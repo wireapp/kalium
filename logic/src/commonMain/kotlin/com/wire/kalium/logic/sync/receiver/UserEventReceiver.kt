@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -49,6 +50,8 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isNotFound
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
@@ -83,7 +86,7 @@ internal class UserEventReceiverImpl internal constructor(
             is Event.User.LegalHoldRequest -> legalHoldRequestHandler.handle(event)
             is Event.User.LegalHoldEnabled -> legalHoldHandler.handleEnable(event)
             is Event.User.LegalHoldDisabled -> legalHoldHandler.handleDisable(event)
-            is Event.User.SessionRefreshSuggested -> handleSessionRefreshSuggested(event)
+            is Event.User.SessionRefreshSuggested -> handleSessionRefreshSuggested(event, deliveryInfo)
         }
     }
 
@@ -115,6 +118,14 @@ internal class UserEventReceiverImpl internal constructor(
     ): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
         return userRepository.fetchUserInfo(event.connection.qualifiedToId)
+            .flatMapLeft { failure ->
+                if (failure.isUserNotFoundFailure()) {
+                    kaliumLogger.w("Ignoring missing user details while processing a connection event")
+                    Either.Right(Unit)
+                } else {
+                    Either.Left(failure)
+                }
+            }
             .flatMap {
                 val previousStatus = connectionRepository.getConnection(event.connection.qualifiedConversationId)
                     .map { it.connection.status }.getOrNull()
@@ -192,10 +203,25 @@ internal class UserEventReceiverImpl internal constructor(
         }
     }
 
-    private suspend fun handleSessionRefreshSuggested(event: Event.User.SessionRefreshSuggested): Either<CoreFailure, Unit> {
+    private suspend fun handleSessionRefreshSuggested(
+        event: Event.User.SessionRefreshSuggested,
+        deliveryInfo: EventDeliveryInfo
+    ): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
         return sessionRefreshSuggestedEventHandler.handle(event)
             .onSuccess { logger.logSuccess() }
-            .onFailure { logger.logFailure(it) }
+            .onFailure {
+                logger.logComplete(
+                    if (deliveryInfo.source == EventSource.PENDING) EventLoggingStatus.SKIPPED else EventLoggingStatus.FAILURE,
+                    arrayOf("errorInfo" to it)
+                )
+            }
+            .flatMapLeft {
+                if (deliveryInfo.source == EventSource.PENDING) Either.Right(Unit) else Either.Left(it)
+            }
     }
 }
+
+private fun CoreFailure.isUserNotFoundFailure(): Boolean =
+    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError)
+        ?.isNotFound() == true

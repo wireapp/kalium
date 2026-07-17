@@ -147,7 +147,7 @@ class SyncMeetingsUseCaseTest {
         updatedAt = null,
         title = "Meeting Title",
         startTime = Instant.parse("2026-08-01T12:00:00.000Z"),
-        endTime = null,
+        endTime = Instant.parse("2026-08-01T13:00:00.000Z"),
         trial = false,
         recurrence = null
     )

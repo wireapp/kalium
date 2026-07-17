@@ -32,6 +32,7 @@ import com.wire.kalium.persistence.HistoryClient
 import com.wire.kalium.persistence.LabeledConversation
 import com.wire.kalium.persistence.LastMessage
 import com.wire.kalium.persistence.Meeting
+import com.wire.kalium.persistence.MeetingOccurrence
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
@@ -62,7 +63,7 @@ import com.wire.kalium.persistence.adapter.ChangeLogEventTypeAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
-import com.wire.kalium.persistence.adapter.GroupTypeAdapter
+import com.wire.kalium.persistence.adapter.ConversationTypeAdapter
 import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.adapter.MLSPublicKeysAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
@@ -78,7 +79,7 @@ internal object TableMapper {
     val callAdapter = Call.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         statusAdapter = EnumColumnAdapter(),
-        conversation_typeAdapter = EnumColumnAdapter(),
+        conversation_typeAdapter = ConversationTypeAdapter,
         typeAdapter = EnumColumnAdapter()
     )
     val clientAdapter = Client.Adapter(
@@ -97,7 +98,7 @@ internal object TableMapper {
     )
     val conversationAdapter = Conversation.Adapter(
         qualified_idAdapter = QualifiedIDAdapter,
-        typeAdapter = EnumColumnAdapter(),
+        typeAdapter = ConversationTypeAdapter,
         mls_group_stateAdapter = EnumColumnAdapter(),
         protocolAdapter = EnumColumnAdapter(),
         muted_statusAdapter = EnumColumnAdapter(),
@@ -113,7 +114,6 @@ internal object TableMapper {
         verification_statusAdapter = EnumColumnAdapter(),
         proteus_verification_statusAdapter = EnumColumnAdapter(),
         legal_hold_statusAdapter = EnumColumnAdapter(),
-        group_typeAdapter = GroupTypeAdapter,
         channel_accessAdapter = EnumColumnAdapter(),
         channel_add_permissionAdapter = EnumColumnAdapter()
     )
@@ -140,7 +140,9 @@ internal object TableMapper {
 
     val messageLinkPreviewAdapter = MessageLinkPreview.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
-        url_offsetAdapter = IntColumnAdapter
+        url_offsetAdapter = IntColumnAdapter,
+        image_widthAdapter = IntColumnAdapter,
+        image_heightAdapter = IntColumnAdapter
     )
     val messageMentionAdapter = MessageMention.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
@@ -294,5 +296,11 @@ internal object TableMapper {
         end_dateAdapter = InstantTypeAdapter,
         recurrence_frequencyAdapter = EnumColumnAdapter(),
         recurrence_end_dateAdapter = InstantTypeAdapter
+    )
+
+    val meetingOccurrenceAdapter = MeetingOccurrence.Adapter(
+        meeting_idAdapter = QualifiedIDAdapter,
+        occurrence_startAdapter = InstantTypeAdapter,
+        occurrence_endAdapter = InstantTypeAdapter
     )
 }

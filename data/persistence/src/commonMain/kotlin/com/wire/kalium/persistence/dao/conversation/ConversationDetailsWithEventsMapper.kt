@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageMapper
@@ -38,7 +37,6 @@ data object ConversationDetailsWithEventsMapper {
         qualifiedId: QualifiedIDEntity,
         name: String?,
         type: ConversationEntity.Type,
-        callStatus: CallEntity.Status?,
         previewAssetId: QualifiedIDEntity?,
         mutedStatus: ConversationEntity.MutedStatus,
         teamId: String?,
@@ -77,7 +75,6 @@ data object ConversationDetailsWithEventsMapper {
         mls_verification_status: ConversationEntity.VerificationStatus,
         proteus_verification_status: ConversationEntity.VerificationStatus,
         legal_hold_status: ConversationEntity.LegalHoldStatus,
-        group_type: ConversationEntity.GroupType,
         channel_access: ConversationEntity.ChannelAccess?,
         channel_add_permission: ConversationEntity.ChannelAddPermission?,
         selfUserId: QualifiedIDEntity?,
@@ -120,7 +117,6 @@ data object ConversationDetailsWithEventsMapper {
             qualifiedId = qualifiedId,
             name = name,
             type = type,
-            callStatus = callStatus,
             previewAssetId = previewAssetId,
             mutedStatus = mutedStatus,
             teamId = teamId,
@@ -164,7 +160,6 @@ data object ConversationDetailsWithEventsMapper {
             isFavorite = isFavorite,
             folderId = folderId,
             folderName = folderName,
-            groupType = group_type,
             channelAccess = channel_access,
             channelAddPermission = channel_add_permission,
             wireCell = wireCell,

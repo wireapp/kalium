@@ -229,12 +229,23 @@ sealed interface MessageEntity {
         @SerialName("userId") val userId: QualifiedIDEntity
     )
 
+    @Serializable
     data class LinkPreview(
         val url: String,
         val urlOffset: Int,
         val permanentUrl: String,
         val title: String,
-        val summary: String
+        val summary: String,
+        val imageLocalPath: String? = null,
+        val imageWidth: Int? = null,
+        val imageHeight: Int? = null,
+        val imageMimeType: String? = null,
+        val imageAssetKey: String? = null,
+        val imageAssetToken: String? = null,
+        val imageAssetDomain: String? = null,
+        val imageOtrKey: String? = null,
+        val imageSha256: String? = null,
+        val imageEncryptionAlgorithm: String? = null,
     )
 }
 

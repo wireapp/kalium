@@ -517,7 +517,6 @@ internal object MessageReadBenchmarkData {
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-            groupType = ConversationEntity.GroupType.Group,
             channelAccess = null,
             channelAddPermission = null,
             wireCell = null,

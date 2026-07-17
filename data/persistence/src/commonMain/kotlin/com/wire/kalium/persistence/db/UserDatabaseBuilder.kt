@@ -209,6 +209,7 @@ class UserDatabaseBuilder internal constructor(
         AppAdapter = TableMapper.appAdapter,
         PendingActionsAdapter = TableMapper.pendingActionsAdapter,
         MeetingAdapter = TableMapper.meetingAdapter,
+        MeetingOccurrenceAdapter = TableMapper.meetingOccurrenceAdapter,
     )
 
     init {
@@ -440,7 +441,7 @@ class UserDatabaseBuilder internal constructor(
         get() = RemoteBackupChangeLogDAOImpl(database.remotebackupChangeLogQueries, readDispatcher, writeDispatcher)
 
     val meetingDao: MeetingDao
-        get() = MeetingDaoImpl(database.meetingsQueries, writeDispatcher)
+        get() = MeetingDaoImpl(database.meetingsQueries, readDispatcher, writeDispatcher)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(

@@ -45,7 +45,4 @@ private class CellsAwsClientApple(
     override suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
         // Not implemented for iOS
     }
-
-    override suspend fun getPreSignedUrl(objectKey: String): String = ""
-
 }

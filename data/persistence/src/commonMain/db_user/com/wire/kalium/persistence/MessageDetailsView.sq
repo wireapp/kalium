@@ -110,6 +110,30 @@ IFNULL(
     ),
     '[]'
 ) AS mentions,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT('{
+        "url":"' || url || '",
+        "urlOffset":' || url_offset || ',
+        "permanentUrl":"' || IFNULL(permanent_url,"' || url || '") || '",
+        "title":"' || title || '",
+        "summary":"' || summary || '",
+        "imageLocalPath":"' || IFNULL(image_local_path,'') || '",
+        "imageWidth":' || IFNULL(image_width,0) || ',
+        "imageHeight":' || IFNULL(image_height,0) || ',
+        "imageMimeType":"' || IFNULL(image_mime_type,'') || '",
+        "imageAssetKey":"' || IFNULL(image_asset_key,'') || '",
+        "imageAssetToken":"' || IFNULL(image_asset_token,'') || '",
+        "imageAssetDomain":"' || IFNULL(image_asset_domain,'') || '",
+        "imageOtrKey":"' || IFNULL(image_otr_key,'') || '",
+        "imageSha256":"' || IFNULL(image_sha256,'') || '",
+        "imageEncryptionAlgorithm":"' || IFNULL(image_encryption_algorithm,'') || '"}') || ']'
+    FROM MessageLinkPreview
+    WHERE MessageLinkPreview.message_id = Message.id
+        AND MessageLinkPreview.conversation_id = Message.conversation_id
+    ORDER BY MessageLinkPreview.url_offset ASC
+    ),
+    '[]'
+) AS linkPreviews,
 TextContent.quoted_message_id AS quotedMessageId,
 QuotedMessage.sender_user_id AS quotedSenderId,
 TextContent.is_quote_verified AS isQuoteVerified,

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2025 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,24 +15,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.util.DebugKaliumApi
+package com.wire.kalium.logic.feature.user.linkPreviews
+
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /**
- * Use case to observe if the client has consumable notifications enabled.
+ * Use case that allows observing whether link preview generation is enabled for the current user.
  */
-@DebugKaliumApi("Debug-only API for observing consumable-notification capability state.")
-public interface ObserveIsConsumableNotificationsEnabledUseCase {
+public interface ObserveLinkPreviewsEnabledUseCase {
     public suspend operator fun invoke(): Flow<Boolean>
 }
 
-internal class ObserveIsConsumableNotificationsEnabledUseCaseImpl(
-    private val clientRepository: ClientRepository
-) : ObserveIsConsumableNotificationsEnabledUseCase {
-    override suspend fun invoke(): Flow<Boolean> {
-        return clientRepository.observeClientHasConsumableNotifications()
-    }
+internal class ObserveLinkPreviewsEnabledUseCaseImpl(
+    private val userPropertyRepository: UserPropertyRepository,
+) : ObserveLinkPreviewsEnabledUseCase {
+
+    override suspend fun invoke(): Flow<Boolean> =
+        userPropertyRepository.observeLinkPreviewsStatus().map { result ->
+            result.fold({ false }, { it })
+        }
 }

@@ -228,6 +228,7 @@ class SendTextMessageCaseTest {
                 matching { message ->
                     (message.content as MessageContent.Text).linkPreviews[0].image != null
                             && !(message.content as MessageContent.Text).linkPreviews[0].image?.otrKey.contentEquals(ByteArray(0))
+                            && (message.content as MessageContent.Text).linkPreviews[0].image?.assetDataPath == PERSISTED_LINK_PREVIEW_PATH
                 }
             )
         }
@@ -393,6 +394,9 @@ class SendTextMessageCaseTest {
             everySuspend {
                 assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
             } returns Either.Right(Pair(UploadedAssetId("", "", ""), SHA256Key(ByteArray(0))))
+            everySuspend {
+                assetRepository.fetchDecodedAsset("")
+            } returns Either.Right(PERSISTED_LINK_PREVIEW_PATH)
         }
 
         suspend fun withUploadAndPersistPrivateAssetFailure() = apply {
@@ -441,6 +445,7 @@ class SendTextMessageCaseTest {
     }
 
     private companion object {
+        val PERSISTED_LINK_PREVIEW_PATH = "persisted/link-preview.png".toPath()
         val VALID_LINK_PREVIEW_ASSET = LinkPreviewAsset(
             assetKey = "",
             assetDomain = "",

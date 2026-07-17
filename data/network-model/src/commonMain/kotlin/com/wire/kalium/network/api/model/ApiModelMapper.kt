@@ -50,7 +50,7 @@ interface ApiModelMapper {
     fun fromApiV10(response: ConversationResponseV10): ConversationResponse
 
     /**
-     * Forcing new clients using >= v9 to have [consumable-notifications] and [legalhold-implicit-consent] capability.
+     * Forcing new clients using >= v9 to have [legalhold-implicit-consent] capability.
      */
     fun toApiV9(request: RegisterClientRequest): RegisterClientRequest
 
@@ -228,9 +228,8 @@ class ApiModelMapperImpl : ApiModelMapper {
             type = request.type,
             label = request.label,
             capabilities = request.capabilities?.toMutableSet()?.apply {
-                add(ClientCapabilityDTO.ConsumableNotifications)
                 add(ClientCapabilityDTO.LegalHoldImplicitConsent)
-            }?.toList() ?: listOf(ClientCapabilityDTO.ConsumableNotifications, ClientCapabilityDTO.LegalHoldImplicitConsent),
+            }?.toList() ?: listOf(ClientCapabilityDTO.LegalHoldImplicitConsent),
             model = request.model,
             cookieLabel = request.cookieLabel,
             secondFactorVerificationCode = request.secondFactorVerificationCode

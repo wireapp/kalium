@@ -25,7 +25,6 @@ import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
-import com.wire.kalium.network.clearTextTrafficEngine
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.HttpClient
@@ -42,10 +41,6 @@ private interface UnboundNetworkClientProvider {
     val unboundNetworkClient: UnboundNetworkClient
 }
 
-private interface UnboundClearTextTrafficNetworkClientProvider {
-    val unboundClearTextTrafficNetworkClient: UnboundNetworkClient
-}
-
 internal class UnboundNetworkClientProviderImpl(
     userAgent: String,
     engine: HttpClientEngine
@@ -56,20 +51,6 @@ internal class UnboundNetworkClientProviderImpl(
     }
 
     override val unboundNetworkClient by lazy {
-        UnboundNetworkClient(engine)
-    }
-}
-
-internal class UnboundClearTextTrafficNetworkClientProviderImpl(
-    userAgent: String,
-    engine: HttpClientEngine
-) : UnboundClearTextTrafficNetworkClientProvider {
-
-    init {
-        KaliumUserAgentProvider.setUserAgent(userAgent)
-    }
-
-    override val unboundClearTextTrafficNetworkClient by lazy {
         UnboundNetworkClient(engine)
     }
 }
@@ -89,20 +70,12 @@ class UnboundNetworkContainerCommon(
             serverConfigDTOApiProxy = null,
             ignoreSSLCertificates = ignoreSSLCertificates
         )
-    ),
-    UnboundClearTextTrafficNetworkClientProvider by UnboundClearTextTrafficNetworkClientProviderImpl(
-        userAgent = userAgent,
-        engine = mockEngine ?: clearTextTrafficEngine()
     ) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
 
     override val versionApi: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
 
-    override val acmeApi: ACMEApi
-        get() = ACMEApiImpl(
-            unboundNetworkClient,
-            unboundClearTextTrafficNetworkClient
-        )
+    override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)
 
     override val cellsClient: HttpClient
         get() = unboundNetworkClient.httpClient

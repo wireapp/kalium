@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
@@ -51,6 +52,7 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
+import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
 import kotlinx.datetime.Instant
@@ -103,6 +105,7 @@ internal class ApplicationMessageHandlerImpl(
     private val buttonActionHandler: ButtonActionHandler,
     private val messageCompositeEditHandler: MessageCompositeEditHandler,
     private val callingMessageHandler: CallingMessageHandler,
+    private val resolveLinkPreviewImages: LinkPreviewImagesResolver,
     private val selfUserId: UserId,
 ) : ApplicationMessageHandler {
 
@@ -310,7 +313,9 @@ internal class ApplicationMessageHandlerImpl(
         val adjustedMessage = message.copy(
             content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
         )
-        persistMessage(adjustedMessage)
+        persistMessage(adjustedMessage).onSuccess {
+            resolveLinkPreviewImages(adjustedMessage.conversationId, adjustedMessage.id)
+        }
     }
 
     private suspend fun verifyMessageQuote(

@@ -48,7 +48,6 @@ CREATE TABLE Conversation_new (
     proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
     legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED',
-    group_type TEXT AS ConversationEntity.GroupType NOT NULL DEFAULT '',
     channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL,
     channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL,
     wire_cell TEXT,
@@ -89,7 +88,6 @@ INSERT INTO Conversation_new(
     proteus_verification_status,
     degraded_conversation_notified,
     legal_hold_status,
-    group_type,
     channel_access,
     channel_add_permission,
     wire_cell,
@@ -99,7 +97,7 @@ INSERT INTO Conversation_new(
 SELECT
     qualified_id,
     name,
-    type,
+    CASE WHEN type = 'GROUP' AND is_channel = 1 THEN 'CHANNEL' ELSE type END,
     team_id,
     mls_group_id,
     mls_group_state,
@@ -129,7 +127,6 @@ SELECT
     proteus_verification_status,
     degraded_conversation_notified,
     legal_hold_status,
-    CASE WHEN is_channel = 1 THEN 'CHANNEL' ELSE 'GROUP' END,
     channel_access,
     channel_add_permission,
     wire_cell,
@@ -146,7 +143,7 @@ CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
 CREATE INDEX conversation_creator_index ON Conversation(creator_id);
 CREATE INDEX conversation_verification_status ON Conversation(verification_status);
 CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
-CREATE INDEX conversation_archived_type_group_type_index ON Conversation(archived, type, group_type);
+CREATE INDEX conversation_archived_type_index ON Conversation(archived, type);
 CREATE INDEX Conversation_idx_archived_protocol ON Conversation(archived, protocol);
 CREATE INDEX conversation_idx_wire_cell_notnull ON Conversation(wire_cell) WHERE wire_cell IS NOT NULL;
 CREATE INDEX conversation_history_sharing_retention ON Conversation(history_sharing_retention_seconds);
@@ -370,12 +367,11 @@ Conversation.archived_date_time,
 Conversation.verification_status AS mls_verification_status,
 Conversation.proteus_verification_status,
 Conversation.legal_hold_status,
-Conversation.group_type,
 Conversation.channel_access,
 Conversation.channel_add_permission,
 SelfUser.id AS selfUserId,
 CASE
-    WHEN Conversation.type = 'GROUP' THEN
+    WHEN Conversation.type IN ('GROUP', 'CHANNEL', 'MEETING') THEN
         CASE
             WHEN memberRole.role IS NOT NULL THEN 1
             ELSE 0
@@ -426,7 +422,7 @@ SELECT
     UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
     UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
     CASE
-        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
+        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING') THEN 1 -- if ongoing call in a group, move it to the top
         WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
            CASE
                 WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
@@ -486,7 +482,7 @@ LEFT JOIN MessageTextContent AS TextContent
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
+        ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING')
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
         OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata

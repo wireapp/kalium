@@ -107,6 +107,8 @@ internal interface UserConfigRepository {
     suspend fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
     fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit>
+    fun observeLinkPreviewsEnabled(): Flow<Either<StorageFailure, Boolean>>
+    suspend fun setLinkPreviewsStatus(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     suspend fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
@@ -359,6 +361,14 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistTypingIndicator(enabled)
+        }
+
+    override fun observeLinkPreviewsEnabled(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigStorage.isLinkPreviewsEnabled().wrapStorageRequest()
+
+    override suspend fun setLinkPreviewsStatus(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigStorage.persistLinkPreviews(enabled)
         }
 
     override suspend fun setGuestRoomStatus(

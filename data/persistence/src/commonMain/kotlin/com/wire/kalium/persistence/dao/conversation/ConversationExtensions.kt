@@ -17,13 +17,21 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
+import androidx.paging.InvalidatingPagingSourceFactory
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.AsyncQueryPagingSource
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.db.ReadDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.dropWhile
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
 
 interface ConversationExtensions {
     fun getPagerForConversationDetailsWithEventsSearch(
@@ -37,6 +45,8 @@ interface ConversationExtensions {
         val fromArchive: Boolean = false,
         val onlyInteractionEnabled: Boolean = false,
         val newActivitiesOnTop: Boolean = false,
+        val ongoingCallConversationIds: List<QualifiedIDEntity> = emptyList(),
+        val ongoingCallConversationIdsFlow: Flow<List<QualifiedIDEntity>> = flowOf(ongoingCallConversationIds),
         val conversationFilter: ConversationFilterEntity = ConversationFilterEntity.ALL,
         val strictMlsFilter: Boolean = true,
     )
@@ -51,15 +61,33 @@ internal class ConversationExtensionsImpl internal constructor(
         queryConfig: QueryConfig,
         pagingConfig: PagingConfig,
         startingOffset: Long
-    ): KaliumPager<ConversationDetailsWithEventsEntity> =
-        KaliumPager(
+    ): KaliumPager<ConversationDetailsWithEventsEntity> {
+        val ongoingCallConversationIds = MutableStateFlow(queryConfig.ongoingCallConversationIds)
+        val pagingSourceFactory = InvalidatingPagingSourceFactory {
+            pagingSource(
+                queryConfig = queryConfig,
+                initialOffset = startingOffset,
+                ongoingCallConversationIds = { ongoingCallConversationIds.value }
+            )
+        }
+        return KaliumPager(
             // We could return a Flow directly, but having the PagingSource is the only way to test this
             pager = Pager(pagingConfig) {
-                pagingSource(queryConfig, startingOffset)
+                pagingSourceFactory()
             },
-            pagingSource = pagingSource(queryConfig, startingOffset),
+            pagingSource = pagingSource(
+                queryConfig = queryConfig,
+                initialOffset = startingOffset,
+                ongoingCallConversationIds = { ongoingCallConversationIds.value }
+            ),
             readDispatcher = readDispatcher,
+            invalidateOn = queryConfig.ongoingCallConversationIdsFlow
+                .distinctUntilChanged()
+                .onEach { ongoingCallConversationIds.value = it }
+                .dropWhile { it == queryConfig.ongoingCallConversationIds },
+            invalidatePagingSource = pagingSourceFactory::invalidate
         )
+    }
 
     /**
      * Uses lightweight COUNT when `searchQuery` is empty.
@@ -72,7 +100,11 @@ internal class ConversationExtensionsImpl internal constructor(
      * - Only used when search is empty
      * - SELECT still uses full ConversationDetails rules (COUNT can be a superset)
      */
-    private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
+    private fun pagingSource(
+        queryConfig: QueryConfig,
+        initialOffset: Long,
+        ongoingCallConversationIds: () -> List<QualifiedIDEntity>
+    ) = with(queryConfig) {
         AsyncQueryPagingSource(
             countQuery =
                 if (searchQuery.isBlank()) {
@@ -99,6 +131,7 @@ internal class ConversationExtensionsImpl internal constructor(
                         onlyInteractionsEnabled = onlyInteractionEnabled,
                         conversationFilter = conversationFilter.name,
                         newActivitiesOnTop = newActivitiesOnTop,
+                        ongoingCallConversationIds = ongoingCallConversationIds(),
                         limit = limit,
                         offset = offset,
                         strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
@@ -111,6 +144,7 @@ internal class ConversationExtensionsImpl internal constructor(
                         conversationFilter = conversationFilter.name,
                         searchQuery = searchQuery,
                         newActivitiesOnTop = newActivitiesOnTop,
+                        ongoingCallConversationIds = ongoingCallConversationIds(),
                         limit = limit,
                         offset = offset,
                         strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,

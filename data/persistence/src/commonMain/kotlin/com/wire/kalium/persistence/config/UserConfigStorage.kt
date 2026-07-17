@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.E2EI
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.E2EI_SETTINGS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_CLASSIFIED_DOMAINS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_CONFERENCE_CALLING
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_LINK_PREVIEWS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_MLS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_READ_RECEIPTS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_SCREENSHOT_CENSORING
@@ -191,6 +192,9 @@ interface UserConfigStorage {
      */
     suspend fun persistTypingIndicator(enabled: Boolean)
 
+    fun isLinkPreviewsEnabled(): Flow<Boolean>
+    suspend fun persistLinkPreviews(enabled: Boolean)
+
     suspend fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
     suspend fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
@@ -214,6 +218,7 @@ interface UserConfigStorage {
         REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE("require_second_factor_password_challenge"),
         ENABLE_SCREENSHOT_CENSORING("enable_screenshot_censoring"),
         ENABLE_TYPING_INDICATOR("enable_typing_indicator"),
+        ENABLE_LINK_PREVIEWS("enable_link_previews"),
         APP_LOCK("app_lock"),
         DEFAULT_PROTOCOL("default_protocol")
     }
@@ -330,6 +335,12 @@ class UserConfigStorageImpl constructor(
         )
 
     private val isTypingIndicatorEnabledFlow =
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
+
+    private val isLinkPreviewsEnabledFlow =
         MutableSharedFlow<Unit>(
             extraBufferCapacity = 1,
             onBufferOverflow = BufferOverflow.DROP_OLDEST
@@ -597,6 +608,17 @@ class UserConfigStorageImpl constructor(
     override suspend fun persistTypingIndicator(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_TYPING_INDICATOR.key, enabled).also {
             isTypingIndicatorEnabledFlow.tryEmit(Unit)
+        }
+    }
+
+    override fun isLinkPreviewsEnabled(): Flow<Boolean> = isLinkPreviewsEnabledFlow
+        .map { kaliumPreferences.getBoolean(ENABLE_LINK_PREVIEWS.key, false) }
+        .onStart { emit(kaliumPreferences.getBoolean(ENABLE_LINK_PREVIEWS.key, false)) }
+        .distinctUntilChanged()
+
+    override suspend fun persistLinkPreviews(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_LINK_PREVIEWS.key, enabled).also {
+            isLinkPreviewsEnabledFlow.tryEmit(Unit)
         }
     }
 

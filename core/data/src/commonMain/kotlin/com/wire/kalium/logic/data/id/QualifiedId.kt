@@ -47,6 +47,7 @@ const val VALUE_DOMAIN_SEPARATOR = '@'
 val FEDERATION_REGEX = """[^@.]+@[^@.]+\.[^@]+""".toRegex()
 
 typealias ConversationId = QualifiedID
+typealias MeetingId = QualifiedID
 
 @JvmInline
 @Serializable

@@ -85,6 +85,8 @@ internal class OnCloseCall(
                     true
                 }
 
+            callRepository.leaveStaleMlsConferenceIfNeeded(conversationIdWithDomain)
+
             if (shouldUpdateCallStatus) {
                 callRepository.updateCallStatusById(
                     conversationId = conversationIdWithDomain,
