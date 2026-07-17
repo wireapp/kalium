@@ -2480,7 +2480,7 @@ final class com.wire.kalium.logic.configuration.server/ServerConfig { // com.wir
     }
 
     final class Links { // com.wire.kalium.logic.configuration.server/ServerConfig.Links|null[0]
-        constructor <init>(kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/Boolean, com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy?) // com.wire.kalium.logic.configuration.server/ServerConfig.Links.<init>|<init>(kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.Boolean;com.wire.kalium.logic.configuration.server.ServerConfig.ApiProxy?){}[0]
+        constructor <init>(kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/Boolean, com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy?, kotlin/String? = ...) // com.wire.kalium.logic.configuration.server/ServerConfig.Links.<init>|<init>(kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.Boolean;com.wire.kalium.logic.configuration.server.ServerConfig.ApiProxy?;kotlin.String?){}[0]
 
         final val accounts // com.wire.kalium.logic.configuration.server/ServerConfig.Links.accounts|{}accounts[0]
             final fun <get-accounts>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.accounts.<get-accounts>|<get-accounts>(){}[0]
@@ -2496,6 +2496,8 @@ final class com.wire.kalium.logic.configuration.server/ServerConfig { // com.wir
             final fun <get-isOnPremises>(): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.Links.isOnPremises.<get-isOnPremises>|<get-isOnPremises>(){}[0]
         final val pricing // com.wire.kalium.logic.configuration.server/ServerConfig.Links.pricing|{}pricing[0]
             final fun <get-pricing>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.pricing.<get-pricing>|<get-pricing>(){}[0]
+        final val supportEmail // com.wire.kalium.logic.configuration.server/ServerConfig.Links.supportEmail|{}supportEmail[0]
+            final fun <get-supportEmail>(): kotlin/String? // com.wire.kalium.logic.configuration.server/ServerConfig.Links.supportEmail.<get-supportEmail>|<get-supportEmail>(){}[0]
         final val teams // com.wire.kalium.logic.configuration.server/ServerConfig.Links.teams|{}teams[0]
             final fun <get-teams>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.teams.<get-teams>|<get-teams>(){}[0]
         final val title // com.wire.kalium.logic.configuration.server/ServerConfig.Links.title|{}title[0]
@@ -2508,6 +2510,7 @@ final class com.wire.kalium.logic.configuration.server/ServerConfig { // com.wir
             final fun <get-website>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.website.<get-website>|<get-website>(){}[0]
 
         final fun component1(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component1|component1(){}[0]
+        final fun component10(): kotlin/String? // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component10|component10(){}[0]
         final fun component2(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component2|component2(){}[0]
         final fun component3(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component3|component3(){}[0]
         final fun component4(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component4|component4(){}[0]
@@ -2516,7 +2519,7 @@ final class com.wire.kalium.logic.configuration.server/ServerConfig { // com.wir
         final fun component7(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component7|component7(){}[0]
         final fun component8(): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component8|component8(){}[0]
         final fun component9(): com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy? // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component9|component9(){}[0]
-        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/Boolean = ..., com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy? = ...): com.wire.kalium.logic.configuration.server/ServerConfig.Links // com.wire.kalium.logic.configuration.server/ServerConfig.Links.copy|copy(kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.Boolean;com.wire.kalium.logic.configuration.server.ServerConfig.ApiProxy?){}[0]
+        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/Boolean = ..., com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy? = ..., kotlin/String? = ...): com.wire.kalium.logic.configuration.server/ServerConfig.Links // com.wire.kalium.logic.configuration.server/ServerConfig.Links.copy|copy(kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.Boolean;com.wire.kalium.logic.configuration.server.ServerConfig.ApiProxy?;kotlin.String?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.Links.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration.server/ServerConfig.Links.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.toString|toString(){}[0]
