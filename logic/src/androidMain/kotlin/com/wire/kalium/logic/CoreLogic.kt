@@ -32,12 +32,14 @@ import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.logic.sync.WorkSchedulerProviderImpl
 import com.wire.kalium.logic.util.PlatformContext
+import com.wire.kalium.logic.util.DatabaseKeyLock
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -60,14 +62,27 @@ public actual class CoreLogic(
         kaliumConfigs.shouldEncryptData()
     )
 
+    private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+    private val globalDBKeyMaterial = if (kaliumConfigs.shouldEncryptData()) {
+        DatabaseKeyLock.withLock {
+            securityHelper.globalDBKeyMaterial(
+                databaseExists = appContext.getDatabasePath(FileNameUtil.globalDBName()).exists()
+            )
+        }
+    } else {
+        null
+    }
+
     actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
-        platformDatabaseData = PlatformDatabaseData(appContext),
+        platformDatabaseData = PlatformDatabaseData(
+            context = appContext,
+            globalDatabaseMigrationRawKey = globalDBKeyMaterial?.migrationRawKey,
+            onGlobalDatabaseMigratedToRawKey = {
+                DatabaseKeyLock.withLock(securityHelper::markGlobalDBSecretAsV2)
+            }
+        ),
         queriesContext = KaliumDispatcherImpl.io,
-        passphrase = if (kaliumConfigs.shouldEncryptData()) {
-            SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret()
-        } else {
-            null
-        },
+        passphrase = globalDBKeyMaterial?.currentSecret,
         enableWAL = true
     )
 

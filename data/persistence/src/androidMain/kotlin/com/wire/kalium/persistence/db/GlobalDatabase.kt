@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import com.wire.kalium.persistence.GlobalDatabase
+import com.wire.kalium.persistence.db.support.globalDatabaseKey
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 
@@ -31,10 +32,21 @@ actual fun globalDatabaseProvider(
 ): GlobalDatabaseBuilder {
     val schema = GlobalDatabase.Schema.synchronous()
     val dbName = FileNameUtil.globalDBName()
+    if (passphrase != null) {
+        System.loadLibrary("sqlcipher")
+    }
+    val databaseKey = passphrase?.value?.let {
+        globalDatabaseKey(
+            databaseFile = platformDatabaseData.context.getDatabasePath(dbName),
+            secret = it,
+            migrationRawKey = platformDatabaseData.globalDatabaseMigrationRawKey,
+            onMigrationComplete = platformDatabaseData.onGlobalDatabaseMigratedToRawKey
+        )
+    }
     val driver = databaseDriver(
         platformDatabaseData.context,
         dbName,
-        passphrase?.value,
+        databaseKey,
         schema
     ) {
         isWALEnabled = enableWAL
