@@ -36,7 +36,9 @@ import kotlinx.coroutines.Dispatchers
 internal object BenchmarkDb {
     val selfUserId: UserIDEntity = UserIDEntity("benchmark-self", "benchmark.wire.com")
 
-    private val passphrase = UserDBSecret("db_secret".toByteArray())
+    private val passphrase = UserDBSecret(
+        "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'".encodeToByteArray()
+    )
 
     fun build(context: Context): UserDatabaseBuilder = userDatabaseBuilder(
         platformDatabaseData = PlatformDatabaseData(context),
