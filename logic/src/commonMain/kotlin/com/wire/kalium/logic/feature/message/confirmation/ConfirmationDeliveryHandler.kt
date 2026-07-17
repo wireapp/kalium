@@ -89,15 +89,7 @@ internal class ConfirmationDeliveryHandlerImpl(
                             conversation = conversation,
                             messages = messages.toList()
                         ).toEither().onSuccess {
-                            pendingConfirmationMessages.block {
-                                val currentMessages = it[conversationId]
-                                if (currentMessages != null) {
-                                    currentMessages.removeAll(messages.toSet())
-                                    if (currentMessages.isEmpty()) {
-                                        it.remove(conversationId)
-                                    }
-                                }
-                            }
+                            removePendingConfirmations(conversationId, messages)
                         }
                     } else {
                         kaliumLogger.logStructuredJson(
@@ -113,6 +105,18 @@ internal class ConfirmationDeliveryHandlerImpl(
                 }
             }
             kaliumLogger.d("Finished collecting pending messages for delivery confirmation")
+        }
+    }
+
+    private fun removePendingConfirmations(conversationId: ConversationId, messages: Set<String>) {
+        pendingConfirmationMessages.block {
+            val currentMessages = it[conversationId]
+            if (currentMessages != null) {
+                currentMessages.removeAll(messages)
+                if (currentMessages.isEmpty()) {
+                    it.remove(conversationId)
+                }
+            }
         }
     }
 

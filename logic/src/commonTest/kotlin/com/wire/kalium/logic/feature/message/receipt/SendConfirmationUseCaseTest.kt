@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message.receipt
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -48,6 +49,74 @@ class SendConfirmationUseCaseTest {
         val (arrangement, sendConfirmation) = Arrangement()
             .withCurrentClientIdProvider()
             .withGetConversationByIdSuccessful()
+            .withToggleReadReceiptsStatus(true)
+            .withPendingMessagesResponse()
+            .withSendMessageSuccess()
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
+
+        result.toEither().shouldSucceed()
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMLSOneOnOneConversation_whenSendingReadConfirmation_thenShouldSendConfirmation() = runTest {
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withGetConversationByIdSuccessful(TestConversation.MLS_CONVERSATION)
+            .withToggleReadReceiptsStatus(true)
+            .withPendingMessagesResponse()
+            .withSendMessageSuccess()
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
+
+        result.toEither().shouldSucceed()
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMLSGroupConversation_whenSendingReadConfirmation_thenShouldNotSendConfirmation() = runTest {
+        val mlsGroupConversation = TestConversation.MLS_CONVERSATION.copy(type = Conversation.Type.Group.Regular)
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withGetConversationByIdSuccessful(mlsGroupConversation)
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
+
+        result.toEither().shouldSucceed()
+        coVerify {
+            arrangement.messageRepository.getPendingConfirmationMessagesByConversationAfterDate(
+                any(),
+                eq(after),
+                eq(until),
+                any()
+            )
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenMixedConversation_whenSendingReadConfirmation_thenShouldSendConfirmationUsingProteus() = runTest {
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withGetConversationByIdSuccessful(TestConversation.MIXED_CONVERSATION)
             .withToggleReadReceiptsStatus(true)
             .withPendingMessagesResponse()
             .withSendMessageSuccess()
@@ -114,10 +183,12 @@ class SendConfirmationUseCaseTest {
             }.returns(Either.Right(Unit))
         }
 
-        suspend fun withGetConversationByIdSuccessful() = apply {
+        suspend fun withGetConversationByIdSuccessful(
+            conversation: Conversation = TestConversation.CONVERSATION
+        ) = apply {
             coEvery {
                 conversationRepository.getConversationById(any())
-            }.returns(Either.Right(TestConversation.CONVERSATION))
+            }.returns(Either.Right(conversation))
         }
 
         suspend fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
