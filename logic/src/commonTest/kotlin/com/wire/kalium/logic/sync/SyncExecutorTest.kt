@@ -278,7 +278,36 @@ class SyncExecutorTest {
         }
 
     @Test
-    fun givenSyncIsNotFailed_whenNewRequestStarts_thenShouldNotRestartSync() =
+    fun givenSyncIsConnecting_whenNewRequestStarts_thenShouldResetBackoffWithoutRestartingSync() =
+        runTest(TestKaliumDispatcher.default) {
+            listOf(
+                SyncState.Waiting,
+                SyncState.SlowSync,
+                SyncState.GatheringPendingEvents,
+            ).forEach { connectingState ->
+                val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+                val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+                syncExecutor.startAndStopSyncAsNeeded()
+
+                syncExecutor.request {
+                    arrangement.syncStateObserver.mutableSyncState.emit(connectingState)
+                    advanceUntilIdle()
+
+                    syncExecutor.request {
+                        advanceUntilIdle()
+                        assertEquals(1, arrangement.slowSyncManager.resetRetryBackoffCount)
+                        assertEquals(1, arrangement.incrementalSyncManager.resetRetryBackoffCount)
+                        assertEquals(1, arrangement.slowSyncManager.performSyncFlowCount)
+                        assertEquals(0, arrangement.slowSyncManager.cancelledSyncFlowCount)
+                    }
+                }
+                syncScope.cancel()
+            }
+        }
+
+    @Test
+    fun givenSyncIsLive_whenNewRequestStarts_thenShouldNotRestartOrResetSync() =
         runTest(TestKaliumDispatcher.default) {
             val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
             val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
@@ -297,6 +326,8 @@ class SyncExecutorTest {
                     advanceUntilIdle()
                     assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
                     assertEquals(0, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+                    assertEquals(0, arrangement.slowSyncManager.resetRetryBackoffCount)
+                    assertEquals(0, arrangement.incrementalSyncManager.resetRetryBackoffCount)
                 }
             }
             syncScope.cancel()
@@ -325,6 +356,8 @@ class SyncExecutorTest {
                     assertEquals(2, arrangement.incrementalSyncManager.performSyncFlowCount)
                     assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
                     assertEquals(1, arrangement.incrementalSyncManager.fakeSyncFlow.subscriptionCount.value)
+                    assertEquals(0, arrangement.slowSyncManager.resetRetryBackoffCount)
+                    assertEquals(0, arrangement.incrementalSyncManager.resetRetryBackoffCount)
                 }
             }
             syncScope.cancel()

@@ -88,6 +88,11 @@ internal interface IncrementalSyncManager {
      */
     fun performSyncFlow(): Flow<IncrementalSyncStatus>
 
+    /**
+     * Resets the accumulated retry backoff without interrupting an ongoing sync attempt.
+     */
+    fun resetRetryBackoff()
+
     companion object {
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes
@@ -109,6 +114,15 @@ internal fun IncrementalSyncManager(
 ) = object : IncrementalSyncManager {
 
     private val logger = userScopedLogger.withFeatureId(SYNC).withTextTag("IncrementalSyncManager")
+
+    override fun resetRetryBackoff() {
+        exponentialDurationHelper.reset()
+        logger.logSyncTelemetry(
+            event = SyncTelemetryEvent.RETRY_BACKOFF_RESET,
+            component = SyncTelemetryComponent.INCREMENTAL,
+            data = mapOf("reason" to "NEW_SYNC_REQUEST")
+        )
+    }
 
     private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {
