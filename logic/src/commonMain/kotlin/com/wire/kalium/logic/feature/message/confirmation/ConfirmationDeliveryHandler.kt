@@ -82,21 +82,26 @@ internal class ConfirmationDeliveryHandlerImpl(
             val messagesToSend = pendingConfirmationMessages.block { it.toMap() }
             messagesToSend.forEach { (conversationId, messages) ->
                 conversationRepository.observeConversationById(conversationId).first().flatMap { conversation ->
-                    if (conversation.type == Conversation.Type.OneOnOne) {
+                    if (conversation.type == Conversation.Type.OneOnOne &&
+                        conversation.protocol !is Conversation.ProtocolInfo.MLS
+                    ) {
                         sendDeliverSignalUseCase(
                             conversation = conversation,
                             messages = messages.toList()
                         ).toEither().onSuccess {
-                            pendingConfirmationMessages.block {
-                                val currentMessages = it[conversationId]
-                                if (currentMessages != null) {
-                                    currentMessages.removeAll(messages.toSet())
-                                    if (currentMessages.isEmpty()) {
-                                        it.remove(conversationId)
-                                    }
-                                }
-                            }
+                            removePendingConfirmations(conversationId, messages)
                         }
+                    } else if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
+                        kaliumLogger.logStructuredJson(
+                            level = KaliumLogLevel.DEBUG,
+                            leadingMessage = "Skipping delivery confirmation for MLS conversation: " +
+                                    conversation.id.toLogString(),
+                            jsonStringKeyValues = mapOf(
+                                "conversationId" to conversation.id.toLogString(),
+                                "messageCount" to messages.size
+                            )
+                        )
+                        removePendingConfirmations(conversationId, messages)
                     } else {
                         kaliumLogger.logStructuredJson(
                             level = KaliumLogLevel.DEBUG,
@@ -111,6 +116,18 @@ internal class ConfirmationDeliveryHandlerImpl(
                 }
             }
             kaliumLogger.d("Finished collecting pending messages for delivery confirmation")
+        }
+    }
+
+    private fun removePendingConfirmations(conversationId: ConversationId, messages: Set<String>) {
+        pendingConfirmationMessages.block {
+            val currentMessages = it[conversationId]
+            if (currentMessages != null) {
+                currentMessages.removeAll(messages)
+                if (currentMessages.isEmpty()) {
+                    it.remove(conversationId)
+                }
+            }
         }
     }
 
