@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.keypackage
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toApi
@@ -49,6 +50,10 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -94,6 +99,74 @@ internal class KeyPackageRepositoryTest {
 
         result.shouldSucceed { keyPackageResult ->
             assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), keyPackageResult.successfullyFetchedKeyPackages)
+        }
+    }
+
+    @Test
+    fun givenUserHasKeyPackagesForMultipleClients_whenClaimingKeyPackages_thenAllClientKeyPackagesAreCollectedAndUserIsNotMissing() =
+        runTest {
+            val user = Arrangement.USER_ID
+            val (_, keyPackageRepository) = Arrangement()
+                .withCurrentClientId()
+                .withClaimKeyPackagesForMultipleClients(user)
+                .arrange()
+
+            val result = keyPackageRepository.claimKeyPackages(listOf(user), CIPHER_SUITE)
+
+            result.shouldSucceed { keyPackageResult ->
+                // Every client's key package present in the response is collected.
+                assertEquals(
+                    Arrangement.MULTI_CLIENT_CLAIMED_KEY_PACKAGES.keyPackages,
+                    keyPackageResult.successfullyFetchedKeyPackages
+                )
+                // A user is only reported as missing when the response is empty; a non-empty (incl. partial-client) response
+                // counts as a success, so the user must not appear in either failure bucket.
+                assertEquals(emptySet(), keyPackageResult.usersWithoutKeyPackages)
+                assertEquals(emptySet(), keyPackageResult.usersWithUnreachableBackend)
+            }
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenMoreUsersThanConcurrencyLimit_whenClaimingKeyPackages_thenSemaphoreKeepsClaimsWithinLimit() = runTest {
+        val users = List(3) { index -> Arrangement.USER_ID.copy(value = "user$index") }
+        val claimStarted = List(users.size) { CompletableDeferred<Unit>() }
+        val releaseClaim = List(users.size) { CompletableDeferred<Unit>() }
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withCurrentClientId()
+            .arrange(maxConcurrentClaims = 2)
+
+        users.forEachIndexed { index, user ->
+            coEvery {
+                arrangement.keyPackageApi.claimKeyPackages(
+                    eq(KeyPackageApi.Param.SkipOwnClient(user.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                )
+            }.invokes {
+                claimStarted[index].complete(Unit)
+                releaseClaim[index].await()
+                NetworkResponse.Success(Arrangement.CLAIMED_KEY_PACKAGES, mapOf(), 200)
+            }
+        }
+
+        val result = async {
+            keyPackageRepository.claimKeyPackages(users, CIPHER_SUITE)
+        }
+        runCurrent()
+
+        assertEquals(true, claimStarted[0].isCompleted)
+        assertEquals(true, claimStarted[1].isCompleted)
+        assertEquals(false, claimStarted[2].isCompleted)
+
+        releaseClaim[0].complete(Unit)
+        runCurrent()
+
+        // A free semaphore permit starts the next claim without waiting for the other active claim.
+        assertEquals(true, claimStarted[2].isCompleted)
+
+        releaseClaim[1].complete(Unit)
+        releaseClaim[2].complete(Unit)
+        result.await().shouldSucceed { keyPackageResult ->
+            assertEquals(users.size, keyPackageResult.successfullyFetchedKeyPackages.size)
         }
     }
 
@@ -220,7 +293,7 @@ internal class KeyPackageRepositoryTest {
         val (arrangement, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
             .withClaimKeyPackagesNoNetworkError(user1)
-            .arrange()
+            .arrange(maxConcurrentClaims = 1)
 
         val result = keyPackageRepository.claimKeyPackages(listOf(user1, user2), CIPHER_SUITE)
 
@@ -230,6 +303,112 @@ internal class KeyPackageRepositoryTest {
                 eq(KeyPackageApi.Param.SkipOwnClient(user2.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
             )
         }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenFatalFailure_whenClaimingKeyPackages_thenActiveClaimsFinishButWaitingClaimsDoNotStart() = runTest {
+        val failingUser = Arrangement.USER_ID.copy(value = "failing")
+        val activeUser = Arrangement.USER_ID.copy(value = "active")
+        val waitingUser = Arrangement.USER_ID.copy(value = "waiting")
+        val activeClaimStarted = CompletableDeferred<Unit>()
+        val releaseActiveClaim = CompletableDeferred<Unit>()
+        val failingParam = KeyPackageApi.Param.SkipOwnClient(
+            failingUser.toApi(),
+            Arrangement.SELF_CLIENT_ID.value,
+            CIPHER_SUITE.tag
+        )
+        val activeParam = KeyPackageApi.Param.SkipOwnClient(
+            activeUser.toApi(),
+            Arrangement.SELF_CLIENT_ID.value,
+            CIPHER_SUITE.tag
+        )
+        val startedClaims = mutableListOf<KeyPackageApi.Param>()
+        val concurrentKeyPackageApi = object : KeyPackageApi {
+            override suspend fun claimKeyPackages(param: KeyPackageApi.Param): NetworkResponse<ClaimedKeyPackageList> {
+                startedClaims += param
+                return when (param) {
+                    failingParam -> {
+                        activeClaimStarted.await()
+                        NetworkResponse.Error(KaliumException.NoNetwork())
+                    }
+
+                    activeParam -> {
+                        activeClaimStarted.complete(Unit)
+                        releaseActiveClaim.await()
+                        NetworkResponse.Success(Arrangement.CLAIMED_KEY_PACKAGES, mapOf(), 200)
+                    }
+
+                    else -> error("A claim waiting for a permit must not start after a fatal failure")
+                }
+            }
+
+            override suspend fun uploadKeyPackages(clientId: String, keyPackages: List<KeyPackage>): NetworkResponse<Unit> =
+                error("Unexpected uploadKeyPackages call")
+
+            override suspend fun replaceKeyPackages(
+                clientId: String,
+                keyPackages: List<KeyPackage>,
+                cipherSuite: Int
+            ): NetworkResponse<Unit> = error("Unexpected replaceKeyPackages call")
+
+            override suspend fun getAvailableKeyPackageCount(
+                clientId: String,
+                cipherSuite: Int
+            ): NetworkResponse<KeyPackageCountDTO> = error("Unexpected getAvailableKeyPackageCount call")
+        }
+        val (_, keyPackageRepository) = Arrangement(concurrentKeyPackageApi)
+            .withCurrentClientId()
+            .arrange(maxConcurrentClaims = 2)
+
+        val result = async {
+            keyPackageRepository.claimKeyPackages(listOf(failingUser, activeUser, waitingUser), CIPHER_SUITE)
+        }
+        runCurrent()
+
+        assertEquals(false, result.isCompleted)
+        assertEquals(setOf(failingParam, activeParam), startedClaims.toSet())
+
+        releaseActiveClaim.complete(Unit)
+        result.await().shouldFail { assertIs<NetworkFailure.NoNetworkConnection>(it) }
+    }
+
+    @Test
+    fun givenMixedResults_whenClaimingAtDifferentConcurrencyLevels_thenResultsAreConsistent() = runTest {
+        val successA = Arrangement.USER_ID.copy(value = "successA")
+        val successB = Arrangement.USER_ID.copy(value = "successB")
+        val noKeyPackages = Arrangement.USER_ID.copy(value = "noKP")
+        val federated = UserId("alice", "unreachable.com")
+        val serverError = Arrangement.USER_ID.copy(value = "serverError")
+        val users = listOf(successA, noKeyPackages, federated, successB, serverError)
+
+        suspend fun claimWith(maxConcurrentClaims: Int): KeyPackageClaimResult {
+            val (_, keyPackageRepository) = Arrangement()
+                .withCurrentClientId()
+                .withClaimKeyPackagesSuccessful(successA)
+                .withClaimKeyPackagesSuccessful(successB)
+                .withClaimKeyPackagesSuccessfulWithEmptyResponse(noKeyPackages)
+                .withClaimKeyPackagesFederationError(federated)
+                .withClaimKeyPackagesServerError(serverError)
+                .arrange(maxConcurrentClaims = maxConcurrentClaims)
+
+            lateinit var claimResult: KeyPackageClaimResult
+            keyPackageRepository.claimKeyPackages(users, CIPHER_SUITE).shouldSucceed { claimResult = it }
+            return claimResult
+        }
+
+        // maxConcurrentClaims = 1 reproduces the previous sequential behaviour; higher values are the new batched behaviour.
+        val sequentialResult = claimWith(maxConcurrentClaims = 1)
+        listOf(2, 4, users.size + 1).forEach { concurrency ->
+            assertEquals(
+                sequentialResult,
+                claimWith(maxConcurrentClaims = concurrency),
+                "Result diverged at maxConcurrentClaims=$concurrency"
+            )
+        }
+
+        assertEquals(2, sequentialResult.successfullyFetchedKeyPackages.size)
+        assertEquals(setOf(noKeyPackages), sequentialResult.usersWithoutKeyPackages)
+        assertEquals(setOf(federated, serverError), sequentialResult.usersWithUnreachableBackend)
     }
 
     @Test
@@ -249,8 +428,9 @@ internal class KeyPackageRepositoryTest {
         }
     }
 
-    class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-        val keyPackageApi = mock(KeyPackageApi::class)
+    class Arrangement(keyPackageApi: KeyPackageApi = mock(KeyPackageApi::class)) :
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val keyPackageApi = keyPackageApi
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         suspend fun withCurrentClientId() = apply {
@@ -283,6 +463,14 @@ internal class KeyPackageRepositoryTest {
                     eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
                 )
             }.returns(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
+        }
+
+        suspend fun withClaimKeyPackagesForMultipleClients(userId: UserId) = apply {
+            coEvery {
+                keyPackageApi.claimKeyPackages(
+                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                )
+            }.returns(NetworkResponse.Success(MULTI_CLIENT_CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
         suspend fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
@@ -333,7 +521,8 @@ internal class KeyPackageRepositoryTest {
             )
         }
 
-        fun arrange() = this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, SELF_USER_ID)
+        fun arrange(maxConcurrentClaims: Int = 4) =
+            this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, SELF_USER_ID, maxConcurrentClaims)
 
         internal companion object {
             const val KEY_PACKAGE_COUNT = 100
@@ -351,6 +540,12 @@ internal class KeyPackageRepositoryTest {
             val CLAIMED_KEY_PACKAGES = ClaimedKeyPackageList(
                 listOf(
                     KeyPackageDTO(OTHER_CLIENT_ID.value, "wire.com", KeyPackage(), KeyPackageRef(), "user_id")
+                )
+            )
+            val MULTI_CLIENT_CLAIMED_KEY_PACKAGES = ClaimedKeyPackageList(
+                listOf(
+                    KeyPackageDTO("client_a", "wire.com", "keyPackageA", "refA", USER_ID.value),
+                    KeyPackageDTO("client_b", "wire.com", "keyPackageB", "refB", USER_ID.value),
                 )
             )
         }
