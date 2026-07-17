@@ -97,3 +97,107 @@ SELECT *
 FROM MeetingOccurrence
 WHERE meeting_id = ?
 ORDER BY occurrence_start ASC;
+
+countUpcomingMeetingOccurrences:
+SELECT COUNT(*)
+FROM MeetingOccurrence
+WHERE MeetingOccurrence.occurrence_start >= :fromDate;
+
+selectMeetingOccurrenceDetailsById:
+-- @CustomKey MeetingOccurrence
+-- @CustomKey Meeting
+-- @CustomKey conversation_list_membership
+SELECT
+    MeetingOccurrence.occurrence_id AS occurrenceId,
+    MeetingOccurrence.meeting_id AS occurrenceMeetingId,
+    MeetingOccurrence.occurrence_start AS occurrenceStart,
+    MeetingOccurrence.occurrence_end AS occurrenceEnd,
+    Meeting.meeting_id AS meetingId,
+    Meeting.conversation_id AS conversationId,
+    Meeting.creator_id AS creatorId,
+    Meeting.creation_date AS creationDate,
+    Meeting.last_edit_date AS lastEditDate,
+    Meeting.title AS meetingTitle,
+    Meeting.start_date AS startDate,
+    Meeting.end_date AS endDate,
+    Meeting.trial AS trial,
+    Meeting.recurrence_frequency AS recurrenceFrequency,
+    Meeting.recurrence_interval AS recurrenceInterval,
+    Meeting.recurrence_end_date AS recurrenceEndDate,
+    CASE Conversation.type
+        WHEN 'ONE_ON_ONE' THEN otherUser.name
+        ELSE Conversation.name
+    END AS conversationName,
+    Conversation.type AS conversationType,
+    CASE Conversation.type
+        WHEN 'ONE_ON_ONE' THEN otherUser.preview_asset_id
+    END AS previewAssetId,
+    Conversation.channel_access AS channelAccess,
+    SelfUser.id AS selfUserId
+FROM MeetingOccurrence
+JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+JOIN Conversation ON Conversation.qualified_id = Meeting.conversation_id
+JOIN SelfUser
+LEFT JOIN Member ON Member.conversation = Conversation.qualified_id
+    AND Conversation.type IS 'ONE_ON_ONE'
+    AND Member.user IS NOT SelfUser.id
+LEFT JOIN User AS otherUser ON otherUser.qualified_id = Member.user
+WHERE occurrenceId = :occurrenceId;
+
+selectPagedMeetingOccurrenceDetails:
+-- @CustomKey MeetingOccurrence
+-- @CustomKey Meeting
+-- @CustomKey conversation_list_membership
+SELECT
+    MeetingOccurrence.occurrence_id AS occurrenceId,
+    MeetingOccurrence.meeting_id AS occurrenceMeetingId,
+    MeetingOccurrence.occurrence_start AS occurrenceStart,
+    MeetingOccurrence.occurrence_end AS occurrenceEnd,
+    Meeting.meeting_id AS meetingId,
+    Meeting.conversation_id AS conversationId,
+    Meeting.creator_id AS creatorId,
+    Meeting.creation_date AS creationDate,
+    Meeting.last_edit_date AS lastEditDate,
+    Meeting.title AS meetingTitle,
+    Meeting.start_date AS startDate,
+    Meeting.end_date AS endDate,
+    Meeting.trial AS trial,
+    Meeting.recurrence_frequency AS recurrenceFrequency,
+    Meeting.recurrence_interval AS recurrenceInterval,
+    Meeting.recurrence_end_date AS recurrenceEndDate,
+    CASE Conversation.type
+        WHEN 'ONE_ON_ONE' THEN otherUser.name
+        ELSE Conversation.name
+    END AS conversationName,
+    Conversation.type AS conversationType,
+    CASE Conversation.type
+        WHEN 'ONE_ON_ONE' THEN otherUser.preview_asset_id
+    END AS previewAssetId,
+    Conversation.channel_access AS channelAccess,
+    SelfUser.id AS selfUserId
+FROM MeetingOccurrence
+JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+JOIN Conversation ON Conversation.qualified_id = Meeting.conversation_id
+JOIN SelfUser
+LEFT JOIN Member ON Member.conversation = Conversation.qualified_id
+    AND Conversation.type IS 'ONE_ON_ONE'
+    AND Member.user IS NOT SelfUser.id
+LEFT JOIN User AS otherUser ON otherUser.qualified_id = Member.user
+WHERE occurrenceStart >= :fromDate
+ORDER BY occurrenceStart ASC,
+    CASE WHEN occurrenceEnd IS NULL THEN 1 ELSE 0 END ASC,
+    occurrenceEnd ASC,
+    meetingTitle ASC
+LIMIT :limit
+OFFSET :offset;
+
+selectMeetingParticipantPreviewAssetIds:
+SELECT
+    Member.conversation AS conversationId,
+    User.preview_asset_id AS previewAssetId
+FROM Member
+JOIN User ON User.qualified_id = Member.user
+LEFT JOIN SelfUser
+WHERE Member.conversation IN :conversationIds
+    AND User.preview_asset_id IS NOT NULL
+ORDER BY Member.conversation ASC, Member.user ASC;
