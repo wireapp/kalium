@@ -93,7 +93,11 @@ public enum class NotificationExtensionCallProcessingStatus {
 
 /** Swift bridge to the separately linked notification-only AVS framework. */
 public fun interface NotificationExtensionCallProcessor {
-    public fun process(events: List<NotificationExtensionCallEvent>): NotificationExtensionCallProcessingStatus
+    public fun process(
+        selfUserId: String,
+        selfClientId: String,
+        events: List<NotificationExtensionCallEvent>
+    ): NotificationExtensionCallProcessingStatus
 }
 
 internal fun interface NotificationExtensionEngineFactory {

@@ -40,7 +40,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 9. Resilience, security, and performance | Completed | `f7dff7073677` | macOS/simulator hardening probes, Swift token/import parity, bounded-sync budget probe, Apple/metadata compilation | External native app, encrypted storage, signing, backend, physical-device, and product budget approvals remain explicit |
 | 10. Rollout and observability | Completed | `378b222b265a` | Metadata/Apple compilation, simulator framework/Swift host probe, dependency/header/privacy audits, detekt, independent review | External rollout ownership, privacy approval, signing, backend, and physical-device validation remain explicit |
 | 11. Real-account integration path | Implemented for host/NSE testing | `16a8a39ef2f3` | JVM logic compile, iOS Simulator compile/link, generated-header inspection, application-extension Swift type-check, detekt, dependency review | Initial path reused `UserSessionScope`; transport ACKs and disk handoff remain disabled until encrypted durability is available |
-| 12. Passive account assembly cleanup | Implemented | This commit | JVM/Apple compilation, Apple framework link/size, source lifecycle audit, detekt, diff check | No `CoreLogic`/`UserSessionScope`, foreground workers, application calling lifecycle, or outbound MLS transport in the runtime path; temporary `:logic` module dependency remains |
+| 12. Passive account assembly cleanup | Implemented | `6eabb48e5224` | JVM/Apple compilation, Apple framework link/size, source lifecycle audit, detekt, diff check | No `CoreLogic`/`UserSessionScope`, foreground workers, application calling lifecycle, or outbound MLS transport in the runtime path; temporary `:logic` module dependency remains |
+| 13. Real notification-only AVS integration | Implemented | This commit | JVM/Apple compilation, both split framework links, Swift application-extension type-check, detekt, header/symbol review | Real calling payloads use `:domain:calling-notifications`; signed device and captured real-call validation remain open |
 
 ## Milestone 11 — Real-account integration path
 
@@ -84,8 +85,8 @@ still held; their persistent cryptographic state is not deleted.
 
 The notification framework still has a temporary Gradle dependency on `:logic`; this cleanup fixes
 runtime ownership and side effects, not the final packaging graph. Extraction of the selected auth,
-network, storage, and crypto provider implementations into the ADR's lower-layer modules remains the
-next production cleanup. Notification-only AVS integration remains a separate split-framework task.
+network, storage, and crypto provider implementations into the ADR's lower-layer modules remains a
+production cleanup.
 
 Verification evidence:
 
@@ -98,6 +99,31 @@ Verification evidence:
   `CoreLogic`, `UserSessionScope`, or `NotificationExtensionCoreLogic` type.
 - The linked core image contains no native `wcall_*`, `AVSFlowManager`, or `AVSMediaManager` symbol.
 - No automated tests were added, modified, generated, or run.
+
+## Milestone 13 — Real notification-only AVS integration
+
+Status: Implemented on 2026-07-18
+
+`RealNotificationExtension` now requires the existing split-framework
+`NotificationExtensionCallProcessor` bridge. Decrypted calling content retains its exact AVS JSON
+payload and optional target conversation, resolves the same federation-aware user/conversation IDs,
+registered self client, stored conversation protocol/type, and one-to-one SFT preference used by
+the application calling path, then invokes the bridge synchronously while the process lock is held.
+
+The Swift bridge reconstructs scalar/string-only `NotificationExtensionAvsEvent` values in
+`KaliumNotificationExtensionAvs` and delegates directly to the existing
+`:domain:calling-notifications` processor. That implementation owns the real
+`wcall_event_create/start/process/end` lifecycle, surfaces incoming/missed/closed callbacks, and
+closes the per-batch native processor before returning. The core framework still does not link or
+initialize the application call manager, media manager, flow manager, or full `:domain:calling`
+stack. AVS cannot silently become a no-op because the real entry point has no constructor without a
+call processor.
+
+The AVS callbacks are host presentation inputs, not another transport. APNs has already delivered
+the wake-up push to the device; the host maps the callback into its existing CallKit/local
+notification path and invokes the NSE content handler.
+
+No automated tests were added, modified, generated, or run, per the spike working agreement.
 
 ## Milestone 0 — Architecture and Contracts
 

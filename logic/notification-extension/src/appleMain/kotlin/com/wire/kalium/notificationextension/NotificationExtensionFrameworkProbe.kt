@@ -221,7 +221,11 @@ public class NotificationExtensionFrameworkProbe {
         check(received.content.serializedContent.contentEquals(PROBE_PROTO)) { "phase=exact-decoded-proto" }
         evidence.receivingAndExtractionLinked = true
         val lockHeldBeforeAvs = processLockIsHeld(processLockFactory)
-        val avsStatus = callProcessor.process(listOf(probeCallEvent()))
+        val avsStatus = callProcessor.process(
+            selfUserId = "synthetic-avs-user",
+            selfClientId = "synthetic-avs-client",
+            events = listOf(probeCallEvent())
+        )
         val lockHeldAfterAvs = processLockIsHeld(processLockFactory)
         evidence.avsBridgeUnderLock = lockHeldBeforeAvs && lockHeldAfterAvs
         // The synthetic payload is intentionally malformed. Returning a classified failure proves

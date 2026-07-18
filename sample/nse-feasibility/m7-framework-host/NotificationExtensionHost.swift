@@ -16,7 +16,11 @@ final class NoOpAvsCallbacks: NSObject, NotificationExtensionAvsCallbacks {
 final class SplitAvsCallProcessor: NSObject, NotificationExtensionCallProcessor {
     private(set) var detail = "facadeReturned=false; realPayload=false"
 
-    func process(events: [NotificationExtensionCallEvent]) -> NotificationExtensionCallProcessingStatus {
+    func process(
+        selfUserId: String,
+        selfClientId: String,
+        events: [NotificationExtensionCallEvent]
+    ) -> NotificationExtensionCallProcessingStatus {
         let copiedEvents = events.map { event in
             NotificationExtensionAvsEvent(
                 payload: String(event.payload),
@@ -29,8 +33,8 @@ final class SplitAvsCallProcessor: NSObject, NotificationExtensionCallProcessor 
             )
         }
         let result = NotificationExtensionAvsProcessor().process(
-            selfUserId: "synthetic-avs-user",
-            selfClientId: "synthetic-avs-client",
+            selfUserId: selfUserId,
+            selfClientId: selfClientId,
             events: copiedEvents,
             callbacks: NoOpAvsCallbacks()
         )

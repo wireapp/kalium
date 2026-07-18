@@ -18,15 +18,20 @@ absolute deadline. Kalium then:
 6. performs one bounded catch-up and closes at the matching marker;
 7. applies real Proteus or MLS receive bytes to the existing CoreCrypto state;
 8. resolves Proteus external content, decodes the exact `GenericMessage` protobuf, and runs the
-   notification-content extractor; and
-9. returns the decrypted candidates in `RealNotificationExtensionResult.notifications`.
+   notification-content extractor;
+9. converts decrypted calling content into the existing notification-only AVS input and invokes
+   `:domain:calling-notifications` synchronously through the split AVS framework; and
+10. returns the decrypted candidates in `RealNotificationExtensionResult.notifications`.
 
 The entry point uses a dedicated `NotificationExtensionCoreLogic` account assembly. It does not
 construct the application `CoreLogic` or `UserSessionScope`, so it does not run startup migrations,
 continuous/slow sync, recovery workers, schedulers, pending confirmations, local event processing,
 or the application calling lifecycle. Its CoreCrypto transporter rejects outbound MLS messages and
 commits, and Proteus migration failure is returned without invoking application logout/data-clear
-recovery. Notification-only AVS processing is not wired into this real-account path yet.
+recovery. It requires a `NotificationExtensionCallProcessor`, so calling content cannot silently
+take a no-op path. The processor bridge copies only scalar/string values into the separate
+`KaliumNotificationExtensionAvs` framework, which runs the real `wcall_event_*` lifecycle and closes
+the native processor before returning.
 
 ## Required host setup
 
@@ -54,10 +59,58 @@ or perform a fresh login before testing the NSE.
 
 ## Swift-shaped usage
 
-The exact generated Swift spelling should be taken from the built framework header, but the host
-flow is:
+The exact generated Swift spelling should be taken from the built framework header. Both
+`KaliumNotificationExtension` and `KaliumNotificationExtensionAvs` must be embedded as dynamic
+frameworks. The required bridge is intentionally owned by Swift so no Kotlin object crosses between
+their two runtimes:
 
 ```swift
+final class RealAvsBridge: NSObject, NotificationExtensionCallProcessor {
+    let callbacks: NotificationExtensionAvsCallbacks
+
+    init(callbacks: NotificationExtensionAvsCallbacks) {
+        self.callbacks = callbacks
+    }
+
+    func process(
+        selfUserId: String,
+        selfClientId: String,
+        events: [NotificationExtensionCallEvent]
+    ) -> NotificationExtensionCallProcessingStatus {
+        let copied = events.map {
+            NotificationExtensionAvsEvent(
+                payload: String($0.payload),
+                currentTimeSeconds: $0.currentTimeSeconds,
+                messageTimeSeconds: $0.messageTimeSeconds,
+                conversationId: String($0.conversationId),
+                senderUserId: String($0.senderUserId),
+                senderClientId: String($0.senderClientId),
+                conversationType: avsConversationType($0.conversationType)
+            )
+        }
+        let result = NotificationExtensionAvsProcessor().process(
+            selfUserId: selfUserId,
+            selfClientId: selfClientId,
+            events: copied,
+            callbacks: callbacks
+        )
+        switch result.status {
+        case .success: return .success
+        case .unsupportedPlatform: return .retryableFailure
+        default: return .terminalFailure
+        }
+    }
+}
+```
+
+`NotificationExtensionAvsCallbacks.onIncomingCall`, `onMissedCall`, and `onClosedCall` are the real
+AVS-produced call-notification outputs. The host can inspect them for the spike and map them to its
+CallKit/local-notification presentation layer.
+
+The entry-point flow is:
+
+```swift
+let avsBridge = RealAvsBridge(callbacks: avsCallbacks)
 let component = RealNotificationExtension(
     configuration: RealNotificationExtensionConfiguration(
         kaliumRootPath: sharedContainer.appendingPathComponent("kalium").path,
@@ -65,7 +118,8 @@ let component = RealNotificationExtension(
         keychainServiceName: keychainService,
         keychainAccessGroup: keychainAccessGroup,
         userAgent: userAgent
-    )
+    ),
+    callProcessor: avsBridge
 )
 
 let request = RealNotificationExtensionRequest(
@@ -100,6 +154,9 @@ guarded so it is delivered at most once.
 
 - `notifications` is the list produced by real decryption and pure extraction. It is the answer to
   “which notifications did this invocation produce?”
+- Calling candidates also run through real notification-only AVS. The AVS callback methods are the
+  authoritative incoming/missed/closed call-notification output; a `CALLING` item in `notifications`
+  shows which decrypted message fed that processor.
 - `status`, `reason`, and `summary` explain whether catch-up completed, hit a limit, lost the lock,
   reached the deadline, or deferred work to the foreground app.
 - `clientId` is the locally registered client Kalium resolved for the requested account.
@@ -131,13 +188,12 @@ They are not repaired or sent from the NSE.
   in the target lower-layer modules. The previous `UserSessionScope`-based iOS Simulator debug
   binary was 109,641,000 bytes. The passive-assembly version is 74,485,112 bytes, a reduction of
   35,155,888 bytes (32.1%); this remains a debug, non-App-Store-thinned measurement.
-- Wire real calling candidates through the already split `:domain:calling-notifications` framework;
-  do not reintroduce the application call manager or full AVS stack.
 - Open all shared account/CoreCrypto resources only after acquiring the cross-process lock, and
   make the foreground app use the same lock for overlapping work.
 - Add encrypted durable handoff persistence, cursor cutover, safe transport ACKs, and native
   foreground import.
 - Wire the notification-policy snapshot and approved generic/replacement behavior.
 - Complete signed physical-device testing for push delivery, locked-device Keychain accessibility,
-  memory, cold start, expiration, owner death, and real Proteus/MLS traffic.
+  memory, cold start, expiration, owner death, real Proteus/MLS traffic, and captured real call
+  payloads/AVS callbacks.
 - Add automated tests only after the spike design is accepted, per the current working agreement.

@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.EpochChangesObserverImpl
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -85,7 +86,18 @@ internal class AppleNotificationExtensionLogicBridgeFactory(
         val userStorage = createUserStorage(userId)
         val currentClientId = createCurrentClientIdProvider(userStorage)
         val authenticatedNetwork = createAuthenticatedNetwork(userId, currentClientId)
-        val crypto = createCryptoResources(userId, userStorage, currentClientId, authenticatedNetwork)
+        val userConfigRepository = UserConfigDataSource(
+            userStorage.database.userPrefsDAO,
+            userStorage.database.userConfigDAO,
+            kaliumConfigs
+        )
+        val crypto = createCryptoResources(
+            userId,
+            currentClientId,
+            authenticatedNetwork,
+            userConfigRepository
+        )
+        val avsIdentifier = AppleNotificationExtensionAvsIdentifier(userId, sessionRepository)
         return NotificationExtensionLogicBridge(
             selfUserId = userId,
             currentClientId = currentClientId::invoke,
@@ -95,6 +107,10 @@ internal class AppleNotificationExtensionLogicBridgeFactory(
                 val protocol = userStorage.database.conversationDAO.getConversationProtocolInfo(conversationId.toDao())
                 (protocol as? ConversationEntity.ProtocolInfo.MLSCapable)?.groupId
             },
+            conversationCallType = { conversationId ->
+                resolveCallConversationType(userStorage, userConfigRepository, conversationId)
+            },
+            avsIdentifier = avsIdentifier::format,
             closeResources = crypto.processingScope::cancel
         )
     }
@@ -156,15 +172,10 @@ internal class AppleNotificationExtensionLogicBridgeFactory(
 
     private fun createCryptoResources(
         userId: UserId,
-        userStorage: UserStorage,
         currentClientId: CurrentClientIdProvider,
-        authenticatedNetwork: AuthenticatedNetworkContainer
+        authenticatedNetwork: AuthenticatedNetworkContainer,
+        userConfigRepository: UserConfigDataSource
     ): NotificationExtensionCryptoResources {
-        val userConfigRepository = UserConfigDataSource(
-            userStorage.database.userPrefsDAO,
-            userStorage.database.userConfigDAO,
-            kaliumConfigs
-        )
         val processingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val mlsClientProvider = MLSClientProviderImpl(
             rootKeyStorePath = rootPathsProvider.rootMLSPath(userId),
@@ -192,6 +203,52 @@ internal class AppleNotificationExtensionLogicBridgeFactory(
             processingScope = processingScope
         )
     }
+
+    private suspend fun resolveCallConversationType(
+        userStorage: UserStorage,
+        userConfigRepository: UserConfigDataSource,
+        conversationId: QualifiedID
+    ): Int {
+        val conversation = userStorage.database.conversationDAO.getConversationById(conversationId.toDao())
+            ?: return AVS_CONVERSATION_TYPE_UNKNOWN
+        return when {
+            conversation.type == ConversationEntity.Type.ONE_ON_ONE -> {
+                val useSft = when (val result = userConfigRepository.shouldUseSFTForOneOnOneCalls()) {
+                    is Either.Left -> return AVS_CONVERSATION_TYPE_UNKNOWN
+                    is Either.Right -> result.value
+                }
+                if (useSft) conversation.protocolInfo.toConferenceCallType() else AVS_CONVERSATION_TYPE_ONE_ON_ONE
+            }
+
+            conversation.type.isGroup -> conversation.protocolInfo.toConferenceCallType()
+            else -> AVS_CONVERSATION_TYPE_UNKNOWN
+        }
+    }
+}
+
+private class AppleNotificationExtensionAvsIdentifier(
+    private val selfUserId: UserId,
+    private val sessionRepository: SessionRepository
+) {
+    private var federationResolved: Boolean = false
+    private var federationEnabled: Boolean = false
+
+    suspend fun format(id: QualifiedID): String {
+        if (!federationResolved) {
+            federationEnabled = when (val result = sessionRepository.isFederated(selfUserId)) {
+                is Either.Left -> false
+                is Either.Right -> result.value
+            }
+            federationResolved = true
+        }
+        return if (federationEnabled && id.domain.isNotEmpty()) id.toString() else id.value
+    }
+}
+
+private fun ConversationEntity.ProtocolInfo.toConferenceCallType(): Int = when (this) {
+    is ConversationEntity.ProtocolInfo.MLS -> AVS_CONVERSATION_TYPE_CONFERENCE_MLS
+    is ConversationEntity.ProtocolInfo.Mixed,
+    ConversationEntity.ProtocolInfo.Proteus -> AVS_CONVERSATION_TYPE_CONFERENCE
 }
 
 private data class NotificationExtensionCryptoResources(
@@ -212,3 +269,7 @@ private object PassiveNotificationExtensionProteusRecovery : ProteusMigrationRec
 }
 
 private const val PASSIVE_TRANSPORT_REASON = "notification-extension-receive-only"
+private const val AVS_CONVERSATION_TYPE_ONE_ON_ONE = 0
+private const val AVS_CONVERSATION_TYPE_CONFERENCE = 2
+private const val AVS_CONVERSATION_TYPE_CONFERENCE_MLS = 3
+private const val AVS_CONVERSATION_TYPE_UNKNOWN = -1

@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.notificationextension.NotificationExtensionCoreLogic
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicBridge
+import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicCallEvent
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicContentKind
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicMessage
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicProtocol
@@ -211,10 +212,12 @@ public class RealNotificationExtensionRunHandle internal constructor(
  * The transport is intentionally not ACKed because this assembly uses a volatile per-invocation
  * inbox: a backend redelivery is safer than claiming durability before the encrypted App Group
  * handoff store is available. CoreCrypto and protobuf decoding are real; notification policy and
- * foreground import remain outside this component.
+ * foreground import remain outside this component. The separately linked notification-only AVS
+ * bridge is required at construction so calling payloads can never silently fall back to a no-op.
  */
 public class RealNotificationExtension(
-    private val configuration: RealNotificationExtensionConfiguration
+    private val configuration: RealNotificationExtensionConfiguration,
+    private val callProcessor: NotificationExtensionCallProcessor
 ) {
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val coreLogic: NotificationExtensionCoreLogic by lazy {
@@ -224,7 +227,7 @@ public class RealNotificationExtension(
                 serviceName = configuration.keychainServiceName,
                 accessGroup = configuration.keychainAccessGroup
             ),
-            kaliumConfigs = KaliumConfigs(enableCalling = false),
+            kaliumConfigs = KaliumConfigs(),
             userAgent = configuration.userAgent
         )
     }
@@ -267,6 +270,7 @@ public class RealNotificationExtension(
         return try {
             val clientId = bridge.resolveClientId()
                 ?: return unavailableResult(NotificationExtensionReason.TRANSPORT_CONFIGURATION)
+            val selfAvsUserId = bridge.resolveSelfAvsUserId()
             val markerId = Uuid.random().toString()
             val inbox = VolatileNotificationSyncInbox()
             val candidates = LinkedHashMap<String, RealNotification>()
@@ -277,7 +281,13 @@ public class RealNotificationExtension(
                 ),
                 inbox = inbox,
                 transport = RealLogicNotificationTransport(bridge),
-                eventProcessor = RealLogicEventProcessor(bridge, candidates)
+                eventProcessor = RealLogicEventProcessor(
+                    bridge = bridge,
+                    candidates = candidates,
+                    callProcessor = callProcessor,
+                    selfUserId = selfAvsUserId,
+                    selfClientId = clientId
+                )
             )
             val domainResult = engine.syncOnce(
                 BoundedNotificationSyncRequest(
@@ -371,14 +381,44 @@ private class RealLogicNotificationSession(
 
 private class RealLogicEventProcessor(
     private val bridge: NotificationExtensionLogicBridge,
-    private val candidates: MutableMap<String, RealNotification>
+    private val candidates: MutableMap<String, RealNotification>,
+    private val callProcessor: NotificationExtensionCallProcessor,
+    private val selfUserId: String,
+    private val selfClientId: String
 ) : StagedNotificationEventProcessor {
     override suspend fun process(event: StagedNotificationEvent): StagedEventProcessingResult {
         val result = bridge.receive(event.rawEnvelope)
-        result.messages.forEach { message ->
+        val callEvents = mutableListOf<NotificationExtensionCallEvent>()
+        var callMetadataMissing = false
+        for (message in result.messages) {
             message.toRealNotification()?.let { notification ->
                 candidates[message.idempotencyKey()] = notification
             }
+            if (message.candidate?.kind == NotificationExtensionLogicContentKind.CALLING) {
+                val callEvent = bridge.resolveCallEvent(message)
+                if (callEvent == null) {
+                    callMetadataMissing = true
+                } else {
+                    callEvents += callEvent.toExtensionCallEvent()
+                }
+            }
+        }
+        if (callMetadataMissing) {
+            return StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)
+        }
+        val callStatus = if (callEvents.isEmpty()) {
+            NotificationExtensionCallProcessingStatus.SUCCESS
+        } else {
+            runCatching { callProcessor.process(selfUserId, selfClientId, callEvents) }
+                .getOrDefault(NotificationExtensionCallProcessingStatus.RETRYABLE_FAILURE)
+        }
+        when (callStatus) {
+            NotificationExtensionCallProcessingStatus.SUCCESS -> Unit
+            NotificationExtensionCallProcessingStatus.RETRYABLE_FAILURE ->
+                return StagedEventProcessingResult.RetryableFailure
+
+            NotificationExtensionCallProcessingStatus.TERMINAL_FAILURE ->
+                return StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)
         }
         return when (result.status) {
             NotificationExtensionLogicReceiveStatus.MATERIALIZED -> StagedEventProcessingResult.DurablyMaterialized
@@ -390,6 +430,17 @@ private class RealLogicEventProcessor(
         }
     }
 }
+
+private fun NotificationExtensionLogicCallEvent.toExtensionCallEvent(): NotificationExtensionCallEvent =
+    NotificationExtensionCallEvent(
+        payload = payload,
+        currentTimeSeconds = currentTimeSeconds,
+        messageTimeSeconds = messageTimeSeconds,
+        conversationId = conversationId,
+        senderUserId = senderUserId,
+        senderClientId = senderClientId,
+        conversationType = conversationType
+    )
 
 /**
  * Per-invocation staging used only while ACKs are suppressed. It preserves engine ordering and

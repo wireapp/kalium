@@ -72,6 +72,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlin.io.encoding.Base64
@@ -87,6 +88,8 @@ public class NotificationExtensionLogicBridge internal constructor(
     private val notificationApi: NotificationApi,
     private val cryptoTransactionProvider: CryptoTransactionProvider,
     private val conversationMlsGroupId: suspend (QualifiedID) -> String?,
+    private val conversationCallType: suspend (QualifiedID) -> Int,
+    private val avsIdentifier: suspend (QualifiedID) -> String,
     private val protobufDecoder: ProtobufMessageContentDecoder = ProtobufMessageContentDecoderImpl(selfUserId),
     private val contentExtractor: NotificationContentExtractor = NotificationContentExtractorImpl(),
     private val proteusDecryptor: ProteusMessageDecryptor = ProteusMessageDecryptorImpl(),
@@ -101,6 +104,38 @@ public class NotificationExtensionLogicBridge internal constructor(
     public suspend fun resolveClientId(): String? = when (val result = currentClientId()) {
         is Either.Left -> null
         is Either.Right -> result.value.value
+    }
+
+    /** Resolves the same federation-aware self identifier used by the application AVS path. */
+    public suspend fun resolveSelfAvsUserId(): String = avsIdentifier(selfUserId)
+
+    /** Builds the exact notification-only AVS input for one decrypted calling message. */
+    public suspend fun resolveCallEvent(
+        message: NotificationExtensionLogicMessage
+    ): NotificationExtensionLogicCallEvent? {
+        val candidate = message.candidate ?: return null
+        if (candidate.kind != NotificationExtensionLogicContentKind.CALLING) return null
+        val payload = candidate.callPayload ?: return null
+        val senderClientId = message.senderClientId ?: return null
+        val envelopeConversationId = QualifiedID(message.conversationId, message.conversationDomain)
+        val embeddedConversationId = candidate.callConversationId?.let { value ->
+            QualifiedID(value, candidate.callConversationDomain.orEmpty())
+        }
+        val senderIsSelf = message.senderId == selfUserId.value && message.senderDomain == selfUserId.domain
+        val targetConversationId = if (senderIsSelf) {
+            embeddedConversationId ?: envelopeConversationId
+        } else {
+            envelopeConversationId
+        }
+        return NotificationExtensionLogicCallEvent(
+            payload = payload,
+            currentTimeSeconds = Clock.System.now().epochSeconds,
+            messageTimeSeconds = message.timestampEpochMillis / MILLIS_PER_SECOND,
+            conversationId = avsIdentifier(targetConversationId),
+            senderUserId = avsIdentifier(QualifiedID(message.senderId, message.senderDomain)),
+            senderClientId = senderClientId,
+            conversationType = conversationCallType(targetConversationId)
+        )
     }
 
     /** Cancels resources owned by this passive account bridge. This operation is idempotent. */
@@ -532,6 +567,19 @@ public class NotificationExtensionLogicReceiveResult internal constructor(
     public val messages: List<NotificationExtensionLogicMessage> = messages.toList()
 }
 
+@Suppress("LongParameterList")
+public class NotificationExtensionLogicCallEvent internal constructor(
+    public val payload: String,
+    public val currentTimeSeconds: Long,
+    public val messageTimeSeconds: Long,
+    public val conversationId: String,
+    public val senderUserId: String,
+    public val senderClientId: String,
+    public val conversationType: Int
+) {
+    override fun toString(): String = "NotificationExtensionLogicCallEvent(redacted)"
+}
+
 public enum class NotificationExtensionLogicProtocol {
     PROTEUS,
     MLS
@@ -573,7 +621,10 @@ public class NotificationExtensionLogicCandidate internal constructor(
     public val body: String?,
     public val mentionsSelf: Boolean,
     public val legalHoldStatus: String,
-    public val expiresAfterMillis: Long?
+    public val expiresAfterMillis: Long?,
+    public val callPayload: String?,
+    public val callConversationId: String?,
+    public val callConversationDomain: String?
 )
 
 private sealed interface ReceiveItemResult {
@@ -639,13 +690,17 @@ private fun NotificationContentExtractionResult.Candidate.toLogicCandidate(): No
         is NotificationContent.Knock -> CandidateDetails(NotificationExtensionLogicContentKind.KNOCK, null, false)
         is NotificationContent.Location -> CandidateDetails(NotificationExtensionLogicContentKind.LOCATION, content.name, false)
     }
+    val callingContent = content as? NotificationContent.Calling
     return NotificationExtensionLogicCandidate(
         messageId = content.messageUid,
         kind = details.kind,
         body = details.body,
         mentionsSelf = details.mentionsSelf,
         legalHoldStatus = legalHoldStatus.name,
-        expiresAfterMillis = expiresAfterMillis
+        expiresAfterMillis = expiresAfterMillis,
+        callPayload = callingContent?.payload,
+        callConversationId = callingContent?.conversationId?.value,
+        callConversationDomain = callingContent?.conversationId?.domain
     )
 }
 
@@ -654,3 +709,5 @@ private data class CandidateDetails(
     val body: String?,
     val mentionsSelf: Boolean
 )
+
+private const val MILLIS_PER_SECOND = 1_000L
