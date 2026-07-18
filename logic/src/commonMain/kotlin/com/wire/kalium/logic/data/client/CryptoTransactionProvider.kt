@@ -51,6 +51,7 @@ import com.wire.kalium.util.InternalCryptoAccess
 internal interface CryptoTransactionProvider {
     val mlsClientProvider: MLSClientProvider
     val proteusClientProvider: ProteusClientProvider
+    suspend fun closeClients()
     suspend fun <R> proteusTransaction(
         name: String? = null,
         block: suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>
@@ -71,6 +72,14 @@ internal class CryptoTransactionProviderImpl(
     override val mlsClientProvider: MLSClientProvider,
     override val proteusClientProvider: ProteusClientProvider
 ) : CryptoTransactionProvider {
+
+    override suspend fun closeClients() {
+        try {
+            mlsClientProvider.close()
+        } finally {
+            proteusClientProvider.close()
+        }
+    }
 
     @OptIn(InternalCryptoAccess::class)
     override suspend fun <R> proteusTransaction(

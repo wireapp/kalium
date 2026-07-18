@@ -6,11 +6,13 @@ Date: 2026-07-13
 
 Accepted for spike; production acceptance depends on the feasibility gates in this ADR.
 
-Implementation note (2026-07-18): a real-account integration entry point now temporarily reuses
-the full `:logic` session graph to validate authenticated catch-up and real Proteus/MLS decryption.
-It suppresses transport ACKs because its handoff is volatile. This is an explicit spike exception
-to the target lightweight module graph, not a production architecture change. See
-`docs/spikes/ios-nse-real-account-spike.md`.
+Implementation note (2026-07-18): a real-account integration entry point now uses a dedicated
+passive Apple account assembly to validate authenticated catch-up and real Proteus/MLS decryption.
+It does not construct `CoreLogic` or `UserSessionScope`, start application workers, or provide an
+outbound MLS transport. The framework still temporarily depends on `:logic` for selected auth,
+storage, network, and CoreCrypto implementation classes, and it suppresses transport ACKs because
+its handoff is volatile. This remains an explicit spike exception to the target lightweight module
+graph, not a production architecture change. See `docs/spikes/ios-nse-real-account-spike.md`.
 
 ## Context
 

@@ -65,7 +65,6 @@ import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
-import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicBridge
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
@@ -1270,20 +1269,6 @@ public class UserSessionScope internal constructor(
         get() = CryptoTransactionProviderImpl(
             mlsClientProvider = mlsClientProvider,
             proteusClientProvider = proteusClientProvider,
-        )
-
-    /**
-     * Spike-only bridge for a bounded notification-extension catch-up. It reuses this session's
-     * authenticated network and CoreCrypto state without starting the full incremental sync graph.
-     */
-    public fun notificationExtensionLogicBridge(): NotificationExtensionLogicBridge =
-        NotificationExtensionLogicBridge(
-            selfUserId = userId,
-            currentClientId = clientIdProvider::invoke,
-            notificationApi = authenticatedNetworkContainer.notificationApi,
-            cryptoTransactionProvider = cryptoTransactionProvider,
-            conversationRepository = conversationRepository,
-            subconversationRepository = subconversationRepository
         )
 
     private val eventProcessor: EventProcessor by lazy {

@@ -16,14 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-@file:OptIn(kotlin.concurrent.atomics.ExperimentalAtomicApi::class)
+@file:OptIn(
+    kotlin.concurrent.atomics.ExperimentalAtomicApi::class,
+    com.wire.kalium.util.InternalKaliumApi::class
+)
 @file:Suppress("LongParameterList", "TooManyFunctions")
 
 package com.wire.kalium.notificationextension
 
-import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.notificationextension.NotificationExtensionCoreLogic
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicBridge
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicContentKind
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicMessage
@@ -214,8 +217,8 @@ public class RealNotificationExtension(
     private val configuration: RealNotificationExtensionConfiguration
 ) {
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val coreLogic: CoreLogic by lazy {
-        CoreLogic(
+    private val coreLogic: NotificationExtensionCoreLogic by lazy {
+        NotificationExtensionCoreLogic(
             rootPath = configuration.kaliumRootPath,
             keychainConfig = ApplePersistenceConfig(
                 serviceName = configuration.keychainServiceName,
@@ -260,38 +263,42 @@ public class RealNotificationExtension(
             return unavailableResult(NotificationExtensionReason.INVALID_REQUEST)
         }
         val userId = UserId(request.userId, request.userDomain)
-        val bridge = coreLogic.getSessionScope(userId).notificationExtensionLogicBridge()
-        val clientId = bridge.resolveClientId()
-            ?: return unavailableResult(NotificationExtensionReason.TRANSPORT_CONFIGURATION)
-        val markerId = Uuid.random().toString()
-        val inbox = VolatileNotificationSyncInbox()
-        val candidates = LinkedHashMap<String, RealNotification>()
-        val engine = BoundedNotificationSyncEngine(
-            leaseCoordinator = AppleNotificationSyncLeaseCoordinator(
-                configuration.sharedAppGroupRoot,
-                closeAttemptResources = {}
-            ),
-            inbox = inbox,
-            transport = RealLogicNotificationTransport(bridge),
-            eventProcessor = RealLogicEventProcessor(bridge, candidates)
-        )
-        val domainResult = engine.syncOnce(
-            BoundedNotificationSyncRequest(
-                scope = NotificationSyncScope(accountId = userId.toString(), clientId = clientId),
-                markerId = markerId,
-                absoluteDeadline = Instant.fromEpochMilliseconds(request.absoluteDeadlineEpochMillis),
-                budget = request.toBudget()
+        val bridge = coreLogic.createBridge(userId)
+        return try {
+            val clientId = bridge.resolveClientId()
+                ?: return unavailableResult(NotificationExtensionReason.TRANSPORT_CONFIGURATION)
+            val markerId = Uuid.random().toString()
+            val inbox = VolatileNotificationSyncInbox()
+            val candidates = LinkedHashMap<String, RealNotification>()
+            val engine = BoundedNotificationSyncEngine(
+                leaseCoordinator = AppleNotificationSyncLeaseCoordinator(
+                    configuration.sharedAppGroupRoot,
+                    closeAttemptResources = bridge::close
+                ),
+                inbox = inbox,
+                transport = RealLogicNotificationTransport(bridge),
+                eventProcessor = RealLogicEventProcessor(bridge, candidates)
             )
-        )
-        val base = domainResult.toExtensionResult()
-        return RealNotificationExtensionResult(
-            status = base.status,
-            reason = base.reason,
-            summary = base.summary,
-            clientId = clientId,
-            markerId = markerId,
-            notifications = candidates.values.toList()
-        )
+            val domainResult = engine.syncOnce(
+                BoundedNotificationSyncRequest(
+                    scope = NotificationSyncScope(accountId = userId.toString(), clientId = clientId),
+                    markerId = markerId,
+                    absoluteDeadline = Instant.fromEpochMilliseconds(request.absoluteDeadlineEpochMillis),
+                    budget = request.toBudget()
+                )
+            )
+            val base = domainResult.toExtensionResult()
+            RealNotificationExtensionResult(
+                status = base.status,
+                reason = base.reason,
+                summary = base.summary,
+                clientId = clientId,
+                markerId = markerId,
+                notifications = candidates.values.toList()
+            )
+        } finally {
+            bridge.close()
+        }
     }
 }
 

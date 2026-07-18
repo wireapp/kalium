@@ -46,6 +46,9 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 internal interface ProteusClientProvider : CryptoBackupExporter {
+    /** Closes the in-memory client without deleting its persistent cryptographic state. */
+    suspend fun close()
+
     suspend fun clearLocalFiles()
 
     /**
@@ -72,6 +75,14 @@ internal class ProteusClientProviderImpl(
     private var _proteusClient: ProteusClient? = null
     private var _coreCryptoCentral: CoreCryptoCentral? = null
     private val mutex = Mutex()
+
+    override suspend fun close() {
+        mutex.withLock {
+            withContext(dispatcher.io) {
+                closeClient()
+            }
+        }
+    }
 
     override suspend fun clearLocalFiles() {
         mutex.withLock { removeLocalFiles() }
@@ -149,11 +160,15 @@ internal class ProteusClientProviderImpl(
      */
     private suspend fun removeLocalFiles() {
         withContext(dispatcher.io) {
-            _proteusClient?.close()
-            _proteusClient = null
-            _coreCryptoCentral = null
+            closeClient()
             FileUtil.deleteDirectory(rootProteusPath)
         }
+    }
+
+    private suspend fun closeClient() {
+        _proteusClient?.close()
+        _proteusClient = null
+        _coreCryptoCentral = null
     }
 
     @Suppress("TooGenericExceptionCaught")

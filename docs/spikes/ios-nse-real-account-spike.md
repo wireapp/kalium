@@ -21,8 +21,12 @@ absolute deadline. Kalium then:
    notification-content extractor; and
 9. returns the decrypted candidates in `RealNotificationExtensionResult.notifications`.
 
-It does not start `IncrementalSyncManager`, slow sync, message sending, chat receipts, MLS recovery,
-or a continuous WebSocket listener.
+The entry point uses a dedicated `NotificationExtensionCoreLogic` account assembly. It does not
+construct the application `CoreLogic` or `UserSessionScope`, so it does not run startup migrations,
+continuous/slow sync, recovery workers, schedulers, pending confirmations, local event processing,
+or the application calling lifecycle. Its CoreCrypto transporter rejects outbound MLS messages and
+commits, and Proteus migration failure is returned without invoking application logout/data-clear
+recovery. Notification-only AVS processing is not wired into this real-account path yet.
 
 ## Required host setup
 
@@ -123,14 +127,17 @@ They are not repaired or sent from the NSE.
 ## Remaining production work
 
 - Replace the temporary `:logic:notification-extension -> :logic` dependency with a narrow
-  authenticated account/CoreCrypto assembly so the framework is actually lightweight. The linked
-  iOS Simulator debug binary for this spike is 109,641,000 bytes; this is not an App Store-thinned
-  measurement, but it makes the temporary packaging cost explicit.
+  module dependency so the dedicated passive assembly and its selected implementation classes live
+  in the target lower-layer modules. The previous `UserSessionScope`-based iOS Simulator debug
+  binary was 109,641,000 bytes. The passive-assembly version is 74,485,112 bytes, a reduction of
+  35,155,888 bytes (32.1%); this remains a debug, non-App-Store-thinned measurement.
+- Wire real calling candidates through the already split `:domain:calling-notifications` framework;
+  do not reintroduce the application call manager or full AVS stack.
 - Open all shared account/CoreCrypto resources only after acquiring the cross-process lock, and
   make the foreground app use the same lock for overlapping work.
 - Add encrypted durable handoff persistence, cursor cutover, safe transport ACKs, and native
   foreground import.
 - Wire the notification-policy snapshot and approved generic/replacement behavior.
 - Complete signed physical-device testing for push delivery, locked-device Keychain accessibility,
-  memory, cold start, expiration, owner death, and real Proteus/MLS/AVS traffic.
+  memory, cold start, expiration, owner death, and real Proteus/MLS traffic.
 - Add automated tests only after the spike design is accepted, per the current working agreement.

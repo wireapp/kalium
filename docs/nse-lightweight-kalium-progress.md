@@ -39,7 +39,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 8. Foreground importer contract/integration | Completed | `7a098a341c5b` | Kotlin/Swift compile, KMP/native probes, token parity, dependency audit, detekt, independent review | Real native app mapping and production storage/path/device gates remain open |
 | 9. Resilience, security, and performance | Completed | `f7dff7073677` | macOS/simulator hardening probes, Swift token/import parity, bounded-sync budget probe, Apple/metadata compilation | External native app, encrypted storage, signing, backend, physical-device, and product budget approvals remain explicit |
 | 10. Rollout and observability | Completed | `378b222b265a` | Metadata/Apple compilation, simulator framework/Swift host probe, dependency/header/privacy audits, detekt, independent review | External rollout ownership, privacy approval, signing, backend, and physical-device validation remain explicit |
-| 11. Real-account integration path | Implemented for host/NSE testing | This commit | JVM logic compile, iOS Simulator compile/link, generated-header inspection, application-extension Swift type-check, detekt, dependency review | Temporarily reuses full `:logic`; transport ACKs and disk handoff remain disabled until encrypted durability is available |
+| 11. Real-account integration path | Implemented for host/NSE testing | `16a8a39ef2f3` | JVM logic compile, iOS Simulator compile/link, generated-header inspection, application-extension Swift type-check, detekt, dependency review | Initial path reused `UserSessionScope`; transport ACKs and disk handoff remain disabled until encrypted durability is available |
+| 12. Passive account assembly cleanup | Implemented | This commit | JVM/Apple compilation, Apple framework link/size, source lifecycle audit, detekt, diff check | No `CoreLogic`/`UserSessionScope`, foreground workers, application calling lifecycle, or outbound MLS transport in the runtime path; temporary `:logic` module dependency remains |
 
 ## Milestone 11 — Real-account integration path
 
@@ -60,6 +61,43 @@ engine, so the backend is never ACKed without encrypted crash-durable handoff st
 for a real decryption demonstration but deliberately does not open the production factory gates.
 The host runbook and output inspection contract are recorded in
 `docs/spikes/ios-nse-real-account-spike.md`.
+
+## Milestone 12 — Passive account assembly cleanup
+
+Status: Implemented on 2026-07-18
+
+The real entry point now constructs `NotificationExtensionCoreLogic`, not the application
+`CoreLogic` or `UserSessionScope`. The passive assembly opens only the existing global account/auth
+metadata, selected user storage, authenticated notification APIs, local conversation protocol data,
+and Proteus/MLS providers required for receive-only decryption. It therefore does not trigger the
+user-session initializer that starts migrations, continuous sync, recovery, schedulers, pending
+confirmations, local event processing, AVS sync reporting, or call background observation.
+
+MLS still requires a CoreCrypto transporter when the client is created, but this assembly supplies
+a fail-closed transporter that rejects messages and commit bundles. Proteus migration failure also
+does not invoke the application logout/data-clear recovery path. Subconversation events remain
+foreground-only because their membership cache is process-local and the NSE must not fetch or join
+them. The bridge-owned processing scope is cancelled on every result, cancellation, lock failure,
+and lease release. MLS and Proteus clients are also closed non-destructively after every raw-event
+receive transaction, before control returns to the bounded engine and while the process lease is
+still held; their persistent cryptographic state is not deleted.
+
+The notification framework still has a temporary Gradle dependency on `:logic`; this cleanup fixes
+runtime ownership and side effects, not the final packaging graph. Extraction of the selected auth,
+network, storage, and crypto provider implementations into the ADR's lower-layer modules remains the
+next production cleanup. Notification-only AVS integration remains a separate split-framework task.
+
+Verification evidence:
+
+- JVM logic compilation, iOS Simulator compilation/framework linking, and repository detekt passed.
+- The existing Swift application-extension integration smoke source type-checked against the
+  regenerated framework header.
+- The iOS Simulator debug framework binary decreased from 109,641,000 to 74,485,112 bytes: a
+  35,155,888-byte (32.1%) reduction. This is not an App Store-thinned measurement.
+- The generated public header exposes the existing `RealNotificationExtension` API but no
+  `CoreLogic`, `UserSessionScope`, or `NotificationExtensionCoreLogic` type.
+- The linked core image contains no native `wcall_*`, `AVSFlowManager`, or `AVSMediaManager` symbol.
+- No automated tests were added, modified, generated, or run.
 
 ## Milestone 0 — Architecture and Contracts
 

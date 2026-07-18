@@ -29,11 +29,7 @@ import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messagecontent.DecodedProtobufContent
@@ -67,6 +63,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
@@ -74,6 +71,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlin.io.encoding.Base64
@@ -88,13 +86,13 @@ public class NotificationExtensionLogicBridge internal constructor(
     private val currentClientId: suspend () -> Either<CoreFailure, com.wire.kalium.logic.data.conversation.ClientId>,
     private val notificationApi: NotificationApi,
     private val cryptoTransactionProvider: CryptoTransactionProvider,
-    private val conversationRepository: ConversationRepository,
-    private val subconversationRepository: SubconversationRepository,
+    private val conversationMlsGroupId: suspend (QualifiedID) -> String?,
     private val protobufDecoder: ProtobufMessageContentDecoder = ProtobufMessageContentDecoderImpl(selfUserId),
     private val contentExtractor: NotificationContentExtractor = NotificationContentExtractorImpl(),
     private val proteusDecryptor: ProteusMessageDecryptor = ProteusMessageDecryptorImpl(),
     private val mlsDecryptor: MlsMessageDecryptor = MlsMessageDecryptorImpl(),
-    private val contentResolver: MessageContentResolver = MessageContentResolverImpl()
+    private val contentResolver: MessageContentResolver = MessageContentResolverImpl(),
+    private val closeResources: () -> Unit = {}
 ) {
     private val receiveDecoder: MessageContentDecoder<DecodedProtobufContent> =
         NotificationExtensionProtobufDecoderAdapter(protobufDecoder)
@@ -103,6 +101,11 @@ public class NotificationExtensionLogicBridge internal constructor(
     public suspend fun resolveClientId(): String? = when (val result = currentClientId()) {
         is Either.Left -> null
         is Either.Right -> result.value.value
+    }
+
+    /** Cancels resources owned by this passive account bridge. This operation is idempotent. */
+    public fun close() {
+        closeResources()
     }
 
     /** Opens one authenticated, marker-bounded consumable-notification session. */
@@ -153,8 +156,18 @@ public class NotificationExtensionLogicBridge internal constructor(
      * GenericMessage protobufs. Other event kinds are ignored because this is a receive-only NSE
      * path and the transport remains unacknowledged by the spike assembly.
      */
+    public suspend fun receive(rawEnvelope: ByteArray): NotificationExtensionLogicReceiveResult = try {
+        receiveAndMaterialize(rawEnvelope)
+    } finally {
+        // The engine invokes receive while owning the process lease. Close before returning so no
+        // NSE-owned CoreCrypto handle can survive the lease release and race the foreground app.
+        withContext(NonCancellable) {
+            cryptoTransactionProvider.closeClients()
+        }
+    }
+
     @Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount")
-    public suspend fun receive(rawEnvelope: ByteArray): NotificationExtensionLogicReceiveResult {
+    private suspend fun receiveAndMaterialize(rawEnvelope: ByteArray): NotificationExtensionLogicReceiveResult {
         val storedEvent = try {
             KtxSerializer.json.decodeFromString<EventResponseToStore>(rawEnvelope.decodeToString())
         } catch (_: CancellationException) {
@@ -280,21 +293,23 @@ public class NotificationExtensionLogicBridge internal constructor(
         itemIndex: Int
     ): ReceiveItemResult {
         val conversationId = event.qualifiedConversation.toLogicId()
-        val groupId = event.subconversation?.let { subconversation ->
-            subconversationRepository.getSubconversationInfo(conversationId, SubconversationId(subconversation))
-                ?: return ReceiveItemResult.ForegroundRequired(emptyList())
-        } ?: when (val protocol = conversationRepository.getConversationProtocolInfo(conversationId)) {
-            is Either.Left -> return ReceiveItemResult.ForegroundRequired(emptyList())
-            is Either.Right -> (protocol.value as? Conversation.ProtocolInfo.MLSCapable)?.groupId
-                ?: return ReceiveItemResult.ForegroundRequired(emptyList())
-        }
+        // Subconversation membership is process-local in the application graph. The NSE must not
+        // fetch or join it, so those messages are deliberately handed back to the foreground app.
+        if (event.subconversation != null) return ReceiveItemResult.ForegroundRequired(emptyList())
+        val groupId = try {
+            conversationMlsGroupId(conversationId)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Throwable) {
+            null
+        } ?: return ReceiveItemResult.ForegroundRequired(emptyList())
         val encryptedMessage = runCatching { Base64.decode(event.message) }
             .getOrElse { return ReceiveItemResult.TerminalFailure }
         val result = cryptoTransactionProvider.mlsTransaction("notification-extension-receive") { context ->
             wrapMLSRequest {
                 mlsDecryptor.decrypt(
                     context = context,
-                    message = MlsEncryptedMessage(groupId.value, encryptedMessage)
+                    message = MlsEncryptedMessage(groupId, encryptedMessage)
                 ) { decryptedMessages ->
                     val output = mutableListOf<NotificationExtensionLogicMessage>()
                     var foregroundRequired = false

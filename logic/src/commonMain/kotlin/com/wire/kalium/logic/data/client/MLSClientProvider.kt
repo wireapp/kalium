@@ -60,6 +60,9 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
 internal interface MLSClientProvider : CryptoBackupExporter {
+    /** Closes the in-memory client without deleting its persistent cryptographic state. */
+    suspend fun close()
+
     suspend fun isMLSClientInitialised(): Boolean
 
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
@@ -95,6 +98,14 @@ internal class MLSClientProviderImpl(
 
     private val mlsClientMutex = Mutex()
     private val coreCryptoCentralMutex = Mutex()
+
+    override suspend fun close() {
+        mlsClientMutex.withLock {
+            coreCryptoCentralMutex.withLock {
+                closeClient()
+            }
+        }
+    }
 
     override suspend fun isMLSClientInitialised() = mlsClientMutex.withLock { mlsClient != null }
 
@@ -153,12 +164,16 @@ internal class MLSClientProviderImpl(
     override suspend fun clearLocalFiles() {
         mlsClientMutex.withLock {
             coreCryptoCentralMutex.withLock {
-                mlsClient?.close()
-                mlsClient = null
-                coreCryptoCentral = null
+                closeClient()
                 FileUtil.deleteDirectory(rootKeyStorePath)
             }
         }
+    }
+
+    private suspend fun closeClient() {
+        mlsClient?.close()
+        mlsClient = null
+        coreCryptoCentral = null
     }
 
     @Suppress("TooGenericExceptionCaught")
