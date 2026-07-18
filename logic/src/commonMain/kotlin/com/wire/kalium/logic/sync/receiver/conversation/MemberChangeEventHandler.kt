@@ -35,6 +35,7 @@ import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Instant
 
 internal interface MemberChangeEventHandler {
@@ -88,6 +89,8 @@ internal class MemberChangeEventHandlerImpl(
         event: Event.Conversation.MemberChanged.MemberChangedRole
     ) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
+        val changedMember = event.member ?: return
+        var memberWasAlreadyAdmin = false
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
         fetchConversationIfUnknown(transactionContext, event.conversationId)
             .run {
@@ -103,11 +106,18 @@ internal class MemberChangeEventHandlerImpl(
                     logger.w("Failure fetching conversation details on MemberChange Event: ${logMap.toJsonElement()}")
                 }
                 // Even if unable to fetch conversation details, at least attempt updating the member
-                conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
+                memberWasAlreadyAdmin = conversationRepository.observeConversationMembers(event.conversationId)
+                    .first()
+                    .any { member ->
+                        member.id == changedMember.id && member.role == Conversation.Member.Role.Admin
+                    }
+                conversationRepository.updateMemberFromEvent(changedMember, event.conversationId)
             }
             .onFailure { eventLogger.logFailure(it) }
             .onSuccess {
-                event.member?.takeIf { it.role == Conversation.Member.Role.Admin }?.let { promotedMember ->
+                changedMember.takeIf {
+                    it.role == Conversation.Member.Role.Admin && !memberWasAlreadyAdmin
+                }?.let { promotedMember ->
                     persistMessage(
                         Message.System(
                             id = event.id,

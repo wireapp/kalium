@@ -41,6 +41,7 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -211,6 +212,24 @@ class MemberChangeEventHandlerTest {
     }
 
     @Test
+    fun givenUserIsAlreadyAdmin_whenHandlingAdminRoleChange_thenSystemMessageIsNotPersisted() = runTest {
+        val adminMember = Member(TestUser.OTHER_USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChange(member = adminMember)
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withFetchConversationIfUnknownSucceeding()
+            .withExistingMembers(listOf(adminMember))
+            .withUpdateMemberSucceeding()
+            .arrange()
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessage(any())
+        }
+    }
+
+    @Test
     fun givenSelfUserRoleChangedToMember_whenHandlingMemberChangedRole_thenNoSystemMessageIsPersisted() = runTest {
         val selfMember = Member(TestUser.USER_ID, Member.Role.Member)
         val event = TestEvent.memberChange(member = selfMember)
@@ -241,6 +260,10 @@ class MemberChangeEventHandlerTest {
             selfUserId = TestUser.USER_ID,
         )
 
+        init {
+            everySuspend { conversationRepository.observeConversationMembers(any()) } returns flowOf(emptyList())
+        }
+
         suspend fun withFetchConversationIfUnknownSucceeding() = apply {
             everySuspend {
                 fetchConversationIfUnknown(any(), any(), eq(ConversationSyncReason.Other))
@@ -257,6 +280,10 @@ class MemberChangeEventHandlerTest {
             everySuspend {
                 conversationRepository.updateMemberFromEvent(any(), any())
             } returns Either.Right(Unit)
+        }
+
+        suspend fun withExistingMembers(members: List<Member>) = apply {
+            everySuspend { conversationRepository.observeConversationMembers(any()) } returns flowOf(members)
         }
 
         suspend fun withUpdateMutedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
