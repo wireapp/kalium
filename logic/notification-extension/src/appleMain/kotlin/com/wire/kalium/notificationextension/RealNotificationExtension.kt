@@ -403,24 +403,24 @@ private class RealLogicEventProcessor(
                 }
             }
         }
-        if (callMetadataMissing) {
-            return StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)
-        }
-        val callStatus = if (callEvents.isEmpty()) {
-            NotificationExtensionCallProcessingStatus.SUCCESS
-        } else {
-            runCatching { callProcessor.process(selfUserId, selfClientId, callEvents) }
-                .getOrDefault(NotificationExtensionCallProcessingStatus.RETRYABLE_FAILURE)
-        }
-        when (callStatus) {
-            NotificationExtensionCallProcessingStatus.SUCCESS -> Unit
-            NotificationExtensionCallProcessingStatus.RETRYABLE_FAILURE ->
-                return StagedEventProcessingResult.RetryableFailure
+        val callFailure = when {
+            callMetadataMissing ->
+                StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)
 
-            NotificationExtensionCallProcessingStatus.TERMINAL_FAILURE ->
-                return StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)
+            callEvents.isEmpty() -> null
+            else -> when (
+                runCatching { callProcessor.process(selfUserId, selfClientId, callEvents) }
+                    .getOrDefault(NotificationExtensionCallProcessingStatus.RETRYABLE_FAILURE)
+            ) {
+                NotificationExtensionCallProcessingStatus.SUCCESS -> null
+                NotificationExtensionCallProcessingStatus.RETRYABLE_FAILURE ->
+                    StagedEventProcessingResult.RetryableFailure
+
+                NotificationExtensionCallProcessingStatus.TERMINAL_FAILURE ->
+                    StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)
+            }
         }
-        return when (result.status) {
+        return callFailure ?: when (result.status) {
             NotificationExtensionLogicReceiveStatus.MATERIALIZED -> StagedEventProcessingResult.DurablyMaterialized
             NotificationExtensionLogicReceiveStatus.FOREGROUND_REQUIRED ->
                 StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)

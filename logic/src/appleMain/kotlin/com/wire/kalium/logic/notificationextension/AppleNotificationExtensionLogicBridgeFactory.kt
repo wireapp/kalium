@@ -210,14 +210,17 @@ internal class AppleNotificationExtensionLogicBridgeFactory(
         conversationId: QualifiedID
     ): Int {
         val conversation = userStorage.database.conversationDAO.getConversationById(conversationId.toDao())
-            ?: return AVS_CONVERSATION_TYPE_UNKNOWN
+        if (conversation == null) return AVS_CONVERSATION_TYPE_UNKNOWN
         return when {
             conversation.type == ConversationEntity.Type.ONE_ON_ONE -> {
-                val useSft = when (val result = userConfigRepository.shouldUseSFTForOneOnOneCalls()) {
-                    is Either.Left -> return AVS_CONVERSATION_TYPE_UNKNOWN
-                    is Either.Right -> result.value
+                when (val result = userConfigRepository.shouldUseSFTForOneOnOneCalls()) {
+                    is Either.Left -> AVS_CONVERSATION_TYPE_UNKNOWN
+                    is Either.Right -> if (result.value) {
+                        conversation.protocolInfo.toConferenceCallType()
+                    } else {
+                        AVS_CONVERSATION_TYPE_ONE_ON_ONE
+                    }
                 }
-                if (useSft) conversation.protocolInfo.toConferenceCallType() else AVS_CONVERSATION_TYPE_ONE_ON_ONE
             }
 
             conversation.type.isGroup -> conversation.protocolInfo.toConferenceCallType()

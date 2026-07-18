@@ -113,10 +113,11 @@ public class NotificationExtensionLogicBridge internal constructor(
     public suspend fun resolveCallEvent(
         message: NotificationExtensionLogicMessage
     ): NotificationExtensionLogicCallEvent? {
-        val candidate = message.candidate ?: return null
-        if (candidate.kind != NotificationExtensionLogicContentKind.CALLING) return null
-        val payload = candidate.callPayload ?: return null
-        val senderClientId = message.senderClientId ?: return null
+        val candidate = message.candidate
+        if (candidate == null || candidate.kind != NotificationExtensionLogicContentKind.CALLING) return null
+        val payload = candidate.callPayload
+        val senderClientId = message.senderClientId
+        if (payload == null || senderClientId == null) return null
         val envelopeConversationId = QualifiedID(message.conversationId, message.conversationDomain)
         val embeddedConversationId = candidate.callConversationId?.let { value ->
             QualifiedID(value, candidate.callConversationDomain.orEmpty())
