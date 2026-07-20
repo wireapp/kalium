@@ -34,9 +34,16 @@ internal class FakeIncrementalSyncManager(
     var cancelledSyncFlowCount: Int = 0
         private set
 
+    var resetRetryBackoffCount: Int = 0
+        private set
+
     override fun performSyncFlow(): Flow<IncrementalSyncStatus> = fakeSyncFlow
         .onCompletion { cause ->
             if (cause is CancellationException) cancelledSyncFlowCount++
         }
         .also { performSyncFlowCount++ }
+
+    override fun resetRetryBackoff() {
+        resetRetryBackoffCount++
+    }
 }

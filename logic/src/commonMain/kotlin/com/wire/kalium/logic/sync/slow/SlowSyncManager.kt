@@ -64,6 +64,11 @@ internal interface SlowSyncManager {
      */
     fun performSyncFlow(): Flow<SlowSyncStatus>
 
+    /**
+     * Resets the accumulated retry backoff without interrupting an ongoing sync attempt.
+     */
+    fun resetRetryBackoff()
+
     companion object {
         /**
          * The current version of Slow Sync.
@@ -108,6 +113,15 @@ internal fun SlowSyncManager(
 ): SlowSyncManager = object : SlowSyncManager {
 
     private val logger = userScopedLogger.withFeatureId(SYNC).withTextTag("SlowSyncManager")
+
+    override fun resetRetryBackoff() {
+        exponentialDurationHelper.reset()
+        logger.logSyncTelemetry(
+            event = SyncTelemetryEvent.RETRY_BACKOFF_RESET,
+            component = SyncTelemetryComponent.SLOW,
+            data = mapOf("reason" to "NEW_SYNC_REQUEST")
+        )
+    }
 
     private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {

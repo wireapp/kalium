@@ -375,6 +375,50 @@ class SlowSyncManagerTest {
     }
 
     @Test
+    fun whenResettingRetryBackoff_thenShouldResetExponentialDuration() = runTest {
+        val (arrangement, slowSyncManager) = Arrangement().arrange()
+
+        slowSyncManager.resetRetryBackoff()
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.exponentialDurationHelper.reset()
+        }
+    }
+
+    @Test
+    fun givenBackoffHasGrown_whenResettingDuringSyncAndNextAttemptFails_thenShouldUseMinimumDelay() = runTest {
+        val failureSignal = CompletableDeferred<Unit>()
+        val exponentialDurationHelper = ExponentialDurationHelper(1.seconds, 10.minutes)
+        val workerFlow = flow<SlowSyncStep> {
+            failureSignal.await()
+            throw IOException("Connection failed")
+        }
+        val (arrangement, slowSyncManager) = Arrangement(
+            exponentialDurationHelper = exponentialDurationHelper,
+            configureDefaultExponentialDuration = false,
+        ).arrange {
+            withSatisfiedCriteria()
+            withSlowSyncWorkerReturning(workerFlow)
+            withIgnoringFailureRecovery()
+        }
+        val syncJob = slowSyncManager.performSyncFlow().launchIn(backgroundScope)
+        runCurrent()
+        exponentialDurationHelper.next()
+        exponentialDurationHelper.next()
+
+        slowSyncManager.resetRetryBackoff()
+        failureSignal.complete(Unit)
+        runCurrent()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.slowSyncRepository.updateSlowSyncStatus(
+                matches<SlowSyncStatus> { it is SlowSyncStatus.Failed && it.retryDelay == 1.seconds }
+            )
+        }
+        syncJob.cancel()
+    }
+
+    @Test
     fun givenCriteriaAreMet_whenRecovers_thenShouldRetry() = runTest {
         val (arrangement, slowSyncManager) = Arrangement().arrange {
             withSatisfiedCriteria()
@@ -472,6 +516,12 @@ class SlowSyncManagerTest {
                 val onRetryCallback = invocation.args[1] as OnSlowSyncRetryCallback
                 onRetryCallback.retry()
             }
+        }
+
+        suspend fun withIgnoringFailureRecovery() = apply {
+            everySuspend {
+                slowSyncRecoveryHandler.recover(any(), any())
+            } returns Unit
         }
 
         fun withNetworkState(networkStateFlow: StateFlow<NetworkState>) = apply {
