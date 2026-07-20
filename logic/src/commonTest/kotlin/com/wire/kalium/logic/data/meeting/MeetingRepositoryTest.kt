@@ -17,14 +17,20 @@
  */
 package com.wire.kalium.logic.data.meeting
 
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.model.ConversationId
-import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.api.model.MeetingId as NetworkMeetingId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
@@ -39,6 +45,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class MeetingRepositoryTest {
@@ -46,7 +53,7 @@ class MeetingRepositoryTest {
     @Test
     fun whenFetchAndPersistMeetings_thenMeetingsAreFetchedAndPersistedWithNowDateTime() = runTest {
         val meetingDTO = MeetingDTO(
-            meetingId = MeetingId("meeting1", "domain"),
+            meetingId = NetworkMeetingId("meeting1", "domain"),
             conversationId = ConversationId("conversation1", "domain"),
             creatorId = UserId("user1", "domain"),
             createdAt = Instant.parse("2026-06-01T00:00:00Z"),
@@ -92,6 +99,40 @@ class MeetingRepositoryTest {
         }
     }
 
+    @Test
+    fun givenApiDeleteSucceeds_whenDeleteMeeting_thenMeetingIsDeletedLocally() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val (arrangement, repository) = Arrangement()
+            .withDeleteMeetingSuccess(meetingId)
+            .arrange()
+
+        val result = repository.deleteMeeting(meetingId)
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingApi.deleteMeeting(meetingId.toApi())
+            arrangement.meetingDao.deleteMeeting(meetingId.toDao())
+        }
+    }
+
+    @Test
+    fun givenApiDeleteFails_whenDeleteMeeting_thenMeetingIsNotDeletedLocally() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val (arrangement, repository) = Arrangement()
+            .withDeleteMeetingFailure(meetingId)
+            .arrange()
+
+        val result = repository.deleteMeeting(meetingId)
+
+        assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingApi.deleteMeeting(meetingId.toApi())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.meetingDao.deleteMeeting(meetingId.toDao())
+        }
+    }
+
     inner class Arrangement {
         internal val meetingDao = mock<MeetingDao>(mode = MockMode.autoUnit)
         internal val meetingApi = mock<MeetingApi>(mode = MockMode.autoUnit)
@@ -100,6 +141,15 @@ class MeetingRepositoryTest {
         internal fun withFetchMeetingsSuccess(result: List<MeetingDTO>) = apply {
             everySuspend { meetingApi.fetchMeetings() } returns NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value)
         }
+
+        internal fun withDeleteMeetingSuccess(meetingId: MeetingId) = apply {
+            everySuspend { meetingApi.deleteMeeting(meetingId.toApi()) } returns NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value)
+        }
+
+        internal fun withDeleteMeetingFailure(meetingId: MeetingId) = apply {
+            everySuspend { meetingApi.deleteMeeting(meetingId.toApi()) } returns NetworkResponse.Error(TestNetworkException.generic)
+        }
+
         internal fun arrange() = this to MeetingDataSource(meetingDAO = meetingDao, meetingApi = meetingApi)
     }
 }

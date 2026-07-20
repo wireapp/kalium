@@ -45,6 +45,7 @@ interface MeetingDao {
         startingOffset: Long,
         from: Instant,
     ): KaliumPager<MeetingOccurrenceDetailsEntity>
+    suspend fun deleteMeeting(meetingId: QualifiedIDEntity)
 }
 
 internal class MeetingDaoImpl(
@@ -128,6 +129,12 @@ internal class MeetingDaoImpl(
             ),
             readDispatcher = readDispatcher,
         )
+
+    override suspend fun deleteMeeting(meetingId: QualifiedIDEntity) {
+        withContext(writeDispatcher.value) {
+            meetingsQueries.deleteMeeting(meetingId)
+        }
+    }
 
     private fun meetingPagingSource(from: Instant, startingOffset: Long, prefetchDistance: Int): MeetingPagingSource =
         MeetingPagingSource(
