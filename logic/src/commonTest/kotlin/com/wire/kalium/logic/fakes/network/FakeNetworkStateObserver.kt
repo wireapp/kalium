@@ -1,0 +1,48 @@
+/*
+ * Wire
+ * Copyright (C) 2026 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
+package com.wire.kalium.logic.fakes.network
+
+import com.wire.kalium.network.CurrentNetwork
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlin.time.Duration
+
+internal class FakeNetworkStateObserver(
+    var networkStateFlow: StateFlow<NetworkState> = MutableStateFlow(NetworkState.ConnectedWithInternet),
+) : NetworkStateObserver {
+
+    var reconnectWaitOverride: (suspend (Duration) -> Boolean)? = null
+
+    var reconnectWaitCallCount: Int = 0
+        private set
+
+    private val currentNetworkFlow = MutableStateFlow<CurrentNetwork?>(null)
+
+    override fun observeNetworkState(): StateFlow<NetworkState> = networkStateFlow
+
+    override fun observeCurrentNetwork(): StateFlow<CurrentNetwork?> = currentNetworkFlow
+
+    override suspend fun delayUntilConnectedWithInternetAgain(delay: Duration): Boolean {
+        reconnectWaitCallCount++
+        return reconnectWaitOverride?.invoke(delay)
+            ?: super<NetworkStateObserver>.delayUntilConnectedWithInternetAgain(delay)
+    }
+}

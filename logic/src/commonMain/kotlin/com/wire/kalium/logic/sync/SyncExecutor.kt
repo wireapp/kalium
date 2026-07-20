@@ -27,9 +27,8 @@ import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collect
@@ -39,6 +38,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
 
 public abstract class SyncExecutor {
@@ -99,22 +99,47 @@ internal class SyncExecutorImpl(
     userScopedLogger: KaliumLogger = kaliumLogger,
 ) : SyncExecutor() {
 
-    private val syncStateFlow = MutableStateFlow<SyncState>(SyncState.Waiting)
+    private data class SyncDemand(
+        val requesterCount: Int = 0,
+        val restartVersion: Long = 0,
+    )
+
+    private data class SyncExecution(
+        val shouldSync: Boolean,
+        val restartVersion: Long,
+    )
+
+    // Keep logical request lifetimes separate from transient collectors that only wait for a sync state.
+    // Never emits; its subscriptionCount (non-conflated) is the requester count.
+    private val syncRequestDemandFlow = MutableSharedFlow<Unit>()
     private val logger by lazy { userScopedLogger.withFeatureId(SYNC).withTextTag("SyncExecutor") }
 
     override fun startAndStopSyncAsNeeded() {
         scope.launch {
-            syncStateObserver.syncState.collect { syncStateFlow.value = it }
-        }
-        scope.launch {
-            syncStateFlow.subscriptionCount
+            syncRequestDemandFlow.subscriptionCount
                 .onEach {
                     logger.d("!! Sync requester count changed to $it")
                 }
-                .map { count -> count > 0 }
+                .runningFold(SyncDemand()) { previous, requesterCount ->
+                    val requestAdded = requesterCount > previous.requesterCount
+                    // The first request starts sync. An additional request restarts it only when
+                    // recovery is backing off, avoiding disruption to an already-live connection.
+                    val shouldRestart = requestAdded &&
+                        (previous.requesterCount == 0 || syncStateObserver.syncState.value is SyncState.Failed)
+                    SyncDemand(
+                        requesterCount = requesterCount,
+                        restartVersion = previous.restartVersion + if (shouldRestart) 1 else 0,
+                    )
+                }
+                .map { demand ->
+                    SyncExecution(
+                        shouldSync = demand.requesterCount > 0,
+                        restartVersion = demand.restartVersion,
+                    )
+                }
                 .distinctUntilChanged()
-                .collectLatest { shouldSync ->
-                    if (shouldSync) {
+                .collectLatest { execution ->
+                    if (execution.shouldSync) {
                         logger.i("!! Starting Sync to fulfill requests !!")
                         performSync()
                     } else {
@@ -145,11 +170,9 @@ internal class SyncExecutorImpl(
      */
     private fun startNewSyncRequest(): Request {
         val syncJob = scope.launch {
-            syncStateFlow.collect { state ->
-                awaitCancellation()
-            }
+            syncRequestDemandFlow.collect()
         }
-        return Request(syncStateFlow, syncJob, logger)
+        return Request(syncStateObserver.syncState, syncJob, logger)
     }
 
     override suspend fun <T> request(
