@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
+import com.wire.kalium.logic.sync.delayBeforeSyncRetry
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
@@ -101,7 +102,7 @@ internal fun SlowSyncManager(
     )
 ): SlowSyncManager = object : SlowSyncManager {
 
-    private val logger = userScopedLogger.withFeatureId(SYNC)
+    private val logger = userScopedLogger.withFeatureId(SYNC).withTextTag("SlowSyncManager")
 
     private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {
@@ -114,10 +115,7 @@ internal fun SlowSyncManager(
             val delay = exponentialDurationHelper.next()
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure, delay))
             slowSyncRecoveryHandler.recover(failure) {
-                logger.i("SlowSync Triggering delay($delay) and waiting for reconnection")
-                networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
-                logger.i("SlowSync Delay and waiting for connection finished - retrying")
-                logger.i("SlowSync Connected - retrying")
+                networkStateObserver.delayBeforeSyncRetry(delay, exponentialDurationHelper, logger)
                 onRetry()
             }
         }
@@ -151,6 +149,8 @@ internal fun SlowSyncManager(
 
     override fun performSyncFlow(): Flow<SlowSyncStatus> = channelFlow {
         coroutineScope {
+            // A new sync request must not inherit a stale retry delay from a previous collector.
+            exponentialDurationHelper.reset()
             launch {
                 // TODO: Instead of forwarding repository state, we could just emit within the flow. Killing the repository completely.
                 slowSyncRepository.slowSyncStatus.collect { slowSyncStatus ->

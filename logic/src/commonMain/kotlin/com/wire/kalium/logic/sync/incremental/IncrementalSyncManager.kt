@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
+import com.wire.kalium.logic.sync.delayBeforeSyncRetry
 import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.util.ExponentialDurationHelper
@@ -119,9 +120,7 @@ internal fun IncrementalSyncManager(
             )
 
             incrementalSyncRecoveryHandler.recover(failure = failure) {
-                logger.i("Triggering delay($delay) and waiting for reconnection")
-                networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
-                logger.i("Delay and waiting for connection finished - retrying")
+                networkStateObserver.delayBeforeSyncRetry(delay, exponentialDurationHelper, logger)
                 onRetry()
             }
         }
