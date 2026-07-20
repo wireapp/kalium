@@ -19,6 +19,7 @@ package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.CellConversation
+import com.wire.kalium.cells.domain.model.ConversationMetadata
 import com.wire.kalium.cells.util.toQualifiedIdOrNull
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
@@ -31,7 +32,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
 internal class CellConversationDataSource(
@@ -46,14 +46,20 @@ internal class CellConversationDataSource(
             }
         }
 
-    override suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>> =
+    override suspend fun getConversationsByIds(conversationIds: List<String>): Either<StorageFailure, List<ConversationMetadata>> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
-                conversationDao.getAllConversations().firstOrNull()?.mapNotNull { conv ->
-                    conv.name?.let { name ->
-                        conv.id.toString() to name
+                conversationIds.mapNotNull { conversationId ->
+                    conversationId.toQualifiedIdOrNull()?.let { qualifiedId ->
+                        conversationDao.getConversationById(qualifiedId)?.let { conversation ->
+                            ConversationMetadata(
+                                id = conversationId,
+                                name = conversation.name,
+                                teamId = conversation.teamId,
+                            )
+                        }
                     }
-                } ?: emptyList()
+                }
             }
         }
 
@@ -62,15 +68,6 @@ internal class CellConversationDataSource(
             wrapStorageRequest {
                 conversationId.toQualifiedIdOrNull()?.let { qualifiedId ->
                     conversationDao.getConversationById(qualifiedId)?.name
-                }
-            }
-        }
-
-    override suspend fun getConversationTeamId(conversationId: String): Either<StorageFailure, String?> =
-        withContext(dispatchers.io) {
-            wrapStorageRequest {
-                conversationId.toQualifiedIdOrNull()?.let { qualifiedId ->
-                    conversationDao.getConversationById(qualifiedId)?.teamId
                 }
             }
         }

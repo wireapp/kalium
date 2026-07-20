@@ -18,7 +18,6 @@
 package com.wire.kalium.cells.domain.usecase
 
 import dev.mokkery.MockMode
-import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
@@ -26,6 +25,7 @@ import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.ConversationMetadata
 import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.common.functional.getOrNull
@@ -34,6 +34,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.cellfile.CellFileLocalPath
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
@@ -167,7 +168,6 @@ class GetPaginatedNodesUseCaseTest {
         val conversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
         val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
         val usersRepository = mock<CellUsersRepository>(mode = MockMode.autoUnit)
-        val isSelfGuestInConversation = mock<IsSelfGuestInConversationUseCase>(mode = MockMode.autoUnit)
 
         private var guestConversations: Set<String> = emptySet()
 
@@ -193,27 +193,40 @@ class GetPaginatedNodesUseCaseTest {
                 ).right()
             )
 
-            everySuspend { usersRepository.getUserNames() }.returns(testUserNames.right())
+            everySuspend { usersRepository.getUserNamesByIds(any()) }.returns(testUserNames.right())
 
-            everySuspend { conversationRepository.getConversationNames() }.returns(testConversationNames.right())
+            everySuspend { usersRepository.getUserTeamId(any()) }.returns(SELF_TEAM_ID.right())
+
+            everySuspend { conversationRepository.getConversationsByIds(any()) }.returns(
+                testConversationIds.map { id ->
+                    ConversationMetadata(
+                        id = id,
+                        name = CONVERSATION_NAME,
+                        teamId = if (id in guestConversations) OTHER_TEAM_ID else SELF_TEAM_ID,
+                    )
+                }.right()
+            )
 
             everySuspend { attachmentsRepository.getAttachments() }.returns(testAttachments.right())
 
             everySuspend { attachmentsRepository.getStandaloneAssetPaths() }.returns(testAssetPaths.right())
-
-            everySuspend { isSelfGuestInConversation(any()) } calls { (it.args[0] as String) in guestConversations }
 
             return this to GetPaginatedNodesUseCaseImpl(
                 cellsRepository = cellsRepository,
                 conversationRepository = conversationRepository,
                 attachmentsRepository = attachmentsRepository,
                 usersRepository = usersRepository,
-                isSelfGuestInConversation = isSelfGuestInConversation,
+                selfUserId = SELF_USER_ID,
             )
         }
     }
 
     private companion object {
+
+        val SELF_USER_ID = UserId("self_user_id", "wire.com")
+        const val SELF_TEAM_ID = "self_team"
+        const val OTHER_TEAM_ID = "other_team"
+        const val CONVERSATION_NAME = "conversation_name"
 
         val testNodes = listOf(
             CellNode(
@@ -249,11 +262,11 @@ class GetPaginatedNodesUseCaseTest {
             "user_id_4" to "user_name",
         )
 
-        val testConversationNames = listOf(
-            "conversation_id" to "conversation_name",
-            "conversation_id_2" to "conversation_name",
-            "conversation_id_3" to "conversation_name",
-            "conversation_id_4" to "conversation_name",
+        val testConversationIds = listOf(
+            "conversation_id",
+            "conversation_id_2",
+            "conversation_id_3",
+            "conversation_id_4",
         )
 
         val testAssetPaths = listOf(

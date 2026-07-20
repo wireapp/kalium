@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.domain.model.CellConversation
+import com.wire.kalium.cells.domain.model.ConversationMetadata
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.ConversationId
@@ -288,7 +289,7 @@ class CellConversationRepositoryTest {
     }
 
     @Test
-    fun given_ConversationWithTeam_whenGetConversationTeamId_thenReturnTeamId() = runTest {
+    fun given_ConversationWithTeam_whenGetConversationsByIds_thenReturnNameAndTeamId() = runTest {
         val conv = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
@@ -299,10 +300,25 @@ class CellConversationRepositoryTest {
             .withConversationById(conv)
             .arrange()
 
-        val result = repository.getConversationTeamId("conv1@wire.com")
+        val result = repository.getConversationsByIds(listOf("conv1@wire.com"))
 
-        assertIs<Either.Right<String?>>(result)
-        assertEquals("team123", result.value)
+        assertIs<Either.Right<List<ConversationMetadata>>>(result)
+        assertEquals(1, result.value.size)
+        assertEquals("conv1@wire.com", result.value[0].id)
+        assertEquals(CONVERSATION_NAME_1, result.value[0].name)
+        assertEquals("team123", result.value[0].teamId)
+    }
+
+    @Test
+    fun given_UnknownConversationId_whenGetConversationsByIds_thenItIsOmitted() = runTest {
+        val (_, repository) = Arrangement()
+            .withConversationById(null)
+            .arrange()
+
+        val result = repository.getConversationsByIds(listOf("conv1@wire.com"))
+
+        assertIs<Either.Right<List<ConversationMetadata>>>(result)
+        assertEquals(0, result.value.size)
     }
 
     private fun createGroupConversationEntity(

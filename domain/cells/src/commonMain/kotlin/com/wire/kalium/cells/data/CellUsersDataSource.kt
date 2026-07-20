@@ -35,11 +35,16 @@ internal class CellUsersDataSource(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : CellUsersRepository {
 
-    override suspend fun getUserNames() = withContext(dispatchers.io) {
+    override suspend fun getUserNamesByIds(userIds: List<String>) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            userDAO.getAllUsersDetails().firstOrNull()?.mapNotNull { user ->
-                user.name?.let { name ->
-                    user.id.toString() to name
+            val qualifiedIds = userIds.mapNotNull { it.toQualifiedIdOrNull() }
+            if (qualifiedIds.isEmpty()) {
+                emptyList()
+            } else {
+                userDAO.getUsersDetailsByQualifiedIDList(qualifiedIds).mapNotNull { user ->
+                    user.name?.let { name ->
+                        user.id.toString() to name
+                    }
                 }
             }
         }

@@ -131,8 +131,6 @@ import com.wire.kalium.cells.domain.usecase.GetConversationNameUseCase
 import com.wire.kalium.cells.domain.usecase.GetConversationNameUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetUserNameUseCase
 import com.wire.kalium.cells.domain.usecase.GetUserNameUseCaseImpl
-import com.wire.kalium.cells.domain.usecase.IsSelfGuestInConversationUseCase
-import com.wire.kalium.cells.domain.usecase.IsSelfGuestInConversationUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveIsAtLeastOneCellAvailableUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveIsAtLeastOneCellAvailableUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCase
@@ -298,7 +296,7 @@ public class CellsScope(
             cellsConversationRepository,
             cellAttachmentsRepository,
             usersRepository,
-            isSelfGuestInConversation,
+            userId,
         )
     }
 
@@ -466,13 +464,5 @@ public class CellsScope(
 
     public val getUserName: GetUserNameUseCase by lazy {
         GetUserNameUseCaseImpl(usersRepository)
-    }
-
-    private val isSelfGuestInConversation: IsSelfGuestInConversationUseCase by lazy {
-        IsSelfGuestInConversationUseCaseImpl(
-            selfUserId = userId,
-            usersRepository = usersRepository,
-            conversationRepository = cellsConversationRepository,
-        )
     }
 }
