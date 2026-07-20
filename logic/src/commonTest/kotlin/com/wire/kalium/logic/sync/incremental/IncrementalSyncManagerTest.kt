@@ -38,6 +38,7 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +48,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -345,6 +347,48 @@ class IncrementalSyncManagerTest {
             }
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun whenResettingRetryBackoff_thenShouldResetExponentialDuration() = runTest {
+        val (arrangement, incrementalSyncManager) = Arrangement().arrange()
+
+        incrementalSyncManager.resetRetryBackoff()
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.exponentialDurationHelper.reset()
+        }
+    }
+
+    @Test
+    fun givenBackoffHasGrown_whenResettingDuringSyncAndNextAttemptFails_thenShouldUseMinimumDelay() = runTest {
+        val failureSignal = CompletableDeferred<Unit>()
+        val exponentialDurationHelper = ExponentialDurationHelper(1.seconds, 10.minutes)
+        val workerFlow = flow<EventSource> {
+            failureSignal.await()
+            throw IOException("Connection failed")
+        }
+        val (arrangement, incrementalSyncManager) = Arrangement(
+            exponentialDurationHelper = exponentialDurationHelper,
+            configureDefaultExponentialDuration = false,
+        )
+            .withWorkerReturning(workerFlow)
+            .withRecoveringFromFailure { }
+            .arrange()
+        val syncJob = incrementalSyncManager.performSyncFlow().launchIn(backgroundScope)
+        runCurrent()
+        exponentialDurationHelper.next()
+        exponentialDurationHelper.next()
+
+        incrementalSyncManager.resetRetryBackoff()
+        failureSignal.complete(Unit)
+        runCurrent()
+
+        val failedState = assertIs<IncrementalSyncStatus.Failed>(
+            arrangement.incrementalSyncRepository.incrementalSyncState.first()
+        )
+        assertEquals(1.seconds, failedState.retryDelay)
+        syncJob.cancel()
     }
 
     private class Arrangement(
