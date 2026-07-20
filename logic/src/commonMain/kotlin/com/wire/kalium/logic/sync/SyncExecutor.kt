@@ -193,8 +193,7 @@ internal class SyncExecutorImpl(
 
     /**
      * The demand policy: the first request starts sync. A later request restarts it only when
-     * recovery is backing off; while an attempt is in flight it only resets future backoff,
-     * and an already-live connection is left undisturbed.
+     * recovery is backing off; an in-flight or live connection is left undisturbed.
      */
     private fun decideDemandAction(
         previousCount: Int,
@@ -205,7 +204,7 @@ internal class SyncExecutorImpl(
         return when {
             requestAdded && previousCount == 0 -> DemandAction.START
             requestAdded && syncState is SyncState.Failed -> DemandAction.RESTART
-            requestAdded && syncState != SyncState.Live -> DemandAction.RESET_BACKOFF
+//             requestAdded && syncState != SyncState.Live -> DemandAction.RESET_BACKOFF // for now disabled need a bit more testing
             requesterCount == 0 && previousCount > 0 -> DemandAction.STOP
             requesterCount > 0 -> DemandAction.KEEP_RUNNING
             else -> DemandAction.IDLE

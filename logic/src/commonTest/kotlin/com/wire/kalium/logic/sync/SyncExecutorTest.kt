@@ -278,7 +278,7 @@ class SyncExecutorTest {
         }
 
     @Test
-    fun givenSyncIsConnecting_whenNewRequestStarts_thenShouldResetBackoffWithoutRestartingSync() =
+    fun givenSyncIsConnecting_whenNewRequestStarts_thenShouldNotResetBackoffOrRestartSync() =
         runTest(TestKaliumDispatcher.default) {
             listOf(
                 SyncState.Waiting,
@@ -296,8 +296,8 @@ class SyncExecutorTest {
 
                     syncExecutor.request {
                         advanceUntilIdle()
-                        assertEquals(1, arrangement.slowSyncManager.resetRetryBackoffCount)
-                        assertEquals(1, arrangement.incrementalSyncManager.resetRetryBackoffCount)
+                        assertEquals(0, arrangement.slowSyncManager.resetRetryBackoffCount)
+                        assertEquals(0, arrangement.incrementalSyncManager.resetRetryBackoffCount)
                         assertEquals(1, arrangement.slowSyncManager.performSyncFlowCount)
                         assertEquals(0, arrangement.slowSyncManager.cancelledSyncFlowCount)
                     }
