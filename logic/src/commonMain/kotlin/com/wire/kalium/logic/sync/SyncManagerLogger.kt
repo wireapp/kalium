@@ -17,13 +17,11 @@
  */
 package com.wire.kalium.logic.sync
 
-import kotlin.uuid.Uuid
-import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.common.logger.logStructuredJson
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
 /**
  * Logs the sync process by providing structured logs.
@@ -40,15 +38,12 @@ internal class SyncManagerLogger(
      * Logs the sync process start.
      */
     fun logSyncStarted() {
-        logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC).logStructuredJson(
-            level = KaliumLogLevel.INFO,
-            leadingMessage = "Started sync process",
-            jsonStringKeyValues = mapOf(
-                "syncMetadata" to mapOf(
-                    "id" to syncId,
-                    "status" to SyncStatus.STARTED.name,
-                    "type" to syncType.name
-                )
+        logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC).logSyncTelemetry(
+            event = SyncTelemetryEvent.SYNC_PROCESS_STARTED,
+            component = syncType.telemetryComponent(),
+            data = mapOf(
+                "syncId" to syncId,
+                "status" to SyncStatus.STARTED.name,
             )
         )
     }
@@ -61,17 +56,14 @@ internal class SyncManagerLogger(
      * @param duration optional the duration of the sync process.
      */
     fun logSyncCompleted(duration: Duration = Clock.System.now() - syncStartedMoment) {
-        val logMap = mapOf(
-            "id" to syncId,
-            "status" to SyncStatus.COMPLETED.name,
-            "type" to syncType.name,
-            "performanceData" to mapOf("timeTakenInMillis" to duration.inWholeMilliseconds)
-        )
-
-        logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC).logStructuredJson(
-            level = KaliumLogLevel.INFO,
-            leadingMessage = "Completed sync process",
-            jsonStringKeyValues = mapOf("syncMetadata" to logMap)
+        logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.SYNC).logSyncTelemetry(
+            event = SyncTelemetryEvent.SYNC_PROCESS_COMPLETED,
+            component = syncType.telemetryComponent(),
+            data = mapOf(
+                "syncId" to syncId,
+                "status" to SyncStatus.COMPLETED.name,
+                "durationInMillis" to duration.inWholeMilliseconds,
+            )
         )
     }
 }
