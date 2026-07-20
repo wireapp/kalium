@@ -36,7 +36,6 @@ interface NetworkStateObserver {
      */
     suspend fun delayUntilConnectedWithInternetAgain(delay: Duration): Boolean {
         // Delay for given amount but break it if reconnected again.
-        kaliumUtilLogger.i("$TAG delayUntilConnectedWithInternetAgain for $delay")
         return withTimeoutOrNull(delay) {
             // Drop the current value, so it will complete only if the connection changed again to connected during that time.
             observeNetworkState()

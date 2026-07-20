@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
@@ -37,7 +38,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
 
@@ -67,7 +67,12 @@ public abstract class SyncExecutor {
          */
         internal fun release() {
             if (isEndless) {
-                logger.w("Sync request was marked as endless, so it was not released and will keep running. Following the Sync Scope.")
+                logger.logSyncTelemetry(
+                    event = SyncTelemetryEvent.REQUEST_RETAINED,
+                    component = SyncTelemetryComponent.EXECUTOR,
+                    level = KaliumLogLevel.WARN,
+                    data = mapOf("reason" to "KEEP_SYNC_ALWAYS_ON")
+                )
                 return
             }
             job.cancel()
@@ -99,14 +104,21 @@ internal class SyncExecutorImpl(
     userScopedLogger: KaliumLogger = kaliumLogger,
 ) : SyncExecutor() {
 
+    private enum class ExecutionTrigger {
+        FIRST_REQUEST,
+        NEW_REQUEST_WHILE_FAILED,
+    }
+
     private data class SyncDemand(
         val requesterCount: Int = 0,
         val restartVersion: Long = 0,
+        val executionTrigger: ExecutionTrigger? = null,
     )
 
     private data class SyncExecution(
         val shouldSync: Boolean,
         val restartVersion: Long,
+        val trigger: ExecutionTrigger?,
     )
 
     // Keep logical request lifetimes separate from transient collectors that only wait for a sync state.
@@ -117,36 +129,87 @@ internal class SyncExecutorImpl(
     override fun startAndStopSyncAsNeeded() {
         scope.launch {
             syncRequestDemandFlow.subscriptionCount
-                .onEach {
-                    logger.d("!! Sync requester count changed to $it")
-                }
                 .runningFold(SyncDemand()) { previous, requesterCount ->
                     val requestAdded = requesterCount > previous.requesterCount
+                    val syncState = syncStateObserver.syncState.value
                     // The first request starts sync. An additional request restarts it only when
                     // recovery is backing off, avoiding disruption to an already-live connection.
                     val shouldRestart = requestAdded &&
-                        (previous.requesterCount == 0 || syncStateObserver.syncState.value is SyncState.Failed)
+                        (previous.requesterCount == 0 || syncState is SyncState.Failed)
+                    val executionTrigger = when {
+                        !shouldRestart -> null
+                        previous.requesterCount == 0 -> ExecutionTrigger.FIRST_REQUEST
+                        else -> ExecutionTrigger.NEW_REQUEST_WHILE_FAILED
+                    }
+                    logRequesterCountChanged(previous, requesterCount, syncState, executionTrigger)
                     SyncDemand(
                         requesterCount = requesterCount,
                         restartVersion = previous.restartVersion + if (shouldRestart) 1 else 0,
+                        executionTrigger = executionTrigger ?: previous.executionTrigger,
                     )
                 }
                 .map { demand ->
                     SyncExecution(
                         shouldSync = demand.requesterCount > 0,
                         restartVersion = demand.restartVersion,
+                        trigger = demand.executionTrigger,
                     )
                 }
                 .distinctUntilChanged()
                 .collectLatest { execution ->
                     if (execution.shouldSync) {
-                        logger.i("!! Starting Sync to fulfill requests !!")
+                        logger.logSyncTelemetry(
+                            event = SyncTelemetryEvent.EXECUTION_STARTED,
+                            component = SyncTelemetryComponent.EXECUTOR,
+                            data = mapOf(
+                                "restartVersion" to execution.restartVersion,
+                                "trigger" to execution.trigger?.name,
+                            )
+                        )
                         performSync()
                     } else {
-                        logger.i("!! Stopping sync, as there are no requests for it. !!")
+                        logger.logSyncTelemetry(
+                            event = SyncTelemetryEvent.EXECUTION_STOPPED,
+                            component = SyncTelemetryComponent.EXECUTOR,
+                            data = mapOf(
+                                "restartVersion" to execution.restartVersion,
+                                "reason" to "NO_ACTIVE_REQUESTS",
+                            )
+                        )
                     }
                 }
         }
+    }
+
+    private fun logRequesterCountChanged(
+        previous: SyncDemand,
+        requesterCount: Int,
+        syncState: SyncState,
+        executionTrigger: ExecutionTrigger?,
+    ) {
+        val action = when {
+            executionTrigger == ExecutionTrigger.FIRST_REQUEST -> "START"
+            executionTrigger == ExecutionTrigger.NEW_REQUEST_WHILE_FAILED -> "RESTART"
+            requesterCount == 0 && previous.requesterCount > 0 -> "STOP"
+            requesterCount > 0 -> "KEEP_RUNNING"
+            else -> "IDLE"
+        }
+        logger.logSyncTelemetry(
+            event = SyncTelemetryEvent.REQUEST_COUNT_CHANGED,
+            component = SyncTelemetryComponent.EXECUTOR,
+            level = KaliumLogLevel.DEBUG,
+            data = buildMap {
+                put("previousRequesterCount", previous.requesterCount)
+                put("requesterCount", requesterCount)
+                put("syncState", syncState.telemetryName())
+                put("action", action)
+                put("trigger", executionTrigger?.name)
+                if (syncState is SyncState.Failed) {
+                    put("retryDelayInMillis", syncState.retryDelay.inWholeMilliseconds)
+                    putAll(syncState.cause.telemetryData())
+                }
+            }
+        )
     }
 
     private suspend fun performSync() {
