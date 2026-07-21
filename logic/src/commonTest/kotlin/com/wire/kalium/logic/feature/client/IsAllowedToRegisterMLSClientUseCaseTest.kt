@@ -18,12 +18,16 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
+import com.wire.kalium.logic.data.featureConfig.MLSModel
+import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.common.functional.Either
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -39,7 +43,7 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
     fun givenAllMlsConditionsAreMet_whenUseCaseInvoked_returnsTrue() = runTest {
         val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
             .withMlsFeatureFlag(true)
-            .withUserConfigMlsEnabled(true)
+            .withRemoteMlsConfig()
             .withGetPublicKeysSuccessful()
             .arrange()
 
@@ -52,8 +56,6 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
     fun givenMlsFeatureFlagDisabled_whenUseCaseInvoked_returnsFalse() = runTest {
         val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
             .withMlsFeatureFlag(false)
-            .withUserConfigMlsEnabled(true)
-            .withGetPublicKeysSuccessful()
             .arrange()
 
         val result = isAllowedToRegisterMLSClientUseCase()
@@ -62,11 +64,34 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
     }
 
     @Test
-    fun givenUserConfigMlsDisabled_whenUseCaseInvoked_returnsFalse() = runTest {
+    fun givenRemoteMlsFeatureDisabled_whenUseCaseInvoked_returnsFalse() = runTest {
         val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
             .withMlsFeatureFlag(true)
-            .withUserConfigMlsEnabled(false)
-            .withGetPublicKeysSuccessful()
+            .withRemoteMlsConfig(status = Status.DISABLED)
+            .arrange()
+
+        val result = isAllowedToRegisterMLSClientUseCase()
+
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun givenRemoteMlsProtocolUnsupported_whenUseCaseInvoked_returnsFalse() = runTest {
+        val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
+            .withMlsFeatureFlag(true)
+            .withRemoteMlsConfig(supportedProtocols = setOf(SupportedProtocol.PROTEUS))
+            .arrange()
+
+        val result = isAllowedToRegisterMLSClientUseCase()
+
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun givenRemoteFeatureConfigFailure_whenUseCaseInvoked_returnsFalse() = runTest {
+        val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
+            .withMlsFeatureFlag(true)
+            .withRemoteFeatureConfigFailure()
             .arrange()
 
         val result = isAllowedToRegisterMLSClientUseCase()
@@ -78,7 +103,7 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
     fun givenPublicKeysFailure_whenUseCaseInvoked_returnsFalse() = runTest {
         val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
             .withMlsFeatureFlag(true)
-            .withUserConfigMlsEnabled(true)
+            .withRemoteMlsConfig()
             .withGetPublicKeysFailed()
             .arrange()
 
@@ -86,26 +111,12 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
 
         assertEquals(false, result)
     }
-
-    @Test
-    fun givenUserConfigDataNotFound_whenUseCaseInvoked_returnsFalse() = runTest {
-        val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
-            .withMlsFeatureFlag(true)
-            .withUserConfigDataNotFound()
-            .withGetPublicKeysFailed()
-            .arrange()
-
-        val result = isAllowedToRegisterMLSClientUseCase()
-
-        assertEquals(false, result)
-    }
-
 
     private class Arrangement {
 
         val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
         val mlsPublicKeysRepository = mock<MLSPublicKeysRepository>(mode = MockMode.autoUnit)
-        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        val featureConfigRepository = mock<FeatureConfigRepository>(mode = MockMode.autoUnit)
 
         fun withMlsFeatureFlag(enabled: Boolean) = apply {
             every {
@@ -113,16 +124,28 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
             } returns enabled
         }
 
-        suspend fun withUserConfigMlsEnabled(enabled: Boolean) = apply {
+        suspend fun withRemoteMlsConfig(
+            status: Status = Status.ENABLED,
+            supportedProtocols: Set<SupportedProtocol> = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+        ) = apply {
             everySuspend {
-                userConfigRepository.isMLSEnabled()
-            } returns Either.Right(enabled)
+                featureConfigRepository.getFeatureConfigs()
+            } returns Either.Right(
+                FeatureConfigTest.newModel(
+                    mlsModel = MLSModel(
+                        defaultProtocol = SupportedProtocol.MLS,
+                        supportedProtocols = supportedProtocols,
+                        supportedCipherSuite = null,
+                        status = status
+                    )
+                )
+            )
         }
 
-        suspend fun withUserConfigDataNotFound() = apply {
+        suspend fun withRemoteFeatureConfigFailure() = apply {
             everySuspend {
-                userConfigRepository.isMLSEnabled()
-            } returns Either.Left(StorageFailure.DataNotFound)
+                featureConfigRepository.getFeatureConfigs()
+            } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
         suspend fun withGetPublicKeysSuccessful() = apply {
@@ -140,7 +163,7 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
         fun arrange() = this to IsAllowedToRegisterMLSClientUseCaseImpl(
             featureSupport = featureSupport,
             mlsPublicKeysRepository = mlsPublicKeysRepository,
-            userConfigRepository = userConfigRepository
+            featureConfigRepository = featureConfigRepository
         )
 
         companion object {
