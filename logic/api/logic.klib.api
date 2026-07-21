@@ -1340,6 +1340,31 @@ abstract interface com.wire.kalium.logic.feature.legalhold/ObserveLegalHoldState
     abstract fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.feature.legalhold/LegalHoldState> // com.wire.kalium.logic.feature.legalhold/ObserveLegalHoldStateForUserUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase { // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 abstract interface com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase { // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase|null[0]
     abstract suspend fun invoke(androidx.paging/PagingConfig, kotlin/Long, kotlinx.datetime/Instant = ...): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.meeting/MeetingOccurrence>> // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase.invoke|invoke(androidx.paging.PagingConfig;kotlin.Long;kotlinx.datetime.Instant){}[0]
 }
@@ -4227,6 +4252,8 @@ final class com.wire.kalium.logic.feature.incallreaction/SendInCallReactionUseCa
 }
 
 final class com.wire.kalium.logic.feature.meeting/MeetingScope { // com.wire.kalium.logic.feature.meeting/MeetingScope|null[0]
+    final val deleteMeeting // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeeting|{}deleteMeeting[0]
+        final fun <get-deleteMeeting>(): com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeeting.<get-deleteMeeting>|<get-deleteMeeting>(){}[0]
     final val getPaginatedMeetingOccurrenceDetails // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails|{}getPaginatedMeetingOccurrenceDetails[0]
         final fun <get-getPaginatedMeetingOccurrenceDetails>(): com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails.<get-getPaginatedMeetingOccurrenceDetails>|<get-getPaginatedMeetingOccurrenceDetails>(){}[0]
     final val observeMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence|{}observeMeetingOccurrence[0]

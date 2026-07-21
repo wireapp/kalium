@@ -320,6 +320,32 @@ class MeetingDaoTest : BaseDatabaseTest() {
             assertEquals(true, occurrences.all { it.occurrence_start <= until })
         }
 
+    @Test
+    fun givenStoredMeeting_whenDeletingMeeting_thenMeetingAndOccurrencesAreDeleted() = runTest(dispatcher) {
+        val now = Clock.System.now()
+        val meeting = newMeeting(
+            startTime = now + 1.days,
+            recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = now + 5.days)
+        )
+        val otherMeeting = newMeeting(
+            meetingId = QualifiedIDEntity("other-meeting", "wire.com"),
+            conversationId = QualifiedIDEntity("other-conversation", "wire.com"),
+            startTime = now + 1.days
+        )
+        insertMeetingDependencies(meeting)
+        insertMeetingDependencies(otherMeeting)
+        meetingDao.upsertMeetings(listOf(meeting, otherMeeting), GenerationLimit.Window(now, now + GENERATION_DAYS.days))
+        assertEquals(true, isMeetingStored(meeting))
+        assertEquals(true, occurrencesFor(meeting).isNotEmpty())
+
+        meetingDao.deleteMeeting(meeting.meetingId)
+
+        assertEquals(false, isMeetingStored(meeting))
+        assertEquals(true, occurrencesFor(meeting).isEmpty())
+        assertEquals(true, isMeetingStored(otherMeeting))
+        assertEquals(true, occurrencesFor(otherMeeting).isNotEmpty())
+    }
+
     private suspend fun insertMeetingDependencies(meeting: MeetingEntity) {
         databaseBuilder.userDAO.upsertUser(newUserEntity(meeting.creatorId))
         databaseBuilder.conversationDAO.insertConversation(newConversationEntity(meeting.conversationId))

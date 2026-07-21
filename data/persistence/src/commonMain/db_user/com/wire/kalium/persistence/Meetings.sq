@@ -67,6 +67,10 @@ WHERE meeting_id = ?
 ORDER BY occurrence_start DESC
 LIMIT 1;
 
+deleteMeeting:
+DELETE FROM Meeting
+WHERE meeting_id = ?;
+
 deleteMeetingOccurrences:
 DELETE FROM MeetingOccurrence
 WHERE meeting_id = ?;
