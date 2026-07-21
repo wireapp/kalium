@@ -68,9 +68,31 @@ class SendConfirmationUseCaseTest {
     }
 
     @Test
-    fun givenMLSConversation_whenSendingReadConfirmation_thenShouldNotSendConfirmation() = runTest {
+    fun givenMLSOneOnOneConversation_whenSendingReadConfirmation_thenShouldSendConfirmation() = runTest {
         val (arrangement, sendConfirmation) = Arrangement()
+            .withCurrentClientIdProvider()
             .withGetConversationByIdSuccessful(TestConversation.MLS_CONVERSATION)
+            .withToggleReadReceiptsStatus(true)
+            .withPendingMessagesResponse()
+            .withSendMessageSuccess()
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
+
+        result.toEither().shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenMLSGroupConversation_whenSendingReadConfirmation_thenShouldNotSendConfirmation() = runTest {
+        val mlsGroupConversation = TestConversation.MLS_CONVERSATION.copy(type = Conversation.Type.Group.Regular)
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withGetConversationByIdSuccessful(mlsGroupConversation)
             .arrange()
 
         val after = Instant.DISTANT_PAST

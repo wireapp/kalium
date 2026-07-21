@@ -635,6 +635,27 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenOneOnOneConversation_whenUpdatingProtocolToMLS_thenReadReceiptsRemainEnabled() = runTest(dispatcher) {
+        val conversation = conversationEntity5.copy(
+            type = ConversationEntity.Type.ONE_ON_ONE,
+            receiptMode = ConversationEntity.ReceiptMode.ENABLED
+        )
+
+        conversationDAO.insertConversation(conversation)
+        conversationDAO.updateConversationProtocolAndCipherSuite(
+            conversation.id,
+            groupID = "groupId",
+            protocol = ConversationEntity.Protocol.MLS,
+            cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
+        )
+
+        assertEquals(
+            ConversationEntity.ReceiptMode.ENABLED,
+            conversationDAO.getConversationDetailsById(conversation.id)?.receiptMode
+        )
+    }
+
+    @Test
     fun givenSameValue_whenUpdatingProtocol_thenItsReportedAsUnchanged() = runTest {
         val conversation = conversationEntity5
         val updatedProtocol = ConversationEntity.Protocol.PROTEUS

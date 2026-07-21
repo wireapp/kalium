@@ -138,13 +138,11 @@ internal fun SendConfirmationUseCase(
         conversationRepository.getConversationById(conversationId).fold({
             false
         }, { conversation ->
-            if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-                false
-            } else {
-                when (conversation.type) {
-                    Conversation.Type.OneOnOne -> userPropertyRepository.getReadReceiptsStatus()
-                    else -> conversation.receiptMode == Conversation.ReceiptMode.ENABLED
-                }
+            when (conversation.type) {
+                Conversation.Type.OneOnOne -> userPropertyRepository.getReadReceiptsStatus()
+                else ->
+                    conversation.protocol !is Conversation.ProtocolInfo.MLS &&
+                        conversation.receiptMode == Conversation.ReceiptMode.ENABLED
             }
         })
 
