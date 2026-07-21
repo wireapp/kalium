@@ -44,6 +44,7 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -54,6 +55,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -103,6 +105,23 @@ class PendingProposalSchedulerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+        }
+    }
+
+    @Test
+    fun givenUserSessionScopeIsCancelled_whenSyncFinishes_thenPendingProposalsAreNotCommitted() = runTest {
+        val userSessionJob = SupervisorJob()
+        val (arrangement, _) = Arrangement()
+            .withScheduledProposalTimers(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+            .withCommitPendingProposalsSuccessful()
+            .arrange(testDispatcher(), userSessionJob)
+
+        userSessionJob.cancel()
+        arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+        advanceUntilIdle()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), any())
         }
     }
 
@@ -262,12 +281,16 @@ class PendingProposalSchedulerTest {
         val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
         val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
 
-        suspend fun arrange(testDispatcher: KaliumDispatcher) = this to PendingProposalSchedulerImpl(
+        suspend fun arrange(
+            testDispatcher: KaliumDispatcher,
+            parentContext: CoroutineContext = SupervisorJob(),
+        ) = this to PendingProposalSchedulerImpl(
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
             lazy { subconversationRepository },
             cryptoTransactionProvider,
-            testDispatcher
+            testDispatcher,
+            parentContext,
         ).also {
             withTransactionReturning(Either.Right(Unit))
         }

@@ -27,6 +27,7 @@ import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.util.InternalCryptoAccess
 import dev.mokkery.MockMode
@@ -76,6 +77,29 @@ class CryptoTransactionProviderCrashTest {
     fun givenMainTransactionWhenProteusClientThrows_thenReturnsMissingClientFailure() = runTest {
         val (_, provider) = Arrangement()
             .withProteusTransactionThrowing(IllegalStateException("CoreCrypto object has already been destroyed"))
+            .withMlsTransactionSucceeds()
+            .arrange()
+
+        val result = provider.transaction<Unit>("test") {
+            error("should not be called")
+        }
+
+        result.shouldFail {
+            assertEquals(CoreFailure.MissingClientRegistration, it)
+        }
+    }
+
+    @Test
+    fun givenMainTransactionThrowsWrappedDestroyedCoreCryptoException_thenReturnsMissingClientFailure() = runTest {
+        val destroyedCoreCryptoException = IllegalStateException("CoreCrypto object has already been destroyed")
+        val wrappedException = ProteusException(
+            message = destroyedCoreCryptoException.message,
+            code = ProteusException.Code.UNKNOWN_ERROR,
+            intCode = null,
+            cause = destroyedCoreCryptoException,
+        )
+        val (_, provider) = Arrangement()
+            .withProteusTransactionThrowing(wrappedException)
             .withMlsTransactionSucceeds()
             .arrange()
 
