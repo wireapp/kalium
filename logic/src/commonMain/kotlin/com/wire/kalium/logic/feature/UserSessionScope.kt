@@ -2706,7 +2706,7 @@ public class UserSessionScope internal constructor(
         get() = IsAllowedToRegisterMLSClientUseCaseImpl(
             featureSupport,
             mlsPublicKeysRepository,
-            userConfigRepository
+            featureConfigRepository
         )
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase

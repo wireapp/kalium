@@ -163,6 +163,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         clearClientDataUseCase()
         logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearCurrentClientId()
+        clientRepository.clearRetainedClientId()
         clientRepository.clearHasRegisteredMLSClient()
         clientRepository.clearNewClients()
 
