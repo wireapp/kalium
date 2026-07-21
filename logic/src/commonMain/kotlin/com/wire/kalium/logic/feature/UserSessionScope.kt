@@ -1719,7 +1719,8 @@ public class UserSessionScope internal constructor(
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
             lazy { subconversationRepository },
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            parentContext = coroutineContext,
         )
 
     private val callManager: Lazy<CallManager> = lazy {
