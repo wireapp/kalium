@@ -36,17 +36,24 @@ internal class ExponentialDurationHelperImpl(
     private val maxDuration: Duration,
     private val factor: Double = 2.0,
 ) : ExponentialDurationHelper {
-    private val currentDuration = AtomicReference(initialDuration)
+
+    // Wrapper class to avoid issues with Duration's equals/hashCode in AtomicReference
+    private data class DurationState(val value: Duration)
+
+    private val currentDuration = AtomicReference(DurationState(initialDuration))
 
     override fun reset() {
-        currentDuration.set(initialDuration)
+        currentDuration.set(DurationState(initialDuration))
     }
 
     override fun next(): Duration {
         while (true) {
             val current = currentDuration.get()
-            val next = current.times(factor).coerceAtMost(maxDuration)
-            if (currentDuration.compareAndSet(current, next)) return current
+            val next = DurationState(current.value.times(factor).coerceAtMost(maxDuration))
+
+            if (currentDuration.compareAndSet(current, next)) {
+                return current.value
+            }
         }
     }
 }
