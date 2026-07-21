@@ -971,6 +971,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun isE2EIEnabled ()Lcom/wire/kalium/logic/feature/user/IsE2EIEnabledUseCase;
 	public final fun isFileSharingEnabled ()Lcom/wire/kalium/logic/feature/user/IsFileSharingEnabledUseCase;
 	public final fun isMLSEnabled ()Lcom/wire/kalium/logic/feature/user/IsMLSEnabledUseCase;
+	public final fun isMeetingsEnabled ()Lcom/wire/kalium/logic/feature/user/IsMeetingsEnabledUseCase;
 	public final fun isPreventAdminlessGroupsEnabled ()Lcom/wire/kalium/logic/feature/user/IsPreventAdminlessGroupsEnabledUseCase;
 	public final fun observeIfE2EIRequiredDuringLogin (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun setIncrementalSyncUnprocessedEventsBatchLimit (Ljava/lang/Integer;)V
@@ -6757,6 +6758,10 @@ public abstract interface class com/wire/kalium/logic/feature/user/IsFileSharing
 }
 
 public abstract interface class com/wire/kalium/logic/feature/user/IsMLSEnabledUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/user/IsMeetingsEnabledUseCase {
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

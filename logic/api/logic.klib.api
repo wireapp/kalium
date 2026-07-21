@@ -1715,6 +1715,10 @@ abstract interface com.wire.kalium.logic.feature.user/IsMLSEnabledUseCase { // c
     abstract suspend fun invoke(): kotlin/Boolean // com.wire.kalium.logic.feature.user/IsMLSEnabledUseCase.invoke|invoke(){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase { // com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase|null[0]
+    abstract suspend fun invoke(): kotlin/Boolean // com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase.invoke|invoke(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.user/IsPreventAdminlessGroupsEnabledUseCase { // com.wire.kalium.logic.feature.user/IsPreventAdminlessGroupsEnabledUseCase|null[0]
     abstract suspend fun invoke(): kotlin/Boolean // com.wire.kalium.logic.feature.user/IsPreventAdminlessGroupsEnabledUseCase.invoke|invoke(){}[0]
 }
@@ -5144,6 +5148,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-isFileSharingEnabled>(): com.wire.kalium.logic.feature.user/IsFileSharingEnabledUseCase // com.wire.kalium.logic.feature/UserSessionScope.isFileSharingEnabled.<get-isFileSharingEnabled>|<get-isFileSharingEnabled>(){}[0]
     final val isMLSEnabled // com.wire.kalium.logic.feature/UserSessionScope.isMLSEnabled|{}isMLSEnabled[0]
         final fun <get-isMLSEnabled>(): com.wire.kalium.logic.feature.user/IsMLSEnabledUseCase // com.wire.kalium.logic.feature/UserSessionScope.isMLSEnabled.<get-isMLSEnabled>|<get-isMLSEnabled>(){}[0]
+    final val isMeetingsEnabled // com.wire.kalium.logic.feature/UserSessionScope.isMeetingsEnabled|{}isMeetingsEnabled[0]
+        final fun <get-isMeetingsEnabled>(): com.wire.kalium.logic.feature.user/IsMeetingsEnabledUseCase // com.wire.kalium.logic.feature/UserSessionScope.isMeetingsEnabled.<get-isMeetingsEnabled>|<get-isMeetingsEnabled>(){}[0]
     final val isPreventAdminlessGroupsEnabled // com.wire.kalium.logic.feature/UserSessionScope.isPreventAdminlessGroupsEnabled|{}isPreventAdminlessGroupsEnabled[0]
         final fun <get-isPreventAdminlessGroupsEnabled>(): com.wire.kalium.logic.feature.user/IsPreventAdminlessGroupsEnabledUseCase // com.wire.kalium.logic.feature/UserSessionScope.isPreventAdminlessGroupsEnabled.<get-isPreventAdminlessGroupsEnabled>|<get-isPreventAdminlessGroupsEnabled>(){}[0]
     final val kaliumFileSystem // com.wire.kalium.logic.feature/UserSessionScope.kaliumFileSystem|{}kaliumFileSystem[0]
