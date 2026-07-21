@@ -260,15 +260,11 @@ import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
-import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCase
-import com.wire.kalium.logic.feature.client.IsAllowedToUseAsyncNotificationsUseCaseImpl
-import com.wire.kalium.logic.feature.client.MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.ProteusMigrationRecoveryHandlerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
-import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
@@ -346,6 +342,7 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserU
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
+import com.wire.kalium.logic.feature.meeting.MeetingScope
 import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCase
 import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
@@ -465,6 +462,8 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
 import com.wire.kalium.logic.sync.local.LocalEventManagerImpl
 import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.local.LocalEventRepositoryImpl
+import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorker
+import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorkerImpl
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorkerImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
@@ -2148,19 +2147,6 @@ public class UserSessionScope internal constructor(
     internal val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
         get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
 
-    private val updateSelfClientCapabilityToConsumableNotifications by lazy {
-        UpdateSelfClientCapabilityToConsumableNotificationsUseCaseImpl(
-            selfClientIdProvider = clientIdProvider,
-            clientRepository = clientRepository,
-            clientRemoteRepository = clientRemoteRepository,
-            incrementalSyncRepository = incrementalSyncRepository,
-            selfServerConfig = users.serverLinks,
-            syncRequester = { syncExecutor.request { waitUntilLiveOrFailure() } },
-            slowSyncRepository = slowSyncRepository,
-            logger = userScopedLogger
-        )
-    }
-
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase
         get() = FetchLegalHoldForSelfUserFromRemoteUseCaseImpl(
             teamRepository = teamRepository,
@@ -2307,6 +2293,11 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    internal val meetingOccurrencesSyncWorker: MeetingOccurrencesSyncWorker = MeetingOccurrencesSyncWorkerImpl(
+        meetingRepository = meetingRepository,
+        featureSupport = featureSupport
+    )
+
     internal fun buildAudioNormalizedLoudnessWorker(
         conversationId: ConversationId,
         messageId: String
@@ -2371,14 +2362,6 @@ public class UserSessionScope internal constructor(
             userRepository
         )
 
-    private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase
-        get() = IsAllowedToUseAsyncNotificationsUseCaseImpl(
-            userConfigRepository = userConfigRepository,
-            isAllowedByCurrentBackendVersionProvider = {
-                sessionManager.serverConfig().metaData.commonApiVersion.version >= MIN_API_VERSION_FOR_CONSUMABLE_NOTIFICATIONS
-            }
-        )
-
     @OptIn(DelicateKaliumApi::class)
     public val client: ClientScope by lazy {
         ClientScope(
@@ -2406,7 +2389,6 @@ public class UserSessionScope internal constructor(
             syncFeatureConfigsUseCase,
             userConfigRepository,
             cryptoTransactionProvider,
-            isAllowedToUseAsyncNotifications,
             currentCryptoStateChangeHookNotifier
         )
     }
@@ -2490,9 +2472,7 @@ public class UserSessionScope internal constructor(
             this,
             userStorage,
             mlsMissingUsersRejectionHandlerProvider,
-            updateSelfClientCapabilityToConsumableNotifications,
             e2EIClientProvider,
-            users.serverLinks,
             fetchConversationUseCase,
             resetMlsConversation,
             cryptoTransactionProvider,
@@ -2956,6 +2936,13 @@ public class UserSessionScope internal constructor(
         { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
     )
 
+    public val meetings: MeetingScope by lazy {
+        MeetingScope(
+            dispatcher = KaliumDispatcherImpl,
+            meetingRepository = meetingRepository,
+        )
+    }
+
     private val meetingRepository: MeetingRepository
         get() = MeetingDataSource(
             meetingDAO = userStorage.database.meetingDao,
@@ -3034,12 +3021,6 @@ public class UserSessionScope internal constructor(
         }
 
         launch {
-            if (isAllowedToUseAsyncNotifications()) {
-                updateSelfClientCapabilityToConsumableNotifications()
-            }
-        }
-
-        launch {
             mlsFaultyKeysConversationsRepairUseCase.invoke()
         }
 
@@ -3059,6 +3040,7 @@ public class UserSessionScope internal constructor(
         }
 
         userSessionWorkScheduler.schedulePeriodicUserConfigSync()
+        userSessionWorkScheduler.schedulePeriodicMeetingOccurrencesSync()
 
         launch {
             waitUntilClientIdIsAvailable()

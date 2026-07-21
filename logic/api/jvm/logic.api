@@ -234,8 +234,10 @@ public final class com/wire/kalium/logic/configuration/server/ServerConfig$Compa
 
 public final class com/wire/kalium/logic/configuration/server/ServerConfig$Links {
 	public static final field Companion Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
@@ -244,8 +246,8 @@ public final class com/wire/kalium/logic/configuration/server/ServerConfig$Links
 	public final fun component7 ()Ljava/lang/String;
 	public final fun component8 ()Z
 	public final fun component9 ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;Ljava/lang/String;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccounts ()Ljava/lang/String;
 	public final fun getApi ()Ljava/lang/String;
@@ -253,6 +255,7 @@ public final class com/wire/kalium/logic/configuration/server/ServerConfig$Links
 	public final fun getBlackList ()Ljava/lang/String;
 	public final fun getForgotPassword ()Ljava/lang/String;
 	public final fun getPricing ()Ljava/lang/String;
+	public final fun getSupportEmail ()Ljava/lang/String;
 	public final fun getTeams ()Ljava/lang/String;
 	public final fun getTitle ()Ljava/lang/String;
 	public final fun getTos ()Ljava/lang/String;
@@ -934,6 +937,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getMarkNotifyForRevokedCertificateAsNotified ()Lcom/wire/kalium/logic/feature/user/e2ei/MarkNotifyForRevokedCertificateAsNotifiedUseCase;
 	public final fun getMarkSelfDeletingMessagesAsNotified ()Lcom/wire/kalium/logic/feature/user/MarkSelfDeletionStatusAsNotifiedUseCase;
 	public final fun getMarkTeamAppLockStatusAsNotified ()Lcom/wire/kalium/logic/feature/applock/MarkTeamAppLockStatusAsNotifiedUseCase;
+	public final fun getMeetings ()Lcom/wire/kalium/logic/feature/meeting/MeetingScope;
 	public final fun getMessages ()Lcom/wire/kalium/logic/feature/message/MessageScope;
 	public final fun getMigrateConversationToMLS ()Lcom/wire/kalium/logic/feature/conversation/MigrateConversationToMLSUseCase;
 	public final fun getMigrateFromPersonalToTeam ()Lcom/wire/kalium/logic/feature/user/migration/MigrateFromPersonalToTeamUseCase;
@@ -5257,6 +5261,24 @@ public abstract interface class com/wire/kalium/logic/feature/legalhold/ObserveL
 
 public abstract interface class com/wire/kalium/logic/feature/legalhold/ObserveLegalHoldStateForUserUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase {
+	public abstract fun invoke (Landroidx/paging/PagingConfig;JLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;Landroidx/paging/PagingConfig;JLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase$DefaultImpls {
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;Landroidx/paging/PagingConfig;JLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
+	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
+	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase {
+	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/message/DeleteMessageUseCase {

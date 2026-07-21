@@ -56,7 +56,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.userstorage.di.UserStorage
-import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCase
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
@@ -75,7 +74,6 @@ import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageFor
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenToAPIUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SendFCMTokenUseCase
-import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -119,10 +117,7 @@ public class DebugScope internal constructor(
     private val scope: CoroutineScope,
     private val userStorage: UserStorage,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
-    private val updateSelfClientCapabilityToConsumableNotifications:
-    UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
     private val e2EIClientProvider: E2EIClientProvider,
-    private val selfServerConfig: SelfServerConfigUseCase,
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
@@ -287,12 +282,6 @@ public class DebugScope internal constructor(
             userStorage.database.unreadEventsFeeder,
             userStorage.database.mentionsFeeder,
         )
-
-    public val startUsingAsyncNotifications: StartUsingAsyncNotificationsUseCase
-        get() = StartUsingAsyncNotificationsUseCaseImpl(selfServerConfig, updateSelfClientCapabilityToConsumableNotifications)
-
-    public val observeIsConsumableNotificationsEnabled: ObserveIsConsumableNotificationsEnabledUseCase
-        get() = ObserveIsConsumableNotificationsEnabledUseCaseImpl(clientRepository)
 
     public val getFeatureConfig: GetFeatureConfigUseCase
         get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)

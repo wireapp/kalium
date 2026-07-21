@@ -28,6 +28,10 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -90,6 +94,27 @@ class SyncExecutorTest {
         waitJob.join()
         advanceUntilIdle()
         assertTrue(didContinue)
+        syncScope.cancel()
+    }
+
+    @Test
+    fun givenRequestWithWaiter_whenNoOtherRequests_thenShouldStartSync() = runTest(TestKaliumDispatcher.default) {
+        val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+        val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+        syncExecutor.startAndStopSyncAsNeeded()
+
+        val waitingJob = backgroundScope.launch {
+            syncExecutor.request {
+                waitUntilLiveOrFailure()
+            }
+        }
+        advanceUntilIdle()
+
+        assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+
+        arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Live)
+        waitingJob.join()
         syncScope.cancel()
     }
 
@@ -241,27 +266,261 @@ class SyncExecutorTest {
             syncExecutor.startAndStopSyncAsNeeded()
 
             syncExecutor.request {
+                arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
                 advanceUntilIdle()
                 syncExecutor.request {
                     advanceUntilIdle()
                     assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
-                    assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+                    assertEquals(1, arrangement.incrementalSyncManager.fakeSyncFlow.subscriptionCount.value)
                 }
             }
             syncScope.cancel()
         }
 
-    private class Arrangement(val syncScope: CoroutineScope) {
+    @Test
+    fun givenSyncIsConnecting_whenNewRequestStarts_thenShouldNotResetBackoffOrRestartSync() =
+        runTest(TestKaliumDispatcher.default) {
+            listOf(
+                SyncState.Waiting,
+                SyncState.SlowSync,
+                SyncState.GatheringPendingEvents,
+            ).forEach { connectingState ->
+                val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+                val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+                syncExecutor.startAndStopSyncAsNeeded()
+
+                syncExecutor.request {
+                    arrangement.syncStateObserver.mutableSyncState.emit(connectingState)
+                    advanceUntilIdle()
+
+                    syncExecutor.request {
+                        advanceUntilIdle()
+                        assertEquals(0, arrangement.slowSyncManager.resetRetryBackoffCount)
+                        assertEquals(0, arrangement.incrementalSyncManager.resetRetryBackoffCount)
+                        assertEquals(1, arrangement.slowSyncManager.performSyncFlowCount)
+                        assertEquals(0, arrangement.slowSyncManager.cancelledSyncFlowCount)
+                    }
+                }
+                syncScope.cancel()
+            }
+        }
+
+    @Test
+    fun givenSyncIsLive_whenNewRequestStarts_thenShouldNotRestartOrResetSync() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+                advanceUntilIdle()
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+
+                arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Live)
+                advanceUntilIdle()
+
+                syncExecutor.request {
+                    advanceUntilIdle()
+                    assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+                    assertEquals(0, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+                    assertEquals(0, arrangement.slowSyncManager.resetRetryBackoffCount)
+                    assertEquals(0, arrangement.incrementalSyncManager.resetRetryBackoffCount)
+                }
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenSyncFailed_whenNewRequestStarts_thenShouldRestartSyncImmediately() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+                advanceUntilIdle()
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+
+                arrangement.syncStateObserver.mutableSyncState.emit(
+                    SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds)
+                )
+                advanceUntilIdle()
+
+                syncExecutor.request {
+                    advanceUntilIdle()
+                    assertEquals(2, arrangement.incrementalSyncManager.performSyncFlowCount)
+                    assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+                    assertEquals(1, arrangement.incrementalSyncManager.fakeSyncFlow.subscriptionCount.value)
+                    assertEquals(0, arrangement.slowSyncManager.resetRetryBackoffCount)
+                    assertEquals(0, arrangement.incrementalSyncManager.resetRetryBackoffCount)
+                }
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenExistingRequestAndFailedSync_whenWaitingForLive_thenShouldNotRestartSync() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+                advanceUntilIdle()
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+
+                arrangement.syncStateObserver.mutableSyncState.emit(
+                    SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds)
+                )
+                advanceUntilIdle()
+
+                assertIs<SyncRequestResult.Failure>(waitUntilLiveOrFailure())
+                advanceUntilIdle()
+
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+                assertEquals(0, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenFailedSync_whenNewRequestWaitsForLive_thenShouldRestartSyncExactlyOnce() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+                advanceUntilIdle()
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+
+                arrangement.syncStateObserver.mutableSyncState.emit(
+                    SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds)
+                )
+                advanceUntilIdle()
+
+                val result = syncExecutor.request {
+                    waitUntilLiveOrFailure()
+                }
+                advanceUntilIdle()
+
+                assertIs<SyncRequestResult.Failure>(result)
+                assertEquals(2, arrangement.incrementalSyncManager.performSyncFlowCount)
+                assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenFailedStateNotYetDeliveredToCollectors_whenNewRequestStarts_thenShouldRestartSyncImmediately() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val syncStateObserver = PausableSyncStateObserver()
+            val (arrangement, syncExecutor) = Arrangement(syncScope, syncStateObserver).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+                syncStateObserver.mutableSyncState.value = SyncState.Live
+                advanceUntilIdle()
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+
+                syncStateObserver.mutableSyncState.pauseDelivery()
+                syncStateObserver.mutableSyncState.value =
+                    SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds)
+
+                syncExecutor.request {
+                    advanceUntilIdle()
+                    assertEquals(2, arrangement.incrementalSyncManager.performSyncFlowCount)
+                    assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+                }
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenRecoveredStateNotYetDeliveredToCollectors_whenNewRequestStarts_thenShouldNotRestartSync() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val syncStateObserver = PausableSyncStateObserver()
+            val (arrangement, syncExecutor) = Arrangement(syncScope, syncStateObserver).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+                syncStateObserver.mutableSyncState.value =
+                    SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds)
+                advanceUntilIdle()
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+
+                syncStateObserver.mutableSyncState.pauseDelivery()
+                syncStateObserver.mutableSyncState.value = SyncState.Live
+
+                syncExecutor.request {
+                    advanceUntilIdle()
+                    assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+                    assertEquals(0, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+                }
+            }
+            syncScope.cancel()
+        }
+
+    private class Arrangement(
+        val syncScope: CoroutineScope,
+        syncStateObserverOverride: SyncStateObserver? = null,
+    ) {
         val syncStateObserver = FakeSyncStateObserver()
         val slowSyncManager = FakeSlowSyncManager()
         val incrementalSyncManager = FakeIncrementalSyncManager()
+        private val observedSyncState = syncStateObserverOverride ?: syncStateObserver
 
         fun arrange() = this to SyncExecutorImpl(
-            syncStateObserver,
+            observedSyncState,
             slowSyncManager,
             incrementalSyncManager,
             syncScope
         )
+    }
+
+    private class PausableSyncStateObserver(
+        delegate: FakeSyncStateObserver = FakeSyncStateObserver(),
+    ) : SyncStateObserver by delegate {
+        val mutableSyncState = PausableStateFlow<SyncState>(SyncState.Waiting)
+        override val syncState: StateFlow<SyncState> = mutableSyncState
+    }
+
+    private class PausableStateFlow<T>(initialValue: T) : StateFlow<T> {
+        private val delegate = MutableStateFlow(initialValue)
+        private val deliveryEnabled = MutableStateFlow(true)
+
+        override var value: T
+            get() = delegate.value
+            set(value) {
+                delegate.value = value
+            }
+
+        override val replayCache: List<T>
+            get() = delegate.replayCache
+
+        fun pauseDelivery() {
+            deliveryEnabled.value = false
+        }
+
+        override suspend fun collect(collector: FlowCollector<T>): Nothing = delegate.collect { value ->
+            deliveryEnabled.first { it }
+            collector.emit(value)
+        }
     }
 
 }

@@ -1,11 +1,3 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
-import kotlin.Boolean;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
-
-PRAGMA foreign_keys = 0;
-
 DROP VIEW IF EXISTS ConversationDetailsWithEvents;
 DROP VIEW IF EXISTS ConversationDetails;
 DROP VIEW IF EXISTS MessagePreview;
@@ -15,140 +7,15 @@ DROP TRIGGER IF EXISTS updateConversationProteusVerificationStatusAfterMemeberCh
 DROP TRIGGER IF EXISTS updateConversationProteusVerificationStatusAfterMemeberDelete;
 DROP TRIGGER IF EXISTS addMessageAfterProteusVerificationStatusChange;
 
-CREATE TABLE Conversation_new (
-    qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
-    name TEXT,
-    type TEXT AS ConversationEntity.Type NOT NULL,
-    team_id TEXT,
-    mls_group_id TEXT,
-    mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
-    mls_epoch INTEGER DEFAULT 0 NOT NULL,
-    mls_proposal_timer TEXT,
-    protocol TEXT AS ConversationEntity.Protocol NOT NULL,
-    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
-    muted_time INTEGER DEFAULT 0 NOT NULL,
-    creator_id TEXT NOT NULL,
-    last_modified_date INTEGER AS Instant NOT NULL,
-    last_notified_date INTEGER AS Instant,
-    last_read_date INTEGER AS Instant DEFAULT 0 NOT NULL,
-    access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
-    access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
-    mls_last_keying_material_update_date INTEGER AS Instant DEFAULT 0 NOT NULL,
-    mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
-    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL,
-    guest_room_link TEXT,
-    message_timer INTEGER DEFAULT(NULL),
-    user_message_timer INTEGER DEFAULT(NULL),
-    incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
-    mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0,
-    is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL,
-    archived INTEGER AS Boolean NOT NULL DEFAULT 0,
-    archived_date_time INTEGER AS Instant,
-    verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
-    proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
-    degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
-    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED',
-    channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL,
-    channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL,
-    wire_cell TEXT,
-    deleted_locally INTEGER AS Boolean NOT NULL DEFAULT 0,
-    history_sharing_retention_seconds INTEGER NOT NULL DEFAULT 0 CHECK (history_sharing_retention_seconds >= 0)
-);
+DROP INDEX IF EXISTS conversation_archived_type_channel_index;
 
-INSERT INTO Conversation_new(
-    qualified_id,
-    name,
-    type,
-    team_id,
-    mls_group_id,
-    mls_group_state,
-    mls_epoch,
-    mls_proposal_timer,
-    protocol,
-    muted_status,
-    muted_time,
-    creator_id,
-    last_modified_date,
-    last_notified_date,
-    last_read_date,
-    access_list,
-    access_role_list,
-    mls_last_keying_material_update_date,
-    mls_cipher_suite,
-    receipt_mode,
-    guest_room_link,
-    message_timer,
-    user_message_timer,
-    incomplete_metadata,
-    mls_degraded_notified,
-    is_guest_password_protected,
-    archived,
-    archived_date_time,
-    verification_status,
-    proteus_verification_status,
-    degraded_conversation_notified,
-    legal_hold_status,
-    channel_access,
-    channel_add_permission,
-    wire_cell,
-    deleted_locally,
-    history_sharing_retention_seconds
-)
-SELECT
-    qualified_id,
-    name,
-    CASE WHEN type = 'GROUP' AND is_channel = 1 THEN 'CHANNEL' ELSE type END,
-    team_id,
-    mls_group_id,
-    mls_group_state,
-    mls_epoch,
-    mls_proposal_timer,
-    protocol,
-    muted_status,
-    muted_time,
-    creator_id,
-    last_modified_date,
-    last_notified_date,
-    last_read_date,
-    access_list,
-    access_role_list,
-    mls_last_keying_material_update_date,
-    mls_cipher_suite,
-    receipt_mode,
-    guest_room_link,
-    message_timer,
-    user_message_timer,
-    incomplete_metadata,
-    mls_degraded_notified,
-    is_guest_password_protected,
-    archived,
-    archived_date_time,
-    verification_status,
-    proteus_verification_status,
-    degraded_conversation_notified,
-    legal_hold_status,
-    channel_access,
-    channel_add_permission,
-    wire_cell,
-    deleted_locally,
-    history_sharing_retention_seconds
-FROM Conversation;
+UPDATE Conversation
+SET type = 'CHANNEL'
+WHERE type = 'GROUP' AND is_channel = 1;
 
-DROP TABLE Conversation;
-ALTER TABLE Conversation_new RENAME TO Conversation;
+ALTER TABLE Conversation DROP COLUMN is_channel;
 
-CREATE INDEX conversation_modified_date_index ON Conversation(last_modified_date);
-CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date);
-CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
-CREATE INDEX conversation_creator_index ON Conversation(creator_id);
-CREATE INDEX conversation_verification_status ON Conversation(verification_status);
-CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
 CREATE INDEX conversation_archived_type_index ON Conversation(archived, type);
-CREATE INDEX Conversation_idx_archived_protocol ON Conversation(archived, protocol);
-CREATE INDEX conversation_idx_wire_cell_notnull ON Conversation(wire_cell) WHERE wire_cell IS NOT NULL;
-CREATE INDEX conversation_history_sharing_retention ON Conversation(history_sharing_retention_seconds);
-CREATE INDEX conversation_keying_material_update_index ON Conversation(mls_group_state, deleted_locally,protocol, mls_last_keying_material_update_date, qualified_id, mls_group_id) WHERE mls_group_id IS NOT NULL;
-CREATE INDEX conversation_proposal_timer_index ON Conversation(deleted_locally, protocol, qualified_id, mls_group_id, mls_proposal_timer) WHERE mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
 
 CREATE TRIGGER updateConversationProteusVerificationStatus
 AFTER UPDATE ON Client
@@ -490,5 +357,3 @@ WHERE
     AND ConversationDetails.isActive
     AND ConversationDetails.deletedLocally = 0
 GROUP BY ConversationDetails.qualifiedId;
-
-PRAGMA foreign_keys = 1;

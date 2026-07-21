@@ -17,12 +17,14 @@
  */
 package com.wire.kalium.persistence.migration
 
+import app.cash.sqldelight.SuspendingTransacterImpl
 import app.cash.sqldelight.async.coroutines.awaitMigrate
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.migration.SchemaMigrationTest
 import kotlinx.coroutines.test.runTest
+import org.sqlite.SQLiteConfig
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -201,6 +203,79 @@ class Migration136Test : SchemaMigrationTest() {
         }
     }
 
+    @Test
+    fun givenForeignKeysEnabledAndConversationHistory_whenMigratingInTransaction_thenKeepsDependentData() = runTest {
+        val dbFile = File("build/user-schema-dumps/migration-$MIGRATION_TO_TEST-foreign-keys-test.db")
+        dbFile.parentFile.mkdirs()
+        File("src/commonTest/kotlin/com/wire/kalium/persistence/schemas/$LAST_KNOWN_SCHEMA.db").copyTo(dbFile, overwrite = true)
+        val sqliteConfig = SQLiteConfig().apply { enforceForeignKeys(true) }
+        val driver = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}", sqliteConfig.toProperties())
+
+        try {
+            UserDatabase.Schema.awaitMigrate(driver, LAST_KNOWN_SCHEMA, MIGRATION_TO_TEST)
+
+            driver.execute(null, "INSERT INTO User(qualified_id) VALUES ('user@wire.com')", 0)
+            driver.execute(
+                null,
+                """
+                    INSERT INTO Conversation (
+                        qualified_id, type, is_channel, mls_group_state, protocol, creator_id,
+                        last_modified_date, access_list, access_role_list, mls_cipher_suite
+                    ) VALUES (
+                        'conversation@wire.com', 'GROUP', 0, 'ESTABLISHED', 'PROTEUS', 'user@wire.com',
+                        0, '[]', '[]', 'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519'
+                    )
+                """.trimIndent(),
+                0
+            )
+            driver.execute(
+                null,
+                """
+                    INSERT INTO Message(
+                        id, content_type, conversation_id, creation_date, sender_user_id, status, visibility
+                    ) VALUES (
+                        'message-id', 'TEXT', 'conversation@wire.com', 0, 'user@wire.com', 'SENT', 'VISIBLE'
+                    )
+                """.trimIndent(),
+                0
+            )
+            driver.execute(
+                null,
+                "INSERT INTO Member(user, conversation, role) VALUES ('user@wire.com', 'conversation@wire.com', 'wire_member')",
+                0
+            )
+            driver.execute(
+                null,
+                "INSERT INTO UnreadEvent(id, type, conversation_id, creation_date) VALUES ('message-id', 'MESSAGE', 'conversation@wire.com', 0)",
+                0
+            )
+            driver.execute(
+                null,
+                "INSERT INTO Reaction(message_id, conversation_id, sender_id, emoji, date) " +
+                    "VALUES ('message-id', 'conversation@wire.com', 'user@wire.com', '👍', '0')",
+                0
+            )
+            object : SuspendingTransacterImpl(driver) {}.transaction {
+                UserDatabase.Schema.awaitMigrate(driver, MIGRATION_TO_TEST, MIGRATION_TO_TEST + 1)
+            }
+
+            assertEquals(
+                mapOf(
+                    "Conversation" to 1L,
+                    "Message" to 1L,
+                    "Member" to 1L,
+                    "UnreadEvent" to 1L,
+                    "Reaction" to 1L,
+                ),
+                listOf("Conversation", "Message", "Member", "UnreadEvent", "Reaction")
+                    .associateWith { driver.rowCount(it) }
+            )
+        } finally {
+            driver.close()
+            dbFile.delete()
+        }
+    }
+
     private fun JdbcSqliteDriver.selectConversationTypes(): Map<String, String> {
         val result = mutableMapOf<String, String>()
         executeQuery(
@@ -231,5 +306,21 @@ class Migration136Test : SchemaMigrationTest() {
             0
         )
         return hasColumn
+    }
+
+    private fun JdbcSqliteDriver.rowCount(table: String): Long {
+        var result = 0L
+        executeQuery(
+            null,
+            "SELECT COUNT(*) FROM $table",
+            mapper = { cursor ->
+                if (cursor.next().value) {
+                    result = cursor.getLong(0)!!
+                }
+                QueryResult.Unit
+            },
+            0
+        )
+        return result
     }
 }
