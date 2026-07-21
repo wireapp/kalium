@@ -20,11 +20,13 @@ package com.wire.kalium.network.api.base.authenticated.meeting
 
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.base.authenticated.BaseApi
+import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.utils.NetworkResponse
 
 @Suppress("TooManyFunctions")
 interface MeetingApi : BaseApi {
     suspend fun fetchMeetings(): NetworkResponse<List<MeetingDTO>>
+    suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit>
 
     companion object {
         const val MIN_API_VERSION_MEETINGS = 16

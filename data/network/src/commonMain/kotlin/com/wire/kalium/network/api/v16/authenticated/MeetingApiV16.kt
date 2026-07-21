@@ -19,9 +19,11 @@ package com.wire.kalium.network.api.v16.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
+import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.api.v15.authenticated.MeetingApiV15
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapRequest
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 
 internal open class MeetingApiV16 internal constructor(
@@ -32,6 +34,10 @@ internal open class MeetingApiV16 internal constructor(
 
     override suspend fun fetchMeetings(): NetworkResponse<List<MeetingDTO>> = wrapRequest {
         httpClient.get("$PATH_MEETINGS/$PATH_LIST")
+    }
+
+    override suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit> = wrapRequest {
+        httpClient.delete("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}")
     }
 
     companion object {

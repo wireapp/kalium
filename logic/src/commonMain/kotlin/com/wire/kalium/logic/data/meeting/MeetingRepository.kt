@@ -26,6 +26,9 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
@@ -57,6 +60,8 @@ internal interface MeetingRepository {
         startingOffset: Long,
         from: Instant = currentInstant().asStartOfDay(),
     ): Flow<PagingData<MeetingOccurrence>>
+
+    suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit>
 }
 
 internal class MeetingDataSource(
@@ -106,6 +111,15 @@ internal class MeetingDataSource(
         startingOffset = startingOffset,
         from = from,
     ).pagingDataFlow.map { pagingData -> pagingData.map(meetingMapper::fromDaoToModel) }
+
+    override suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            meetingApi.deleteMeeting(meetingId.toApi())
+        }.flatMap {
+            wrapStorageRequest {
+                meetingDAO.deleteMeeting(meetingId.toDao())
+            }
+        }
 }
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90

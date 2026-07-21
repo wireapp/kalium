@@ -15,30 +15,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature.meeting
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.meeting.MeetingRepository
-import com.wire.kalium.util.KaliumDispatcher
 
-public class MeetingScope internal constructor(
-    private val dispatcher: KaliumDispatcher,
+/**
+ * Use case for deleting a meeting by its ID.
+ */
+public interface DeleteMeetingUseCase {
+    public suspend operator fun invoke(meetingId: MeetingId): Result
+
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val coreFailure: CoreFailure) : Result
+    }
+}
+
+internal class DeleteMeetingUseCaseImpl(
     private val meetingRepository: MeetingRepository,
-) {
-    public val getPaginatedMeetingOccurrenceDetails: GetPaginatedMeetingOccurrencesUseCase
-        get() = GetPaginatedMeetingOccurrencesUseCaseImpl(
-            dispatcher = dispatcher,
-            meetingRepository = meetingRepository,
-        )
-
-    public val observeMeetingOccurrence: ObserveMeetingOccurrenceUseCase
-        get() = ObserveMeetingOccurrenceUseCaseImpl(
-            dispatcher = dispatcher,
-            meetingRepository = meetingRepository,
-        )
-
-    public val deleteMeeting: DeleteMeetingUseCase
-        get() = DeleteMeetingUseCaseImpl(
-            meetingRepository = meetingRepository,
-        )
+) : DeleteMeetingUseCase {
+    override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingUseCase.Result {
+        return meetingRepository.deleteMeeting(meetingId).fold({
+            DeleteMeetingUseCase.Result.Failure(it)
+        }, {
+            DeleteMeetingUseCase.Result.Success
+        })
+    }
 }
