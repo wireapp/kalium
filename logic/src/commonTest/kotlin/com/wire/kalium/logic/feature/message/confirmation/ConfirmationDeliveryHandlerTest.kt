@@ -100,9 +100,10 @@ class ConfirmationDeliveryHandlerTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenMLSConversation_whenCollectingDeliveryConfirmations_thenShouldNotSendAndShouldClearQueue() = runTest {
+    fun givenMLSOneOnOneConversation_whenCollectingDeliveryConfirmations_thenShouldSendAndClearQueue() = runTest {
         val (arrangement, sut) = Arrangement()
             .withConversationDetailsResult(flowOf(TestConversation.MLS_CONVERSATION.right()))
+            .withSendDeliverSignalResult()
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
@@ -112,7 +113,7 @@ class ConfirmationDeliveryHandlerTest {
         advanceUntilIdle()
         job.cancel()
 
-        verifySuspend(VerifyMode.not) { arrangement.sendDeliverSignal(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.sendDeliverSignal(any(), any()) }
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
