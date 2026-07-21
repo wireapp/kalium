@@ -24,6 +24,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.SelfTeamIdProvider
 import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.model.PaginatedList
@@ -34,7 +35,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.message.CellAssetContent
-import com.wire.kalium.logic.data.user.UserId
 
 public interface GetPaginatedNodesUseCase {
     /**
@@ -63,7 +63,7 @@ internal class GetPaginatedNodesUseCaseImpl(
     private val conversationRepository: CellConversationRepository,
     private val attachmentsRepository: CellAttachmentsRepository,
     private val usersRepository: CellUsersRepository,
-    private val selfUserId: UserId,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : GetPaginatedNodesUseCase {
 
     override suspend operator fun invoke(
@@ -88,15 +88,13 @@ internal class GetPaginatedNodesUseCaseImpl(
         ).map { nodes ->
             val visibleNodes = nodes.data.filterNot { it.isDraft }
 
-            // Enrich only with the users/conversations referenced by this page, resolving guest
-            // (viewer-only) status in memory against the self team instead of per-conversation DB reads.
             val ownerIds = visibleNodes.mapNotNull { it.ownerUserId }.distinct()
             val conversationIds = visibleNodes.mapNotNull { it.conversationId }.distinct()
 
             val userNames = usersRepository.getUserNamesByIds(ownerIds).getOrElse(emptyList()).toMap()
             val conversations = conversationRepository.getConversationsByIds(conversationIds).getOrElse(emptyList())
             val conversationNames = conversations.associate { it.id to it.name }
-            val selfTeamId = usersRepository.getUserTeamId(selfUserId).getOrElse(null)
+            val selfTeamId = selfTeamIdProvider()
             val viewerOnlyByConversation = conversations.associate { conversation ->
                 conversation.id to (conversation.teamId != null && conversation.teamId != selfTeamId)
             }

@@ -24,6 +24,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.SelfTeamIdProvider
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.ConversationMetadata
 import com.wire.kalium.cells.domain.model.Node
@@ -34,7 +35,6 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.cellfile.CellFileLocalPath
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
@@ -168,6 +168,7 @@ class GetPaginatedNodesUseCaseTest {
         val conversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
         val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
         val usersRepository = mock<CellUsersRepository>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
 
         private var guestConversations: Set<String> = emptySet()
 
@@ -195,7 +196,7 @@ class GetPaginatedNodesUseCaseTest {
 
             everySuspend { usersRepository.getUserNamesByIds(any()) }.returns(testUserNames.right())
 
-            everySuspend { usersRepository.getUserTeamId(any()) }.returns(SELF_TEAM_ID.right())
+            everySuspend { selfTeamIdProvider() }.returns(SELF_TEAM_ID)
 
             everySuspend { conversationRepository.getConversationsByIds(any()) }.returns(
                 testConversationIds.map { id ->
@@ -216,14 +217,13 @@ class GetPaginatedNodesUseCaseTest {
                 conversationRepository = conversationRepository,
                 attachmentsRepository = attachmentsRepository,
                 usersRepository = usersRepository,
-                selfUserId = SELF_USER_ID,
+                selfTeamIdProvider = selfTeamIdProvider,
             )
         }
     }
 
     private companion object {
 
-        val SELF_USER_ID = UserId("self_user_id", "wire.com")
         const val SELF_TEAM_ID = "self_team"
         const val OTHER_TEAM_ID = "other_team"
         const val CONVERSATION_NAME = "conversation_name"

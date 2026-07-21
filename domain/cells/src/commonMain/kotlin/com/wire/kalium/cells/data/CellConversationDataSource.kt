@@ -49,16 +49,13 @@ internal class CellConversationDataSource(
     override suspend fun getConversationsByIds(conversationIds: List<String>): Either<StorageFailure, List<ConversationMetadata>> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
-                conversationIds.mapNotNull { conversationId ->
-                    conversationId.toQualifiedIdOrNull()?.let { qualifiedId ->
-                        conversationDao.getConversationById(qualifiedId)?.let { conversation ->
-                            ConversationMetadata(
-                                id = conversationId,
-                                name = conversation.name,
-                                teamId = conversation.teamId,
-                            )
-                        }
-                    }
+                val qualifiedIds = conversationIds.mapNotNull { it.toQualifiedIdOrNull() }
+                conversationDao.getConversationsByIds(qualifiedIds).map { conversation ->
+                    ConversationMetadata(
+                        id = conversation.id.toString(),
+                        name = conversation.name,
+                        teamId = conversation.teamId,
+                    )
                 }
             }
         }

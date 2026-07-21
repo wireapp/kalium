@@ -40,6 +40,8 @@ import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.NodeServiceBuilder
+import com.wire.kalium.cells.domain.SelfTeamIdProvider
+import com.wire.kalium.cells.domain.SelfTeamIdProviderImpl
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
@@ -290,13 +292,17 @@ public class CellsScope(
         PublishAttachmentsUseCaseImpl(cellsRepository)
     }
 
+    private val selfTeamIdProvider: SelfTeamIdProvider by lazy {
+        SelfTeamIdProviderImpl(userId, usersRepository)
+    }
+
     public val observeFiles: GetPaginatedNodesUseCase by lazy {
         GetPaginatedNodesUseCaseImpl(
             cellsRepository,
             cellsConversationRepository,
             cellAttachmentsRepository,
             usersRepository,
-            userId,
+            selfTeamIdProvider,
         )
     }
 

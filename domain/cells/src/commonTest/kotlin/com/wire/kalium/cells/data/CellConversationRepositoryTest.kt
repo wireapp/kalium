@@ -297,7 +297,7 @@ class CellConversationRepositoryTest {
             wireCell = "cell1"
         )
         val (_, repository) = Arrangement()
-            .withConversationById(conv)
+            .withConversationsByIds(listOf(conv))
             .arrange()
 
         val result = repository.getConversationsByIds(listOf("conv1@wire.com"))
@@ -310,9 +310,9 @@ class CellConversationRepositoryTest {
     }
 
     @Test
-    fun given_UnknownConversationId_whenGetConversationsByIds_thenItIsOmitted() = runTest {
+    fun given_ConversationIdNotInStorage_whenGetConversationsByIds_thenItIsOmitted() = runTest {
         val (_, repository) = Arrangement()
-            .withConversationById(null)
+            .withConversationsByIds(emptyList())
             .arrange()
 
         val result = repository.getConversationsByIds(listOf("conv1@wire.com"))
@@ -358,14 +358,14 @@ class CellConversationRepositoryTest {
         private val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
         private var conversations: List<ConversationEntity> = emptyList()
         private var pagedConversations: Map<Int, List<ConversationEntity>> = emptyMap()
-        private var conversationById: ConversationEntity? = null
+        private var conversationsByIds: List<ConversationEntity> = emptyList()
 
         fun withConversations(convs: List<ConversationEntity>) = apply {
             conversations = convs
         }
 
-        fun withConversationById(conv: ConversationEntity?) = apply {
-            conversationById = conv
+        fun withConversationsByIds(convs: List<ConversationEntity>) = apply {
+            conversationsByIds = convs
         }
 
         fun withPagedConversations(conversations: List<ConversationEntity>, offset: Int = 0) = apply {
@@ -390,8 +390,8 @@ class CellConversationRepositoryTest {
             }
 
             everySuspend {
-                conversationDAO.getConversationById(any())
-            }.returns(conversationById)
+                conversationDAO.getConversationsByIds(any())
+            }.returns(conversationsByIds)
 
             return this to CellConversationDataSource(conversationDAO)
         }
