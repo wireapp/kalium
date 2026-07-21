@@ -68,11 +68,18 @@ class MLSMessageFailureHandlerTest {
     }
 
     @Test
+    fun givenBufferedMlsFailure_whenHandling_thenMarkAsBuffered() {
+        assertFailureResolutions(
+            failures = listOf(MLSFailure.BufferedFutureMessage, MLSFailure.BufferedCommit),
+            expected = MLSMessageFailureResolution.Buffered,
+        )
+    }
+
+    @Test
     fun givenIgnorableMlsOrBackupFailure_whenHandling_thenIgnore() {
         assertFailureResolutions(
             failures = listOf(
                 MLSFailure.DuplicateMessage,
-                MLSFailure.BufferedFutureMessage,
                 MLSFailure.SelfCommitIgnored,
                 MLSFailure.UnmergedPendingGroup,
                 MLSFailure.StaleProposal,
@@ -82,7 +89,6 @@ class MLSMessageFailureHandlerTest {
                 MLSFailure.Disabled,
                 MLSFailure.CommitForMissingProposal,
                 MLSFailure.ConversationNotFound,
-                MLSFailure.BufferedCommit,
                 MLSFailure.OrphanWelcome,
                 CoreFailure.DevelopmentAPINotAllowedOnProduction,
                 BackupFailure.NoCryptoStateAvailable,

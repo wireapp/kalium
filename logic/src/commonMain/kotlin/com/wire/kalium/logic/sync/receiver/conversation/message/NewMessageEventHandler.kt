@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.util.EventProcessingLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
 
@@ -68,6 +69,7 @@ internal class NewMessageEventHandlerImpl(
     private val selfUserId: UserId,
     private val staleEpochVerifier: StaleEpochVerifier,
     private val resetMLSConversation: ResetMLSConversationUseCase,
+    private val bufferedMLSMessageRecoveryTracker: BufferedMLSMessageRecoveryTracker = BufferedMLSMessageRecoveryTracker(),
 ) : NewMessageEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -151,46 +153,10 @@ internal class NewMessageEventHandlerImpl(
     ) {
         var eventLogger = logger.createEventProcessingLogger(event)
         transactionContext.wrapInMLSContext { mlsMessageUnpacker.unpackMlsMessage(it, event) }
-            .onFailure {
-                when (MLSMessageFailureHandler.handleFailure(it)) {
-                    is MLSMessageFailureResolution.Ignore -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
-                    }
-
-                    is MLSMessageFailureResolution.InformUser -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
-                        // messages from subconversations should not send a system message
-                        if (event.subconversationId == null) {
-                            applicationMessageHandler.handleDecryptionError(
-                                eventId = event.id,
-                                conversationId = event.conversationId,
-                                messageInstant = event.messageInstant,
-                                senderUserId = event.senderUserId,
-                                senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                                content = MessageContent.FailedDecryption(
-                                    isDecryptionResolved = false,
-                                    senderUserId = event.senderUserId
-                                )
-                            )
-                        }
-                    }
-
-                    is MLSMessageFailureResolution.OutOfSync -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
-                        staleEpochVerifier.verifyEpoch(
-                            transactionContext,
-                            event.conversationId,
-                            event.subconversationId,
-                            event.messageInstant
-                        )
-                    }
-
-                    MLSMessageFailureResolution.ResetConversation -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
-                        resetMLSConversation(event.conversationId, transactionContext)
-                    }
-                }
+            .onFailure { failure ->
+                handleMLSFailure(transactionContext, event, failure, eventLogger)
             }.onSuccess { batchResult ->
+                bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
                 batchResult.forEach { message ->
                     if (message is MessageUnpackResult.ApplicationMessage) {
                         processApplicationMessage(transactionContext, message, deliveryInfo)
@@ -204,6 +170,87 @@ internal class NewMessageEventHandlerImpl(
                     eventLogger = logger.createEventProcessingLogger(event)
                 }
             }
+    }
+
+    private suspend fun handleMLSFailure(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.NewMLSMessage,
+        failure: CoreFailure,
+        eventLogger: EventProcessingLogger
+    ) {
+        when (MLSMessageFailureHandler.handleFailure(failure)) {
+            is MLSMessageFailureResolution.Ignore ->
+                eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
+
+            is MLSMessageFailureResolution.Buffered ->
+                handleBufferedMLSMessage(transactionContext, event, failure, eventLogger)
+
+            is MLSMessageFailureResolution.InformUser ->
+                handleMLSFailureToInformUser(event, failure, eventLogger)
+
+            is MLSMessageFailureResolution.OutOfSync -> {
+                bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
+                eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+                staleEpochVerifier.verifyEpoch(
+                    transactionContext,
+                    event.conversationId,
+                    event.subconversationId,
+                    event.messageInstant
+                )
+            }
+
+            MLSMessageFailureResolution.ResetConversation -> {
+                bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
+                eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+                resetMLSConversation(event.conversationId, transactionContext)
+            }
+        }
+    }
+
+    private suspend fun handleBufferedMLSMessage(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.NewMLSMessage,
+        failure: CoreFailure,
+        eventLogger: EventProcessingLogger
+    ) {
+        val shouldRecover = bufferedMLSMessageRecoveryTracker.observeBufferedMessage(
+            event.conversationId,
+            event.subconversationId,
+            event.messageInstant
+        )
+        if (shouldRecover) {
+            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED_RECOVERY")
+            staleEpochVerifier.verifyEpoch(
+                transactionContext,
+                event.conversationId,
+                event.subconversationId,
+                event.messageInstant
+            )
+        } else {
+            eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED")
+        }
+    }
+
+    private suspend fun handleMLSFailureToInformUser(
+        event: Event.Conversation.NewMLSMessage,
+        failure: CoreFailure,
+        eventLogger: EventProcessingLogger
+    ) {
+        eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
+        // messages from subconversations should not send a system message
+        if (event.subconversationId == null) {
+            applicationMessageHandler.handleDecryptionError(
+                eventId = event.id,
+                conversationId = event.conversationId,
+                messageInstant = event.messageInstant,
+                senderUserId = event.senderUserId,
+                senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+                content = MessageContent.FailedDecryption(
+                    isDecryptionResolved = false,
+                    senderUserId = event.senderUserId
+                )
+            )
+        }
     }
 
     private suspend fun processApplicationMessage(
