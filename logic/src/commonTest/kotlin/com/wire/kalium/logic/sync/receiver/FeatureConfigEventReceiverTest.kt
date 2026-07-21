@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
+import com.wire.kalium.logic.data.featureConfig.MeetingsConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -51,6 +52,7 @@ import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldSucceed
@@ -189,11 +191,11 @@ class FeatureConfigEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.userConfigRepository.setTeamSettingsSelfDeletionStatus(matches {
-                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
-                })
-            }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setTeamSettingsSelfDeletionStatus(matches {
+                it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
+            })
+        }
     }
 
     @Test
@@ -393,6 +395,40 @@ class FeatureConfigEventReceiverTest {
         ).shouldSucceed()
     }
 
+    @Test
+    fun givenMeetingsFeatureIsEnabled_whenProcessingEvent_thenSetMeetingsEnabled() = runTest {
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withMeetingsConfigSetup()
+            .arrange()
+
+        featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            event = arrangement.newMeetingsConfigUpdatedEvent(MeetingsConfigModel(Status.ENABLED)),
+            deliveryInfo = TestEvent.liveDeliveryInfo
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setMeetingsEnabled(true)
+        }
+    }
+
+    @Test
+    fun givenMeetingsFeatureIsDisabled_whenProcessingEvent_thenSetMeetingsDisabled() = runTest {
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withMeetingsConfigSetup()
+            .arrange()
+
+        featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            event = arrangement.newMeetingsConfigUpdatedEvent(MeetingsConfigModel(Status.DISABLED)),
+            deliveryInfo = TestEvent.liveDeliveryInfo
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setMeetingsEnabled(false)
+        }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
         var kaliumConfigs = KaliumConfigs()
@@ -416,6 +452,7 @@ class FeatureConfigEventReceiverTest {
                 EnableUserProfileQRCodeConfigHandler(userConfigRepository),
                 AssetAuditLogConfigHandler(userConfigRepository),
                 PreventAdminlessGroupsConfigHandler(userConfigRepository),
+                MeetingsConfigHandler(userConfigRepository),
             )
         }
 
@@ -495,6 +532,12 @@ class FeatureConfigEventReceiverTest {
             } returns Either.Right(Unit)
         }
 
+        suspend fun withMeetingsConfigSetup() = apply {
+            everySuspend {
+                userConfigRepository.setMeetingsEnabled(any())
+            } returns Either.Right(Unit)
+        }
+
         fun newFileSharingUpdatedEvent(
             model: ConfigsStatusModel
         ) = Event.FeatureConfig.FileSharingUpdated("eventId", model)
@@ -506,6 +549,8 @@ class FeatureConfigEventReceiverTest {
         fun newSelfDeletingMessagesUpdatedEvent(
             model: SelfDeletingMessagesModel
         ) = Event.FeatureConfig.SelfDeletingMessagesConfig("eventId", model)
+
+        fun newMeetingsConfigUpdatedEvent(model: MeetingsConfigModel) = Event.FeatureConfig.MeetingsConfigUpdated("eventId", model)
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = run {
             runBlocking { block() }

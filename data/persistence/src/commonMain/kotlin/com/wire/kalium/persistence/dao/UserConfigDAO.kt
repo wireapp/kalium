@@ -88,6 +88,8 @@ interface UserConfigDAO {
     suspend fun getWireCellsConfig(): WireCellsConfigEntity?
     suspend fun isMlsFaultyKeysRepairExecuted(): Boolean
     suspend fun setMlsFaultyKeysRepairExecuted(repaired: Boolean)
+    suspend fun setMeetingsEnabled(enabled: Boolean)
+    suspend fun isMeetingsEnabled(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -319,6 +321,13 @@ internal class UserConfigDAOImpl internal constructor(
     override fun observeAppsEnabled(): Flow<Boolean> =
         metadataDAO.valueByKeyFlow(APPS_ENABLED_KEY).map { it?.toBoolean() ?: false }
 
+    override suspend fun setMeetingsEnabled(enabled: Boolean) {
+        metadataDAO.insertValue(enabled.toString(), MEETINGS_ENABLED)
+    }
+
+    override suspend fun isMeetingsEnabled(): Boolean =
+        metadataDAO.valueByKey(MEETINGS_ENABLED)?.toBoolean() ?: false
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
@@ -340,5 +349,6 @@ internal class UserConfigDAOImpl internal constructor(
         private const val PREVENT_ADMINLESS_GROUPS_ENABLED = "prevent_adminless_groups"
         private const val WIRE_CELLS_CONFIG = "wire_cells_config"
         private const val MLS_FAULTY_CONVERSATIONS_REPAIRED = "mls_faulty_conversations_repaired"
+        private const val MEETINGS_ENABLED = "meetings_enabled"
     }
 }
