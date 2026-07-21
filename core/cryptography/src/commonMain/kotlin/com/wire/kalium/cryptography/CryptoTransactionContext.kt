@@ -149,12 +149,12 @@ interface MlsCoreCryptoContext {
      * @param groupId MLS group where the message was received
      * @param message application message or handshake message
      *
-     * @return decrypted message bundle, which contains the decrypted message.
+     * @return the decrypted messages or the reason the message was buffered.
      */
    suspend fun decryptMessage(
        groupId: String,
        message: ByteArray
-   ): List<DecryptedMessageBundle>
+   ): MLSDecryptResult
 
     /**
      * Current members of the group.

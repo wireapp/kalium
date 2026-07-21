@@ -109,7 +109,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
         val result = aliceClient.transaction { it.decryptMessage(welcomeBundle.groupId, keyMaterialCommit.first.commit) }
 
-        assertNull(result.first().message)
+        assertNull((result as MLSDecryptResult.Success).messages.first().message)
     }
 
     @Test
@@ -164,7 +164,9 @@ class MLSClientTest : BaseMLSClientTest() {
         val welcomeBundle = aliceClient.transaction { it.processWelcomeMessage(welcome) }
 
         val applicationMessage = aliceClient.transaction { it.encryptMessage(welcomeBundle.groupId, PLAIN_TEXT.encodeToByteArray()) }
-        val bundle = bobClient.transaction { it.decryptMessage(welcomeBundle.groupId, applicationMessage).first() }
+        val bundle = bobClient.transaction {
+            (it.decryptMessage(welcomeBundle.groupId, applicationMessage) as MLSDecryptResult.Success).messages.first()
+        }
 
         assertNotNull(bundle.senderClientId)
         assertEquals(PLAIN_TEXT, bundle.message?.decodeToString())
@@ -237,7 +239,8 @@ class MLSClientTest : BaseMLSClientTest() {
         }
         val commit = bobArrangement.sendCommitBundleFlow.first().first.commit
 
-        assertNull(aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, commit) }.first().message)
+        val result = aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, commit) }
+        assertNull((result as MLSDecryptResult.Success).messages.first().message)
     }
 
     @Test
@@ -278,11 +281,12 @@ class MLSClientTest : BaseMLSClientTest() {
         val clientRemovalList = listOf(CAROL1.qualifiedClientId)
         bobClient.transaction { it.removeMember(welcomeBundle.groupId, clientRemovalList) }
         val commit = bobArrangement.sendCommitBundleFlow.first().first.commit
-        assertNull(aliceClient.transaction { it.decryptMessage(welcomeBundle.groupId, commit) }.first().message)
+        val result = aliceClient.transaction { it.decryptMessage(welcomeBundle.groupId, commit) }
+        assertNull((result as MLSDecryptResult.Success).messages.first().message)
     }
 
     @Test
-    fun givenThreeClients_whenProcessingCommitOutOfOrder_shouldCatchBufferedFutureMessageAndBuffer() = runTest {
+    fun givenCommitFromFutureEpoch_whenDecrypting_thenReturnBufferedFutureMessage() = runTest {
         val aliceArrangement = create(
             ALICE1,
             ::createMLSClient,
@@ -328,26 +332,9 @@ class MLSClientTest : BaseMLSClientTest() {
         val commitRemoveCarol = bobArrangement.sendCommitBundleFlow.first().first.commit
 
         // Alice tries to decrypt the removeCarol commit, which references an epoch Alice hasn't seen yet.
-        // In normal MLS logic, this triggers a "buffering" error, typically thrown as MlsException.BufferedFutureMessage
-        // wrapped in CoreCryptoException.Mls. The client code is supposed to swallow that error in a transaction
-        // and return an empty DecryptedMessage list.
+        val result = aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol) }
 
-        val decryptedBundlesResult = runCatching {
-            aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol) }
-        }
-
-        // The exception should be caught internally, so from the caller's perspective we succeed with an empty result.
-        // That indicates the message was buffered instead of fully decrypted.
-        assertTrue(
-            decryptedBundlesResult.isSuccess,
-            "Out-of-order commit should not propagate BufferedFutureMessage as an unhandled exception."
-        )
-
-        val decryptedBundles = decryptedBundlesResult.getOrThrow()
-        assertTrue(
-            decryptedBundles.isEmpty(),
-            "Decryption result should be empty for a buffered out-of-order commit."
-        )
+        assertEquals(MLSDecryptResult.BufferedFutureMessage, result)
     }
 
     @Test
@@ -397,10 +384,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
         // Alice tries to decrypt the removeCarol commit first => out-of-order => should buffer
         val removeResult = aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol) }
-        assertTrue(
-            removeResult.isEmpty(),
-            "Out-of-order remove commit should be buffered and return an empty list."
-        )
+        assertEquals(MLSDecryptResult.BufferedFutureMessage, removeResult)
 
         // Now Alice processes the missing 'addCarol' commit.
         // By processing the addCarol commit, MLS should also flush any previously buffered commits (the removeCarol).
@@ -411,7 +395,7 @@ class MLSClientTest : BaseMLSClientTest() {
         // We expect 2 total commits to be processed now: (1) addCarol, (2) removeCarol.
         assertEquals(
             2,
-            addResult.size,
+            (addResult as MLSDecryptResult.Success).messages.size,
             "Processing the older 'addCarol' commit should also flush the buffered 'removeCarol' commit, resulting in 2 items."
         )
         assertEquals(

@@ -121,6 +121,12 @@ data class DecryptedMessageBundle(
     }
 }
 
+sealed interface MLSDecryptResult {
+    data class Success(val messages: List<DecryptedMessageBundle>) : MLSDecryptResult
+    data object BufferedFutureMessage : MLSDecryptResult
+    data object BufferedCommit : MLSDecryptResult
+}
+
 @JvmInline
 value class ExternalSenderKey(
     val value: ByteArray
