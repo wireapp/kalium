@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -56,8 +57,10 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.userstorage.di.UserStorage
+import com.wire.kalium.logic.feature.keypackage.GenerateAndUploadNewKeyPackagesUseCase
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
+import com.wire.kalium.logic.feature.proteus.GenerateAndUploadNewPrekeysUseCaseImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -122,6 +125,7 @@ public class DebugScope internal constructor(
     private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
+    private val generateAndUploadNewKeyPackagesUseCase: GenerateAndUploadNewKeyPackagesUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -329,6 +333,25 @@ public class DebugScope internal constructor(
             }
         }
     }
+
+    /**
+     * Generates [count] new Proteus prekeys and uploads them to the backend.
+     * This is a debug utility that wraps the internal prekey generation/upload logic.
+     */
+    public suspend fun generateAndUploadNewPrekeys(count: Int): GenerateAndUploadKeysResult =
+        GenerateAndUploadNewPrekeysUseCaseImpl(preKeyRepository)(count)
+            .fold(GenerateAndUploadKeysResult::Failure) { GenerateAndUploadKeysResult.Success }
+
+    /**
+     * Generates [count] new MLS key packages and uploads them to the backend.
+     * This is a debug utility that wraps the internal crypto transaction logic.
+     */
+    public suspend fun generateAndUploadNewKeyPackages(count: Int): GenerateAndUploadKeysResult =
+        transactionProvider.transaction { transactionContext ->
+            transactionContext.wrapInMLSContext { mlsContext ->
+                generateAndUploadNewKeyPackagesUseCase(mlsContext, count)
+            }
+        }.fold(GenerateAndUploadKeysResult::Failure) { GenerateAndUploadKeysResult.Success }
 
     /**
      * Generates test events for debugging purposes.

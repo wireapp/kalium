@@ -38,6 +38,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
+import com.wire.kalium.logic.feature.keypackage.GenerateAndUploadNewKeyPackagesUseCase
+import com.wire.kalium.logic.feature.keypackage.GenerateAndUploadNewKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
@@ -124,6 +126,13 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
         get() = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository = keyPackageRepository,
             keyPackageLimitsProvider = keyPackageLimitsProvider,
+            currentClientIdProvider = clientIdProvider,
+            selfUserId = selfUserId,
+            cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier,
+        )
+    internal val generateAndUploadNewKeyPackages: GenerateAndUploadNewKeyPackagesUseCase
+        get() = GenerateAndUploadNewKeyPackagesUseCaseImpl(
+            keyPackageRepository = keyPackageRepository,
             currentClientIdProvider = clientIdProvider,
             selfUserId = selfUserId,
             cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier,
