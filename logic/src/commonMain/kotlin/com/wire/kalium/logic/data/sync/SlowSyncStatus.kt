@@ -47,5 +47,4 @@ internal enum class SlowSyncStep {
     RESOLVE_ONE_ON_ONE_PROTOCOLS,
     LEGAL_HOLD,
     OPTIMIZE_DB,
-    MEETINGS,
 }
