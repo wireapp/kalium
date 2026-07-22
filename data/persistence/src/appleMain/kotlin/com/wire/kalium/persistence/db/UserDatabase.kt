@@ -23,6 +23,7 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
+import co.touchlab.sqliter.DatabaseFileContext
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -153,11 +154,13 @@ internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
 ): String? {
-    return if (
-        platformDatabaseData.storageData is StorageData.FileBacked && NSURL.fileURLWithPath(platformDatabaseData.storageData.storePath)
-            .checkResourceIsReachableAndReturnError(null)
-    ) {
+    if (platformDatabaseData.storageData !is StorageData.FileBacked) return null
+    val dbFilePath = DatabaseFileContext.databasePath(
+        FileNameUtil.userDBName(userId),
         platformDatabaseData.storageData.storePath
+    )
+    return if (NSURL.fileURLWithPath(dbFilePath).checkResourceIsReachableAndReturnError(null)) {
+        dbFilePath
     } else {
         null
     }
