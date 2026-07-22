@@ -82,26 +82,13 @@ internal class ConfirmationDeliveryHandlerImpl(
             val messagesToSend = pendingConfirmationMessages.block { it.toMap() }
             messagesToSend.forEach { (conversationId, messages) ->
                 conversationRepository.observeConversationById(conversationId).first().flatMap { conversation ->
-                    if (conversation.type == Conversation.Type.OneOnOne &&
-                        conversation.protocol !is Conversation.ProtocolInfo.MLS
-                    ) {
+                    if (conversation.type == Conversation.Type.OneOnOne) {
                         sendDeliverSignalUseCase(
                             conversation = conversation,
                             messages = messages.toList()
                         ).toEither().onSuccess {
                             removePendingConfirmations(conversationId, messages)
                         }
-                    } else if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-                        kaliumLogger.logStructuredJson(
-                            level = KaliumLogLevel.DEBUG,
-                            leadingMessage = "Skipping delivery confirmation for MLS conversation: " +
-                                    conversation.id.toLogString(),
-                            jsonStringKeyValues = mapOf(
-                                "conversationId" to conversation.id.toLogString(),
-                                "messageCount" to messages.size
-                            )
-                        )
-                        removePendingConfirmations(conversationId, messages)
                     } else {
                         kaliumLogger.logStructuredJson(
                             level = KaliumLogLevel.DEBUG,

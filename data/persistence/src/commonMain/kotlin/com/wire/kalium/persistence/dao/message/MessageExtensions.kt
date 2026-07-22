@@ -126,22 +126,12 @@ internal class MessageExtensionsImpl internal constructor(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         initialOffset: Long
-    ) = PendingMessagesPagingSource(
-        totalCountQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
-        pendingCountQuery = messagesQueries.countPendingByConversationIdAndVisibility(conversationId, visibilities),
+    ) = AsyncQueryPagingSource(
+        countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
         context = readDispatcher.value,
         initialOffset = initialOffset,
-        pendingQueryProvider = { limit, offset ->
-            messagesQueries.selectPendingByConversationIdAndVisibility(
-                conversationId,
-                visibilities,
-                limit,
-                offset,
-                messageMapper::toEntityMessageFromView
-            )
-        },
-        nonPendingQueryProvider = { limit, offset ->
-            messagesQueries.selectNonPendingByConversationIdAndVisibility(
+        queryProvider = { limit, offset ->
+            messagesQueries.selectByConversationIdAndVisibility(
                 conversationId,
                 visibilities,
                 limit,

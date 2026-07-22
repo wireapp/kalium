@@ -170,10 +170,13 @@ class UpdateConversationReadDateUseCaseTest {
     }
 
     @Test
-    fun givenMLSConversation_whenUpdatingLastRead_thenShouldPersistAndSyncWithoutSendingReceipt() = runTest {
+    fun givenMLSGroupConversation_whenUpdatingLastRead_thenShouldPersistAndSyncWithoutSendingReceipt() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds
-        val conversation = TestConversation.MLS_CONVERSATION.copy(lastReadDate = persistedLastRead)
+        val conversation = TestConversation.MLS_CONVERSATION.copy(
+            type = Conversation.Type.Group.Regular,
+            lastReadDate = persistedLastRead
+        )
         val (arrangement, updateConversationReadDateUseCase) = arrange {
             withObserveByIdReturning(conversation)
             withRealSendConfirmation(conversation)

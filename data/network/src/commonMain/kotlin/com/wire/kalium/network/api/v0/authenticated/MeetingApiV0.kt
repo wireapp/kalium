@@ -21,10 +21,14 @@ package com.wire.kalium.network.api.v0.authenticated
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi.Companion.MIN_API_VERSION_MEETINGS
+import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.utils.NetworkResponse
 
 @Suppress("TooManyFunctions")
 internal open class MeetingApiV0 internal constructor() : MeetingApi {
     override suspend fun fetchMeetings(): NetworkResponse<List<MeetingDTO>> =
+        getApiNotSupportedError("fetchMeetings", MIN_API_VERSION_MEETINGS)
+
+    override suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit> =
         getApiNotSupportedError("fetchMeetings", MIN_API_VERSION_MEETINGS)
 }
