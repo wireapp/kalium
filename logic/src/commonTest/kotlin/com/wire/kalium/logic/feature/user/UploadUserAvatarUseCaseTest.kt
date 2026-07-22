@@ -107,11 +107,75 @@ class UploadUserAvatarUseCaseTest {
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
                 assetRepository.uploadAndPersistPublicAsset(
-                    mimeType = eq("image/jpg"),
+                    mimeType = eq("image/jpeg"),
                     assetDataPath = any(),
                     assetDataSize = eq(avatarImage.size.toLong()),
                     conversationId = eq(null),
                     filename = eq("profile-picture"),
+                    filetype = eq("image/jpeg")
+                )
+            }
+        }
+    }
+
+    @Test
+    fun givenExplicitMimeType_whenUploadingUserAvatar_thenShouldForwardMimeTypeToAssetUpload() = runTest {
+        val expected = UploadedAssetId("some_key", "some_domain")
+        val avatarImage = "An Avatar Image (:".encodeToByteArray()
+        val avatarPath = "some-image-asset".toPath()
+        val (arrangement, uploadUserAvatar) = Arrangement()
+            .withStoredData(avatarImage, avatarPath)
+            .withSuccessfulUploadResponse(expected)
+            .arrange()
+
+        uploadUserAvatar(avatarPath, avatarImage.size.toLong(), "image/png")
+
+        with(arrangement) {
+            verifySuspend(VerifyMode.exactly(1)) {
+                assetRepository.uploadAndPersistPublicAsset(
+                    mimeType = eq("image/png"),
+                    assetDataPath = any(),
+                    assetDataSize = eq(avatarImage.size.toLong()),
+                    conversationId = eq(null),
+                    filename = eq("profile-picture"),
+                    filetype = eq("image/png")
+                )
+            }
+        }
+    }
+
+    @Test
+    fun givenDefaultInvocation_whenUploadingUserAvatar_thenShouldNotUseNonIanaImageJpg() = runTest {
+        // Regression guard: the previous hardcoded default `image/jpg` is not a registered
+        // IANA media type and was rejected by some asset-v3 backend configurations.
+        val expected = UploadedAssetId("some_key", "some_domain")
+        val avatarImage = "An Avatar Image (:".encodeToByteArray()
+        val avatarPath = "some-image-asset".toPath()
+        val (arrangement, uploadUserAvatar) = Arrangement()
+            .withStoredData(avatarImage, avatarPath)
+            .withSuccessfulUploadResponse(expected)
+            .arrange()
+
+        uploadUserAvatar(avatarPath, avatarImage.size.toLong())
+
+        with(arrangement) {
+            verifySuspend(VerifyMode.not) {
+                assetRepository.uploadAndPersistPublicAsset(
+                    mimeType = eq("image/jpg"),
+                    assetDataPath = any(),
+                    assetDataSize = any(),
+                    conversationId = any(),
+                    filename = any(),
+                    filetype = any()
+                )
+            }
+            verifySuspend(VerifyMode.not) {
+                assetRepository.uploadAndPersistPublicAsset(
+                    mimeType = any(),
+                    assetDataPath = any(),
+                    assetDataSize = any(),
+                    conversationId = any(),
+                    filename = any(),
                     filetype = eq("image/jpg")
                 )
             }

@@ -35,9 +35,24 @@ public interface UploadUserAvatarUseCase {
      * This first will upload the data as an asset and then will link this asset with the [User]
      *
      * @param imageDataPath data [Path] of the actual picture
+     * @param imageDataSize size of the picture in bytes
+     * @param mimeType IANA media type of the picture; defaults to `image/jpeg`. The previous
+     *   default `image/jpg` is not a registered IANA type and some asset-v3 backends reject it.
      * @return UploadAvatarResult with [UserAssetId] in case of success or [CoreFailure] on failure
      */
-    public suspend operator fun invoke(imageDataPath: Path, imageDataSize: Long): UploadAvatarResult
+    public suspend operator fun invoke(
+        imageDataPath: Path,
+        imageDataSize: Long,
+        mimeType: String = DEFAULT_AVATAR_MIME_TYPE,
+    ): UploadAvatarResult
+
+    public companion object {
+        /**
+         * RFC 6838 / IANA-registered media type for JPEG. The previous constant `image/jpg`
+         * is not a real IANA type; keep this as the single default across Kalium.
+         */
+        public const val DEFAULT_AVATAR_MIME_TYPE: String = "image/jpeg"
+    }
 }
 
 internal class UploadUserAvatarUseCaseImpl(
@@ -46,16 +61,20 @@ internal class UploadUserAvatarUseCaseImpl(
     private val dispatcher: KaliumDispatcherImpl = KaliumDispatcherImpl
 ) : UploadUserAvatarUseCase {
 
-    override suspend operator fun invoke(imageDataPath: Path, imageDataSize: Long): UploadAvatarResult {
+    override suspend operator fun invoke(
+        imageDataPath: Path,
+        imageDataSize: Long,
+        mimeType: String,
+    ): UploadAvatarResult {
         return withContext(dispatcher.io) {
 
             assetDataSource.uploadAndPersistPublicAsset(
-                mimeType = "image/jpg",
+                mimeType = mimeType,
                 assetDataPath = imageDataPath,
                 assetDataSize = imageDataSize,
                 conversationId = null,
                 filename = "profile-picture",
-                filetype = "image/jpg"
+                filetype = mimeType,
             ).flatMap { asset ->
                 userDataSource.updateSelfUser(newAssetId = asset.key).map { asset }
             }.fold({
