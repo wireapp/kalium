@@ -1494,7 +1494,6 @@ public class UserSessionScope internal constructor(
                 userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
                 logger = userScopedLogger
             ),
-            syncMeetings = syncMeetingsUseCase,
             optimizer = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
         )
     }
