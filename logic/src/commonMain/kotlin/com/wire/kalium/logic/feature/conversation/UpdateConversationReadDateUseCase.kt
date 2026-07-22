@@ -93,55 +93,75 @@ public class UpdateConversationReadDateUseCase internal constructor(
         doWork(conversationId, time)
     }
 
-    private suspend fun doWork(conversationId: QualifiedID, time: Instant) {
+    private suspend fun doWork(conversationId: QualifiedID, requestedLastRead: Instant) {
         coroutineScope {
             conversationRepository.observeConversationById(conversationId).first().onFailure {
                 logger.w("Failed to update conversation read date; StorageFailure $it")
             }.onSuccess { conversation ->
-                if (conversation.lastReadDate >= time) {
+                val storedLastRead = conversation.lastReadDate
+
+                if (storedLastRead > requestedLastRead) {
                     logger.d(
                         "Skipping last-read update for '${conversationId.toLogString()}': " +
-                            "stored=${conversation.lastReadDate} >= requested=$time"
+                            "stored=$storedLastRead > requested=$requestedLastRead"
                     )
-                    // Skipping, as current lastRead is already newer than the scheduled one
                     return@onSuccess
                 }
 
-                val shouldRunOptionalSideEffects = currentCoroutineContext()[kotlinx.coroutines.Job] != NonCancellable
+                val needsLocalPersistence = storedLastRead < requestedLastRead
+                // Network operations must stay cancellable. NonCancellable execution is used only to finish local persistence.
+                val canPerformRemoteSync = currentCoroutineContext()[kotlinx.coroutines.Job] != NonCancellable
 
-                if (shouldRunOptionalSideEffects) {
-                    launch {
-                        sendConfirmation(conversationId, conversation.lastReadDate, time)
-                    }
-                }
-
-                withContext(NonCancellable) {
-                    val updateResult = conversationRepository.updateConversationReadDate(conversationId, time)
-                    updateResult.onSuccess {
-                        logger.d("Persisted last-read for '${conversationId.toLogString()}' at $time")
-                        persistenceEventHookNotifier.onConversationLastReadPersisted(
-                            ConversationLastReadEventData(conversationId, time),
-                            selfUserId
-                        )
-                    }
-                }
-                if (shouldRunOptionalSideEffects) {
-                    launch {
-                        selfConversationIdProvider().flatMap { selfConversationIds ->
-                            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                                sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
-                            }
+                if (needsLocalPersistence) {
+                    if (canPerformRemoteSync) {
+                        launch {
+                            sendReadConfirmations(conversationId, storedLastRead, requestedLastRead)
                         }
+                    }
+                    persistLastRead(conversationId, requestedLastRead)
+                }
+
+                if (canPerformRemoteSync) {
+                    launch {
+                        syncLastReadWithOtherClients(conversationId, requestedLastRead)
                     }
                 }
             }
         }
     }
 
-    private suspend fun sendLastReadMessageToOtherClients(
+    private suspend fun sendReadConfirmations(
         conversationId: QualifiedID,
+        previouslyReadUntil: Instant,
+        newlyReadUntil: Instant,
+    ) {
+        sendConfirmation(conversationId, previouslyReadUntil, newlyReadUntil)
+    }
+
+    private suspend fun persistLastRead(conversationId: QualifiedID, time: Instant) {
+        withContext(NonCancellable) {
+            conversationRepository.updateConversationReadDate(conversationId, time).onSuccess {
+                logger.d("Persisted last-read for '${conversationId.toLogString()}' at $time")
+                persistenceEventHookNotifier.onConversationLastReadPersisted(
+                    ConversationLastReadEventData(conversationId, time),
+                    selfUserId
+                )
+            }
+        }
+    }
+
+    private suspend fun syncLastReadWithOtherClients(conversationId: QualifiedID, lastRead: Instant) {
+        selfConversationIdProvider().flatMap { selfConversationIds ->
+            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                sendLastReadToSelfConversation(conversationId, selfConversationId, lastRead)
+            }
+        }
+    }
+
+    private suspend fun sendLastReadToSelfConversation(
+        readConversationId: QualifiedID,
         selfConversationId: QualifiedID,
-        time: Instant
+        lastRead: Instant
     ): Either<CoreFailure, Unit> {
         val generatedMessageUuid = Uuid.random().toString()
 
@@ -150,8 +170,8 @@ public class UpdateConversationReadDateUseCase internal constructor(
                 id = generatedMessageUuid,
                 content = MessageContent.LastRead(
                     messageId = generatedMessageUuid,
-                    conversationId = conversationId,
-                    time = time
+                    conversationId = readConversationId,
+                    time = lastRead
                 ),
                 conversationId = selfConversationId,
                 date = Clock.System.now(),
