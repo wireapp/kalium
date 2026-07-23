@@ -59,7 +59,8 @@ data class ServerConfig(
         @SerialName("websiteUrl") val website: String,
         @SerialName("title") val title: String,
         @SerialName("is_on_premises") val isOnPremises: Boolean,
-        @SerialName("apiProxy") val apiProxy: ApiProxy?
+        @SerialName("apiProxy") val apiProxy: ApiProxy?,
+        @SerialName("supportEmail") val supportEmail: String? = null,
     ) {
         val forgotPassword: String
             get() = URLBuilder().apply {
@@ -181,15 +182,16 @@ class ServerConfigMapperImpl(
         ServerConfigDTO(
             id = id,
             links = ServerConfigDTO.Links(
-                links.api,
-                links.accounts,
-                links.webSocket,
-                links.blackList,
-                links.teams,
-                links.website,
-                links.title,
+                api = links.api,
+                accounts = links.accounts,
+                webSocket = links.webSocket,
+                blackList = links.blackList,
+                teams = links.teams,
+                website = links.website,
+                title = links.title,
                 isOnPremises = links.isOnPremises,
-                apiProxy = links.apiProxy?.let { toDTO(it) }
+                apiProxy = links.apiProxy?.let { toDTO(it) },
+                supportEmail = links.supportEmail,
             ),
             metaData = ServerConfigDTO.MetaData(
                 federation = metaData.federation,
@@ -209,7 +211,8 @@ class ServerConfigMapperImpl(
             links.website,
             title,
             isOnPremises,
-            links.apiProxy?.let { toDTO(it) }
+            links.apiProxy?.let { toDTO(it) },
+            links.supportEmail,
         )
     }
 
@@ -253,7 +256,8 @@ class ServerConfigMapperImpl(
             teams = teams,
             title = title,
             isOnPremises = isOnPremises,
-            apiProxy = apiProxy?.let { fromDTO(it) }
+            apiProxy = apiProxy?.let { fromDTO(it) },
+            supportEmail = supportEmail,
         )
     }
 
