@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -78,6 +79,8 @@ interface ConversationDAO {
         filter: ConversationFilterEntity,
         strictMLSFilter: Boolean = true,
     ): Flow<List<ConversationViewEntity>>
+
+    @DebugKaliumApi("Legacy conversation-list query retained for tests and performance benchmarks.")
     fun getAllConversationDetailsWithEvents(
         fromArchive: Boolean = false,
         onlyInteractionEnabled: Boolean = false,

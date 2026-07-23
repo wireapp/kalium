@@ -65,6 +65,12 @@ kotlin {
     }
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>()
+    .matching { it.name.contains("AndroidTest", ignoreCase = true) }
+    .configureEach {
+        compilerOptions.optIn.add("com.wire.kalium.util.DebugKaliumApi")
+    }
+
 dependencies {
     coreLibraryDesugaring(libs.desugarJdkLibs)
     androidTestImplementation(projects.data.persistence)

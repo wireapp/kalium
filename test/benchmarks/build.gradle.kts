@@ -24,6 +24,7 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
+            languageSettings.optIn("com.wire.kalium.util.DebugKaliumApi")
             dependencies {
                 implementation(projects.data.persistence)
                 implementation(projects.logic)

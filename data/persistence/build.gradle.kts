@@ -78,6 +78,7 @@ kotlin {
             }
         }
         val commonTest by getting {
+            languageSettings.optIn("com.wire.kalium.util.DebugKaliumApi")
             dependencies {
                 // coroutines
                 implementation(libs.coroutines.test)
