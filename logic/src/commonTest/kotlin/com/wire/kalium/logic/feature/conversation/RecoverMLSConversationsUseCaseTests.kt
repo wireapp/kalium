@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -207,6 +208,29 @@ class RecoverMLSConversationsUseCaseTests {
     }
 
     @Test
+    fun givenSelfIsNotConversationMember_whenRecovering_thenConversationIsSkipped() = runTest {
+        val (arrangement, recoverMLSConversationsUseCase) = Arrangement()
+            .withConversationsByGroupStateReturns(Either.Right(listOf(Arrangement.MLS_CONVERSATION1)))
+            .withConversationMembers(Arrangement.MLS_CONVERSATION1.id, emptyList())
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .arrange()
+
+        val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.updateConversationGroupState(any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
+        }
+        assertIs<RecoverMLSConversationsResult.Success>(actual)
+    }
+
+    @Test
     fun whenFetchingListOfConversationsFails_ThenShouldReturnFailure() = runTest {
         val (arrangement, recoverMLSConversationsUseCase) = Arrangement()
             .withConversationsByGroupStateReturns(Either.Left(StorageFailure.DataNotFound))
@@ -237,7 +261,8 @@ class RecoverMLSConversationsUseCaseTests {
             clientRepository,
             conversationRepository,
             mlsConversationRepository,
-            joinExistingMLSConversationUseCase
+            joinExistingMLSConversationUseCase,
+            SELF_USER_ID,
         )
 
         fun withIsMLSSupported(supported: Boolean) = apply {
@@ -256,6 +281,15 @@ class RecoverMLSConversationsUseCaseTests {
             everySuspend {
                 conversationRepository.getConversationsByGroupState(any())
             } returns either
+            everySuspend {
+                conversationRepository.getConversationMembers(any())
+            } returns Either.Right(listOf(SELF_USER_ID))
+        }
+
+        suspend fun withConversationMembers(conversationId: ConversationId, members: List<UserId>) = apply {
+            everySuspend {
+                conversationRepository.getConversationMembers(eq(conversationId))
+            } returns Either.Right(members)
         }
 
         suspend fun withJoinExistingMLSConversationUseCaseSuccessful() = apply {
@@ -303,6 +337,7 @@ class RecoverMLSConversationsUseCaseTests {
         fun arrange() = this to recoverMLSConversationsUseCase
 
         companion object {
+            val SELF_USER_ID = UserId("self", "domain")
             val GROUP_ID1 = GroupID("group1")
             val GROUP_ID2 = GroupID("group2")
             val MLS_CONVERSATION1 = TestConversation.GROUP(

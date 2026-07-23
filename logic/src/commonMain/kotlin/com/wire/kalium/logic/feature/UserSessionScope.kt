@@ -282,6 +282,8 @@ import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationL
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCase
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
@@ -1378,7 +1380,8 @@ public class UserSessionScope internal constructor(
             clientRepository,
             conversationRepository,
             mlsConversationRepository,
-            joinExistingMLSConversationUseCase
+            joinExistingMLSConversationUseCase,
+            userId,
         )
 
     private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
@@ -1388,7 +1391,15 @@ public class UserSessionScope internal constructor(
             conversationRepository,
             joinExistingMLSConversationUseCase,
             cryptoTransactionProvider,
-            pendingActionsRepository
+            pendingActionsRepository,
+            userId,
+        )
+
+    public val recoverMLSConversationsForUser: RecoverMLSConversationsForUserUseCase
+        get() = RecoverMLSConversationsForUserUseCaseImpl(
+            recoverEstablishedMLSConversations = recoverMLSConversationsUseCase,
+            joinPendingMLSConversations = joinExistingMLSConversations,
+            transactionProvider = cryptoTransactionProvider,
         )
 
     private val joinSubconversationUseCase: JoinSubconversationUseCase

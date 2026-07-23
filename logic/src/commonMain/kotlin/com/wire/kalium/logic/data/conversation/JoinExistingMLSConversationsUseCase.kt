@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isTooManyRequests
@@ -58,6 +59,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val pendingActionsRepository: PendingActionsRepository,
+    private val selfUserId: UserId,
     private val maxConcurrentJoins: Int = DEFAULT_MAX_CONCURRENT_JOINS,
     private val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
     private val throttleRetryDelayMs: Long = DEFAULT_THROTTLE_RETRY_DELAY_MS,
@@ -80,14 +82,36 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
             Either.Right(Unit)
         } else {
             transactionProvider.transaction("JoinExistingMLSConversations") { transactionContext ->
-                conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
-                    kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
-                    pendingConversations.chunked(maxConcurrentJoins).foldToEitherWhileRight(Unit) { batch, _ ->
-                        joinBatch(transactionContext, batch, keepRetryingOnFailure, allowJoinByExternalCommit)
+                getPendingConversations().flatMap { pendingConversations ->
+                    filterSelfMemberConversations(pendingConversations).flatMap { recoverableConversations ->
+                        kaliumLogger.d("Requesting to re-join ${recoverableConversations.size} existing MLS conversation(s)")
+                        recoverableConversations.chunked(maxConcurrentJoins).foldToEitherWhileRight(Unit) { batch, _ ->
+                            joinBatch(transactionContext, batch, keepRetryingOnFailure, allowJoinByExternalCommit)
+                        }
                     }
                 }
             }
         }
+
+    private suspend fun getPendingConversations(): Either<CoreFailure, List<Conversation>> =
+        conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingJoin ->
+            conversationRepository.getConversationsByGroupState(GroupState.PENDING_AFTER_RESET).flatMap { pendingAfterReset ->
+                Either.Right(pendingJoin + pendingAfterReset)
+            }
+        }
+
+    private suspend fun filterSelfMemberConversations(
+        conversations: List<Conversation>,
+    ): Either<CoreFailure, List<Conversation>> {
+        val result = mutableListOf<Conversation>()
+        for (conversation in conversations) {
+            when (val members = conversationRepository.getConversationMembers(conversation.id)) {
+                is Either.Left -> return Either.Left(members.value)
+                is Either.Right -> if (selfUserId in members.value) result += conversation
+            }
+        }
+        return Either.Right(result)
+    }
 
     private suspend fun joinBatch(
         transactionContext: CryptoTransactionContext,
