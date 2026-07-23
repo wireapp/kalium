@@ -23,9 +23,10 @@ import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.header
-import io.ktor.client.request.request
+import io.ktor.client.request.prepareRequest
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.HttpStatement
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -62,21 +63,26 @@ internal class CellsS3Client(
         outFileSink: okio.Sink,
         onProgressUpdate: (Long) -> Unit,
     ) {
-        val response = requestWithRetry(
+        requestWithRetry(
             operation = "Download object",
             request = {
                 val signedRequest = signedRequest(
                     method = HttpMethod.Get,
                     objectKey = objectKey,
                 )
-                httpClient.request(signedRequest.url) {
+                httpClient.prepareRequest(signedRequest.url) {
                     method = HttpMethod.Get
                     signedRequest.headers.forEach { (name, value) -> header(name, value) }
                 }
             },
-            transform = { it },
+            transform = { response ->
+                response.bodyAsChannel().copyToSink(
+                    sink = outFileSink,
+                    onProgressUpdate = onProgressUpdate,
+                )
+                Unit
+            },
         )
-        response.bodyAsChannel().copyToSink(outFileSink, onProgressUpdate = onProgressUpdate)
     }
 
     override suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
@@ -105,7 +111,7 @@ internal class CellsS3Client(
                     objectKey = node.path,
                     signedHeaders = node.createDraftNodeHeaders(),
                 )
-                httpClient.request(signedRequest.url) {
+                httpClient.prepareRequest(signedRequest.url) {
                     method = HttpMethod.Put
                     signedRequest.headers.forEach { (name, value) -> header(name, value) }
                     setBody(S3FileContent(fileSystem, path, length, progressReporter::report))
@@ -154,7 +160,7 @@ internal class CellsS3Client(
                     queryParameters = listOf(S3QueryParameter(UPLOADS_QUERY_PARAMETER, "")),
                     signedHeaders = node.createDraftNodeHeaders(),
                 )
-                httpClient.request(signedRequest.url) {
+                httpClient.prepareRequest(signedRequest.url) {
                     method = HttpMethod.Post
                     signedRequest.headers.forEach { (name, value) -> header(name, value) }
                 }
@@ -182,7 +188,7 @@ internal class CellsS3Client(
                         S3QueryParameter("uploadId", uploadId),
                     ),
                 )
-                httpClient.request(signedRequest.url) {
+                httpClient.prepareRequest(signedRequest.url) {
                     method = HttpMethod.Put
                     signedRequest.headers.forEach { (name, value) -> header(name, value) }
                     setBody(ByteArrayContent(partData, ContentType.Application.OctetStream))
@@ -212,7 +218,7 @@ internal class CellsS3Client(
                     objectKey = objectKey,
                     queryParameters = listOf(S3QueryParameter("uploadId", uploadId)),
                 )
-                httpClient.request(signedRequest.url) {
+                httpClient.prepareRequest(signedRequest.url) {
                     method = HttpMethod.Post
                     signedRequest.headers.forEach { (name, value) -> header(name, value) }
                     setBody(TextContent(body, ContentType.Application.Xml))
@@ -224,7 +230,7 @@ internal class CellsS3Client(
 
     private suspend fun <T> requestWithRetry(
         operation: String,
-        request: suspend () -> HttpResponse,
+        request: suspend () -> HttpStatement,
         transform: suspend (HttpResponse) -> T,
     ): T {
         var lastRetryableFailure: Exception? = null
@@ -245,14 +251,15 @@ internal class CellsS3Client(
 
     private suspend fun <T> performRequestAttempt(
         operation: String,
-        request: suspend () -> HttpResponse,
+        request: suspend () -> HttpStatement,
         transform: suspend (HttpResponse) -> T,
     ): S3Attempt<T> = try {
-        val response = request()
-        if (!response.status.isSuccess()) {
-            response.toS3Failure(operation)
-        } else {
-            S3Attempt.Success(transform(response))
+        request().execute { response ->
+            if (!response.status.isSuccess()) {
+                response.toS3Failure(operation)
+            } else {
+                S3Attempt.Success(transform(response))
+            }
         }
     } catch (cause: RetryableS3Exception) {
         S3Attempt.RetryableFailure(cause)

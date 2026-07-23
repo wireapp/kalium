@@ -29,6 +29,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteChannel
+import io.ktor.utils.io.close
+import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
 import okio.ForwardingFileSystem
@@ -37,6 +44,7 @@ import okio.Source
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertContains
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
@@ -363,6 +371,42 @@ class CellsS3ClientTest {
         assertTrue(progressUpdates.zipWithNext().all { (previous, next) -> next > previous })
     }
 
+    @Test
+    fun givenOpenDownloadResponse_whenDownloading_thenStreamsBeforeResponseCompletes() = runTest {
+        val firstChunk = ByteArray(TEST_STREAM_CHUNK_SIZE) { it.toByte() }
+        val secondChunk = ByteArray(TEST_STREAM_CHUNK_SIZE) { (it + TEST_STREAM_CHUNK_SIZE).toByte() }
+        val responseChannel = ByteChannel(autoFlush = true)
+        val firstChunkCopied = CompletableDeferred<Unit>()
+        val sink = okio.Buffer()
+        val client = CellsS3Client(
+            httpClient = HttpClient(MockEngine { respond(content = responseChannel, status = HttpStatusCode.OK) }),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        val download = launch {
+            client.download("download.txt", sink) { downloaded ->
+                if (downloaded >= firstChunk.size) {
+                    firstChunkCopied.complete(Unit)
+                }
+            }
+        }
+
+        responseChannel.writeFully(firstChunk)
+        withContext(Dispatchers.Default) {
+            withTimeout(STREAM_ASSERTION_TIMEOUT_MILLIS) {
+                firstChunkCopied.await()
+            }
+        }
+
+        responseChannel.writeFully(secondChunk)
+        responseChannel.close()
+        download.join()
+
+        assertContentEquals(firstChunk + secondChunk, sink.readByteArray())
+    }
+
     private fun cellNode(path: String): CellNodeDTO = CellNodeDTO(
         uuid = "node-uuid",
         versionId = "version-uuid",
@@ -391,5 +435,7 @@ class CellsS3ClientTest {
     private companion object {
         const val EXPECTED_ATTEMPTS = 3
         const val TEST_DOWNLOAD_SIZE = 20 * 1024
+        const val TEST_STREAM_CHUNK_SIZE = 1024
+        const val STREAM_ASSERTION_TIMEOUT_MILLIS = 5_000L
     }
 }
