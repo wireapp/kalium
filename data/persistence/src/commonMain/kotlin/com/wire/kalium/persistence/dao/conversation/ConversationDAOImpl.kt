@@ -39,6 +39,7 @@ import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
@@ -349,6 +350,7 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(readDispatcher.value)
     }
 
+    @DebugKaliumApi("Legacy conversation-list query retained for tests and performance benchmarks.")
     override fun getAllConversationDetailsWithEvents(
         fromArchive: Boolean,
         onlyInteractionEnabled: Boolean,
