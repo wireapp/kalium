@@ -52,6 +52,15 @@ class ServerConfigMapperTest {
     }
 
     @Test
+    fun givenServerConfigDtoWithSupportEmail_whenMappingToLinks_thenSupportEmailIsRetained() {
+        val links = newServerConfigDTO(1).links.copy(supportEmail = "support@example.com")
+
+        val actual = serverConfigMapper.fromDTO(links)
+
+        assertEquals("support@example.com", actual.supportEmail)
+    }
+
+    @Test
     fun givenAServerConfig_whenMappingToBackendConfig_thenValuesAreMappedCorrectly() {
         val serverConfig: ServerConfig = SERVER_CONFIG_TEST
         val expected: ServerConfigDTO =

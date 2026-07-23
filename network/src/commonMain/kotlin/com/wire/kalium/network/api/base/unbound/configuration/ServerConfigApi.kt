@@ -85,7 +85,8 @@ class ServerConfigApiImpl internal constructor(
                     isOnPremises = true,
                     apiProxy = apiProxy?.let { proxy ->
                         ServerConfigDTO.ApiProxy(proxy.needsAuthentication, proxy.host, proxy.port)
-                    }
+                    },
+                    supportEmail = supportEmail
                 )
             }
         }
