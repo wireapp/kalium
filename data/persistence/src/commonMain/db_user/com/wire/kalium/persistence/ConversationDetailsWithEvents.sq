@@ -96,7 +96,7 @@ WHERE archived = :fromArchive
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
 ORDER BY
     CASE
-        WHEN :newActivitiesOnTop AND type IN ('GROUP', 'CHANNEL', 'MEETING') AND qualifiedId IN :ongoingCallConversationIds
+        WHEN :newActivitiesOnTop AND qualifiedId IN :ongoingCallConversationIds
         THEN 1
         WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow
         ELSE 0
@@ -136,7 +136,7 @@ WHERE
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     ORDER BY
         CASE
-            WHEN :newActivitiesOnTop AND type IN ('GROUP', 'CHANNEL', 'MEETING') AND qualifiedId IN :ongoingCallConversationIds THEN 1
+            WHEN :newActivitiesOnTop AND qualifiedId IN :ongoingCallConversationIds THEN 1
             ELSE 0
         END DESC,
         CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
@@ -178,7 +178,7 @@ WHERE
     AND name LIKE ('%' || :searchQuery || '%')
 ORDER BY
     CASE
-        WHEN :newActivitiesOnTop AND type IN ('GROUP', 'CHANNEL', 'MEETING') AND qualifiedId IN :ongoingCallConversationIds THEN 1
+        WHEN :newActivitiesOnTop AND qualifiedId IN :ongoingCallConversationIds THEN 1
         ELSE 0
     END DESC,
     CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
