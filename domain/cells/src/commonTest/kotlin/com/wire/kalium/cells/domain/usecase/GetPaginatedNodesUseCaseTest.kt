@@ -24,7 +24,9 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.SelfTeamIdProvider
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.ConversationMetadata
 import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.model.PaginatedList
 import com.wire.kalium.common.functional.getOrNull
@@ -124,12 +126,55 @@ class GetPaginatedNodesUseCaseTest {
         assertEquals(result.getOrNull()?.data?.all { it.conversationName == "conversation_name" }, true)
     }
 
+    @Test
+    fun givenSelfIsGuestInConversation_whenUseCaseInvoked_thenNodesFromThatConversationAreViewerOnly() = runTest {
+        val (_, useCase) = Arrangement()
+            .withGuestConversations("conversation_id")
+            .arrange()
+
+        val result = useCase(
+            conversationId = null,
+            query = "",
+            limit = 100,
+            offset = 0,
+            fileFilters = FileFilters()
+        )
+
+        assertTrue(result.isRight())
+        val data = result.getOrNull()?.data.orEmpty()
+        assertEquals(true, (data.first { it.uuid == "uuid_1" } as Node.File).isViewerOnly)
+        assertEquals(false, (data.first { it.uuid == "uuid_3" } as Node.File).isViewerOnly)
+    }
+
+    @Test
+    fun givenSelfIsNotGuestInAnyConversation_whenUseCaseInvoked_thenNoNodeIsViewerOnly() = runTest {
+        val (_, useCase) = Arrangement().arrange()
+
+        val result = useCase(
+            conversationId = null,
+            query = "",
+            limit = 100,
+            offset = 0,
+            fileFilters = FileFilters()
+        )
+
+        assertTrue(result.isRight())
+        assertEquals(result.getOrNull()?.data?.none { (it as Node.File).isViewerOnly }, true)
+    }
+
     private inner class Arrangement {
 
         val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
         val conversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
         val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
         val usersRepository = mock<CellUsersRepository>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
+
+        private var guestConversations: Set<String> = emptySet()
+
+        fun withGuestConversations(vararg conversationIds: String) = apply {
+            guestConversations = conversationIds.toSet()
+        }
 
         suspend fun arrange(): Pair<Arrangement, GetPaginatedNodesUseCase> {
 
@@ -149,9 +194,19 @@ class GetPaginatedNodesUseCaseTest {
                 ).right()
             )
 
-            everySuspend { usersRepository.getUserNames() }.returns(testUserNames.right())
+            everySuspend { usersRepository.getUserNamesByIds(any()) }.returns(testUserNames.right())
 
-            everySuspend { conversationRepository.getConversationNames() }.returns(testConversationNames.right())
+            everySuspend { selfTeamIdProvider() }.returns(SELF_TEAM_ID)
+
+            everySuspend { conversationRepository.getConversationsByIds(any()) }.returns(
+                testConversationIds.map { id ->
+                    ConversationMetadata(
+                        id = id,
+                        name = CONVERSATION_NAME,
+                        teamId = if (id in guestConversations) OTHER_TEAM_ID else SELF_TEAM_ID,
+                    )
+                }.right()
+            )
 
             everySuspend { attachmentsRepository.getAttachments() }.returns(testAttachments.right())
 
@@ -161,12 +216,17 @@ class GetPaginatedNodesUseCaseTest {
                 cellsRepository = cellsRepository,
                 conversationRepository = conversationRepository,
                 attachmentsRepository = attachmentsRepository,
-                usersRepository = usersRepository
+                usersRepository = usersRepository,
+                selfTeamIdProvider = selfTeamIdProvider,
             )
         }
     }
 
     private companion object {
+
+        const val SELF_TEAM_ID = "self_team"
+        const val OTHER_TEAM_ID = "other_team"
+        const val CONVERSATION_NAME = "conversation_name"
 
         val testNodes = listOf(
             CellNode(
@@ -202,11 +262,11 @@ class GetPaginatedNodesUseCaseTest {
             "user_id_4" to "user_name",
         )
 
-        val testConversationNames = listOf(
-            "conversation_id" to "conversation_name",
-            "conversation_id_2" to "conversation_name",
-            "conversation_id_3" to "conversation_name",
-            "conversation_id_4" to "conversation_name",
+        val testConversationIds = listOf(
+            "conversation_id",
+            "conversation_id_2",
+            "conversation_id_3",
+            "conversation_id_4",
         )
 
         val testAssetPaths = listOf(

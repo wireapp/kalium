@@ -87,6 +87,16 @@ internal class ConversationDAOImpl internal constructor(
         qualifiedID: QualifiedIDEntity
     ): ConversationEntity? = observeConversationById(qualifiedID).first()
 
+    override suspend fun getConversationsByIds(
+        qualifiedIDs: List<QualifiedIDEntity>
+    ): List<ConversationEntity> = withContext(readDispatcher.value) {
+        if (qualifiedIDs.isEmpty()) {
+            emptyList()
+        } else {
+            conversationQueries.selectByQualifiedIds(qualifiedIDs, conversationMapper::fromViewToModel).awaitAsList()
+        }
+    }
+
     override suspend fun getNonDeletedConversationById(
         qualifiedID: QualifiedIDEntity
     ): ConversationEntity? = withContext(readDispatcher.value) {

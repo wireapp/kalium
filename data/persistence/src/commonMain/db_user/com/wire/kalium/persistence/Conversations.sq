@@ -302,6 +302,9 @@ WHERE type IN ('GROUP', 'CHANNEL', 'MEETING') AND protocol IS 'MIXED' AND team_i
 selectByQualifiedId:
 SELECT * FROM Conversation WHERE qualified_id = ? AND deleted_locally = 0;
 
+selectByQualifiedIds:
+SELECT * FROM Conversation WHERE qualified_id IN ?;
+
 selectConversationByQualifiedId:
 SELECT
     Conversation.*

@@ -20,6 +20,7 @@ package com.wire.kalium.cells.data
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.util.toQualifiedIdOrNull
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
@@ -34,11 +35,16 @@ internal class CellUsersDataSource(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : CellUsersRepository {
 
-    override suspend fun getUserNames() = withContext(dispatchers.io) {
+    override suspend fun getUserNamesByIds(userIds: List<String>) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            userDAO.getAllUsersDetails().firstOrNull()?.mapNotNull { user ->
-                user.name?.let { name ->
-                    user.id.toString() to name
+            val qualifiedIds = userIds.mapNotNull { it.toQualifiedIdOrNull() }
+            if (qualifiedIds.isEmpty()) {
+                emptyList()
+            } else {
+                userDAO.getUsersDetailsByQualifiedIDList(qualifiedIds).mapNotNull { user ->
+                    user.name?.let { name ->
+                        user.id.toString() to name
+                    }
                 }
             }
         }
@@ -49,6 +55,12 @@ internal class CellUsersDataSource(
             userId.toQualifiedIdOrNull()?.let { qualifiedId ->
                 userDAO.getUserDetailsByQualifiedID(qualifiedId)?.name
             }
+        }
+    }
+
+    override suspend fun getUserTeamId(userId: UserId) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            userDAO.getUserDetailsByQualifiedID(QualifiedIDEntity(userId.value, userId.domain))?.team
         }
     }
 

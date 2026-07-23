@@ -17,17 +17,18 @@
  */
 package com.wire.kalium.cells.data
 
-import dev.mokkery.MockMode
-import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.model.CellConversation
+import com.wire.kalium.cells.domain.model.ConversationMetadata
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import dev.mokkery.matcher.any
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -287,6 +288,39 @@ class CellConversationRepositoryTest {
         assertEquals(CONVERSATION_ID_1, conversations[0].id)
     }
 
+    @Test
+    fun given_ConversationWithTeam_whenGetConversationsByIds_thenReturnNameAndTeamId() = runTest {
+        val conv = createGroupConversationEntity(
+            CONVERSATION_ID_1,
+            CONVERSATION_NAME_1,
+            channelAccess = null,
+            wireCell = "cell1"
+        )
+        val (_, repository) = Arrangement()
+            .withConversationsByIds(listOf(conv))
+            .arrange()
+
+        val result = repository.getConversationsByIds(listOf("conv1@wire.com"))
+
+        assertIs<Either.Right<List<ConversationMetadata>>>(result)
+        assertEquals(1, result.value.size)
+        assertEquals("conv1@wire.com", result.value[0].id)
+        assertEquals(CONVERSATION_NAME_1, result.value[0].name)
+        assertEquals("team123", result.value[0].teamId)
+    }
+
+    @Test
+    fun given_ConversationIdNotInStorage_whenGetConversationsByIds_thenItIsOmitted() = runTest {
+        val (_, repository) = Arrangement()
+            .withConversationsByIds(emptyList())
+            .arrange()
+
+        val result = repository.getConversationsByIds(listOf("conv1@wire.com"))
+
+        assertIs<Either.Right<List<ConversationMetadata>>>(result)
+        assertEquals(0, result.value.size)
+    }
+
     private fun createGroupConversationEntity(
         conversationId: ConversationId,
         name: String,
@@ -324,9 +358,14 @@ class CellConversationRepositoryTest {
         private val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
         private var conversations: List<ConversationEntity> = emptyList()
         private var pagedConversations: Map<Int, List<ConversationEntity>> = emptyMap()
+        private var conversationsByIds: List<ConversationEntity> = emptyList()
 
         fun withConversations(convs: List<ConversationEntity>) = apply {
             conversations = convs
+        }
+
+        fun withConversationsByIds(convs: List<ConversationEntity>) = apply {
+            conversationsByIds = convs
         }
 
         fun withPagedConversations(conversations: List<ConversationEntity>, offset: Int = 0) = apply {
@@ -349,6 +388,10 @@ class CellConversationRepositoryTest {
                     conversationDAO.getCellGroupConversationsPaged(any(), any(), any())
                 }.returns(emptyList())
             }
+
+            everySuspend {
+                conversationDAO.getConversationsByIds(any())
+            }.returns(conversationsByIds)
 
             return this to CellConversationDataSource(conversationDAO)
         }

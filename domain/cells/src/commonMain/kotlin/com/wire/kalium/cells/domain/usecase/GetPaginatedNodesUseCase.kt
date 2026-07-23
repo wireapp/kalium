@@ -24,6 +24,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.SelfTeamIdProvider
 import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.model.PaginatedList
@@ -62,6 +63,7 @@ internal class GetPaginatedNodesUseCaseImpl(
     private val conversationRepository: CellConversationRepository,
     private val attachmentsRepository: CellAttachmentsRepository,
     private val usersRepository: CellUsersRepository,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : GetPaginatedNodesUseCase {
 
     override suspend operator fun invoke(
@@ -73,9 +75,6 @@ internal class GetPaginatedNodesUseCaseImpl(
         sortingSpec: SortingSpec
     ): Either<CoreFailure, PaginatedList<Node>> {
 
-        // Collect all data required to show the file/folder
-        val userNames = usersRepository.getUserNames().getOrElse(emptyList())
-        val conversationNames = conversationRepository.getConversationNames().getOrElse(emptyList())
         val attachments = attachmentsRepository.getAttachments().getOrElse { emptyList() }.filterIsInstance<CellAssetContent>()
         val assets = attachmentsRepository.getStandaloneAssetPaths().getOrElse { emptyList() }
 
@@ -87,26 +86,41 @@ internal class GetPaginatedNodesUseCaseImpl(
             fileFilters = fileFilters,
             sortingSpec = sortingSpec,
         ).map { nodes ->
+            val visibleNodes = nodes.data.filterNot { it.isDraft }
+
+            val ownerIds = visibleNodes.mapNotNull { it.ownerUserId }.distinct()
+            val conversationIds = visibleNodes.mapNotNull { it.conversationId }.distinct()
+
+            val userNames = usersRepository.getUserNamesByIds(ownerIds).getOrElse(emptyList()).toMap()
+            val conversations = conversationRepository.getConversationsByIds(conversationIds).getOrElse(emptyList())
+            val conversationNames = conversations.associate { it.id to it.name }
+            val selfTeamId = selfTeamIdProvider()
+            val viewerOnlyByConversation = conversations.associate { conversation ->
+                conversation.id to (conversation.teamId != null && conversation.teamId != selfTeamId)
+            }
+
             PaginatedList(
-                data = nodes.data.asSequence()
-                    .filterNot { it.isDraft }
-                    .map { node ->
-                        if (node.type == CellNodeType.FOLDER.value) {
-                            node.toFolderModel().copy(
-                                userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
-                                conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
-                            )
-                        } else {
-                            val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
-                            node.toFileModel().copy(
-                                localPath = attachment?.localPath ?: assets.firstOrNull { it.uuid == node.uuid }?.localPath,
-                                metadata = attachment?.metadata,
-                                userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
-                                conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
-                                isEditSupported = node.supportedEditors.isNotEmpty(),
-                            )
-                        }
-                    }.toList(),
+                data = visibleNodes.map { node ->
+                    val isViewerOnly = node.conversationId?.let { viewerOnlyByConversation[it] } ?: false
+
+                    if (node.type == CellNodeType.FOLDER.value) {
+                        node.toFolderModel().copy(
+                            userName = node.ownerUserId?.let { userNames[it] },
+                            conversationName = node.conversationId?.let { conversationNames[it] },
+                            isViewerOnly = isViewerOnly,
+                        )
+                    } else {
+                        val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
+                        node.toFileModel().copy(
+                            localPath = attachment?.localPath ?: assets.firstOrNull { it.uuid == node.uuid }?.localPath,
+                            metadata = attachment?.metadata,
+                            userName = node.ownerUserId?.let { userNames[it] },
+                            conversationName = node.conversationId?.let { conversationNames[it] },
+                            isEditSupported = node.supportedEditors.isNotEmpty(),
+                            isViewerOnly = isViewerOnly,
+                        )
+                    }
+                },
                 pagination = nodes.pagination
             )
         }
