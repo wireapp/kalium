@@ -482,7 +482,9 @@ internal class EventMapper(
                 Event.Conversation.MemberChanged.MemberMutedStatusChanged(
                     id = id,
                     conversationId = eventContentDTO.qualifiedConversation.toModel(),
-                    mutedConversationChangedTime = eventContentDTO.roleChange.mutedRef.orEmpty(),
+                    mutedConversationChangedTime = eventContentDTO.roleChange.mutedRef
+                        ?.let(Instant::parse)
+                        ?: Instant.parse(eventContentDTO.time),
                     mutedConversationStatus = mapConversationMutedStatus(eventContentDTO.roleChange.mutedStatus)
                 )
             }
@@ -491,7 +493,9 @@ internal class EventMapper(
                 Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
                     id = id,
                     conversationId = eventContentDTO.qualifiedConversation.toModel(),
-                    archivedConversationChangedTime = eventContentDTO.roleChange.archivedRef.orEmpty(),
+                    archivedConversationChangedTime = eventContentDTO.roleChange.archivedRef
+                        ?.let(Instant::parse)
+                        ?: Instant.parse(eventContentDTO.time),
                     isArchiving = eventContentDTO.roleChange.isArchiving ?: false
                 )
             }

@@ -26,18 +26,19 @@ import com.wire.kalium.network.api.authenticated.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import kotlinx.datetime.Instant
 
 internal interface ConversationStatusMapper {
-    fun toMutedStatusApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long): MemberUpdateDTO
+    fun toMutedStatusApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Instant): MemberUpdateDTO
     fun toMutedStatusDaoModel(mutedStatus: MutedConversationStatus): ConversationEntity.MutedStatus
     fun fromMutedStatusDaoModel(mutedStatus: ConversationEntity.MutedStatus): MutedConversationStatus
     fun fromMutedStatusApiToDaoModel(mutedStatus: MutedStatus?): ConversationEntity.MutedStatus
     fun fromRemovedByToLogicModel(removedBy: UserIDEntity): UserId
-    fun toArchivedStatusApiModel(isArchived: Boolean, archivedStatusTimestamp: Long): MemberUpdateDTO
+    fun toArchivedStatusApiModel(isArchived: Boolean, archivedStatusTimestamp: Instant): MemberUpdateDTO
 }
 
 internal class ConversationStatusMapperImpl(val idMapper: IdMapper) : ConversationStatusMapper {
-    override fun toMutedStatusApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long): MemberUpdateDTO {
+    override fun toMutedStatusApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Instant): MemberUpdateDTO {
         return MemberUpdateDTO(
             otrMutedStatus = MutedStatus.fromOrdinal(mutedStatus.status),
             otrMutedRef = mutedStatusTimestamp.toIsoDateTimeString()
@@ -73,7 +74,7 @@ internal class ConversationStatusMapperImpl(val idMapper: IdMapper) : Conversati
     override fun fromRemovedByToLogicModel(removedBy: UserIDEntity): UserId = removedBy.toModel()
     override fun toArchivedStatusApiModel(
         isArchived: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestamp: Instant
     ): MemberUpdateDTO = MemberUpdateDTO(
         otrArchived = isArchived,
         otrArchivedRef = archivedStatusTimestamp.toIsoDateTimeString()

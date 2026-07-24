@@ -96,8 +96,9 @@ class ReactionDAOImpl(
         reactionsQueries.transaction {
             reactionsQueries.doesMessageExist(originalMessageId, conversationId).awaitAsOneOrNull()?.let {
                 reactionsQueries.deleteAllReactionsOnMessageFromUser(originalMessageId, conversationId, senderUserId)
+                val date = instant.toIsoDateTimeString()
                 reactions.forEach {
-                    reactionsQueries.insertReaction(originalMessageId, conversationId, senderUserId, it, instant.toIsoDateTimeString())
+                    reactionsQueries.insertReaction(originalMessageId, conversationId, senderUserId, it, date)
                 }
             }
         }

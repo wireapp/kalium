@@ -222,7 +222,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusRemotely(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            DateTimeUtil.currentInstant().toEpochMilliseconds()
+            DateTimeUtil.currentInstant()
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -244,7 +244,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateArchivedStatusRemotely(
             TestConversation.ID,
             isArchived,
-            DateTimeUtil.currentInstant().toEpochMilliseconds()
+            DateTimeUtil.currentInstant()
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -265,7 +265,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusLocally(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            DateTimeUtil.currentInstant().toEpochMilliseconds()
+            DateTimeUtil.currentInstant()
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
