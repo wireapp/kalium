@@ -88,8 +88,13 @@ internal class GetPaginatedNodesUseCaseImpl(
         ).map { nodes ->
             val visibleNodes = nodes.data.filterNot { it.isDraft }
 
+            // Nodes returned while browsing inside a conversation don't carry their conversationId,
+            // so we fall back to the conversation being browsed. The argument may be a nested folder
+            // path ("conversationId/folder/..."), so we take the root segment: the actual conversation id.
+            val browsedConversationId = conversationId?.substringBefore("/")
+
             val ownerIds = visibleNodes.mapNotNull { it.ownerUserId }.distinct()
-            val conversationIds = visibleNodes.mapNotNull { it.conversationId }.distinct()
+            val conversationIds = (visibleNodes.mapNotNull { it.conversationId } + listOfNotNull(browsedConversationId)).distinct()
 
             val userNames = usersRepository.getUserNamesByIds(ownerIds).getOrElse(emptyList()).toMap()
             val conversations = conversationRepository.getConversationsByIds(conversationIds).getOrElse(emptyList())
@@ -101,12 +106,15 @@ internal class GetPaginatedNodesUseCaseImpl(
 
             PaginatedList(
                 data = visibleNodes.map { node ->
-                    val isViewerOnly = node.conversationId?.let { viewerOnlyByConversation[it] } ?: false
+                    val nodeConversationId = node.conversationId ?: browsedConversationId
+                    val userName = node.ownerUserId?.let { userNames[it] }
+                    val conversationName = nodeConversationId?.let { conversationNames[it] }
+                    val isViewerOnly = nodeConversationId?.let { viewerOnlyByConversation[it] } ?: false
 
                     if (node.type == CellNodeType.FOLDER.value) {
                         node.toFolderModel().copy(
-                            userName = node.ownerUserId?.let { userNames[it] },
-                            conversationName = node.conversationId?.let { conversationNames[it] },
+                            userName = userName,
+                            conversationName = conversationName,
                             isViewerOnly = isViewerOnly,
                         )
                     } else {
@@ -114,8 +122,8 @@ internal class GetPaginatedNodesUseCaseImpl(
                         node.toFileModel().copy(
                             localPath = attachment?.localPath ?: assets.firstOrNull { it.uuid == node.uuid }?.localPath,
                             metadata = attachment?.metadata,
-                            userName = node.ownerUserId?.let { userNames[it] },
-                            conversationName = node.conversationId?.let { conversationNames[it] },
+                            userName = userName,
+                            conversationName = conversationName,
                             isEditSupported = node.supportedEditors.isNotEmpty(),
                             isViewerOnly = isViewerOnly,
                         )

@@ -162,6 +162,28 @@ class GetPaginatedNodesUseCaseTest {
         assertEquals(result.getOrNull()?.data?.none { (it as Node.File).isViewerOnly }, true)
     }
 
+    @Test
+    fun givenBrowsingSubfolderOfGuestConversationAndNodesHaveNoConversationId_whenUseCaseInvoked_thenNodesAreViewerOnly() = runTest {
+        val (_, useCase) = Arrangement()
+            .withNodes(nodesWithoutConversationId)
+            .withGuestConversations("conversation_id")
+            .arrange()
+
+        // browsing a nested folder: the argument is a path whose root segment is the conversation id
+        val result = useCase(
+            conversationId = "conversation_id/folder_uuid",
+            query = "",
+            limit = 100,
+            offset = 0,
+            fileFilters = FileFilters()
+        )
+
+        assertTrue(result.isRight())
+        val data = result.getOrNull()?.data.orEmpty()
+        assertEquals(true, (data.first { it.uuid == "uuid_1" } as Node.File).isViewerOnly)
+        assertEquals(CONVERSATION_NAME, data.first { it.uuid == "uuid_1" }.conversationName)
+    }
+
     private inner class Arrangement {
 
         val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
@@ -171,9 +193,14 @@ class GetPaginatedNodesUseCaseTest {
         val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
 
         private var guestConversations: Set<String> = emptySet()
+        private var nodes: List<CellNode> = testNodes
 
         fun withGuestConversations(vararg conversationIds: String) = apply {
             guestConversations = conversationIds.toSet()
+        }
+
+        fun withNodes(nodes: List<CellNode>) = apply {
+            this.nodes = nodes
         }
 
         suspend fun arrange(): Pair<Arrangement, GetPaginatedNodesUseCase> {
@@ -189,7 +216,7 @@ class GetPaginatedNodesUseCaseTest {
                 )
             }.returns(
                 PaginatedList(
-                    data = testNodes,
+                    data = nodes,
                     pagination = null,
                 ).right()
             )
@@ -252,6 +279,19 @@ class GetPaginatedNodesUseCaseTest {
                 isDraft = false,
                 ownerUserId = "user_id_3",
                 conversationId = "conversation_id_3",
+            ),
+        )
+
+        // Simulates nodes returned by getNodesForPath when browsing inside a conversation:
+        // the API response does not populate the node's conversationId.
+        val nodesWithoutConversationId = listOf(
+            CellNode(
+                uuid = "uuid_1",
+                versionId = "version_id",
+                path = "path",
+                isDraft = false,
+                ownerUserId = "user_id",
+                conversationId = null,
             ),
         )
 
