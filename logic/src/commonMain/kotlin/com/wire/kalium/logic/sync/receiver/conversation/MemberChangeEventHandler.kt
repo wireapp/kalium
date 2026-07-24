@@ -35,7 +35,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
 
 internal interface MemberChangeEventHandler {
@@ -57,7 +56,7 @@ internal class MemberChangeEventHandlerImpl(
                 conversationRepository.updateMutedStatusLocally(
                     event.conversationId,
                     event.mutedConversationStatus,
-                    DateTimeUtil.currentInstant().toEpochMilliseconds()
+                    event.mutedConversationChangedTime
                 )
                 eventLogger.logSuccess()
             }
@@ -66,7 +65,7 @@ internal class MemberChangeEventHandlerImpl(
                 conversationRepository.updateArchivedStatusLocally(
                     event.conversationId,
                     event.isArchiving,
-                    DateTimeUtil.currentInstant().toEpochMilliseconds()
+                    event.archivedConversationChangedTime
                 )
                 eventLogger.logSuccess()
             }

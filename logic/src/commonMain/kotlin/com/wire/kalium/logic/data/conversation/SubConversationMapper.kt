@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
+import kotlinx.datetime.Instant
 
 internal fun SubconversationResponse.toModel(): SubConversation {
     return SubConversation(
@@ -28,7 +29,7 @@ internal fun SubconversationResponse.toModel(): SubConversation {
         parentId = parentId.toModel(),
         groupId = GroupID(groupId),
         epoch = epoch,
-        epochTimestamp = epochTimestamp,
+        epochTimestamp = epochTimestamp?.let(Instant::parse),
         mlsCipherSuiteTag = mlsCipherSuiteTag,
         members = members.map { it.toModel() }
     )

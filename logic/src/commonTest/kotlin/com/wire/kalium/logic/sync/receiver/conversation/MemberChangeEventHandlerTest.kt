@@ -79,7 +79,11 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateMutedStatusLocally(eq(event.conversationId), any(), any())
+            arrangement.conversationRepository.updateMutedStatusLocally(
+                eq(event.conversationId),
+                any(),
+                eq(event.mutedConversationChangedTime)
+            )
         }
     }
 
@@ -100,7 +104,7 @@ class MemberChangeEventHandlerTest {
             arrangement.conversationRepository.updateArchivedStatusLocally(
                 eq(event.conversationId),
                 matches { it == isNewEventArchiving },
-                any()
+                eq(event.archivedConversationChangedTime)
             )
         }
     }

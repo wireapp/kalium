@@ -32,6 +32,7 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -41,7 +42,7 @@ class UpdateConversationArchivedStatusUseCaseTest {
     fun givenAConversationId_whenInvokingAnArchivedStatusChange_thenShouldDelegateTheCallAndReturnASuccessResult() = runTest {
         val conversationId = TestConversation.ID
         val isConversationArchived = true
-        val archivedStatusTimestamp = 123456789L
+        val archivedStatusTimestamp = Instant.fromEpochMilliseconds(123456789L)
         val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
@@ -75,7 +76,7 @@ class UpdateConversationArchivedStatusUseCaseTest {
         runTest {
             val conversationId = TestConversation.ID
             val isConversationArchived = true
-            val archivedStatusTimestamp = 123456789L
+            val archivedStatusTimestamp = Instant.fromEpochMilliseconds(123456789L)
             val onlyLocally = true
 
             val (arrangement, updateConversationArchivedStatus) = Arrangement()
@@ -104,7 +105,7 @@ class UpdateConversationArchivedStatusUseCaseTest {
     fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFails_thenShouldDelegateTheCallAndReturnAFailureResult() = runTest {
         val conversationId = TestConversation.ID
         val isConversationArchived = true
-        val archivedStatusTimestamp = 123456789L
+        val archivedStatusTimestamp = Instant.fromEpochMilliseconds(123456789L)
         val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
@@ -137,7 +138,7 @@ class UpdateConversationArchivedStatusUseCaseTest {
     fun givenRemoteNoConversationError_whenInvokingAnArchivedStatusChange_thenShouldArchiveLocallyAndReturnSuccess() = runTest {
         val conversationId = TestConversation.ID
         val isConversationArchived = true
-        val archivedStatusTimestamp = 123456789L
+        val archivedStatusTimestamp = Instant.fromEpochMilliseconds(123456789L)
         val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
@@ -170,7 +171,7 @@ class UpdateConversationArchivedStatusUseCaseTest {
     fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFailsOnlyLocally_thenShouldReturnAFailureResult() = runTest {
         val conversationId = TestConversation.ID
         val isConversationArchived = true
-        val archivedStatusTimestamp = 123456789L
+        val archivedStatusTimestamp = Instant.fromEpochMilliseconds(123456789L)
         val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
