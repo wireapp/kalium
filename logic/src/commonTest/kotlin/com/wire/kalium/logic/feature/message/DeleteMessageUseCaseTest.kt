@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -327,7 +326,7 @@ class DeleteMessageUseCaseTest {
         val TEST_CONVERSATION_ID = TestConversation.ID
         val SELF_CONVERSATION_ID = TestConversation.SELF().id
         const val TEST_MESSAGE_UUID = "messageUuid"
-        val SELF_CLIENT_ID: ClientId = PlainId("client_self")
+        val SELF_CLIENT_ID: ClientId = ClientId("client_self")
         val deletedMessageContent = MessageContent.DeleteMessage(TEST_MESSAGE_UUID)
         val ASSET_ID = AssetId("asset-id", "some-asset-domain.com")
         const val ASSET_TOKEN = "==some-asset-token"

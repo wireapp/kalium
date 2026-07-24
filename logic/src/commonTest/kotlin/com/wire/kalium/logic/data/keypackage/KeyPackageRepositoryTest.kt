@@ -23,7 +23,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryTest.Arrangement.Companion.CIPHER_SUITE
 import com.wire.kalium.logic.data.mls.CipherSuite
@@ -511,8 +510,8 @@ internal class KeyPackageRepositoryTest {
             const val KEY_PACKAGE_COUNT = 100
             val CIPHER_SUITE = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
             val KEY_PACKAGE_COUNT_DTO = KeyPackageCountDTO(KEY_PACKAGE_COUNT)
-            val SELF_CLIENT_ID: ClientId = PlainId("client_self")
-            val OTHER_CLIENT_ID: ClientId = PlainId("client_other")
+            val SELF_CLIENT_ID: ClientId = ClientId("client_self")
+            val OTHER_CLIENT_ID: ClientId = ClientId("client_other")
             val USER_ID = UserId("user_id", "wire.com")
             val SELF_USER_ID = UserId("self_user_id", "wire.com")
             val KEY_PACKAGES = listOf("keypackage".encodeToByteArray())
