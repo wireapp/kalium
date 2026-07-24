@@ -27,5 +27,6 @@ expect fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
     ignoreSSLCertificates: Boolean = false,
-    certificatePinning: CertificatePinning
+    certificatePinning: CertificatePinning,
+    httpTrafficObserver: HttpTrafficObserver? = null,
 ): HttpClientEngine

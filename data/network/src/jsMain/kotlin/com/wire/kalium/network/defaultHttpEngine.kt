@@ -28,8 +28,10 @@ actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
     ignoreSSLCertificates: Boolean,
-    certificatePinning: CertificatePinning
+    certificatePinning: CertificatePinning,
+    httpTrafficObserver: HttpTrafficObserver?,
 ): HttpClientEngine {
+    // Not implemented on JS: this hook is currently only wired up on JVM/Android.
     if (serverConfigDTOApiProxy != null || proxyCredentials != null) {
         throw IllegalArgumentException("Proxy is not implemented on JS")
     }
