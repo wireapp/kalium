@@ -20,7 +20,10 @@ package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.QualifiedID
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -36,5 +39,47 @@ class EventMapperTest {
 
         val event = assertIs<Event.User.SessionRefreshSuggested>(result)
         assertEquals(eventId, event.id)
+    }
+
+    @Test
+    fun givenDeletedConversationDTO_whenMapping_thenTimestampIsMappedToInstant() {
+        val timestamp = Instant.parse("2026-07-24T12:00:00.000Z")
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val dto = EventContentDTO.Conversation.DeletedConversationDTO(
+            qualifiedConversation = QualifiedID("conversation-id", "domain"),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            time = timestamp.toString()
+        )
+
+        val result = mapper.fromEventContentDTO("event-id", dto)
+
+        val event = assertIs<Event.Conversation.DeletedConversation>(result)
+        assertEquals(timestamp, event.dateTime)
+    }
+
+    @Test
+    fun givenMemberRoleUpdateDTO_whenMapping_thenTimestampIsMappedToInstant() {
+        val timestamp = Instant.parse("2026-07-24T12:00:00.000Z")
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val dto = EventContentDTO.Conversation.MemberUpdateDTO(
+            qualifiedConversation = QualifiedID("conversation-id", "domain"),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            time = timestamp.toString(),
+            from = TestUser.NETWORK_ID.value,
+            roleChange = ConversationRoleChange(
+                user = TestUser.NETWORK_ID.value,
+                qualifiedUserId = TestUser.NETWORK_ID,
+                role = "wire_admin",
+                mutedRef = null,
+                mutedStatus = null,
+                isArchiving = null,
+                archivedRef = null
+            )
+        )
+
+        val result = mapper.fromEventContentDTO("event-id", dto)
+
+        val event = assertIs<Event.Conversation.MemberChanged.MemberChangedRole>(result)
+        assertEquals(timestamp, event.dateTime)
     }
 }
