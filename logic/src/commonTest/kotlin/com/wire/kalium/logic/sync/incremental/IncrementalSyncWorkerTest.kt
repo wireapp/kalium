@@ -147,6 +147,33 @@ class IncrementalSyncWorkerTest {
     }
 
     @Test
+    fun givenEventProcessingFails_whenPageContainsMoreEvents_thenLaterEventsAreNotProcessed() = runTest {
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val failingEnvelope = TestEvent.memberJoin("failing-event").wrapInEnvelope()
+        val laterEnvelope = TestEvent.memberJoin("later-event").wrapInEnvelope()
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(failingEnvelope, laterEnvelope))))
+            .arrange {
+                everySuspend {
+                    eventProcessor.processEvent(any(), eq(failingEnvelope))
+                } returns Either.Left(failure)
+                everySuspend {
+                    eventProcessor.processEvent(any(), eq(laterEnvelope))
+                } returns Either.Right(laterEnvelope.event.id)
+            }
+
+        assertFailsWith<KaliumSyncException> {
+            worker.processEventsFlow().collect()
+        }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.eventProcessor.processEvent(any(), eq(laterEnvelope))
+            arrangement.eventProcessor.flushPendingSideEffects()
+            arrangement.eventRepository.setEventsAsProcessed(any())
+        }
+    }
+
+    @Test
     fun givenProcessorReturnsEventId_whenPerformingIncrementalSync_thenWorkerMarksEventAsProcessed() = runTest {
         val envelope = TestEvent.memberJoin().wrapInEnvelope()
         val eventId = envelope.event.id
