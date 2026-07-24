@@ -75,6 +75,8 @@ data class FeatureConfigResponse(
     val assetAuditLog: FeatureConfigData.AssetAuditLog?,
     @SerialName("preventAdminlessGroups")
     val preventAdminlessGroups: FeatureConfigData.PreventAdminlessGroups?,
+    @SerialName("meetings")
+    val meetings: FeatureConfigData.Meetings?,
 )
 
 @Serializable
@@ -367,6 +369,13 @@ sealed class FeatureConfigData {
     @SerialName("preventAdminlessGroups")
     @Serializable
     data class PreventAdminlessGroups(
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO
+    ) : FeatureConfigData()
+
+    @SerialName("meetings")
+    @Serializable
+    data class Meetings(
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()
