@@ -109,7 +109,7 @@ internal class OnCloseCall(
         when (callStatus) {
             CallStatus.MISSED -> true
             CallStatus.CLOSED -> callMetadata?.callStatus?.let { currentCallStatus ->
-                callMetadata.establishedTime.isNullOrEmpty() &&
+                callMetadata.establishedTime == null &&
                         currentCallStatus != CallStatus.CLOSED_INTERNALLY &&
                         currentCallStatus != CallStatus.REJECTED &&
                         currentCallStatus != CallStatus.STARTED
