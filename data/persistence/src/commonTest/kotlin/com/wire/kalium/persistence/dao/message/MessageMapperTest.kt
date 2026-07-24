@@ -300,7 +300,6 @@ class MessageMapperTest {
                 id = "someId",
                 conversationId = ConversationIDEntity("someValue", "someDomain"),
                 contentType = MessageEntity.ContentType.TEXT,
-                date = Instant.DISTANT_FUTURE,
                 visibility = MessageEntity.Visibility.VISIBLE,
                 senderUserId = QualifiedIDEntity("someValue", "someDomain"),
                 isEphemeral = isEphemeral,
