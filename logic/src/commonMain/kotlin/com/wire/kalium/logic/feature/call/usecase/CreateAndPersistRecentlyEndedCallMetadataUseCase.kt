@@ -62,7 +62,7 @@ internal class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal con
         val guestsProCount = conversationMembers.count { member -> member.user.userType.isGuest() && member.user.teamId != null }
         val isOutgoingCall = callStatus == CallStatus.STARTED
         val callDurationInSeconds = establishedTime?.let {
-            DateTimeUtil.calculateMillisDifference(it, DateTimeUtil.currentIsoDateTimeString()) / MILLIS_IN_SECOND
+            DateTimeUtil.calculateMillisDifference(it, DateTimeUtil.currentInstant()) / MILLIS_IN_SECOND
         } ?: 0L
 
         return RecentlyEndedCallMetadata(

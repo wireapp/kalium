@@ -220,7 +220,7 @@ class OnCloseCallTest {
         testScope.runTest {
             val establishedCall = callMetadata.copy(
                 callStatus = CallStatus.ESTABLISHED,
-                establishedTime = "time",
+                establishedTime = Instant.parse("2026-01-01T12:00:00Z"),
                 conversationType = Conversation.Type.Group.Regular
             )
             val (arrangement, onCloseCall) = Arrangement(testScope)

@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import kotlinx.datetime.Instant
 
 enum class CallStatus {
     STARTED,
@@ -45,7 +46,7 @@ data class Call(
     val conversationType: Conversation.Type,
     val callerName: String?,
     val callerTeamName: String?,
-    val establishedTime: String? = null,
+    val establishedTime: Instant? = null,
     val participants: List<Participant> = emptyList(),
     val maxParticipants: Int = 0 // Was used for tracking
 )

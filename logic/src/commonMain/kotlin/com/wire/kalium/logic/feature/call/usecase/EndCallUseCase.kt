@@ -29,7 +29,6 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
 
 /**
  * This use case is responsible for ending a call.
@@ -78,6 +77,6 @@ internal class EndCallUseCaseImpl(
 
         callManager.value.endCall(conversationId)
         callRepository.updateIsCameraOnById(conversationId, false)
-        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedback(endedCall?.establishedTime?.let { Instant.parse(it) }))
+        endCallListener.onCallEndedAskForFeedback(shouldAskCallFeedback(endedCall?.establishedTime))
     }
 }
