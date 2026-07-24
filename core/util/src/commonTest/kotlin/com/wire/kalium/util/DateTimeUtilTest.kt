@@ -20,6 +20,7 @@ package com.wire.kalium.util
 
 import com.wire.kalium.util.string.IgnoreIOS
 import com.wire.kalium.util.string.IgnoreJS
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -89,6 +90,34 @@ class DateTimeUtilTest {
     fun whenGettingCurrentIsoDateTimeString_thenMillisShouldNotBeIgnored() {
         val result = DateTimeUtil.currentIsoDateTimeString()
         assertTrue(regex.matches(result))
+    }
+
+    @Test
+    fun whenGettingCurrentInstant_thenPrecisionShouldBeTruncatedToMilliseconds() {
+        val currentTime = Instant.parse("2022-12-20T17:30:00.123456789Z")
+        val clock = object : Clock {
+            override fun now(): Instant = currentTime
+        }
+
+        val result = DateTimeUtil.currentInstant(clock)
+
+        assertEquals(Instant.parse("2022-12-20T17:30:00.123Z"), result)
+    }
+
+    @Test
+    fun whenGettingCurrentInstant_thenCurrentClockMillisecondsShouldBePreserved() {
+        lateinit var generatedInstant: Instant
+        val clock = object : Clock {
+            override fun now(): Instant = Clock.System.now().also { generatedInstant = it }
+        }
+
+        val result = DateTimeUtil.currentInstant(clock)
+        val resultIso = DateTimeUtil.fromInstantToIsoDateTimeString(result)
+        val expectedMilliseconds = (generatedInstant.toEpochMilliseconds() % 1000).toString().padStart(3, '0')
+        val resultMilliseconds = resultIso.substringAfterLast('.').removeSuffix("Z")
+
+        assertEquals(generatedInstant.toEpochMilliseconds(), result.toEpochMilliseconds())
+        assertEquals(expectedMilliseconds, resultMilliseconds)
     }
 
     @Test

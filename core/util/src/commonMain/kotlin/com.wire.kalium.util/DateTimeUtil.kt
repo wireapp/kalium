@@ -95,12 +95,14 @@ object DateTimeUtil : PlatformDateTimeUtil() {
     fun currentSimpleDateTimeString(): String = fromInstantToSimpleDateTimeString(Clock.System.now())
 
     /**
-     * Return the current date-time as [kotlinx.datetime.Instant].
-     * It's parsed to string and back to ensure that it has the same proper accuracy (three decimal places - milliseconds)
-     * @return current date-time as [kotlinx.datetime.Instant]
+     * Return the current date-time as [kotlinx.datetime.Instant], truncated to millisecond precision.
+     * @return current date-time as [kotlinx.datetime.Instant] with millisecond precision
      */
     fun currentInstant(): Instant =
-        Instant.parse(currentIsoDateTimeString())
+        currentInstant(Clock.System)
+
+    internal fun currentInstant(clock: Clock): Instant =
+        clock.now().let { Instant.fromEpochMilliseconds(it.toEpochMilliseconds()) }
 
     /**
      * Parse epoch timestamp in milliseconds into date-time in ISO-8601 format
@@ -117,13 +119,6 @@ object DateTimeUtil : PlatformDateTimeUtil() {
      */
     fun fromIsoDateTimeStringToEpochMillis(isoDateTime: String): Long =
         Instant.parse(isoDateTime).toEpochMilliseconds()
-
-    /**
-     * Parse date-time in ISO-8601 format into epoch timestamp in milliseconds
-     * @receiver date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
-     * @return epoch timestamp in milliseconds
-     */
-    fun String.toEpochMillis(): Long = fromIsoDateTimeStringToEpochMillis(this)
 
     /**
      * Parse epoch timestamp in milliseconds into date-time in ISO-8601 format
