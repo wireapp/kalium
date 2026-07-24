@@ -434,6 +434,12 @@ internal class ConversationDAOImpl internal constructor(
                 .awaitAsList()
         }
 
+    override suspend fun getActiveMLSConversationsForMembershipAudit(): List<ConversationEntity> =
+        withContext(readDispatcher.value) {
+            conversationQueries.selectActiveMLSConversationsForMembershipAudit(conversationMapper::toConversationEntity)
+                .awaitAsList()
+        }
+
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         conversationQueries.transactionWithResult {
             conversationQueries.deleteConversation(qualifiedID)

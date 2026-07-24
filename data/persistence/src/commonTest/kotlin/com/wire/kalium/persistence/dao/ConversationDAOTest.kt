@@ -193,6 +193,41 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenConversationsWithDifferentProtocolsAndMembership_whenGettingMembershipAuditList_thenOnlyActiveMLSMembershipsReturned() =
+        runTest {
+            val deletedMLSConversation = conversationEntity4.copy(id = QualifiedIDEntity("deleted-mls", "wire.com"))
+            val removedMLSConversation = conversationEntity4.copy(id = QualifiedIDEntity("removed-mls", "wire.com"))
+            val selfMLSConversation = conversationEntity2.copy(
+                id = QualifiedIDEntity("self-mls", "wire.com"),
+                type = ConversationEntity.Type.SELF
+            )
+            conversationDAO.insertConversations(
+                listOf(
+                    conversationEntity1,
+                    conversationEntity2,
+                    conversationEntity3,
+                    conversationEntity6,
+                    deletedMLSConversation,
+                    removedMLSConversation,
+                    selfMLSConversation
+                )
+            )
+            insertSelfMember(conversationEntity1.id)
+            insertSelfMember(conversationEntity2.id)
+            insertSelfMember(conversationEntity3.id)
+            insertSelfMember(conversationEntity6.id)
+            insertSelfMember(deletedMLSConversation.id)
+            conversationDAO.setConversationDeletedLocally(deletedMLSConversation.id, true)
+
+            val result = conversationDAO.getActiveMLSConversationsForMembershipAudit()
+
+            assertEquals(
+                setOf(conversationEntity2.id, conversationEntity3.id, conversationEntity6.id, selfMLSConversation.id),
+                result.map { it.id }.toSet()
+            )
+        }
+
+    @Test
     fun givenExistingGroupConversations_WhenGetConversationIds_ThenAllGroupTypesWithGivenProtocolAreReturned() = runTest {
         val channel = conversationEntity5.copy(
             id = QualifiedIDEntity("channel", "test"),
