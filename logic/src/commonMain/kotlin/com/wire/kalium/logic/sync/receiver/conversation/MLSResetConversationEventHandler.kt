@@ -17,10 +17,16 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
 internal interface MLSResetConversationEventHandler {
@@ -30,37 +36,41 @@ internal interface MLSResetConversationEventHandler {
 internal class MLSResetConversationEventHandlerImpl(
     private val mlsConversationRepository: MLSConversationRepository,
 ) : MLSResetConversationEventHandler {
-    override suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset) {
+    override suspend fun handle(
+        transaction: CryptoTransactionContext,
+        event: Event.Conversation.MLSReset
+    ) {
+        val mlsContext = transaction.mls ?: return
+        val eventLogger = kaliumLogger.createEventProcessingLogger(event)
 
-        transaction.mls?.let { mlsContext ->
-            mlsConversationRepository.leaveGroup(mlsContext, event.groupID)
+        // Leaving the old group is best-effort: it may already be absent when a reset is replayed.
+        mlsConversationRepository.leaveGroup(mlsContext, event.groupID)
 
-            val hasEstablishedMLSGroup = mlsConversationRepository.hasEstablishedMLSGroup(
-                mlsContext,
-                event.newGroupID
-            ).getOrElse { false }
-
-            val newEpoch = if (hasEstablishedMLSGroup) {
-                mlsContext.conversationEpoch(event.newGroupID.value).toLong()
-            } else {
-                0L
-            }
-
-            val newState = if (hasEstablishedMLSGroup) {
-                // already have the group, no need to join
-                // can mean that the welcome event arrived before the reset
-                ConversationEntity.GroupState.ESTABLISHED
-            } else {
-                // update local db with the new group id and set the conversation as not established
-                ConversationEntity.GroupState.PENDING_AFTER_RESET
-            }
-
-            mlsConversationRepository.updateGroupIdAndState(
-                event.conversationId,
-                event.newGroupID,
-                groupState = newState,
-                newEpoch = newEpoch,
+        mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, event.newGroupID)
+            .fold(
+                { Either.Left(it) },
+                { hasEstablishedMLSGroup ->
+                    if (hasEstablishedMLSGroup) {
+                        mlsConversationRepository.getLocalGroupEpoch(mlsContext, event.newGroupID)
+                            .flatMap { epoch ->
+                                updateGroupState(event, ConversationEntity.GroupState.ESTABLISHED, epoch.toLong())
+                            }
+                    } else {
+                        updateGroupState(event, ConversationEntity.GroupState.PENDING_AFTER_RESET, 0L)
+                    }
+                }
             )
-        }
+            .onFailure { eventLogger.logFailure(it) }
     }
+
+    private suspend fun updateGroupState(
+        event: Event.Conversation.MLSReset,
+        state: ConversationEntity.GroupState,
+        epoch: Long
+    ): Either<CoreFailure, Unit> = mlsConversationRepository.updateGroupIdAndState(
+        event.conversationId,
+        event.newGroupID,
+        groupState = state,
+        newEpoch = epoch,
+    )
 }

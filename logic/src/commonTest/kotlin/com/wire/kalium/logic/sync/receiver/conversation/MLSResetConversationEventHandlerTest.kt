@@ -34,7 +34,6 @@ import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -160,7 +159,7 @@ class MLSResetConversationEventHandlerTest {
         }
 
     @Test
-    fun givenHasEstablishedGroupFails_whenHandlingEvent_thenShouldUpdateGroupIdWithNotEstablished() =
+    fun givenHasEstablishedGroupFails_whenHandlingEvent_thenShouldNotUpdateGroupState() =
         runTest {
             val failure = MLSFailure.Generic(RuntimeException("Has established failed"))
             val event = MLS_RESET_EVENT
@@ -176,18 +175,13 @@ class MLSResetConversationEventHandlerTest {
                 arrangement.mlsConversationRepository.leaveGroup(any(), eq(event.groupID))
             }
 
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.mlsConversationRepository.updateGroupIdAndState(
-                    matches { it == event.conversationId },
-                    matches { it == event.newGroupID },
-                    eq(0L),
-                    matches { it == ConversationEntity.GroupState.PENDING_AFTER_RESET }
-                )
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
             }
         }
 
     @Test
-    fun givenUpdateGroupIdAndStateFails_whenHandlingEvent_thenShouldPropagateError() = runTest {
+    fun givenUpdateGroupIdAndStateFails_whenHandlingEvent_thenShouldAttemptUpdate() = runTest {
         val failure = StorageFailure.DataNotFound
         val (arrangement, handler) = arrange {
             withLeaveGroupSucceeding()
@@ -204,6 +198,22 @@ class MLSResetConversationEventHandlerTest {
                 eq(0L),
                 eq(ConversationEntity.GroupState.PENDING_AFTER_RESET)
             )
+        }
+    }
+
+    @Test
+    fun givenNewGroupEpochLookupFails_whenHandlingEvent_thenShouldNotUpdateGroupState() = runTest {
+        val failure = CoreFailure.Unknown(RuntimeException("Epoch lookup failed"))
+        val (arrangement, handler) = arrange {
+            withLeaveGroupSucceeding()
+            withHasEstablishedMLSGroupReturning(true)
+            withNewGroupEpochFailure(failure)
+        }
+
+        handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
         }
     }
 
@@ -262,8 +272,14 @@ class MLSResetConversationEventHandlerTest {
 
         suspend fun withNewGroupEpoch(newGroupEpoch: Long) = apply {
             everySuspend {
-                mlsContext.conversationEpoch(any())
-            } returns newGroupEpoch.toULong()
+                mlsConversationRepository.getLocalGroupEpoch(any(), any())
+            } returns Either.Right(newGroupEpoch.toULong())
+        }
+
+        suspend fun withNewGroupEpochFailure(failure: CoreFailure) = apply {
+            everySuspend {
+                mlsConversationRepository.getLocalGroupEpoch(any(), any())
+            } returns Either.Left(failure)
         }
 
         suspend fun withHasEstablishedMLSGroupFailing(failure: MLSFailure) = apply {
