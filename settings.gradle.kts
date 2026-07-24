@@ -50,11 +50,6 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
     }
-    versionCatalogs {
-        create("awssdk") {
-            from("aws.sdk.kotlin:version-catalog:1.5.89")
-        }
-    }
 }
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

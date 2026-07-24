@@ -17,32 +17,13 @@
  */
 package com.wire.kalium.cells.data
 
-import aws.sdk.kotlin.services.s3.S3Client
-import aws.sdk.kotlin.services.s3.completeMultipartUpload
-import aws.sdk.kotlin.services.s3.createMultipartUpload
-import aws.sdk.kotlin.services.s3.model.CompletedMultipartUpload
-import aws.sdk.kotlin.services.s3.model.CompletedPart
-import aws.sdk.kotlin.services.s3.model.GetObjectRequest
-import aws.sdk.kotlin.services.s3.putObject
-import aws.sdk.kotlin.services.s3.uploadPart
-import aws.sdk.kotlin.services.s3.withConfig
-import aws.smithy.kotlin.runtime.content.ByteStream
-import aws.smithy.kotlin.runtime.content.fromFile
-import aws.smithy.kotlin.runtime.content.toInputStream
-import aws.smithy.kotlin.runtime.net.url.Url
-import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import okio.Path
-import okio.Sink
-import okio.buffer
-import okio.source
-import java.io.RandomAccessFile
-import java.nio.ByteBuffer
+import okio.FileSystem
+import okio.SYSTEM
 
 internal actual fun cellsAwsClient(
     credentials: Deferred<CellsCredentials?>,
@@ -54,141 +35,24 @@ private class CellsAwsClientJvm(
     private val credentials: Deferred<CellsCredentials?>,
     private val sessionManager: SessionManager,
     private val accessTokenAPI: AccessTokenApi,
-) : CellsAwsClient {
-
-    private companion object {
-        const val DEFAULT_REGION = "us-east-1"
-        const val DEFAULT_BUCKET_NAME = "io"
-        const val MAX_REGULAR_UPLOAD_SIZE = 100 * 1024 * 1024L
-        const val MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024
-    }
-
-    private var s3Client: S3Client? = null
-    private val mutex = Mutex()
-
-    suspend fun getS3Client(): S3Client {
-        s3Client?.let { return it }
-
-        return mutex.withLock {
-            s3Client ?: buildS3Client().also { s3Client = it }
-        }
-    }
-    private suspend fun buildS3Client() = with(credentials.await()) {
-        S3Client {
-            region = DEFAULT_REGION
-            enableAwsChunked = true
-            endpointUrl = Url.parse(this@with?.serverUrl ?: "")
-            credentialsProvider = TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI, this@with?.gatewaySecret ?: "")
-            interceptors.add(RemoveExpectInterceptor())
-        }
-    }
-
-    override suspend fun download(objectKey: String, outFileSink: Sink, onProgressUpdate: (Long) -> Unit) {
-        withS3Client(downloadProgressListener = onProgressUpdate) {
-            getObject(
-                GetObjectRequest {
-                    bucket = DEFAULT_BUCKET_NAME
-                    key = objectKey
-                }
-            ) { response ->
-                response.body?.toInputStream()?.let { input ->
-                    outFileSink.buffer().use { out ->
-                        out.writeAll(input.source())
-                    }
-                }
-            }
-        }
-    }
-
-    override suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
-        val length = path.toFile().length()
-        if (length > MAX_REGULAR_UPLOAD_SIZE) {
-            uploadMultipart(path, node, onProgressUpdate)
-        } else {
-            uploadRegular(path, node, onProgressUpdate)
-        }
-    }
-
-    private suspend fun uploadRegular(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
-        withS3Client(uploadProgressListener = onProgressUpdate) {
-            putObject {
-                bucket = DEFAULT_BUCKET_NAME
-                key = node.path
-                metadata = node.createDraftNodeMetaData()
-                body = ByteStream.fromFile(path.toFile())
-                contentLength = path.toFile().length()
-            }
-        }
-    }
-
-    private suspend fun uploadMultipart(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
-        val buffer = ByteBuffer.allocate(MULTIPART_CHUNK_SIZE)
-        var number = 1
-        val completed = mutableListOf<CompletedPart>()
-        withS3Client {
-            val requestId = createMultipartUpload {
-                bucket = DEFAULT_BUCKET_NAME
-                key = node.path
-                metadata = node.createDraftNodeMetaData()
-            }.uploadId
-            RandomAccessFile(path.toFile(), "r").use { file ->
-                val fileSize = file.length()
-                var position = 0L
-                while (position < fileSize) {
-                    file.seek(position)
-                    val bytesRead = file.channel.read(buffer)
-                    onProgressUpdate(position + bytesRead)
-                    buffer.flip()
-                    val partData = ByteArray(bytesRead)
-                    buffer.get(partData, 0, bytesRead)
-                    val response = uploadPart {
-                        bucket = DEFAULT_BUCKET_NAME
-                        key = node.path
-                        uploadId = requestId
-                        partNumber = number
-                        contentLength = bytesRead.toLong()
-                        body = ByteStream.fromBytes(partData)
-                    }
-                    completed.add(
-                        CompletedPart {
-                            partNumber = number
-                            eTag = response.eTag
-                        }
-                    )
-                    buffer.clear()
-                    position += bytesRead
-                    number++
-                }
-            }
-            completeMultipartUpload {
-                bucket = DEFAULT_BUCKET_NAME
-                key = node.path
-                uploadId = requestId
-                multipartUpload = CompletedMultipartUpload {
-                    parts = completed
-                }
-            }
-        }
-    }
-
-    private suspend fun <T> withS3Client(
-        uploadProgressListener: ((Long) -> Unit)? = null,
-        downloadProgressListener: ((Long) -> Unit)? = null,
-        block: suspend S3Client.() -> T,
-    ): T = getS3Client().withConfig {
-        if (uploadProgressListener != null) {
-            interceptors.add(AwsProgressListenerInterceptor.UploadProgressListenerInterceptor(uploadProgressListener))
-        }
-        if (downloadProgressListener != null) {
-            interceptors.add(AwsProgressListenerInterceptor.DownloadProgressListenerInterceptor(downloadProgressListener))
-        }
-    }.use {
-        block(it)
-    }
-}
-
-private fun CellNodeDTO.createDraftNodeMetaData() = mapOf(
-    MetadataHeaders.DRAFT_MODE to "true",
-    MetadataHeaders.CREATE_RESOURCE_UUID to uuid,
-    MetadataHeaders.CREATE_VERSION_ID to versionId,
+) : CellsAwsClient by CellsS3Client(
+    httpClient = HttpClient(),
+    endpointProvider = {
+        credentials.awaitOrThrow().serverUrl
+    },
+    credentialsProvider = {
+        val cellsCredentials = credentials.awaitOrThrow()
+        val session = sessionManager.updateToken(
+            accessTokenAPI,
+            sessionManager.session()?.refreshToken ?: ""
+        )
+        S3Credentials(
+            accessKeyId = session.accessToken,
+            secretAccessKey = cellsCredentials.gatewaySecret,
+        )
+    },
+    fileSystem = FileSystem.SYSTEM,
 )
+
+private suspend fun Deferred<CellsCredentials?>.awaitOrThrow(): CellsCredentials =
+    await() ?: error("Cells credentials are not available")

@@ -21,7 +21,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.onDownload
-import io.ktor.client.request.get
+import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.copyTo
@@ -41,25 +41,24 @@ public class FileDownloaderJvm(
         outFileSink: Sink,
         onProgressUpdate: (Long, Long) -> Unit,
     ): Either<NetworkFailure, Unit> {
-
-        val response = httpClient.get(presignedUrl) {
+        return httpClient.prepareGet(presignedUrl) {
             onDownload { bytesSentTotal, contentLength ->
                 contentLength?.let {
                     onProgressUpdate(bytesSentTotal, it)
                 }
             }
-        }
+        }.execute { response ->
+            if (!response.status.isSuccess()) {
+                val exception = okio.IOException("Download failed: ${response.status}")
+                return@execute Either.Left(NetworkFailure.ServerMiscommunication(exception))
+            }
 
-        if (!response.status.isSuccess()) {
-            val exception = okio.IOException("Download failed: ${response.status}")
-            return Either.Left(NetworkFailure.ServerMiscommunication(exception))
-        }
+            outFileSink.buffer().use { bufferedSink ->
+                response.bodyAsChannel().copyTo(bufferedSink)
+                bufferedSink.flush()
+            }
 
-        outFileSink.buffer().use { bufferedSink ->
-            response.bodyAsChannel().copyTo(bufferedSink)
-            bufferedSink.flush()
+            Either.Right(Unit)
         }
-
-        return Either.Right(Unit)
     }
 }

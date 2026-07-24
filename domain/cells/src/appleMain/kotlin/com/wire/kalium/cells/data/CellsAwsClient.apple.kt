@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.Deferred
-import okio.Path
-import okio.Sink
+import okio.FileSystem
+import okio.SYSTEM
 
 internal actual fun cellsAwsClient(
     credentials: Deferred<CellsCredentials?>,
@@ -31,18 +31,28 @@ internal actual fun cellsAwsClient(
     accessTokenApi: AccessTokenApi
 ): CellsAwsClient = CellsAwsClientApple(credentials, sessionManager, accessTokenApi)
 
-@Suppress("UnusedPrivateProperty")
 private class CellsAwsClientApple(
     private val credentials: Deferred<CellsCredentials?>,
     private val sessionManager: SessionManager,
     private val accessTokenAPI: AccessTokenApi
-) : CellsAwsClient {
+) : CellsAwsClient by CellsS3Client(
+    httpClient = HttpClient(),
+    endpointProvider = {
+        credentials.awaitOrThrow().serverUrl
+    },
+    credentialsProvider = {
+        val cellsCredentials = credentials.awaitOrThrow()
+        val session = sessionManager.updateToken(
+            accessTokenAPI,
+            sessionManager.session()?.refreshToken ?: ""
+        )
+        S3Credentials(
+            accessKeyId = session.accessToken,
+            secretAccessKey = cellsCredentials.gatewaySecret,
+        )
+    },
+    fileSystem = FileSystem.SYSTEM,
+)
 
-    override suspend fun download(objectKey: String, outFileSink: Sink, onProgressUpdate: (Long) -> Unit) {
-        // Not implemented for iOS
-    }
-
-    override suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
-        // Not implemented for iOS
-    }
-}
+private suspend fun Deferred<CellsCredentials?>.awaitOrThrow(): CellsCredentials =
+    await() ?: error("Cells credentials are not available")
