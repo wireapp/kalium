@@ -133,6 +133,15 @@ class FeatureConfigMapperTest {
         assertEquals(Status.ENABLED, model.status)
     }
 
+    @Test
+    fun givenApiModelResponse_whenMappingMeetingsToModel_thenShouldBeMappedCorrectly() {
+        val (arrangement, mapper) = Arrangement().arrange()
+
+        val model = mapper.fromDTO(arrangement.featureConfigResponse.meetings!!)
+
+        assertEquals(Status.ENABLED, model.status)
+    }
+
     private class Arrangement {
         val featureConfigResponse = FeatureConfigResponse(
             FeatureConfigData.AppLock(
@@ -187,6 +196,7 @@ class FeatureConfigMapperTest {
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.PreventAdminlessGroups(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.Meetings(FeatureFlagStatusDTO.ENABLED),
         )
 
         val mapper: FeatureConfigMapper = FeatureConfigMapperImpl()
