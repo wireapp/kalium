@@ -300,6 +300,42 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     @Test
+    fun givenMigratedConversationWithStaleZeroEpoch_whenInvokingUseCase_thenRefreshBeforeExternalCommit() = runTest {
+        val (arrangement, joinExistingMLSConversationUseCase) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSequentially(
+                Arrangement.MLS_MIGRATED_STALE_GROUP_CONVERSATION,
+                Arrangement.MLS_MIGRATED_REFRESHED_GROUP_CONVERSATION
+            )
+            .withFetchConversationSuccessful()
+            .withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationUseCase(
+            arrangement.transactionContext,
+            Arrangement.MLS_MIGRATED_STALE_GROUP_CONVERSATION.id
+        ).shouldSucceed()
+
+        verifySuspend(VerifyMode.order) {
+            arrangement.fetchConversation(
+                any(),
+                eq(Arrangement.MLS_MIGRATED_STALE_GROUP_CONVERSATION.id),
+                eq(ConversationSyncReason.Other)
+            )
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(
+                any(),
+                eq(Arrangement.GROUP_ID3),
+                any()
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
     fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true)
@@ -513,6 +549,26 @@ class JoinExistingMLSConversationUseCaseTest {
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id-pending-after-reset", "domain"))
+
+            val MLS_MIGRATED_STALE_GROUP_CONVERSATION = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID3,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id-migrated-stale", "domain"))
+
+            val MLS_MIGRATED_REFRESHED_GROUP_CONVERSATION = MLS_MIGRATED_STALE_GROUP_CONVERSATION.copy(
+                protocol = Conversation.ProtocolInfo.MLS(
+                    GROUP_ID3,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
+                    epoch = 2UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            )
 
             val MLS_ESTABLISHED_GROUP_CONVERSATION = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(

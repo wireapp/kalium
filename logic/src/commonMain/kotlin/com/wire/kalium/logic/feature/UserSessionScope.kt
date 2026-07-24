@@ -149,6 +149,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.keypackage.MLSMembershipAuditRepository
+import com.wire.kalium.logic.data.keypackage.MLSMembershipAuditRepositoryImpl
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.meeting.MeetingDataSource
@@ -269,9 +271,13 @@ import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.AuditMLSConversationMembershipUseCase
+import com.wire.kalium.logic.feature.conversation.AuditMLSConversationMembershipUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.MLSConversationMembershipAuditManager
+import com.wire.kalium.logic.feature.conversation.MLSConversationMembershipAuditManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSFaultyKeysConversationsRepairUseCaseImpl
@@ -1037,6 +1043,9 @@ public class UserSessionScope internal constructor(
     private val slowSyncRepository: SlowSyncRepository by lazy {
         SlowSyncRepositoryImpl(userStorage.database.metadataDAO, userScopedLogger)
     }
+    private val mlsMembershipAuditRepository: MLSMembershipAuditRepository by lazy {
+        MLSMembershipAuditRepositoryImpl(userStorage.database.metadataDAO)
+    }
     private val incrementalSyncRepository: IncrementalSyncRepository by lazy {
         InMemoryIncrementalSyncRepository(userScopedLogger)
     }
@@ -1387,7 +1396,8 @@ public class UserSessionScope internal constructor(
             keyPackageLimitsProvider,
             userConfigRepository,
             userId,
-            currentCryptoStateChangeHookNotifier
+            currentCryptoStateChangeHookNotifier,
+            mlsMembershipAuditRepository,
         )
 
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
@@ -1399,6 +1409,23 @@ public class UserSessionScope internal constructor(
             joinExistingMLSConversationUseCase,
             userId,
         )
+
+    private val auditMLSConversationMembershipUseCase: AuditMLSConversationMembershipUseCase
+        get() = AuditMLSConversationMembershipUseCaseImpl(
+            conversationRepository,
+            mlsConversationRepository,
+            joinExistingMLSConversationUseCase
+        )
+
+    private val mlsConversationMembershipAuditManager: MLSConversationMembershipAuditManager by lazy {
+        MLSConversationMembershipAuditManagerImpl(
+            incrementalSyncRepository,
+            slowSyncRepository,
+            mlsMembershipAuditRepository,
+            lazy { auditMLSConversationMembershipUseCase },
+            cryptoTransactionProvider
+        )
+    }
 
     private val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
         get() = JoinExistingMLSConversationsUseCaseImpl(
@@ -1678,6 +1705,7 @@ public class UserSessionScope internal constructor(
         lazy { client.refillKeyPackages },
         lazy { client.mlsKeyPackageCountUseCase },
         lazy { users.timestampKeyRepository },
+        lazy { mlsConversationMembershipAuditManager },
         cryptoTransactionProvider
     )
 
@@ -1706,7 +1734,8 @@ public class UserSessionScope internal constructor(
                     keyPackageLimitsProvider,
                     userConfigRepository,
                     userId,
-                    currentCryptoStateChangeHookNotifier
+                    currentCryptoStateChangeHookNotifier,
+                    mlsMembershipAuditRepository,
                 )
             },
             this,
@@ -2466,7 +2495,8 @@ public class UserSessionScope internal constructor(
             syncFeatureConfigsUseCase,
             userConfigRepository,
             cryptoTransactionProvider,
-            currentCryptoStateChangeHookNotifier
+            currentCryptoStateChangeHookNotifier,
+            mlsMembershipAuditRepository
         )
     }
     public val conversations: ConversationScope by lazy {

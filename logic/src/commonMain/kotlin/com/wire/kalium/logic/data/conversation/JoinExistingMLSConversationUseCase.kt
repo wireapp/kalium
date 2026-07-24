@@ -95,10 +95,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
-                    refreshConversationMetadataIfPendingAfterReset(
+                    refreshConversationMetadataIfNeeded(
                         transactionContext = transactionContext,
                         conversation = conversation,
-                        currentPublicKeys = mlsPublicKeys
+                        currentPublicKeys = mlsPublicKeys,
+                        allowJoinByExternalCommit = allowJoinByExternalCommit
                     ).flatMap { refreshedConversation ->
                         joinOrEstablishMLSGroupAndRetry(
                             transactionContext,
@@ -111,16 +112,26 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             })
         }
 
-    private suspend fun refreshConversationMetadataIfPendingAfterReset(
+    private suspend fun refreshConversationMetadataIfNeeded(
         transactionContext: CryptoTransactionContext,
         conversation: Conversation,
-        currentPublicKeys: MLSPublicKeys?
+        currentPublicKeys: MLSPublicKeys?,
+        allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, RefreshedConversation> {
         val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
             ?: return Either.Right(RefreshedConversation(conversation, currentPublicKeys))
+        // MLS migration can leave local epoch-zero metadata marked as established even
+        // though this client missed the group. Refresh it before choosing establish vs external commit.
+        val requiresAuthoritativeMetadata = protocol.groupState ==
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET ||
+            (
+                allowJoinByExternalCommit &&
+                    protocol.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED &&
+                    protocol.epoch == 0UL
+                )
 
         return when {
-            protocol.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET ->
+            !requiresAuthoritativeMetadata ->
                 Either.Right(RefreshedConversation(conversation, currentPublicKeys))
 
             conversation.type == Conversation.Type.OneOnOne -> {

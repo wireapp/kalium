@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.keypackage.MLSMembershipAuditRepository
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.E2EI_TEAM_SETTINGS
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.MLS_CIPHER_SUITE
 import com.wire.kalium.logic.framework.TestClient
@@ -66,6 +67,7 @@ class RegisterMLSClientUseCaseTest {
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
+                .withAuditAfterSlowSyncMarked()
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
                 .withUploadKeyPackagesSuccessful()
                 .withMLSTransaction<Unit>()
@@ -77,15 +79,13 @@ class RegisterMLSClientUseCaseTest {
 
             assertIs<RegisterMLSClientResult.Success>(result.value)
 
-            verifySuspend(VerifyMode.exactly(1)) {
+            verifySuspend(VerifyMode.order) {
                 arrangement.clientRepository.registerMLSClient(
                     TestClient.CLIENT_ID,
                     Arrangement.MLS_PUBLIC_KEY,
                     MLS_CIPHER_SUITE.toModel()
                 )
-            }
-
-            verifySuspend {
+                arrangement.mlsMembershipAuditRepository.markAuditRequiredAfterSlowSync()
                 arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
             }
             verifySuspend(VerifyMode.not) {
@@ -104,6 +104,7 @@ class RegisterMLSClientUseCaseTest {
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
+                .withAuditAfterSlowSyncMarked()
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
                 .withUploadKeyPackagesSuccessful()
                 .arrange()
@@ -115,6 +116,7 @@ class RegisterMLSClientUseCaseTest {
             assertIs<RegisterMLSClientResult.E2EICertificateRequired>(result.value)
 
             verifySuspend(VerifyMode.not) {
+                arrangement.mlsMembershipAuditRepository.markAuditRequiredAfterSlowSync()
                 arrangement.clientRepository.registerMLSClient(
                     TestClient.CLIENT_ID,
                     Arrangement.MLS_PUBLIC_KEY,
@@ -170,6 +172,7 @@ class RegisterMLSClientUseCaseTest {
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
+                .withAuditAfterSlowSyncMarked()
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
                 .withUploadKeyPackagesSuccessful()
                 .withMLSTransaction<Unit>()
@@ -197,6 +200,31 @@ class RegisterMLSClientUseCaseTest {
             }
         }
 
+    @Test
+    fun givenAuditMarkerCannotBePersisted_whenInvoked_thenClientIsRegisteredAndPackagesAreNotUploaded() = runTest {
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = false)))
+            .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withAuditAfterSlowSyncMarkFailed()
+            .arrange()
+
+        registerMLSClient(TestClient.CLIENT_ID).shouldFail()
+
+        verifySuspend(VerifyMode.order) {
+            arrangement.clientRepository.registerMLSClient(
+                TestClient.CLIENT_ID,
+                Arrangement.MLS_PUBLIC_KEY,
+                MLS_CIPHER_SUITE.toModel()
+            )
+            arrangement.mlsMembershipAuditRepository.markAuditRequiredAfterSlowSync()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), any(), any())
+        }
+    }
+
     private class Arrangement {
         val mlsClient: MLSClient = mock(mode = MockMode.autoUnit)
         val x509CredentialRef: CryptoCredentialRef = mock(mode = MockMode.autoUnit)
@@ -206,6 +234,7 @@ class RegisterMLSClientUseCaseTest {
         val keyPackageRepository: KeyPackageRepository = mock(mode = MockMode.autoUnit)
         val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock(mode = MockMode.autoUnit)
         val userConfigRepository: UserConfigRepository = mock(mode = MockMode.autoUnit)
+        val mlsMembershipAuditRepository: MLSMembershipAuditRepository = mock(mode = MockMode.autoUnit)
 
         suspend fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
             everySuspend {
@@ -223,6 +252,18 @@ class RegisterMLSClientUseCaseTest {
             everySuspend {
                 clientRepository.registerMLSClient(any(), any(), any())
             } returns result
+        }
+
+        suspend fun withAuditAfterSlowSyncMarked() = apply {
+            everySuspend {
+                mlsMembershipAuditRepository.markAuditRequiredAfterSlowSync()
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withAuditAfterSlowSyncMarkFailed() = apply {
+            everySuspend {
+                mlsMembershipAuditRepository.markAuditRequiredAfterSlowSync()
+            } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         fun withKeyPackageLimits(refillAmount: Int) = apply {
@@ -272,7 +313,8 @@ class RegisterMLSClientUseCaseTest {
             keyPackageLimitsProvider,
             userConfigRepository,
             TestUser.SELF.id,
-            NoOpCryptoStateChangeHookNotifier
+            NoOpCryptoStateChangeHookNotifier,
+            mlsMembershipAuditRepository,
         )
 
         companion object {
