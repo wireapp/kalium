@@ -107,7 +107,8 @@ class FeatureConfigRepositoryTest {
             cellsInternalModel = CellsInternalModel(
                 status = Status.DISABLED,
                 config = CellsInternalConfigModel(null, CollaboraEdition.NO, null)
-            )
+            ),
+            meetingsConfigModel = MeetingsConfigModel(status = Status.DISABLED),
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -206,6 +207,7 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.PreventAdminlessGroups(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.Meetings(FeatureFlagStatusDTO.DISABLED),
         )
 
         val featureConfigApi: FeatureConfigApi = mock<FeatureConfigApi>(mode = MockMode.autoUnit)

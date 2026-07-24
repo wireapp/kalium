@@ -39,6 +39,7 @@ import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandle
 import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
@@ -62,6 +63,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val enableUserProfileQRCodeConfigHandler: EnableUserProfileQRCodeConfigHandler,
     private val assetAuditLogConfigHandler: AssetAuditLogConfigHandler,
     private val preventAdminlessGroupsConfigHandler: PreventAdminlessGroupsConfigHandler,
+    private val meetingsConfigHandler: MeetingsConfigHandler,
 ) : FeatureConfigEventReceiver {
 
     override suspend fun onEvent(
@@ -117,5 +119,6 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             is Event.FeatureConfig.AssetAuditLogConfigUpdated -> assetAuditLogConfigHandler.handle(event.model)
             is Event.FeatureConfig.PreventAdminlessGroupsConfigUpdated ->
                 preventAdminlessGroupsConfigHandler.handle(event.model)
+            is Event.FeatureConfig.MeetingsConfigUpdated -> meetingsConfigHandler.handle(event.model)
         }
 }

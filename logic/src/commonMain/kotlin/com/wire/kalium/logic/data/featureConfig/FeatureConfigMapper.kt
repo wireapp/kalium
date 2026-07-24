@@ -51,6 +51,7 @@ internal interface FeatureConfigMapper {
     fun fromDTO(data: FeatureConfigData.EnableUserProfileQRCode): EnableUserProfileQRCodeConfigModel
     fun fromDTO(data: FeatureConfigData.AssetAuditLog): AssetAuditLogConfigModel
     fun fromDTO(data: FeatureConfigData.PreventAdminlessGroups): PreventAdminlessGroupsConfigModel
+    fun fromDTO(data: FeatureConfigData.Meetings): MeetingsConfigModel
 }
 
 internal fun FeatureFlagStatusDTO.toModel(): Status =
@@ -62,6 +63,8 @@ internal fun FeatureFlagStatusDTO.toModel(): Status =
 internal fun FeatureConfigData.AssetAuditLog.toModel() = AssetAuditLogConfigModel(status.toModel())
 
 internal fun FeatureConfigData.PreventAdminlessGroups.toModel() = PreventAdminlessGroupsConfigModel(status.toModel())
+
+internal fun FeatureConfigData.Meetings.toModel() = MeetingsConfigModel(status.toModel())
 
 @Suppress("TooManyFunctions")
 internal class FeatureConfigMapperImpl : FeatureConfigMapper {
@@ -99,6 +102,9 @@ internal class FeatureConfigMapperImpl : FeatureConfigMapper {
                     fromDTO(it)
                 },
                 preventAdminlessGroupsModel = preventAdminlessGroups?.let {
+                    fromDTO(it)
+                },
+                meetingsConfigModel = meetings?.let {
                     fromDTO(it)
                 }
             )
@@ -232,6 +238,10 @@ internal class FeatureConfigMapperImpl : FeatureConfigMapper {
     )
 
     override fun fromDTO(data: FeatureConfigData.PreventAdminlessGroups) = PreventAdminlessGroupsConfigModel(
+        status = fromDTO(data.status)
+    )
+
+    override fun fromDTO(data: FeatureConfigData.Meetings) = MeetingsConfigModel(
         status = fromDTO(data.status)
     )
 

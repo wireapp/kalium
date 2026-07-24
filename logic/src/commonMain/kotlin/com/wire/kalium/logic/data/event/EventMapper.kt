@@ -597,6 +597,11 @@ internal class EventMapper(
             (featureConfigUpdatedDTO.data as FeatureConfigData.PreventAdminlessGroups).toModel()
         )
 
+        is FeatureConfigData.Meetings -> Event.FeatureConfig.MeetingsConfigUpdated(
+            id,
+            (featureConfigUpdatedDTO.data as FeatureConfigData.Meetings).toModel()
+        )
+
         // These features are NOT received through events. As FeatureConfig Events are deprecated
         is FeatureConfigData.ConsumableNotifications,
         is FeatureConfigData.Apps,

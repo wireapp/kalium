@@ -119,6 +119,9 @@ object FeatureConfigJson {
             |  },
             |  "apps": {
             |    "status": "disabled"
+            |  },
+            |  "meetings": {
+            |    "status": "enabled"
             |  }
             |}
         """.trimMargin()
@@ -165,6 +168,7 @@ object FeatureConfigJson {
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.PreventAdminlessGroups(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.Meetings(FeatureFlagStatusDTO.ENABLED),
         ),
         featureConfigResponseSerializer
     )

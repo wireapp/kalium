@@ -45,6 +45,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.EnableUserProfileQRCodeConfigModel
+import com.wire.kalium.logic.data.featureConfig.MeetingsConfigModel
 import com.wire.kalium.logic.data.featureConfig.PreventAdminlessGroupsConfigModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -674,6 +675,17 @@ internal sealed class Event(open val id: String) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.UnknownFeatureUpdated",
                 idKey to id,
+            )
+        }
+
+        internal data class MeetingsConfigUpdated(
+            override val id: String,
+            val model: MeetingsConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.MeetingsConfigUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
             )
         }
     }

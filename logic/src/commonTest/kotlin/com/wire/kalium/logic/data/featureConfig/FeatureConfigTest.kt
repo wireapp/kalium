@@ -78,6 +78,9 @@ object FeatureConfigTest {
         preventAdminlessGroupsModel: PreventAdminlessGroupsConfigModel? = PreventAdminlessGroupsConfigModel(
             status = Status.DISABLED,
         ),
+        meetingsConfigModel: MeetingsConfigModel? = MeetingsConfigModel(
+            status = Status.ENABLED,
+        ),
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -104,5 +107,6 @@ object FeatureConfigTest {
         enableUserProfileQRCodeConfigModel,
         assetAuditLogConfigModel,
         preventAdminlessGroupsModel,
+        meetingsConfigModel,
     )
 }
