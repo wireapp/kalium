@@ -185,7 +185,6 @@ data object ConversationDetailsWithEventsMapper {
                     id = lastMessageId,
                     conversationId = qualifiedId,
                     contentType = lastMessageContentType,
-                    date = lastMessageDate,
                     visibility = lastMessageVisibility,
                     senderUserId = lastMessageSenderUserId,
                     isEphemeral = lastMessageIsEphemeral,

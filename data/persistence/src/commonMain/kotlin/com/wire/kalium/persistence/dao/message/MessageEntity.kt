@@ -409,7 +409,6 @@ data class MessagePreviewEntity(
     val id: String,
     val conversationId: QualifiedIDEntity,
     val content: MessagePreviewEntityContent,
-    val date: String,
     val visibility: MessageEntity.Visibility,
     val isSelfMessage: Boolean,
     val senderUserId: QualifiedIDEntity,

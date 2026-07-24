@@ -37,7 +37,6 @@ import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.isDebug
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerializationException
 
@@ -269,7 +268,6 @@ object MessageMapper {
         id: String,
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
-        date: Instant,
         visibility: MessageEntity.Visibility,
         senderUserId: UserIDEntity,
         isEphemeral: Boolean,
@@ -312,7 +310,6 @@ object MessageMapper {
             id = id,
             conversationId = conversationId,
             content = content,
-            date = date.toIsoDateTimeString(),
             visibility = visibility,
             isSelfMessage = isSelfMessage,
             senderUserId = senderUserId
