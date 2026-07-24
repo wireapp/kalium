@@ -18,19 +18,23 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.util.DelicateKaliumApi
 
 /**
  * Answers the question if the self user allowed to register an MLS client
  *
  * Which we are allowed to do if:
- * - MLS support is enabled.
- * - MLS supported is configured on the backend, which can be verified by looking for the existence of MLS public keys.
+ * - This build supports MLS.
+ * - MLS is enabled and supported in the current backend feature configuration.
+ * - MLS public keys are available on the backend.
  */
 @DelicateKaliumApi("This use case performs network calls, consider using IsMLSEnabledUseCase.")
 internal interface IsAllowedToRegisterMLSClientUseCase {
@@ -41,12 +45,19 @@ internal interface IsAllowedToRegisterMLSClientUseCase {
 internal class IsAllowedToRegisterMLSClientUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
-    private val userConfigRepository: UserConfigRepository
+    private val featureConfigRepository: FeatureConfigRepository
 ) : IsAllowedToRegisterMLSClientUseCase {
 
     override suspend operator fun invoke(): Boolean {
-        return featureSupport.isMLSSupported
-                && userConfigRepository.isMLSEnabled().getOrElse(false)
-                && mlsPublicKeysRepository.getKeys().isRight()
+        if (!featureSupport.isMLSSupported) return false
+
+        val isMLSEnabledRemotely = featureConfigRepository.getFeatureConfigs()
+            .map { featureConfig ->
+                featureConfig.mlsModel.status == Status.ENABLED &&
+                        SupportedProtocol.MLS in featureConfig.mlsModel.supportedProtocols
+            }
+            .getOrElse(false)
+
+        return isMLSEnabledRemotely && mlsPublicKeysRepository.getKeys().isRight()
     }
 }

@@ -32,6 +32,7 @@ import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.framework.TestClient
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -121,6 +122,43 @@ class GetOrRegisterClientUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.persistClientId(eq(clientId))
         }
+    }
+
+    @Test
+    fun givenInvalidClientIsRetained_whenMetadataIsCleared_thenRefreshFeatureConfigBeforeRegisteringNewClient() = runTest {
+        val clientId = ClientId("clientId")
+        val client = TestClient.CLIENT.copy(id = clientId)
+        val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
+            .withRetainedClientIdResult(Either.Right(clientId))
+            .withVerifyExistingClientResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
+            .withRegisterClientResult(RegisterClientResult.Success(client))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withClearHasConsumableNotifications(Either.Right(Unit))
+            .withUpgradeCurrentSessionResult(Either.Right(Unit))
+            .withPersistClientIdResult(Either.Right(Unit))
+            .withPersistHasConsumableNotifications(false)
+            .withSetUpdateFirebaseTokenFlagResult(Either.Right(Unit))
+            .arrange()
+        val calls = mutableListOf<String>()
+        everySuspend { arrangement.syncFeatureConfigsUseCase.invoke() } calls {
+            calls += "syncFeatureConfigs"
+            Either.Right(Unit)
+        }
+        everySuspend { arrangement.logoutRepository.clearClientRelatedLocalMetadata() } calls {
+            calls += "clearClientMetadata"
+        }
+        everySuspend { arrangement.registerClientUseCase.invoke(any()) } calls {
+            calls += "registerClient"
+            RegisterClientResult.Success(client)
+        }
+
+        useCase.invoke(RegisterClientParam("", listOf()))
+
+        assertEquals(
+            listOf("syncFeatureConfigs", "clearClientMetadata", "syncFeatureConfigs", "registerClient"),
+            calls
+        )
     }
 
     @Test

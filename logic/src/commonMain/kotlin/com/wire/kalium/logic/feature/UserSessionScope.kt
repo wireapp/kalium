@@ -1715,7 +1715,8 @@ public class UserSessionScope internal constructor(
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
             lazy { subconversationRepository },
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            parentContext = coroutineContext,
         )
 
     private val callManager: Lazy<CallManager> = lazy {
@@ -2695,7 +2696,7 @@ public class UserSessionScope internal constructor(
         get() = IsAllowedToRegisterMLSClientUseCaseImpl(
             featureSupport,
             mlsPublicKeysRepository,
-            userConfigRepository
+            featureConfigRepository
         )
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
