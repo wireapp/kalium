@@ -200,6 +200,8 @@ internal interface ConversationRepository {
         groupState: GroupState
     ): Either<StorageFailure, List<Conversation>>
 
+    suspend fun getActiveMLSConversationsForMembershipAudit(): Either<StorageFailure, List<Conversation>>
+
     suspend fun updateConversationGroupState(groupID: GroupID, groupState: GroupState): Either<StorageFailure, Unit>
     suspend fun updateConversationGroupStateByConversationId(
         conversationId: ConversationId,
@@ -631,6 +633,12 @@ internal class ConversationDataSource internal constructor(
     ): Either<StorageFailure, List<Conversation>> =
         wrapStorageRequest {
             conversationDAO.getConversationsByGroupState(conversationMapper.toDAOGroupState(groupState))
+                .map(conversationMapper::fromDaoModel)
+        }
+
+    override suspend fun getActiveMLSConversationsForMembershipAudit(): Either<StorageFailure, List<Conversation>> =
+        wrapStorageRequest {
+            conversationDAO.getActiveMLSConversationsForMembershipAudit()
                 .map(conversationMapper::fromDaoModel)
         }
 
