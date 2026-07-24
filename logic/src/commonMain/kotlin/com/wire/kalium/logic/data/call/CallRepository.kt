@@ -361,7 +361,7 @@ internal class CallDataSource(
             callMetadata.copy(
                 callStatus = status,
                 establishedTime = when (status) {
-                    CallStatus.ESTABLISHED -> DateTimeUtil.currentIsoDateTimeString()
+                    CallStatus.ESTABLISHED -> DateTimeUtil.currentInstant()
                     else -> callMetadata.establishedTime
                 },
             )
