@@ -1851,9 +1851,28 @@ abstract interface com.wire.kalium.logic.sync/ObserveSyncStateUseCase { // com.w
     abstract fun invoke(): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.sync/SyncState> // com.wire.kalium.logic.sync/ObserveSyncStateUseCase.invoke|invoke(){}[0]
 }
 
+abstract interface com.wire.kalium.logic.sync/SendPendingMessagesUseCase { // com.wire.kalium.logic.sync/SendPendingMessagesUseCase|null[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.invoke|invoke(){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result|null[0]
+        final object Failure : com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result { // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result.Failure|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result { // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.sync/SendPendingMessagesUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 abstract interface com.wire.kalium.logic.sync/SyncRequest { // com.wire.kalium.logic.sync/SyncRequest|null[0]
     abstract fun keepSyncAlwaysOn() // com.wire.kalium.logic.sync/SyncRequest.keepSyncAlwaysOn|keepSyncAlwaysOn(){}[0]
     abstract suspend fun waitUntilLiveOrFailure(): com.wire.kalium.logic.sync/SyncRequestResult // com.wire.kalium.logic.sync/SyncRequest.waitUntilLiveOrFailure|waitUntilLiveOrFailure(){}[0]
+    abstract suspend fun waitUntilNextLiveOrFailure(): com.wire.kalium.logic.sync/SyncRequestResult // com.wire.kalium.logic.sync/SyncRequest.waitUntilNextLiveOrFailure|waitUntilNextLiveOrFailure(){}[0]
     abstract suspend fun waitUntilOrFailure(com.wire.kalium.logic.data.sync/SyncState): com.wire.kalium.logic.sync/SyncRequestResult // com.wire.kalium.logic.sync/SyncRequest.waitUntilOrFailure|waitUntilOrFailure(com.wire.kalium.logic.data.sync.SyncState){}[0]
 }
 
@@ -5243,6 +5262,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-resetMlsConversation>(): com.wire.kalium.logic.data.conversation/ResetMLSConversationUseCase // com.wire.kalium.logic.feature/UserSessionScope.resetMlsConversation.<get-resetMlsConversation>|<get-resetMlsConversation>(){}[0]
     final val search // com.wire.kalium.logic.feature/UserSessionScope.search|{}search[0]
         final fun <get-search>(): com.wire.kalium.logic.feature.search/SearchScope // com.wire.kalium.logic.feature/UserSessionScope.search.<get-search>|<get-search>(){}[0]
+    final val sendPendingMessages // com.wire.kalium.logic.feature/UserSessionScope.sendPendingMessages|{}sendPendingMessages[0]
+        final fun <get-sendPendingMessages>(): com.wire.kalium.logic.sync/SendPendingMessagesUseCase // com.wire.kalium.logic.feature/UserSessionScope.sendPendingMessages.<get-sendPendingMessages>|<get-sendPendingMessages>(){}[0]
     final val service // com.wire.kalium.logic.feature/UserSessionScope.service|{}service[0]
         final fun <get-service>(): com.wire.kalium.logic.feature.service/ServiceScope // com.wire.kalium.logic.feature/UserSessionScope.service.<get-service>|<get-service>(){}[0]
     final val setNewUserTrackingIdentifier // com.wire.kalium.logic.feature/UserSessionScope.setNewUserTrackingIdentifier|{}setNewUserTrackingIdentifier[0]
@@ -8181,6 +8202,17 @@ sealed class com.wire.kalium.logic.sync/SyncRequestResult { // com.wire.kalium.l
     }
 
     final object Success : com.wire.kalium.logic.sync/SyncRequestResult // com.wire.kalium.logic.sync/SyncRequestResult.Success|null[0]
+}
+
+final object com.wire.kalium.logic.sync/PendingMessagesForegroundSync { // com.wire.kalium.logic.sync/PendingMessagesForegroundSync|null[0]
+    final const val ACTION_SENDING_OF_PENDING_MESSAGES_CANCELLED // com.wire.kalium.logic.sync/PendingMessagesForegroundSync.ACTION_SENDING_OF_PENDING_MESSAGES_CANCELLED|{}ACTION_SENDING_OF_PENDING_MESSAGES_CANCELLED[0]
+        final fun <get-ACTION_SENDING_OF_PENDING_MESSAGES_CANCELLED>(): kotlin/String // com.wire.kalium.logic.sync/PendingMessagesForegroundSync.ACTION_SENDING_OF_PENDING_MESSAGES_CANCELLED.<get-ACTION_SENDING_OF_PENDING_MESSAGES_CANCELLED>|<get-ACTION_SENDING_OF_PENDING_MESSAGES_CANCELLED>(){}[0]
+    final const val ACTION_SENDING_OF_PENDING_MESSAGES_SCHEDULED // com.wire.kalium.logic.sync/PendingMessagesForegroundSync.ACTION_SENDING_OF_PENDING_MESSAGES_SCHEDULED|{}ACTION_SENDING_OF_PENDING_MESSAGES_SCHEDULED[0]
+        final fun <get-ACTION_SENDING_OF_PENDING_MESSAGES_SCHEDULED>(): kotlin/String // com.wire.kalium.logic.sync/PendingMessagesForegroundSync.ACTION_SENDING_OF_PENDING_MESSAGES_SCHEDULED.<get-ACTION_SENDING_OF_PENDING_MESSAGES_SCHEDULED>|<get-ACTION_SENDING_OF_PENDING_MESSAGES_SCHEDULED>(){}[0]
+    final const val EXTRA_USER_ID_DOMAIN // com.wire.kalium.logic.sync/PendingMessagesForegroundSync.EXTRA_USER_ID_DOMAIN|{}EXTRA_USER_ID_DOMAIN[0]
+        final fun <get-EXTRA_USER_ID_DOMAIN>(): kotlin/String // com.wire.kalium.logic.sync/PendingMessagesForegroundSync.EXTRA_USER_ID_DOMAIN.<get-EXTRA_USER_ID_DOMAIN>|<get-EXTRA_USER_ID_DOMAIN>(){}[0]
+    final const val EXTRA_USER_ID_VALUE // com.wire.kalium.logic.sync/PendingMessagesForegroundSync.EXTRA_USER_ID_VALUE|{}EXTRA_USER_ID_VALUE[0]
+        final fun <get-EXTRA_USER_ID_VALUE>(): kotlin/String // com.wire.kalium.logic.sync/PendingMessagesForegroundSync.EXTRA_USER_ID_VALUE.<get-EXTRA_USER_ID_VALUE>|<get-EXTRA_USER_ID_VALUE>(){}[0]
 }
 
 final val com.wire.kalium.logic.feature.conversation/getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery // com.wire.kalium.logic.feature.conversation/getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery|@com.wire.kalium.logic.feature.conversation.ConversationScope{}getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery[0]

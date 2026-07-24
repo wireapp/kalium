@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -26,55 +29,50 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.EditMessageBuilder
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 
 /**
- * This worker attempts to send all pending messages created by this user.
- * @see [PendingMessagesSenderWorker.doWork]
+ * Attempts to send all pending messages created by this user.
  */
-internal class PendingMessagesSenderWorker(
+public interface SendPendingMessagesUseCase {
+    public suspend operator fun invoke(): Result
+
+    public sealed interface Result {
+        public data object Success : Result
+        public data object Failure : Result
+    }
+}
+
+internal class SendPendingMessagesUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val messageSender: MessageSender,
     private val userId: UserId,
     private val sendPendingAssetMessage: SendPendingAssetMessageUseCase,
     private val messageSendFailureHandler: MessageSendFailureHandler,
-) : DefaultWorker {
+) : SendPendingMessagesUseCase {
 
-    /**
-     * Attempt to send all pending messages for the user.
-     *
-     * @return [Result.Success]. Can't touch this.
-     *
-     * Does **not** return [Result.Retry] **nor** [Result.Failure].
-     *
-     * The failure or retry logic is handled by [MessageSender] for each message.
-     */
-    override suspend fun doWork(): Result {
+    override suspend operator fun invoke(): SendPendingMessagesUseCase.Result {
+        var result: SendPendingMessagesUseCase.Result = SendPendingMessagesUseCase.Result.Success
+
         messageRepository.getAllPendingMessagesFromUser(userId)
             .onSuccess { pendingMessages ->
                 pendingMessages.forEach { message ->
-                    kaliumLogger.withFeatureId(SYNC).i("Attempting scheduled sending of message $message")
-                    when {
-                        message is Message.Regular && message.content is MessageContent.Asset ->
+                    when (message) {
+                        is Message.Regular if message.content is MessageContent.Asset ->
                             sendPendingAssetMessage(message)
 
-                        message is Message.Regular &&
-                                message.content is MessageContent.Text &&
+                        is Message.Regular if message.content is MessageContent.Text &&
                                 message.editStatus is Message.EditStatus.Edited ->
                             resendPendingTextEdit(message, message.content as MessageContent.Text)
 
-                        else ->
-                            messageSender.sendPendingMessage(message.conversationId, message.id)
+                        else -> messageSender.sendPendingMessage(message.conversationId, message.id)
                     }
                 }
             }.onFailure {
                 kaliumLogger.withFeatureId(SYNC).w("Failed to fetch and attempt retry of pending messages: $it")
-                // This execution doesn't care about failures
+                result = SendPendingMessagesUseCase.Result.Failure
             }
 
-        return Result.Success
+        return result
     }
 
     private suspend fun resendPendingTextEdit(
@@ -97,7 +95,6 @@ internal class PendingMessagesSenderWorker(
     }
 
     companion object {
-        const val NAME_PREFIX = "scheduled-message-"
         private const val TEXT_EDITED_TYPE = "TextEdited"
     }
 }

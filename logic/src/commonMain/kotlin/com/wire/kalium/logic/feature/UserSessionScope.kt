@@ -444,7 +444,8 @@ import com.wire.kalium.logic.sync.AvsSyncStateReporter
 import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
-import com.wire.kalium.logic.sync.PendingMessagesSenderWorker
+import com.wire.kalium.logic.sync.SendPendingMessagesUseCase
+import com.wire.kalium.logic.sync.SendPendingMessagesUseCaseImpl
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -2283,8 +2284,8 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    internal val pendingMessagesSenderWorker: PendingMessagesSenderWorker by lazy {
-        PendingMessagesSenderWorker(
+    public val sendPendingMessages: SendPendingMessagesUseCase by lazy {
+        SendPendingMessagesUseCaseImpl(
             messageRepository = messageRepository,
             messageSender = messages.messageSender,
             userId = userId,

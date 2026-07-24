@@ -18,16 +18,13 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logic.sync.PendingMessagesSenderWorker
-
 /**
  * Responsible for [scheduleSendingOfPendingMessages].
  */
 internal interface MessageSendingScheduler {
 
     /**
-     *  Schedules an execution of [PendingMessagesSenderWorker], which attempts to send
-     *  all pending messages of this user.
+     *  Schedules an execution that attempts to send all pending messages of this user.
      *
      *  **When** it's gonna to be executed may vary depending on the platform and/or implementation.
      *
@@ -40,8 +37,8 @@ internal interface MessageSendingScheduler {
     fun scheduleSendingOfPendingMessages()
 
     /**
-     * Cancels the scheduled execution of [PendingMessagesSenderWorker], which attempts to send
-     *  all pending messages of this user, because the account has been logged out for instance.
+     * Cancels the scheduled execution that attempts to send all pending messages of this user,
+     *  because the account has been logged out for instance.
      */
     fun cancelScheduledSendingOfPendingMessages()
 }
