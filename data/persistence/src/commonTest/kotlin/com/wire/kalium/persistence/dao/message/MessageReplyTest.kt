@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -48,7 +47,7 @@ class MessageReplyTest : BaseMessageTest() {
         assertNotNull(quotedMessage)
         assertEquals(ORIGINAL_MESSAGE_SENDER.id, quotedMessage.senderId)
         assertEquals(ORIGINAL_MESSAGE_SENDER.name, quotedMessage.senderName)
-        assertEquals(ORIGINAL_TEXT_MESSAGE.date.toIsoDateTimeString(), quotedMessage.dateTime)
+        assertEquals(ORIGINAL_TEXT_MESSAGE.date, quotedMessage.dateTime)
         assertEquals(ORIGINAL_TEXT_MESSAGE_CONTENT, quotedMessage.textBody)
         assertNull(quotedMessage.assetMimeType)
     }
@@ -70,7 +69,7 @@ class MessageReplyTest : BaseMessageTest() {
         assertNotNull(quotedMessage)
         assertEquals(ORIGINAL_MESSAGE_SENDER.id, quotedMessage.senderId)
         assertEquals(ORIGINAL_MESSAGE_SENDER.name, quotedMessage.senderName)
-        assertEquals(ORIGINAL_IMAGE_MESSAGE.date.toIsoDateTimeString(), quotedMessage.dateTime)
+        assertEquals(ORIGINAL_IMAGE_MESSAGE.date, quotedMessage.dateTime)
         assertEquals(ORIGINAL_IMAGE_MESSAGE_ASSET_MIMETYPE, quotedMessage.assetMimeType)
         assertEquals(ORIGINAL_IMAGE_MESSAGE_NAME, quotedMessage.assetName)
         assertNull(quotedMessage.textBody)
@@ -93,7 +92,7 @@ class MessageReplyTest : BaseMessageTest() {
         assertNotNull(quotedMessage)
         assertEquals(ORIGINAL_MESSAGE_SENDER.id, quotedMessage.senderId)
         assertEquals(ORIGINAL_MESSAGE_SENDER.name, quotedMessage.senderName)
-        assertEquals(ORIGINAL_LOCATION_MESSAGE.date.toIsoDateTimeString(), quotedMessage.dateTime)
+        assertEquals(ORIGINAL_LOCATION_MESSAGE.date, quotedMessage.dateTime)
         assertEquals(ORIGINAL_LOCATION_NAME, quotedMessage.locationName)
         assertNull(quotedMessage.textBody)
     }
