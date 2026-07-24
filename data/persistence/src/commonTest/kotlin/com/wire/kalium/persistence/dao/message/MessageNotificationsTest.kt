@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -70,7 +71,11 @@ class MessageNotificationsTest : BaseMessageTest() {
     fun givenMutedConversation_whenNewMessageInserted_thenNotificationEmpty() = runTest {
         val message = OTHER_MESSAGE
         insertInitialData()
-        conversationDAO.updateConversationMutedStatus(TEST_CONVERSATION_1.id, ConversationEntity.MutedStatus.ALL_MUTED, 0L)
+        conversationDAO.updateConversationMutedStatus(
+            TEST_CONVERSATION_1.id,
+            ConversationEntity.MutedStatus.ALL_MUTED,
+            Instant.fromEpochMilliseconds(0L)
+        )
 
         messageDAO.insertOrIgnoreMessage(message)
 
@@ -366,7 +371,7 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     private suspend fun setConversationMutedStatus(conversationId: QualifiedIDEntity, mutedStatus: ConversationEntity.MutedStatus) {
-        conversationDAO.updateConversationMutedStatus(conversationId, mutedStatus, Clock.System.now().toEpochMilliseconds())
+        conversationDAO.updateConversationMutedStatus(conversationId, mutedStatus, Clock.System.now())
     }
 
     override suspend fun insertInitialData() {

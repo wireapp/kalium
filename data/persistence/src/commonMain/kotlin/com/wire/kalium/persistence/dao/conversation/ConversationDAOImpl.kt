@@ -38,7 +38,6 @@ import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -449,12 +448,12 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
-        mutedStatusTimestamp: Long
+        mutedStatusTimestamp: Instant
     ) {
         withContext(writeDispatcher.value) {
             conversationQueries.updateConversationMutingStatus(
                 mutedStatus,
-                mutedStatusTimestamp,
+                mutedStatusTimestamp.toEpochMilliseconds(),
                 conversationId
             )
         }
@@ -463,12 +462,12 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateConversationArchivedStatus(
         conversationId: QualifiedIDEntity,
         isArchived: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestamp: Instant
     ) {
         withContext(writeDispatcher.value) {
             conversationQueries.updateConversationArchivingStatus(
                 isArchived,
-                Instant.parse(archivedStatusTimestamp.toIsoDateTimeString()),
+                archivedStatusTimestamp,
                 conversationId
             )
         }

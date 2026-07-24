@@ -111,13 +111,13 @@ interface ConversationDAO {
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
-        mutedStatusTimestamp: Long
+        mutedStatusTimestamp: Instant
     )
 
     suspend fun updateConversationArchivedStatus(
         conversationId: QualifiedIDEntity,
         isArchived: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestamp: Instant
     )
 
     suspend fun updateAccess(

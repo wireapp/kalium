@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Instant
 
 public interface UpdateConversationMutedStatusUseCase {
     /**
@@ -38,7 +39,7 @@ public interface UpdateConversationMutedStatusUseCase {
     public suspend operator fun invoke(
         conversationId: ConversationId,
         mutedConversationStatus: MutedConversationStatus,
-        mutedStatusTimestamp: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
+        mutedStatusTimestamp: Instant = DateTimeUtil.currentInstant()
     ): ConversationUpdateStatusResult
 }
 
@@ -49,7 +50,7 @@ internal class UpdateConversationMutedStatusUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: ConversationId,
         mutedConversationStatus: MutedConversationStatus,
-        mutedStatusTimestamp: Long
+        mutedStatusTimestamp: Instant
     ): ConversationUpdateStatusResult =
         conversationRepository.updateMutedStatusRemotely(conversationId, mutedConversationStatus, mutedStatusTimestamp)
             .flatMap {

@@ -1140,7 +1140,7 @@ abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversation
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversationArchivedStatusUseCase { // com.wire.kalium.logic.feature.conversation/UpdateConversationArchivedStatusUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Boolean, kotlin/Boolean, kotlin/Long = ...): com.wire.kalium.logic.feature.conversation/ArchiveStatusUpdateResult // com.wire.kalium.logic.feature.conversation/UpdateConversationArchivedStatusUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Boolean;kotlin.Boolean;kotlin.Long){}[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Boolean, kotlin/Boolean, kotlinx.datetime/Instant = ...): com.wire.kalium.logic.feature.conversation/ArchiveStatusUpdateResult // com.wire.kalium.logic.feature.conversation/UpdateConversationArchivedStatusUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Boolean;kotlin.Boolean;kotlinx.datetime.Instant){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversationMemberRoleUseCase { // com.wire.kalium.logic.feature.conversation/UpdateConversationMemberRoleUseCase|null[0]
@@ -1148,7 +1148,7 @@ abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversation
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversationMutedStatusUseCase { // com.wire.kalium.logic.feature.conversation/UpdateConversationMutedStatusUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.conversation/MutedConversationStatus, kotlin/Long = ...): com.wire.kalium.logic.feature.conversation/ConversationUpdateStatusResult // com.wire.kalium.logic.feature.conversation/UpdateConversationMutedStatusUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.conversation.MutedConversationStatus;kotlin.Long){}[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.conversation/MutedConversationStatus, kotlinx.datetime/Instant = ...): com.wire.kalium.logic.feature.conversation/ConversationUpdateStatusResult // com.wire.kalium.logic.feature.conversation/UpdateConversationMutedStatusUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.conversation.MutedConversationStatus;kotlinx.datetime.Instant){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversationReceiptModeUseCase { // com.wire.kalium.logic.feature.conversation/UpdateConversationReceiptModeUseCase|null[0]

@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -36,7 +37,8 @@ class ConversationStatusMapperTest {
 
     @Test
     fun givenAConversationModel_whenMappingToApiModel_thenTheMappingStatusesShouldBeOk() {
-        val result = conversationStatusMapper.toMutedStatusApiModel(MutedConversationStatus.OnlyMentionsAndRepliesAllowed, 1649708697237L)
+        val timestamp = Instant.fromEpochMilliseconds(1649708697237L)
+        val result = conversationStatusMapper.toMutedStatusApiModel(MutedConversationStatus.OnlyMentionsAndRepliesAllowed, timestamp)
 
         assertEquals(MutedStatus.ONLY_MENTIONS_ALLOWED, result.otrMutedStatus)
         assertEquals("2022-04-11T20:24:57.237Z", result.otrMutedRef)
@@ -45,7 +47,8 @@ class ConversationStatusMapperTest {
     @Test
     fun givenAConversationModelWithArchivedField_whenMappingToApiModel_thenTheMappingStatusesShouldBeOk() {
         val isArchived = true
-        val result = conversationStatusMapper.toArchivedStatusApiModel(isArchived = isArchived, 1649708697237L)
+        val timestamp = Instant.fromEpochMilliseconds(1649708697237L)
+        val result = conversationStatusMapper.toArchivedStatusApiModel(isArchived = isArchived, timestamp)
 
         assertEquals(isArchived, result.otrArchived)
         assertEquals("2022-04-11T20:24:57.237Z", result.otrArchivedRef)

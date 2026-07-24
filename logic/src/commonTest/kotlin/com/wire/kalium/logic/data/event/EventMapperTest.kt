@@ -82,4 +82,57 @@ class EventMapperTest {
         val event = assertIs<Event.Conversation.MemberChanged.MemberChangedRole>(result)
         assertEquals(timestamp, event.dateTime)
     }
+
+    @Test
+    fun givenMutedStatusUpdateDTO_whenMapping_thenMutedReferenceIsMappedToInstant() {
+        val eventTimestamp = Instant.parse("2026-07-24T12:00:00.000Z")
+        val mutedReference = Instant.parse("2026-07-24T12:01:00.000Z")
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val dto = EventContentDTO.Conversation.MemberUpdateDTO(
+            qualifiedConversation = QualifiedID("conversation-id", "domain"),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            time = eventTimestamp.toString(),
+            from = TestUser.NETWORK_ID.value,
+            roleChange = ConversationRoleChange(
+                user = TestUser.NETWORK_ID.value,
+                qualifiedUserId = TestUser.NETWORK_ID,
+                role = null,
+                mutedRef = mutedReference.toString(),
+                mutedStatus = 3,
+                isArchiving = null,
+                archivedRef = null
+            )
+        )
+
+        val result = mapper.fromEventContentDTO("event-id", dto)
+
+        val event = assertIs<Event.Conversation.MemberChanged.MemberMutedStatusChanged>(result)
+        assertEquals(mutedReference, event.mutedConversationChangedTime)
+    }
+
+    @Test
+    fun givenArchivedStatusUpdateWithoutReference_whenMapping_thenEventTimestampIsUsed() {
+        val eventTimestamp = Instant.parse("2026-07-24T12:00:00.000Z")
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val dto = EventContentDTO.Conversation.MemberUpdateDTO(
+            qualifiedConversation = QualifiedID("conversation-id", "domain"),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            time = eventTimestamp.toString(),
+            from = TestUser.NETWORK_ID.value,
+            roleChange = ConversationRoleChange(
+                user = TestUser.NETWORK_ID.value,
+                qualifiedUserId = TestUser.NETWORK_ID,
+                role = null,
+                mutedRef = null,
+                mutedStatus = null,
+                isArchiving = true,
+                archivedRef = null
+            )
+        )
+
+        val result = mapper.fromEventContentDTO("event-id", dto)
+
+        val event = assertIs<Event.Conversation.MemberChanged.MemberArchivedStatusChanged>(result)
+        assertEquals(eventTimestamp, event.archivedConversationChangedTime)
+    }
 }

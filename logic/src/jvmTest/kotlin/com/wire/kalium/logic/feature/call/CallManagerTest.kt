@@ -218,7 +218,7 @@ internal class CallManagerTest {
         }
 
         fun withFetchServerTimeReturning() = apply {
-            everySuspend { callRepository.fetchServerTime() } returns "2022-03-30T16:36:00.000Z"
+            everySuspend { callRepository.fetchServerTime() } returns Instant.parse("2022-03-30T16:36:00.000Z")
         }
 
         fun withCallMetadataReturning(conversationId: ConversationId, callMetadata: CallMetadata?) = apply {

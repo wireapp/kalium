@@ -101,6 +101,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -1869,8 +1870,9 @@ class CallRepositoryTest {
 
     @Test
     fun givenAPISucceeds_whenFetchingServerTime_thenReturnTime() = runTest {
+        val expectedTime = Instant.parse("2025-01-01T00:00:00Z")
         val result = NetworkResponse.Success(
-            value = ServerTimeDTO("123434545"),
+            value = ServerTimeDTO(expectedTime.toString()),
             headers = mapOf(),
             httpCode = HttpStatusCode.OK.value
         )
@@ -1880,7 +1882,7 @@ class CallRepositoryTest {
 
         val time = eventRepository.fetchServerTime()
 
-        assertNotNull(time)
+        assertEquals(expectedTime, time)
     }
 
     @Test

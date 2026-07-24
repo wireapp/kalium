@@ -4229,12 +4229,12 @@ public final class com/wire/kalium/logic/feature/conversation/UpdateConversation
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ZZJLkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZZJLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ZZLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZZLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase$DefaultImpls {
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZZJLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZZLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/conversation/UpdateConversationMemberRoleResult {
@@ -4259,12 +4259,12 @@ public abstract interface class com/wire/kalium/logic/feature/conversation/Updat
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;JLkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;JLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase$DefaultImpls {
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;JLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/conversation/UpdateConversationReadDateUseCase {

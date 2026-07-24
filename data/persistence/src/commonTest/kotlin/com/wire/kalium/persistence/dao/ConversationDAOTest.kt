@@ -382,7 +382,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.updateConversationMutedStatus(
             conversationId = conversationEntity3.id,
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
-            mutedStatusTimestamp = 1649702788L
+            mutedStatusTimestamp = Instant.fromEpochMilliseconds(1649702788L)
         )
 
         val result = conversationDAO.getConversationDetailsById(conversationEntity3.id)
@@ -2555,7 +2555,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationDAO.updateConversationMutedStatus(
                 conversationEntity1.id,
                 ConversationEntity.MutedStatus.MENTIONS_MUTED,
-                Clock.System.now().toEpochMilliseconds()
+                Clock.System.now()
             )
             val result2 = awaitItem()
             assertEquals(ConversationEntity.MutedStatus.MENTIONS_MUTED, result2?.mutedStatus)
