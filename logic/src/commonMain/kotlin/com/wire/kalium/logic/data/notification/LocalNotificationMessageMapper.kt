@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
-import kotlinx.datetime.Instant
 
 internal interface LocalNotificationMessageMapper {
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
@@ -83,8 +82,7 @@ internal class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapp
                 val notificationMessage = LocalNotificationMessage.ConversationDeleted(
                     messageId = "",
                     author = LocalNotificationMessageAuthor(author?.name ?: "", null),
-                    // TODO: change time to Instant
-                    time = Instant.parse(conversationEvent.timestampIso)
+                    time = conversationEvent.dateTime
                 )
                 LocalNotification.Conversation(
                     id = conversation.id,

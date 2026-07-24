@@ -63,14 +63,13 @@ internal object TestEvent {
     fun memberChange(eventId: String = "eventId", member: Member) = Event.Conversation.MemberChanged.MemberChangedRole(
         eventId,
         TestConversation.ID,
-        "2022-03-30T15:36:00.000Z",
+        Instant.parse("2022-03-30T15:36:00.000Z"),
         member
     )
 
     fun memberChangeMutedStatus(eventId: String = "eventId") = Event.Conversation.MemberChanged.MemberMutedStatusChanged(
         eventId,
         TestConversation.ID,
-        "2022-03-30T15:36:00.000Z",
         MutedConversationStatus.AllAllowed,
         "2022-03-30T15:36:00.000Zp"
     )
@@ -79,7 +78,6 @@ internal object TestEvent {
         Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
             eventId,
             TestConversation.ID,
-            "2022-03-30T15:36:00.000Z",
             "2022-03-31T16:36:00.000Zp",
             isArchiving,
         )
@@ -127,7 +125,7 @@ internal object TestEvent {
         eventId,
         TestConversation.ID,
         TestUser.USER_ID,
-        "2022-03-30T15:36:00.000Z"
+        Instant.parse("2022-03-30T15:36:00.000Z")
     )
 
     fun renamedConversation(eventId: String = "eventId") = Event.Conversation.RenamedConversation(
@@ -224,7 +222,6 @@ internal object TestEvent {
         TestConversation.ID,
         TestUser.USER_ID,
         "dummy-message",
-        timestampIso = "2022-03-30T15:36:00.000Z"
     )
 
     fun codeUpdated() = Event.Conversation.CodeUpdated(
@@ -245,7 +242,6 @@ internal object TestEvent {
         id = "eventId",
         conversationId = TestConversation.ID,
         senderUserId = TestUser.OTHER_USER_ID,
-        timestampIso = "2022-03-30T15:36:00.000Z",
         typingIndicatorMode = typingIndicatorMode
     )
 
