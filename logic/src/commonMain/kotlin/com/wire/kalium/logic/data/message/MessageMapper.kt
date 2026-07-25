@@ -53,7 +53,6 @@ import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
-import kotlinx.datetime.Instant
 import okio.Path.Companion.toPath
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -629,8 +628,8 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
                 isQuotingSelfUser = it.isQuotingSelfUser,
                 isVerified = it.isVerified,
                 messageId = it.id,
-                timeInstant = Instant.parse(it.dateTime),
-                editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
+                timeInstant = it.dateTime,
+                editInstant = it.editTimestamp,
                 quotedContent = quotedContentFromEntity(it),
                 accentId = it.accentId
             )
@@ -697,8 +696,8 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
                 isQuotingSelfUser = it.isQuotingSelfUser,
                 isVerified = it.isVerified,
                 messageId = it.id,
-                timeInstant = Instant.parse(it.dateTime),
-                editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
+                timeInstant = it.dateTime,
+                editInstant = it.editTimestamp,
                 quotedContent = quotedContentFromEntity(it),
                 accentId = it.accentId
             )

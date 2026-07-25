@@ -27,10 +27,10 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.feature.user.IsMeetingsEnabledUseCase
 
 internal interface SyncMeetingsUseCase {
-    fun isEnabled(): Boolean
+    suspend fun isEnabled(): Boolean
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
@@ -40,11 +40,11 @@ internal interface SyncMeetingsUseCase {
 internal class SyncMeetingsUseCaseImpl(
     private val meetingRepository: MeetingRepository,
     private val userRepository: UserRepository,
-    private val featureSupport: FeatureSupport,
+    private val isMeetingsEnabledUseCase: IsMeetingsEnabledUseCase,
     private val transactionProvider: CryptoTransactionProvider
 ) : SyncMeetingsUseCase {
 
-    override fun isEnabled(): Boolean = featureSupport.isMeetingsSupported
+    override suspend fun isEnabled(): Boolean = isMeetingsEnabledUseCase.invoke()
 
     override suspend operator fun invoke(): Either<CoreFailure, Unit> = when (isEnabled()) {
         false -> Either.Right(Unit)

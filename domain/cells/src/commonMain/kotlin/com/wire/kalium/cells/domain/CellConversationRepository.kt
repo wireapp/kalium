@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.domain
 
 import com.wire.kalium.cells.domain.model.CellConversation
+import com.wire.kalium.cells.domain.model.ConversationMetadata
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -25,7 +26,7 @@ import kotlinx.coroutines.flow.Flow
 
 internal interface CellConversationRepository {
     suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
-    suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
+    suspend fun getConversationsByIds(conversationIds: List<String>): Either<StorageFailure, List<ConversationMetadata>>
     suspend fun getConversationNameById(conversationId: String): Either<StorageFailure, String?>
     suspend fun hasConversationWithCell(): Either<StorageFailure, Boolean>
     suspend fun observeHasConversationWithCell(): Either<StorageFailure, Flow<Boolean>>
