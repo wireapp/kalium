@@ -23,66 +23,39 @@ import com.wire.kalium.persistence.kaliumLogger
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.File
 
-private const val SQLCIPHER_RAW_KEY_BYTES = 32
-private const val SQLCIPHER_RAW_KEY_PAYLOAD_BYTES = 67
-private const val RAW_KEY_PREFIX_LENGTH = 2
-private const val HEX_CHARS_PER_BYTE = 2
-private const val NIBBLE_BITS = 4
-private const val LOW_NIBBLE_MASK = 0x0F
-private const val UNSIGNED_BYTE_MASK = 0xFF
-private val hexDigits = "0123456789abcdef".encodeToByteArray()
-
-/**
- * Converts 32 bytes of random key material to SQLCipher's raw-key BLOB representation.
- *
- * The returned payload is `x'<64 hex characters>'`. SQLCipher uses those 32 bytes directly
- * instead of applying its password KDF.
- */
-internal fun ByteArray.toSqlCipherRawKey(): ByteArray {
-    require(size == SQLCIPHER_RAW_KEY_BYTES) {
-        "SQLCipher raw keys must contain exactly $SQLCIPHER_RAW_KEY_BYTES bytes"
-    }
-
-    return ByteArray(SQLCIPHER_RAW_KEY_PAYLOAD_BYTES).also { result ->
-        result[0] = 'x'.code.toByte()
-        result[1] = '\''.code.toByte()
-        forEachIndexed { index, byte ->
-        val unsignedByte = byte.toInt() and UNSIGNED_BYTE_MASK
-        result[RAW_KEY_PREFIX_LENGTH + index * HEX_CHARS_PER_BYTE] = hexDigits[unsignedByte ushr NIBBLE_BITS]
-        result[RAW_KEY_PREFIX_LENGTH + index * HEX_CHARS_PER_BYTE + 1] = hexDigits[unsignedByte and LOW_NIBBLE_MASK]
-        }
-        result[result.lastIndex] = '\''.code.toByte()
-    }
-}
+/** Rekeys [databaseFile] from [legacyKey] to [rawKey]. Injectable so callers can test the failure paths. */
+internal typealias DatabaseRekey = (databaseFile: File, legacyKey: ByteArray, rawKey: ByteArray) -> Unit
 
 /**
  * Selects the key representation for the global database and eagerly rekeys a legacy database.
  *
  * If migration fails but the legacy database is still readable, availability wins and the legacy
  * representation is returned. A later process start will retry the migration.
+ *
+ * Callers must serialize invocations for a given database file: this opens, rekeys and promotes in
+ * separate steps, and a concurrent caller rekeying the same file would break an in-flight connection.
  */
 @Suppress("TooGenericExceptionCaught")
 internal fun globalDatabaseKey(
     databaseFile: File,
     secret: ByteArray,
     migrationRawKey: ByteArray?,
+    rekey: DatabaseRekey = ::rekeyDatabase,
     onMigrationComplete: () -> Unit
 ): ByteArray {
     if (migrationRawKey == null || !databaseFile.exists()) return secret
 
+    // `onMigrationComplete` is deliberately invoked outside the try/catch: it persists the promoted
+    // key alias and can throw, and re-entering it from the catch would escape unhandled.
     val selectedKey = try {
-        rekeyDatabase(databaseFile, secret, migrationRawKey)
+        rekey(databaseFile, secret, migrationRawKey)
         check(canOpenDatabase(databaseFile, migrationRawKey, verifyIntegrity = true)) {
             "Global database could not be validated after raw-key migration"
         }
-        onMigrationComplete()
         migrationRawKey
     } catch (migrationFailure: RuntimeException) {
         when {
-            canOpenDatabase(databaseFile, migrationRawKey, verifyIntegrity = true) -> {
-                onMigrationComplete()
-                migrationRawKey
-            }
+            canOpenDatabase(databaseFile, migrationRawKey, verifyIntegrity = true) -> migrationRawKey
 
             canOpenDatabase(databaseFile, secret) -> {
                 val message = "Failed to migrate the global database to a SQLCipher raw key; continuing with its legacy key"
@@ -93,6 +66,7 @@ internal fun globalDatabaseKey(
             else -> throw migrationFailure
         }
     }
+    if (selectedKey === migrationRawKey) onMigrationComplete()
     return selectedKey
 }
 
@@ -150,6 +124,14 @@ private fun hasReadableSchema(database: SQLiteDatabase): Boolean =
         cursor.moveToFirst()
     }
 
+/**
+ * REQUIRES SQLCipher >= 4.12.0, which is where `PRAGMA cipher_status` was introduced.
+ *
+ * On an older core SQLite silently ignores the unknown pragma and returns no rows, so this would
+ * always report `false`. That makes [canOpenDatabase] fail for the raw key *and* for the legacy
+ * fallback, turning every migration attempt into a hard failure and leaving the global database
+ * unopenable. Do not downgrade `sqlcipher-android` below 4.12.0 without replacing this check.
+ */
 private fun hasActiveCipher(database: SQLiteDatabase): Boolean =
     database.rawQuery("PRAGMA cipher_status", emptyArray()).use { cursor ->
         cursor.moveToFirst() && cursor.getInt(0) == 1

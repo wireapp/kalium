@@ -44,7 +44,11 @@ internal interface SecurityHelper {
     suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret
 }
 
-internal data class GlobalDBKeyMaterial(
+/**
+ * Not a data class on purpose: [migrationRawKey] is a [ByteArray], so generated
+ * `equals`/`hashCode` would compare by identity and quietly lie about equality.
+ */
+internal class GlobalDBKeyMaterial(
     val currentSecret: GlobalDatabaseSecret,
     val migrationRawKey: ByteArray? = null
 )
@@ -62,9 +66,7 @@ internal class SecurityHelperImpl(
 
     override fun globalDBKeyMaterial(databaseExists: Boolean): GlobalDBKeyMaterial =
         getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2)?.let {
-            if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING) != null) {
-                passphraseStorage.clearPassphrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING)
-            }
+            clearSupersededGlobalAliases()
             GlobalDBKeyMaterial(GlobalDatabaseSecret(it.toPreservedByteArray.toSqlCipherRawKey()))
         } ?: if (databaseExists) {
             val pendingV2Secret = getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING)
@@ -150,12 +152,31 @@ internal class SecurityHelperImpl(
     }
 
     override fun markGlobalDBSecretAsV2() {
-        if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2) != null) return
+        if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2) != null) {
+            clearSupersededGlobalAliases()
+            return
+        }
 
         val pendingV2Secret = getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING)
             ?: error("Cannot mark the global database key as V2 without its pending V2 secret")
         passphraseStorage.setPassphrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2, pendingV2Secret)
-        passphraseStorage.clearPassphrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING)
+        clearSupersededGlobalAliases()
+    }
+
+    /**
+     * Drops the aliases the promoted V2 key made obsolete.
+     *
+     * The database has already been rekeyed at this point, so the V1 secret can no longer open it
+     * and is only stale key material. Best-effort: a crash between promoting V2 and this call
+     * leaves the aliases behind, and the next process start cleans them up.
+     */
+    private fun clearSupersededGlobalAliases() {
+        if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING) != null) {
+            passphraseStorage.clearPassphrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING)
+        }
+        if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS) != null) {
+            passphraseStorage.clearPassphrase(GLOBAL_DB_PASSPHRASE_ALIAS)
+        }
     }
 
     private fun getOrGeneratePassPhrase(alias: String): String =
@@ -181,8 +202,16 @@ internal class SecurityHelperImpl(
     private val ByteArray.toPreservedString: String
         get() = Base64.encode(this)
 
+    /**
+     * Converts 32 bytes of key material to SQLCipher's raw-key representation, `x'<64 hex chars>'`.
+     *
+     * SQLCipher only recognises this form when the payload is exactly `keySize * 2 + 3` bytes, so
+     * the size is asserted rather than padded or truncated.
+     */
     private fun ByteArray.toSqlCipherRawKey(): ByteArray {
-        require(size == MIN_DATABASE_SECRET_LENGTH)
+        require(size == SQLCIPHER_RAW_KEY_BYTES) {
+            "SQLCipher raw keys must contain exactly $SQLCIPHER_RAW_KEY_BYTES bytes, but got $size"
+        }
 
         val hexDigits = HEX_DIGITS.encodeToByteArray()
         val result = ByteArray(SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH)
@@ -205,6 +234,7 @@ internal class SecurityHelperImpl(
     private companion object {
         const val HEX_DIGITS = "0123456789abcdef"
         const val MIN_DATABASE_SECRET_LENGTH = 32
+        const val SQLCIPHER_RAW_KEY_BYTES = 32
         const val SQLCIPHER_RAW_KEY_MARKER: Byte = 0x78
         const val SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH = 67
         const val SQLCIPHER_RAW_KEY_QUOTE: Byte = 0x27

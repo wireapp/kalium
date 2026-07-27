@@ -36,8 +36,8 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.DatabaseKeyLock
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 
@@ -63,11 +63,13 @@ internal fun UserSessionScope(
     val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
     val platformUserStorageProperties =
         PlatformUserStorageProperties(applicationContext) { userId ->
-            val userIdEntity = UserIDEntity(userId.value, userId.domain)
-            val databaseExists = applicationContext
-                .getDatabasePath(FileNameUtil.userDBName(userIdEntity))
-                .exists()
+            // The existence check has to be inside the lock: it decides whether a legacy or a raw
+            // key is used, so reading it outside would race with a concurrent database creation.
             DatabaseKeyLock.withLock {
+                val userIdEntity = UserIDEntity(userId.value, userId.domain)
+                val databaseExists = applicationContext
+                    .getDatabasePath(FileNameUtil.userDBName(userIdEntity))
+                    .exists()
                 securityHelper.userDBSecret(userId, databaseExists)
             }
         }

@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.db.support
 
 import android.content.Context
+import android.database.sqlite.SQLiteException
 import androidx.test.core.app.ApplicationProvider
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.File
@@ -26,7 +27,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
-import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -48,43 +49,77 @@ class GlobalDatabaseRawKeyMigrationTest {
     }
 
     @Test
-    fun given32ByteSecret_whenConvertingToRawKey_thenSqlCipherBlobFormatIsReturned() {
-        val rawKey = SECRET.toSqlCipherRawKey()
-
-        assertEquals(67, rawKey.size)
-        assertEquals(
-            "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'",
-            rawKey.decodeToString()
-        )
-    }
-
-    @Test
     fun givenHistoricalGlobalKey_whenMigrating_thenDatabaseUsesFreshRawKey() {
-        val rawKey = V2_SECRET.toSqlCipherRawKey()
         var migrationCompleted = false
         createDatabase(HISTORICAL_V1_SECRET)
 
         assertContentEquals(
-            rawKey,
-            globalDatabaseKey(databaseFile, HISTORICAL_V1_SECRET, rawKey) { migrationCompleted = true }
+            RAW_KEY,
+            globalDatabaseKey(databaseFile, HISTORICAL_V1_SECRET, RAW_KEY) { migrationCompleted = true }
         )
         assertTrue(migrationCompleted)
-        assertTrue(canOpenDatabase(databaseFile, rawKey, verifyIntegrity = true))
+        assertTrue(canOpenDatabase(databaseFile, RAW_KEY, verifyIntegrity = true))
         assertFalse(canOpenDatabase(databaseFile, HISTORICAL_V1_SECRET))
     }
 
     @Test
     fun givenRekeyCompletedBeforeV2AliasWasStored_whenMigratingAgain_thenRawKeyIsRecovered() {
-        val rawKey = V2_SECRET.toSqlCipherRawKey()
         var migrationCompleted = false
-        createDatabase(rawKey)
+        createDatabase(RAW_KEY)
 
         assertContentEquals(
-            rawKey,
-            globalDatabaseKey(databaseFile, HISTORICAL_V1_SECRET, rawKey) { migrationCompleted = true }
+            RAW_KEY,
+            globalDatabaseKey(databaseFile, HISTORICAL_V1_SECRET, RAW_KEY) { migrationCompleted = true }
         )
         assertTrue(migrationCompleted)
-        assertTrue(canOpenDatabase(databaseFile, rawKey, verifyIntegrity = true))
+        assertTrue(canOpenDatabase(databaseFile, RAW_KEY, verifyIntegrity = true))
+    }
+
+    @Test
+    fun givenRekeyFailsAndLegacyKeyStillWorks_whenMigrating_thenLegacyKeyIsKeptAndMigrationIsNotCompleted() {
+        var migrationCompleted = false
+        createDatabase(HISTORICAL_V1_SECRET)
+
+        val selectedKey = globalDatabaseKey(
+            databaseFile = databaseFile,
+            secret = HISTORICAL_V1_SECRET,
+            migrationRawKey = RAW_KEY,
+            rekey = { _, _, _ -> throw IllegalStateException("rekey failed") },
+            onMigrationComplete = { migrationCompleted = true }
+        )
+
+        assertContentEquals(HISTORICAL_V1_SECRET, selectedKey)
+        assertFalse(migrationCompleted)
+        assertTrue(canOpenDatabase(databaseFile, HISTORICAL_V1_SECRET, verifyIntegrity = true))
+    }
+
+    @Test
+    fun givenNeitherKeyOpensTheDatabase_whenMigrating_thenTheMigrationFailureIsPropagated() {
+        var migrationCompleted = false
+        createDatabase(HISTORICAL_V1_SECRET)
+
+        assertFailsWith<SQLiteException> {
+            globalDatabaseKey(
+                databaseFile = databaseFile,
+                secret = "wrong-legacy-secret".encodeToByteArray(),
+                migrationRawKey = RAW_KEY,
+                onMigrationComplete = { migrationCompleted = true }
+            )
+        }
+        assertFalse(migrationCompleted)
+    }
+
+    @Test
+    fun givenNoMigrationKey_whenSelectingTheKey_thenTheCurrentSecretIsUsedUntouched() {
+        var migrationCompleted = false
+        createDatabase(HISTORICAL_V1_SECRET)
+
+        assertContentEquals(
+            HISTORICAL_V1_SECRET,
+            globalDatabaseKey(databaseFile, HISTORICAL_V1_SECRET, null) { migrationCompleted = true }
+        )
+        assertFalse(migrationCompleted)
+        assertTrue(canOpenDatabase(databaseFile, HISTORICAL_V1_SECRET, verifyIntegrity = true))
     }
 
     private fun createDatabase(key: ByteArray) {
@@ -109,8 +144,9 @@ class GlobalDatabaseRawKeyMigrationTest {
 
     private companion object {
         const val DATABASE_NAME = "sqlcipher-global-key-test.db"
-        val SECRET = ByteArray(32) { index -> index.toByte() }
-        val V2_SECRET = ByteArray(32) { index -> (index + 1).toByte() }
+
+        /** SQLCipher raw-key literal. The encoder that produces this is covered by `SecurityHelperTest`. */
+        val RAW_KEY = "x'0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20'".encodeToByteArray()
         val HISTORICAL_V1_SECRET = "historical-v1-secret".encodeToByteArray()
     }
 }

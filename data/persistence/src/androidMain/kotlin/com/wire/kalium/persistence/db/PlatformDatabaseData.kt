@@ -30,7 +30,9 @@ import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
  * that might be necessary for future operations
  * in the future like [nuke]
  */
-actual class PlatformDatabaseData(
+// @JvmOverloads keeps the previous `PlatformDatabaseData(Context)` constructor in the published
+// artifact; without it the added parameters silently break binary compatibility for consumers.
+actual class PlatformDatabaseData @JvmOverloads constructor(
     val context: Context,
     internal val globalDatabaseMigrationRawKey: ByteArray? = null,
     internal val onGlobalDatabaseMigratedToRawKey: () -> Unit = {}

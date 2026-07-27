@@ -19,13 +19,13 @@
 package com.wire.kalium.persistence.kmmSettings
 
 import android.content.Context
+import com.russhwolf.settings.SharedPreferencesSettings
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.AuthTokenStorageImpl
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
-import com.russhwolf.settings.SharedPreferencesSettings
 
 actual class GlobalPrefProvider(context: Context, shouldEncryptData: Boolean = true) {
 
