@@ -75,8 +75,12 @@ private fun rekeyToRawKey(
     rekey: DatabaseRekey
 ): Boolean = try {
     rekey(databaseFile, legacyKey, rawKey)
-    check(canOpenDatabase(databaseFile, rawKey, verifyIntegrity = true)) {
-        "Global database could not be validated after raw-key migration"
+    // Opening with the new key is the whole assertion: `changePassword` runs under a rollback
+    // journal, so a torn rekey rolls back rather than half-applying. A full
+    // `cipher_integrity_check` here would only ever catch damage that predates the migration, and
+    // failing on that would turn a readable-but-scarred database into a startup failure.
+    check(canOpenDatabase(databaseFile, rawKey)) {
+        "Global database could not be opened with its new raw key after migration"
     }
     true
 } catch (migrationFailure: RuntimeException) {
@@ -113,6 +117,11 @@ private fun rekeyDatabase(databaseFile: File, legacyKey: ByteArray, rawKey: Byte
     }
 }
 
+/**
+ * @param verifyIntegrity also HMACs every page. Off on the startup paths, where the cost is paid by
+ * every user and a failure has no better recovery than a plain open failure; the migration tests
+ * turn it on to prove a rekeyed database is sound.
+ */
 internal fun canOpenDatabase(
     databaseFile: File,
     key: ByteArray,
