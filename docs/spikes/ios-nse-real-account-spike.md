@@ -7,21 +7,22 @@ Status: implemented for signed host-app/NSE integration testing; not production-
 ## What this path does
 
 `RealNotificationExtension` is the temporary real-account entry point in the
-`KaliumNotificationExtension` framework. The caller supplies the qualified Wire account and an
-absolute deadline. Kalium then:
+`KaliumNotificationExtension` framework. The caller supplies the canonical APNs account UUID and
+an absolute deadline. Kalium then:
 
-1. opens the same App Group-backed Kalium root used by the logged-in app;
-2. reads auth state through the same Keychain service and access group;
-3. resolves the account's locally registered client ID;
-4. acquires the non-blocking account/client process lock;
-5. opens the authenticated consumable-notification WebSocket with a new synchronization marker;
-6. performs one bounded catch-up and closes at the matching marker;
-7. applies real Proteus or MLS receive bytes to the existing CoreCrypto state;
-8. resolves Proteus external content, decodes the exact `GenericMessage` protobuf, and runs the
+1. acquires a non-blocking account-wide process lock before opening account state;
+2. opens the same App Group-backed Kalium root used by the logged-in app;
+3. reads auth state through the same Keychain service and access group;
+4. resolves the UUID to the one authoritative qualified local session and its registered client ID;
+5. acquires the non-blocking account/client process lock;
+6. opens the authenticated consumable-notification WebSocket with a new synchronization marker;
+7. performs one bounded catch-up and closes at the matching marker;
+8. applies real Proteus or MLS receive bytes to the existing CoreCrypto state;
+9. resolves Proteus external content, decodes the exact `GenericMessage` protobuf, and runs the
    notification-content extractor;
-9. converts decrypted calling content into the existing notification-only AVS input and invokes
+10. converts decrypted calling content into the existing notification-only AVS input and invokes
    `:domain:calling-notifications` synchronously through the split AVS framework; and
-10. returns the decrypted candidates in `RealNotificationExtensionResult.notifications`.
+11. returns the decrypted candidates in `RealNotificationExtensionResult.notifications`.
 
 The entry point uses a dedicated `NotificationExtensionCoreLogic` account assembly. It does not
 construct the application `CoreLogic` or `UserSessionScope`, so it does not run startup migrations,
@@ -49,13 +50,17 @@ The app's normal `CoreLogic` must also be configured with the shared access grou
 ```kotlin
 ApplePersistenceConfig(
     serviceName = "<stable-keychain-service>",
-    accessGroup = "<TEAM_ID.shared-keychain-group>"
+    accessGroup = "<TEAM_ID.shared-keychain-group>",
+    accessibleAfterFirstUnlock = true
 )
 ```
 
-Changing an existing installation from the default target-specific Keychain group to a shared
-group does not make old entries appear in the new group. The host must migrate the existing entries
-or perform a fresh login before testing the NSE.
+Changing an existing installation to the after-first-unlock device-only accessibility class requires
+an explicit update before the new class is included in every query. Kalium now performs that
+service/access-group-scoped migration before constructing `KeychainSettings`. The main app must run
+once while unlocked so the migration can access legacy when-unlocked items; otherwise a fresh login
+is required before locked-device NSE testing. Moving entries from a different access group remains
+a separate host migration.
 
 ## Swift-shaped usage
 
@@ -113,7 +118,7 @@ The entry-point flow is:
 let avsBridge = RealAvsBridge(callbacks: avsCallbacks)
 let component = RealNotificationExtension(
     configuration: RealNotificationExtensionConfiguration(
-        kaliumRootPath: sharedContainer.appendingPathComponent("kalium").path,
+        kaliumRootPath: sharedContainer.path,
         sharedAppGroupRoot: sharedContainer.path,
         keychainServiceName: keychainService,
         keychainAccessGroup: keychainAccessGroup,
@@ -124,7 +129,6 @@ let component = RealNotificationExtension(
 
 let request = RealNotificationExtensionRequest(
     userId: pushAccountId,
-    userDomain: pushAccountDomain,
     absoluteDeadlineEpochMillis: deadlineEpochMillis
 )
 
@@ -188,12 +192,15 @@ They are not repaired or sent from the NSE.
   in the target lower-layer modules. The previous `UserSessionScope`-based iOS Simulator debug
   binary was 109,641,000 bytes. The passive-assembly version is 74,485,112 bytes, a reduction of
   35,155,888 bytes (32.1%); this remains a debug, non-App-Store-thinned measurement.
-- Open all shared account/CoreCrypto resources only after acquiring the cross-process lock, and
-  make the foreground app use the same lock for overlapping work.
+- Resolve the dedicated
+  [AVS extension-safety production blocker](ios-nse-avs-extension-safety-blocker.md) by replacing
+  the full `com.wire:avs-kmp` archive with an extension-safe notification-only AVS artifact. The
+  current archive still imports `UIApplication`/`sharedApplication`, so it cannot pass App Store
+  extension-safety validation even though the real AVS call path builds and runs.
 - Add encrypted durable handoff persistence, cursor cutover, safe transport ACKs, and native
   foreground import.
 - Wire the notification-policy snapshot and approved generic/replacement behavior.
 - Complete signed physical-device testing for push delivery, locked-device Keychain accessibility,
   memory, cold start, expiration, owner death, real Proteus/MLS traffic, and captured real call
   payloads/AVS callbacks.
-- Add automated tests only after the spike design is accepted, per the current working agreement.
+- Add host lifecycle and real push integration tests after the spike design is accepted.

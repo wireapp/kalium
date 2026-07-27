@@ -36,8 +36,12 @@ package com.wire.kalium.persistence.kmmSettings
  * @property accessGroup Optional iOS Keychain Sharing access group. The host app and its
  *  Notification Service Extension must pass the same fully qualified value and include it in both
  *  targets' entitlements when they need to share Kalium auth tokens and storage passphrases.
+ * @property accessibleAfterFirstUnlock Makes entries available to background extensions after the
+ *  user has unlocked the device once since boot. The device-only accessibility class prevents the
+ *  entries from migrating to another device.
  */
 public data class ApplePersistenceConfig(
     val serviceName: String,
     val accessGroup: String? = null,
+    val accessibleAfterFirstUnlock: Boolean = false,
 )

@@ -26,8 +26,10 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,10 +42,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 public abstract class SyncExecutor {
 
     public abstract fun startAndStopSyncAsNeeded()
+
+    /** Cancels the active sync lifecycle and returns only after its work has fully unwound. */
+    public abstract suspend fun stopAndWait()
 
     /**
      * Requests Sync to be performed, fetching new events, etc. bringing the user to an online status.
@@ -101,26 +109,41 @@ internal class SyncExecutorImpl(
 
     private val syncStateFlow = MutableStateFlow<SyncState>(SyncState.Waiting)
     private val logger by lazy { userScopedLogger.withFeatureId(SYNC).withTextTag("SyncExecutor") }
+    private var syncStateObserverJob: Job? = null
+    private var syncLifecycleJob: Job? = null
+    private val syncLifecycleStopMutex = Mutex()
 
     override fun startAndStopSyncAsNeeded() {
-        scope.launch {
-            syncStateObserver.syncState.collect { syncStateFlow.value = it }
+        if (syncStateObserverJob?.isActive != true) {
+            syncStateObserverJob = scope.launch {
+                syncStateObserver.syncState.collect { syncStateFlow.value = it }
+            }
         }
-        scope.launch {
-            syncStateFlow.subscriptionCount
-                .onEach {
-                    logger.d("!! Sync requester count changed to $it")
-                }
-                .map { count -> count > 0 }
-                .distinctUntilChanged()
-                .collectLatest { shouldSync ->
-                    if (shouldSync) {
-                        logger.i("!! Starting Sync to fulfill requests !!")
-                        performSync()
-                    } else {
-                        logger.i("!! Stopping sync, as there are no requests for it. !!")
+        if (syncLifecycleJob?.isActive != true) {
+            syncLifecycleJob = scope.launch {
+                syncStateFlow.subscriptionCount
+                    .onEach {
+                        logger.d("!! Sync requester count changed to $it")
                     }
-                }
+                    .map { count -> count > 0 }
+                    .distinctUntilChanged()
+                    .collectLatest { shouldSync ->
+                        if (shouldSync) {
+                            logger.i("!! Starting Sync to fulfill requests !!")
+                            performSync()
+                        } else {
+                            logger.i("!! Stopping sync, as there are no requests for it. !!")
+                        }
+                    }
+            }
+        }
+    }
+
+    override suspend fun stopAndWait(): Unit = withContext(NonCancellable) {
+        syncLifecycleStopMutex.withLock {
+            val job = syncLifecycleJob
+            syncLifecycleJob = null
+            job?.cancelAndJoin()
         }
     }
 

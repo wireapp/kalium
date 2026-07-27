@@ -38,6 +38,8 @@ import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicTra
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicTransportMode
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicTransportOpenStatus
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicTransportReceiveStatus
+import com.wire.kalium.logic.notificationextension.MainAppNotificationExtensionProcessLock
+import com.wire.kalium.logic.notificationextension.MainAppNotificationExtensionProcessLockStatus
 import com.wire.kalium.notificationsync.BoundedNotificationSyncEngine
 import com.wire.kalium.notificationsync.BoundedNotificationSyncRequest
 import com.wire.kalium.notificationsync.DurableStageStatus
@@ -96,7 +98,7 @@ public data class RealNotificationExtensionConfiguration(
 @Suppress("LongParameterList")
 public data class RealNotificationExtensionRequest(
     public val userId: String,
-    public val userDomain: String,
+    public val userDomain: String?,
     public val absoluteDeadlineEpochMillis: Long,
     public val maxTransportFrames: Int = NotificationExtensionRequest.DEFAULT_MAX_TRANSPORT_FRAMES,
     public val maxEventsToStage: Int = NotificationExtensionRequest.DEFAULT_MAX_EVENTS_TO_STAGE,
@@ -112,11 +114,10 @@ public data class RealNotificationExtensionRequest(
     /** Swift-friendly constructor using the bounded engine defaults. */
     public constructor(
         userId: String,
-        userDomain: String,
         absoluteDeadlineEpochMillis: Long
     ) : this(
         userId = userId,
-        userDomain = userDomain,
+        userDomain = null,
         absoluteDeadlineEpochMillis = absoluteDeadlineEpochMillis,
         maxTransportFrames = NotificationExtensionRequest.DEFAULT_MAX_TRANSPORT_FRAMES,
         maxEventsToStage = NotificationExtensionRequest.DEFAULT_MAX_EVENTS_TO_STAGE,
@@ -225,7 +226,8 @@ public class RealNotificationExtension(
             rootPath = configuration.kaliumRootPath,
             keychainConfig = ApplePersistenceConfig(
                 serviceName = configuration.keychainServiceName,
-                accessGroup = configuration.keychainAccessGroup
+                accessGroup = configuration.keychainAccessGroup,
+                accessibleAfterFirstUnlock = true
             ),
             kaliumConfigs = KaliumConfigs(),
             userAgent = configuration.userAgent
@@ -265,7 +267,42 @@ public class RealNotificationExtension(
         if (!request.isValid() || !configuration.isValid()) {
             return unavailableResult(NotificationExtensionReason.INVALID_REQUEST)
         }
-        val userId = UserId(request.userId, request.userDomain)
+        val processLock = MainAppNotificationExtensionProcessLock(configuration.sharedAppGroupRoot)
+            .tryAcquire(request.userId)
+        when (processLock.status) {
+            MainAppNotificationExtensionProcessLockStatus.ACQUIRED -> Unit
+            MainAppNotificationExtensionProcessLockStatus.UNAVAILABLE -> {
+                processLock.release()
+                return lockUnavailableResult()
+            }
+
+            MainAppNotificationExtensionProcessLockStatus.RETRYABLE_FAILURE -> {
+                processLock.release()
+                return unavailableResult(NotificationExtensionReason.LEASE_ACQUISITION_FAILED)
+            }
+
+            MainAppNotificationExtensionProcessLockStatus.TERMINAL_FAILURE -> {
+                processLock.release()
+                return unavailableResult(NotificationExtensionReason.LEASE_FAILURE)
+            }
+        }
+
+        return try {
+            executeWhileProcessLockIsHeld(request)
+        } finally {
+            processLock.release()
+        }
+    }
+
+    @Suppress("ReturnCount")
+    private suspend fun executeWhileProcessLockIsHeld(
+        request: RealNotificationExtensionRequest
+    ): RealNotificationExtensionResult {
+        val userId = request.userDomain
+            ?.takeIf(String::isNotBlank)
+            ?.let { UserId(request.userId, it) }
+            ?: coreLogic.resolveQualifiedUserId(request.userId)
+            ?: return unavailableResult(NotificationExtensionReason.TRANSPORT_CONFIGURATION)
         val bridge = coreLogic.createBridge(userId)
         return try {
             val clientId = bridge.resolveClientId()
@@ -386,6 +423,7 @@ private class RealLogicEventProcessor(
     private val selfUserId: String,
     private val selfClientId: String
 ) : StagedNotificationEventProcessor {
+    @Suppress("CyclomaticComplexMethod")
     override suspend fun process(event: StagedNotificationEvent): StagedEventProcessingResult {
         val result = bridge.receive(event.rawEnvelope)
         val callEvents = mutableListOf<NotificationExtensionCallEvent>()
@@ -593,7 +631,7 @@ private fun RealNotificationExtensionRequest.toBudget(): NotificationSyncBudget 
 )
 
 private fun RealNotificationExtensionRequest.isValid(): Boolean =
-    userId.isNotBlank() && userDomain.isNotBlank() && absoluteDeadlineEpochMillis > 0L &&
+    userId.isNotBlank() && absoluteDeadlineEpochMillis > 0L &&
             maxTransportFrames > 0 && maxEventsToStage > 0 && maxDrainBatches > 0 &&
             maxEventsPerDrainBatch > 0 && maxRawEnvelopeBytes > 0 &&
             maxRawEnvelopeBytesPerRun > 0 && maxDrainRawEnvelopeBytesPerRun > 0 &&
@@ -607,6 +645,16 @@ private fun unavailableResult(reason: NotificationExtensionReason): RealNotifica
     RealNotificationExtensionResult(
         status = NotificationExtensionStatus.CONFIGURATION_UNAVAILABLE,
         reason = reason,
+        summary = NotificationExtensionSummary.Empty,
+        clientId = null,
+        markerId = null,
+        notifications = emptyList()
+    )
+
+private fun lockUnavailableResult(): RealNotificationExtensionResult =
+    RealNotificationExtensionResult(
+        status = NotificationExtensionStatus.LOCK_UNAVAILABLE,
+        reason = NotificationExtensionReason.LEASE_ACQUISITION_FAILED,
         summary = NotificationExtensionSummary.Empty,
         clientId = null,
         markerId = null,

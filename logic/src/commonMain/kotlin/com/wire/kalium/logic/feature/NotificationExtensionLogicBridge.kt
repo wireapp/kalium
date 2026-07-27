@@ -110,6 +110,7 @@ public class NotificationExtensionLogicBridge internal constructor(
     public suspend fun resolveSelfAvsUserId(): String = avsIdentifier(selfUserId)
 
     /** Builds the exact notification-only AVS input for one decrypted calling message. */
+    @Suppress("ReturnCount")
     public suspend fun resolveCallEvent(
         message: NotificationExtensionLogicMessage
     ): NotificationExtensionLogicCallEvent? {

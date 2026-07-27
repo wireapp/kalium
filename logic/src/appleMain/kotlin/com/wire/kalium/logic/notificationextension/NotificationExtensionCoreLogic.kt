@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.notificationextension
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.PlatformRootPathsProvider
@@ -82,4 +83,19 @@ public class NotificationExtensionCoreLogic(
             userStorageProvider = userStorageProvider,
             userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider
         ).create(userId)
+
+    /**
+     * Resolves the canonical APNs account UUID to exactly one qualified local Kalium account.
+     *
+     * APNs intentionally carries no backend domain. Ambiguous, missing, invalid, and storage-error
+     * results all fail closed instead of selecting the foreground account.
+     */
+    public suspend fun resolveQualifiedUserId(userId: String): UserId? =
+        when (val sessions = sessionRepository.allValidSessions()) {
+            is Either.Left -> null
+            is Either.Right ->
+                sessions.value
+                    .map { it.userId }
+                    .singleOrNull { it.value.equals(userId, ignoreCase = true) }
+        }
 }

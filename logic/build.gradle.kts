@@ -133,6 +133,9 @@ kotlin {
 
         val appleMain by getting {
             kotlin.exclude("com/wire/kalium/logic/feature/call/**")
+            dependencies {
+                implementation(projects.data.syncCoordination)
+            }
         }
         val appleCallSourceDir = "src/appleMain/kotlin/com/wire/kalium/logic/feature/call"
         listOf(

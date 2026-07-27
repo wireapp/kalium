@@ -27,6 +27,7 @@ import com.wire.kalium.logic.fakes.sync.FakeSyncStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -215,6 +216,33 @@ class SyncExecutorTest {
         assertEquals(0, arrangement.incrementalSyncManager.fakeSyncFlow.subscriptionCount.value)
         syncScope.cancel()
     }
+
+    @Test
+    fun givenActiveSync_whenStopAndWaitReturns_thenSyncWorkIsFullyUnsubscribed() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+            syncExecutor.startAndStopSyncAsNeeded()
+            val request = backgroundScope.launch {
+                syncExecutor.request {
+                    awaitCancellation()
+                }
+            }
+            advanceUntilIdle()
+            assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+
+            syncExecutor.stopAndWait()
+
+            assertEquals(0, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+            assertEquals(0, arrangement.incrementalSyncManager.fakeSyncFlow.subscriptionCount.value)
+
+            syncExecutor.startAndStopSyncAsNeeded()
+            advanceUntilIdle()
+            assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+
+            request.cancel()
+            syncScope.cancel()
+        }
 
     @Test
     fun givenKeepSyncAlwaysOn_whenRequestBlockEnds_thenShouldKeepSync() = runTest(TestKaliumDispatcher.default) {
