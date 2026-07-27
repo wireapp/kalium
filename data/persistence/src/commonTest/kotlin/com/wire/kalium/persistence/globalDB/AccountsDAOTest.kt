@@ -112,6 +112,31 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     }
 
     @Test
+    fun givenAccountWithSsoIdentityProviderId_whenInsertedAndUpdated_thenLatestIdIsStored() = runTest {
+        val account = VALID_ACCOUNT
+
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            userIDEntity = account.info.userIDEntity,
+            ssoIdEntity = account.ssoId,
+            managedByEntity = account.managedBy,
+            serverConfigId = account.serverConfigId,
+            isPersistentWebSocketEnabled = false,
+            ssoIdentityProviderId = "first-idp-id",
+        )
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            userIDEntity = account.info.userIDEntity,
+            ssoIdEntity = account.ssoId,
+            managedByEntity = account.managedBy,
+            serverConfigId = account.serverConfigId,
+            isPersistentWebSocketEnabled = false,
+            ssoIdentityProviderId = "second-idp-id",
+        )
+
+        val insertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
+        assertEquals("second-idp-id", insertedAccount?.ssoIdentityProviderId)
+    }
+
+    @Test
     fun whenCallingAllAccountList_thenAllStoredAccountsAreReturned() = runTest {
         val expectedList = insertAccounts().map { it.info }
         val actualList = globalDatabaseBuilder.accountsDAO.allAccountList()

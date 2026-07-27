@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.session.token.AccessToken
@@ -122,6 +123,149 @@ class AddAuthenticatedUserUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.doesValidSessionExist(any())
         }
+    }
+
+    @Test
+    fun givenRetainedAccountWithMatchingIdpId_whenInvoked_thenSuccessIsReturned() = runTest {
+        val retainedAccount = retainedAccount(ssoIdentityProviderId = TEST_IDP_ID)
+        val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(false))
+            .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
+            .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
+            .withFullAccountInfoResult(TEST_USERID, Either.Right(retainedAccount))
+            .withStoreSessionResult(
+                TEST_SERVER_CONFIG.id,
+                TEST_SSO_ID.copy(scimExternalId = "updated-scim"),
+                TEST_AUTH_TOKENS,
+                PROXY_CREDENTIALS,
+                null,
+                Either.Right(Unit),
+                ssoIdentityProviderId = TEST_IDP_ID,
+            )
+            .withUpdateCurrentSessionResult(TEST_USERID, Either.Right(Unit))
+            .arrange()
+
+        val actual = addAuthenticatedUserUseCase(
+            session = defaultSessionParam(
+                ssoId = TEST_SSO_ID.copy(scimExternalId = "updated-scim"),
+                ssoIdentityProviderId = TEST_IDP_ID,
+            )
+        )
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.sessionRepository.storeSession(any())
+        }
+    }
+
+    @Test
+    fun givenRetainedAccountWithMatchingIdpIdAndChangedSsoIdentity_whenInvoked_thenSuccessIsReturned() = runTest {
+        val retainedAccount = retainedAccount(ssoIdentityProviderId = TEST_IDP_ID)
+        val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(false))
+            .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
+            .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
+            .withFullAccountInfoResult(TEST_USERID, Either.Right(retainedAccount))
+            .withStoreSessionResult(
+                TEST_SERVER_CONFIG.id,
+                TEST_SSO_ID.copy(tenant = "new-tenant", subject = "new-subject"),
+                TEST_AUTH_TOKENS,
+                PROXY_CREDENTIALS,
+                null,
+                Either.Right(Unit),
+                ssoIdentityProviderId = TEST_IDP_ID,
+            )
+            .withUpdateCurrentSessionResult(TEST_USERID, Either.Right(Unit))
+            .arrange()
+
+        val actual = addAuthenticatedUserUseCase(
+            session = defaultSessionParam(
+                ssoId = TEST_SSO_ID.copy(tenant = "new-tenant", subject = "new-subject"),
+                ssoIdentityProviderId = TEST_IDP_ID,
+            )
+        )
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.sessionRepository.storeSession(any())
+        }
+    }
+
+    @Test
+    fun givenRetainedAccountWithDifferentIdpId_whenInvoked_thenSsoIdentityChangedIsReturned() = runTest {
+        val retainedAccount = retainedAccount(ssoIdentityProviderId = TEST_IDP_ID)
+        val (_, addAuthenticatedUserUseCase) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(false))
+            .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
+            .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
+            .withFullAccountInfoResult(TEST_USERID, Either.Right(retainedAccount))
+            .arrange()
+
+        val actual = addAuthenticatedUserUseCase(
+            session = defaultSessionParam(ssoIdentityProviderId = "different-idp-id")
+        )
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Failure.SsoIdentityChanged>(actual)
+    }
+
+    @Test
+    fun givenRetainedAccountWithoutIdpId_whenMultiIngressSsoUserLogsIn_thenSsoIdentityChangedIsReturned() = runTest {
+        val (_, addAuthenticatedUser) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(false))
+            .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
+            .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
+            .withFullAccountInfoResult(
+                TEST_USERID,
+                Either.Right(retainedAccount(ssoIdentityProviderId = null))
+            )
+            .arrange()
+
+        val actual = addAuthenticatedUser(
+            defaultSessionParam(ssoIdentityProviderId = TEST_IDP_ID)
+        )
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Failure.SsoIdentityChanged>(actual)
+    }
+
+    @Test
+    fun givenRetainedAccount_whenLoginHasNoIdpId_thenExistingFlowContinues() = runTest {
+        val (arrangement, addAuthenticatedUser) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(false))
+            .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
+            .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
+            .withFullAccountInfoResult(TEST_USERID, Either.Right(retainedAccount()))
+            .withStoreSessionResult(
+                TEST_SERVER_CONFIG.id,
+                TEST_SSO_ID,
+                TEST_AUTH_TOKENS,
+                PROXY_CREDENTIALS,
+                null,
+                Either.Right(Unit),
+                ssoIdentityProviderId = null,
+            )
+            .withUpdateCurrentSessionResult(TEST_USERID, Either.Right(Unit))
+            .arrange()
+
+        val actual = addAuthenticatedUser(defaultSessionParam(ssoIdentityProviderId = null))
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.sessionRepository.storeSession(any())
+        }
+    }
+
+    @Test
+    fun givenActiveAccountWithDifferentIdpId_whenInvoked_thenUserAlreadyExistsIsReturned() = runTest {
+        val (_, addAuthenticatedUserUseCase) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(false))
+            .withDoesValidSessionExistResult(TEST_USERID, Either.Right(true))
+            .arrange()
+
+        val actual = addAuthenticatedUserUseCase(
+            session = defaultSessionParam(ssoIdentityProviderId = "different-idp-id")
+        )
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
     }
 
     @Test
@@ -391,8 +535,32 @@ class AddAuthenticatedUserUseCaseTest {
         val PROXY_CREDENTIALS = ProxyCredentials("user_name", "password")
         val TEST_SSO_ID = SsoId(
             "scim",
-            null,
-            null
+            "subject",
+            "tenant"
+        )
+        const val TEST_IDP_ID = "identity-provider-id"
+
+        fun defaultSessionParam(
+            ssoId: SsoId? = TEST_SSO_ID,
+            ssoIdentityProviderId: String? = null,
+        ) = StoreSessionParam(
+            serverConfigId = TEST_SERVER_CONFIG.id,
+            ssoId = ssoId,
+            accountTokens = TEST_AUTH_TOKENS,
+            proxyCredentials = PROXY_CREDENTIALS,
+            managedBy = null,
+            isPersistentWebSocketEnabled = false,
+            ssoIdentityProviderId = ssoIdentityProviderId,
+        )
+
+        fun retainedAccount(
+            ssoId: SsoId? = TEST_SSO_ID,
+            ssoIdentityProviderId: String? = null,
+        ) = Account(
+            info = AccountInfo.Invalid(TEST_USERID, LogoutReason.SELF_SOFT_LOGOUT),
+            serverConfig = TEST_SERVER_CONFIG,
+            ssoId = ssoId,
+            ssoIdentityProviderId = ssoIdentityProviderId,
         )
     }
 
@@ -402,6 +570,17 @@ class AddAuthenticatedUserUseCaseTest {
         val serverConfigurationDAO = mock<ServerConfigurationDAO>(mode = MockMode.autoUnit)
 
         private val addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(sessionRepository, serverConfigurationDAO)
+
+        init {
+            everySuspend { sessionRepository.doesSessionExist(any()) } returns Either.Right(false)
+        }
+
+        suspend fun withDoesSessionExistResult(
+            userId: UserId,
+            result: Either<StorageFailure, Boolean>
+        ) = apply {
+            everySuspend { sessionRepository.doesSessionExist(userId) } returns result
+        }
 
         suspend fun withDoesValidSessionExistResult(
             userId: UserId,
@@ -451,7 +630,8 @@ class AddAuthenticatedUserUseCaseTest {
             managedBy: SsoManagedBy? = null,
             result: Either<StorageFailure, Unit>,
             isPersistentWebSocketEnabled: Boolean = false,
-            nomadServiceUrl: String? = null
+            nomadServiceUrl: String? = null,
+            ssoIdentityProviderId: String? = null,
         ) = apply {
             everySuspend {
                 sessionRepository.storeSession(
@@ -463,6 +643,7 @@ class AddAuthenticatedUserUseCaseTest {
                         managedBy = managedBy,
                         isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
                         nomadServiceUrl = nomadServiceUrl,
+                        ssoIdentityProviderId = ssoIdentityProviderId,
                     )
                 )
             } returns (result)
