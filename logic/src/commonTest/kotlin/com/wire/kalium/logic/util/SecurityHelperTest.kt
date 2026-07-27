@@ -46,7 +46,6 @@ class SecurityHelperTest {
     private val userId = UserId("df8703fb-bbab-4b10-a369-0ef781a17cf5", "wire.com")
     private val globalV1Alias = "global_db_passphrase_alias"
     private val globalV2Alias = "global_db_passphrase_alias_v2"
-    private val globalV2PendingAlias = "global_db_passphrase_alias_v2_pending"
     private val userV1Alias = "user_db_secret_alias_$userId"
     private val userV2Alias = "user_db_secret_alias_v2_$userId"
     private val mlsV1Alias = "mls_db_secret_alias_$userId"
@@ -63,22 +62,20 @@ class SecurityHelperTest {
     }
 
     @Test
-    fun whenCallingGlobalDBSecretTwice_thenTheSameValueIsReturned() = runTest {
-        every {
-            passphraseStorage.getPassphrase(any())
-        }.returns(null)
+    fun whenCallingGlobalDBKeyMaterialTwice_thenTheSameValueIsReturned() = runTest {
+        val storedSecret = Base64.encode(ByteArray(32) { it.toByte() })
+        every { passphraseStorage.getPassphrase(any()) }.returns(null)
         every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
-        val secret1 = securityHelper.globalDBSecret()
-        every {
-            passphraseStorage.getPassphrase(any())
-        }.returns(Base64.encode(secret1.value))
+        val secret1 = securityHelper.globalDBKeyMaterial(databaseExists = false).rawKey
+        every { passphraseStorage.getPassphrase(globalV2Alias) }.returns(storedSecret)
 
-        val secret2 = securityHelper.globalDBSecret()
-        assertTrue(secret1.value.contentEquals(secret2.value))
+        val secret2 = securityHelper.globalDBKeyMaterial(databaseExists = false).rawKey
 
-        verify(VerifyMode.exactly(2)) {
-            passphraseStorage.getPassphrase(any())
-        }
+        assertEquals(67, secret1.value.size)
+        assertEquals(
+            "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'",
+            secret2.value.decodeToString()
+        )
         verify(VerifyMode.exactly(1)) {
             passphraseStorage.setPassphrase(any(), any())
         }
@@ -86,21 +83,15 @@ class SecurityHelperTest {
 
     @Test
     fun whenCallingUserDBSecretTwice_thenTheSameValueIsReturned() = runTest {
-        every {
-            passphraseStorage.getPassphrase(any())
-        }.returns(null)
+        every { passphraseStorage.getPassphrase(any()) }.returns(null)
         every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
         val userId = UserId("df8703fb-bbab-4b10-a369-0ef781a17cf5", "wire.com")
-        val secret1 = securityHelper.userDBSecret(userId)
-        every {
-            passphraseStorage.getPassphrase(any())
-        }.returns(Base64.encode(secret1.value))
+        val secret1 = securityHelper.userDBSecret(userId, databaseExists = false)
+        every { passphraseStorage.getPassphrase(any()) }.returns(Base64.encode(ByteArray(32) { it.toByte() }))
 
-        val secret2 = securityHelper.userDBSecret(userId)
-        assertTrue(secret1.value.contentEquals(secret2.value))
-        verify(VerifyMode.exactly(2)) {
-            passphraseStorage.getPassphrase(any())
-        }
+        val secret2 = securityHelper.userDBSecret(userId, databaseExists = false)
+
+        assertEquals(secret1.value.size, secret2.value.size)
         verify(VerifyMode.exactly(1)) {
             passphraseStorage.setPassphrase(any(), any())
         }
@@ -161,79 +152,52 @@ class SecurityHelperTest {
     }
 
     @Test
-    fun givenExistingGlobalDatabaseAndOnlyV1Alias_whenGettingKeyMaterial_thenFreshPendingV2IsReturned() {
+    fun givenExistingGlobalDatabaseAndOnlyV1Alias_whenGettingKeyMaterial_thenTheLegacyKeyIsReportedAlongsideAFreshRawKey() {
         val v1SecretBytes = "historical-v1-secret".encodeToByteArray()
-        val pendingV2SecretBytes = ByteArray(32) { (it + 1).toByte() }
-        every { passphraseStorage.getPassphrase(globalV2Alias) } returns null
-        every { passphraseStorage.getPassphrase(globalV2PendingAlias) } returns Base64.encode(pendingV2SecretBytes)
+        every { passphraseStorage.getPassphrase(globalV2Alias) } returns Base64.encode(ByteArray(32) { (it + 1).toByte() })
         every { passphraseStorage.getPassphrase(globalV1Alias) } returns Base64.encode(v1SecretBytes)
 
         val keyMaterial = securityHelper.globalDBKeyMaterial(databaseExists = true)
 
-        assertTrue(keyMaterial.currentSecret.value.contentEquals(v1SecretBytes))
         assertEquals(
             "x'0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20'",
-            keyMaterial.migrationRawKey?.decodeToString()
+            keyMaterial.rawKey.value.decodeToString()
         )
+        assertTrue(keyMaterial.legacyKey.contentEquals(v1SecretBytes))
     }
 
     @Test
-    fun givenCompletedGlobalMigration_whenMarkingV2_thenPendingSecretIsPromotedAndSupersededAliasesAreCleared() {
-        val pendingSecret = Base64.encode(ByteArray(32) { it.toByte() })
-        every { passphraseStorage.getPassphrase(globalV2Alias) } returns null
-        every { passphraseStorage.getPassphrase(globalV2PendingAlias) } returns pendingSecret
-        every { passphraseStorage.getPassphrase(globalV1Alias) } returns Base64.encode("historical".encodeToByteArray())
-        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
-        every { passphraseStorage.clearPassphrase(any()) } returns Unit
-
-        securityHelper.markGlobalDBSecretAsV2()
-
-        verify(VerifyMode.exactly(1)) {
-            passphraseStorage.setPassphrase(globalV2Alias, pendingSecret)
-        }
-        verify(VerifyMode.exactly(1)) { passphraseStorage.clearPassphrase(globalV2PendingAlias) }
-        verify(VerifyMode.exactly(1)) { passphraseStorage.clearPassphrase(globalV1Alias) }
-    }
-
-    @Test
-    fun givenGlobalMigrationAlreadyPromoted_whenMarkingV2Again_thenTheV2AliasIsNotOverwritten() {
+    fun givenTheLegacyGlobalAliasIsGone_whenGettingKeyMaterial_thenNoMigrationIsReported() {
         every { passphraseStorage.getPassphrase(globalV2Alias) } returns Base64.encode(ByteArray(32) { it.toByte() })
-        every { passphraseStorage.getPassphrase(globalV2PendingAlias) } returns null
         every { passphraseStorage.getPassphrase(globalV1Alias) } returns null
-        every { passphraseStorage.clearPassphrase(any()) } returns Unit
-
-        securityHelper.markGlobalDBSecretAsV2()
-
-        verify(VerifyMode.not) { passphraseStorage.setPassphrase(any(), any()) }
-        verify(VerifyMode.not) { passphraseStorage.clearPassphrase(any()) }
-    }
-
-    @Test
-    fun givenNoPendingSecret_whenMarkingV2_thenTheCallFailsRatherThanPromotingAnUnknownKey() {
-        every { passphraseStorage.getPassphrase(globalV2Alias) } returns null
-        every { passphraseStorage.getPassphrase(globalV2PendingAlias) } returns null
-
-        assertFailsWith<IllegalStateException> { securityHelper.markGlobalDBSecretAsV2() }
-
-        verify(VerifyMode.not) { passphraseStorage.setPassphrase(any(), any()) }
-    }
-
-    @Test
-    fun givenGlobalV2Alias_whenGettingKeyMaterial_thenRawKeyIsReturnedAndSupersededAliasesAreCleared() {
-        every { passphraseStorage.getPassphrase(globalV2Alias) } returns Base64.encode(ByteArray(32) { it.toByte() })
-        every { passphraseStorage.getPassphrase(globalV2PendingAlias) } returns Base64.encode(ByteArray(32))
-        every { passphraseStorage.getPassphrase(globalV1Alias) } returns Base64.encode("historical".encodeToByteArray())
-        every { passphraseStorage.clearPassphrase(any()) } returns Unit
 
         val keyMaterial = securityHelper.globalDBKeyMaterial(databaseExists = true)
 
         assertEquals(
             "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'",
-            keyMaterial.currentSecret.value.decodeToString()
+            keyMaterial.rawKey.value.decodeToString()
         )
-        assertEquals(null, keyMaterial.migrationRawKey)
-        verify(VerifyMode.exactly(1)) { passphraseStorage.clearPassphrase(globalV2PendingAlias) }
+        assertEquals(null, keyMaterial.legacyKey)
+        verify(VerifyMode.not) { passphraseStorage.setPassphrase(any(), any()) }
+    }
+
+    @Test
+    fun givenCompletedGlobalMigration_whenClearingTheLegacyKey_thenTheV1AliasIsRemoved() {
+        every { passphraseStorage.getPassphrase(globalV1Alias) } returns Base64.encode("historical".encodeToByteArray())
+        every { passphraseStorage.clearPassphrase(any()) } returns Unit
+
+        securityHelper.clearGlobalDBLegacyKey()
+
         verify(VerifyMode.exactly(1)) { passphraseStorage.clearPassphrase(globalV1Alias) }
+    }
+
+    @Test
+    fun givenTheLegacyKeyIsAlreadyGone_whenClearingItAgain_thenNothingIsWritten() {
+        every { passphraseStorage.getPassphrase(globalV1Alias) } returns null
+
+        securityHelper.clearGlobalDBLegacyKey()
+
+        verify(VerifyMode.not) { passphraseStorage.clearPassphrase(any()) }
     }
 
     @Test
@@ -269,8 +233,8 @@ class SecurityHelperTest {
 
         val keyMaterial = securityHelper.globalDBKeyMaterial(databaseExists = false)
 
-        assertEquals(67, keyMaterial.currentSecret.value.size)
-        assertEquals(null, keyMaterial.migrationRawKey)
+        assertEquals(67, keyMaterial.rawKey.value.size)
+        assertEquals(null, keyMaterial.legacyKey)
         verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphrase(eq(globalV2Alias), any()) }
         verify(VerifyMode.not) { passphraseStorage.getPassphrase(globalV1Alias) }
     }

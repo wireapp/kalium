@@ -78,11 +78,11 @@ public actual class CoreLogic(
         globalDatabaseProvider(
             platformDatabaseData = PlatformDatabaseData(
                 context = appContext,
-                globalDatabaseMigrationRawKey = keyMaterial?.migrationRawKey,
-                onGlobalDatabaseMigratedToRawKey = securityHelper::markGlobalDBSecretAsV2
+                globalDatabaseLegacyKey = keyMaterial?.legacyKey,
+                onGlobalDatabaseMigratedToRawKey = securityHelper::clearGlobalDBLegacyKey
             ),
             queriesContext = KaliumDispatcherImpl.io,
-            passphrase = keyMaterial?.currentSecret,
+            passphrase = keyMaterial?.rawKey,
             enableWAL = true
         )
     }

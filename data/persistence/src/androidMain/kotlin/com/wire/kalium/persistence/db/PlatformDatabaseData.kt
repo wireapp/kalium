@@ -34,7 +34,8 @@ import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 // artifact; without it the added parameters silently break binary compatibility for consumers.
 actual class PlatformDatabaseData @JvmOverloads constructor(
     val context: Context,
-    internal val globalDatabaseMigrationRawKey: ByteArray? = null,
+    /** Set only while the global database may still be on its legacy key. */
+    internal val globalDatabaseLegacyKey: ByteArray? = null,
     internal val onGlobalDatabaseMigratedToRawKey: () -> Unit = {}
 )
 

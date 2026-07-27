@@ -27,6 +27,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -50,76 +51,110 @@ class GlobalDatabaseRawKeyMigrationTest {
 
     @Test
     fun givenHistoricalGlobalKey_whenMigrating_thenDatabaseUsesFreshRawKey() {
-        var migrationCompleted = false
+        var migrated = false
         createDatabase(HISTORICAL_V1_SECRET)
 
         assertContentEquals(
             RAW_KEY,
-            globalDatabaseKey(databaseFile, HISTORICAL_V1_SECRET, RAW_KEY) { migrationCompleted = true }
+            globalDatabaseKey(databaseFile, RAW_KEY, HISTORICAL_V1_SECRET) { migrated = true }
         )
-        assertTrue(migrationCompleted)
+        assertTrue(migrated)
         assertTrue(canOpenDatabase(databaseFile, RAW_KEY, verifyIntegrity = true))
         assertFalse(canOpenDatabase(databaseFile, HISTORICAL_V1_SECRET))
     }
 
     @Test
-    fun givenRekeyCompletedBeforeV2AliasWasStored_whenMigratingAgain_thenRawKeyIsRecovered() {
-        var migrationCompleted = false
+    fun givenRekeyCompletedBeforeLegacyAliasWasCleared_whenStartingAgain_thenTheDatabaseIsNotRekeyedTwice() {
+        var migrated = false
+        var rekeyCalls = 0
         createDatabase(RAW_KEY)
 
         assertContentEquals(
             RAW_KEY,
-            globalDatabaseKey(databaseFile, HISTORICAL_V1_SECRET, RAW_KEY) { migrationCompleted = true }
+            globalDatabaseKey(
+                databaseFile = databaseFile,
+                rawKey = RAW_KEY,
+                legacyKey = HISTORICAL_V1_SECRET,
+                rekey = { _, _, _ -> rekeyCalls++ },
+                onMigrated = { migrated = true }
+            )
         )
-        assertTrue(migrationCompleted)
+        assertEquals(0, rekeyCalls)
+        assertTrue(migrated)
         assertTrue(canOpenDatabase(databaseFile, RAW_KEY, verifyIntegrity = true))
     }
 
     @Test
     fun givenRekeyFailsAndLegacyKeyStillWorks_whenMigrating_thenLegacyKeyIsKeptAndMigrationIsNotCompleted() {
-        var migrationCompleted = false
+        var migrated = false
         createDatabase(HISTORICAL_V1_SECRET)
 
         val selectedKey = globalDatabaseKey(
             databaseFile = databaseFile,
-            secret = HISTORICAL_V1_SECRET,
-            migrationRawKey = RAW_KEY,
+            rawKey = RAW_KEY,
+            legacyKey = HISTORICAL_V1_SECRET,
             rekey = { _, _, _ -> throw IllegalStateException("rekey failed") },
-            onMigrationComplete = { migrationCompleted = true }
+            onMigrated = { migrated = true }
         )
 
         assertContentEquals(HISTORICAL_V1_SECRET, selectedKey)
-        assertFalse(migrationCompleted)
+        assertFalse(migrated)
         assertTrue(canOpenDatabase(databaseFile, HISTORICAL_V1_SECRET, verifyIntegrity = true))
     }
 
     @Test
     fun givenNeitherKeyOpensTheDatabase_whenMigrating_thenTheMigrationFailureIsPropagated() {
-        var migrationCompleted = false
+        var migrated = false
         createDatabase(HISTORICAL_V1_SECRET)
 
         assertFailsWith<SQLiteException> {
             globalDatabaseKey(
                 databaseFile = databaseFile,
-                secret = "wrong-legacy-secret".encodeToByteArray(),
-                migrationRawKey = RAW_KEY,
-                onMigrationComplete = { migrationCompleted = true }
+                rawKey = RAW_KEY,
+                legacyKey = "wrong-legacy-secret".encodeToByteArray(),
+                onMigrated = { migrated = true }
             )
         }
-        assertFalse(migrationCompleted)
+        assertFalse(migrated)
     }
 
     @Test
-    fun givenNoMigrationKey_whenSelectingTheKey_thenTheCurrentSecretIsUsedUntouched() {
-        var migrationCompleted = false
-        createDatabase(HISTORICAL_V1_SECRET)
+    fun givenNoLegacyKey_whenSelectingTheKey_thenTheRawKeyIsUsedWithoutTouchingTheDatabase() {
+        var migrated = false
+        var rekeyCalls = 0
+        createDatabase(RAW_KEY)
 
         assertContentEquals(
-            HISTORICAL_V1_SECRET,
-            globalDatabaseKey(databaseFile, HISTORICAL_V1_SECRET, null) { migrationCompleted = true }
+            RAW_KEY,
+            globalDatabaseKey(
+                databaseFile = databaseFile,
+                rawKey = RAW_KEY,
+                legacyKey = null,
+                rekey = { _, _, _ -> rekeyCalls++ },
+                onMigrated = { migrated = true }
+            )
         )
-        assertFalse(migrationCompleted)
-        assertTrue(canOpenDatabase(databaseFile, HISTORICAL_V1_SECRET, verifyIntegrity = true))
+        assertEquals(0, rekeyCalls)
+        assertFalse(migrated)
+    }
+
+    @Test
+    fun givenAnEmptyDatabaseFile_whenSelectingTheKey_thenItIsNotTreatedAsAnExistingDatabase() {
+        var rekeyCalls = 0
+        databaseFile.parentFile?.mkdirs()
+        databaseFile.createNewFile()
+
+        assertContentEquals(
+            RAW_KEY,
+            globalDatabaseKey(
+                databaseFile = databaseFile,
+                rawKey = RAW_KEY,
+                legacyKey = HISTORICAL_V1_SECRET,
+                rekey = { _, _, _ -> rekeyCalls++ },
+                onMigrated = { }
+            )
+        )
+        assertEquals(0, rekeyCalls)
     }
 
     private fun createDatabase(key: ByteArray) {

@@ -38,9 +38,9 @@ actual fun globalDatabaseProvider(
     val databaseKey = passphrase?.value?.let {
         globalDatabaseKey(
             databaseFile = platformDatabaseData.context.getDatabasePath(dbName),
-            secret = it,
-            migrationRawKey = platformDatabaseData.globalDatabaseMigrationRawKey,
-            onMigrationComplete = platformDatabaseData.onGlobalDatabaseMigratedToRawKey
+            rawKey = it,
+            legacyKey = platformDatabaseData.globalDatabaseLegacyKey,
+            onMigrated = platformDatabaseData.onGlobalDatabaseMigratedToRawKey
         )
     }
     val driver = databaseDriver(

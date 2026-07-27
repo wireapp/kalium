@@ -27,48 +27,68 @@ import java.io.File
 internal typealias DatabaseRekey = (databaseFile: File, legacyKey: ByteArray, rawKey: ByteArray) -> Unit
 
 /**
- * Selects the key representation for the global database and eagerly rekeys a legacy database.
+ * Returns the key the global database should be opened with, rekeying it to [rawKey] first if it is
+ * still on [legacyKey].
  *
- * If migration fails but the legacy database is still readable, availability wins and the legacy
- * representation is returned. A later process start will retry the migration.
+ * Migration state is derived from the database itself rather than tracked in a flag: [legacyKey] is
+ * non-null only while the legacy alias is still stored, and a database that already opens with
+ * [rawKey] needs no rekey. That makes "rekeyed but the process died before the legacy alias was
+ * cleared" an ordinary path instead of a special case.
  *
- * Callers must serialize invocations for a given database file: this opens, rekeys and promotes in
- * separate steps, and a concurrent caller rekeying the same file would break an in-flight connection.
+ * If the rekey fails but the legacy key still opens the database, availability wins and the legacy
+ * key is returned; a later process start retries.
+ *
+ * Callers must serialize invocations for a given database file — a concurrent caller rekeying the
+ * same file would break an in-flight connection.
  */
-@Suppress("TooGenericExceptionCaught")
 internal fun globalDatabaseKey(
     databaseFile: File,
-    secret: ByteArray,
-    migrationRawKey: ByteArray?,
+    rawKey: ByteArray,
+    legacyKey: ByteArray?,
     rekey: DatabaseRekey = ::rekeyDatabase,
-    onMigrationComplete: () -> Unit
+    onMigrated: () -> Unit
 ): ByteArray {
-    if (migrationRawKey == null || !databaseFile.exists()) return secret
+    if (legacyKey == null || !databaseFile.isNonEmpty()) return rawKey
 
-    // `onMigrationComplete` is deliberately invoked outside the try/catch: it persists the promoted
-    // key alias and can throw, and re-entering it from the catch would escape unhandled.
-    val selectedKey = try {
-        rekey(databaseFile, secret, migrationRawKey)
-        check(canOpenDatabase(databaseFile, migrationRawKey, verifyIntegrity = true)) {
-            "Global database could not be validated after raw-key migration"
-        }
-        migrationRawKey
-    } catch (migrationFailure: RuntimeException) {
-        when {
-            canOpenDatabase(databaseFile, migrationRawKey, verifyIntegrity = true) -> migrationRawKey
-
-            canOpenDatabase(databaseFile, secret) -> {
-                val message = "Failed to migrate the global database to a SQLCipher raw key; continuing with its legacy key"
-                kaliumLogger.w(message, migrationFailure)
-                secret
-            }
-
-            else -> throw migrationFailure
-        }
+    val onRawKey = canOpenDatabase(databaseFile, rawKey) || rekeyToRawKey(databaseFile, rawKey, legacyKey, rekey)
+    return if (onRawKey) {
+        // Safe to run after the fact: the database is already on the raw key and the raw key is
+        // already stored, so a failure here only leaves the legacy alias behind for the next start.
+        onMigrated()
+        rawKey
+    } else {
+        legacyKey
     }
-    if (selectedKey === migrationRawKey) onMigrationComplete()
-    return selectedKey
 }
+
+/**
+ * Returns true once the database is on [rawKey], false if the rekey failed but [legacyKey] still
+ * opens it — availability wins and a later process start retries.
+ *
+ * Throws when neither key works, since there is nothing left to fall back to.
+ */
+@Suppress("TooGenericExceptionCaught")
+private fun rekeyToRawKey(
+    databaseFile: File,
+    rawKey: ByteArray,
+    legacyKey: ByteArray,
+    rekey: DatabaseRekey
+): Boolean = try {
+    rekey(databaseFile, legacyKey, rawKey)
+    check(canOpenDatabase(databaseFile, rawKey, verifyIntegrity = true)) {
+        "Global database could not be validated after raw-key migration"
+    }
+    true
+} catch (migrationFailure: RuntimeException) {
+    if (!canOpenDatabase(databaseFile, legacyKey)) throw migrationFailure
+
+    val message = "Failed to migrate the global database to a SQLCipher raw key; continuing with its legacy key"
+    kaliumLogger.w(message, migrationFailure)
+    false
+}
+
+/** An interrupted first run can leave a zero-length file behind, which is not a database to migrate. */
+private fun File.isNonEmpty(): Boolean = exists() && length() > 0
 
 private fun rekeyDatabase(databaseFile: File, legacyKey: ByteArray, rawKey: ByteArray) {
     val database = SQLiteDatabase.openDatabase(
@@ -79,11 +99,9 @@ private fun rekeyDatabase(databaseFile: File, legacyKey: ByteArray, rawKey: Byte
         null
     )
     try {
-        database.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", emptyArray()).use { cursor ->
-            check(cursor.moveToFirst() && cursor.getInt(0) == 0) {
-                "Could not checkpoint the global database before raw-key migration"
-            }
-        }
+        // Leaving WAL checkpoints as part of the mode switch and reports the mode it ended up in, so
+        // this doubles as the checkpoint. A rollback journal also makes `changePassword` recoverable
+        // if the process dies mid-rekey.
         database.rawQuery("PRAGMA journal_mode=DELETE", emptyArray()).use { cursor ->
             check(cursor.moveToFirst() && cursor.getString(0).equals("delete", ignoreCase = true)) {
                 "Could not leave WAL mode before global database raw-key migration"
@@ -109,9 +127,7 @@ internal fun canOpenDatabase(
             SQLiteDatabase.OPEN_READWRITE,
             null
         )
-        hasReadableSchema(database) &&
-                hasActiveCipher(database) &&
-                (!verifyIntegrity || hasValidCipherIntegrity(database))
+        hasReadableSchema(database) && (!verifyIntegrity || hasValidCipherIntegrity(database))
     } catch (_: SQLiteException) {
         false
     } finally {
@@ -119,24 +135,16 @@ internal fun canOpenDatabase(
     }
 }
 
+/**
+ * Reading the schema is what proves the key is correct: SQLCipher cannot return `sqlite_schema` rows
+ * for a file it failed to decrypt, it throws instead.
+ */
 private fun hasReadableSchema(database: SQLiteDatabase): Boolean =
     database.rawQuery("SELECT COUNT(*) FROM sqlite_schema", emptyArray()).use { cursor ->
         cursor.moveToFirst()
     }
 
-/**
- * REQUIRES SQLCipher >= 4.12.0, which is where `PRAGMA cipher_status` was introduced.
- *
- * On an older core SQLite silently ignores the unknown pragma and returns no rows, so this would
- * always report `false`. That makes [canOpenDatabase] fail for the raw key *and* for the legacy
- * fallback, turning every migration attempt into a hard failure and leaving the global database
- * unopenable. Do not downgrade `sqlcipher-android` below 4.12.0 without replacing this check.
- */
-private fun hasActiveCipher(database: SQLiteDatabase): Boolean =
-    database.rawQuery("PRAGMA cipher_status", emptyArray()).use { cursor ->
-        cursor.moveToFirst() && cursor.getInt(0) == 1
-    }
-
+/** `PRAGMA cipher_integrity_check` returns a row per problem found, so no rows means consistent. */
 private fun hasValidCipherIntegrity(database: SQLiteDatabase): Boolean =
     database.rawQuery("PRAGMA cipher_integrity_check", emptyArray()).use { cursor ->
         !cursor.moveToFirst()

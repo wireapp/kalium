@@ -33,24 +33,27 @@ internal expect class SecureRandom internal constructor() {
 }
 
 internal interface SecurityHelper {
-    fun globalDBSecret(): GlobalDatabaseSecret
     fun globalDBKeyMaterial(databaseExists: Boolean): GlobalDBKeyMaterial
-    fun userDBSecret(userId: UserId): UserDBSecret
+    fun clearGlobalDBLegacyKey()
     fun userDBSecret(userId: UserId, databaseExists: Boolean): UserDBSecret
     fun userDBOrSecretNull(userId: UserId): UserDBSecret?
-    fun markGlobalDBSecretAsV2()
     fun setDBPassphrase(key: String, passphrase: String)
     suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret
     suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret
 }
 
 /**
- * Not a data class on purpose: [migrationRawKey] is a [ByteArray], so generated
- * `equals`/`hashCode` would compare by identity and quietly lie about equality.
+ * The key the global database should end up on, plus the key it may still be encrypted with.
+ *
+ * [legacyKey] is non-null only while the legacy alias is still stored, which is exactly the window
+ * in which a migration can be outstanding. Once it is cleared, [rawKey] is the whole story.
+ *
+ * Not a data class on purpose: both fields are [ByteArray]s, so generated `equals`/`hashCode` would
+ * compare by identity and quietly lie about equality.
  */
 internal class GlobalDBKeyMaterial(
-    val currentSecret: GlobalDatabaseSecret,
-    val migrationRawKey: ByteArray? = null
+    val rawKey: GlobalDatabaseSecret,
+    val legacyKey: ByteArray? = null
 )
 
 internal typealias DatabaseMigrator = suspend (rootDir: String, oldKey: String, passphrase: ByteArray) -> Unit
@@ -61,38 +64,30 @@ internal class SecurityHelperImpl(
     private val databaseMigrator: DatabaseMigrator = ::migrateDatabaseKey
 ) : SecurityHelper {
 
-    override fun globalDBSecret(): GlobalDatabaseSecret =
-        GlobalDatabaseSecret(getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS).toPreservedByteArray)
+    /**
+     * The raw key is generated and stored *before* it is ever used, so a crash between storing it
+     * and rekeying the database only costs an unused alias. The reverse order would lose the
+     * database.
+     */
+    override fun globalDBKeyMaterial(databaseExists: Boolean): GlobalDBKeyMaterial {
+        val rawKey = getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2).toPreservedByteArray.toSqlCipherRawKey()
+        val legacyKey = if (databaseExists) getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS)?.toPreservedByteArray else null
+        return GlobalDBKeyMaterial(GlobalDatabaseSecret(rawKey), legacyKey)
+    }
 
-    override fun globalDBKeyMaterial(databaseExists: Boolean): GlobalDBKeyMaterial =
-        getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2)?.let {
-            clearSupersededGlobalAliases()
-            GlobalDBKeyMaterial(GlobalDatabaseSecret(it.toPreservedByteArray.toSqlCipherRawKey()))
-        } ?: if (databaseExists) {
-            val pendingV2Secret = getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING)
-                .toPreservedByteArray
-                .toSqlCipherRawKey()
-            GlobalDBKeyMaterial(
-                currentSecret = globalDBSecret(),
-                migrationRawKey = pendingV2Secret
-            )
-        } else {
-            GlobalDBKeyMaterial(
-                GlobalDatabaseSecret(
-                    getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2).toPreservedByteArray.toSqlCipherRawKey()
-                )
-            )
+    override fun clearGlobalDBLegacyKey() {
+        if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS) != null) {
+            passphraseStorage.clearPassphrase(GLOBAL_DB_PASSPHRASE_ALIAS)
         }
-
-    override fun userDBSecret(userId: UserId): UserDBSecret =
-        UserDBSecret(getOrGeneratePassPhrase("${USER_DB_PASSPHRASE_PREFIX}_$userId").toPreservedByteArray)
+    }
 
     override fun userDBSecret(userId: UserId, databaseExists: Boolean): UserDBSecret {
         val v2Alias = "${USER_DB_PASSPHRASE_PREFIX_V2}_$userId"
         return getStoredDbPassword(v2Alias)?.let {
             UserDBSecret(it.toPreservedByteArray.toSqlCipherRawKey())
         } ?: if (databaseExists) {
-            userDBSecret(userId)
+            // Existing user databases keep their legacy key: rekeying them is not worth the cost.
+            UserDBSecret(getOrGeneratePassPhrase("${USER_DB_PASSPHRASE_PREFIX}_$userId").toPreservedByteArray)
         } else {
             UserDBSecret(getOrGeneratePassPhrase(v2Alias).toPreservedByteArray.toSqlCipherRawKey())
         }
@@ -149,34 +144,6 @@ internal class SecurityHelperImpl(
 
     override fun setDBPassphrase(key: String, passphrase: String) {
         passphraseStorage.setPassphrase(key, passphrase)
-    }
-
-    override fun markGlobalDBSecretAsV2() {
-        if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2) != null) {
-            clearSupersededGlobalAliases()
-            return
-        }
-
-        val pendingV2Secret = getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING)
-            ?: error("Cannot mark the global database key as V2 without its pending V2 secret")
-        passphraseStorage.setPassphrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2, pendingV2Secret)
-        clearSupersededGlobalAliases()
-    }
-
-    /**
-     * Drops the aliases the promoted V2 key made obsolete.
-     *
-     * The database has already been rekeyed at this point, so the V1 secret can no longer open it
-     * and is only stale key material. Best-effort: a crash between promoting V2 and this call
-     * leaves the aliases behind, and the next process start cleans them up.
-     */
-    private fun clearSupersededGlobalAliases() {
-        if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING) != null) {
-            passphraseStorage.clearPassphrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING)
-        }
-        if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS) != null) {
-            passphraseStorage.clearPassphrase(GLOBAL_DB_PASSPHRASE_ALIAS)
-        }
     }
 
     private fun getOrGeneratePassPhrase(alias: String): String =
@@ -244,7 +211,6 @@ internal class SecurityHelperImpl(
         const val UNSIGNED_BYTE_MASK = 0xFF
         const val GLOBAL_DB_PASSPHRASE_ALIAS = "global_db_passphrase_alias"
         const val GLOBAL_DB_PASSPHRASE_ALIAS_V2 = "global_db_passphrase_alias_v2"
-        const val GLOBAL_DB_PASSPHRASE_ALIAS_V2_PENDING = "global_db_passphrase_alias_v2_pending"
         const val USER_DB_PASSPHRASE_PREFIX = "user_db_secret_alias"
         const val USER_DB_PASSPHRASE_PREFIX_V2 = "user_db_secret_alias_v2"
         const val MLS_DB_PASSPHRASE_PREFIX = "mls_db_secret_alias"
