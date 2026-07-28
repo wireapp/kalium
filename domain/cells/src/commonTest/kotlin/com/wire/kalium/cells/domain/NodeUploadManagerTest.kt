@@ -17,8 +17,6 @@
  */
 package com.wire.kalium.cells.domain
 
-import dev.mokkery.MockMode
-import dev.mokkery.answering.returns
 import app.cash.turbine.test
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.FileFilters
@@ -38,11 +36,13 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import dev.mokkery.matcher.any
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.verifySuspend
-import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -305,7 +305,8 @@ private class TestRepository : CellsRepository {
         limit: Int,
         offset: Int,
         fileFilters: FileFilters,
-        sortingSpec: SortingSpec
+        sortingSpec: SortingSpec,
+        isRecursive: Boolean
     ): Either<NetworkFailure, PaginatedList<CellNode>> = PaginatedList<CellNode>(
         data = emptyList(),
         pagination = null
