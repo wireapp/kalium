@@ -49,8 +49,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-konan-
 
       - name: iOS Tests
-        # Temporary full-suite run to benchmark the 4 GB heap on this draft PR.
-        run: ./gradlew iosSimulatorArm64Test
+        run: ./gradlew iOSOnlyAffectedTest
         env:
           GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"'
           GITHUB_USER: ${{ github.actor }}
