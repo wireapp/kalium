@@ -42,6 +42,7 @@ public interface GetPaginatedFilesFlowUseCase {
             criteria = SortingCriteria.FOLDERS_FIRST_THEN_ALPHABETICAL,
             descending = true
         ),
+        isRecursive: Boolean = false
     ): Flow<PagingData<Node>>
 }
 
@@ -54,7 +55,8 @@ internal class GetPaginatedFilesFlowUseCaseImpl(
         query: String,
         fileFilters: FileFilters,
         sortingSpec: SortingSpec,
+        isRecursive: Boolean
     ): Flow<PagingData<Node>> {
-        return getCellFilesUseCase(conversationId, query, fileFilters, sortingSpec)
+        return getCellFilesUseCase(conversationId, query, fileFilters, sortingSpec, isRecursive)
     }
 }

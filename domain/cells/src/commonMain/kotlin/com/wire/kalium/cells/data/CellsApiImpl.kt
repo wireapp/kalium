@@ -128,6 +128,7 @@ internal class CellsApiImpl(
         offset: Int?,
         fileFilters: FileFilters,
         sortingSpec: SortingSpec,
+        isRecursive: Boolean,
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             val metadataFilters =
@@ -139,7 +140,7 @@ internal class CellsApiImpl(
                 RestLookupRequest(
                     limit = limit?.toString(),
                     offset = offset?.toString(),
-                    scope = RestLookupScope(root = RestNodeLocator(path = path)),
+                    scope = RestLookupScope(root = RestNodeLocator(path = path), recursive = isRecursive),
                     filters = RestLookupFilter(
                         status = LookupFilterStatusFilter(
                             deleted = if (fileFilters.onlyDeleted) StatusFilterDeletedStatus.Only else null,
