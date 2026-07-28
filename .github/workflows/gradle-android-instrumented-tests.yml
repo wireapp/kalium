@@ -25,6 +25,9 @@ jobs:
       checks: write # required to publish unit test check runs
       pull-requests: write # required to publish pull request comments
     runs-on: ubuntu-latest
+    env:
+      # Inherited by the nested Gradle process started by connectedAndroidOnlyAffectedTest.
+      GRADLE_OPTS: -Dorg.gradle.caching=true
     strategy:
       matrix:
         api-level: [ 31 ]
@@ -54,6 +57,8 @@ jobs:
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
+        with:
+          cache-write: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
 
       # - name: AVD cache
       #      - name: AVD cache

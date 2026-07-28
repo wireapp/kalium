@@ -32,6 +32,8 @@ jobs:
       checks: write # required to publish unit test check runs
       pull-requests: write # required to publish pull request comments
     runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: -Dorg.gradle.caching=true
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
     container: kubazwire/cryptobox:1.0.0@sha256:4791e83cd7c76418e623c5ba17e9396efacf4f742d960a340eb08a106263334b
     steps:
@@ -47,6 +49,8 @@ jobs:
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
+        with:
+          cache-write: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
 
       - name: Build the CLI App
         env:

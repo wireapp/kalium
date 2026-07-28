@@ -21,8 +21,12 @@ jobs:
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
+        with:
+          cache-write: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
 
       - name: Run Detekt
+        env:
+          GRADLE_OPTS: -Dorg.gradle.caching=true
         run: |
           ./gradlew clean detekt
       - name: Cleanup Gradle Cache
