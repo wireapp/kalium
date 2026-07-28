@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">4a9e999
+        <div class="library-version" id="library-version">c5da75f
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -95,7 +95,7 @@
   <div class="cover ">
     <h1 class="cover"><span>schedule</span><wbr><span>Sending</span><wbr><span>Of</span><wbr><span>Pending</span><wbr><span><span>Messages</span></span></h1>
   </div>
-  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="schedule-sending-of-pending-messages.html"><span class="token function">scheduleSendingOfPendingMessages</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><p class="paragraph">Schedules an execution of <a href="../../com.wire.kalium.logic.sync/-pending-messages-sender-worker/index.html">PendingMessagesSenderWorker</a>, which attempts to send all pending messages of this user.</p><p class="paragraph"><strong>When</strong> it's gonna to be executed may vary depending on the platform and/or implementation.</p><p class="paragraph">One of the criteria in order to attempt sending a message is that there's an established internet connection. So the scheduler <i>may</i> take this into consideration.</p><p class="paragraph">If the implementation is unable to schedule (due to platform limitations for example), it's OK to just don't do anything, ideally logging a warning about the lack of implementation.</p></div></div>
+  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">fun </span><a href="schedule-sending-of-pending-messages.html"><span class="token function">scheduleSendingOfPendingMessages</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><p class="paragraph">Schedules an execution that attempts to send all pending messages of this user.</p><p class="paragraph"><strong>When</strong> it's gonna to be executed may vary depending on the platform and/or implementation.</p><p class="paragraph">One of the criteria in order to attempt sending a message is that there's an established internet connection. So the scheduler <i>may</i> take this into consideration.</p><p class="paragraph">If the implementation is unable to schedule (due to platform limitations for example), it's OK to just don't do anything, ideally logging a warning about the lack of implementation.</p></div></div>
 </div>
     <div class="footer">
         <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
