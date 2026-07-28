@@ -24,14 +24,31 @@
 
 package com.wire.kalium.notificationextension
 
+import com.wire.kalium.notificationinbox.DecryptionState
+import com.wire.kalium.notificationinbox.EncryptedAppleNotificationInboxFactory
+import com.wire.kalium.notificationinbox.EncryptedNotificationInboxOpenResult
+import com.wire.kalium.notificationinbox.ForegroundImportState
+import com.wire.kalium.notificationinbox.InboxScope
+import com.wire.kalium.notificationinbox.NotificationInboxFailure
+import com.wire.kalium.notificationinbox.NotificationInboxLimits
+import com.wire.kalium.notificationinbox.NotificationState
+import com.wire.kalium.notificationinbox.RawEnvelopeDeliverySource
+import com.wire.kalium.notificationinbox.ReceiveChildWrite
+import com.wire.kalium.notificationinbox.ReceiveChildrenStageResult
+import com.wire.kalium.notificationinbox.ReceiveChildrenWrite
+import com.wire.kalium.notificationinbox.ReceiveClassification
+import com.wire.kalium.notificationinbox.ReceiveProtocol
+import com.wire.kalium.notificationinbox.fallbackChildIdempotencyKey
+import com.wire.kalium.notificationinbox.protocolMessageUidChildIdempotencyKey
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.notificationextension.NotificationExtensionCoreLogic
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicBridge
+import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicBridgeUnsafeTeardownException
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicCallEvent
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicContentKind
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicMessage
-import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicProtocol
+import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicMaterializationStatus
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicReceiveStatus
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicTransportAckStatus
 import com.wire.kalium.logic.notificationextension.NotificationExtensionLogicTransportFrame
@@ -72,17 +89,25 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /**
  * Shared paths and keychain identity already used by the logged-in host app.
  *
- * [kaliumRootPath] must point at the same App Group-backed Kalium directory as the app. The app and
- * NSE targets must also have matching App Group and Keychain Sharing entitlements.
+ * [kaliumRootPath] is retained for source compatibility and must exactly equal
+ * [sharedAppGroupRoot]. The validated App Group root is the one canonical root used for locking,
+ * Kalium, and encrypted handoff storage. The app and NSE targets must also have matching App Group
+ * and Keychain Sharing entitlements.
  */
 public data class RealNotificationExtensionConfiguration(
     public val kaliumRootPath: String,
@@ -100,6 +125,7 @@ public data class RealNotificationExtensionRequest(
     public val userId: String,
     public val userDomain: String?,
     public val absoluteDeadlineEpochMillis: Long,
+    public val rolloutControl: NotificationExtensionRolloutControl = NotificationExtensionRolloutControl.Unavailable,
     public val maxTransportFrames: Int = NotificationExtensionRequest.DEFAULT_MAX_TRANSPORT_FRAMES,
     public val maxEventsToStage: Int = NotificationExtensionRequest.DEFAULT_MAX_EVENTS_TO_STAGE,
     public val maxDrainBatches: Int = NotificationExtensionRequest.DEFAULT_MAX_DRAIN_BATCHES,
@@ -130,62 +156,72 @@ public data class RealNotificationExtensionRequest(
         maxRunDurationMillis = NotificationExtensionRequest.DEFAULT_MAX_RUN_DURATION_MILLIS
     )
 
+    /** Swift-friendly constructor with no domain and an explicit fail-closed rollout snapshot. */
+    public constructor(
+        userId: String,
+        absoluteDeadlineEpochMillis: Long,
+        rolloutControl: NotificationExtensionRolloutControl
+    ) : this(
+        userId = userId,
+        userDomain = null,
+        absoluteDeadlineEpochMillis = absoluteDeadlineEpochMillis,
+        rolloutControl = rolloutControl,
+        maxTransportFrames = NotificationExtensionRequest.DEFAULT_MAX_TRANSPORT_FRAMES,
+        maxEventsToStage = NotificationExtensionRequest.DEFAULT_MAX_EVENTS_TO_STAGE,
+        maxDrainBatches = NotificationExtensionRequest.DEFAULT_MAX_DRAIN_BATCHES,
+        maxEventsPerDrainBatch = NotificationExtensionRequest.DEFAULT_MAX_EVENTS_PER_DRAIN_BATCH,
+        maxRawEnvelopeBytes = NotificationExtensionRequest.DEFAULT_MAX_RAW_ENVELOPE_BYTES,
+        maxRawEnvelopeBytesPerRun = NotificationExtensionRequest.DEFAULT_MAX_RAW_ENVELOPE_BYTES_PER_RUN,
+        maxDrainRawEnvelopeBytesPerRun = NotificationExtensionRequest.DEFAULT_MAX_DRAIN_RAW_ENVELOPE_BYTES_PER_RUN,
+        deadlineSafetyMarginMillis = NotificationExtensionRequest.DEFAULT_DEADLINE_SAFETY_MARGIN_MILLIS,
+        maxRunDurationMillis = NotificationExtensionRequest.DEFAULT_MAX_RUN_DURATION_MILLIS
+    )
+
+    /** Swift-friendly constructor with an explicit fail-closed rollout snapshot. */
+    public constructor(
+        userId: String,
+        userDomain: String?,
+        absoluteDeadlineEpochMillis: Long,
+        rolloutControl: NotificationExtensionRolloutControl
+    ) : this(
+        userId = userId,
+        userDomain = userDomain,
+        absoluteDeadlineEpochMillis = absoluteDeadlineEpochMillis,
+        rolloutControl = rolloutControl,
+        maxTransportFrames = NotificationExtensionRequest.DEFAULT_MAX_TRANSPORT_FRAMES,
+        maxEventsToStage = NotificationExtensionRequest.DEFAULT_MAX_EVENTS_TO_STAGE,
+        maxDrainBatches = NotificationExtensionRequest.DEFAULT_MAX_DRAIN_BATCHES,
+        maxEventsPerDrainBatch = NotificationExtensionRequest.DEFAULT_MAX_EVENTS_PER_DRAIN_BATCH,
+        maxRawEnvelopeBytes = NotificationExtensionRequest.DEFAULT_MAX_RAW_ENVELOPE_BYTES,
+        maxRawEnvelopeBytesPerRun = NotificationExtensionRequest.DEFAULT_MAX_RAW_ENVELOPE_BYTES_PER_RUN,
+        maxDrainRawEnvelopeBytesPerRun = NotificationExtensionRequest.DEFAULT_MAX_DRAIN_RAW_ENVELOPE_BYTES_PER_RUN,
+        deadlineSafetyMarginMillis = NotificationExtensionRequest.DEFAULT_DEADLINE_SAFETY_MARGIN_MILLIS,
+        maxRunDurationMillis = NotificationExtensionRequest.DEFAULT_MAX_RUN_DURATION_MILLIS
+    )
+
     override fun toString(): String = "RealNotificationExtensionRequest(redacted)"
 }
 
-public enum class RealNotificationKind {
-    TEXT,
-    ASSET,
-    MULTIPART,
-    EDIT,
-    DELETE,
-    REACTION,
-    CALLING,
-    KNOCK,
-    LOCATION
-}
-
-public enum class RealNotificationProtocol {
-    PROTEUS,
-    MLS
-}
-
-/** A decrypted, policy-unfiltered candidate. The host app remains responsible for presentation. */
-@Suppress("LongParameterList")
-public data class RealNotification(
-    public val messageId: String,
-    public val kind: RealNotificationKind,
-    public val body: String?,
-    public val mentionsSelf: Boolean,
-    public val conversationId: String,
-    public val conversationDomain: String,
-    public val senderId: String,
-    public val senderDomain: String,
-    public val senderClientId: String?,
-    public val timestampEpochMillis: Long,
-    public val protocol: RealNotificationProtocol,
-    public val legalHoldStatus: String,
-    public val expiresAfterMillis: Long?
-) {
-    override fun toString(): String = "RealNotification(redacted)"
+/** Final host presentation action. No decrypted candidate or message body crosses this boundary. */
+public enum class RealNotificationPresentationDecision {
+    PRIVACY_PRESERVING_FALLBACK
 }
 
 /**
- * Result of one real bounded attempt. [notifications] shows exactly what the receive-only extractor
- * produced; it is intentionally not a final iOS notification policy decision.
+ * Result of one real bounded attempt.
+ *
+ * The production policy-snapshot gate remains blocked, so the only exportable presentation
+ * decision is the privacy-preserving fallback. Decrypted candidates remain inside the process and
+ * can never escape on partial, deadline, cancellation, recovery, or configuration outcomes.
  */
 public class RealNotificationExtensionResult internal constructor(
     public val status: NotificationExtensionStatus,
     public val reason: NotificationExtensionReason,
     public val summary: NotificationExtensionSummary,
-    public val clientId: String?,
-    public val markerId: String?,
-    notifications: List<RealNotification>
+    public val presentationDecision: RealNotificationPresentationDecision
 ) {
-    public val notifications: List<RealNotification> = notifications.toList()
-
-    /** No policy snapshot is available in this spike, so a production UI must still fail closed. */
-    public val shouldUsePrivacyPreservingFallback: Boolean = true
+    public val shouldUsePrivacyPreservingFallback: Boolean
+        get() = presentationDecision == RealNotificationPresentationDecision.PRIVACY_PRESERVING_FALLBACK
 }
 
 public fun interface RealNotificationExtensionCompletion {
@@ -208,22 +244,22 @@ public class RealNotificationExtensionRunHandle internal constructor(
 }
 
 /**
- * Testable real-account spike entry point.
+ * Internal real-account implementation.
  *
- * The transport is intentionally not ACKed because this assembly uses a volatile per-invocation
- * inbox: a backend redelivery is safer than claiming durability before the encrypted App Group
- * handoff store is available. CoreCrypto and protobuf decoding are real; notification policy and
- * foreground import remain outside this component. The separately linked notification-only AVS
- * bridge is required at construction so calling payloads can never silently fall back to a no-op.
+ * There is deliberately no public constructor. Native code must use
+ * [RealNotificationExtensionFactory], which keeps this path unavailable until every production
+ * gate—including encrypted handoff storage and CoreCrypto/handoff crash ordering—is closed.
  */
-public class RealNotificationExtension(
+public class RealNotificationExtension internal constructor(
     private val configuration: RealNotificationExtensionConfiguration,
     private val callProcessor: NotificationExtensionCallProcessor
 ) {
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val beginState = AtomicInt(REAL_BEGIN_AVAILABLE)
     private val coreLogic: NotificationExtensionCoreLogic by lazy {
         NotificationExtensionCoreLogic(
-            rootPath = configuration.kaliumRootPath,
+            // One canonical root is locked, validated, and used for every Kalium resource.
+            rootPath = configuration.sharedAppGroupRoot,
             keychainConfig = ApplePersistenceConfig(
                 serviceName = configuration.keychainServiceName,
                 accessGroup = configuration.keychainAccessGroup,
@@ -240,6 +276,11 @@ public class RealNotificationExtension(
     ): RealNotificationExtensionRunHandle {
         val cancellationKind = AtomicInt(REAL_NOT_CANCELLED)
         val completionGate = RealCompletionGate(completion)
+        if (!claimRealNotificationExtensionBegin(beginState)) {
+            completionGate.complete(unavailableResult(NotificationExtensionReason.RUNTIME_FAILURE))
+            val completedJob = Job().apply { complete() }
+            return RealNotificationExtensionRunHandle(completedJob, cancellationKind)
+        }
         val job = scope.launch {
             val result = try {
                 execute(request)
@@ -267,8 +308,12 @@ public class RealNotificationExtension(
         if (!request.isValid() || !configuration.isValid()) {
             return unavailableResult(NotificationExtensionReason.INVALID_REQUEST)
         }
-        val processLock = MainAppNotificationExtensionProcessLock(configuration.sharedAppGroupRoot)
-            .tryAcquire(request.userId)
+        when (val rollout = request.rolloutControl.evaluate(Clock.System.now().toEpochMilliseconds())) {
+            NotificationExtensionRolloutEvaluation.Enabled -> Unit
+            is NotificationExtensionRolloutEvaluation.Disabled -> return rolloutDisabledRealResult(rollout.reason)
+            is NotificationExtensionRolloutEvaluation.Unavailable -> return unavailableResult(rollout.reason)
+        }
+        val processLock = acquireAccountProcessLock(request)
         when (processLock.status) {
             MainAppNotificationExtensionProcessLockStatus.ACQUIRED -> Unit
             MainAppNotificationExtensionProcessLockStatus.UNAVAILABLE -> {
@@ -287,43 +332,71 @@ public class RealNotificationExtension(
             }
         }
 
-        return try {
-            executeWhileProcessLockIsHeld(request)
-        } finally {
-            processLock.release()
-        }
+        return executeRetainingAccountLockOnUnsafeTeardown(
+            execution = { executeWhileProcessLockIsHeld(request) },
+            retainAccountLock = { retainUnsafeAccountLockUntilProcessExit(processLock) },
+            releaseAccountLock = processLock::release
+        )
     }
 
     @Suppress("ReturnCount")
     private suspend fun executeWhileProcessLockIsHeld(
         request: RealNotificationExtensionRequest
     ): RealNotificationExtensionResult {
-        val userId = request.userDomain
-            ?.takeIf(String::isNotBlank)
-            ?.let { UserId(request.userId, it) }
-            ?: coreLogic.resolveQualifiedUserId(request.userId)
-            ?: return unavailableResult(NotificationExtensionReason.TRANSPORT_CONFIGURATION)
-        val bridge = coreLogic.createBridge(userId)
+        val teardownState = NotificationExtensionTeardownState()
+        var bridge: NotificationExtensionLogicBridge? = null
         return try {
-            val clientId = bridge.resolveClientId()
+            val userId = request.userDomain
+                ?.takeIf(String::isNotBlank)
+                ?.let { UserId(request.userId, it) }
+                ?: coreLogic.resolveQualifiedUserId(request.userId)
                 ?: return unavailableResult(NotificationExtensionReason.TRANSPORT_CONFIGURATION)
-            val selfAvsUserId = bridge.resolveSelfAvsUserId()
+            val activeBridge = try {
+                coreLogic.createBridge(userId)
+            } catch (failure: NotificationExtensionLogicBridgeUnsafeTeardownException) {
+                throw UnsafeRealNotificationExtensionTeardown(failure)
+            } catch (failure: Throwable) {
+                return unavailableResult(NotificationExtensionReason.TRANSPORT_CONFIGURATION)
+            }
+            bridge = activeBridge
+            val clientId = activeBridge.resolveClientId()
+                ?: return unavailableResult(NotificationExtensionReason.TRANSPORT_CONFIGURATION)
+            val selfAvsUserId = activeBridge.resolveSelfAvsUserId()
             val markerId = Uuid.random().toString()
-            val inbox = VolatileNotificationSyncInbox()
-            val candidates = LinkedHashMap<String, RealNotification>()
+            val inboxScope = InboxScope(accountId = userId.toString(), clientId = clientId)
+            val inboxStoreProvider = RealNotificationInboxStoreProvider(
+                EncryptedAppleNotificationInboxFactory(
+                    sharedAppGroupRoot = configuration.sharedAppGroupRoot,
+                    scope = inboxScope,
+                    key = coreLogic.getOrCreateNotificationInboxDatabaseKey(userId, clientId),
+                    limits = request.toInboxLimits()
+                )
+            )
+            val inbox = NotificationInboxSyncAdapter(
+                provider = inboxStoreProvider,
+                deliverySource = RawEnvelopeDeliverySource.CONSUMABLE_WEBSOCKET
+            )
             val engine = BoundedNotificationSyncEngine(
                 leaseCoordinator = AppleNotificationSyncLeaseCoordinator(
                     configuration.sharedAppGroupRoot,
-                    closeAttemptResources = bridge::close
+                    closeAttemptResources = {
+                        closeRealAttemptResources(
+                            inboxStoreProvider::close,
+                            activeBridge::close,
+                            coreLogic::close
+                        )
+                    },
+                    teardownState = teardownState
                 ),
                 inbox = inbox,
-                transport = RealLogicNotificationTransport(bridge),
+                transport = RealLogicNotificationTransport(activeBridge),
                 eventProcessor = RealLogicEventProcessor(
-                    bridge = bridge,
-                    candidates = candidates,
+                    provider = inboxStoreProvider,
+                    bridge = activeBridge,
                     callProcessor = callProcessor,
                     selfUserId = selfAvsUserId,
-                    selfClientId = clientId
+                    selfClientId = clientId,
+                    inboxScope = inboxScope
                 )
             )
             val domainResult = engine.syncOnce(
@@ -334,18 +407,161 @@ public class RealNotificationExtension(
                     budget = request.toBudget()
                 )
             )
+            if (teardownState.isUnsafe) {
+                throw UnsafeRealNotificationExtensionTeardown()
+            }
             val base = domainResult.toExtensionResult()
             RealNotificationExtensionResult(
                 status = base.status,
                 reason = base.reason,
                 summary = base.summary,
-                clientId = clientId,
-                markerId = markerId,
-                notifications = candidates.values.toList()
+                presentationDecision = base.status.toFailClosedPresentationDecision()
             )
         } finally {
-            bridge.close()
+            val closeFailure = runCatching {
+                closeRealAttemptResources(
+                    { bridge?.close() },
+                    coreLogic::close
+                )
+            }.exceptionOrNull()
+            if (closeFailure != null || teardownState.isUnsafe) {
+                throw UnsafeRealNotificationExtensionTeardown(closeFailure)
+            }
         }
+    }
+
+    private suspend fun acquireAccountProcessLock(
+        request: RealNotificationExtensionRequest
+    ): com.wire.kalium.logic.notificationextension.MainAppNotificationExtensionProcessLockResult {
+        val lock = MainAppNotificationExtensionProcessLock(configuration.sharedAppGroupRoot)
+        var attempt = 0
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val result = lock.tryAcquire(request.userId)
+            if (result.status == MainAppNotificationExtensionProcessLockStatus.ACQUIRED ||
+                result.status == MainAppNotificationExtensionProcessLockStatus.TERMINAL_FAILURE
+            ) {
+                return result
+            }
+            result.release()
+            val now = Clock.System.now().toEpochMilliseconds()
+            val retryDelayMillis = accountLockRetryDelayMillis(attempt++)
+            if (!hasAccountLockRetryBudget(
+                    absoluteDeadlineEpochMillis = request.absoluteDeadlineEpochMillis,
+                    safetyMarginMillis = request.deadlineSafetyMarginMillis,
+                    nowEpochMillis = now,
+                    retryDelayMillis = retryDelayMillis
+                )
+            ) {
+                return result
+            }
+            delay(retryDelayMillis)
+        }
+    }
+}
+
+/**
+ * Explicit evidence owned by the native app rather than Kalium.
+ *
+ * Only gates in the externally-verifiable allow-list are accepted. Claiming a code-owned gate is
+ * rejected and can never make the real implementation constructible.
+ */
+public data class RealNotificationExtensionProductionReadiness(
+    public val externallyVerifiedGateMask: Long,
+    public val hostIntegrationReadiness: NotificationExtensionHostIntegrationReadiness
+) {
+    override fun toString(): String = "RealNotificationExtensionProductionReadiness(redacted)"
+
+    public fun verifies(gate: NotificationExtensionProductionGate): Boolean =
+        externallyVerifiedGateMask and gate.bitMask != 0L
+
+    public companion object {
+        public val None: RealNotificationExtensionProductionReadiness =
+            RealNotificationExtensionProductionReadiness(
+                externallyVerifiedGateMask = 0L,
+                hostIntegrationReadiness = NotificationExtensionHostIntegrationReadiness.None
+            )
+
+        /** Gates whose evidence necessarily comes from the signed native app/product release. */
+        public val SupportedExternalGateMask: Long
+            get() = EXTERNALLY_VERIFIABLE_REAL_GATE_MASK
+
+        public fun isSupportedExternalGate(gate: NotificationExtensionProductionGate): Boolean =
+            EXTERNALLY_VERIFIABLE_REAL_GATE_MASK and gate.bitMask != 0L
+    }
+}
+
+/** Fail-closed production construction result for the real account wrapper. */
+public class RealNotificationExtensionConstruction internal constructor(
+    public val instance: RealNotificationExtension?,
+    public val blockedGateMask: Long,
+    public val missingHostResponsibilityMask: Long,
+    public val rejectedExternalGateClaimMask: Long,
+    public val isConfigurationValid: Boolean
+) {
+    public val isAvailable: Boolean
+        get() = instance != null &&
+                isConfigurationValid &&
+                blockedGateMask == 0L &&
+                missingHostResponsibilityMask == 0L &&
+                rejectedExternalGateClaimMask == 0L
+
+    public fun isBlockedBy(gate: NotificationExtensionProductionGate): Boolean =
+        blockedGateMask and gate.bitMask != 0L
+
+    public fun isMissing(responsibility: NotificationExtensionHostResponsibility): Boolean =
+        missingHostResponsibilityMask and responsibility.bitMask != 0L
+
+    public fun rejectedExternalClaimFor(gate: NotificationExtensionProductionGate): Boolean =
+        rejectedExternalGateClaimMask and gate.bitMask != 0L
+}
+
+/**
+ * Sole public construction path for the real account implementation.
+ *
+ * It delegates gate evaluation to the production factory. While any gate remains open it never
+ * constructs account storage, CoreCrypto, transport, AVS, or the real wrapper.
+ */
+public object RealNotificationExtensionFactory {
+    public fun createProduction(
+        configuration: RealNotificationExtensionConfiguration,
+        callProcessor: NotificationExtensionCallProcessor,
+        readiness: RealNotificationExtensionProductionReadiness
+    ): RealNotificationExtensionConstruction {
+        val acceptedExternalGateMask =
+            readiness.externallyVerifiedGateMask and EXTERNALLY_VERIFIABLE_REAL_GATE_MASK
+        val rejectedExternalGateClaimMask =
+            readiness.externallyVerifiedGateMask and EXTERNALLY_VERIFIABLE_REAL_GATE_MASK.inv()
+        val blockedGateMask = NotificationExtensionProductionGate.entries.fold(0L) { mask, gate ->
+            if (
+                gate in REAL_IMPLEMENTATION_SATISFIED_GATES ||
+                acceptedExternalGateMask and gate.bitMask != 0L
+            ) {
+                mask
+            } else {
+                mask or gate.bitMask
+            }
+        }
+        val missingHostResponsibilityMask = allHostResponsibilityMask and
+                readiness.hostIntegrationReadiness.fulfilledResponsibilityMask.inv()
+        val configurationValid = configuration.isValid()
+        val instance = if (
+            configurationValid &&
+            blockedGateMask == 0L &&
+            missingHostResponsibilityMask == 0L &&
+            rejectedExternalGateClaimMask == 0L
+        ) {
+            RealNotificationExtension(configuration, callProcessor)
+        } else {
+            null
+        }
+        return RealNotificationExtensionConstruction(
+            instance = instance,
+            blockedGateMask = blockedGateMask,
+            missingHostResponsibilityMask = missingHostResponsibilityMask,
+            rejectedExternalGateClaimMask = rejectedExternalGateClaimMask,
+            isConfigurationValid = configurationValid
+        )
     }
 }
 
@@ -357,6 +573,45 @@ private class RealCompletionGate(
     fun complete(result: RealNotificationExtensionResult) {
         if (!state.compareAndSet(REAL_COMPLETION_PENDING, REAL_COMPLETION_DELIVERED)) return
         runCatching { completion.complete(result) }
+    }
+}
+
+private fun closeRealAttemptResources(vararg closeResources: () -> Unit) {
+    val failures = closeResources.mapNotNull { close ->
+        runCatching(close).exceptionOrNull()
+    }
+    val failure = failures.firstOrNull() ?: return
+    failures.drop(1).forEach(failure::addSuppressed)
+    throw UnsafeRealNotificationExtensionTeardown(failure)
+}
+
+internal class UnsafeRealNotificationExtensionTeardown(
+    cause: Throwable? = null
+) : IllegalStateException("Notification extension teardown was unsafe", cause)
+
+internal suspend fun executeRetainingAccountLockOnUnsafeTeardown(
+    execution: suspend () -> RealNotificationExtensionResult,
+    retainAccountLock: () -> Unit,
+    releaseAccountLock: () -> Unit
+): RealNotificationExtensionResult {
+    var retainUntilProcessExit = false
+    return try {
+        execution()
+    } catch (_: UnsafeRealNotificationExtensionTeardown) {
+        retainUntilProcessExit = true
+        retainAccountLock()
+        unavailableResult(NotificationExtensionReason.RUNTIME_FAILURE)
+    } finally {
+        if (!retainUntilProcessExit) releaseAccountLock()
+    }
+}
+
+private fun retainUnsafeAccountLockUntilProcessExit(
+    lock: com.wire.kalium.logic.notificationextension.MainAppNotificationExtensionProcessLockResult
+) {
+    while (true) {
+        val current = RETAINED_UNSAFE_ACCOUNT_LOCKS.load()
+        if (RETAINED_UNSAFE_ACCOUNT_LOCKS.compareAndSet(current, current + lock)) return
     }
 }
 
@@ -417,21 +672,55 @@ private class RealLogicNotificationSession(
 }
 
 private class RealLogicEventProcessor(
+    private val provider: NotificationInboxStoreProvider,
     private val bridge: NotificationExtensionLogicBridge,
-    private val candidates: MutableMap<String, RealNotification>,
     private val callProcessor: NotificationExtensionCallProcessor,
     private val selfUserId: String,
-    private val selfClientId: String
+    private val selfClientId: String,
+    private val inboxScope: InboxScope
 ) : StagedNotificationEventProcessor {
     @Suppress("CyclomaticComplexMethod")
     override suspend fun process(event: StagedNotificationEvent): StagedEventProcessingResult {
-        val result = bridge.receive(event.rawEnvelope)
+        var childrenDurablyStaged = false
+        val result = bridge.receive(event.rawEnvelope) { messages, receiveStatus ->
+            val callsRequireForeground = processCalls(messages)
+            val children = messages.map {
+                it.toReceiveChild(
+                    inboxScope,
+                    requiresForeground = callsRequireForeground ||
+                            receiveStatus == NotificationExtensionLogicReceiveStatus.FOREGROUND_REQUIRED
+                )
+            }
+            when (stageChildren(event, children)) {
+                NotificationExtensionLogicMaterializationStatus.DURABLE -> {
+                    childrenDurablyStaged = true
+                    NotificationExtensionLogicMaterializationStatus.DURABLE
+                }
+
+                NotificationExtensionLogicMaterializationStatus.RETRYABLE_FAILURE ->
+                    NotificationExtensionLogicMaterializationStatus.RETRYABLE_FAILURE
+
+                NotificationExtensionLogicMaterializationStatus.TERMINAL_FAILURE ->
+                    NotificationExtensionLogicMaterializationStatus.TERMINAL_FAILURE
+            }
+        }
+        return when (result.status) {
+            NotificationExtensionLogicReceiveStatus.MATERIALIZED -> StagedEventProcessingResult.DurablyMaterialized
+            NotificationExtensionLogicReceiveStatus.FOREGROUND_REQUIRED -> if (childrenDurablyStaged) {
+                StagedEventProcessingResult.DurablyMaterialized
+            } else {
+                StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)
+            }
+
+            NotificationExtensionLogicReceiveStatus.RETRYABLE_FAILURE -> StagedEventProcessingResult.RetryableFailure
+            NotificationExtensionLogicReceiveStatus.TERMINAL_FAILURE -> StagedEventProcessingResult.TerminalFailure
+        }
+    }
+
+    private suspend fun processCalls(messages: List<NotificationExtensionLogicMessage>): Boolean {
         val callEvents = mutableListOf<NotificationExtensionCallEvent>()
         var callMetadataMissing = false
-        for (message in result.messages) {
-            message.toRealNotification()?.let { notification ->
-                candidates[message.idempotencyKey()] = notification
-            }
+        for (message in messages) {
             if (message.candidate?.kind == NotificationExtensionLogicContentKind.CALLING) {
                 val callEvent = bridge.resolveCallEvent(message)
                 if (callEvent == null) {
@@ -441,33 +730,125 @@ private class RealLogicEventProcessor(
                 }
             }
         }
-        val callFailure = when {
-            callMetadataMissing ->
-                StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)
-
-            callEvents.isEmpty() -> null
+        return when {
+            callMetadataMissing -> true
+            callEvents.isEmpty() -> false
             else -> when (
                 runCatching { callProcessor.process(selfUserId, selfClientId, callEvents) }
                     .getOrDefault(NotificationExtensionCallProcessingStatus.RETRYABLE_FAILURE)
             ) {
-                NotificationExtensionCallProcessingStatus.SUCCESS -> null
-                NotificationExtensionCallProcessingStatus.RETRYABLE_FAILURE ->
-                    StagedEventProcessingResult.RetryableFailure
-
-                NotificationExtensionCallProcessingStatus.TERMINAL_FAILURE ->
-                    StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)
+                NotificationExtensionCallProcessingStatus.SUCCESS -> false
+                NotificationExtensionCallProcessingStatus.RETRYABLE_FAILURE,
+                NotificationExtensionCallProcessingStatus.TERMINAL_FAILURE -> true
             }
         }
-        return callFailure ?: when (result.status) {
-            NotificationExtensionLogicReceiveStatus.MATERIALIZED -> StagedEventProcessingResult.DurablyMaterialized
-            NotificationExtensionLogicReceiveStatus.FOREGROUND_REQUIRED ->
-                StagedEventProcessingResult.ForegroundRequired(ForegroundRecoveryReason.EVENT_PROCESSING_DEFERRED)
+    }
 
-            NotificationExtensionLogicReceiveStatus.RETRYABLE_FAILURE -> StagedEventProcessingResult.RetryableFailure
-            NotificationExtensionLogicReceiveStatus.TERMINAL_FAILURE -> StagedEventProcessingResult.TerminalFailure
+    private suspend fun stageChildren(
+        event: StagedNotificationEvent,
+        children: List<ReceiveChildWrite>
+    ): NotificationExtensionLogicMaterializationStatus = when (val access = provider.get()) {
+        is NotificationInboxStoreAccessResult.Opened -> when (
+            val staged = access.store.stageReceiveChildren(
+                ReceiveChildrenWrite(
+                    scope = inboxScope,
+                    parentServerEventId = event.key.serverEventId,
+                    children = children
+                )
+            )
+        ) {
+            is ReceiveChildrenStageResult.Stored -> NotificationExtensionLogicMaterializationStatus.DURABLE
+            ReceiveChildrenStageResult.ParentMissing,
+            ReceiveChildrenStageResult.IntegrityConflict ->
+                NotificationExtensionLogicMaterializationStatus.TERMINAL_FAILURE
+
+            is ReceiveChildrenStageResult.StorageFailure -> if (staged.reason.isRetryableOpenFailure()) {
+                NotificationExtensionLogicMaterializationStatus.RETRYABLE_FAILURE
+            } else {
+                NotificationExtensionLogicMaterializationStatus.TERMINAL_FAILURE
+            }
         }
+
+        NotificationInboxStoreAccessResult.RetryableFailure ->
+            NotificationExtensionLogicMaterializationStatus.RETRYABLE_FAILURE
+
+        NotificationInboxStoreAccessResult.TerminalFailure ->
+            NotificationExtensionLogicMaterializationStatus.TERMINAL_FAILURE
     }
 }
+
+private class RealNotificationInboxStoreProvider(
+    private val factory: EncryptedAppleNotificationInboxFactory
+) : NotificationInboxStoreProvider {
+    private var opened: NotificationInboxStoreAccessResult? = null
+
+    override suspend fun get(): NotificationInboxStoreAccessResult {
+        opened?.let { return it }
+        val result = when (val open = factory.open()) {
+            is EncryptedNotificationInboxOpenResult.Opened -> NotificationInboxStoreAccessResult.Opened(open.store)
+            is EncryptedNotificationInboxOpenResult.Failure -> if (open.reason.isRetryableOpenFailure()) {
+                NotificationInboxStoreAccessResult.RetryableFailure
+            } else {
+                NotificationInboxStoreAccessResult.TerminalFailure
+            }
+        }
+        opened = result
+        return result
+    }
+
+    override fun close() {
+        (opened as? NotificationInboxStoreAccessResult.Opened)?.store?.close()
+        opened = null
+    }
+}
+
+private fun NotificationInboxFailure.isRetryableOpenFailure(): Boolean = when (this) {
+    NotificationInboxFailure.STORAGE_UNAVAILABLE,
+    NotificationInboxFailure.CLOSED,
+    NotificationInboxFailure.UNEXPECTED_PLATFORM_FAILURE -> true
+
+    NotificationInboxFailure.INVALID_INPUT,
+    NotificationInboxFailure.CONFIGURED_LIMIT_EXCEEDED,
+    NotificationInboxFailure.INCOMPATIBLE_SCHEMA,
+    NotificationInboxFailure.CORRUPT_STATE,
+    NotificationInboxFailure.ACCOUNT_NOT_ACTIVE,
+    NotificationInboxFailure.ACCOUNT_TOMBSTONED,
+    NotificationInboxFailure.CURSOR_CUTOVER_REQUIRED,
+    NotificationInboxFailure.CURSOR_RECOVERY_REQUIRED -> false
+}
+
+private fun NotificationExtensionLogicMessage.toReceiveChild(
+    scope: InboxScope,
+    requiresForeground: Boolean
+): ReceiveChildWrite = ReceiveChildWrite(
+    scope = scope,
+    parentServerEventId = eventId,
+    itemIndex = itemIndex,
+    idempotencyKey = candidate?.messageId
+        ?.takeIf(String::isNotBlank)
+        ?.let(::protocolMessageUidChildIdempotencyKey)
+        ?: fallbackChildIdempotencyKey(eventId, itemIndex),
+    conversationId = "$conversationId@$conversationDomain",
+    senderId = "$senderId@$senderDomain",
+    senderClientId = senderClientId,
+    protocol = when (protocol) {
+        com.wire.kalium.logic.notificationextension.NotificationExtensionLogicProtocol.PROTEUS ->
+            ReceiveProtocol.PROTEUS
+
+        com.wire.kalium.logic.notificationextension.NotificationExtensionLogicProtocol.MLS -> ReceiveProtocol.MLS
+    },
+    messageTimestampEpochMillis = timestampEpochMillis,
+    decryptedProto = serializedContent,
+    cryptoStateApplied = true,
+    receiveClassification = ReceiveClassification.APPLICATION_MESSAGE,
+    failureClassification = if (requiresForeground) "FOREGROUND_RECOVERY_REQUIRED" else null,
+    decryptionState = realNotificationChildDecryptionState(),
+    notificationState = NotificationState.SUPPRESSED,
+    importState = ForegroundImportState.PENDING,
+    retryCount = 0
+)
+
+internal fun realNotificationChildDecryptionState(): DecryptionState = DecryptionState.DECRYPTED
 
 private fun NotificationExtensionLogicCallEvent.toExtensionCallEvent(): NotificationExtensionCallEvent =
     NotificationExtensionCallEvent(
@@ -480,88 +861,6 @@ private fun NotificationExtensionLogicCallEvent.toExtensionCallEvent(): Notifica
         conversationType = conversationType
     )
 
-/**
- * Per-invocation staging used only while ACKs are suppressed. It preserves engine ordering and
- * duplicate checks without ever writing real plaintext notification data to disk.
- */
-private class VolatileNotificationSyncInbox : NotificationSyncInbox {
-    private val rows = LinkedHashMap<NotificationEventKey, VolatileRow>()
-    private var cursor: NotificationSyncCursor? = null
-
-    override suspend fun readCursor(scope: NotificationSyncScope): InboxReadResult<NotificationSyncCursor?> =
-        InboxReadResult.Success(cursor)
-
-    override suspend fun stageRawEventAndAdvanceCursor(
-        scope: NotificationSyncScope,
-        event: RawNotificationEvent
-    ): StageResult {
-        val existing = rows[event.key]
-        if (existing != null) {
-            return if (existing.event == event) {
-                StageResult.Durable(DurableStageStatus.ALREADY_STAGED)
-            } else {
-                StageResult.Conflict
-            }
-        }
-        rows[event.key] = VolatileRow(event, VolatileRowState.PENDING)
-        if (!event.isTransient) cursor = event.cursor
-        return StageResult.Durable(DurableStageStatus.INSERTED)
-    }
-
-    override suspend fun readPendingReceiveBatch(
-        scope: NotificationSyncScope,
-        limit: Int
-    ): InboxReadResult<PendingReceiveBatch> {
-        val pending = rows.values.filter { it.state == VolatileRowState.PENDING }
-        return InboxReadResult.Success(
-            PendingReceiveBatch(
-                events = pending.take(limit).map { row ->
-                    StagedNotificationEvent(
-                        key = row.event.key,
-                        rawEnvelope = row.event.rawEnvelope,
-                        isTransient = row.event.isTransient,
-                        cursor = row.event.cursor
-                    )
-                },
-                hasMore = pending.size > limit
-            )
-        )
-    }
-
-    override suspend fun markReceiveProcessingCompleted(
-        scope: NotificationSyncScope,
-        eventKey: NotificationEventKey
-    ): InboxWriteResult = update(eventKey, VolatileRowState.COMPLETED)
-
-    override suspend fun markGlobalForegroundRecoveryRequired(
-        scope: NotificationSyncScope,
-        reason: ForegroundRecoveryReason
-    ): InboxWriteResult = InboxWriteResult.Success
-
-    override suspend fun markEventDeferredToForeground(
-        scope: NotificationSyncScope,
-        eventKey: NotificationEventKey,
-        reason: ForegroundRecoveryReason
-    ): InboxWriteResult = update(eventKey, VolatileRowState.DEFERRED)
-
-    private fun update(eventKey: NotificationEventKey, state: VolatileRowState): InboxWriteResult {
-        val row = rows[eventKey] ?: return InboxWriteResult.TerminalFailure
-        row.state = state
-        return InboxWriteResult.Success
-    }
-}
-
-private class VolatileRow(
-    val event: RawNotificationEvent,
-    var state: VolatileRowState
-)
-
-private enum class VolatileRowState {
-    PENDING,
-    COMPLETED,
-    DEFERRED
-}
-
 private fun NotificationExtensionLogicTransportFrame.toDomainFrame(): NotificationTransportFrame = when (this) {
     is NotificationExtensionLogicTransportFrame.Event -> NotificationTransportFrame.Event(
         event = RawNotificationEvent(
@@ -570,53 +869,17 @@ private fun NotificationExtensionLogicTransportFrame.toDomainFrame(): Notificati
             isTransient = isTransient,
             cursor = cursor?.let(::NotificationSyncCursor)
         ),
-        // A volatile inbox cannot certify crash durability, so the spike must never ACK.
-        deliveryTag = null
+        // The bounded engine acknowledges only after the encrypted store reports durable staging.
+        deliveryTag = deliveryTag
     )
 
     is NotificationExtensionLogicTransportFrame.SynchronizationMarker ->
-        NotificationTransportFrame.SynchronizationMarker(markerId, deliveryTag = null)
+        NotificationTransportFrame.SynchronizationMarker(markerId, deliveryTag = deliveryTag)
 
     NotificationExtensionLogicTransportFrame.MissedNotification -> NotificationTransportFrame.MissedNotification
     NotificationExtensionLogicTransportFrame.Closed -> NotificationTransportFrame.Closed
     NotificationExtensionLogicTransportFrame.UnexpectedPayload -> NotificationTransportFrame.UnexpectedPayload
 }
-
-private fun NotificationExtensionLogicMessage.toRealNotification(): RealNotification? {
-    val extracted = candidate ?: return null
-    return RealNotification(
-        messageId = extracted.messageId,
-        kind = extracted.kind.toRealKind(),
-        body = extracted.body,
-        mentionsSelf = extracted.mentionsSelf,
-        conversationId = conversationId,
-        conversationDomain = conversationDomain,
-        senderId = senderId,
-        senderDomain = senderDomain,
-        senderClientId = senderClientId,
-        timestampEpochMillis = timestampEpochMillis,
-        protocol = when (protocol) {
-            NotificationExtensionLogicProtocol.PROTEUS -> RealNotificationProtocol.PROTEUS
-            NotificationExtensionLogicProtocol.MLS -> RealNotificationProtocol.MLS
-        },
-        legalHoldStatus = extracted.legalHoldStatus,
-        expiresAfterMillis = extracted.expiresAfterMillis
-    )
-}
-
-private fun NotificationExtensionLogicContentKind.toRealKind(): RealNotificationKind = when (this) {
-    NotificationExtensionLogicContentKind.TEXT -> RealNotificationKind.TEXT
-    NotificationExtensionLogicContentKind.ASSET -> RealNotificationKind.ASSET
-    NotificationExtensionLogicContentKind.MULTIPART -> RealNotificationKind.MULTIPART
-    NotificationExtensionLogicContentKind.EDIT -> RealNotificationKind.EDIT
-    NotificationExtensionLogicContentKind.DELETE -> RealNotificationKind.DELETE
-    NotificationExtensionLogicContentKind.REACTION -> RealNotificationKind.REACTION
-    NotificationExtensionLogicContentKind.CALLING -> RealNotificationKind.CALLING
-    NotificationExtensionLogicContentKind.KNOCK -> RealNotificationKind.KNOCK
-    NotificationExtensionLogicContentKind.LOCATION -> RealNotificationKind.LOCATION
-}
-
-private fun NotificationExtensionLogicMessage.idempotencyKey(): String = "$eventId:$itemIndex:${candidate?.messageId.orEmpty()}"
 
 private fun RealNotificationExtensionRequest.toBudget(): NotificationSyncBudget = NotificationSyncBudget(
     maxTransportFrames = maxTransportFrames,
@@ -630,6 +893,18 @@ private fun RealNotificationExtensionRequest.toBudget(): NotificationSyncBudget 
     maxRunDuration = maxRunDurationMillis.milliseconds
 )
 
+private fun RealNotificationExtensionRequest.toInboxLimits(): NotificationInboxLimits = NotificationInboxLimits(
+    maxIdentifierUtf8Bytes = REAL_INBOX_MAX_IDENTIFIER_BYTES,
+    maxCursorUtf8Bytes = REAL_INBOX_MAX_CURSOR_BYTES,
+    maxReasonUtf8Bytes = REAL_INBOX_MAX_REASON_BYTES,
+    maxRawEnvelopeBytes = maxRawEnvelopeBytes,
+    maxDecryptedProtoBytes = maxRawEnvelopeBytes,
+    maxBatchBlobBytes = maxRawEnvelopeBytesPerRun,
+    maxRowsPerRead = maxEventsPerDrainBatch,
+    maxChildrenPerEvent = maxEventsToStage,
+    maxRetryCount = REAL_INBOX_MAX_RETRY_COUNT
+)
+
 private fun RealNotificationExtensionRequest.isValid(): Boolean =
     userId.isNotBlank() && absoluteDeadlineEpochMillis > 0L &&
             maxTransportFrames > 0 && maxEventsToStage > 0 && maxDrainBatches > 0 &&
@@ -638,7 +913,7 @@ private fun RealNotificationExtensionRequest.isValid(): Boolean =
             deadlineSafetyMarginMillis >= 0L && maxRunDurationMillis > 0L
 
 private fun RealNotificationExtensionConfiguration.isValid(): Boolean =
-    kaliumRootPath.isNotBlank() && sharedAppGroupRoot.isNotBlank() &&
+    kaliumRootPath.isNotBlank() && kaliumRootPath == sharedAppGroupRoot &&
             keychainServiceName.isNotBlank() && keychainAccessGroup.isNotBlank() && userAgent.isNotBlank()
 
 private fun unavailableResult(reason: NotificationExtensionReason): RealNotificationExtensionResult =
@@ -646,9 +921,7 @@ private fun unavailableResult(reason: NotificationExtensionReason): RealNotifica
         status = NotificationExtensionStatus.CONFIGURATION_UNAVAILABLE,
         reason = reason,
         summary = NotificationExtensionSummary.Empty,
-        clientId = null,
-        markerId = null,
-        notifications = emptyList()
+        presentationDecision = RealNotificationPresentationDecision.PRIVACY_PRESERVING_FALLBACK
     )
 
 private fun lockUnavailableResult(): RealNotificationExtensionResult =
@@ -656,12 +929,18 @@ private fun lockUnavailableResult(): RealNotificationExtensionResult =
         status = NotificationExtensionStatus.LOCK_UNAVAILABLE,
         reason = NotificationExtensionReason.LEASE_ACQUISITION_FAILED,
         summary = NotificationExtensionSummary.Empty,
-        clientId = null,
-        markerId = null,
-        notifications = emptyList()
+        presentationDecision = RealNotificationPresentationDecision.PRIVACY_PRESERVING_FALLBACK
     )
 
-private fun cancelledResult(kind: Int): RealNotificationExtensionResult = RealNotificationExtensionResult(
+private fun rolloutDisabledRealResult(reason: NotificationExtensionReason): RealNotificationExtensionResult =
+    RealNotificationExtensionResult(
+        status = NotificationExtensionStatus.ROLLOUT_DISABLED,
+        reason = reason,
+        summary = NotificationExtensionSummary.Empty,
+        presentationDecision = RealNotificationPresentationDecision.PRIVACY_PRESERVING_FALLBACK
+    )
+
+internal fun cancelledResult(kind: Int): RealNotificationExtensionResult = RealNotificationExtensionResult(
     status = if (kind == REAL_CANCELLED_FOR_EXPIRATION) {
         NotificationExtensionStatus.DEADLINE_REACHED
     } else {
@@ -673,13 +952,80 @@ private fun cancelledResult(kind: Int): RealNotificationExtensionResult = RealNo
         NotificationExtensionReason.HOST_CANCELLED
     },
     summary = NotificationExtensionSummary.Empty,
-    clientId = null,
-    markerId = null,
-    notifications = emptyList()
+    presentationDecision = RealNotificationPresentationDecision.PRIVACY_PRESERVING_FALLBACK
 )
 
-private const val REAL_NOT_CANCELLED = 0
-private const val REAL_CANCELLED_BY_HOST = 1
-private const val REAL_CANCELLED_FOR_EXPIRATION = 2
+internal fun NotificationExtensionStatus.toFailClosedPresentationDecision(): RealNotificationPresentationDecision =
+    when (this) {
+        NotificationExtensionStatus.COMPLETE,
+        NotificationExtensionStatus.PARTIAL,
+        NotificationExtensionStatus.ROLLOUT_DISABLED,
+        NotificationExtensionStatus.LOCK_UNAVAILABLE,
+        NotificationExtensionStatus.DEADLINE_REACHED,
+        NotificationExtensionStatus.FOREGROUND_RECOVERY_REQUIRED,
+        NotificationExtensionStatus.CONFIGURATION_UNAVAILABLE,
+        NotificationExtensionStatus.CANCELLED ->
+            RealNotificationPresentationDecision.PRIVACY_PRESERVING_FALLBACK
+    }
+
+internal fun accountLockRetryDelayMillis(attempt: Int): Long {
+    val cappedAttempt = attempt.coerceIn(0, ACCOUNT_LOCK_MAX_BACKOFF_ATTEMPT)
+    val exponential = ACCOUNT_LOCK_INITIAL_RETRY_MILLIS shl cappedAttempt
+    val capped = exponential.coerceAtMost(ACCOUNT_LOCK_MAX_RETRY_MILLIS)
+    val jitterBound = (capped / ACCOUNT_LOCK_JITTER_DIVISOR).coerceAtLeast(1L)
+    return capped - Random.nextLong(jitterBound + 1L)
+}
+
+internal fun hasAccountLockRetryBudget(
+    absoluteDeadlineEpochMillis: Long,
+    safetyMarginMillis: Long,
+    nowEpochMillis: Long,
+    retryDelayMillis: Long
+): Boolean = absoluteDeadlineEpochMillis - safetyMarginMillis - nowEpochMillis > retryDelayMillis
+
+internal const val REAL_NOT_CANCELLED = 0
+internal const val REAL_CANCELLED_BY_HOST = 1
+internal const val REAL_CANCELLED_FOR_EXPIRATION = 2
+private const val REAL_BEGIN_AVAILABLE = 0
+private const val REAL_BEGIN_CLAIMED = 1
 private const val REAL_COMPLETION_PENDING = 0
 private const val REAL_COMPLETION_DELIVERED = 1
+private const val ACCOUNT_LOCK_INITIAL_RETRY_MILLIS = 20L
+private const val ACCOUNT_LOCK_MAX_RETRY_MILLIS = 250L
+private const val ACCOUNT_LOCK_MAX_BACKOFF_ATTEMPT = 4
+private const val ACCOUNT_LOCK_JITTER_DIVISOR = 4L
+private const val REAL_INBOX_MAX_IDENTIFIER_BYTES = 1_024
+private const val REAL_INBOX_MAX_CURSOR_BYTES = 1_024
+private const val REAL_INBOX_MAX_REASON_BYTES = 256
+private const val REAL_INBOX_MAX_RETRY_COUNT = 3
+private val RETAINED_UNSAFE_ACCOUNT_LOCKS =
+    AtomicReference<List<com.wire.kalium.logic.notificationextension.MainAppNotificationExtensionProcessLockResult>>(
+        emptyList()
+    )
+private val REAL_IMPLEMENTATION_SATISFIED_GATES = setOf(
+    NotificationExtensionProductionGate.VALIDATED_APP_GROUP_ROOT,
+    NotificationExtensionProductionGate.ENCRYPTED_HANDOFF_STORAGE,
+    NotificationExtensionProductionGate.SHARED_KEYCHAIN_AUTHENTICATION,
+    NotificationExtensionProductionGate.RAW_EVENT_TRANSPORT_CAPTURE,
+    NotificationExtensionProductionGate.RECEIVE_ONLY_CRYPTO_ASSEMBLY,
+    NotificationExtensionProductionGate.NOTIFICATION_AVS_SWIFT_BRIDGE,
+    NotificationExtensionProductionGate.BOUNDED_STORAGE_ENFORCEMENT
+)
+private val EXTERNALLY_VERIFIABLE_REAL_GATES = setOf(
+    NotificationExtensionProductionGate.SIGNED_APP_AND_NSE_ENTITLEMENTS,
+    NotificationExtensionProductionGate.PHYSICAL_DEVICE_VALIDATION,
+    NotificationExtensionProductionGate.FOREGROUND_CURSOR_CUTOVER,
+    NotificationExtensionProductionGate.ACCOUNT_REMOVAL_TOMBSTONE,
+    NotificationExtensionProductionGate.GLOBAL_RECOVERY_FOREGROUND_ACK,
+    NotificationExtensionProductionGate.PHYSICAL_DEVICE_BUDGET_APPROVAL,
+    NotificationExtensionProductionGate.NATIVE_ROLLOUT_CONTROL_OWNERSHIP,
+    NotificationExtensionProductionGate.APPROVED_GENERIC_FALLBACK_AND_REPLACEMENT,
+    NotificationExtensionProductionGate.PRIVACY_DIAGNOSTICS_RETENTION_AND_EXPORT,
+    NotificationExtensionProductionGate.CURSOR_CUTOVER_AND_DOWNGRADE_RELEASE,
+    NotificationExtensionProductionGate.ROLLOUT_STOP_CONDITIONS_APPROVAL
+)
+private val EXTERNALLY_VERIFIABLE_REAL_GATE_MASK =
+    EXTERNALLY_VERIFIABLE_REAL_GATES.fold(0L) { mask, gate -> mask or gate.bitMask }
+
+internal fun claimRealNotificationExtensionBegin(beginState: AtomicInt): Boolean =
+    beginState.compareAndSet(REAL_BEGIN_AVAILABLE, REAL_BEGIN_CLAIMED)

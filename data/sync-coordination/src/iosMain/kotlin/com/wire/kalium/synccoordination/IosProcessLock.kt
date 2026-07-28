@@ -82,6 +82,8 @@ import platform.posix.open
 import platform.posix.openat
 import platform.posix.stat
 import kotlin.concurrent.atomics.AtomicInt
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.ref.createCleaner
 
 internal actual fun acquireAppleProcessLock(
     sharedRoot: String,
@@ -185,14 +187,27 @@ private class IosProcessLockAcquirer(
     }
 }
 
+@OptIn(ExperimentalNativeApi::class)
 private class IosProcessLockLease(descriptor: Int) : ProcessLockLease {
-    private val ownedDescriptor = AtomicInt(descriptor)
+    private class DescriptorOwner(descriptor: Int) {
+        private val ownedDescriptor = AtomicInt(descriptor)
+
+        fun release() {
+            val descriptor = ownedDescriptor.exchange(CLOSED_DESCRIPTOR)
+            if (descriptor < 0) return
+            runCatching { flock(descriptor, LOCK_UN) }
+            runCatching { close(descriptor) }
+        }
+    }
+
+    private val descriptorOwner = DescriptorOwner(descriptor)
+    @Suppress("unused")
+    private val descriptorCleaner = createCleaner(descriptorOwner) {
+        it.release()
+    }
 
     override fun release() {
-        val descriptor = ownedDescriptor.exchange(CLOSED_DESCRIPTOR)
-        if (descriptor < 0) return
-        runCatching { flock(descriptor, LOCK_UN) }
-        runCatching { close(descriptor) }
+        descriptorOwner.release()
     }
 }
 

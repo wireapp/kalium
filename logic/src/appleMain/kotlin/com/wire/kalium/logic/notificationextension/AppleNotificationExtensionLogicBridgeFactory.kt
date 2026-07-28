@@ -60,8 +60,11 @@ import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Apple-only spike assembly for the exact account resources needed by the NSE.
@@ -83,36 +86,86 @@ internal class AppleNotificationExtensionLogicBridgeFactory(
     private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider
 ) {
     fun create(userId: UserId): NotificationExtensionLogicBridge {
-        val userStorage = createUserStorage(userId)
-        val currentClientId = createCurrentClientIdProvider(userStorage)
-        val authenticatedNetwork = createAuthenticatedNetwork(userId, currentClientId)
-        val userConfigRepository = UserConfigDataSource(
-            userStorage.database.userPrefsDAO,
-            userStorage.database.userConfigDAO,
-            kaliumConfigs
-        )
-        val crypto = createCryptoResources(
-            userId,
-            currentClientId,
-            authenticatedNetwork,
-            userConfigRepository
-        )
-        val avsIdentifier = AppleNotificationExtensionAvsIdentifier(userId, sessionRepository)
-        return NotificationExtensionLogicBridge(
-            selfUserId = userId,
-            currentClientId = currentClientId::invoke,
-            notificationApi = authenticatedNetwork.notificationApi,
-            cryptoTransactionProvider = crypto.transactionProvider,
-            conversationMlsGroupId = { conversationId ->
-                val protocol = userStorage.database.conversationDAO.getConversationProtocolInfo(conversationId.toDao())
-                (protocol as? ConversationEntity.ProtocolInfo.MLSCapable)?.groupId
-            },
-            conversationCallType = { conversationId ->
-                resolveCallConversationType(userStorage, userConfigRepository, conversationId)
-            },
-            avsIdentifier = avsIdentifier::format,
-            closeResources = crypto.processingScope::cancel
-        )
+        val rollback = AppleNotificationExtensionConstructionRollback()
+        try {
+            val userStorage = createUserStorage(userId)
+            rollback.own {
+                closeConstructionResources(
+                    { userStorageProvider.remove(userId) },
+                    userStorage.database::close
+                )
+            }
+            val currentClientId = createCurrentClientIdProvider(userStorage)
+            val authenticatedNetwork = createAuthenticatedNetwork(userId, currentClientId)
+            val networkUserId = userId.toApi()
+            rollback.own {
+                closeConstructionResources(
+                    authenticatedNetwork.notificationApi::close,
+                    { userAuthenticatedNetworkProvider.remove(networkUserId) },
+                    authenticatedNetwork::close
+                )
+            }
+            val userConfigRepository = UserConfigDataSource(
+                userStorage.database.userPrefsDAO,
+                userStorage.database.userConfigDAO,
+                kaliumConfigs
+            )
+            val crypto = createCryptoResources(
+                userId,
+                currentClientId,
+                authenticatedNetwork,
+                userConfigRepository
+            )
+            rollback.own {
+                closeAppleNotificationExtensionOwnedResources(
+                    closeProcessing = {
+                        crypto.processingScope.coroutineContext[Job]?.cancelAndJoin()
+                    },
+                    closeCrypto = crypto.transactionProvider::closeClients,
+                    closeNotificationSocket = {},
+                    removeAuthenticatedNetwork = {},
+                    closeAuthenticatedNetwork = {},
+                    removeUserStorage = {},
+                    closeUserDatabase = {}
+                )
+            }
+            val avsIdentifier = AppleNotificationExtensionAvsIdentifier(userId, sessionRepository)
+            val bridge = NotificationExtensionLogicBridge(
+                selfUserId = userId,
+                currentClientId = currentClientId::invoke,
+                notificationApi = authenticatedNetwork.notificationApi,
+                cryptoTransactionProvider = crypto.transactionProvider,
+                conversationMlsGroupId = { conversationId ->
+                    val protocol = userStorage.database.conversationDAO.getConversationProtocolInfo(conversationId.toDao())
+                    (protocol as? ConversationEntity.ProtocolInfo.MLSCapable)?.groupId
+                },
+                conversationCallType = { conversationId ->
+                    resolveCallConversationType(userStorage, userConfigRepository, conversationId)
+                },
+                avsIdentifier = avsIdentifier::format,
+                closeResources = {
+                    closeAppleNotificationExtensionOwnedResources(
+                        closeProcessing = {
+                            crypto.processingScope.coroutineContext[Job]?.cancelAndJoin()
+                        },
+                        closeCrypto = crypto.transactionProvider::closeClients,
+                        closeNotificationSocket = authenticatedNetwork.notificationApi::close,
+                        removeAuthenticatedNetwork = {
+                            userAuthenticatedNetworkProvider.remove(networkUserId)
+                        },
+                        closeAuthenticatedNetwork = authenticatedNetwork::close,
+                        removeUserStorage = {
+                            userStorageProvider.remove(userId)
+                        },
+                        closeUserDatabase = userStorage.database::close
+                    )
+                }
+            )
+            rollback.transfer()
+            return bridge
+        } catch (failure: Throwable) {
+            rollback.rollback(failure)
+        }
     }
 
     private fun createUserStorage(userId: UserId): UserStorage =
@@ -176,32 +229,50 @@ internal class AppleNotificationExtensionLogicBridgeFactory(
         authenticatedNetwork: AuthenticatedNetworkContainer,
         userConfigRepository: UserConfigDataSource
     ): NotificationExtensionCryptoResources {
+        val rollback = AppleNotificationExtensionConstructionRollback()
         val processingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val mlsClientProvider = MLSClientProviderImpl(
-            rootKeyStorePath = rootPathsProvider.rootMLSPath(userId),
-            userId = userId,
-            currentClientIdProvider = currentClientId,
-            passphraseStorage = globalPreferences.passphraseStorage,
-            userConfigRepository = userConfigRepository,
-            featureConfigRepository = FeatureConfigDataSource(authenticatedNetwork.featureConfigApi),
-            mlsTransportProvider = PassiveNotificationExtensionMlsTransport,
-            epochObserver = EpochChangesObserverImpl(),
-            processingScope = processingScope
-        )
-        val proteusClientProvider = ProteusClientProviderImpl(
-            rootProteusPath = rootPathsProvider.rootProteusPath(userId),
-            userId = userId,
-            passphraseStorage = globalPreferences.passphraseStorage,
-            currentClientIdProvider = currentClientId,
-            proteusMigrationRecoveryHandler = PassiveNotificationExtensionProteusRecovery
-        )
-        return NotificationExtensionCryptoResources(
-            transactionProvider = CryptoTransactionProviderImpl(
-                mlsClientProvider = mlsClientProvider,
-                proteusClientProvider = proteusClientProvider
-            ),
-            processingScope = processingScope
-        )
+        rollback.ownFirst {
+            closeSuspendConstructionResource("NSE processing jobs") {
+                processingScope.coroutineContext[Job]?.cancelAndJoin()
+            }
+        }
+        try {
+            val mlsClientProvider = MLSClientProviderImpl(
+                rootKeyStorePath = rootPathsProvider.rootMLSPath(userId),
+                userId = userId,
+                currentClientIdProvider = currentClientId,
+                passphraseStorage = globalPreferences.passphraseStorage,
+                userConfigRepository = userConfigRepository,
+                featureConfigRepository = FeatureConfigDataSource(authenticatedNetwork.featureConfigApi),
+                mlsTransportProvider = PassiveNotificationExtensionMlsTransport,
+                epochObserver = EpochChangesObserverImpl(),
+                processingScope = processingScope
+            )
+            rollback.own {
+                closeSuspendConstructionResource("MLS client provider", mlsClientProvider::close)
+            }
+            val proteusClientProvider = ProteusClientProviderImpl(
+                rootProteusPath = rootPathsProvider.rootProteusPath(userId),
+                userId = userId,
+                passphraseStorage = globalPreferences.passphraseStorage,
+                currentClientIdProvider = currentClientId,
+                proteusMigrationRecoveryHandler = PassiveNotificationExtensionProteusRecovery
+            )
+            rollback.own {
+                closeSuspendConstructionResource("Proteus client provider", proteusClientProvider::close)
+            }
+            val resources = NotificationExtensionCryptoResources(
+                transactionProvider = CryptoTransactionProviderImpl(
+                    mlsClientProvider = mlsClientProvider,
+                    proteusClientProvider = proteusClientProvider
+                ),
+                processingScope = processingScope
+            )
+            rollback.transfer()
+            return resources
+        } catch (failure: Throwable) {
+            rollback.rollback(failure)
+        }
     }
 
     private suspend fun resolveCallConversationType(
@@ -228,6 +299,125 @@ internal class AppleNotificationExtensionLogicBridgeFactory(
         }
     }
 }
+
+/**
+ * Synchronously drains bridge-owned resources before the caller releases its process lease.
+ *
+ * Every close is attempted even if an earlier resource reports a failure. Persistent account and
+ * cryptographic files are retained; only live handles and provider-cache ownership are removed.
+ */
+internal fun closeAppleNotificationExtensionOwnedResources(
+    closeProcessing: suspend () -> Unit,
+    closeCrypto: suspend () -> Unit,
+    closeNotificationSocket: () -> Unit,
+    removeAuthenticatedNetwork: () -> Unit,
+    closeAuthenticatedNetwork: () -> Unit,
+    removeUserStorage: () -> Unit,
+    closeUserDatabase: () -> Unit
+) {
+    val failures = mutableListOf<Throwable>()
+    fun attempt(block: () -> Unit) {
+        runCatching(block).exceptionOrNull()?.let(failures::add)
+    }
+
+    attempt {
+        val stoppedWithinBound = runBlocking {
+            withTimeoutOrNull(RESOURCE_CLOSE_TIMEOUT_MILLIS) {
+                closeProcessing()
+                true
+            } ?: false
+        }
+        check(stoppedWithinBound) { "NSE processing jobs exceeded the teardown bound" }
+    }
+    attempt {
+        val closedWithinBound = runBlocking {
+            withTimeoutOrNull(RESOURCE_CLOSE_TIMEOUT_MILLIS) {
+                closeCrypto()
+                true
+            } ?: false
+        }
+        check(closedWithinBound) { "CoreCrypto close exceeded the NSE teardown bound" }
+    }
+    attempt(closeNotificationSocket)
+    attempt(removeAuthenticatedNetwork)
+    attempt(closeAuthenticatedNetwork)
+    attempt(removeUserStorage)
+    attempt(closeUserDatabase)
+    if (failures.isNotEmpty()) {
+        kaliumLogger.e(
+            "Notification extension resource teardown completed with ${failures.size} failure(s)",
+            failures.first()
+        )
+        throw NotificationExtensionResourceTeardownException(failures.first())
+    }
+}
+
+internal class AppleNotificationExtensionConstructionRollback {
+    private val firstCloseActions = mutableListOf<() -> Unit>()
+    private val closeActions = mutableListOf<() -> Unit>()
+    private var transferred = false
+
+    /**
+     * Owns a resource that must stop before other resources are closed.
+     *
+     * This is used by the processing scope because crypto providers can still be running work on
+     * their native clients. It is registered immediately after allocation so construction remains
+     * exception-atomic, but is always executed before the ordinary reverse-order cleanup stack.
+     */
+    fun ownFirst(close: () -> Unit) {
+        check(!transferred)
+        firstCloseActions += close
+    }
+
+    fun own(close: () -> Unit) {
+        check(!transferred)
+        closeActions += close
+    }
+
+    fun transfer() {
+        transferred = true
+        firstCloseActions.clear()
+        closeActions.clear()
+    }
+
+    fun rollback(constructionFailure: Throwable): Nothing {
+        if (transferred) throw constructionFailure
+        val orderedCloseActions = firstCloseActions.asReversed() + closeActions.asReversed()
+        val closeFailures = orderedCloseActions.mapNotNull { close ->
+            runCatching(close).exceptionOrNull()
+        }
+        if (closeFailures.isEmpty()) throw constructionFailure
+        val unsafe = NotificationExtensionLogicBridgeUnsafeTeardownException(constructionFailure)
+        closeFailures.forEach(unsafe::addSuppressed)
+        throw unsafe
+    }
+}
+
+private fun closeConstructionResources(vararg closeActions: () -> Unit) {
+    val failures = closeActions.mapNotNull { close ->
+        runCatching(close).exceptionOrNull()
+    }
+    val failure = failures.firstOrNull() ?: return
+    failures.drop(1).forEach(failure::addSuppressed)
+    throw failure
+}
+
+private fun closeSuspendConstructionResource(
+    resourceName: String,
+    close: suspend () -> Unit
+) {
+    val closedWithinBound = runBlocking {
+        withTimeoutOrNull(RESOURCE_CLOSE_TIMEOUT_MILLIS) {
+            close()
+            true
+        } ?: false
+    }
+    check(closedWithinBound) { "$resourceName close exceeded the NSE teardown bound" }
+}
+
+private class NotificationExtensionResourceTeardownException(
+    cause: Throwable
+) : IllegalStateException("Notification extension resource teardown failed", cause)
 
 private class AppleNotificationExtensionAvsIdentifier(
     private val selfUserId: UserId,
@@ -276,3 +466,4 @@ private const val AVS_CONVERSATION_TYPE_ONE_ON_ONE = 0
 private const val AVS_CONVERSATION_TYPE_CONFERENCE = 2
 private const val AVS_CONVERSATION_TYPE_CONFERENCE_MLS = 3
 private const val AVS_CONVERSATION_TYPE_UNKNOWN = -1
+private const val RESOURCE_CLOSE_TIMEOUT_MILLIS = 250L

@@ -34,7 +34,34 @@ sealed class WebSocketEvent<BinaryPayloadType> {
      */
     data class Open<BinaryPayloadType>(val shouldProcessPendingEvents: Boolean = true) : WebSocketEvent<BinaryPayloadType>()
 
-    data class BinaryPayloadReceived<BinaryPayloadType>(val payload: BinaryPayloadType) : WebSocketEvent<BinaryPayloadType>()
+    class BinaryPayloadReceived<BinaryPayloadType>(
+        val payload: BinaryPayloadType,
+        rawPayload: ByteArray? = null
+    ) : WebSocketEvent<BinaryPayloadType>() {
+        private val ownedRawPayload: ByteArray? = rawPayload?.copyOf()
+
+        /**
+         * The exact bytes received from the WebSocket, before JSON decoding.
+         *
+         * This is optional for legacy and synthetic producers. Consumers that promise exact wire
+         * capture must reject an event when these bytes are absent.
+         */
+        val rawPayload: ByteArray?
+            get() = ownedRawPayload?.copyOf()
+
+        override fun equals(other: Any?): Boolean =
+            this === other ||
+                    other is BinaryPayloadReceived<*> &&
+                    payload == other.payload &&
+                    when {
+                        ownedRawPayload == null -> other.ownedRawPayload == null
+                        other.ownedRawPayload == null -> false
+                        else -> ownedRawPayload.contentEquals(other.ownedRawPayload)
+                    }
+
+        override fun hashCode(): Int =
+            31 * payload.hashCode() + (ownedRawPayload?.contentHashCode() ?: 0)
+    }
 
     data class NonBinaryPayloadReceived<BinaryPayloadType>(val payload: ByteArray) : WebSocketEvent<BinaryPayloadType>() {
         override fun equals(other: Any?): Boolean {
@@ -55,6 +82,12 @@ sealed class WebSocketEvent<BinaryPayloadType> {
         val cause: Throwable?,
         val payload: BinaryPayloadType? = null
     ) : WebSocketEvent<BinaryPayloadType>()
+}
+
+enum class EventAcknowledgeResult {
+    ACCEPTED_BY_LOCAL_WRITER,
+    RETRYABLE_FAILURE,
+    TERMINAL_FAILURE
 }
 
 interface NotificationApi : BaseApi {
@@ -78,6 +111,12 @@ interface NotificationApi : BaseApi {
      * @param markerId a random id used to identify the end of the initial sync. This will be received in the events stream.
      */
     suspend fun consumeLiveEvents(clientId: String, markerId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>
-    suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest)
+    suspend fun acknowledgeEvents(
+        clientId: String,
+        markerId: String,
+        eventAcknowledgeRequest: EventAcknowledgeRequest
+    ): EventAcknowledgeResult
 
+    /** Closes any notification WebSocket retained by this API instance. */
+    fun close(): Unit = Unit
 }

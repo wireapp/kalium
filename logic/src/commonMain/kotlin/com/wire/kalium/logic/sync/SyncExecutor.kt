@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -42,9 +43,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 public abstract class SyncExecutor {
 
@@ -99,6 +101,7 @@ public abstract class SyncExecutor {
     }
 }
 
+@OptIn(ExperimentalAtomicApi::class)
 internal class SyncExecutorImpl(
     private val syncStateObserver: SyncStateObserver,
     private val slowSyncManager: SlowSyncManager,
@@ -109,18 +112,111 @@ internal class SyncExecutorImpl(
 
     private val syncStateFlow = MutableStateFlow<SyncState>(SyncState.Waiting)
     private val logger by lazy { userScopedLogger.withFeatureId(SYNC).withTextTag("SyncExecutor") }
-    private var syncStateObserverJob: Job? = null
-    private var syncLifecycleJob: Job? = null
-    private val syncLifecycleStopMutex = Mutex()
+    private val syncLifecycleState = AtomicReference<SyncLifecycleState>(
+        SyncLifecycleState.Stopped
+    )
 
     override fun startAndStopSyncAsNeeded() {
-        if (syncStateObserverJob?.isActive != true) {
-            syncStateObserverJob = scope.launch {
-                syncStateObserver.syncState.collect { syncStateFlow.value = it }
+        startSyncLifecycle()
+    }
+
+    override suspend fun stopAndWait(): Unit = withContext(NonCancellable) {
+        stopSyncLifecycle()
+    }
+
+    private fun startSyncLifecycle() {
+        while (true) {
+            when (val state = syncLifecycleState.load()) {
+                SyncLifecycleState.Stopped -> {
+                    val job = createSyncLifecycleJob()
+                    val running = SyncLifecycleState.Running(job)
+                    job.invokeOnCompletion {
+                        syncLifecycleState.compareAndSet(running, SyncLifecycleState.Stopped)
+                    }
+                    if (
+                        syncLifecycleState.compareAndSet(
+                            state,
+                            running
+                        )
+                    ) {
+                        job.start()
+                        return
+                    }
+                    job.cancel()
+                }
+
+                is SyncLifecycleState.Running -> {
+                    return
+                }
+
+                is SyncLifecycleState.Stopping -> {
+                    state.startRequested.store(true)
+                    if (syncLifecycleState.load() === state) return
+                }
             }
         }
-        if (syncLifecycleJob?.isActive != true) {
-            syncLifecycleJob = scope.launch {
+    }
+
+    private suspend fun stopSyncLifecycle() {
+        while (true) {
+            when (val state = syncLifecycleState.load()) {
+                SyncLifecycleState.Stopped -> return
+                is SyncLifecycleState.Running -> {
+                    val stopping = SyncLifecycleState.Stopping(
+                        job = state.job,
+                        startRequested = AtomicBoolean(false)
+                    )
+                    if (syncLifecycleState.compareAndSet(state, stopping)) {
+                        state.job.cancelAndJoin()
+                        finishStopping(stopping)
+                        return
+                    }
+                }
+
+                is SyncLifecycleState.Stopping -> {
+                    state.job.cancelAndJoin()
+                    finishStopping(state)
+                    return
+                }
+            }
+        }
+    }
+
+    private fun finishStopping(stopping: SyncLifecycleState.Stopping) {
+        while (syncLifecycleState.load() === stopping) {
+            if (stopping.startRequested.load()) {
+                val job = createSyncLifecycleJob()
+                val running = SyncLifecycleState.Running(job)
+                job.invokeOnCompletion {
+                    syncLifecycleState.compareAndSet(running, SyncLifecycleState.Stopped)
+                }
+                if (
+                    syncLifecycleState.compareAndSet(
+                        stopping,
+                        running
+                    )
+                ) {
+                    job.start()
+                    return
+                }
+                job.cancel()
+            } else if (
+                syncLifecycleState.compareAndSet(
+                    stopping,
+                    SyncLifecycleState.Stopped
+                )
+            ) {
+                return
+            }
+        }
+    }
+
+    private fun createSyncLifecycleJob(): Job = scope.launch(start = CoroutineStart.LAZY) {
+        coroutineScope {
+            launch {
+                syncStateObserver.syncState.collect { syncStateFlow.value = it }
+            }
+            launch {
                 syncStateFlow.subscriptionCount
                     .onEach {
                         logger.d("!! Sync requester count changed to $it")
@@ -136,14 +232,6 @@ internal class SyncExecutorImpl(
                         }
                     }
             }
-        }
-    }
-
-    override suspend fun stopAndWait(): Unit = withContext(NonCancellable) {
-        syncLifecycleStopMutex.withLock {
-            val job = syncLifecycleJob
-            syncLifecycleJob = null
-            job?.cancelAndJoin()
         }
     }
 
@@ -187,4 +275,14 @@ internal class SyncExecutorImpl(
         }
         result.await()
     }
+}
+
+@OptIn(ExperimentalAtomicApi::class)
+private sealed interface SyncLifecycleState {
+    data object Stopped : SyncLifecycleState
+    class Running(val job: Job) : SyncLifecycleState
+    class Stopping(
+        val job: Job,
+        val startRequested: AtomicBoolean
+    ) : SyncLifecycleState
 }

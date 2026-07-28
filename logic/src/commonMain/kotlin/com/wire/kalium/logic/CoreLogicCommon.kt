@@ -95,6 +95,18 @@ public abstract class CoreLogicCommon internal constructor(
 
     internal abstract suspend fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
 
+    /** Releases all process-local resources for a session without deleting persisted account data. */
+    public suspend fun closeSessionScope(userId: UserId) {
+        if (userSessionScopeProvider.isInitialized()) {
+            userSessionScopeProvider.value.close(userId)
+        }
+    }
+
+    /** Returns true only when this CoreLogic already owns process-local resources for the user. */
+    public fun isSessionScopeOpen(userId: UserId): Boolean =
+        userSessionScopeProvider.isInitialized() &&
+                userSessionScopeProvider.value.get(userId) != null
+
     // TODO: make globalScope a singleton
     public inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 

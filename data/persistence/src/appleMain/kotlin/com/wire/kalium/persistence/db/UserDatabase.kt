@@ -61,24 +61,29 @@ actual fun userDatabaseBuilder(
             }
     }
 
-    val invalidationController = DbInvalidationController(
-        enabled = dbInvalidationControlEnabled,
-        notifyKey = { key -> rawDriver.notifyListeners(key) }
-    )
+    try {
+        val invalidationController = DbInvalidationController(
+            enabled = dbInvalidationControlEnabled,
+            notifyKey = { key -> rawDriver.notifyListeners(key) }
+        )
 
-    val driver: SqlDriver = MutedSqlDriver(
-        delegate = rawDriver,
-        invalidationController = invalidationController
-    )
+        val driver: SqlDriver = MutedSqlDriver(
+            delegate = rawDriver,
+            invalidationController = invalidationController
+        )
 
-    return UserDatabaseBuilder(
-        userId = userId,
-        sqlDriver = driver,
-        dispatcher = dispatcher,
-        platformDatabaseData = platformDatabaseData,
-        isEncrypted = passphrase != null,
-        dbInvalidationController = invalidationController
-    )
+        return UserDatabaseBuilder(
+            userId = userId,
+            sqlDriver = driver,
+            dispatcher = dispatcher,
+            platformDatabaseData = platformDatabaseData,
+            isEncrypted = passphrase != null,
+            dbInvalidationController = invalidationController
+        )
+    } catch (constructionFailure: Throwable) {
+        runCatching(rawDriver::close).exceptionOrNull()?.let(constructionFailure::addSuppressed)
+        throw constructionFailure
+    }
 }
 
 actual fun userDatabaseDriverByPath(

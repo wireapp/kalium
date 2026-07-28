@@ -586,7 +586,10 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -595,6 +598,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
@@ -622,6 +626,13 @@ public class UserSessionScope internal constructor(
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
+
+    /** Stops session work and closes CoreCrypto before the owning process releases its lease. */
+    public suspend fun closeAndWait(): Unit = withContext(NonCancellable) {
+        syncExecutor.stopAndWait()
+        coroutineContext[Job]?.cancelAndJoin()
+        cryptoTransactionProvider.closeClients()
+    }
 
     private val userStorage = userStorageProvider.getOrCreate(
         userId,

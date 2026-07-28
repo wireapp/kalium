@@ -23,6 +23,8 @@ import com.wire.kalium.synccoordination.ProcessLockAcquireResult
 import com.wire.kalium.synccoordination.ProcessLockLease
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.ref.createCleaner
 
 /**
  * Swift-facing owner for the account-wide lock shared by foreground Kalium and the iOS NSE.
@@ -59,16 +61,28 @@ public enum class MainAppNotificationExtensionProcessLockStatus {
     TERMINAL_FAILURE
 }
 
-@OptIn(ExperimentalAtomicApi::class)
+@OptIn(ExperimentalAtomicApi::class, ExperimentalNativeApi::class)
 public class MainAppNotificationExtensionProcessLockResult internal constructor(
     public val status: MainAppNotificationExtensionProcessLockStatus,
     lease: ProcessLockLease?
 ) {
-    private val ownedLease: AtomicReference<ProcessLockLease?> = AtomicReference(lease)
+    private class LeaseOwner(lease: ProcessLockLease) {
+        private val ownedLease = AtomicReference<ProcessLockLease?>(lease)
+
+        fun release() {
+            ownedLease.exchange(null)?.release()
+        }
+    }
+
+    private val leaseOwner = lease?.let(::LeaseOwner)
+    @Suppress("unused")
+    private val leaseCleaner = leaseOwner?.let { owner ->
+        createCleaner(owner) { it.release() }
+    }
 
     /** Bounded, idempotent release suitable for Swift lifecycle cleanup. */
     public fun release() {
-        ownedLease.exchange(null)?.release()
+        leaseOwner?.release()
     }
 }
 

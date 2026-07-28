@@ -47,20 +47,21 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 
 Status: Implemented for signed host-app/NSE testing on 2026-07-18
 
-This spike adds `RealNotificationExtension`, which accepts a qualified user ID and deadline, resolves
-the existing registered client, uses the authenticated consumable-notification API, runs one bounded
-marker catch-up, and applies real Proteus/MLS receive-only decryption before returning extracted
-notification candidates. It reuses the established `UserSessionScope` providers rather than
-duplicating auth, networking, conversation metadata, or CoreCrypto construction.
+This spike introduced the real-account path. The current audited API accepts a qualified user ID,
+deadline, and explicit rollout snapshot, resolves the existing registered client, uses the
+authenticated consumable-notification API, and runs one bounded marker catch-up. It returns only
+status, reason, bounded summary, and a privacy-preserving presentation decision; decrypted
+notification candidates are no longer public.
 
 Apple Keychain configuration now accepts an optional shared access group. The real NSE entry point
 requires one, and the normal app-side `CoreLogic` must use the same service/access-group pair.
 
-For this integration spike the notification framework temporarily depends on the full `:logic`
-module. The per-run inbox is volatile and delivery tags are removed before they reach the bounded
-engine, so the backend is never ACKed without encrypted crash-durable handoff storage. This is safe
-for a real decryption demonstration but deliberately does not open the production factory gates.
-The host runbook and output inspection contract are recorded in
+The notification framework still temporarily depends on the full `:logic` module. The volatile
+per-run inbox has been replaced by the encrypted durable handoff implementation, and delivery tags
+reach the bounded engine for local acceptance only after raw-event staging. Production remains
+blocked by descriptor-relative path/file-protection proof, exact raw-byte capture, notification
+policy, post-CoreCrypto-commit child visibility, foreground/native ownership, and signed-device
+evidence. The current host contract is recorded in
 `docs/spikes/ios-nse-real-account-spike.md`.
 
 ## Milestone 12 — Passive account assembly cleanup

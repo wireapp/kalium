@@ -32,11 +32,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.AtomicReference
 
 /** M5-to-M4 Apple adapter with cancellation-safe native ownership transfer. */
 internal class AppleNotificationSyncLeaseCoordinator(
     sharedAppGroupRoot: String,
-    private val closeAttemptResources: () -> Unit
+    private val closeAttemptResources: () -> Unit,
+    private val teardownState: NotificationExtensionTeardownState = NotificationExtensionTeardownState()
 ) : NotificationSyncLeaseCoordinator {
     private val factory = AppleProcessLockFactory(sharedAppGroupRoot)
 
@@ -58,27 +60,54 @@ internal class AppleNotificationSyncLeaseCoordinator(
             throw cancellation
         }
         return LeaseAcquireResult.Acquired(
-            CloseResourcesThenProcessLease(closeAttemptResources, nativeLease)
+            CloseResourcesThenProcessLease(closeAttemptResources, nativeLease, teardownState)
         )
     }
 }
 
 /** Resource teardown is part of lease release, so M6/CoreCrypto/AVS close before `flock` unlock. */
-private class CloseResourcesThenProcessLease(
+internal class CloseResourcesThenProcessLease(
     private val closeAttemptResources: () -> Unit,
-    private val nativeLease: ProcessLockLease
+    private val nativeLease: ProcessLockLease,
+    private val teardownState: NotificationExtensionTeardownState
 ) : NotificationSyncLease {
     private val released = AtomicInt(LEASE_OWNED)
 
     override fun release() {
-        if (!released.compareAndSet(LEASE_OWNED, LEASE_RELEASED)) return
-        try {
-            runCatching(closeAttemptResources)
-        } finally {
-            nativeLease.release()
+        if (!released.compareAndSet(LEASE_OWNED, LEASE_RELEASING)) return
+        if (runCatching(closeAttemptResources).isFailure) {
+            teardownState.markUnsafe()
+            retainUnsafeClientLeaseUntilProcessExit(nativeLease)
+            released.store(LEASE_RETAINED_UNTIL_PROCESS_EXIT)
+            return
         }
+        nativeLease.release()
+        released.store(LEASE_RELEASED)
+    }
+}
+
+internal class NotificationExtensionTeardownState {
+    private val state = AtomicInt(TEARDOWN_SAFE)
+
+    val isUnsafe: Boolean
+        get() = state.load() == TEARDOWN_UNSAFE
+
+    fun markUnsafe() {
+        state.store(TEARDOWN_UNSAFE)
+    }
+}
+
+private fun retainUnsafeClientLeaseUntilProcessExit(lease: ProcessLockLease) {
+    while (true) {
+        val current = RETAINED_UNSAFE_CLIENT_LEASES.load()
+        if (RETAINED_UNSAFE_CLIENT_LEASES.compareAndSet(current, current + lease)) return
     }
 }
 
 private const val LEASE_OWNED = 0
-private const val LEASE_RELEASED = 1
+private const val LEASE_RELEASING = 1
+private const val LEASE_RELEASED = 2
+private const val LEASE_RETAINED_UNTIL_PROCESS_EXIT = 3
+private const val TEARDOWN_SAFE = 0
+private const val TEARDOWN_UNSAFE = 1
+private val RETAINED_UNSAFE_CLIENT_LEASES = AtomicReference<List<ProcessLockLease>>(emptyList())

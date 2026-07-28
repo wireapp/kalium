@@ -48,6 +48,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.base.authenticated.notification.EventAcknowledgeResult
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
@@ -132,6 +133,15 @@ internal interface EventRepository {
     fun setUnprocessedEventsBatchLimit(limit: Int?)
 }
 
+internal fun EventAcknowledgeResult.toEventRepositoryResult(): Either<CoreFailure, Unit> =
+    when (this) {
+        EventAcknowledgeResult.ACCEPTED_BY_LOCAL_WRITER -> Unit.right()
+        EventAcknowledgeResult.RETRYABLE_FAILURE ->
+            NetworkFailure.NoNetworkConnection(cause = null).left()
+
+        EventAcknowledgeResult.TERMINAL_FAILURE -> CoreFailure.Unknown(rootCause = null).left()
+    }
+
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class EventDataSource(
     private val notificationApi: NotificationApi,
@@ -203,8 +213,11 @@ internal class EventDataSource(
         return currentClientId().fold(
             { it.left() },
             {
-                notificationApi.acknowledgeEvents(it.value, sentinelMarker.get().getMarker(), EventMapper.FULL_ACKNOWLEDGE_REQUEST)
-                Unit.right()
+                notificationApi.acknowledgeEvents(
+                    it.value,
+                    sentinelMarker.get().getMarker(),
+                    EventMapper.FULL_ACKNOWLEDGE_REQUEST
+                ).toEventRepositoryResult()
             }
         )
     }
@@ -295,7 +308,7 @@ internal class EventDataSource(
                                     )
                                 }.onSuccess {
                                     event.data.deliveryTag?.let {
-                                        ackEvent(it)
+                                        ackEvent(it).onFailure(::throwPendingEventException)
                                     }
                                     if (!event.data.event.transient) {
                                         updateLastSavedEventId(event.data.event.id)
@@ -312,13 +325,15 @@ internal class EventDataSource(
 
                         ConsumableNotificationResponse.MissedNotification -> {
                             logger.d("Handling ConsumableNotificationResponse.MissedNotification")
-                            acknowledgeMissedEvent()
+                            acknowledgeMissedEvent().onFailure(::throwPendingEventException)
                             restartSlowSyncProcessForRecovery()
                         }
 
                         is ConsumableNotificationResponse.SynchronizationNotification -> {
                             logger.d("Handling ConsumableNotificationResponse.SynchronizationNotification")
-                            event.data.deliveryTag?.let { ackEvent(it) }
+                            event.data.deliveryTag?.let {
+                                ackEvent(it).onFailure(::throwPendingEventException)
+                            }
                             val currentMarker = sentinelMarker.get().getMarker()
                             if (event.data.markerId == currentMarker) {
                                 logger.d("Handling current sentinel marker [${event.data.markerId}] for this session.")
@@ -353,8 +368,7 @@ internal class EventDataSource(
                             multiple = false // TODO when use multiple?
                         )
                     )
-                )
-                Unit.right()
+                ).toEventRepositoryResult()
             }
         )
     }

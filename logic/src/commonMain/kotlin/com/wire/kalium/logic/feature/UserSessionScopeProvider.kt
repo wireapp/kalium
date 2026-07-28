@@ -27,6 +27,7 @@ internal interface UserSessionScopeProvider {
     fun get(userId: UserId): UserSessionScope?
     fun getOrCreate(userId: UserId): UserSessionScope
     fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T
+    suspend fun close(userId: UserId)
     suspend fun delete(userId: UserId)
 }
 
@@ -50,12 +51,14 @@ internal abstract class UserSessionScopeProviderCommon(
 
     override fun get(userId: UserId): UserSessionScope? = userScopeStorage.get(userId)
 
-    override suspend fun delete(userId: UserId) {
+    override suspend fun close(userId: UserId) {
+        userScopeStorage.remove(userId)?.closeAndWait()
         globalCallManager.removeInMemoryCallingManagerForUser(userId)
-        userScopeStorage.remove(userId)
-        userStorageProvider.remove(userId)
+        userStorageProvider.remove(userId)?.database?.close()
         removeAuthenticatedNetworkForUser(userId)
     }
+
+    override suspend fun delete(userId: UserId) = close(userId)
 
     internal abstract fun create(userId: UserId): UserSessionScope
 }
@@ -64,5 +67,6 @@ internal expect class UserSessionScopeProviderImpl : UserSessionScopeProvider {
     override fun get(userId: UserId): UserSessionScope?
     override fun getOrCreate(userId: UserId): UserSessionScope
     override fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T
+    override suspend fun close(userId: UserId)
     override suspend fun delete(userId: UserId)
 }

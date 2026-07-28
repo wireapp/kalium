@@ -25,7 +25,7 @@ import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
 import kotlin.concurrent.atomics.AtomicInt
 
-/** Scalar-only result from the disposable M10 rollout and observation probe. */
+/** Scalar-only test result from the disposable rollout and observation probe. */
 @Suppress("LongParameterList")
 public data class NotificationExtensionRolloutProbeResult(
     public val passed: Boolean,

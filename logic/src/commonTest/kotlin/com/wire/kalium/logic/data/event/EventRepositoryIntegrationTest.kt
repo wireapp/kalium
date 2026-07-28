@@ -33,6 +33,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
+import com.wire.kalium.network.api.base.authenticated.notification.EventAcknowledgeResult
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
@@ -489,7 +490,7 @@ class EventRepositoryIntegrationTest {
             clientId: String,
             markerId: String,
             eventAcknowledgeRequest: EventAcknowledgeRequest
-        ) = Unit
+        ): EventAcknowledgeResult = EventAcknowledgeResult.ACCEPTED_BY_LOCAL_WRITER
 
         private fun nextPendingPage(querySince: String?): NotificationResponse {
             return pendingResponses[querySince]?.removeFirstOrNull() ?: emptyNotificationPage()

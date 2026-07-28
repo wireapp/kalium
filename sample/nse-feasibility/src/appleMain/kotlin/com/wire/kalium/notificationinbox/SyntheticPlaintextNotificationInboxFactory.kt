@@ -17,6 +17,7 @@
  */
 
 @file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 
 package com.wire.kalium.notificationinbox
 
@@ -33,7 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import platform.Foundation.NSFileManager
 
 /**
- * Plaintext Apple persistence strictly for synthetic Milestone 6 probes.
+ * Sample-only plaintext Apple persistence strictly for synthetic feasibility probes.
  *
  * This factory accepts only the fixed synthetic account/client scope exported by this module, and
  * raw writes must declare the `SYNTHETIC_FEASIBILITY` delivery source. It intentionally permits

@@ -458,9 +458,16 @@ class UserDatabaseBuilder internal constructor(
      * drops DB connection and delete the DB file
      */
     fun nuke(): Boolean {
-        sqlDriver.close()
-        databaseScope.cancel()
+        close()
         return nuke(userId, platformDatabaseData)
+    }
+
+    /**
+     * Stops database work and closes the driver without deleting persisted data.
+     */
+    fun close() {
+        databaseScope.cancel()
+        sqlDriver.close()
     }
 
     private companion object {

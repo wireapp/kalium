@@ -26,9 +26,12 @@ import com.wire.kalium.logic.fakes.sync.FakeSlowSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSyncStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -235,10 +238,73 @@ class SyncExecutorTest {
 
             assertEquals(0, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
             assertEquals(0, arrangement.incrementalSyncManager.fakeSyncFlow.subscriptionCount.value)
+            assertEquals(0, arrangement.syncStateObserver.mutableSyncState.subscriptionCount.value)
 
             syncExecutor.startAndStopSyncAsNeeded()
             advanceUntilIdle()
             assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+            assertEquals(1, arrangement.syncStateObserver.mutableSyncState.subscriptionCount.value)
+
+            request.cancel()
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenConcurrentStarts_whenRequestIsActive_thenOnlyOneLifecycleAndObserverAreStarted() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+            val request = backgroundScope.launch {
+                syncExecutor.request {
+                    awaitCancellation()
+                }
+            }
+
+            coroutineScope {
+                List(64) {
+                    launch(Dispatchers.Default) {
+                        syncExecutor.startAndStopSyncAsNeeded()
+                    }
+                }.joinAll()
+            }
+            advanceUntilIdle()
+
+            assertEquals(1, arrangement.syncStateObserver.mutableSyncState.subscriptionCount.value)
+            assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+
+            request.cancel()
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenConcurrentStartsAndStops_whenSettledOnStart_thenOnlyOneLifecycleIsActive() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+            val request = backgroundScope.launch {
+                syncExecutor.request {
+                    awaitCancellation()
+                }
+            }
+            syncExecutor.startAndStopSyncAsNeeded()
+            advanceUntilIdle()
+
+            coroutineScope {
+                List(64) { index ->
+                    launch(Dispatchers.Default) {
+                        if (index % 2 == 0) {
+                            syncExecutor.stopAndWait()
+                        } else {
+                            syncExecutor.startAndStopSyncAsNeeded()
+                        }
+                    }
+                }.joinAll()
+            }
+            syncExecutor.startAndStopSyncAsNeeded()
+            advanceUntilIdle()
+
+            assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+            assertEquals(1, arrangement.syncStateObserver.mutableSyncState.subscriptionCount.value)
 
             request.cancel()
             syncScope.cancel()

@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:OptIn(kotlin.concurrent.atomics.ExperimentalAtomicApi::class)
 @file:Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 
 package com.wire.kalium.logic.notificationextension
@@ -28,6 +29,9 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.CryptoSessionId
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -54,6 +58,7 @@ import com.wire.kalium.network.api.authenticated.notification.AcknowledgeData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
+import com.wire.kalium.network.api.base.authenticated.notification.EventAcknowledgeResult
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
@@ -66,16 +71,30 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
+import kotlin.concurrent.atomics.AtomicInt
 import kotlin.io.encoding.Base64
+
+/**
+ * Signals that bridge construction failed and at least one acquired resource could not be closed.
+ *
+ * Callers sharing account state with another process must retain their process lock when this is
+ * thrown. Ordinary construction failures are not represented by this type because their rollback
+ * completed safely.
+ */
+public class NotificationExtensionLogicBridgeUnsafeTeardownException(
+    cause: Throwable
+) : IllegalStateException("Notification extension bridge construction rollback was unsafe", cause)
 
 /**
  * Narrow spike bridge from the notification framework into an existing authenticated Kalium
@@ -99,6 +118,8 @@ public class NotificationExtensionLogicBridge internal constructor(
 ) {
     private val receiveDecoder: MessageContentDecoder<DecodedProtobufContent> =
         NotificationExtensionProtobufDecoderAdapter(protobufDecoder)
+    private val resourcesClosed = AtomicInt(RESOURCES_OPEN)
+    private val transportShutdownState = AtomicInt(TRANSPORT_SHUTDOWN_SAFE)
 
     /** Returns the locally registered client for this account, without registering a new one. */
     public suspend fun resolveClientId(): String? = when (val result = currentClientId()) {
@@ -142,7 +163,14 @@ public class NotificationExtensionLogicBridge internal constructor(
 
     /** Cancels resources owned by this passive account bridge. This operation is idempotent. */
     public fun close() {
-        closeResources()
+        if (!resourcesClosed.compareAndSet(RESOURCES_OPEN, RESOURCES_CLOSED)) return
+        val resourceFailure = runCatching(closeResources).exceptionOrNull()
+        if (transportShutdownState.load() == TRANSPORT_SHUTDOWN_UNSAFE) {
+            val shutdownFailure = IllegalStateException("Notification transport collector did not stop within its teardown bound")
+            resourceFailure?.let(shutdownFailure::addSuppressed)
+            throw shutdownFailure
+        }
+        resourceFailure?.let { throw it }
     }
 
     /** Opens one authenticated, marker-bounded consumable-notification session. */
@@ -162,7 +190,8 @@ public class NotificationExtensionLogicBridge internal constructor(
             clientId = clientId,
             markerId = markerId,
             notificationApi = notificationApi,
-            events = flow
+            events = flow,
+            transportShutdownState = transportShutdownState
         )
         return when (session.initialize()) {
             NotificationExtensionLogicTransportOpenStatus.OPENED -> NotificationExtensionLogicTransportOpenResult(
@@ -189,12 +218,18 @@ public class NotificationExtensionLogicBridge internal constructor(
     }
 
     /**
-     * Applies the message payloads in one captured event to CoreCrypto and extracts their exact
-     * GenericMessage protobufs. Other event kinds are ignored because this is a receive-only NSE
-     * path and the transport remains unacknowledged by the spike assembly.
+     * Applies one captured event and extracts exact GenericMessage protobufs.
+     *
+     * [materializer] is invoked with the complete child batch before the enclosing CoreCrypto
+     * transaction may commit. Any non-durable result aborts that transaction. This ordering makes
+     * a committed Proteus/MLS state transition imply that a foreground-importable child batch
+     * already exists.
      */
-    public suspend fun receive(rawEnvelope: ByteArray): NotificationExtensionLogicReceiveResult = try {
-        receiveAndMaterialize(rawEnvelope)
+    public suspend fun receive(
+        rawEnvelope: ByteArray,
+        materializer: NotificationExtensionLogicMaterializer
+    ): NotificationExtensionLogicReceiveResult = try {
+        receiveAndMaterialize(rawEnvelope, materializer)
     } finally {
         // The engine invokes receive while owning the process lease. Close before returning so no
         // NSE-owned CoreCrypto handle can survive the lease release and race the foreground app.
@@ -204,9 +239,12 @@ public class NotificationExtensionLogicBridge internal constructor(
     }
 
     @Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount")
-    private suspend fun receiveAndMaterialize(rawEnvelope: ByteArray): NotificationExtensionLogicReceiveResult {
+    private suspend fun receiveAndMaterialize(
+        rawEnvelope: ByteArray,
+        materializer: NotificationExtensionLogicMaterializer
+    ): NotificationExtensionLogicReceiveResult {
         val storedEvent = try {
-            KtxSerializer.json.decodeFromString<EventResponseToStore>(rawEnvelope.decodeToString())
+            decodeNotificationExtensionStoredEvent(rawEnvelope)
         } catch (_: CancellationException) {
             throw CancellationException()
         } catch (_: Throwable) {
@@ -226,25 +264,79 @@ public class NotificationExtensionLogicBridge internal constructor(
             )
         }
 
+        val hasCryptoPayload = payload.any {
+            it is EventContentDTO.Conversation.NewMessageDTO ||
+                    it is EventContentDTO.Conversation.NewMLSMessageDTO
+        }
+        if (!hasCryptoPayload) {
+            return receivePayload(storedEvent.id, payload, null)
+        }
+        return try {
+            when (
+                val transaction = cryptoTransactionProvider.transaction("notification-extension-receive") { context ->
+                    val result = receivePayload(storedEvent.id, payload, context)
+                    if (result.messages.isNotEmpty()) {
+                        when (materializer.materialize(result.messages, result.status)) {
+                            NotificationExtensionLogicMaterializationStatus.DURABLE -> Unit
+                            NotificationExtensionLogicMaterializationStatus.RETRYABLE_FAILURE ->
+                                throw NotificationExtensionMaterializationAbort(retryable = true)
+
+                            NotificationExtensionLogicMaterializationStatus.TERMINAL_FAILURE ->
+                                throw NotificationExtensionMaterializationAbort(retryable = false)
+                        }
+                    }
+                    Either.Right(result)
+                }
+            ) {
+                is Either.Left -> NotificationExtensionLogicReceiveResult(
+                    status = NotificationExtensionLogicReceiveStatus.FOREGROUND_REQUIRED,
+                    messages = emptyList()
+                )
+
+                is Either.Right -> transaction.value
+            }
+        } catch (abort: NotificationExtensionMaterializationAbort) {
+            NotificationExtensionLogicReceiveResult(
+                status = if (abort.retryable) {
+                    NotificationExtensionLogicReceiveStatus.RETRYABLE_FAILURE
+                } else {
+                    NotificationExtensionLogicReceiveStatus.TERMINAL_FAILURE
+                },
+                messages = emptyList()
+            )
+        }
+    }
+
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount")
+    private suspend fun receivePayload(
+        eventId: String,
+        payload: List<EventContentDTO>,
+        context: CryptoTransactionContext?
+    ): NotificationExtensionLogicReceiveResult {
         val messages = mutableListOf<NotificationExtensionLogicMessage>()
         var nextItemIndex = 0
         var requiresForeground = false
         for (item in payload) {
             val result = when (item) {
-                is EventContentDTO.Conversation.NewMessageDTO -> receiveProteus(storedEvent.id, item, nextItemIndex)
-                is EventContentDTO.Conversation.NewMLSMessageDTO -> receiveMls(storedEvent.id, item, nextItemIndex)
+                is EventContentDTO.Conversation.NewMessageDTO -> context?.proteus?.let {
+                    receiveProteus(it, eventId, item, nextItemIndex)
+                } ?: ReceiveItemResult.ForegroundRequired(emptyList())
+
+                is EventContentDTO.Conversation.NewMLSMessageDTO ->
+                    receiveMls(context?.mls, eventId, item, nextItemIndex)
+
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> ReceiveItemResult.ForegroundRequired(emptyList())
                 else -> ReceiveItemResult.Applied(emptyList())
             }
             when (result) {
                 is ReceiveItemResult.Applied -> {
                     messages += result.messages
-                    nextItemIndex += result.messages.size.coerceAtLeast(1)
+                    nextItemIndex = nextReceiveChildIndex(nextItemIndex, result.messages.size)
                 }
 
                 is ReceiveItemResult.ForegroundRequired -> {
                     messages += result.messages
-                    nextItemIndex += result.messages.size.coerceAtLeast(1)
+                    nextItemIndex = nextReceiveChildIndex(nextItemIndex, result.messages.size)
                     requiresForeground = true
                 }
 
@@ -271,6 +363,7 @@ public class NotificationExtensionLogicBridge internal constructor(
 
     @Suppress("ReturnCount")
     private suspend fun receiveProteus(
+        context: ProteusCoreCryptoContext,
         eventId: String,
         event: EventContentDTO.Conversation.NewMessageDTO,
         itemIndex: Int
@@ -280,43 +373,41 @@ public class NotificationExtensionLogicBridge internal constructor(
         val encryptedExternalContent = event.data.encryptedExternalData?.let {
             runCatching { Base64.decode(it) }.getOrElse { return ReceiveItemResult.TerminalFailure }
         }
-        val result = cryptoTransactionProvider.proteusTransaction("notification-extension-receive") { context ->
-            wrapProteusRequest {
-                proteusDecryptor.decrypt(
-                    context = context,
-                    message = ProteusEncryptedMessage(
-                        sessionId = CryptoSessionId(
-                            userId = CryptoQualifiedID(event.qualifiedFrom.value, event.qualifiedFrom.domain),
-                            cryptoClientId = CryptoClientId(event.data.sender)
-                        ),
-                        encryptedMessage = encryptedMessage
+        val result = wrapProteusRequest {
+            proteusDecryptor.decrypt(
+                context = context,
+                message = ProteusEncryptedMessage(
+                    sessionId = CryptoSessionId(
+                        userId = CryptoQualifiedID(event.qualifiedFrom.value, event.qualifiedFrom.domain),
+                        cryptoClientId = CryptoClientId(event.data.sender)
+                    ),
+                    encryptedMessage = encryptedMessage
+                )
+            ) { decryptedMessage ->
+                when (
+                    val resolution = contentResolver.resolveProteusContent(
+                        decryptedMessage = decryptedMessage,
+                        encryptedExternalContent = encryptedExternalContent,
+                        decoder = receiveDecoder
                     )
-                ) { decryptedMessage ->
-                    when (
-                        val resolution = contentResolver.resolveProteusContent(
-                            decryptedMessage = decryptedMessage,
-                            encryptedExternalContent = encryptedExternalContent,
-                            decoder = receiveDecoder
-                        )
-                    ) {
-                        is MessageContentResolution.InvalidExternalContent ->
-                            Either.Left(CoreFailure.Unknown(resolution.cause))
+                ) {
+                    is MessageContentResolution.InvalidExternalContent ->
+                        Either.Left(CoreFailure.Unknown(resolution.cause))
 
-                        is MessageContentResolution.Success -> Either.Right(
-                            resolution.message.content.toLogicMessage(
-                                eventId = eventId,
-                                itemIndex = itemIndex,
-                                conversationId = event.qualifiedConversation.toLogicId(),
-                                senderId = event.qualifiedFrom.toLogicId(),
-                                senderClientId = event.data.sender,
-                                timestampEpochMillis = event.time.toEpochMilliseconds(),
-                                protocol = NotificationExtensionLogicProtocol.PROTEUS
-                            )
+                    is MessageContentResolution.Success -> Either.Right(
+                        resolution.message.content.toLogicMessage(
+                            eventId = eventId,
+                            itemIndex = itemIndex,
+                            conversationId = event.qualifiedConversation.toLogicId(),
+                            senderId = event.qualifiedFrom.toLogicId(),
+                            senderClientId = event.data.sender,
+                            timestampEpochMillis = event.time.toEpochMilliseconds(),
+                            protocol = NotificationExtensionLogicProtocol.PROTEUS
                         )
-                    }
+                    )
                 }
-            }.flatMap { it }
-        }
+            }
+        }.flatMap { it }
         return when (result) {
             is Either.Left -> ReceiveItemResult.ForegroundRequired(emptyList())
             is Either.Right -> ReceiveItemResult.Applied(listOf(result.value))
@@ -325,10 +416,12 @@ public class NotificationExtensionLogicBridge internal constructor(
 
     @Suppress("CyclomaticComplexMethod", "ReturnCount")
     private suspend fun receiveMls(
+        context: MlsCoreCryptoContext?,
         eventId: String,
         event: EventContentDTO.Conversation.NewMLSMessageDTO,
         itemIndex: Int
     ): ReceiveItemResult {
+        val mlsContext = context ?: return ReceiveItemResult.ForegroundRequired(emptyList())
         val conversationId = event.qualifiedConversation.toLogicId()
         // Subconversation membership is process-local in the application graph. The NSE must not
         // fetch or join it, so those messages are deliberately handed back to the foreground app.
@@ -342,38 +435,36 @@ public class NotificationExtensionLogicBridge internal constructor(
         } ?: return ReceiveItemResult.ForegroundRequired(emptyList())
         val encryptedMessage = runCatching { Base64.decode(event.message) }
             .getOrElse { return ReceiveItemResult.TerminalFailure }
-        val result = cryptoTransactionProvider.mlsTransaction("notification-extension-receive") { context ->
-            wrapMLSRequest {
-                mlsDecryptor.decrypt(
-                    context = context,
-                    message = MlsEncryptedMessage(groupId, encryptedMessage)
-                ) { decryptedMessages ->
-                    val output = mutableListOf<NotificationExtensionLogicMessage>()
-                    var foregroundRequired = false
-                    decryptedMessages.forEachIndexed { bundleIndex, decrypted ->
-                        if (decrypted.commitDelay != null || !decrypted.crlNewDistributionPoints.isNullOrEmpty()) {
-                            foregroundRequired = true
-                        }
-                        decrypted.decryptedMessage?.let { serializedContent ->
-                            val decoded = protobufDecoder.decode(serializedContent)
-                            val sender = decrypted.senderClientId
-                            output += decoded.toLogicMessage(
-                                eventId = eventId,
-                                itemIndex = itemIndex + bundleIndex,
-                                conversationId = conversationId,
-                                senderId = sender?.userId?.let { QualifiedID(it.value, it.domain) }
-                                    ?: event.qualifiedFrom.toLogicId(),
-                                senderClientId = sender?.value,
-                                timestampEpochMillis = event.time.toEpochMilliseconds(),
-                                protocol = NotificationExtensionLogicProtocol.MLS
-                            )
-                        }
+        val result = wrapMLSRequest {
+            mlsDecryptor.decrypt(
+                context = mlsContext,
+                message = MlsEncryptedMessage(groupId, encryptedMessage)
+            ) { decryptedMessages ->
+                val output = mutableListOf<NotificationExtensionLogicMessage>()
+                var foregroundRequired = false
+                decryptedMessages.forEach { decrypted ->
+                    if (decrypted.commitDelay != null || !decrypted.crlNewDistributionPoints.isNullOrEmpty()) {
+                        foregroundRequired = true
                     }
-                    if (foregroundRequired) {
-                        ReceiveItemResult.ForegroundRequired(output)
-                    } else {
-                        ReceiveItemResult.Applied(output)
+                    decrypted.decryptedMessage?.let { serializedContent ->
+                        val decoded = protobufDecoder.decode(serializedContent)
+                        val sender = decrypted.senderClientId
+                        output += decoded.toLogicMessage(
+                            eventId = eventId,
+                            itemIndex = nextEmittedMlsChildIndex(itemIndex, output.size),
+                            conversationId = conversationId,
+                            senderId = sender?.userId?.let { QualifiedID(it.value, it.domain) }
+                                ?: event.qualifiedFrom.toLogicId(),
+                            senderClientId = sender?.value,
+                            timestampEpochMillis = event.time.toEpochMilliseconds(),
+                            protocol = NotificationExtensionLogicProtocol.MLS
+                        )
                     }
+                }
+                if (foregroundRequired) {
+                    ReceiveItemResult.ForegroundRequired(output)
+                } else {
+                    ReceiveItemResult.Applied(output)
                 }
             }
         }
@@ -470,7 +561,8 @@ public class NotificationExtensionLogicTransportSession internal constructor(
     private val clientId: String,
     private val markerId: String,
     private val notificationApi: NotificationApi,
-    events: Flow<WebSocketEvent<ConsumableNotificationResponse>>
+    events: Flow<WebSocketEvent<ConsumableNotificationResponse>>,
+    private val transportShutdownState: AtomicInt
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val channel = Channel<WebSocketEvent<ConsumableNotificationResponse>>(Channel.RENDEZVOUS)
@@ -521,7 +613,7 @@ public class NotificationExtensionLogicTransportSession internal constructor(
             )
         }
         val frame = when (val event = received.getOrThrow()) {
-            is WebSocketEvent.BinaryPayloadReceived -> event.payload.toLogicFrame()
+            is WebSocketEvent.BinaryPayloadReceived -> event.toLogicFrame()
             is WebSocketEvent.Close -> NotificationExtensionLogicTransportFrame.Closed
             is WebSocketEvent.NonBinaryPayloadReceived,
             is WebSocketEvent.Open -> NotificationExtensionLogicTransportFrame.UnexpectedPayload
@@ -540,8 +632,7 @@ public class NotificationExtensionLogicTransportSession internal constructor(
                 type = AcknowledgeType.ACK,
                 data = AcknowledgeData(deliveryTag)
             )
-        )
-        NotificationExtensionLogicTransportAckStatus.ACCEPTED_BY_LOCAL_WRITER
+        ).toLogicTransportAckStatus()
     } catch (_: CancellationException) {
         throw CancellationException()
     } catch (_: Throwable) {
@@ -549,17 +640,59 @@ public class NotificationExtensionLogicTransportSession internal constructor(
     }
 
     public fun close() {
-        collector.cancel()
+        val stoppedWithinBound = runBlocking {
+            withTimeoutOrNull(TRANSPORT_COLLECTOR_CLOSE_TIMEOUT_MILLIS) {
+                collector.cancelAndJoin()
+                true
+            } ?: false
+        }
+        if (!stoppedWithinBound) {
+            transportShutdownState.store(TRANSPORT_SHUTDOWN_UNSAFE)
+        }
         channel.close()
         scope.cancel()
     }
 }
+
+internal fun EventAcknowledgeResult.toLogicTransportAckStatus(): NotificationExtensionLogicTransportAckStatus =
+    when (this) {
+        EventAcknowledgeResult.ACCEPTED_BY_LOCAL_WRITER ->
+            NotificationExtensionLogicTransportAckStatus.ACCEPTED_BY_LOCAL_WRITER
+
+        EventAcknowledgeResult.RETRYABLE_FAILURE ->
+            NotificationExtensionLogicTransportAckStatus.REJECTED_RETRYABLE
+
+        EventAcknowledgeResult.TERMINAL_FAILURE ->
+            NotificationExtensionLogicTransportAckStatus.REJECTED_TERMINAL
+    }
+
+internal fun nextReceiveChildIndex(currentIndex: Int, emittedMessageCount: Int): Int {
+    require(currentIndex >= 0 && emittedMessageCount >= 0)
+    return currentIndex + emittedMessageCount
+}
+
+internal fun nextEmittedMlsChildIndex(itemIndex: Int, emittedMessageCount: Int): Int =
+    nextReceiveChildIndex(itemIndex, emittedMessageCount)
 
 public enum class NotificationExtensionLogicReceiveStatus {
     MATERIALIZED,
     FOREGROUND_REQUIRED,
     RETRYABLE_FAILURE,
     TERMINAL_FAILURE
+}
+
+public enum class NotificationExtensionLogicMaterializationStatus {
+    DURABLE,
+    RETRYABLE_FAILURE,
+    TERMINAL_FAILURE
+}
+
+/** Durable callback invoked inside the event's CoreCrypto transaction. */
+public fun interface NotificationExtensionLogicMaterializer {
+    public suspend fun materialize(
+        messages: List<NotificationExtensionLogicMessage>,
+        receiveStatus: NotificationExtensionLogicReceiveStatus
+    ): NotificationExtensionLogicMaterializationStatus
 }
 
 public class NotificationExtensionLogicReceiveResult internal constructor(
@@ -636,6 +769,10 @@ private sealed interface ReceiveItemResult {
     data object TerminalFailure : ReceiveItemResult
 }
 
+private class NotificationExtensionMaterializationAbort(
+    val retryable: Boolean
+) : Exception()
+
 private class NotificationExtensionProtobufDecoderAdapter(
     private val decoder: ProtobufMessageContentDecoder
 ) : MessageContentDecoder<DecodedProtobufContent> {
@@ -651,20 +788,160 @@ private class NotificationExtensionProtobufDecoderAdapter(
     }
 }
 
-private fun ConsumableNotificationResponse.toLogicFrame(): NotificationExtensionLogicTransportFrame = when (this) {
-    is ConsumableNotificationResponse.EventNotification -> NotificationExtensionLogicTransportFrame.Event(
-        eventId = data.event.id,
-        rawEnvelope = KtxSerializer.json.encodeToString(data.event).encodeToByteArray(),
-        isTransient = data.event.transient,
-        cursor = if (data.event.transient) null else data.event.id,
-        deliveryTag = data.deliveryTag
-    )
+internal fun WebSocketEvent.BinaryPayloadReceived<ConsumableNotificationResponse>.toLogicFrame():
+        NotificationExtensionLogicTransportFrame = when (val decodedPayload = payload) {
+    is ConsumableNotificationResponse.EventNotification -> {
+        val exactEventEnvelope = extractExactConsumableEventEnvelope(
+            requireNotNull(rawPayload) {
+                "Exact WebSocket bytes are required for notification-extension durable capture"
+            }
+        )
+        check(decodeNotificationExtensionStoredEvent(exactEventEnvelope) == decodedPayload.data.event) {
+            "Decoded consumable metadata does not match the exact event envelope"
+        }
+        NotificationExtensionLogicTransportFrame.Event(
+            eventId = decodedPayload.data.event.id,
+            rawEnvelope = exactEventEnvelope,
+            isTransient = decodedPayload.data.event.transient,
+            cursor = if (decodedPayload.data.event.transient) null else decodedPayload.data.event.id,
+            deliveryTag = decodedPayload.data.deliveryTag
+        )
+    }
 
     is ConsumableNotificationResponse.SynchronizationNotification ->
-        NotificationExtensionLogicTransportFrame.SynchronizationMarker(data.markerId, data.deliveryTag)
+        NotificationExtensionLogicTransportFrame.SynchronizationMarker(
+            decodedPayload.data.markerId,
+            decodedPayload.data.deliveryTag
+        )
 
     ConsumableNotificationResponse.MissedNotification -> NotificationExtensionLogicTransportFrame.MissedNotification
 }
+
+internal fun decodeNotificationExtensionStoredEvent(rawEnvelope: ByteArray): EventResponseToStore {
+    return KtxSerializer.json.decodeFromString<EventResponseToStore>(rawEnvelope.decodeToString())
+}
+
+/**
+ * Extracts the exact `data.event` JSON value from a consumable frame.
+ *
+ * Delivery tags are transport-only and must never cross the durable inbox boundary. A small
+ * structural scanner is used instead of DTO re-encoding so unknown event fields, ordering and
+ * whitespace remain byte-exact while the existing event-only envelope format stays version 1.
+ */
+internal fun extractExactConsumableEventEnvelope(rawFrame: ByteArray): ByteArray {
+    val root = rawFrame.findJsonObjectMember("data", 0, rawFrame.size)
+        ?: error("Consumable notification frame has no data object")
+    val event = rawFrame.findJsonObjectMember("event", root.first, root.last + 1)
+        ?: error("Consumable notification frame has no event object")
+    return rawFrame.copyOfRange(event.first, event.last + 1)
+}
+
+private fun ByteArray.findJsonObjectMember(
+    memberName: String,
+    rangeStart: Int,
+    rangeEndExclusive: Int
+): IntRange? {
+    var index = skipJsonWhitespace(rangeStart, rangeEndExclusive)
+    if (index >= rangeEndExclusive || this[index] != JSON_OBJECT_START) return null
+    var matchingRange: IntRange? = null
+    index += 1
+    while (index < rangeEndExclusive) {
+        index = skipJsonWhitespace(index, rangeEndExclusive)
+        if (index >= rangeEndExclusive) return null
+        if (this[index] == JSON_OBJECT_END) return matchingRange
+        if (this[index] != JSON_QUOTE) return null
+        val keyEnd = jsonStringEnd(index, rangeEndExclusive) ?: return null
+        val keyMatches = jsonStringEquals(index, keyEnd, memberName)
+        index = skipJsonWhitespace(keyEnd, rangeEndExclusive)
+        if (index >= rangeEndExclusive || this[index] != JSON_NAME_SEPARATOR) return null
+        val valueStart = skipJsonWhitespace(index + 1, rangeEndExclusive)
+        val valueEnd = jsonValueEnd(valueStart, rangeEndExclusive) ?: return null
+        if (keyMatches) {
+            if (matchingRange != null) return null
+            matchingRange = valueStart until valueEnd
+        }
+        index = skipJsonWhitespace(valueEnd, rangeEndExclusive)
+        if (index < rangeEndExclusive && this[index] == JSON_VALUE_SEPARATOR) {
+            index += 1
+        } else if (index >= rangeEndExclusive || this[index] != JSON_OBJECT_END) {
+            return null
+        }
+    }
+    return null
+}
+
+private fun ByteArray.jsonValueEnd(start: Int, endExclusive: Int): Int? {
+    if (start >= endExclusive) return null
+    return when (this[start]) {
+        JSON_QUOTE -> jsonStringEnd(start, endExclusive)
+        JSON_OBJECT_START, JSON_ARRAY_START -> jsonCompositeEnd(start, endExclusive)
+        else -> {
+            var index = start
+            while (
+                index < endExclusive &&
+                this[index] != JSON_VALUE_SEPARATOR &&
+                this[index] != JSON_OBJECT_END &&
+                this[index] != JSON_ARRAY_END &&
+                !this[index].isJsonWhitespace()
+            ) {
+                index += 1
+            }
+            index.takeIf { it > start }
+        }
+    }
+}
+
+private fun ByteArray.jsonCompositeEnd(start: Int, endExclusive: Int): Int? {
+    val stack = mutableListOf(this[start])
+    var index = start + 1
+    while (index < endExclusive) {
+        when (this[index]) {
+            JSON_QUOTE -> index = jsonStringEnd(index, endExclusive) ?: return null
+            JSON_OBJECT_START, JSON_ARRAY_START -> {
+                stack += this[index]
+                index += 1
+            }
+            JSON_OBJECT_END -> {
+                if (stack.removeLastOrNull() != JSON_OBJECT_START) return null
+                index += 1
+                if (stack.isEmpty()) return index
+            }
+            JSON_ARRAY_END -> {
+                if (stack.removeLastOrNull() != JSON_ARRAY_START) return null
+                index += 1
+                if (stack.isEmpty()) return index
+            }
+            else -> index += 1
+        }
+    }
+    return null
+}
+
+private fun ByteArray.jsonStringEnd(start: Int, endExclusive: Int): Int? {
+    var index = start + 1
+    while (index < endExclusive) {
+        when (this[index]) {
+            JSON_ESCAPE -> index += 2
+            JSON_QUOTE -> return index + 1
+            else -> index += 1
+        }
+    }
+    return null
+}
+
+private fun ByteArray.skipJsonWhitespace(start: Int, endExclusive: Int): Int {
+    var index = start
+    while (index < endExclusive && this[index].isJsonWhitespace()) index += 1
+    return index
+}
+
+private fun ByteArray.jsonStringEquals(start: Int, endExclusive: Int, expected: String): Boolean =
+    runCatching {
+        KtxSerializer.json.decodeFromString<String>(copyOfRange(start, endExclusive).decodeToString())
+    }.getOrNull() == expected
+
+private fun Byte.isJsonWhitespace(): Boolean =
+    this == JSON_SPACE || this == JSON_TAB || this == JSON_LINE_FEED || this == JSON_CARRIAGE_RETURN
 
 private fun com.wire.kalium.network.api.model.QualifiedID.toLogicId(): QualifiedID = QualifiedID(value, domain)
 
@@ -713,3 +990,20 @@ private data class CandidateDetails(
 )
 
 private const val MILLIS_PER_SECOND = 1_000L
+private const val RESOURCES_OPEN = 0
+private const val RESOURCES_CLOSED = 1
+private const val TRANSPORT_SHUTDOWN_SAFE = 0
+private const val TRANSPORT_SHUTDOWN_UNSAFE = 1
+private const val TRANSPORT_COLLECTOR_CLOSE_TIMEOUT_MILLIS = 250L
+private const val JSON_OBJECT_START: Byte = 0x7B
+private const val JSON_OBJECT_END: Byte = 0x7D
+private const val JSON_ARRAY_START: Byte = 0x5B
+private const val JSON_ARRAY_END: Byte = 0x5D
+private const val JSON_QUOTE: Byte = 0x22
+private const val JSON_ESCAPE: Byte = 0x5C
+private const val JSON_NAME_SEPARATOR: Byte = 0x3A
+private const val JSON_VALUE_SEPARATOR: Byte = 0x2C
+private const val JSON_SPACE: Byte = 0x20
+private const val JSON_TAB: Byte = 0x09
+private const val JSON_LINE_FEED: Byte = 0x0A
+private const val JSON_CARRIAGE_RETURN: Byte = 0x0D

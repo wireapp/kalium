@@ -1524,8 +1524,12 @@ private fun SelectImportChildBySequence.toValidatedPending(limits: NotificationI
     )
 }
 
-private fun PendingImportChild.foregroundImportAction(): ForegroundImportAction = when {
+internal fun PendingImportChild.foregroundImportAction(): ForegroundImportAction = when {
     decryptionState == DecryptionState.FAILED_TERMINAL -> ForegroundImportAction.RECORD_TERMINAL_FAILURE
+    receiveClassification == ReceiveClassification.APPLICATION_MESSAGE &&
+            failureClassification != null &&
+            conversationId != null && messageTimestampEpochMillis != null ->
+        ForegroundImportAction.UPSERT_APPLICATION_MESSAGE_AND_SCHEDULE_FOREGROUND_RECOVERY
     receiveClassification == ReceiveClassification.APPLICATION_MESSAGE &&
             conversationId != null && messageTimestampEpochMillis != null ->
         ForegroundImportAction.UPSERT_APPLICATION_MESSAGE
@@ -1594,14 +1598,14 @@ private fun RawEvent.requiresForegroundRawImport(
     children: List<ForegroundChildImport>
 ): Boolean = receive_state == RawReceiveState.DEFERRED_TO_APP.name ||
         foreground_recovery_required != 0L || hasNoChildren ||
-        children.any { it.action == ForegroundImportAction.SCHEDULE_FOREGROUND_RECOVERY }
+        children.any(ForegroundChildImport::requiresForegroundRecovery)
 
 @Suppress("ComplexCondition")
 private fun RawEvent.foregroundRawAction(children: List<ForegroundChildImport> = emptyList()): ForegroundImportAction =
     if (receive_state == RawReceiveState.PENDING.name ||
         receive_state == RawReceiveState.DEFERRED_TO_APP.name ||
         foreground_recovery_required != 0L ||
-        children.any { it.action == ForegroundImportAction.SCHEDULE_FOREGROUND_RECOVERY }
+        children.any(ForegroundChildImport::requiresForegroundRecovery)
     ) {
         ForegroundImportAction.SCHEDULE_FOREGROUND_RECOVERY
     } else {
@@ -1732,6 +1736,10 @@ private fun foregroundSnapshotToken(
         }
     }
 )
+
+private fun ForegroundChildImport.requiresForegroundRecovery(): Boolean =
+    action == ForegroundImportAction.SCHEDULE_FOREGROUND_RECOVERY ||
+            action == ForegroundImportAction.UPSERT_APPLICATION_MESSAGE_AND_SCHEDULE_FOREGROUND_RECOVERY
 
 private fun foregroundFrameDigest(prefix: String, fields: List<String?>): String {
     val encoded: List<ByteArray?> = buildList {

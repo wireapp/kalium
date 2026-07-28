@@ -76,6 +76,9 @@ import io.ktor.websocket.WebSocketSession
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
 
+    /** Closes all HTTP/WebSocket resources owned by this container. */
+    fun close()
+
     /**
      * Clear any cached token on the http clients. This will trigger a reloading
      * of the access token from the session manager on the next request.
@@ -339,6 +342,7 @@ internal interface AuthenticatedHttpClientProvider {
     val websocketClient: AuthenticatedWebSocketClient
     val networkClientWithoutCompression: AuthenticatedNetworkClient
     suspend fun clearCachedToken()
+    fun close()
 }
 
 internal class AuthenticatedHttpClientProviderImpl(
@@ -380,7 +384,7 @@ internal class AuthenticatedHttpClientProviderImpl(
 
     override val backendConfig = sessionManager.serverConfig().links
 
-    override val networkClient by lazy {
+    private val networkClientDelegate = lazy {
         AuthenticatedNetworkClient(
             engine,
             sessionManager.serverConfig(),
@@ -388,7 +392,10 @@ internal class AuthenticatedHttpClientProviderImpl(
             kaliumLogger
         )
     }
-    override val websocketClient by lazy {
+    override val networkClient: AuthenticatedNetworkClient
+        get() = networkClientDelegate.value
+
+    private val websocketClientDelegate = lazy {
         AuthenticatedWebSocketClient(
             engine,
             bearerAuthProvider,
@@ -397,7 +404,10 @@ internal class AuthenticatedHttpClientProviderImpl(
             webSocketSessionProvider
         )
     }
-    override val networkClientWithoutCompression by lazy {
+    override val websocketClient: AuthenticatedWebSocketClient
+        get() = websocketClientDelegate.value
+
+    private val networkClientWithoutCompressionDelegate = lazy {
         AuthenticatedNetworkClient(
             engine,
             sessionManager.serverConfig(),
@@ -405,5 +415,17 @@ internal class AuthenticatedHttpClientProviderImpl(
             kaliumLogger,
             installCompression = false
         )
+    }
+    override val networkClientWithoutCompression: AuthenticatedNetworkClient
+        get() = networkClientWithoutCompressionDelegate.value
+
+    override fun close() {
+        if (networkClientDelegate.isInitialized()) {
+            networkClientDelegate.value.httpClient.close()
+        }
+        if (networkClientWithoutCompressionDelegate.isInitialized()) {
+            networkClientWithoutCompressionDelegate.value.httpClient.close()
+        }
+        engine.close()
     }
 }

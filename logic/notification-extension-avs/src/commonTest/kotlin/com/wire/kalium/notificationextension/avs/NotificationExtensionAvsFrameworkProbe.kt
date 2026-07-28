@@ -18,7 +18,7 @@
 
 package com.wire.kalium.notificationextension.avs
 
-/** Disposable non-production framework-load probe. */
+/** Disposable test-only framework-load probe. */
 public class NotificationExtensionAvsFrameworkProbe {
     public fun run(): String {
         val result = NotificationExtensionAvsProcessor().process(

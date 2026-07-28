@@ -23,6 +23,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
+import com.wire.kalium.network.api.base.authenticated.notification.EventAcknowledgeResult
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
@@ -40,12 +41,15 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.ChannelResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.encodeToJsonElement
@@ -70,23 +74,47 @@ internal open class NotificationApiV9 internal constructor(
                     setWSSUrl(authenticatedWebSocketClient.createWSSUrl(shouldAddApiVersion = true), PATH_EVENTS)
                     parameter(CLIENT_QUERY_KEY, clientId)
                     parameter(SYNC_MARKER_KEY, markerId)
+                }.also {
+                    it.maxFrameSize = MAX_CONSUMABLE_NOTIFICATION_FRAME_BYTES.toLong()
                 }
             }
             return session!!
         }
     }
 
-    override suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
+    override suspend fun acknowledgeEvents(
+        clientId: String,
+        markerId: String,
+        eventAcknowledgeRequest: EventAcknowledgeRequest
+    ): EventAcknowledgeResult {
         val session = getOrCreateAsyncEventsWebSocketSession(clientId, markerId, ::acknowledgeEvents.name)
 
-        KtxSerializer.json.encodeToJsonElement(eventAcknowledgeRequest).let { json ->
-            val result = session.outgoing.trySend(Frame.Text(json.toString()))
-            if (result.isSuccess) {
-                kaliumLogger.i("Acknowledge event sent successfully $json on $this")
-            } else {
-                kaliumLogger.e("Failed to send acknowledge event $json", result.exceptionOrNull())
+        return KtxSerializer.json.encodeToJsonElement(eventAcknowledgeRequest).let { json ->
+            when (
+                acknowledgeWithLocalWriterFlush(
+                    enqueue = { session.outgoing.trySend(Frame.Text(json.toString())) },
+                    flush = session::flush,
+                    writerIsActive = { session.coroutineContext.isActive }
+                )
+            ) {
+                EventAcknowledgeResult.ACCEPTED_BY_LOCAL_WRITER -> {
+                    kaliumLogger.i("Acknowledge event accepted and flushed on $this")
+                    EventAcknowledgeResult.ACCEPTED_BY_LOCAL_WRITER
+                }
+
+                EventAcknowledgeResult.RETRYABLE_FAILURE -> {
+                    kaliumLogger.e("Failed to enqueue or flush acknowledge event on $this")
+                    EventAcknowledgeResult.RETRYABLE_FAILURE
+                }
+
+                EventAcknowledgeResult.TERMINAL_FAILURE -> EventAcknowledgeResult.TERMINAL_FAILURE
             }
         }
+    }
+
+    override fun close() {
+        session?.cancel()
+        session = null
     }
 
     override suspend fun consumeLiveEvents(
@@ -129,12 +157,11 @@ internal open class NotificationApiV9 internal constructor(
                 logger.v("Websocket Received Frame: $frame")
                 when (frame) {
                     is Frame.Binary -> {
-                        // assuming here the byteArray is an ASCII/UTF-8 character set
+                        val decodedFrame = decodeConsumableNotificationFrame(frame.data)
                         val jsonString = frame.data.decodeToString()
 
                         logger.v("Binary frame content: '${deleteSensitiveItemsFromJson(jsonString)}'")
-                        val event = KtxSerializer.json.decodeFromString<ConsumableNotificationResponse>(jsonString)
-                        emit(WebSocketEvent.BinaryPayloadReceived(event))
+                        emit(decodedFrame)
                     }
 
                     else -> {
@@ -143,5 +170,38 @@ internal open class NotificationApiV9 internal constructor(
                     }
                 }
             }
+    }
+}
+
+internal fun decodeConsumableNotificationFrame(
+    rawPayload: ByteArray
+): WebSocketEvent.BinaryPayloadReceived<ConsumableNotificationResponse> {
+    require(rawPayload.size <= MAX_CONSUMABLE_NOTIFICATION_FRAME_BYTES) {
+        "Consumable notification frame exceeds the bounded wire limit"
+    }
+    val event = KtxSerializer.json.decodeFromString<ConsumableNotificationResponse>(rawPayload.decodeToString())
+    return WebSocketEvent.BinaryPayloadReceived(event, rawPayload)
+}
+
+internal const val MAX_CONSUMABLE_NOTIFICATION_FRAME_BYTES: Int =
+    256 * 1_024 + 8 * 1_024
+
+internal suspend fun acknowledgeWithLocalWriterFlush(
+    enqueue: () -> ChannelResult<Unit>,
+    flush: suspend () -> Unit,
+    writerIsActive: () -> Boolean
+): EventAcknowledgeResult {
+    if (enqueue().isFailure) return EventAcknowledgeResult.RETRYABLE_FAILURE
+    return try {
+        flush()
+        if (writerIsActive()) {
+            EventAcknowledgeResult.ACCEPTED_BY_LOCAL_WRITER
+        } else {
+            EventAcknowledgeResult.RETRYABLE_FAILURE
+        }
+    } catch (cancellation: CancellationException) {
+        throw cancellation
+    } catch (_: Throwable) {
+        EventAcknowledgeResult.RETRYABLE_FAILURE
     }
 }

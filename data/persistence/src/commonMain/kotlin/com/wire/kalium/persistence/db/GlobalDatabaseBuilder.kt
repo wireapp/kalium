@@ -33,17 +33,21 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmInline
 
 @JvmInline
 value class GlobalDatabaseSecret(val value: ByteArray)
 
+@OptIn(ExperimentalAtomicApi::class)
 class GlobalDatabaseBuilder internal constructor(
     private val sqlDriver: SqlDriver,
     private val platformDatabaseData: PlatformDatabaseData,
     private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
 ) {
+    private val closeState = AtomicInt(GLOBAL_DATABASE_OPEN)
 
     internal val database: GlobalDatabase = GlobalDatabase(
         sqlDriver,
@@ -76,8 +80,19 @@ class GlobalDatabaseBuilder internal constructor(
         get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries, queriesContext)
 
     fun nuke(): Boolean {
-        sqlDriver.close()
+        close()
         return nuke(platformDatabaseData)
+    }
+
+    /** Closes the driver without deleting any persisted global account data. */
+    fun close() {
+        if (!closeState.compareAndSet(GLOBAL_DATABASE_OPEN, GLOBAL_DATABASE_CLOSED)) return
+        sqlDriver.close()
+    }
+
+    private companion object {
+        const val GLOBAL_DATABASE_OPEN = 0
+        const val GLOBAL_DATABASE_CLOSED = 1
     }
 }
 

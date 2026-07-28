@@ -2,7 +2,7 @@
 
 Date: 2026-07-18
 
-Status: implemented for signed host-app/NSE integration testing; not production-ready.
+Status: fail-closed implementation under audit; not production-ready.
 
 ## What this path does
 
@@ -15,14 +15,20 @@ an absolute deadline. Kalium then:
 3. reads auth state through the same Keychain service and access group;
 4. resolves the UUID to the one authoritative qualified local session and its registered client ID;
 5. acquires the non-blocking account/client process lock;
-6. opens the authenticated consumable-notification WebSocket with a new synchronization marker;
-7. performs one bounded catch-up and closes at the matching marker;
-8. applies real Proteus or MLS receive bytes to the existing CoreCrypto state;
-9. resolves Proteus external content, decodes the exact `GenericMessage` protobuf, and runs the
-   notification-content extractor;
-10. converts decrypted calling content into the existing notification-only AVS input and invokes
+6. opens the encrypted App Group handoff store after both process locks are held;
+7. opens the authenticated consumable-notification WebSocket with a new synchronization marker;
+8. performs one bounded catch-up and closes at the matching marker;
+9. stages the raw event before accepting its delivery tag locally;
+10. applies real Proteus or MLS receive bytes to the existing CoreCrypto state and stages the
+   complete child batch;
+11. resolves Proteus external content and decodes the exact `GenericMessage` protobuf;
+12. converts decrypted calling content into the existing notification-only AVS input and invokes
    `:domain:calling-notifications` synchronously through the split AVS framework; and
-11. returns the decrypted candidates in `RealNotificationExtensionResult.notifications`.
+13. returns only a status, reason, bounded summary, and privacy-preserving presentation decision.
+
+Decrypted notification candidates are not part of the public result. Until the versioned policy
+snapshot and approved replacement behavior are wired, every result requires the
+privacy-preserving fallback.
 
 The entry point uses a dedicated `NotificationExtensionCoreLogic` account assembly. It does not
 construct the application `CoreLogic` or `UserSessionScope`, so it does not run startup migrations,
@@ -112,11 +118,17 @@ final class RealAvsBridge: NSObject, NotificationExtensionCallProcessor {
 AVS-produced call-notification outputs. The host can inspect them for the spike and map them to its
 CallKit/local-notification presentation layer.
 
-The entry-point flow is:
+The entry-point flow goes through the sole public production factory. The exact generated Swift
+spelling must be taken from the built framework header; this source-shaped example intentionally
+shows the security contract rather than bypassing construction:
 
 ```swift
 let avsBridge = RealAvsBridge(callbacks: avsCallbacks)
-let component = RealNotificationExtension(
+let readiness = RealNotificationExtensionProductionReadiness(
+    externallyVerifiedGateMask: externallyVerifiedGateMask,
+    hostIntegrationReadiness: hostIntegrationReadiness
+)
+let construction = RealNotificationExtensionFactory.shared.createProduction(
     configuration: RealNotificationExtensionConfiguration(
         kaliumRootPath: sharedContainer.path,
         sharedAppGroupRoot: sharedContainer.path,
@@ -124,8 +136,13 @@ let component = RealNotificationExtension(
         keychainAccessGroup: keychainAccessGroup,
         userAgent: userAgent
     ),
-    callProcessor: avsBridge
+    callProcessor: avsBridge,
+    readiness: readiness
 )
+guard construction.isAvailable, let component = construction.instance else {
+    usePrivacyPreservingFallback()
+    return
+}
 
 let request = RealNotificationExtensionRequest(
     userId: pushAccountId,
@@ -142,12 +159,8 @@ func complete(result_: RealNotificationExtensionResult) {
     let result = result_
     print("status=\(result.status) reason=\(result.reason)")
     print("frames=\(result.summary.transportFramesReceived)")
-
-    for notification in result.notifications {
-        print("kind=\(notification.kind) message=\(notification.messageId)")
-        print("conversation=\(notification.conversationId)@\(notification.conversationDomain)")
-        print("body=\(notification.body ?? "<generic>")")
-    }
+    guard result.shouldUsePrivacyPreservingFallback else { return }
+    usePrivacyPreservingFallback()
 }
 ```
 
@@ -156,30 +169,46 @@ guarded so it is delivered at most once.
 
 ## Interpreting the result
 
-- `notifications` is the list produced by real decryption and pure extraction. It is the answer to
-  “which notifications did this invocation produce?”
-- Calling candidates also run through real notification-only AVS. The AVS callback methods are the
-  authoritative incoming/missed/closed call-notification output; a `CALLING` item in `notifications`
-  shows which decrypted message fed that processor.
 - `status`, `reason`, and `summary` explain whether catch-up completed, hit a limit, lost the lock,
   reached the deadline, or deferred work to the foreground app.
-- `clientId` is the locally registered client Kalium resolved for the requested account.
-- `markerId` identifies only this bounded WebSocket session.
-- `shouldUsePrivacyPreservingFallback` remains `true` because this spike does not yet consume the
-  versioned notification-policy snapshot. Showing `body` is appropriate only for the explicit
-  integration demonstration until the host policy is wired.
+- `presentationDecision` and `shouldUsePrivacyPreservingFallback` are the only presentation-facing
+  outputs. Raw or decrypted message fields never cross the public boundary.
+- Factory construction reports invalid configuration, missing host responsibilities, blocked
+  production gates, and rejected attempts to claim code-owned gates as external evidence.
 
-## Deliberate spike safety behavior
+## Deliberate fail-closed behavior
 
-Real transport delivery tags are not acknowledged in this assembly. Events are staged only in a
-volatile per-invocation inbox, and claiming a durable transport ACK would risk message loss if iOS
-killed the NSE. The backend can therefore redeliver the same events. The bounded engine still
-enforces stage-before-process ordering, exact duplicate checks, frame/byte/batch budgets, deadline
-checks, and non-blocking process-lock acquisition.
+The volatile inbox is no longer used. Real delivery tags reach the bounded engine and are accepted
+only after the local writer durably stages the raw event in the encrypted-store implementation.
+The App Group storage boundary now uses descriptor-relative/no-follow traversal, verifies inode
+identity, effective-user ownership, type, link count and private modes, enforces complete-until-
+first-authentication file protection, and stores handoff data in SQLCipher. The factory still
+blocks production because notification policy and several code-owned/native/device gates remain
+open. API v9 now retains the exact binary WebSocket frame before DTO decoding, and the NSE persists
+the exact `data.event` value so unknown event fields survive without persisting transport delivery
+tags.
 
-This avoids writing real plaintext notification data to the existing synthetic SQLite handoff
-store. Production transport ACKs remain blocked until the App Group handoff is encrypted, durable,
-and has a socket-writer acceptance guarantee.
+There is also an unresolved CoreCrypto/handoff ordering window: child rows are committed while the
+CoreCrypto transaction is still open. A crash after child staging but before CoreCrypto commit can
+leave import-visible rows whose `cryptoStateApplied` claim is no longer true. Therefore
+`CORE_CRYPTO_HANDOFF_CRASH_ORDERING` remains blocked and cannot be asserted through external
+readiness. Production requires an explicit post-CoreCrypto-commit visibility compare-and-set before
+the foreground importer may read those children.
+
+The notification-only AVS bridge is also still code-blocked. Its callback currently runs while the
+CoreCrypto transaction is open and before the child batch and crypto state are both known committed.
+A rollback, cancellation, or crash can therefore repeat an externally visible AVS/CallKit side
+effect. The bridge code itself satisfies `NOTIFICATION_AVS_SWIFT_BRIDGE`, but
+`POST_COMMIT_IDEMPOTENT_AVS_DISPATCH` remains blocked until call work is represented by a durable,
+idempotent post-commit outbox (or an equivalent compare-and-set) and is processed only after the
+CoreCrypto commit and child visibility transition both succeed. `EXTENSION_SAFE_AVS_BINARY` is a
+separate code-owned blocker while the current AVS artifact imports application-only UIKit APIs; it
+is not externally claimable through a readiness mask.
+
+`LOCAL_WRITER_ACK_GUARANTEE` also remains blocked. The API now rejects `trySend` failure, awaits
+Ktor's `flush`, and checks that the session is still active, but Ktor documents that `flush` may
+return immediately after termination. That primitive is not a definitive frame-write fence, so the
+production factory cannot claim local-writer acceptance until the transport exposes one.
 
 MLS welcomes, missing subconversation group metadata, delayed proposal commits, new CRL distribution
 points, and any receive failure that needs active recovery return `FOREGROUND_RECOVERY_REQUIRED`.
@@ -197,8 +226,11 @@ They are not repaired or sent from the NSE.
   the full `com.wire:avs-kmp` archive with an extension-safe notification-only AVS artifact. The
   current archive still imports `UIApplication`/`sharedApplication`, so it cannot pass App Store
   extension-safety validation even though the real AVS call path builds and runs.
-- Add encrypted durable handoff persistence, cursor cutover, safe transport ACKs, and native
-  foreground import.
+- Add post-CoreCrypto-commit child visibility and a native main-database implementation of the
+  exact-once foreground importer contract.
+- Complete cursor cutover, recovery acknowledgement, account tombstoning, and downgrade ownership.
+- Add a durable, idempotent post-commit call outbox so AVS never runs inside the CoreCrypto
+  transaction and cannot repeat host-visible effects after rollback or restart.
 - Wire the notification-policy snapshot and approved generic/replacement behavior.
 - Complete signed physical-device testing for push delivery, locked-device Keychain accessibility,
   memory, cold start, expiration, owner death, real Proteus/MLS traffic, and captured real call

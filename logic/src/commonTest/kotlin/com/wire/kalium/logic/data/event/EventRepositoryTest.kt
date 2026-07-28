@@ -44,6 +44,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.SynchronizationDataDTO
+import com.wire.kalium.network.api.base.authenticated.notification.EventAcknowledgeResult
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
@@ -79,6 +80,23 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 
 class EventRepositoryTest {
+    @Test
+    fun givenAcceptedLocalAck_whenMappingResult_thenMainSyncReportsSuccess() {
+        EventAcknowledgeResult.ACCEPTED_BY_LOCAL_WRITER.toEventRepositoryResult()
+            .shouldSucceed { }
+    }
+
+    @Test
+    fun givenRetryableAckRejection_whenMappingResult_thenMainSyncReportsNetworkFailure() {
+        EventAcknowledgeResult.RETRYABLE_FAILURE.toEventRepositoryResult()
+            .shouldFail { assertIs<NetworkFailure.NoNetworkConnection>(it) }
+    }
+
+    @Test
+    fun givenTerminalAckRejection_whenMappingResult_thenMainSyncReportsTerminalFailure() {
+        EventAcknowledgeResult.TERMINAL_FAILURE.toEventRepositoryResult()
+            .shouldFail { assertIs<CoreFailure.Unknown>(it) }
+    }
 
     @Test
     fun givenLiveEvents_whenGettingLiveEvents_thenReturnFromListenLiveEvents() = runTest {
@@ -653,7 +671,7 @@ class EventRepositoryTest {
         suspend fun withAcknowledgeEvents() = apply {
             everySuspend {
                 notificationApi.acknowledgeEvents(any(), any(), any())
-            }.returns(Unit)
+            }.returns(EventAcknowledgeResult.ACCEPTED_BY_LOCAL_WRITER)
         }
 
         suspend fun withUnprocessedEvents(events: Flow<List<EventEntity>>) = apply {

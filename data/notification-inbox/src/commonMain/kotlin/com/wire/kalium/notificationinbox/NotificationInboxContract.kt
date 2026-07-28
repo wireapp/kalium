@@ -391,6 +391,7 @@ public class PendingImportChildBatch(
 /** Native main-database action; this is a versioned state mapping, not presentation policy. */
 public enum class ForegroundImportAction {
     UPSERT_APPLICATION_MESSAGE,
+    UPSERT_APPLICATION_MESSAGE_AND_SCHEDULE_FOREGROUND_RECOVERY,
     RECORD_CRYPTO_STATE_ALREADY_APPLIED,
     RECORD_COMPLETION,
     RECORD_TERMINAL_FAILURE,
