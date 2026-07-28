@@ -27,6 +27,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.util.InternalCryptoAccess
 
 /**
@@ -83,8 +84,15 @@ internal class CryptoTransactionProviderImpl(
                     proteus.transaction(name.toTransactionName("proteus")) { proteusContext ->
                         block(proteusContext)
                     }
+                } catch (e: ProteusException) {
+                    if (e.isDestroyedCoreCryptoException()) {
+                        kaliumLogger.w("Tried to use destroyed ProteusClient in transaction '$name'", e)
+                        CoreFailure.MissingClientRegistration.left()
+                    } else {
+                        throw e
+                    }
                 } catch (e: IllegalStateException) {
-                    if (e.message?.contains("already been destroyed") == true) {
+                    if (e.isDestroyedCoreCryptoException()) {
                         kaliumLogger.w("Tried to use destroyed ProteusClient in transaction '$name'", e)
                         CoreFailure.MissingClientRegistration.left()
                     } else {
@@ -105,7 +113,7 @@ internal class CryptoTransactionProviderImpl(
                         block(mlsContext)
                     }
                 } catch (e: IllegalStateException) {
-                    if (e.message?.contains("already been destroyed") == true) {
+                    if (e.isDestroyedCoreCryptoException()) {
                         kaliumLogger.w("Tried to use destroyed MLSClient in transaction '$name'", e)
                         MLSFailure.Disabled.left()
                     } else {
@@ -130,8 +138,15 @@ internal class CryptoTransactionProviderImpl(
                     block(withCryptoContext(proteusCtx, mlsCtx))
                 } ?: block(withCryptoContext(proteusCtx, null))
             }
+        } catch (e: ProteusException) {
+            if (e.isDestroyedCoreCryptoException()) {
+                kaliumLogger.w("Tried to use destroyed crypto client in combined transaction '$name'", e)
+                CoreFailure.MissingClientRegistration.left()
+            } else {
+                throw e
+            }
         } catch (e: IllegalStateException) {
-            if (e.message?.contains("already been destroyed") == true) {
+            if (e.isDestroyedCoreCryptoException()) {
                 kaliumLogger.w("Tried to use destroyed crypto client in combined transaction '$name'", e)
                 CoreFailure.MissingClientRegistration.left()
             } else {
@@ -149,3 +164,7 @@ internal class CryptoTransactionProviderImpl(
         return this?.let { "${protocol}_$it" } ?: protocol
     }
 }
+
+private fun Throwable.isDestroyedCoreCryptoException(): Boolean =
+    generateSequence(this) { it.cause }
+        .any { it.message?.contains("already been destroyed") == true }
