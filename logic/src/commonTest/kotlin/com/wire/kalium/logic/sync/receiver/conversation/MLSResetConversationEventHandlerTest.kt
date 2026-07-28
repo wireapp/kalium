@@ -60,7 +60,7 @@ class MLSResetConversationEventHandlerTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
+            arrangement.mlsConversationRepository.updateGroupIdAndState(any(), any(), any())
         }
     }
 
@@ -87,7 +87,6 @@ class MLSResetConversationEventHandlerTest {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
                 eq(CONVERSATION_ID),
                 eq(NEW_GROUP_ID),
-                eq(0),
                 eq(ConversationEntity.GroupState.PENDING_AFTER_RESET),
             )
         }
@@ -96,11 +95,9 @@ class MLSResetConversationEventHandlerTest {
     @Test
     fun givenNewGroupAlreadyEstablished_whenHandlingEvent_thenShouldUpdateWithEstablishedState() =
         runTest {
-            val newGroupEpoch = 42L
             val (arrangement, handler) = arrange {
                 withLeaveGroupSucceeding()
                 withHasEstablishedMLSGroupReturning(true)
-                withNewGroupEpoch(newGroupEpoch)
                 withUpdateGroupIdAndStateSucceeding()
             }
 
@@ -121,7 +118,6 @@ class MLSResetConversationEventHandlerTest {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
                     eq(CONVERSATION_ID),
                     eq(NEW_GROUP_ID),
-                    eq(newGroupEpoch),
                     eq(ConversationEntity.GroupState.ESTABLISHED)
                 )
             }
@@ -153,7 +149,6 @@ class MLSResetConversationEventHandlerTest {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
                     eq(CONVERSATION_ID),
                     eq(NEW_GROUP_ID),
-                    eq(0L),
                     eq(ConversationEntity.GroupState.PENDING_AFTER_RESET)
                 )
             }
@@ -180,7 +175,6 @@ class MLSResetConversationEventHandlerTest {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
                     matches { it == event.conversationId },
                     matches { it == event.newGroupID },
-                    eq(0L),
                     matches { it == ConversationEntity.GroupState.PENDING_AFTER_RESET }
                 )
             }
@@ -201,7 +195,6 @@ class MLSResetConversationEventHandlerTest {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
                 eq(CONVERSATION_ID),
                 eq(NEW_GROUP_ID),
-                eq(0L),
                 eq(ConversationEntity.GroupState.PENDING_AFTER_RESET)
             )
         }
@@ -209,11 +202,9 @@ class MLSResetConversationEventHandlerTest {
 
     @Test
     fun givenAllSucceedsAndGroupIsEstablished_whenHandlingEvent_thenShouldLeaveGroupAndUpdateState() = runTest {
-        val newGroupEpoch = 44L
         val (arrangement, handler) = arrange {
             withLeaveGroupSucceeding()
             withHasEstablishedMLSGroupReturning(true)
-            withNewGroupEpoch(newGroupEpoch)
             withUpdateGroupIdAndStateSucceeding()
         }
 
@@ -231,7 +222,6 @@ class MLSResetConversationEventHandlerTest {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
                 eq(CONVERSATION_ID),
                 eq(NEW_GROUP_ID),
-                eq(newGroupEpoch),
                 eq(ConversationEntity.GroupState.ESTABLISHED)
             )
         }
@@ -260,12 +250,6 @@ class MLSResetConversationEventHandlerTest {
             } returns Either.Right(hasGroup)
         }
 
-        suspend fun withNewGroupEpoch(newGroupEpoch: Long) = apply {
-            everySuspend {
-                mlsContext.conversationEpoch(any())
-            } returns newGroupEpoch.toULong()
-        }
-
         suspend fun withHasEstablishedMLSGroupFailing(failure: MLSFailure) = apply {
             everySuspend {
                 mlsConversationRepository.hasEstablishedMLSGroup(any(), any())
@@ -274,13 +258,13 @@ class MLSResetConversationEventHandlerTest {
 
         suspend fun withUpdateGroupIdAndStateSucceeding() = apply {
             everySuspend {
-                mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
+                mlsConversationRepository.updateGroupIdAndState(any(), any(), any())
             } returns Either.Right(Unit)
         }
 
         suspend fun withUpdateGroupIdAndStateFailing(failure: CoreFailure) = apply {
             everySuspend {
-                mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
+                mlsConversationRepository.updateGroupIdAndState(any(), any(), any())
             } returns Either.Left(failure)
         }
 

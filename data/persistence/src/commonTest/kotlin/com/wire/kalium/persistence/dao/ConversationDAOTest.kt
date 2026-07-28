@@ -294,7 +294,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                     groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                     groupState = ConversationEntity.GroupState.ESTABLISHED,
-                    epoch = 123UL,
                     cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
                     keyingMaterialLastUpdate = Instant.DISTANT_PAST
                 )
@@ -319,7 +318,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                     groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                     groupState = ConversationEntity.GroupState.ESTABLISHED,
-                    epoch = 123UL,
                     cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
                     keyingMaterialLastUpdate = Instant.DISTANT_PAST
                 )
@@ -344,7 +342,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                     groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                     groupState = ConversationEntity.GroupState.ESTABLISHED,
-                    epoch = 123UL,
                     cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
                     keyingMaterialLastUpdate = Instant.DISTANT_PAST
                 )
@@ -2512,7 +2509,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
                 keyingMaterialLastUpdate = Instant.fromEpochMilliseconds(0),
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-                epoch = 0UL
             )
         )
 
@@ -2638,21 +2634,18 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationExists_whenUpdateMLSGroupIdAndState_thenAllFieldsAreUpdated() = runTest(dispatcher) {
+    fun givenConversationExists_whenUpdateMLSGroupIdAndState_thenGroupIdAndStateAreUpdated() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity2)
 
         val newGroupId = "updated_group_id"
         val newState = ConversationEntity.GroupState.ESTABLISHED
-        val newEpoch = 42L
-
-        conversationDAO.updateMLSGroupIdAndState(conversationEntity2.id, newGroupId, newEpoch, newState)
+        conversationDAO.updateMLSGroupIdAndState(conversationEntity2.id, newGroupId, newState)
 
         val updatedConversation = conversationDAO.getConversationById(conversationEntity2.id)
         assertNotNull(updatedConversation)
         val protocolInfo = updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS
         assertEquals(newGroupId, protocolInfo.groupId)
         assertEquals(newState, protocolInfo.groupState)
-        assertEquals(newEpoch, protocolInfo.epoch.toLong())
     }
 
     @Test
@@ -2662,7 +2655,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 groupId = originalGroupId,
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
-                epoch = 0UL,
                 keyingMaterialLastUpdate = Instant.DISTANT_PAST,
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
@@ -2671,16 +2663,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val newGroupId = "new_group_id"
         val newState = ConversationEntity.GroupState.PENDING_CREATION
-        val newEpoch = 44L
-
-        conversationDAO.updateMLSGroupIdAndState(originalConversation.id, newGroupId, newEpoch, newState)
+        conversationDAO.updateMLSGroupIdAndState(originalConversation.id, newGroupId, newState)
 
         val updatedConversation = conversationDAO.getConversationById(originalConversation.id)
         assertNotNull(updatedConversation)
         val protocolInfo = updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS
         assertEquals(newGroupId, protocolInfo.groupId)
         assertEquals(newState, protocolInfo.groupState)
-        assertEquals(newEpoch, protocolInfo.epoch.toLong())
     }
 
     @Test
@@ -2688,9 +2677,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val nonExistentId = QualifiedIDEntity("non_existent", "domain.com")
         val newGroupId = "new_group_id"
         val newState = ConversationEntity.GroupState.ESTABLISHED
-        val newEpoch = 44L
-
-        conversationDAO.updateMLSGroupIdAndState(nonExistentId, newGroupId, newEpoch, newState)
+        conversationDAO.updateMLSGroupIdAndState(nonExistentId, newGroupId, newState)
 
         val conversation = conversationDAO.getConversationById(nonExistentId)
         assertNull(conversation)
@@ -2711,9 +2698,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationDAO.insertConversation(conversation)
 
             val newGroupId = "group_id_$index"
-            val newEpoch = index.toLong()
-
-            conversationDAO.updateMLSGroupIdAndState(conversationId, newGroupId, newEpoch, state)
+            conversationDAO.updateMLSGroupIdAndState(conversationId, newGroupId, state)
 
             val updatedConversation = conversationDAO.getConversationById(conversationId)
             assertNotNull(updatedConversation)
@@ -2762,7 +2747,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 "mls-group-pending-reset",
                 ConversationEntity.GroupState.PENDING_AFTER_RESET,
-                0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
@@ -2791,7 +2775,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 "mls-group-pending-join",
                 ConversationEntity.GroupState.PENDING_JOIN,
-                0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
@@ -2816,7 +2799,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 "mls-group-pending-join-non-strict",
                 ConversationEntity.GroupState.PENDING_JOIN,
-                0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
@@ -2880,7 +2862,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRoleList = accessRole,
             protocol = protocol,
             mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-            mlsEpoch = 0L,
             mlsGroupId = mlsGroupId,
             mlsLastKeyingMaterialUpdateDate = mlsLastKeyingMaterialUpdate,
             mlsGroupState = mlsGroupState,
@@ -2917,7 +2898,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                 groupState = ConversationEntity.GroupState.PENDING_AFTER_RESET,
-                epoch = 123UL,
                 cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
                 keyingMaterialLastUpdate = Instant.DISTANT_PAST
             )
@@ -2942,7 +2922,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                 groupState = ConversationEntity.GroupState.PENDING_AFTER_RESET,
-                epoch = 123UL,
                 cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
                 keyingMaterialLastUpdate = Instant.DISTANT_PAST
             )
@@ -2967,7 +2946,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                 groupState = ConversationEntity.GroupState.PENDING_CREATION,
-                epoch = 123UL,
                 cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
                 keyingMaterialLastUpdate = Instant.DISTANT_PAST
             )
@@ -2992,7 +2970,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
-                epoch = 123UL,
                 cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
                 keyingMaterialLastUpdate = Instant.DISTANT_PAST
             )
@@ -3017,7 +2994,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
-                epoch = 123UL,
                 cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
                 keyingMaterialLastUpdate = Instant.DISTANT_PAST
             )
@@ -3042,7 +3018,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                 groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                 groupState = ConversationEntity.GroupState.PENDING_JOIN,
-                epoch = 123UL,
                 cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
                 keyingMaterialLastUpdate = Instant.DISTANT_PAST
             )
@@ -3335,14 +3310,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val mlsProtocolInfo1 = ConversationEntity.ProtocolInfo.MLS(
             "group2",
             ConversationEntity.GroupState.ESTABLISHED,
-            0UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
             cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
         val mlsProtocolInfo2 = ConversationEntity.ProtocolInfo.MLS(
             "group3",
             ConversationEntity.GroupState.PENDING_JOIN,
-            0UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
             cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
@@ -3439,7 +3412,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.MLS(
                 "group4",
                 ConversationEntity.GroupState.ESTABLISHED,
-                0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             ),
@@ -3499,7 +3471,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.Mixed(
                 "group6",
                 ConversationEntity.GroupState.ESTABLISHED,
-                0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             ),

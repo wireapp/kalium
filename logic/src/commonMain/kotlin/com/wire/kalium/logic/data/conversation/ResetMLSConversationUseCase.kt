@@ -126,13 +126,13 @@ internal class ResetMLSConversationUseCaseImpl(
 
         return getMlsProtocolInfo(conversationId)
             .flatMap { localProtocolInfo ->
-                getLocalResetInfo(mlsContext, localProtocolInfo)
-                    .flatMap { epoch ->
+                getResetInfo(conversationId, mlsContext, localProtocolInfo)
+                    .flatMap { resetInfo ->
                         resetConversationWithRetryOnMlsStaleMessage(
                             conversationId = conversationId,
                             mlsContext = mlsContext,
-                            localGroupId = localProtocolInfo.groupId,
-                            epoch = epoch
+                            localGroupId = resetInfo.groupId,
+                            epoch = resetInfo.epoch
                         )
                     }
             }
@@ -165,16 +165,20 @@ internal class ResetMLSConversationUseCaseImpl(
             }
     }
 
-    private suspend fun getLocalResetInfo(
+    private suspend fun getResetInfo(
+        conversationId: ConversationId,
         mlsContext: MlsCoreCryptoContext,
         protocolInfo: Conversation.ProtocolInfo.MLSCapable
-    ): Either<CoreFailure, ULong> =
+    ): Either<CoreFailure, ResetInfo> =
         wrapMLSRequest {
-            mlsContext.conversationEpoch(protocolInfo.groupId.toCrypto())
+            ResetInfo(
+                groupId = protocolInfo.groupId,
+                epoch = mlsContext.conversationEpoch(protocolInfo.groupId.toCrypto())
+            )
         }.flatMapLeft {
             logger.e("Failed to get local epoch for reset conversation: $it.")
             if (it is MLSFailure.ConversationNotFound) {
-                protocolInfo.epoch.right()
+                fetchResetInfo(conversationId)
             } else {
                 it.left()
             }

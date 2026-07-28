@@ -27,7 +27,6 @@ object MockProtocolInfo {
     fun mls(groupID: GroupID = GroupID("testGroupId")) = ProtocolInfo.MLS(
         groupID,
         ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-        1UL,
         Instant.parse("2021-03-30T15:36:00.000Z"),
         cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )
@@ -35,7 +34,6 @@ object MockProtocolInfo {
     fun mlsEntity(groupID: String = "testGroupId") = ConversationEntity.ProtocolInfo.MLS(
         groupId = groupID,
         ConversationEntity.GroupState.PENDING_JOIN,
-        epoch = 0UL,
         Instant.parse("2021-03-30T15:36:00.000Z"),
         cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )

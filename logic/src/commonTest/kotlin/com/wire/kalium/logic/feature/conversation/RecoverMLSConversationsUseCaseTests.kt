@@ -29,11 +29,14 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCas
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
 import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -256,6 +259,24 @@ class RecoverMLSConversationsUseCaseTests {
             everySuspend {
                 conversationRepository.getConversationsByGroupState(any())
             } returns either
+            if (either is Either.Right) {
+                everySuspend {
+                    conversationRepository.fetchConversationListDetails(any())
+                } returns Either.Right(
+                    ConversationResponseDTO(
+                        conversationsFound = either.value.mapIndexed { index, conversation ->
+                            TestConversation.CONVERSATION_RESPONSE.copy(
+                                id = conversation.id.toApi(),
+                                groupId = (conversation.protocol as Conversation.ProtocolInfo.MLS).groupId.value,
+                                epoch = (index + 1).toULong(),
+                                protocol = ConvProtocol.MLS
+                            )
+                        },
+                        conversationsNotFound = emptyList(),
+                        conversationsFailed = emptyList()
+                    )
+                )
+            }
         }
 
         suspend fun withJoinExistingMLSConversationUseCaseSuccessful() = apply {
@@ -309,7 +330,6 @@ class RecoverMLSConversationsUseCaseTests {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID1,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -319,7 +339,6 @@ class RecoverMLSConversationsUseCaseTests {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID2,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )

@@ -40,12 +40,6 @@ internal class MLSResetConversationEventHandlerImpl(
                 event.newGroupID
             ).getOrElse { false }
 
-            val newEpoch = if (hasEstablishedMLSGroup) {
-                mlsContext.conversationEpoch(event.newGroupID.value).toLong()
-            } else {
-                0L
-            }
-
             val newState = if (hasEstablishedMLSGroup) {
                 // already have the group, no need to join
                 // can mean that the welcome event arrived before the reset
@@ -59,7 +53,6 @@ internal class MLSResetConversationEventHandlerImpl(
                 event.conversationId,
                 event.newGroupID,
                 groupState = newState,
-                newEpoch = newEpoch,
             )
         }
     }

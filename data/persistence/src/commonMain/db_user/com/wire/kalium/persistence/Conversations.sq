@@ -11,7 +11,6 @@ CREATE TABLE Conversation (
     team_id TEXT,
     mls_group_id TEXT,
     mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
-    mls_epoch INTEGER DEFAULT 0 NOT NULL,
     mls_proposal_timer TEXT,
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
@@ -109,14 +108,13 @@ WHERE qualified_id = :qualifiedId;
 insertConversation:
 -- @NotifyCustomKey conversation_list_membership
 -- @NotifyCustomKey Conversation
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, channel_access, channel_add_permission, wire_cell, history_sharing_retention_seconds)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, channel_access, channel_add_permission, wire_cell, history_sharing_retention_seconds)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
 team_id = excluded.team_id,
 mls_group_id = excluded.mls_group_id,
-mls_epoch = excluded.mls_epoch,
 mls_group_state = CASE
     WHEN Conversation.mls_group_state = 'ESTABLISHED' THEN excluded.mls_group_state
     WHEN excluded.mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN excluded.mls_group_state
@@ -194,8 +192,7 @@ SET mls_group_id = :new_group_id,
         WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
         WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
         ELSE mls_group_state
-    END,
-    mls_epoch = :new_epoch
+    END
 WHERE qualified_id = :conversation_id;
 
 updateConversationNotificationsDateWithTheLastMessage:
@@ -311,7 +308,7 @@ SELECT
 FROM Conversation WHERE qualified_id = ?;
 
 selectProtocolInfoByQualifiedId:
-SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
+SELECT protocol, mls_group_id, mls_group_state,
 mls_last_keying_material_update_date, mls_cipher_suite FROM Conversation WHERE qualified_id = ?;
 
 selectReceiptModeFromGroupConversationByQualifiedId:
@@ -612,8 +609,8 @@ insertConversationOrUpdateLastModifiedDate:
 -- @NotifyCustomKey conversation_list_membership
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey Conversation
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, channel_access, channel_add_permission, wire_cell)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, channel_access, channel_add_permission, wire_cell)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
     last_modified_date = MAX(last_modified_date, excluded.last_modified_date);
 

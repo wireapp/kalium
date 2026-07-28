@@ -193,7 +193,6 @@ internal class ObservableMLSConversationRepository(
     override suspend fun updateGroupIdAndState(
         conversationId: ConversationId,
         newGroupId: GroupID,
-        newEpoch: Long,
         groupState: ConversationEntity.GroupState
-    ): Either<CoreFailure, Unit> = delegate.updateGroupIdAndState(conversationId, newGroupId, newEpoch, groupState)
+    ): Either<CoreFailure, Unit> = delegate.updateGroupIdAndState(conversationId, newGroupId, groupState)
 }

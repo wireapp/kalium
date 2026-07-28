@@ -208,7 +208,6 @@ class MLSOneOnOneConversationResolverTest {
             id = ConversationId("one-on-one-mls-NOT-initialized", "test"),
             protocol = TestConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION,
-                epoch = 0U
             ),
         )
 
@@ -216,7 +215,6 @@ class MLSOneOnOneConversationResolverTest {
             id = ConversationId("one-on-one-mls-initialized", "test"),
             protocol = TestConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-                epoch = 0U
             ),
         )
 

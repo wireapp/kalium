@@ -18,11 +18,15 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.ConversationPersistenceApi
 
 /**
@@ -73,4 +77,50 @@ internal class FetchConversationUseCaseImpl(
         reason: ConversationSyncReason
     ): Either<CoreFailure, Unit> =
         transactionProvider.transaction { invoke(it, conversationId, reason) }
+}
+
+internal interface FetchMLSConversationGroupWithEpochUseCase {
+    suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+    ): Either<CoreFailure, GroupWithEpoch>
+}
+
+@OptIn(ConversationPersistenceApi::class)
+internal class FetchMLSConversationGroupWithEpochUseCaseImpl(
+    private val conversationRepository: ConversationRepository,
+    private val persistConversations: PersistConversationsUseCase,
+) : FetchMLSConversationGroupWithEpochUseCase {
+
+    override suspend fun invoke(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+    ): Either<CoreFailure, GroupWithEpoch> =
+        conversationRepository.fetchConversation(conversationId).flatMap { response ->
+            persistConversations(
+                transactionContext = transactionContext,
+                conversations = listOf(response),
+                invalidateMembers = true,
+                reason = ConversationSyncReason.Other
+            ).flatMap {
+                response.toGroupWithEpoch()
+            }
+        }
+
+    private fun ConversationResponse.toGroupWithEpoch(): Either<CoreFailure, GroupWithEpoch> {
+        val remoteGroupId = groupId
+        val remoteEpoch = epoch
+        return when {
+            protocol != ConvProtocol.MLS -> Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
+            remoteGroupId == null -> Either.Left(
+                CoreFailure.Unknown(IllegalStateException("Remote conversation is missing MLS group id."))
+            )
+
+            remoteEpoch == null -> Either.Left(
+                CoreFailure.Unknown(IllegalStateException("Remote conversation is missing MLS epoch."))
+            )
+
+            else -> Either.Right(GroupWithEpoch(GroupID(remoteGroupId), remoteEpoch))
+        }
+    }
 }

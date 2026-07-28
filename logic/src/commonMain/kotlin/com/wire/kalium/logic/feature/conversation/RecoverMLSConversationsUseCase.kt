@@ -36,6 +36,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.id.toModel
 
 internal sealed class RecoverMLSConversationsResult {
     internal data object Success : RecoverMLSConversationsResult()
@@ -67,22 +68,49 @@ internal class RecoverMLSConversationsUseCaseImpl(
         } else {
             conversationRepository.getConversationsByGroupState(GroupState.ESTABLISHED)
                 .flatMap { groups ->
-                    groups.map { recoverMLSGroup(transactionContext, it) }
-                        .foldToEitherWhileRight(Unit) { value, _ -> value }
+                    recoverMLSGroups(transactionContext, groups)
                 }.fold(
                     { RecoverMLSConversationsResult.Failure(it) },
                     { RecoverMLSConversationsResult.Success }
                 )
         }
 
+    private suspend fun recoverMLSGroups(
+        transactionContext: CryptoTransactionContext,
+        conversations: List<Conversation>
+    ): Either<CoreFailure, Unit> {
+        if (conversations.isEmpty()) return Either.Right(Unit)
+
+        return conversationRepository.fetchConversationListDetails(conversations.map { it.id })
+            .flatMap { response ->
+                val remoteConversations = response.conversationsFound.associateBy { it.id.toModel() }
+                conversations.map { conversation ->
+                    val remoteConversation = remoteConversations[conversation.id]
+                        ?: return@map Either.Left(
+                            CoreFailure.Unknown(
+                                IllegalStateException("Remote conversation details are missing for ${conversation.id}.")
+                            )
+                        )
+                    val remoteEpoch = remoteConversation.epoch
+                        ?: return@map Either.Left(
+                            CoreFailure.Unknown(
+                                IllegalStateException("Remote conversation is missing MLS epoch for ${conversation.id}.")
+                            )
+                        )
+                    recoverMLSGroup(transactionContext, conversation, remoteEpoch)
+                }.foldToEitherWhileRight(Unit) { value, _ -> value }
+            }
+    }
+
     private suspend fun recoverMLSGroup(
         transactionContext: CryptoTransactionContext,
-        conversation: Conversation
+        conversation: Conversation,
+        remoteEpoch: ULong,
     ): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
         return if (protocol is Conversation.ProtocolInfo.MLS) {
             transactionContext.wrapInMLSContext { mlsContext ->
-                mlsConversationRepository.isLocalGroupEpochStale(mlsContext, protocol.groupId, protocol.epoch)
+                mlsConversationRepository.isLocalGroupEpochStale(mlsContext, protocol.groupId, remoteEpoch)
             }
                 .fold({ checkEpochFailure ->
                     if (checkEpochFailure is MLSFailure.ConversationNotFound) {

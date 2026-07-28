@@ -48,12 +48,14 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.ConversationPersistenceApi
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -67,6 +69,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(ConversationPersistenceApi::class)
 class JoinExistingMLSConversationUseCaseTest {
 
     @Test
@@ -159,6 +162,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION)
+                .withRemoteEpoch(0UL)
                 .withGetConversationMembersSuccessful(members)
                 .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet(), emptySet()))
                 .arrange()
@@ -185,6 +189,7 @@ class JoinExistingMLSConversationUseCaseTest {
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
             .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION)
+            .withRemoteEpoch(0UL)
             .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet(), emptySet()))
             .arrange()
 
@@ -211,6 +216,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION)
+                .withRemoteEpoch(0UL)
                 .withGetConversationMembersSuccessful(members)
                 .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet(), emptySet()))
                 .arrange()
@@ -324,6 +330,7 @@ class JoinExistingMLSConversationUseCaseTest {
         val resetMlsConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
         private var localGroupExists: Boolean = false
         private var localGroupEpoch: ULong = LOCAL_GROUP_EPOCH
+        private var remoteEpoch: ULong = 1UL
 
         val selfUserId = TestUser.USER_ID
 
@@ -352,12 +359,23 @@ class JoinExistingMLSConversationUseCaseTest {
                 conversationRepository.updateConversationGroupState(any(), any())
             } returns Either.Right(Unit)
             everySuspend {
-                mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
+                mlsConversationRepository.updateGroupIdAndState(any(), any(), any())
             } returns Either.Right(Unit)
 
             everySuspend {
                 resetMlsConversation.invoke(any())
             } returns ResetMLSConversationResult.Success
+            everySuspend {
+                conversationRepository.fetchConversation(any())
+            } calls {
+                Either.Right(
+                    TestConversation.CONVERSATION_RESPONSE.copy(
+                        groupId = GROUP_ID1.value,
+                        epoch = remoteEpoch,
+                        protocol = ConvProtocol.MLS
+                    )
+                )
+            }
         }
 
         @Suppress("MaxLineLength")
@@ -410,6 +428,10 @@ class JoinExistingMLSConversationUseCaseTest {
 
         suspend fun withLocalGroupEpoch(epoch: ULong) = apply {
             localGroupEpoch = epoch
+        }
+
+        suspend fun withRemoteEpoch(epoch: ULong) = apply {
+            remoteEpoch = epoch
         }
 
         suspend fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
@@ -468,7 +490,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID1,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -478,7 +499,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID2,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -488,7 +508,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID3,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -498,7 +517,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID3,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET,
-                    epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -508,7 +526,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID3,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET,
-                    epoch = 2UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -518,7 +535,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID3,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-                    epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -528,7 +544,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID_SELF,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -538,7 +553,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID_ONE_ON_ONE,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
-                    epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )

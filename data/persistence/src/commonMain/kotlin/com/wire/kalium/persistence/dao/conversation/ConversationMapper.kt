@@ -53,7 +53,6 @@ data object ConversationMapper {
         selfRole: MemberEntity.Role?,
         protocol: ConversationEntity.Protocol,
         mlsCipherSuite: ConversationEntity.CipherSuite,
-        mlsEpoch: Long,
         mlsGroupId: String?,
         mlsLastKeyingMaterialUpdateDate: Instant,
         mlsGroupState: ConversationEntity.GroupState,
@@ -90,7 +89,6 @@ data object ConversationMapper {
             protocol,
             mlsGroupId,
             mlsGroupState,
-            mlsEpoch,
             mlsLastKeyingMaterialUpdateDate,
             mlsCipherSuite
         ),
@@ -104,7 +102,6 @@ data object ConversationMapper {
         accessRoleList = accessRoleList,
         protocol = protocol,
         mlsCipherSuite = mlsCipherSuite,
-        mlsEpoch = mlsEpoch,
         mlsGroupId = mlsGroupId,
         mlsLastKeyingMaterialUpdateDate = mlsLastKeyingMaterialUpdateDate,
         mlsGroupState = mlsGroupState,
@@ -146,7 +143,6 @@ data object ConversationMapper {
         teamId: String?,
         mlsGroupId: String?,
         mlsGroupState: ConversationEntity.GroupState,
-        mlsEpoch: Long,
         mlsProposalTimer: String?,
         protocol: ConversationEntity.Protocol,
         mutedStatus: ConversationEntity.MutedStatus,
@@ -186,7 +182,6 @@ data object ConversationMapper {
             protocol,
             mlsGroupId,
             mlsGroupState,
-            mlsEpoch,
             mlsLastKeyingMaterialUpdateDate,
             mlsCipherSuite
         ),
@@ -220,7 +215,6 @@ data object ConversationMapper {
         team_id: String?,
         mls_group_id: String?,
         mls_group_state: ConversationEntity.GroupState,
-        mls_epoch: Long,
         mls_proposal_timer: String?,
         protocol: ConversationEntity.Protocol,
         muted_status: ConversationEntity.MutedStatus,
@@ -260,7 +254,6 @@ data object ConversationMapper {
             protocol,
             mls_group_id,
             mls_group_state,
-            mls_epoch,
             mls_last_keying_material_update_date,
             mls_cipher_suite
         ),
@@ -294,7 +287,6 @@ data object ConversationMapper {
         team_id: String?,
         mls_group_id: String?,
         mls_group_state: ConversationEntity.GroupState,
-        mls_epoch: Long,
         mls_proposal_timer: String?,
         protocol: ConversationEntity.Protocol,
         muted_status: ConversationEntity.MutedStatus,
@@ -335,7 +327,6 @@ data object ConversationMapper {
             team_id = team_id,
             mls_group_id = mls_group_id,
             mls_group_state = mls_group_state,
-            mls_epoch = mls_epoch,
             mls_proposal_timer = mls_proposal_timer,
             protocol = protocol,
             muted_status = muted_status,
@@ -376,7 +367,6 @@ data object ConversationMapper {
         protocol: ConversationEntity.Protocol,
         mlsGroupId: String?,
         mlsGroupState: ConversationEntity.GroupState,
-        mlsEpoch: Long,
         mlsLastKeyingMaterialUpdate: Instant,
         mlsCipherSuite: ConversationEntity.CipherSuite
     ): ConversationEntity.ProtocolInfo {
@@ -384,7 +374,6 @@ data object ConversationMapper {
             ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
                 mlsGroupId ?: "",
                 mlsGroupState,
-                mlsEpoch.toULong(),
                 mlsLastKeyingMaterialUpdate,
                 mlsCipherSuite
             )
@@ -392,7 +381,6 @@ data object ConversationMapper {
             ConversationEntity.Protocol.MIXED -> ConversationEntity.ProtocolInfo.Mixed(
                 mlsGroupId ?: "",
                 mlsGroupState,
-                mlsEpoch.toULong(),
                 mlsLastKeyingMaterialUpdate,
                 mlsCipherSuite
             )

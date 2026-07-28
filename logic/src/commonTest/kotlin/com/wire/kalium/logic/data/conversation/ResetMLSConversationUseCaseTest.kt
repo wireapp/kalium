@@ -17,21 +17,14 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.common.error.CommonizedMLSException
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import dev.mokkery.MockMode
-import dev.mokkery.answering.returns
-import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.mock
-import dev.mokkery.verify.VerifyMode
-import dev.mokkery.verifySuspend
-import dev.mokkery.answering.calls
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.GroupID
@@ -45,6 +38,16 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.ConversationPersistenceApi
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -133,6 +136,25 @@ class ResetMLSConversationUseCaseTest {
 
     @OptIn(ConversationPersistenceApi::class)
     @Test
+    fun givenLocalGroupIsMissing_whenUseCaseCalled_thenResetUsesBackendEpoch() = runTest {
+        val remoteEpoch = 21UL
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withCCConversationNotFound()
+            .arrange()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.fetchConversation(eq(TEST_CONVERSATION_ID))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(remoteEpoch))
+        }
+    }
+
+    @OptIn(ConversationPersistenceApi::class)
+    @Test
     fun givenResetReturnsMlsStaleMessage_whenUseCaseCalled_thenConversationIsRefetchedAndResetRetriedWithRemoteEpoch() = runTest {
         val remoteEpoch = 42UL
 
@@ -208,7 +230,6 @@ class ResetMLSConversationUseCaseTest {
                     protocol = Conversation.ProtocolInfo.MLS(
                         groupId = GroupID(updatedGroupId),
                         groupState = TestConversation.MLS_PROTOCOL_INFO.groupState,
-                        epoch = refreshedEpoch,
                         keyingMaterialLastUpdate = TestConversation.MLS_PROTOCOL_INFO.keyingMaterialLastUpdate,
                         cipherSuite = TestConversation.MLS_PROTOCOL_INFO.cipherSuite
                     )
@@ -396,6 +417,7 @@ class ResetMLSConversationUseCaseTest {
         ))
         private var resetConversationResults: List<Either<NetworkFailure, Unit>> = listOf(Unit.right())
         private var conversations: List<Conversation> = listOf(TestConversation.MLS_CONVERSATION)
+        private var ccConversationNotFound = false
 
         fun withCompileTimeFlagDisabled() = apply {
             kaliumConfigs = kaliumConfigs.copy(isMlsResetEnabled = false)
@@ -446,6 +468,10 @@ class ResetMLSConversationUseCaseTest {
             resetConversationResults = results.toList()
         }
 
+        fun withCCConversationNotFound() = apply {
+            ccConversationNotFound = true
+        }
+
         fun withLeaveGroupFailing() = apply {
             everySuspend {
                 mlsConversationRepository.leaveGroup(any(), any())
@@ -461,9 +487,18 @@ class ResetMLSConversationUseCaseTest {
             withMLSTransactionReturning(Either.Right(Unit))
             withTransactionReturning(Either.Right(Unit))
 
-            everySuspend {
-                mlsContext.conversationEpoch(any())
-            } returns 15UL
+            if (ccConversationNotFound) {
+                everySuspend {
+                    mlsContext.conversationEpoch(any())
+                } throws CommonizedMLSException(
+                    failure = MLSFailure.ConversationNotFound,
+                    cause = IllegalStateException("Conversation not found")
+                )
+            } else {
+                everySuspend {
+                    mlsContext.conversationEpoch(any())
+                } returns 15UL
+            }
 
             everySuspend {
                 conversationRepository.getConversationById(any())

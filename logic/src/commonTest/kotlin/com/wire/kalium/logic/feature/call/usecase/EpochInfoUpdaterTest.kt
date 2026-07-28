@@ -161,7 +161,6 @@ class EpochInfoUpdaterTest {
         private val mlsProtocolInfo = Conversation.ProtocolInfo.MLS(
             groupId = GroupID("groupId"),
             groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-            epoch = 1.toULong(),
             keyingMaterialLastUpdate = Instant.DISTANT_PAST,
             cipherSuite = CipherSuite.fromTag(1)
         )

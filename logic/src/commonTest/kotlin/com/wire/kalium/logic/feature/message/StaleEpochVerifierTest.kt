@@ -19,14 +19,12 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.ConversationSyncReason
-import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.FetchMLSConversationGroupWithEpochUseCaseImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.conversation.SubConversation
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -85,11 +83,7 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.fetchConversationUseCase.invoke(
-                mokkeryEq(arrangement.transactionContext),
-                mokkeryEq(CONVERSATION_ID),
-                mokkeryEq(ConversationSyncReason.Other)
-            )
+            arrangement.conversationRepository.fetchConversation(mokkeryEq(CONVERSATION_ID))
         }
     }
 
@@ -282,7 +276,7 @@ class StaleEpochVerifierTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.fetchConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            arrangement.conversationRepository.fetchConversation(mokkeryAny())
         }
     }
 
@@ -294,27 +288,16 @@ class StaleEpochVerifierTest {
         val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
         val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
         val joinExistingMLSConversationUseCase = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
-        val fetchConversationUseCase = mock<FetchConversationUseCase>(mode = MockMode.autoUnit)
+        val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withFetchConversationResponse(result: Either<CoreFailure, ConversationResponse>) {
             everySuspend {
-                fetchConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny())
-            } returns when (result) {
-                is Either.Left -> Either.Left(result.value)
-                is Either.Right -> Either.Right(Unit)
-            }
-
-            val localProtocolInfo: Either<StorageFailure, Conversation.ProtocolInfo> = when (result) {
-                is Either.Left -> Either.Left(StorageFailure.Generic(IllegalStateException(result.value.toString())))
-                is Either.Right -> when (result.value.protocol) {
-                    ConvProtocol.MLS -> Either.Right(TestConversation.MLS_PROTOCOL_INFO)
-                    else -> Either.Right(Conversation.ProtocolInfo.Proteus)
-                }
-            }
+                conversationRepository.fetchConversation(mokkeryAny())
+            } returns result
 
             everySuspend {
-                conversationRepository.getConversationProtocolInfo(mokkeryAny())
-            } returns localProtocolInfo
+                persistConversations.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns Either.Right(Unit)
         }
 
         suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>) {
@@ -359,8 +342,10 @@ class StaleEpochVerifierTest {
             block()
             this@Arrangement to StaleEpochVerifierImpl(
                 systemMessageInserter = systemMessageInserter,
-                fetchConversationUseCase = fetchConversationUseCase,
-                conversationRepository = conversationRepository,
+                fetchMLSConversationGroupWithEpoch = FetchMLSConversationGroupWithEpochUseCaseImpl(
+                    conversationRepository = conversationRepository,
+                    persistConversations = persistConversations
+                ),
                 subconversationRepository = subconversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
                 joinExistingMLSConversation = joinExistingMLSConversationUseCase
@@ -382,7 +367,7 @@ class StaleEpochVerifierTest {
             name = "mls-conversation",
             id = CONVERSATION_ID.toApi(),
             groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value,
-            epoch = TestConversation.MLS_PROTOCOL_INFO.epoch,
+            epoch = 123UL,
             type = ConversationResponse.Type.GROUP,
             messageTimer = 0,
             teamId = null,

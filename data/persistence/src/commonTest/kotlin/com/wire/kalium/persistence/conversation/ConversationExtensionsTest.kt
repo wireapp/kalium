@@ -381,7 +381,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
                 protocolInfo = ConversationEntity.ProtocolInfo.MLS(
                     groupId = "group_0",
                     groupState = ConversationEntity.GroupState.ESTABLISHED,
-                    epoch = 0UL,
                     keyingMaterialLastUpdate = Instant.parse("2024-01-01T00:00:00.000Z"),
                     cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
                 )

@@ -116,7 +116,6 @@ class MLSMissingUsersMessageRejectionHandlerTest {
                     Conversation.ProtocolInfo.MLS(
                         groupID,
                         Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-                        0UL,
                         Clock.System.now(),
                         CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
                     )
@@ -149,7 +148,6 @@ class MLSMissingUsersMessageRejectionHandlerTest {
                     Conversation.ProtocolInfo.MLS(
                         groupID,
                         Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-                        0UL,
                         Clock.System.now(),
                         CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
                     )

@@ -54,7 +54,6 @@ data class ConversationViewEntity(
     val accessRoleList: List<ConversationEntity.AccessRole>,
     val protocol: ConversationEntity.Protocol,
     val mlsCipherSuite: ConversationEntity.CipherSuite,
-    val mlsEpoch: Long,
     val mlsGroupId: String?,
     val mlsLastKeyingMaterialUpdateDate: Instant,
     val mlsGroupState: ConversationEntity.GroupState,

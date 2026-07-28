@@ -95,6 +95,7 @@ import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
 import com.wire.kalium.logic.data.conversation.FetchConversationsUseCaseImpl
+import com.wire.kalium.logic.data.conversation.FetchMLSConversationGroupWithEpochUseCaseImpl
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
@@ -1919,8 +1920,10 @@ public class UserSessionScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier
         get() = StaleEpochVerifierImpl(
             systemMessageInserter = systemMessageInserter,
-            fetchConversationUseCase = fetchConversationUseCase,
-            conversationRepository = conversationRepository,
+            fetchMLSConversationGroupWithEpoch = FetchMLSConversationGroupWithEpochUseCaseImpl(
+                conversationRepository = conversationRepository,
+                persistConversations = persistConversationsUseCase
+            ),
             mlsConversationRepository = mlsConversationRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             subconversationRepository = subconversationRepository

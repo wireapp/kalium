@@ -45,9 +45,10 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.util.ConversationPersistenceApi
 import kotlinx.coroutines.withContext
 
 /**
@@ -100,12 +101,15 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         conversation = conversation,
                         currentPublicKeys = mlsPublicKeys
                     ).flatMap { refreshedConversation ->
-                        joinOrEstablishMLSGroupAndRetry(
-                            transactionContext,
-                            refreshedConversation.conversation,
-                            refreshedConversation.publicKeys,
-                            allowJoinByExternalCommit
-                        )
+                        fetchRemoteEpoch(refreshedConversation.conversation.id).flatMap { remoteEpoch ->
+                            joinOrEstablishMLSGroupAndRetry(
+                                transactionContext,
+                                refreshedConversation.conversation,
+                                refreshedConversation.publicKeys,
+                                allowJoinByExternalCommit,
+                                remoteEpoch
+                            )
+                        }
                     }
                 }
             })
@@ -154,12 +158,14 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         conversation: Conversation,
         mlsPublicKeys: MLSPublicKeys?,
         allowJoinByExternalCommit: Boolean,
+        remoteEpoch: ULong,
     ): Either<CoreFailure, Unit> =
         joinOrEstablishMLSGroup(
             transactionContext = transactionContext,
             conversation = conversation,
             publicKeys = mlsPublicKeys,
-            allowJoinByExternalCommit = allowJoinByExternalCommit
+            allowJoinByExternalCommit = allowJoinByExternalCommit,
+            remoteEpoch = remoteEpoch
         )
             .flatMapLeft { failure ->
                 val failure = failure.wrapNetworkMlsFailureIfApplicable()
@@ -186,13 +192,16 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         } else {
                             fetchConversation(transactionContext, conversation.id)
                         }.flatMap {
-                            conversationRepository.getNonDeletedConversationById(conversation.id).flatMap { conversation ->
-                                joinOrEstablishMLSGroup(
-                                    transactionContext = transactionContext,
-                                    conversation = conversation,
-                                    publicKeys = null,
-                                    allowJoinByExternalCommit = allowJoinByExternalCommit
-                                )
+                            fetchRemoteEpoch(conversation.id).flatMap { refreshedRemoteEpoch ->
+                                conversationRepository.getNonDeletedConversationById(conversation.id).flatMap { conversation ->
+                                    joinOrEstablishMLSGroup(
+                                        transactionContext = transactionContext,
+                                        conversation = conversation,
+                                        publicKeys = null,
+                                        allowJoinByExternalCommit = allowJoinByExternalCommit,
+                                        remoteEpoch = refreshedRemoteEpoch
+                                    )
+                                }
                             }
                         }
                     }
@@ -209,20 +218,21 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         conversation: Conversation,
         publicKeys: MLSPublicKeys?,
         allowJoinByExternalCommit: Boolean,
+        remoteEpoch: ULong,
     ): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
         val type = conversation.type
         return when {
             protocol !is Conversation.ProtocolInfo.MLSCapable -> Either.Right(Unit)
 
-            protocol.epoch != 0UL && !allowJoinByExternalCommit -> {
+            remoteEpoch != 0UL && !allowJoinByExternalCommit -> {
                 logger.d(
                     "Skipping external commit join for ${conversation.id.toLogString()} because pending events may still establish it"
                 )
                 Either.Right(Unit)
             }
 
-            protocol.epoch != 0UL -> {
+            remoteEpoch != 0UL -> {
                 // TODO(refactor): don't use conversationAPI directly
                 //                 we could use mlsConversationRepository to solve this
                 logger.d("Joining group by external commit ${conversation.id.toLogString()}")
@@ -317,6 +327,22 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         }
     }
 
+    @OptIn(ConversationPersistenceApi::class)
+    private suspend fun fetchRemoteEpoch(conversationId: ConversationId): Either<CoreFailure, ULong> =
+        conversationRepository.fetchConversation(conversationId).flatMap { response ->
+            when (response.protocol) {
+                ConvProtocol.MLS,
+                ConvProtocol.MIXED -> response.epoch?.let { Either.Right(it) }
+                    ?: Either.Left(
+                        CoreFailure.Unknown(
+                            IllegalStateException("Remote conversation is missing MLS epoch for ${conversationId.toLogString()}.")
+                        )
+                    )
+
+                ConvProtocol.PROTEUS -> Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
+            }
+        }
+
     private fun Conversation.logData(
         failure: CoreFailure? = null
     ): Map<String, Any> = buildMap {
@@ -325,30 +351,6 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         put("protocol", CreateConversationParam.Protocol.MLS.name)
         put("protocolInfo", protocol.toLogMap())
         failure?.let { put("errorInfo", "$it") }
-    }
-
-    private suspend fun syncEstablishedConversationMetadata(
-        transactionContext: CryptoTransactionContext,
-        conversation: Conversation
-    ): Either<CoreFailure, Unit> {
-        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable ?: return Either.Right(Unit)
-        return transactionContext.wrapInMLSContext { mlsContext ->
-            mlsConversationRepository.getLocalGroupEpoch(mlsContext, protocol.groupId)
-        }.flatMap { localEpoch ->
-            if (protocol.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED && protocol.epoch == localEpoch) {
-                Either.Right(Unit)
-            } else {
-                logger.d(
-                    "Updating local MLS metadata for ${conversation.id.toLogString()} to sync DB with local MLS state"
-                )
-                mlsConversationRepository.updateGroupIdAndState(
-                    conversation.id,
-                    protocol.groupId,
-                    localEpoch.toLong(),
-                    ConversationEntity.GroupState.ESTABLISHED
-                )
-            }
-        }
     }
 
     private data class RefreshedConversation(

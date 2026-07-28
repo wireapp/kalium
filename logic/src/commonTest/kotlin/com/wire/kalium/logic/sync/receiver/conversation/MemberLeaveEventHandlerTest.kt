@@ -461,7 +461,6 @@ internal class MemberLeaveEventHandlerTest {
         val MLS_DOMAIN_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
             groupId = MLS_GROUP_ID,
             groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-            epoch = 0UL,
             keyingMaterialLastUpdate = Instant.parse("2021-03-30T15:36:00.000Z"),
             cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )

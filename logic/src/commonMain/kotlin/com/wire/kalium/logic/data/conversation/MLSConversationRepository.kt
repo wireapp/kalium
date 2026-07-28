@@ -241,7 +241,6 @@ internal interface MLSConversationRepository : MLSMemberAdder {
     suspend fun updateGroupIdAndState(
         conversationId: ConversationId,
         newGroupId: GroupID,
-        newEpoch: Long,
         groupState: ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_JOIN
     ): Either<CoreFailure, Unit>
 }
@@ -396,10 +395,6 @@ internal class MLSConversationDataSource(
             checkRevocationList(mlsContext, it)
         }
     }.flatMap {
-        wrapMLSRequest {
-            mlsContext.conversationEpoch(idMapper.toCryptoModel(groupID))
-        }
-    }.flatMap { localEpoch ->
         wrapStorageRequest {
             val localGroupId = idMapper.toCryptoModel(groupID)
             val existingConversation = conversationDAO.getConversationByGroupID(localGroupId)
@@ -407,7 +402,6 @@ internal class MLSConversationDataSource(
                 conversationDAO.updateMLSGroupIdAndState(
                     existingConversation.id,
                     localGroupId,
-                    localEpoch.toLong(),
                     ConversationEntity.GroupState.ESTABLISHED
                 )
             } else {
@@ -937,14 +931,12 @@ internal class MLSConversationDataSource(
     override suspend fun updateGroupIdAndState(
         conversationId: ConversationId,
         newGroupId: GroupID,
-        newEpoch: Long,
         groupState: ConversationEntity.GroupState
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.updateMLSGroupIdAndState(
                 conversationId.toDao(),
                 idMapper.toCryptoModel(newGroupId),
-                newEpoch,
                 groupState
             )
         }

@@ -621,10 +621,9 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenSuccessfulResponses_whenCallingJoinByExternalCommit_ThenGroupStateAndEpochAreUpdated() = runTest {
+    fun givenSuccessfulResponses_whenCallingJoinByExternalCommit_thenGroupStateIsUpdated() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withJoinByExternalCommitSuccessful()
-            .withGetGroupEpochReturn(2UL)
             .withGetConversationByGroupID(MockConversation.entity())
             .arrange()
 
@@ -638,7 +637,6 @@ class MLSConversationRepositoryTest {
             arrangement.conversationDAO.updateMLSGroupIdAndState(
                 any(),
                 eq(Arrangement.RAW_GROUP_ID),
-                eq(2L),
                 eq(ConversationEntity.GroupState.ESTABLISHED),
             )
         }
@@ -670,7 +668,7 @@ class MLSConversationRepositoryTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
+            arrangement.conversationDAO.updateMLSGroupIdAndState(any(), any(), any())
         }
     }
 
@@ -1839,13 +1837,13 @@ class MLSConversationRepositoryTest {
 
         fun withUpdateMLSGroupIdAndStateSuccessful() = apply {
             everySuspend {
-                conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
+                conversationDAO.updateMLSGroupIdAndState(any(), any(), any())
             } returns Unit
         }
 
         fun withUpdateMLSGroupIdAndStateFailing(failure: StorageFailure.Generic) = apply {
             everySuspend {
-                conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
+                conversationDAO.updateMLSGroupIdAndState(any(), any(), any())
             } throws failure.rootCause
         }
 
@@ -1958,14 +1956,13 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId)
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.updateMLSGroupIdAndState(
                 conversationId.toDao(),
                 newGroupId.toCrypto(),
-                0L,
                 ConversationEntity.GroupState.PENDING_JOIN
             )
         }
@@ -1980,14 +1977,13 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L, customState)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, customState)
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.updateMLSGroupIdAndState(
                 conversationId.toDao(),
                 newGroupId.toCrypto(),
-                0L,
                 customState
             )
         }
@@ -2002,7 +1998,7 @@ class MLSConversationRepositoryTest {
             .withUpdateMLSGroupIdAndStateFailing(storageFailure)
             .arrange()
 
-        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L)
+        val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId)
 
         result.shouldFail {
             assertIs<StorageFailure.Generic>(it)
@@ -2025,14 +2021,13 @@ class MLSConversationRepositoryTest {
                 .withUpdateMLSGroupIdAndStateSuccessful()
                 .arrange()
 
-            val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, 0L, state)
+            val result = mlsConversationRepository.updateGroupIdAndState(conversationId, newGroupId, state)
 
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationDAO.updateMLSGroupIdAndState(
                     conversationId.toDao(),
                     newGroupId.toCrypto(),
-                    0L,
                     state
                 )
             }
