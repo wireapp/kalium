@@ -5,6 +5,10 @@ inputs:
     description: 'Whether to enable KVM'
     required: false
     default: false
+  cache-write:
+    description: 'Whether this non-default-branch job may write Gradle cache entries'
+    required: false
+    default: false
 runs:
   using: composite
   steps:
@@ -16,6 +20,8 @@ runs:
 
     - name: Gradle Cache
       uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
+      with:
+        cache-read-only: ${{ github.ref != format('refs/heads/{0}', github.event.repository.default_branch) && inputs.cache-write != 'true' }}
 
     - name: Validate Gradle wrapper
       uses: gradle/actions/wrapper-validation@6cfc8b8e8bb586cc164bef1c478c1eea3a4d6a19
