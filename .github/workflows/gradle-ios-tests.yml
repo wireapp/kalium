@@ -39,8 +39,9 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
         with:
-          # Benchmark-only: normal pull requests remain read-only.
-          cache-write: ${{ github.head_ref == 'mo/ci-test-performance' }}
+          # PR caches are scoped to this PR and speed up reruns and later pushes.
+          # Keep fork pull requests read-only to avoid untrusted cache writes.
+          cache-write: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
 
       - name: Restore Kotlin/Native tooling cache (.konan)
         id: konan-cache
@@ -52,10 +53,9 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-konan-
 
       - name: iOS Tests
-        # Temporary full-suite run to seed and then measure the Gradle build cache.
-        run: ./gradlew iosSimulatorArm64Test
+        run: ./gradlew iOSOnlyAffectedTest
         env:
-          # A system property is inherited by Gradle processes spawned by affected-test tasks.
+          # This system property is inherited by the nested Gradle process.
           GRADLE_OPTS: -Dorg.gradle.caching=true
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -99,7 +99,17 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/gc.properties
 
       - name: Save Kotlin/Native tooling cache (.konan)
-        if: always() && steps.konan-cache.outputs.cache-hit != 'true'
+        # Fork pull requests can restore caches but must not publish cache entries.
+        if: >-
+          always() &&
+          steps.konan-cache.outputs.cache-hit != 'true' &&
+          (
+            (
+              github.event_name == 'pull_request' &&
+              github.event.pull_request.head.repo.full_name == github.repository
+            ) ||
+            github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+          )
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ~/.konan
