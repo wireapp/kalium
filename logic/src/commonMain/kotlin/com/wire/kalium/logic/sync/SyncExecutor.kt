@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -89,6 +90,20 @@ public abstract class SyncExecutor {
         }.filterNotNull().first()
 
         override suspend fun waitUntilLiveOrFailure(): SyncRequestResult = waitUntilOrFailure(SyncState.Live)
+
+        override suspend fun waitUntilNextLiveOrFailure(): SyncRequestResult {
+            var hasObservedSyncProgress = false
+            return syncStateFlow.drop(1).map { state ->
+                if (!hasObservedSyncProgress && state !is SyncState.Failed) {
+                    hasObservedSyncProgress = true
+                }
+                when (state) {
+                    is SyncState.Failed -> if (hasObservedSyncProgress) SyncRequestResult.Failure(state.cause) else null
+                    SyncState.Live -> SyncRequestResult.Success
+                    else -> null
+                }
+            }.filterNotNull().first()
+        }
 
         override fun keepSyncAlwaysOn() {
             isEndless = true

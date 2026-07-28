@@ -133,10 +133,6 @@ public class WrapperWorkerFactory(
 
         return runCatching {
             when (resolvedType) {
-                WORKER_TYPE_PENDING_MESSAGES ->
-                    withSessionScope(userId) { it.pendingMessagesSenderWorker }
-                        ?: fallback(FALLBACK_REASON_SESSION_SCOPE_UNAVAILABLE)
-
                 WORKER_TYPE_USER_CONFIG_SYNC ->
                     withSessionScope(userId) { it.userConfigSyncWorker }
                         ?: fallback(FALLBACK_REASON_SESSION_SCOPE_UNAVAILABLE)
@@ -171,11 +167,6 @@ public class WrapperWorkerFactory(
     private fun resolveWorkerType(workerType: String?, innerWorkerClassName: String): String? {
         if (workerType != null) return workerType
         return when {
-            innerWorkerClassName.matchesWorkerClass(
-                PendingMessagesSenderWorker::class.java.canonicalName,
-                LEGACY_PENDING_MESSAGES_WORKER_CLASS_NAME
-            ) -> WORKER_TYPE_PENDING_MESSAGES
-
             innerWorkerClassName.matchesWorkerClass(
                 UserConfigSyncWorker::class.java.canonicalName,
                 LEGACY_USER_CONFIG_SYNC_WORKER_CLASS_NAME
@@ -325,7 +316,6 @@ public class WrapperWorkerFactory(
         internal const val CONVERSATION_ID_KEY: String = "conversation-id-param"
         internal const val MESSAGE_ID_KEY: String = "message-id-param"
 
-        private const val WORKER_TYPE_PENDING_MESSAGES = "pending_messages"
         private const val WORKER_TYPE_USER_CONFIG_SYNC = "user_config_sync"
         private const val WORKER_TYPE_UPDATE_API_VERSIONS = "update_api_versions"
         private const val WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS = "audio_normalized_loudness"
@@ -333,8 +323,6 @@ public class WrapperWorkerFactory(
 
         // Keep compatibility with tasks enqueued before obfuscation/minification changes.
         // See: docs/minification-workmanager-compat.md
-        private const val LEGACY_PENDING_MESSAGES_WORKER_CLASS_NAME =
-            "com.wire.kalium.logic.sync.PendingMessagesSenderWorker"
         private const val LEGACY_USER_CONFIG_SYNC_WORKER_CLASS_NAME =
             "com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker"
         private const val LEGACY_UPDATE_API_VERSIONS_WORKER_CLASS_NAME =
@@ -372,7 +360,6 @@ public class WrapperWorkerFactory(
             .build()
 
         private fun resolveWorkerType(work: KClass<out DefaultWorker>): String? = when (work) {
-            PendingMessagesSenderWorker::class -> WORKER_TYPE_PENDING_MESSAGES
             UserConfigSyncWorker::class -> WORKER_TYPE_USER_CONFIG_SYNC
             UpdateApiVersionsWorker::class -> WORKER_TYPE_UPDATE_API_VERSIONS
             AudioNormalizedLoudnessWorker::class -> WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS

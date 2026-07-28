@@ -209,7 +209,7 @@ internal class KeyPackageDataSource(
         }
 
     private companion object {
-        const val DEFAULT_MAX_CONCURRENT_CLAIMS = 4
+        const val DEFAULT_MAX_CONCURRENT_CLAIMS = 8
     }
 }
 

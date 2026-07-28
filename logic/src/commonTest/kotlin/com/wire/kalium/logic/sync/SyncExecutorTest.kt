@@ -25,6 +25,7 @@ import com.wire.kalium.logic.fakes.sync.FakeIncrementalSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSlowSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSyncStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -171,6 +172,130 @@ class SyncExecutorTest {
         assertEquals(expectedFailure, actualFailure)
         syncScope.cancel()
     }
+
+    @Test
+    fun givenWaitingUntilLive_whenCurrentStateIsFailed_thenShouldFailImmediately() = runTest(TestKaliumDispatcher.default) {
+        val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+        val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+        val expectedFailure = CoreFailure.SyncEventOrClientNotFound
+
+        syncExecutor.startAndStopSyncAsNeeded()
+        arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Failed(expectedFailure, 1.seconds))
+        advanceUntilIdle()
+
+        syncExecutor.request {
+            val result = waitUntilLiveOrFailure()
+
+            assertIs<SyncRequestResult.Failure>(result)
+            assertEquals(expectedFailure, result.error)
+        }
+        syncScope.cancel()
+    }
+
+    @Test
+    fun givenWaitingUntilNextLive_whenCurrentStateIsFailedAndLiveStateHappens_thenShouldProceed() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+            arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 1.seconds))
+            advanceUntilIdle()
+
+            var didContinue = false
+            val waitingStarted = CompletableDeferred<Unit>()
+            val waitingJob = backgroundScope.launch {
+                syncExecutor.request {
+                    waitingStarted.complete(Unit)
+                    val result = waitUntilNextLiveOrFailure()
+                    assertEquals(SyncRequestResult.Success, result)
+                    didContinue = true
+                }
+            }
+            waitingStarted.await()
+            assertFalse(didContinue)
+
+            arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Live)
+            advanceUntilIdle()
+            waitingJob.join()
+
+            assertTrue(didContinue)
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenWaitingUntilNextLive_whenStaleFailureIsEmittedBeforeSyncProgress_thenShouldIgnoreStaleFailure() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            var didContinue = false
+            val waitingJob = backgroundScope.launch {
+                syncExecutor.request {
+                    val result = waitUntilNextLiveOrFailure()
+                    assertEquals(SyncRequestResult.Success, result)
+                    didContinue = true
+                }
+            }
+            advanceUntilIdle()
+            assertFalse(didContinue)
+
+            arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 1.seconds))
+            advanceUntilIdle()
+            assertFalse(didContinue)
+
+            arrangement.syncStateObserver.mutableSyncState.emit(SyncState.GatheringPendingEvents)
+            advanceUntilIdle()
+            assertFalse(didContinue)
+
+            arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Live)
+            advanceUntilIdle()
+            waitingJob.join()
+
+            assertTrue(didContinue)
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenWaitingUntilNextLive_whenCurrentStateIsFailedAndNewFailureHappens_thenShouldFailWithNewFailure() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+            val expectedFailure = CoreFailure.Unknown(RuntimeException("next sync failed"))
+
+            syncExecutor.startAndStopSyncAsNeeded()
+            arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 1.seconds))
+            advanceUntilIdle()
+
+            var actualFailure: CoreFailure? = null
+            var didContinue = false
+            val waitingStarted = CompletableDeferred<Unit>()
+            val waitingJob = backgroundScope.launch {
+                syncExecutor.request {
+                    waitingStarted.complete(Unit)
+                    val result = waitUntilNextLiveOrFailure()
+                    assertIs<SyncRequestResult.Failure>(result)
+                    actualFailure = result.error
+                    didContinue = true
+                }
+            }
+            waitingStarted.await()
+            assertFalse(didContinue)
+
+            arrangement.syncStateObserver.mutableSyncState.emit(SyncState.GatheringPendingEvents)
+            advanceUntilIdle()
+            assertFalse(didContinue)
+
+            arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Failed(expectedFailure, 1.seconds))
+            advanceUntilIdle()
+            waitingJob.join()
+
+            assertTrue(didContinue)
+            assertEquals(expectedFailure, actualFailure)
+            syncScope.cancel()
+        }
 
     @Test
     fun givenOneRequest_whenSyncScopeIsCancelled_thenShouldStopSyncManagerSubscriptions() = runTest(TestKaliumDispatcher.default) {

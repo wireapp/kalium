@@ -87,6 +87,38 @@ class UpdateConversationReadDateUseCaseTest {
     }
 
     @Test
+    fun givenLastReadWasAlreadyPersistedLocally_whenQueuedWorkRuns_thenShouldSyncOtherSelfClients() = runTest {
+        val lastRead = Clock.System.now()
+        val conversationId = TestConversation.CONVERSATION.id
+        val (arrangement, updateConversationReadDateUseCase) = arrange {
+            withObserveByIdReturning(
+                TestConversation.CONVERSATION.copy(lastReadDate = lastRead)
+            )
+        }
+
+        updateConversationReadDateUseCase(conversationId, lastRead)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.sendConfirmation(any(), any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.updateConversationReadDate(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(
+                message = matching { message ->
+                    val content = message.content
+                    assertIs<MessageContent.LastRead>(content)
+                    assertEquals(conversationId, content.conversationId)
+                    assertEquals(lastRead, content.time)
+                    true
+                },
+                messageTarget = any()
+            )
+        }
+    }
+
+    @Test
     fun givenProvidedTimeIsNewerThanPersistedLastReadForConversation_whenWorking_thenShouldTryToSendReceipts() = runTest {
         val persistedLastRead = Clock.System.now()
         val newLastRead = persistedLastRead + 1.seconds
