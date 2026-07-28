@@ -19,13 +19,11 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
-import android.database.sqlite.SQLiteException
 import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.support.canOpenDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.Dispatchers
-import net.zetetic.database.sqlcipher.SQLiteDatabase
-import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -55,24 +53,6 @@ class UserDatabaseRawKeyTest {
             assertFalse(canOpenDatabase(databaseFile, LEGACY_KEY))
         } finally {
             database.nuke()
-        }
-    }
-
-    private fun canOpenDatabase(databaseFile: File, key: ByteArray): Boolean {
-        var database: SQLiteDatabase? = null
-        return try {
-            database = SQLiteDatabase.openDatabase(
-                databaseFile.absolutePath,
-                key,
-                null,
-                SQLiteDatabase.OPEN_READWRITE,
-                null
-            )
-            database.rawQuery("SELECT COUNT(*) FROM sqlite_schema", emptyArray()).use { it.moveToFirst() }
-        } catch (_: SQLiteException) {
-            false
-        } finally {
-            database?.close()
         }
     }
 
