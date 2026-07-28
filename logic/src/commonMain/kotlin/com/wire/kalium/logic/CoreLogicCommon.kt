@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -36,13 +37,22 @@ import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.startup.KaliumStartup
+import com.wire.kalium.logic.startup.StartupHandle
+import com.wire.kalium.logic.startup.StartupHandleImpl
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.persistence.db.DatabaseMigrationObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.configurePersistenceDebug
 import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 @Suppress("TooManyFunctions")
 public abstract class CoreLogicCommon internal constructor(
@@ -71,6 +81,19 @@ public abstract class CoreLogicCommon internal constructor(
     internal abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
     internal val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
+    private val startupScope = CoroutineScope(SupervisorJob() + KaliumDispatcherImpl.io)
+    private val sessionStartupHandles: ConcurrentMutableMap<UserId, StartupHandleImpl<UserSessionScope>> by lazy {
+        ConcurrentMutableMap()
+    }
+    private val sessionDatabaseOperationMutex = Mutex()
+
+    public val startup: KaliumStartup by lazy {
+        object : KaliumStartup {
+            override fun session(userId: UserId): StartupHandle<UserSessionScope> =
+                sessionStartupHandle(userId)
+        }
+    }
+
     internal val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
     internal val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
@@ -90,6 +113,36 @@ public abstract class CoreLogicCommon internal constructor(
     }
 
     public fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
+
+    internal fun userDatabaseMigrationObserver(userId: UserId): DatabaseMigrationObserver =
+        sessionStartupHandle(userId).migrationObserver
+
+    private fun sessionStartupHandle(userId: UserId): StartupHandleImpl<UserSessionScope> =
+        sessionStartupHandles.computeIfAbsent(userId) {
+            StartupHandleImpl(
+                startupScope = startupScope,
+                isRetryableFailure = ::isRetryableUserDatabaseStartupFailure,
+            ) {
+                sessionDatabaseOperationMutex.withLock {
+                    getSessionScope(userId)
+                }
+            }
+        }
+
+    protected open fun isRetryableUserDatabaseStartupFailure(throwable: Throwable): Boolean = false
+
+    protected suspend fun deleteSessionScopeWithStartupCoordination(
+        userId: UserId,
+        deleteAction: suspend () -> Unit,
+    ) {
+        sessionDatabaseOperationMutex.lock()
+        try {
+            sessionStartupHandles.remove(userId)
+            deleteAction()
+        } finally {
+            sessionDatabaseOperationMutex.unlock()
+        }
+    }
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     internal fun getAuthenticationScope(

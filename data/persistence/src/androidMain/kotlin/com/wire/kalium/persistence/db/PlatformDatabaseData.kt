@@ -40,6 +40,7 @@ fun databaseDriver(
     dbName: String,
     passphrase: ByteArray? = null,
     schema: SqlSchema<QueryResult.Value<Unit>>,
+    migrationObserver: DatabaseMigrationObserver = DatabaseMigrationObserver.None,
     config: DriverConfigurationBuilder.() -> Unit = {}
 ): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
@@ -50,14 +51,18 @@ fun databaseDriver(
             schema = schema,
             context = context,
             name = dbName,
-            factory = SupportOpenHelperFactory(passphrase, enableWAL),
+            factory = SupportOpenHelperFactory(
+                password = passphrase,
+                enableWriteAheadLogging = enableWAL,
+                migrationObserver = migrationObserver,
+            ),
         )
     } else {
         AndroidSqliteDriver(
             schema = schema,
             context = context,
             name = dbName,
-            callback = SqliteCallback(schema, enableWAL),
+            callback = SqliteCallback(schema, enableWAL, migrationObserver),
         )
     }
 }

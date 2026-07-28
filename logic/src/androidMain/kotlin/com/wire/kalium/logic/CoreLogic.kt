@@ -19,6 +19,8 @@
 package com.wire.kalium.logic
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabaseLockedException
+import android.database.sqlite.SQLiteException
 import com.waz.audioeffect.AudioEffect
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
@@ -74,9 +76,22 @@ public actual class CoreLogic(
     public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
+    override fun isRetryableUserDatabaseStartupFailure(throwable: Throwable): Boolean =
+        when (throwable) {
+            is SQLiteDatabaseLockedException -> true
+            is SQLiteException -> throwable.message?.let { message ->
+                message.contains("locked", ignoreCase = true) ||
+                    message.contains("busy", ignoreCase = true)
+            } == true
+
+            else -> false
+        }
+
     actual override suspend fun deleteSessionScope(userId: UserId) {
-        userSessionScopeProvider.value.get(userId)?.cancel()
-        userSessionScopeProvider.value.delete(userId)
+        deleteSessionScopeWithStartupCoordination(userId) {
+            userSessionScopeProvider.value.get(userId)?.cancel()
+            userSessionScopeProvider.value.delete(userId)
+        }
     }
 
     internal actual override val globalCallManager: GlobalCallManager by lazy {
@@ -107,6 +122,7 @@ public actual class CoreLogic(
             userAuthenticatedNetworkProvider,
             networkStateObserver,
             logoutCallbackManager,
+            ::userDatabaseMigrationObserver,
             userAgent
         )
     }

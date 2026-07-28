@@ -23,20 +23,25 @@ import androidx.sqlite.db.SupportSQLiteOpenHelper
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.wire.kalium.persistence.db.DatabaseMigrationObserver
 
 internal class SqliteCallback(
     schema: SqlSchema<QueryResult.Value<Unit>>,
-    private val enableWAL: Boolean
+    private val enableWAL: Boolean,
+    private val migrationObserver: DatabaseMigrationObserver = DatabaseMigrationObserver.None,
 ) : SupportSQLiteOpenHelper.Callback(schema.version.toInt()) {
     private val baseCallback = AndroidSqliteDriver.Callback(schema)
     override fun onCreate(db: SupportSQLiteDatabase) = baseCallback.onCreate(db)
 
-    override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) =
+    override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        migrationObserver.onMigrationStarted(oldVersion.toLong(), newVersion.toLong())
         baseCallback.onUpgrade(
             db,
             oldVersion,
             newVersion
         )
+        migrationObserver.onMigrationCompleted(oldVersion.toLong(), newVersion.toLong())
+    }
 
     override fun onConfigure(db: SupportSQLiteDatabase) {
         super.onConfigure(db)

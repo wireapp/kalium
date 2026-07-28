@@ -20,9 +20,11 @@ package com.wire.kalium.userstorage.di
 
 import android.content.Context
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.db.DatabaseMigrationObserver
 import com.wire.kalium.persistence.db.UserDBSecret
 
 public actual class PlatformUserStorageProperties(
     public val applicationContext: Context,
-    internal val userDbSecretProvider: (UserId) -> UserDBSecret
+    internal val userDbSecretProvider: (UserId) -> UserDBSecret,
+    internal val databaseMigrationObserver: DatabaseMigrationObserver = DatabaseMigrationObserver.None,
 )

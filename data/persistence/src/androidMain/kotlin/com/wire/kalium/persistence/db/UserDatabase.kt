@@ -43,6 +43,25 @@ actual fun userDatabaseBuilder(
     dispatcher: CoroutineDispatcher,
     enableWAL: Boolean,
     dbInvalidationControlEnabled: Boolean
+): UserDatabaseBuilder = userDatabaseBuilder(
+    platformDatabaseData = platformDatabaseData,
+    userId = userId,
+    passphrase = passphrase,
+    dispatcher = dispatcher,
+    enableWAL = enableWAL,
+    dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+    migrationObserver = DatabaseMigrationObserver.None,
+)
+
+@Suppress("LongParameterList")
+public fun userDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean,
+    migrationObserver: DatabaseMigrationObserver,
 ): UserDatabaseBuilder {
     val dbName = FileNameUtil.userDBName(userId)
     val isEncryptionEnabled = passphrase != null
@@ -50,7 +69,8 @@ actual fun userDatabaseBuilder(
         context = platformDatabaseData.context,
         dbName = dbName,
         passphrase = passphrase?.value,
-        schema = UserDatabase.Schema.synchronous()
+        schema = UserDatabase.Schema.synchronous(),
+        migrationObserver = migrationObserver,
     ) {
         isWALEnabled = enableWAL
     }

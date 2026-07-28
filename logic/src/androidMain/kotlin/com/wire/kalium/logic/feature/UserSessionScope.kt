@@ -36,6 +36,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.DatabaseMigrationObserver
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
@@ -56,12 +57,15 @@ internal fun UserSessionScope(
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
     logoutCallback: LogoutCallback,
+    databaseMigrationObserver: DatabaseMigrationObserver,
 ): UserSessionScope {
     val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
     val platformUserStorageProperties =
-        PlatformUserStorageProperties(applicationContext) { userId ->
-            securityHelper.userDBSecret(userId)
-        }
+        PlatformUserStorageProperties(
+            applicationContext = applicationContext,
+            userDbSecretProvider = { userId -> securityHelper.userDBSecret(userId) },
+            databaseMigrationObserver = databaseMigrationObserver,
+        )
 
     val clientConfig: ClientConfig = ClientConfigImpl(applicationContext)
 

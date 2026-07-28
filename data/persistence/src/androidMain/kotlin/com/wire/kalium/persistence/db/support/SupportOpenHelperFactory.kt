@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.db.support
 
 import androidx.sqlite.db.SupportSQLiteOpenHelper
+import com.wire.kalium.persistence.db.DatabaseMigrationObserver
 import net.zetetic.database.sqlcipher.SQLiteDatabase
 import net.zetetic.database.sqlcipher.SQLiteDatabaseHook
 import net.zetetic.database.sqlcipher.SQLiteOpenHelper
@@ -9,7 +10,8 @@ class SupportOpenHelperFactory(
     private val password: ByteArray?,
     private val enableWriteAheadLogging: Boolean = false,
     private val hook: SQLiteDatabaseHook? = null,
-    private val minimumSupportedDatabaseVersion: Int = 1
+    private val minimumSupportedDatabaseVersion: Int = 1,
+    private val migrationObserver: DatabaseMigrationObserver = DatabaseMigrationObserver.None,
 ) : SupportSQLiteOpenHelper.Factory {
     override fun create(configuration: SupportSQLiteOpenHelper.Configuration): SupportSQLiteOpenHelper =
         object : SQLiteOpenHelper(
@@ -28,7 +30,9 @@ class SupportOpenHelperFactory(
             }
 
             override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+                migrationObserver.onMigrationStarted(oldVersion.toLong(), newVersion.toLong())
                 configuration.callback.onUpgrade(db, oldVersion, newVersion)
+                migrationObserver.onMigrationCompleted(oldVersion.toLong(), newVersion.toLong())
             }
 
             override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {

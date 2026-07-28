@@ -80,8 +80,10 @@ public actual class CoreLogic(
         userSessionScopeProvider.value.getOrCreate(userId)
 
     actual override suspend fun deleteSessionScope(userId: UserId) {
-        userSessionScopeProvider.value.get(userId)?.cancel()
-        userSessionScopeProvider.value.delete(userId)
+        deleteSessionScopeWithStartupCoordination(userId) {
+            userSessionScopeProvider.value.get(userId)?.cancel()
+            userSessionScopeProvider.value.delete(userId)
+        }
     }
 
     public actual override val networkStateObserver: NetworkStateObserver =

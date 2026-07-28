@@ -44,7 +44,8 @@ public actual class PlatformUserStorageProvider : UserStorageProvider() {
             passphrase = databasePassphrase,
             dispatcher = KaliumDispatcherImpl.io,
             enableWAL = true,
-            dbInvalidationControlEnabled = dbInvalidationControlEnabled
+            dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+            migrationObserver = platformProperties.databaseMigrationObserver,
         )
         return UserStorage(database)
     }

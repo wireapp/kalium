@@ -35,6 +35,7 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.DatabaseMigrationObserver
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
@@ -54,6 +55,7 @@ internal actual open class UserSessionScopeProviderImpl(
     private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
     private val networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
+    private val databaseMigrationObserverProvider: (UserId) -> DatabaseMigrationObserver,
     userAgent: String
 ) : UserSessionScopeProviderCommon(
     globalCallManager,
@@ -86,6 +88,7 @@ internal actual open class UserSessionScopeProviderImpl(
             userSessionScopeProvider = this,
             networkStateObserver = networkStateObserver,
             logoutCallback = logoutCallback,
+            databaseMigrationObserver = databaseMigrationObserverProvider(userId),
         )
     }
 }
