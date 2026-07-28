@@ -49,7 +49,10 @@ ON CONFLICT(id) DO UPDATE SET
     logout_reason = excluded.logout_reason,
     isPersistentWebSocketEnabled = excluded.isPersistentWebSocketEnabled,
     managed_by = excluded.managed_by,
-    sso_identity_provider_id = excluded.sso_identity_provider_id;
+    sso_identity_provider_id = COALESCE(
+        excluded.sso_identity_provider_id,
+        Accounts.sso_identity_provider_id
+    );
 
 delete:
 DELETE FROM Accounts WHERE id = :id;
