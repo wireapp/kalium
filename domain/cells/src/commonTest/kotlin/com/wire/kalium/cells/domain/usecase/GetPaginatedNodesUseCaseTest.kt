@@ -213,6 +213,7 @@ class GetPaginatedNodesUseCaseTest {
                     offset = any(),
                     fileFilters = any(),
                     sortingSpec = any(),
+                    isRecursive = any()
                 )
             }.returns(
                 PaginatedList(

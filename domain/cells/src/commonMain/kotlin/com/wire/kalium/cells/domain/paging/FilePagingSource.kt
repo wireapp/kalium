@@ -38,6 +38,7 @@ internal class FilePagingSource(
         criteria = SortingCriteria.FOLDERS_FIRST_THEN_ALPHABETICAL,
         descending = true
     ),
+    val isRecursive: Boolean = false
 ) : PagingSource<Int, Node>() {
 
     private val nodeUuids = mutableSetOf<String>()
@@ -50,6 +51,7 @@ internal class FilePagingSource(
             offset = params.key ?: 0,
             fileFilters = fileFilters,
             sortingSpec = sortingSpec,
+            isRecursive = isRecursive
         ).fold(
             { error ->
                 LoadResult.Error(

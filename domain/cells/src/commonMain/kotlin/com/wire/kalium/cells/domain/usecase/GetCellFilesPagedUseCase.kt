@@ -48,6 +48,7 @@ public interface GetCellFilesPagedUseCase {
             criteria = SortingCriteria.FOLDERS_FIRST_THEN_ALPHABETICAL,
             descending = true
         ),
+        isRecursive: Boolean = false
     ): Flow<PagingData<Node>>
 }
 
@@ -64,6 +65,7 @@ internal class GetCellFilesPagedUseCaseImpl(
         query: String,
         fileFilters: FileFilters,
         sortingSpec: SortingSpec,
+        isRecursive: Boolean
     ): Flow<PagingData<Node>> {
         return Pager(
             config = PagingConfig(
@@ -77,6 +79,7 @@ internal class GetCellFilesPagedUseCaseImpl(
                     getPaginatedNodesUseCase = getPaginatedNodesUseCase,
                     fileFilters = fileFilters,
                     sortingSpec = sortingSpec,
+                    isRecursive = isRecursive
                 )
             }
         ).flow

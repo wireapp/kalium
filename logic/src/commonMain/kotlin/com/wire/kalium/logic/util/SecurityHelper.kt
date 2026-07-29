@@ -33,29 +33,72 @@ internal expect class SecureRandom internal constructor() {
 }
 
 internal interface SecurityHelper {
-    fun globalDBSecret(): GlobalDatabaseSecret
-    fun userDBSecret(userId: UserId): UserDBSecret
+    fun globalDBKeyMaterial(databaseExists: Boolean): GlobalDBKeyMaterial
+    fun clearGlobalDBLegacyKey()
+    fun userDBSecret(userId: UserId, databaseExists: Boolean): UserDBSecret
     fun userDBOrSecretNull(userId: UserId): UserDBSecret?
     fun setDBPassphrase(key: String, passphrase: String)
     suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret
     suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret
 }
 
+/**
+ * The key the global database should end up on, plus the key it may still be encrypted with.
+ *
+ * [legacyKey] is non-null only while the legacy alias is still stored, which is exactly the window
+ * in which a migration can be outstanding. Once it is cleared, [rawKey] is the whole story.
+ *
+ * Not a data class on purpose: both fields are [ByteArray]s, so generated `equals`/`hashCode` would
+ * compare by identity and quietly lie about equality.
+ */
+internal class GlobalDBKeyMaterial(
+    val rawKey: GlobalDatabaseSecret,
+    val legacyKey: ByteArray? = null
+)
+
 internal typealias DatabaseMigrator = suspend (rootDir: String, oldKey: String, passphrase: ByteArray) -> Unit
 
+@Suppress("TooManyFunctions")
 internal class SecurityHelperImpl(
     private val passphraseStorage: PassphraseStorage,
     private val databaseMigrator: DatabaseMigrator = ::migrateDatabaseKey
 ) : SecurityHelper {
 
-    override fun globalDBSecret(): GlobalDatabaseSecret =
-        GlobalDatabaseSecret(getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS).toPreservedByteArray)
+    /**
+     * The raw key is generated and stored *before* it is ever used, so a crash between storing it
+     * and rekeying the database only costs an unused alias. The reverse order would lose the
+     * database.
+     */
+    override fun globalDBKeyMaterial(databaseExists: Boolean): GlobalDBKeyMaterial {
+        val rawKey = getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2).toPreservedByteArray.toSqlCipherRawKey()
+        val legacyKey = if (databaseExists) getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS)?.toPreservedByteArray else null
+        return GlobalDBKeyMaterial(GlobalDatabaseSecret(rawKey), legacyKey)
+    }
 
-    override fun userDBSecret(userId: UserId): UserDBSecret =
-        UserDBSecret(getOrGeneratePassPhrase("${USER_DB_PASSPHRASE_PREFIX}_$userId").toPreservedByteArray)
+    override fun clearGlobalDBLegacyKey() {
+        if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS) != null) {
+            passphraseStorage.clearPassphrase(GLOBAL_DB_PASSPHRASE_ALIAS)
+        }
+    }
+
+    override fun userDBSecret(userId: UserId, databaseExists: Boolean): UserDBSecret {
+        val v2Alias = "${USER_DB_PASSPHRASE_PREFIX_V2}_$userId"
+        return getStoredDbPassword(v2Alias)?.let {
+            UserDBSecret(it.toPreservedByteArray.toSqlCipherRawKey())
+        } ?: if (databaseExists) {
+            // Existing user databases keep their legacy key: rekeying them is not worth the cost.
+            UserDBSecret(getOrGeneratePassPhrase("${USER_DB_PASSPHRASE_PREFIX}_$userId").toPreservedByteArray)
+        } else {
+            UserDBSecret(getOrGeneratePassPhrase(v2Alias).toPreservedByteArray.toSqlCipherRawKey())
+        }
+    }
 
     override fun userDBOrSecretNull(userId: UserId): UserDBSecret? =
-        getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX}_$userId")?.toPreservedByteArray?.let { UserDBSecret(it) }
+        getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX_V2}_$userId")?.let {
+            UserDBSecret(it.toPreservedByteArray.toSqlCipherRawKey())
+        } ?: getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX}_$userId")?.toPreservedByteArray?.let {
+            UserDBSecret(it)
+        }
 
     @Suppress("ReturnCount")
     override suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret {
@@ -126,10 +169,50 @@ internal class SecurityHelperImpl(
     private val ByteArray.toPreservedString: String
         get() = Base64.encode(this)
 
+    /**
+     * Converts 32 bytes of key material to SQLCipher's raw-key representation, `x'<64 hex chars>'`.
+     *
+     * SQLCipher only recognises this form when the payload is exactly `keySize * 2 + 3` bytes, so
+     * the size is asserted rather than padded or truncated.
+     */
+    private fun ByteArray.toSqlCipherRawKey(): ByteArray {
+        require(size == SQLCIPHER_RAW_KEY_BYTES) {
+            "SQLCipher raw keys must contain exactly $SQLCIPHER_RAW_KEY_BYTES bytes, but got $size"
+        }
+
+        val hexDigits = HEX_DIGITS.encodeToByteArray()
+        val result = ByteArray(SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH)
+        result[0] = SQLCIPHER_RAW_KEY_MARKER
+        result[1] = SQLCIPHER_RAW_KEY_QUOTE
+
+        var sourceIndex = 0
+        var destinationIndex = RAW_KEY_PREFIX_LENGTH
+        while (sourceIndex < size) {
+            val unsignedByte = this[sourceIndex].toInt() and UNSIGNED_BYTE_MASK
+            result[destinationIndex++] = hexDigits[unsignedByte ushr NIBBLE_BITS]
+            result[destinationIndex++] = hexDigits[unsignedByte and LOW_NIBBLE_MASK]
+            sourceIndex++
+        }
+
+        result[destinationIndex] = SQLCIPHER_RAW_KEY_QUOTE
+        return result
+    }
+
     private companion object {
+        const val HEX_DIGITS = "0123456789abcdef"
         const val MIN_DATABASE_SECRET_LENGTH = 32
+        const val SQLCIPHER_RAW_KEY_BYTES = 32
+        const val SQLCIPHER_RAW_KEY_MARKER: Byte = 0x78
+        const val SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH = 67
+        const val SQLCIPHER_RAW_KEY_QUOTE: Byte = 0x27
+        const val RAW_KEY_PREFIX_LENGTH = 2
+        const val NIBBLE_BITS = 4
+        const val LOW_NIBBLE_MASK = 0x0F
+        const val UNSIGNED_BYTE_MASK = 0xFF
         const val GLOBAL_DB_PASSPHRASE_ALIAS = "global_db_passphrase_alias"
+        const val GLOBAL_DB_PASSPHRASE_ALIAS_V2 = "global_db_passphrase_alias_v2"
         const val USER_DB_PASSPHRASE_PREFIX = "user_db_secret_alias"
+        const val USER_DB_PASSPHRASE_PREFIX_V2 = "user_db_secret_alias_v2"
         const val MLS_DB_PASSPHRASE_PREFIX = "mls_db_secret_alias"
         const val MLS_DB_PASSPHRASE_PREFIX_V2 = "mls_db_secret_alias_v2"
         const val PROTEUS_DB_PASSPHRASE_PREFIX = "proteus_db_secret_alias"
