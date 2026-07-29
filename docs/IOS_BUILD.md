@@ -143,6 +143,19 @@ module/
 
 ## Integrating with iOS Projects
 
+### Dynamic AVS runtime
+
+Kalium keeps CoreCrypto statically linked, but Apple AVS must be linked and
+embedded as the matching dynamic `avs.framework`. The
+`com.wire.kalium.apple-avs-runtime` plugin owns the compatible AVS version and
+checksum; applications must not configure them independently. It is already
+applied to `:logic`, so submodule consumers generate the Xcode configuration
+with `:logic:generateAvsXcodeConfig` and embed with `:logic:embedAvsForXcode`.
+
+Setup for both the submodule and Maven paths, plus the caching and dSYM
+behavior, is documented in the
+[plugin setup guide](../plugins/apple-avs-runtime/README.md).
+
 ### Using the Framework
 
 After building the framework, locate it at:
@@ -319,7 +332,12 @@ git commit -m "Update Kalium submodule"
 
 ### Swift Package Manager (Experimental)
 
-If you prefer SPM over submodules, you can reference the built XCFramework:
+This local wrapper declares only Kalium and is incomplete for AVS-enabled
+builds. Use the submodule integration until the package proposed in
+[ADR 0010](adr/0010-distribute-kalium-and-avs-with-swift-package-manager.md)
+publishes both Kalium and AVS binary targets.
+
+For a no-AVS source build, you can reference the built XCFramework:
 
 1. Build the XCFramework as shown above
 2. Create a `Package.swift` wrapper in your project:
