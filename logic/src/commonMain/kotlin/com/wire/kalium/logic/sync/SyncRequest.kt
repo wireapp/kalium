@@ -40,6 +40,14 @@ public interface SyncRequest {
     public suspend fun waitUntilLiveOrFailure(): SyncRequestResult
 
     /**
+     * Suspends until sync starts progressing after this wait starts, then reaches a terminal state.
+     *
+     * This ignores stale failure emissions from a previous attempt until a non-failed sync state is
+     * observed, which is useful when starting a fresh sync request after the device comes back online.
+     */
+    public suspend fun waitUntilNextLiveOrFailure(): SyncRequestResult
+
+    /**
      * When called, the sync process continues without being released.
      * This ensuring synchronization persists as long as the sync scope lives.
      * This is particularly useful for services that do not care about the lifecycle, like TestService, CLI, etc. and shouldn't
