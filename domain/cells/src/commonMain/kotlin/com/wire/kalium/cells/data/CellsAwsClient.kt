@@ -21,7 +21,9 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.Deferred
+import okio.FileSystem
 import okio.Path
 import okio.Sink
 
@@ -35,8 +37,30 @@ internal interface CellsAwsClient {
     suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit)
 }
 
-internal expect fun cellsAwsClient(
+internal fun cellsAwsClient(
     credentials: Deferred<CellsCredentials?>,
     sessionManager: SessionManager,
     accessTokenApi: AccessTokenApi
-): CellsAwsClient
+): CellsAwsClient = CellsS3Client(
+    httpClient = HttpClient {
+        installCellsS3HttpTimeout()
+    },
+    endpointProvider = {
+        credentials.awaitOrThrow().serverUrl
+    },
+    credentialsProvider = {
+        val cellsCredentials = credentials.awaitOrThrow()
+        val session = sessionManager.updateToken(
+            accessTokenApi,
+            sessionManager.session()?.refreshToken ?: ""
+        )
+        S3Credentials(
+            accessKeyId = session.accessToken,
+            secretAccessKey = cellsCredentials.gatewaySecret,
+        )
+    },
+    fileSystem = FileSystem.SYSTEM,
+)
+
+private suspend fun Deferred<CellsCredentials?>.awaitOrThrow(): CellsCredentials =
+    await() ?: error("Cells credentials are not available")

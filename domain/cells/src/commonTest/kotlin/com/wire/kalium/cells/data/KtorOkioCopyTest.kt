@@ -17,12 +17,21 @@
  */
 package com.wire.kalium.cells.data
 
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class KtorOkioCopyTest {
@@ -42,7 +51,52 @@ class KtorOkioCopyTest {
         assertTrue(progressUpdates.zipWithNext().all { (previous, next) -> next > previous })
     }
 
+    @Test
+    fun givenSuccessfulResponse_whenDownloadingViaPresignedUrl_thenStreamsBodyAndProgress() = runTest {
+        val payload = ByteArray(TEST_PAYLOAD_SIZE) { it.toByte() }
+        val sink = Buffer()
+        val progressUpdates = mutableListOf<Pair<Long, Long>>()
+        val downloader = fileDownloader(
+            HttpClient(
+                MockEngine {
+                    respond(
+                        content = payload,
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentLength, payload.size.toString()),
+                    )
+                }
+            )
+        )
+
+        val result = downloader.downloadViaPresignedUrl(TEST_URL, sink) { downloaded, total ->
+            progressUpdates += downloaded to total
+        }
+
+        assertIs<Either.Right<Unit>>(result)
+        assertContentEquals(payload, sink.readByteArray())
+        assertEquals(payload.size.toLong() to payload.size.toLong(), progressUpdates.last())
+        assertTrue(progressUpdates.zipWithNext().all { (previous, next) -> next.first > previous.first })
+    }
+
+    @Test
+    fun givenErrorResponse_whenDownloadingViaPresignedUrl_thenReturnsNetworkFailure() = runTest {
+        val sink = Buffer()
+        val downloader = fileDownloader(
+            HttpClient(
+                MockEngine {
+                    respond(content = "", status = HttpStatusCode.Forbidden)
+                }
+            )
+        )
+
+        val result = downloader.downloadViaPresignedUrl(TEST_URL, sink)
+
+        assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result)
+        assertEquals(0L, sink.size)
+    }
+
     private companion object {
         const val TEST_PAYLOAD_SIZE = 20 * 1024
+        const val TEST_URL = "https://cells.example.test/download"
     }
 }
