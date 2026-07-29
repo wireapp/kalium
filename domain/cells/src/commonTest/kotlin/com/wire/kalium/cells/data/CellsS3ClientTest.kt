@@ -242,6 +242,208 @@ class CellsS3ClientTest {
     }
 
     @Test
+    fun givenNamespacedMultipartResponses_whenUploading_thenParsesAttributedElementsAndXmlEntities() = runTest {
+        val fileSystem = FakeFileSystem()
+        val uploadPath = "/upload.txt".toPath()
+        fileSystem.write(uploadPath) {
+            write("multipart".encodeToByteArray())
+        }
+        var partUploadId: String? = null
+        var completionUploadId: String? = null
+        val httpClient = HttpClient(
+            MockEngine { request ->
+                when {
+                    request.method == HttpMethod.Post && request.url.parameters.names().contains("uploads") -> respond(
+                        content = """
+                            <s3:InitiateMultipartUploadResult xmlns:s3="http://s3.amazonaws.com/doc/2006-03-01/">
+                                <s3:UploadId encoding="text"> upload&amp;&#45;id </s3:UploadId>
+                            </s3:InitiateMultipartUploadResult>
+                        """.trimIndent(),
+                        status = HttpStatusCode.OK,
+                    )
+
+                    request.method == HttpMethod.Put -> {
+                        partUploadId = request.url.parameters["uploadId"]
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ETag, "etag-1"),
+                        )
+                    }
+
+                    request.method == HttpMethod.Post && request.url.parameters["uploadId"] != null -> {
+                        completionUploadId = request.url.parameters["uploadId"]
+                        respond(
+                            content = """
+                                <s3:CompleteMultipartUploadResult
+                                    xmlns:s3="http://s3.amazonaws.com/doc/2006-03-01/"
+                                    status="complete"
+                                />
+                            """.trimIndent(),
+                            status = HttpStatusCode.OK,
+                        )
+                    }
+
+                    else -> error("Unexpected request: ${request.method} ${request.url}")
+                }
+            }
+        )
+        val client = CellsS3Client(
+            httpClient = httpClient,
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            fileSystem = fileSystem,
+            config = fixedDateConfig(maxRegularUploadSize = 1),
+        )
+
+        client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
+
+        assertEquals("upload&-id", partUploadId)
+        assertEquals("upload&-id", completionUploadId)
+    }
+
+    @Test
+    fun givenFileSpanningSeveralMultipartChunks_whenUploading_thenSendsSequentialExactPartsAndEscapedCompletionXml() = runTest {
+        val fileSystem = FakeFileSystem()
+        val uploadPath = "/upload.txt".toPath()
+        val uploadBytes = ByteArray(10) { it.toByte() }
+        fileSystem.write(uploadPath) {
+            write(uploadBytes)
+        }
+        val partNumbers = mutableListOf<Int>()
+        val partBodies = mutableListOf<ByteArray>()
+        val eTags = listOf("\"first&\"", "<second>", "third'")
+        val progressUpdates = mutableListOf<Long>()
+        var completionBody: String? = null
+        val httpClient = HttpClient(
+            MockEngine { request ->
+                when {
+                    request.method == HttpMethod.Post && request.url.parameters.names().contains("uploads") -> respond(
+                        content = "<InitiateMultipartUploadResult><UploadId>upload-id</UploadId>" +
+                                "</InitiateMultipartUploadResult>",
+                        status = HttpStatusCode.OK,
+                    )
+
+                    request.method == HttpMethod.Put -> {
+                        val partNumber = assertNotNull(request.url.parameters["partNumber"]).toInt()
+                        assertEquals("upload-id", request.url.parameters["uploadId"])
+                        partNumbers += partNumber
+                        partBodies += request.body.toByteArray()
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ETag, eTags[partNumber - 1]),
+                        )
+                    }
+
+                    request.method == HttpMethod.Post && request.url.parameters["uploadId"] != null -> {
+                        assertEquals("upload-id", request.url.parameters["uploadId"])
+                        completionBody = request.body.toByteArray().decodeToString()
+                        respond(content = "<CompleteMultipartUploadResult/>", status = HttpStatusCode.OK)
+                    }
+
+                    else -> error("Unexpected request: ${request.method} ${request.url}")
+                }
+            }
+        )
+        val client = CellsS3Client(
+            httpClient = httpClient,
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            fileSystem = fileSystem,
+            config = fixedDateConfig(
+                maxRegularUploadSize = 1,
+                multipartChunkSize = 4,
+            ),
+        )
+
+        client.upload(uploadPath, cellNode(path = "upload.txt")) { progressUpdates += it }
+
+        assertEquals(listOf(1, 2, 3), partNumbers)
+        val expectedPartBodies = listOf(
+            byteArrayOf(0, 1, 2, 3),
+            byteArrayOf(4, 5, 6, 7),
+            byteArrayOf(8, 9),
+        )
+        assertEquals(expectedPartBodies.size, partBodies.size)
+        expectedPartBodies.forEachIndexed { index, expected ->
+            assertContentEquals(expected, partBodies[index])
+        }
+        assertContentEquals(uploadBytes, partBodies.fold(ByteArray(0)) { result, part -> result + part })
+        assertEquals(listOf(4L, 8L, 10L), progressUpdates)
+        assertEquals(
+            "<CompleteMultipartUpload>" +
+                    "<Part><PartNumber>1</PartNumber><ETag>&quot;first&amp;&quot;</ETag></Part>" +
+                    "<Part><PartNumber>2</PartNumber><ETag>&lt;second&gt;</ETag></Part>" +
+                    "<Part><PartNumber>3</PartNumber><ETag>third&apos;</ETag></Part>" +
+                    "</CompleteMultipartUpload>",
+            completionBody,
+        )
+    }
+
+    @Test
+    fun givenNamespacedEmbeddedSlowDown_whenCreatingMultipartUpload_thenRetriesOnlyCreation() = runTest {
+        val fileSystem = FakeFileSystem()
+        val uploadPath = "/upload.txt".toPath()
+        fileSystem.write(uploadPath) {
+            write("multipart".encodeToByteArray())
+        }
+        var createCount = 0
+        var partCount = 0
+        var completionCount = 0
+        val httpClient = HttpClient(
+            MockEngine { request ->
+                when {
+                    request.method == HttpMethod.Post && request.url.parameters.names().contains("uploads") -> {
+                        createCount++
+                        respond(
+                            content = when (createCount) {
+                                1 -> """
+                                    <s3:Error xmlns:s3="http://s3.amazonaws.com/doc/2006-03-01/" status="503">
+                                        <s3:Code source="server">Slow&#68;own</s3:Code>
+                                    </s3:Error>
+                                """.trimIndent()
+                                else -> "<InitiateMultipartUploadResult><UploadId>upload-id</UploadId>" +
+                                        "</InitiateMultipartUploadResult>"
+                            },
+                            status = HttpStatusCode.OK,
+                        )
+                    }
+
+                    request.method == HttpMethod.Put -> {
+                        partCount++
+                        respond(
+                            content = "",
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ETag, "etag-1"),
+                        )
+                    }
+
+                    request.method == HttpMethod.Post && request.url.parameters["uploadId"] != null -> {
+                        completionCount++
+                        respond(content = "<CompleteMultipartUploadResult/>", status = HttpStatusCode.OK)
+                    }
+
+                    else -> error("Unexpected request: ${request.method} ${request.url}")
+                }
+            }
+        )
+        val client = CellsS3Client(
+            httpClient = httpClient,
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            fileSystem = fileSystem,
+            config = fixedDateConfig(maxRegularUploadSize = 1),
+        )
+
+        client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
+
+        assertEquals(2, createCount)
+        assertEquals(1, partCount)
+        assertEquals(1, completionCount)
+    }
+
+    @Test
     fun givenEmbeddedInternalError_whenCompletingMultipartUpload_thenRetriesOnlyCompletion() = runTest {
         val fileSystem = FakeFileSystem()
         val uploadPath = "/upload.txt".toPath()
@@ -276,9 +478,18 @@ class CellsS3ClientTest {
                         completionCount++
                         respond(
                             content = when (completionCount) {
-                                1 -> "<?xml version=\"1.0\"?><Error><Code>InternalError</Code></Error>"
+                                1 -> """
+                                    <s3:Error xmlns:s3="http://s3.amazonaws.com/doc/2006-03-01/" status="500">
+                                        <s3:Code source="server">InternalError</s3:Code>
+                                    </s3:Error>
+                                """.trimIndent()
                                 2 -> ""
-                                else -> "<CompleteMultipartUploadResult/>"
+                                else -> """
+                                    <s3:CompleteMultipartUploadResult
+                                        xmlns:s3="http://s3.amazonaws.com/doc/2006-03-01/"
+                                        status="complete"
+                                    />
+                                """.trimIndent()
                             },
                             status = HttpStatusCode.OK,
                         )
@@ -329,7 +540,11 @@ class CellsS3ClientTest {
                     request.method == HttpMethod.Post && request.url.parameters["uploadId"] != null -> {
                         completionCount++
                         respond(
-                            content = "<Error><Code>InvalidPart</Code></Error>",
+                            content = """
+                                <s3:Error xmlns:s3="http://s3.amazonaws.com/doc/2006-03-01/" status="400">
+                                    <s3:Code source="server">InvalidPart</s3:Code>
+                                </s3:Error>
+                            """.trimIndent(),
                             status = HttpStatusCode.OK,
                         )
                     }
