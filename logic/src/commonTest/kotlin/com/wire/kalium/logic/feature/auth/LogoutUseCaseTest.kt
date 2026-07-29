@@ -297,6 +297,9 @@ class LogoutUseCaseTest {
                 arrangement.clientRepository.clearCurrentClientId()
             }
             verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.clientRepository.clearRetainedClientId()
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clientRepository.clearHasRegisteredMLSClient()
             }
         }

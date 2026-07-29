@@ -27,8 +27,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.message.MessagePreviewContent
+import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
@@ -56,6 +60,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 internal class ConversationMapperTest {
 
@@ -82,6 +87,38 @@ internal class ConversationMapperTest {
             conversationMemberMapper,
             messageMapper,
         )
+    }
+
+    @Test
+    fun givenOneOnOneDaoModelWithoutOtherUserId_whenMappingToDetails_thenFallbackDeletedUserIsReturned() {
+        val conversation = TestConversation.VIEW_ONE_ON_ONE.copy(
+            name = null,
+            otherUserId = null,
+            userDeleted = null,
+        )
+        every {
+            protocolInfoMapper.fromEntity(any())
+        }.returns(Conversation.ProtocolInfo.Proteus)
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(MutedConversationStatus.AllAllowed)
+        every {
+            domainUserTypeMapper.fromUserTypeEntity(any())
+        }.returns(UserTypeInfo.Regular(UserType.NONE))
+        every {
+            userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(any())
+        }.returns(UserAvailabilityStatus.NONE)
+        every {
+            connectionStatusMapper.fromDaoModel(any())
+        }.returns(ConnectionState.NOT_CONNECTED)
+
+        val details = assertIs<ConversationDetails.OneOne>(
+            conversationMapper.fromDaoModelToDetails(conversation)
+        )
+
+        assertEquals(conversation.id.value, details.otherUser.id.value)
+        assertNull(details.otherUser.name)
+        assertTrue(details.otherUser.deleted)
     }
 
     @Test

@@ -39,6 +39,7 @@ import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
@@ -163,6 +164,56 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         refreshEvents.receive()
         assertEquals("${CONVERSATION_ID_PREFIX}1", presenter.snapshot().items.first().conversationViewEntity.id.value)
         collectionJob.cancel()
+    }
+
+    @Test
+    fun givenOneOnOneOngoingCallIdsChange_whenCollectingPagingData_thenReloadMovesCallToTop() = runTest(dispatcher) {
+        populateOneOnOneData(count = 2)
+        val ongoingCallConversationIds = MutableStateFlow(emptyList<ConversationIDEntity>())
+        val pager = conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
+            pagingConfig = PagingConfig(PAGE_SIZE),
+            queryConfig = ConversationExtensions.QueryConfig(
+                newActivitiesOnTop = true,
+                ongoingCallConversationIds = ongoingCallConversationIds.value,
+                ongoingCallConversationIdsFlow = ongoingCallConversationIds,
+            ),
+        )
+        val refreshEvents = Channel<Unit>(Channel.UNLIMITED)
+        val presenter = object : PagingDataPresenter<ConversationDetailsWithEventsEntity>(dispatcher) {
+            override suspend fun presentPagingDataEvent(event: PagingDataEvent<ConversationDetailsWithEventsEntity>) {
+                if (event is PagingDataEvent.Refresh) refreshEvents.send(Unit)
+            }
+        }
+        val collectionJob = launch {
+            pager.pagingDataFlow.collectLatest(presenter::collectFrom)
+        }
+
+        refreshEvents.receive()
+        assertEquals("${CONVERSATION_ID_PREFIX}0", presenter.snapshot().items.first().conversationViewEntity.id.value)
+
+        ongoingCallConversationIds.value = listOf(ConversationIDEntity("${CONVERSATION_ID_PREFIX}1", "domain"))
+
+        refreshEvents.receive()
+        assertEquals("${CONVERSATION_ID_PREFIX}1", presenter.snapshot().items.first().conversationViewEntity.id.value)
+        collectionJob.cancel()
+    }
+
+    @Test
+    fun givenOneOnOneOngoingCall_whenGettingSearchedPage_thenCallIsMovedToTop() = runTest(dispatcher) {
+        populateOneOnOneData(count = 2)
+        val ongoingCallConversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}1", "domain")
+        val result = conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
+            pagingConfig = PagingConfig(PAGE_SIZE),
+            queryConfig = ConversationExtensions.QueryConfig(
+                searchQuery = "conversation",
+                newActivitiesOnTop = true,
+                ongoingCallConversationIds = listOf(ongoingCallConversationId),
+                conversationFilter = ConversationFilterEntity.ONE_ON_ONE,
+            ),
+        ).pagingSource.refresh()
+
+        assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+        assertEquals(ongoingCallConversationId, result.data.first().conversationViewEntity.id)
     }
 
     @Test
@@ -482,6 +533,33 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
                 archived = archived,
             )
             conversationDAO.insertConversation(conversation)
+        }
+    }
+
+    private suspend fun populateOneOnOneData(count: Int) {
+        repeat(count) {
+            val conversationId = ConversationIDEntity("$CONVERSATION_ID_PREFIX$it", "domain")
+            val otherUserId = UserIDEntity("user_$it", "domain")
+            val lastModified = Instant.fromEpochSeconds(CONVERSATION_COUNT - it.toLong())
+            conversationDAO.insertConversation(
+                newConversationEntity(conversationId).copy(
+                    name = "conversation $it",
+                    lastModifiedDate = lastModified,
+                )
+            )
+            userDAO.upsertUser(
+                newUserEntity(qualifiedID = otherUserId).copy(
+                    name = "conversation $it",
+                    activeOneOnOneConversationId = conversationId
+                )
+            )
+            memberDAO.insertMembersWithQualifiedId(
+                listOf(
+                    MemberEntity(otherUserId, MemberEntity.Role.Member),
+                    MemberEntity(selfUserId, MemberEntity.Role.Member)
+                ),
+                conversationId
+            )
         }
     }
 

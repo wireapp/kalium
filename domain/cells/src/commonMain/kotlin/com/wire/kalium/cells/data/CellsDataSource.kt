@@ -93,6 +93,7 @@ internal class CellsDataSource internal constructor(
         offset: Int,
         fileFilters: FileFilters,
         sortingSpec: SortingSpec,
+        isRecursive: Boolean,
     ) = withContext(dispatchers.io) {
         wrapApiRequest {
             if (path == null) {
@@ -111,6 +112,7 @@ internal class CellsDataSource internal constructor(
                     offset = offset,
                     fileFilters = fileFilters,
                     sortingSpec = sortingSpec,
+                    isRecursive = isRecursive,
                 )
             }
         }.map { response ->

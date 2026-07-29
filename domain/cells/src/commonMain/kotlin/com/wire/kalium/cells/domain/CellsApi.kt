@@ -48,6 +48,7 @@ internal interface CellsApi {
         offset: Int? = null,
         fileFilters: FileFilters,
         sortingSpec: SortingSpec,
+        isRecursive: Boolean = false,
     ): NetworkResponse<GetNodesResponseDTO>
 
     suspend fun getAllTags(): NetworkResponse<List<String>>
