@@ -164,9 +164,13 @@ internal class CellsS3Client(
                     signedRequest.headers.forEach { (name, value) -> header(name, value) }
                 }
             },
-            transform = { it.bodyAsText() },
+            transform = { response ->
+                response.bodyAsText().also { body ->
+                    body.throwEmbeddedS3Error("Create multipart upload")
+                }
+            },
         )
-        return responseBody.xmlTagValue("UploadId")
+        return responseBody.multipartUploadId()
             ?: throw IOException("Create multipart upload response did not include an UploadId")
     }
 
@@ -419,32 +423,17 @@ private fun String.escapeXml(): String =
         .replace("\"", "&quot;")
         .replace("'", "&apos;")
 
-private fun String.xmlTagValue(tagName: String): String? {
-    val startTag = "<$tagName>"
-    val endTag = "</$tagName>"
-    val start = indexOf(startTag).takeIf { it >= 0 }?.plus(startTag.length)
-    val end = start?.let { indexOf(endTag, it).takeIf { end -> end >= it } }
-    return if (start != null && end != null) substring(start, end) else null
+private fun String.throwEmbeddedS3Error(operation: String) {
+    val embeddedError = embeddedS3Error() ?: return
+    val message = "$operation failed: ${embeddedError.code ?: "unknown S3 error"}"
+    throw if (embeddedError.isRetryable()) RetryableS3Exception(message) else S3RequestException(message)
 }
-
-private fun String.embeddedS3Error(): S3Error? {
-    if (!S3_ERROR_ELEMENT.containsMatchIn(this)) return null
-    return S3Error(
-        code = xmlTagValue("Code"),
-    )
-}
-
-private fun String.containsCompleteMultipartUploadResult(): Boolean =
-    S3_COMPLETE_MULTIPART_RESULT_ELEMENT.containsMatchIn(this)
 
 private fun validateCompleteMultipartUploadResponse(responseBody: String) {
-    val embeddedError = responseBody.embeddedS3Error()
-    if (embeddedError == null && responseBody.containsCompleteMultipartUploadResult()) return
-    if (embeddedError == null) {
+    responseBody.throwEmbeddedS3Error("Complete multipart upload")
+    if (!responseBody.containsCompleteMultipartUploadResult()) {
         throw RetryableS3Exception("Complete multipart upload returned an invalid response")
     }
-    val message = "Complete multipart upload failed: ${embeddedError.code ?: "unknown S3 error"}"
-    throw if (embeddedError.isRetryable()) RetryableS3Exception(message) else S3RequestException(message)
 }
 
 private fun S3Error.isRetryable(): Boolean = code in RETRYABLE_S3_ERROR_CODES
@@ -453,10 +442,6 @@ private fun s3RetryDelayMillis(retryCount: Int): Long {
     val maximumDelay = S3_RETRY_MAX_DELAYS[retryCount - 1]
     return Random.nextLong(maximumDelay + 1)
 }
-
-private data class S3Error(
-    val code: String?,
-)
 
 private fun HttpStatusCode.isRetryableS3Status(): Boolean = value in RETRYABLE_S3_STATUS_CODES
 
@@ -499,9 +484,6 @@ private val RETRYABLE_S3_STATUS_CODES = setOf(
     HttpStatusCode.ServiceUnavailable.value,
     HttpStatusCode.GatewayTimeout.value,
 )
-private val S3_ERROR_ELEMENT = Regex("""<(?:(?:[A-Za-z_][\w.-]*):)?Error(?:\s[^>]*)?>""")
-private val S3_COMPLETE_MULTIPART_RESULT_ELEMENT =
-    Regex("""<(?:(?:[A-Za-z_][\w.-]*):)?CompleteMultipartUploadResult(?:\s[^>]*)?/?>""")
 private val S3_RETRY_MAX_DELAYS = longArrayOf(
     S3_FIRST_RETRY_MAX_DELAY_MILLIS,
     S3_SECOND_RETRY_MAX_DELAY_MILLIS,
