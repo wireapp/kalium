@@ -39,6 +39,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
+import okio.FileSystem
 import okio.ForwardingFileSystem
 import okio.Path.Companion.toPath
 import okio.Source
@@ -56,23 +57,17 @@ class CellsS3ClientTest {
     @Test
     fun givenSmallFile_whenUploading_thenPutObjectRequestIsSignedWithDraftMetadata() = runTest {
         var capturedRequest: HttpRequestData? = null
-        val fileSystem = FakeFileSystem()
-        val uploadPath = "/upload.txt".toPath()
-        fileSystem.write(uploadPath) {
-            write("hello cells".encodeToByteArray())
-        }
+        val (fileSystem, uploadPath) = createUploadFile("hello cells".encodeToByteArray())
         val httpClient = HttpClient(
             MockEngine { request ->
                 capturedRequest = request
                 respond(content = "", status = HttpStatusCode.OK)
             }
         )
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = httpClient,
-            endpointProvider = { "https://cells.example.test/api" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
             fileSystem = fileSystem,
-            config = fixedDateConfig(),
+            endpoint = "$TEST_ENDPOINT/api",
         )
 
         client.upload(
@@ -101,12 +96,8 @@ class CellsS3ClientTest {
 
     @Test
     fun givenRetryableServerResponses_whenUploading_thenRetriesWithFreshSignatures() = runTest {
-        val fileSystem = FakeFileSystem()
-        val uploadPath = "/upload.txt".toPath()
         val uploadBytes = "hello cells".encodeToByteArray()
-        fileSystem.write(uploadPath) {
-            write(uploadBytes)
-        }
+        val (fileSystem, uploadPath) = createUploadFile(uploadBytes)
         var requestCount = 0
         var credentialsCount = 0
         val authorizationHeaders = mutableListOf<String>()
@@ -130,15 +121,13 @@ class CellsS3ClientTest {
                 )
             }
         )
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = httpClient,
-            endpointProvider = { "https://cells.example.test" },
             credentialsProvider = {
                 credentialsCount++
                 S3Credentials("access-token-$credentialsCount", "gateway-secret")
             },
             fileSystem = fileSystem,
-            config = fixedDateConfig(),
         )
 
         client.upload(uploadPath, cellNode(path = "upload.txt")) { progressUpdates += it }
@@ -155,23 +144,16 @@ class CellsS3ClientTest {
 
     @Test
     fun givenClientErrorResponse_whenUploading_thenDoesNotRetry() = runTest {
-        val fileSystem = FakeFileSystem()
-        val uploadPath = "/upload.txt".toPath()
-        fileSystem.write(uploadPath) {
-            write("hello cells".encodeToByteArray())
-        }
+        val (fileSystem, uploadPath) = createUploadFile("hello cells".encodeToByteArray())
         var requestCount = 0
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(
                 MockEngine {
                     requestCount++
                     respond(content = "", status = HttpStatusCode.Forbidden)
                 }
             ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
             fileSystem = fileSystem,
-            config = fixedDateConfig(),
         )
 
         assertFailsWith<okio.IOException> {
@@ -183,13 +165,9 @@ class CellsS3ClientTest {
 
     @Test
     fun givenNetworkFailures_whenUploading_thenRetriesAndSucceeds() = runTest {
-        val fileSystem = FakeFileSystem()
-        val uploadPath = "/upload.txt".toPath()
-        fileSystem.write(uploadPath) {
-            write("hello cells".encodeToByteArray())
-        }
+        val (fileSystem, uploadPath) = createUploadFile("hello cells".encodeToByteArray())
         var requestCount = 0
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(
                 MockEngine {
                     requestCount++
@@ -197,10 +175,7 @@ class CellsS3ClientTest {
                     respond(content = "", status = HttpStatusCode.OK)
                 }
             ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
             fileSystem = fileSystem,
-            config = fixedDateConfig(),
         )
 
         client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
@@ -219,7 +194,7 @@ class CellsS3ClientTest {
             override fun source(file: okio.Path): Source = throw okio.IOException("read failed")
         }
         var requestCount = 0
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(
                 MockEngine { request ->
                     requestCount++
@@ -227,10 +202,7 @@ class CellsS3ClientTest {
                     respond(content = "", status = HttpStatusCode.OK)
                 }
             ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
             fileSystem = failingFileSystem,
-            config = fixedDateConfig(),
         )
 
         val exception = assertFailsWith<okio.IOException> {
@@ -243,11 +215,7 @@ class CellsS3ClientTest {
 
     @Test
     fun givenNamespacedMultipartResponses_whenUploading_thenParsesAttributedElementsAndXmlEntities() = runTest {
-        val fileSystem = FakeFileSystem()
-        val uploadPath = "/upload.txt".toPath()
-        fileSystem.write(uploadPath) {
-            write("multipart".encodeToByteArray())
-        }
+        val (fileSystem, uploadPath) = createUploadFile("multipart".encodeToByteArray())
         var partUploadId: String? = null
         var completionUploadId: String? = null
         val httpClient = HttpClient(
@@ -288,10 +256,8 @@ class CellsS3ClientTest {
                 }
             }
         )
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = httpClient,
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
             fileSystem = fileSystem,
             config = fixedDateConfig(maxRegularUploadSize = 1),
         )
@@ -304,12 +270,8 @@ class CellsS3ClientTest {
 
     @Test
     fun givenFileSpanningSeveralMultipartChunks_whenUploading_thenSendsSequentialExactPartsAndEscapedCompletionXml() = runTest {
-        val fileSystem = FakeFileSystem()
-        val uploadPath = "/upload.txt".toPath()
         val uploadBytes = ByteArray(10) { it.toByte() }
-        fileSystem.write(uploadPath) {
-            write(uploadBytes)
-        }
+        val (fileSystem, uploadPath) = createUploadFile(uploadBytes)
         val partNumbers = mutableListOf<Int>()
         val partBodies = mutableListOf<ByteArray>()
         val eTags = listOf("\"first&\"", "<second>", "third'")
@@ -346,10 +308,8 @@ class CellsS3ClientTest {
                 }
             }
         )
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = httpClient,
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
             fileSystem = fileSystem,
             config = fixedDateConfig(
                 maxRegularUploadSize = 1,
@@ -383,11 +343,7 @@ class CellsS3ClientTest {
 
     @Test
     fun givenNamespacedEmbeddedSlowDown_whenCreatingMultipartUpload_thenRetriesOnlyCreation() = runTest {
-        val fileSystem = FakeFileSystem()
-        val uploadPath = "/upload.txt".toPath()
-        fileSystem.write(uploadPath) {
-            write("multipart".encodeToByteArray())
-        }
+        val (fileSystem, uploadPath) = createUploadFile("multipart".encodeToByteArray())
         var createCount = 0
         var partCount = 0
         var completionCount = 0
@@ -428,10 +384,8 @@ class CellsS3ClientTest {
                 }
             }
         )
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = httpClient,
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
             fileSystem = fileSystem,
             config = fixedDateConfig(maxRegularUploadSize = 1),
         )
@@ -445,11 +399,7 @@ class CellsS3ClientTest {
 
     @Test
     fun givenEmbeddedInternalError_whenCompletingMultipartUpload_thenRetriesOnlyCompletion() = runTest {
-        val fileSystem = FakeFileSystem()
-        val uploadPath = "/upload.txt".toPath()
-        fileSystem.write(uploadPath) {
-            write("multipart".encodeToByteArray())
-        }
+        val (fileSystem, uploadPath) = createUploadFile("multipart".encodeToByteArray())
         var createCount = 0
         var partCount = 0
         var completionCount = 0
@@ -499,10 +449,8 @@ class CellsS3ClientTest {
                 }
             }
         )
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = httpClient,
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
             fileSystem = fileSystem,
             config = fixedDateConfig(maxRegularUploadSize = 1),
         )
@@ -516,11 +464,7 @@ class CellsS3ClientTest {
 
     @Test
     fun givenEmbeddedValidationError_whenCompletingMultipartUpload_thenDoesNotRetry() = runTest {
-        val fileSystem = FakeFileSystem()
-        val uploadPath = "/upload.txt".toPath()
-        fileSystem.write(uploadPath) {
-            write("multipart".encodeToByteArray())
-        }
+        val (fileSystem, uploadPath) = createUploadFile("multipart".encodeToByteArray())
         var completionCount = 0
         val httpClient = HttpClient(
             MockEngine { request ->
@@ -553,10 +497,8 @@ class CellsS3ClientTest {
                 }
             }
         )
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = httpClient,
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
             fileSystem = fileSystem,
             config = fixedDateConfig(maxRegularUploadSize = 1),
         )
@@ -574,7 +516,7 @@ class CellsS3ClientTest {
         val payload = ByteArray(TEST_DOWNLOAD_SIZE) { it.toByte() }
         val progressUpdates = mutableListOf<Long>()
         val sink = okio.Buffer()
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(
                 MockEngine {
                     respond(
@@ -584,9 +526,6 @@ class CellsS3ClientTest {
                     )
                 }
             ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
         )
 
         client.download("download.txt", sink) { progressUpdates += it }
@@ -600,7 +539,7 @@ class CellsS3ClientTest {
         val payload = "download".encodeToByteArray()
         var requestCount = 0
         val sink = okio.Buffer()
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(
                 MockEngine {
                     requestCount++
@@ -615,9 +554,6 @@ class CellsS3ClientTest {
                     }
                 }
             ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
         )
 
         client.download("download.txt", sink, onProgressUpdate = {})
@@ -635,16 +571,13 @@ class CellsS3ClientTest {
         val responseChannel = ByteChannel(autoFlush = true)
         val readFailure = IOException("connection lost")
         val sink = okio.Buffer()
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(
                 MockEngine {
                     requestCount++
                     respond(content = responseChannel, status = HttpStatusCode.OK)
                 }
             ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
         )
 
         var failure: Throwable? = null
@@ -682,7 +615,7 @@ class CellsS3ClientTest {
         var requestCount = 0
         val readFailure = IOException("connection lost")
         val sink = okio.Buffer()
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(
                 MockEngine {
                     requestCount++
@@ -691,9 +624,6 @@ class CellsS3ClientTest {
                     respond(content = responseChannel, status = HttpStatusCode.OK)
                 }
             ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
         )
 
         val exception = assertFailsWith<okio.IOException> {
@@ -725,16 +655,13 @@ class CellsS3ClientTest {
                 throw sinkFailure
             }
         }
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(
                 MockEngine {
                     requestCount++
                     respond(content = payload, status = HttpStatusCode.OK)
                 }
             ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
         )
 
         val exception = assertFailsWith<okio.IOException> {
@@ -752,16 +679,13 @@ class CellsS3ClientTest {
         val payload = "download".encodeToByteArray()
         val cancellation = CancellationException("download cancelled")
         var requestCount = 0
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(
                 MockEngine {
                     requestCount++
                     respond(content = payload, status = HttpStatusCode.OK)
                 }
             ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
         )
 
         val exception = assertFailsWith<CancellationException> {
@@ -775,65 +699,33 @@ class CellsS3ClientTest {
     }
 
     @Test
-    fun givenShortDownloadResponse_whenDownloading_thenFailsWithoutRetryingOrDuplicatingBody() = runTest {
-        val payload = "short".encodeToByteArray()
-        var requestCount = 0
-        val sink = okio.Buffer()
-        val client = CellsS3Client(
-            httpClient = HttpClient(
-                MockEngine {
-                    requestCount++
-                    respond(
-                        content = payload,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentLength, (payload.size + 1).toString()),
-                    )
-                }
-            ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
-        )
+    fun givenMismatchedDownloadLengths_whenDownloading_thenFailsWithoutRetryingOrDuplicatingBody() = runTest {
+        listOf("short".encodeToByteArray() to 1, "too long".encodeToByteArray() to -1).forEach { (payload, difference) ->
+            val expectedLength = payload.size + difference
+            var requestCount = 0
+            val sink = okio.Buffer()
+            val client = createClient(
+                httpClient = HttpClient(
+                    MockEngine {
+                        requestCount++
+                        respond(
+                            content = payload,
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentLength, expectedLength.toString()),
+                        )
+                    }
+                ),
+            )
 
-        val exception = assertFailsWith<okio.IOException> {
-            client.download("download.txt", sink, onProgressUpdate = {})
+            val exception = assertFailsWith<okio.IOException> {
+                client.download("download.txt", sink, onProgressUpdate = {})
+            }
+
+            assertContains(exception.message.orEmpty(), "expected $expectedLength bytes")
+            assertContains(exception.message.orEmpty(), "received ${payload.size} bytes")
+            assertContentEquals(payload, sink.readByteArray())
+            assertEquals(1, requestCount)
         }
-
-        assertContains(exception.message.orEmpty(), "expected ${payload.size + 1} bytes")
-        assertContains(exception.message.orEmpty(), "received ${payload.size} bytes")
-        assertContentEquals(payload, sink.readByteArray())
-        assertEquals(1, requestCount)
-    }
-
-    @Test
-    fun givenExcessDownloadResponse_whenDownloading_thenFailsWithoutRetryingOrDuplicatingBody() = runTest {
-        val payload = "too long".encodeToByteArray()
-        var requestCount = 0
-        val sink = okio.Buffer()
-        val client = CellsS3Client(
-            httpClient = HttpClient(
-                MockEngine {
-                    requestCount++
-                    respond(
-                        content = payload,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentLength, (payload.size - 1).toString()),
-                    )
-                }
-            ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
-        )
-
-        val exception = assertFailsWith<okio.IOException> {
-            client.download("download.txt", sink, onProgressUpdate = {})
-        }
-
-        assertContains(exception.message.orEmpty(), "expected ${payload.size - 1} bytes")
-        assertContains(exception.message.orEmpty(), "received ${payload.size} bytes")
-        assertContentEquals(payload, sink.readByteArray())
-        assertEquals(1, requestCount)
     }
 
     @Test
@@ -841,16 +733,13 @@ class CellsS3ClientTest {
         val payload = "download".encodeToByteArray()
         var requestCount = 0
         val sink = okio.Buffer()
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(
                 MockEngine {
                     requestCount++
                     respond(content = payload, status = HttpStatusCode.OK)
                 }
             ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
         )
 
         client.download("download.txt", sink, onProgressUpdate = {})
@@ -860,94 +749,32 @@ class CellsS3ClientTest {
     }
 
     @Test
-    fun givenMalformedContentLength_whenDownloading_thenFailsWithoutRetrying() = runTest {
+    fun givenInvalidContentLengths_whenDownloading_thenFailsWithoutRetrying() = runTest {
         val payload = "download".encodeToByteArray()
-        var requestCount = 0
-        val sink = okio.Buffer()
-        val client = CellsS3Client(
-            httpClient = HttpClient(
-                MockEngine {
-                    requestCount++
-                    respond(
-                        content = payload,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentLength, "invalid"),
-                    )
-                }
-            ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
-        )
+        listOf("invalid", "9223372036854775808", "-1").forEach { contentLength ->
+            var requestCount = 0
+            val sink = okio.Buffer()
+            val client = createClient(
+                httpClient = HttpClient(
+                    MockEngine {
+                        requestCount++
+                        respond(
+                            content = payload,
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentLength, contentLength),
+                        )
+                    }
+                ),
+            )
 
-        val exception = assertFailsWith<okio.IOException> {
-            client.download("download.txt", sink, onProgressUpdate = {})
+            val exception = assertFailsWith<okio.IOException> {
+                client.download("download.txt", sink, onProgressUpdate = {})
+            }
+
+            assertContains(exception.message.orEmpty(), "invalid Content-Length: '$contentLength'")
+            assertEquals(0L, sink.size)
+            assertEquals(1, requestCount)
         }
-
-        assertContains(exception.message.orEmpty(), "invalid Content-Length: 'invalid'")
-        assertEquals(0L, sink.size)
-        assertEquals(1, requestCount)
-    }
-
-    @Test
-    fun givenOverflowedContentLength_whenDownloading_thenFailsWithoutRetrying() = runTest {
-        val payload = "download".encodeToByteArray()
-        val overflowedContentLength = "9223372036854775808"
-        var requestCount = 0
-        val sink = okio.Buffer()
-        val client = CellsS3Client(
-            httpClient = HttpClient(
-                MockEngine {
-                    requestCount++
-                    respond(
-                        content = payload,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentLength, overflowedContentLength),
-                    )
-                }
-            ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
-        )
-
-        val exception = assertFailsWith<okio.IOException> {
-            client.download("download.txt", sink, onProgressUpdate = {})
-        }
-
-        assertContains(exception.message.orEmpty(), "invalid Content-Length: '$overflowedContentLength'")
-        assertEquals(0L, sink.size)
-        assertEquals(1, requestCount)
-    }
-
-    @Test
-    fun givenNegativeContentLength_whenDownloading_thenFailsWithoutRetrying() = runTest {
-        val payload = "download".encodeToByteArray()
-        var requestCount = 0
-        val sink = okio.Buffer()
-        val client = CellsS3Client(
-            httpClient = HttpClient(
-                MockEngine {
-                    requestCount++
-                    respond(
-                        content = payload,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentLength, "-1"),
-                    )
-                }
-            ),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
-        )
-
-        val exception = assertFailsWith<okio.IOException> {
-            client.download("download.txt", sink, onProgressUpdate = {})
-        }
-
-        assertContains(exception.message.orEmpty(), "invalid Content-Length: '-1'")
-        assertEquals(0L, sink.size)
-        assertEquals(1, requestCount)
     }
 
     @Test
@@ -957,11 +784,8 @@ class CellsS3ClientTest {
         val responseChannel = ByteChannel(autoFlush = true)
         val firstChunkCopied = CompletableDeferred<Unit>()
         val sink = okio.Buffer()
-        val client = CellsS3Client(
+        val client = createClient(
             httpClient = HttpClient(MockEngine { respond(content = responseChannel, status = HttpStatusCode.OK) }),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
         )
 
         val download = launch {
@@ -984,6 +808,29 @@ class CellsS3ClientTest {
         download.join()
 
         assertContentEquals(firstChunk + secondChunk, sink.readByteArray())
+    }
+
+    private fun createClient(
+        httpClient: HttpClient,
+        fileSystem: FileSystem = FileSystem.SYSTEM,
+        endpoint: String = TEST_ENDPOINT,
+        credentialsProvider: suspend () -> S3Credentials = { TEST_CREDENTIALS },
+        config: CellsS3ClientConfig = fixedDateConfig(),
+    ): CellsS3Client = CellsS3Client(
+        httpClient = httpClient,
+        endpointProvider = { endpoint },
+        credentialsProvider = credentialsProvider,
+        fileSystem = fileSystem,
+        config = config,
+    )
+
+    private fun createUploadFile(bytes: ByteArray): Pair<FakeFileSystem, okio.Path> {
+        val fileSystem = FakeFileSystem()
+        val path = "/upload.txt".toPath()
+        fileSystem.write(path) {
+            write(bytes)
+        }
+        return fileSystem to path
     }
 
     private fun cellNode(path: String): CellNodeDTO = CellNodeDTO(
@@ -1016,11 +863,13 @@ class CellsS3ClientTest {
     )
 
     private companion object {
+        const val TEST_ENDPOINT = "https://cells.example.test"
         const val EXPECTED_ATTEMPTS = 3
         const val TEST_DOWNLOAD_SIZE = 20 * 1024
         const val TEST_STREAM_CHUNK_SIZE = 1024
         const val STREAM_ASSERTION_TIMEOUT_MILLIS = 5_000L
         const val PARTIAL_SINK_WRITE_SIZE = 3L
         const val DEFAULT_TEST_MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024L
+        val TEST_CREDENTIALS = S3Credentials("access-token", "gateway-secret")
     }
 }
