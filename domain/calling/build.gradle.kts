@@ -19,6 +19,7 @@
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     id(libs.plugins.kalium.library.get().pluginId)
+    id("com.wire.kalium.apple-avs-runtime")
     alias(libs.plugins.ksp)
 }
 
