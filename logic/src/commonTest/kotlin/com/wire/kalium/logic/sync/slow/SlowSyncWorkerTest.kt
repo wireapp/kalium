@@ -89,6 +89,28 @@ class SlowSyncWorkerTest {
     }
 
     @Test
+    fun givenMeetingsDisabled_whenPerformingSlowSync_thenDoNotExecuteMeetingsStep() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withSyncContactsSuccess()
+            .withSyncMeetingsDisabled()
+            .withJoinMLSConversationsSuccess()
+            .withResolveOneOnOneConversationsSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withNomadEnabled()
+            .arrange()
+
+        worker.slowSyncStepsFlow(successfullyMigration).collect()
+
+        assertUseCases(arrangement, stepsWithMeetingsDisabled())
+    }
+
+    @Test
     fun givenSyncSelfUserFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(SlowSyncStep.MIGRATION, SlowSyncStep.SELF_USER)
         val (arrangement, worker) = Arrangement()
@@ -1042,5 +1064,8 @@ class SlowSyncWorkerTest {
 
         fun stepsWithNomadDisabled(): HashSet<SlowSyncStep> =
             SlowSyncStep.entries.filterNot { it == SlowSyncStep.NOMAD_MESSAGES }.toHashSet()
+
+        fun stepsWithMeetingsDisabled(): HashSet<SlowSyncStep> =
+            SlowSyncStep.entries.filterNot { it == SlowSyncStep.MEETINGS }.toHashSet()
     }
 }
