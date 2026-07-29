@@ -61,6 +61,3 @@ internal fun cellsAwsClient(
     },
     fileSystem = FileSystem.SYSTEM,
 )
-
-private suspend fun Deferred<CellsCredentials?>.awaitOrThrow(): CellsCredentials =
-    await() ?: error("Cells credentials are not available")
