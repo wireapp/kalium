@@ -20,21 +20,17 @@ package com.wire.kalium.logic.data.meeting
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
 
 data class MeetingOccurrence(
-    val occurrenceId: String,
-    val meetingId: MeetingId,
-    val conversationId: ConversationId,
+    val meeting: Meeting,
+    val selfRole: SelfRole,
     val conversationName: String,
     val conversationType: ConversationType,
-    val title: String,
-    val startTime: Instant,
-    val endTime: Instant?,
+    val occurrenceId: String,
     val occurrenceStartTime: Instant,
-    val occurrenceEndTime: Instant?,
-    val recurrence: Recurrence?,
-    val selfRole: SelfRole,
+    val occurrenceEndTime: Instant,
 ) {
     sealed interface ConversationType {
         data object Group : ConversationType
@@ -43,6 +39,18 @@ data class MeetingOccurrence(
         data class OneOnOne(val previewPicture: UserAssetId?) : ConversationType
     }
 
+    enum class SelfRole { Creator, Member }
+}
+
+data class Meeting(
+    val meetingId: MeetingId,
+    val conversationId: ConversationId,
+    val creatorId: UserId,
+    val title: String,
+    val startTime: Instant,
+    val endTime: Instant,
+    val recurrence: Recurrence?,
+) {
     data class Recurrence(
         val frequency: Frequency,
         val interval: Long,
@@ -59,6 +67,12 @@ data class MeetingOccurrence(
             )
         }
     }
-
-    enum class SelfRole { Creator, Member }
 }
+
+data class CreateMeeting(
+    val title: String,
+    val startTime: Instant,
+    val endTime: Instant,
+    val recurrence: Meeting.Recurrence?,
+    val otherParticipants: List<UserId>,
+)

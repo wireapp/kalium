@@ -2953,13 +2953,18 @@ public class UserSessionScope internal constructor(
         MeetingScope(
             dispatcher = KaliumDispatcherImpl,
             meetingRepository = meetingRepository,
+            transactionProvider = cryptoTransactionProvider
         )
     }
 
     private val meetingRepository: MeetingRepository
         get() = MeetingDataSource(
+            selfUserId = userId,
             meetingDAO = userStorage.database.meetingDao,
             meetingApi = authenticatedNetworkContainer.meetingApi,
+            mlsConversationRepository = mlsConversationRepository,
+            pendingActionsRepository = pendingActionsRepository,
+            persistConversations = persistConversationsUseCase,
         )
 
     private val syncMeetingsUseCase: SyncMeetingsUseCase
