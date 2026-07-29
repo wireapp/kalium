@@ -68,6 +68,9 @@ internal class GetOrRegisterClientUseCaseImpl(
                         is VerifyExistingClientResult.Failure.Generic -> RegisterClientResult.Failure.Generic(result.genericFailure)
                         is VerifyExistingClientResult.Failure.ClientNotRegistered -> {
                             clearOldClientRelatedData()
+                            // Clearing client metadata also clears the feature configuration used to decide whether
+                            // the replacement client must be registered with MLS support.
+                            syncFeatureConfigsUseCase()
                             null
                         }
 
