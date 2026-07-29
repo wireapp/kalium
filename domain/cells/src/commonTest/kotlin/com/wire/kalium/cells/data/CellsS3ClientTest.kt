@@ -31,6 +31,7 @@ import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.close
 import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -359,7 +360,15 @@ class CellsS3ClientTest {
         val progressUpdates = mutableListOf<Long>()
         val sink = okio.Buffer()
         val client = CellsS3Client(
-            httpClient = HttpClient(MockEngine { respond(content = payload, status = HttpStatusCode.OK) }),
+            httpClient = HttpClient(
+                MockEngine {
+                    respond(
+                        content = payload,
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentLength, payload.size.toString()),
+                    )
+                }
+            ),
             endpointProvider = { "https://cells.example.test" },
             credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
             config = fixedDateConfig(),
@@ -369,6 +378,361 @@ class CellsS3ClientTest {
 
         assertEquals(TEST_DOWNLOAD_SIZE.toLong(), progressUpdates.last())
         assertTrue(progressUpdates.zipWithNext().all { (previous, next) -> next > previous })
+    }
+
+    @Test
+    fun givenRetryableStatusBeforeDownloadBody_whenDownloading_thenRetriesAndWritesPayloadOnce() = runTest {
+        val payload = "download".encodeToByteArray()
+        var requestCount = 0
+        val sink = okio.Buffer()
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    if (requestCount == 1) {
+                        respond(content = "", status = HttpStatusCode.ServiceUnavailable)
+                    } else {
+                        respond(
+                            content = payload,
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentLength, payload.size.toString()),
+                        )
+                    }
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        client.download("download.txt", sink, onProgressUpdate = {})
+
+        assertContentEquals(payload, sink.readByteArray())
+        assertEquals(2, requestCount)
+    }
+
+    @Test
+    fun givenBodyFailureAfterBytes_whenDownloading_thenDoesNotRetryOrDuplicateBytes() = runTest {
+        val payload = "partial".encodeToByteArray()
+        var requestCount = 0
+        val progressUpdates = mutableListOf<Long>()
+        val firstChunkCopied = CompletableDeferred<Unit>()
+        val responseChannel = ByteChannel(autoFlush = true)
+        val readFailure = IOException("connection lost")
+        val sink = okio.Buffer()
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    respond(content = responseChannel, status = HttpStatusCode.OK)
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        var failure: Throwable? = null
+        val download = launch {
+            try {
+                client.download("download.txt", sink) {
+                    progressUpdates += it
+                    firstChunkCopied.complete(Unit)
+                }
+            } catch (cause: Throwable) {
+                failure = cause
+            }
+        }
+        responseChannel.writeFully(payload)
+        withContext(Dispatchers.Default) {
+            withTimeout(STREAM_ASSERTION_TIMEOUT_MILLIS) {
+                firstChunkCopied.await()
+            }
+        }
+        responseChannel.close(readFailure)
+        download.join()
+
+        val exception = assertNotNull(failure)
+        assertContains(exception.message.orEmpty(), "could not be copied")
+        val preservedCause = assertNotNull(exception.cause)
+        assertTrue(preservedCause is IOException)
+        assertContains(preservedCause.message.orEmpty(), readFailure.message.orEmpty())
+        assertContentEquals(payload, sink.readByteArray())
+        assertEquals(listOf(payload.size.toLong()), progressUpdates)
+        assertEquals(1, requestCount)
+    }
+
+    @Test
+    fun givenBodyFailureBeforeBytes_whenDownloading_thenDoesNotRetry() = runTest {
+        var requestCount = 0
+        val readFailure = IOException("connection lost")
+        val sink = okio.Buffer()
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    val responseChannel = ByteChannel(autoFlush = true)
+                    responseChannel.close(readFailure)
+                    respond(content = responseChannel, status = HttpStatusCode.OK)
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        val exception = assertFailsWith<okio.IOException> {
+            client.download("download.txt", sink, onProgressUpdate = {})
+        }
+
+        assertContains(exception.message.orEmpty(), "could not be copied")
+        val preservedCause = assertNotNull(exception.cause)
+        assertTrue(preservedCause is IOException)
+        assertContains(preservedCause.message.orEmpty(), readFailure.message.orEmpty())
+        assertEquals(0L, sink.size)
+        assertEquals(1, requestCount)
+    }
+
+    @Test
+    fun givenSinkWriteFailureAfterBytes_whenDownloading_thenDoesNotRetryOrDuplicateBytes() = runTest {
+        val payload = "download".encodeToByteArray()
+        var requestCount = 0
+        val sinkFailure = okio.IOException("sink write failed")
+        val destination = okio.Buffer()
+        val failingSink = object : okio.ForwardingSink(destination) {
+            private var writeCount = 0
+
+            override fun write(source: okio.Buffer, byteCount: Long) {
+                writeCount++
+                if (writeCount == 1) {
+                    super.write(source, PARTIAL_SINK_WRITE_SIZE)
+                }
+                throw sinkFailure
+            }
+        }
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    respond(content = payload, status = HttpStatusCode.OK)
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        val exception = assertFailsWith<okio.IOException> {
+            client.download("download.txt", failingSink, onProgressUpdate = {})
+        }
+
+        assertContains(exception.message.orEmpty(), "could not be copied")
+        assertTrue(exception.cause === sinkFailure)
+        assertContentEquals(payload.copyOf(PARTIAL_SINK_WRITE_SIZE.toInt()), destination.readByteArray())
+        assertEquals(1, requestCount)
+    }
+
+    @Test
+    fun givenCancellationDuringBodyCopy_whenDownloading_thenPropagatesSameCancellationWithoutRetrying() = runTest {
+        val payload = "download".encodeToByteArray()
+        val cancellation = CancellationException("download cancelled")
+        var requestCount = 0
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    respond(content = payload, status = HttpStatusCode.OK)
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        val exception = assertFailsWith<CancellationException> {
+            client.download("download.txt", okio.Buffer()) {
+                throw cancellation
+            }
+        }
+
+        assertTrue(exception === cancellation)
+        assertEquals(1, requestCount)
+    }
+
+    @Test
+    fun givenShortDownloadResponse_whenDownloading_thenFailsWithoutRetryingOrDuplicatingBody() = runTest {
+        val payload = "short".encodeToByteArray()
+        var requestCount = 0
+        val sink = okio.Buffer()
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    respond(
+                        content = payload,
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentLength, (payload.size + 1).toString()),
+                    )
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        val exception = assertFailsWith<okio.IOException> {
+            client.download("download.txt", sink, onProgressUpdate = {})
+        }
+
+        assertContains(exception.message.orEmpty(), "expected ${payload.size + 1} bytes")
+        assertContains(exception.message.orEmpty(), "received ${payload.size} bytes")
+        assertContentEquals(payload, sink.readByteArray())
+        assertEquals(1, requestCount)
+    }
+
+    @Test
+    fun givenExcessDownloadResponse_whenDownloading_thenFailsWithoutRetryingOrDuplicatingBody() = runTest {
+        val payload = "too long".encodeToByteArray()
+        var requestCount = 0
+        val sink = okio.Buffer()
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    respond(
+                        content = payload,
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentLength, (payload.size - 1).toString()),
+                    )
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        val exception = assertFailsWith<okio.IOException> {
+            client.download("download.txt", sink, onProgressUpdate = {})
+        }
+
+        assertContains(exception.message.orEmpty(), "expected ${payload.size - 1} bytes")
+        assertContains(exception.message.orEmpty(), "received ${payload.size} bytes")
+        assertContentEquals(payload, sink.readByteArray())
+        assertEquals(1, requestCount)
+    }
+
+    @Test
+    fun givenMissingContentLength_whenDownloading_thenSucceedsWithoutValidation() = runTest {
+        val payload = "download".encodeToByteArray()
+        var requestCount = 0
+        val sink = okio.Buffer()
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    respond(content = payload, status = HttpStatusCode.OK)
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        client.download("download.txt", sink, onProgressUpdate = {})
+
+        assertContentEquals(payload, sink.readByteArray())
+        assertEquals(1, requestCount)
+    }
+
+    @Test
+    fun givenMalformedContentLength_whenDownloading_thenFailsWithoutRetrying() = runTest {
+        val payload = "download".encodeToByteArray()
+        var requestCount = 0
+        val sink = okio.Buffer()
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    respond(
+                        content = payload,
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentLength, "invalid"),
+                    )
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        val exception = assertFailsWith<okio.IOException> {
+            client.download("download.txt", sink, onProgressUpdate = {})
+        }
+
+        assertContains(exception.message.orEmpty(), "invalid Content-Length: 'invalid'")
+        assertEquals(0L, sink.size)
+        assertEquals(1, requestCount)
+    }
+
+    @Test
+    fun givenOverflowedContentLength_whenDownloading_thenFailsWithoutRetrying() = runTest {
+        val payload = "download".encodeToByteArray()
+        val overflowedContentLength = "9223372036854775808"
+        var requestCount = 0
+        val sink = okio.Buffer()
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    respond(
+                        content = payload,
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentLength, overflowedContentLength),
+                    )
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        val exception = assertFailsWith<okio.IOException> {
+            client.download("download.txt", sink, onProgressUpdate = {})
+        }
+
+        assertContains(exception.message.orEmpty(), "invalid Content-Length: '$overflowedContentLength'")
+        assertEquals(0L, sink.size)
+        assertEquals(1, requestCount)
+    }
+
+    @Test
+    fun givenNegativeContentLength_whenDownloading_thenFailsWithoutRetrying() = runTest {
+        val payload = "download".encodeToByteArray()
+        var requestCount = 0
+        val sink = okio.Buffer()
+        val client = CellsS3Client(
+            httpClient = HttpClient(
+                MockEngine {
+                    requestCount++
+                    respond(
+                        content = payload,
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentLength, "-1"),
+                    )
+                }
+            ),
+            endpointProvider = { "https://cells.example.test" },
+            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
+            config = fixedDateConfig(),
+        )
+
+        val exception = assertFailsWith<okio.IOException> {
+            client.download("download.txt", sink, onProgressUpdate = {})
+        }
+
+        assertContains(exception.message.orEmpty(), "invalid Content-Length: '-1'")
+        assertEquals(0L, sink.size)
+        assertEquals(1, requestCount)
     }
 
     @Test
@@ -437,5 +801,7 @@ class CellsS3ClientTest {
         const val TEST_DOWNLOAD_SIZE = 20 * 1024
         const val TEST_STREAM_CHUNK_SIZE = 1024
         const val STREAM_ASSERTION_TIMEOUT_MILLIS = 5_000L
+        const val PARTIAL_SINK_WRITE_SIZE = 3L
+        const val DEFAULT_TEST_MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024L
     }
 }

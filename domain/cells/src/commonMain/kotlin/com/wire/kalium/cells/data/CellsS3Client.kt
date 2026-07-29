@@ -37,6 +37,7 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteWriteChannel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.io.IOException as KtorIOException
 import okio.Buffer
@@ -44,6 +45,7 @@ import okio.BufferedSource
 import okio.FileSystem
 import okio.IOException
 import okio.Path
+import okio.Sink
 import okio.SYSTEM
 import okio.buffer
 import okio.use
@@ -57,9 +59,10 @@ internal class CellsS3Client(
     private val config: CellsS3ClientConfig = CellsS3ClientConfig(),
 ) : CellsAwsClient {
 
+    @Suppress("TooGenericExceptionCaught") // Sink and callback implementations can throw arbitrary exceptions.
     override suspend fun download(
         objectKey: String,
-        outFileSink: okio.Sink,
+        outFileSink: Sink,
         onProgressUpdate: (Long) -> Unit,
     ) {
         requestWithRetry(
@@ -75,10 +78,27 @@ internal class CellsS3Client(
                 }
             },
             transform = { response ->
-                response.bodyAsChannel().copyToSink(
-                    sink = outFileSink,
-                    onProgressUpdate = onProgressUpdate,
-                )
+                val expectedContentLength = response.expectedContentLength()
+                try {
+                    val copiedBytes = response.bodyAsChannel().copyToSink(
+                        sink = outFileSink,
+                        onProgressUpdate = onProgressUpdate,
+                    )
+                    if (expectedContentLength != null && copiedBytes != expectedContentLength) {
+                        throw S3RequestException(
+                            "Download object response body length mismatch: " +
+                                    "expected $expectedContentLength bytes but received $copiedBytes bytes"
+                        )
+                    }
+                } catch (cause: CancellationException) {
+                    throw cause
+                } catch (cause: S3RequestException) {
+                    throw cause
+                } catch (cause: Exception) {
+                    // copyToSink closes the caller-provided sink even if reading fails before the first byte.
+                    // Retrying could therefore replay into a partial or closed destination.
+                    throw S3RequestException("Download object response body could not be copied", cause)
+                }
                 Unit
             },
         )
@@ -445,6 +465,14 @@ private fun s3RetryDelayMillis(retryCount: Int): Long {
 
 private fun HttpStatusCode.isRetryableS3Status(): Boolean = value in RETRYABLE_S3_STATUS_CODES
 
+private fun HttpResponse.expectedContentLength(): Long? {
+    val headerValue = headers[HttpHeaders.ContentLength] ?: return null
+    return headerValue.toLongOrNull()
+        ?.takeIf { it >= 0L }
+        // A structurally invalid response is terminal and is rejected before writing to the caller's sink.
+        ?: throw S3RequestException("Download object response has invalid Content-Length: '$headerValue'")
+}
+
 private suspend fun HttpResponse.discardBody() = bodyAsChannel().cancel(null)
 
 private suspend fun HttpResponse.toS3Failure(operation: String): S3Attempt<Nothing> {
@@ -458,7 +486,7 @@ private suspend fun HttpResponse.toS3Failure(operation: String): S3Attempt<Nothi
     }
 }
 
-private open class S3RequestException(message: String) : IOException(message)
+private open class S3RequestException(message: String, cause: Throwable? = null) : IOException(message, cause)
 
 private class RetryableS3Exception(message: String) : S3RequestException(message)
 
