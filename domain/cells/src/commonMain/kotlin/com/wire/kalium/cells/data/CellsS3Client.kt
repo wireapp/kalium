@@ -21,7 +21,6 @@ import com.wire.kalium.cells.data.model.CellNodeDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
-import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareRequest
 import io.ktor.client.request.setBody
@@ -266,8 +265,6 @@ internal class CellsS3Client(
     } catch (cause: S3RequestException) {
         S3Attempt.TerminalFailure(cause)
     } catch (cause: RetryableTransportException) {
-        S3Attempt.RetryableFailure(cause)
-    } catch (cause: HttpRequestTimeoutException) {
         S3Attempt.RetryableFailure(cause)
     } catch (cause: ConnectTimeoutException) {
         S3Attempt.RetryableFailure(cause)

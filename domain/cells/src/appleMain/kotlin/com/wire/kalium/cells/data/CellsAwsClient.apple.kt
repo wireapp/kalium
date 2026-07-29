@@ -36,7 +36,9 @@ private class CellsAwsClientApple(
     private val sessionManager: SessionManager,
     private val accessTokenAPI: AccessTokenApi
 ) : CellsAwsClient by CellsS3Client(
-    httpClient = HttpClient(),
+    httpClient = HttpClient {
+        installCellsS3HttpTimeout()
+    },
     endpointProvider = {
         credentials.awaitOrThrow().serverUrl
     },
