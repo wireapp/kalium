@@ -1597,7 +1597,6 @@ class ConversationRepositoryTest {
             id = "some_id",
             conversationId = CONVERSATION_ENTITY_ID,
             content = MessagePreviewEntityContent.Text("sender", "Hey"),
-            date = "2022-03-30T15:36:00.000Z",
             visibility = MessageEntity.Visibility.VISIBLE,
             isSelfMessage = false,
             senderUserId = USER_ENTITY_ID
