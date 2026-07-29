@@ -156,7 +156,7 @@ internal class CellsS3Client(
 
         fileSystem.source(path).buffer().use { source ->
             while (uploaded < length) {
-                val partSize = minOf(MULTIPART_CHUNK_SIZE.toLong(), length - uploaded)
+                val partSize = minOf(config.multipartChunkSize, length - uploaded)
                 val partData = source.readPart(partSize)
                 val eTag = uploadPart(node.path, uploadId, partNumber, partData)
                 uploaded += partData.size
@@ -377,7 +377,6 @@ internal class CellsS3Client(
 
     private companion object {
         const val DEFAULT_BUCKET_NAME = "io"
-        const val MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024
         const val STREAM_BUFFER_SIZE = 8 * 1024L
         const val UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD"
         const val UPLOADS_QUERY_PARAMETER = "uploads"
@@ -390,7 +389,12 @@ internal data class CellsS3ClientConfig(
     val signer: AwsSigV4Signer = AwsSigV4Signer(DEFAULT_S3_REGION, S3_SERVICE_NAME),
     val dateProvider: () -> AwsSigningDate = { AwsSigningDate.now() },
     val maxRegularUploadSize: Long = DEFAULT_MAX_REGULAR_UPLOAD_SIZE,
-)
+    val multipartChunkSize: Long = DEFAULT_MULTIPART_CHUNK_SIZE,
+) {
+    init {
+        require(multipartChunkSize > 0L) { "Multipart chunk size must be positive" }
+    }
+}
 
 internal data class S3Credentials(
     val accessKeyId: String,
@@ -504,6 +508,7 @@ private const val S3_SECOND_RETRY_MAX_DELAY_MILLIS = 15L
 private const val DEFAULT_S3_REGION = "us-east-1"
 private const val S3_SERVICE_NAME = "s3"
 private const val DEFAULT_MAX_REGULAR_UPLOAD_SIZE = 100 * 1024 * 1024L
+private const val DEFAULT_MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024L
 private val RETRYABLE_S3_STATUS_CODES = setOf(
     HttpStatusCode.RequestTimeout.value,
     HttpStatusCode.TooManyRequests.value,

@@ -791,9 +791,13 @@ class CellsS3ClientTest {
         dateProvider = { AwsSigningDate(date = "20260701", dateTime = "20260701T120102Z") },
     )
 
-    private fun fixedDateConfig(maxRegularUploadSize: Long): CellsS3ClientConfig = CellsS3ClientConfig(
+    private fun fixedDateConfig(
+        maxRegularUploadSize: Long,
+        multipartChunkSize: Long = DEFAULT_TEST_MULTIPART_CHUNK_SIZE,
+    ): CellsS3ClientConfig = CellsS3ClientConfig(
         dateProvider = { AwsSigningDate(date = "20260701", dateTime = "20260701T120102Z") },
         maxRegularUploadSize = maxRegularUploadSize,
+        multipartChunkSize = multipartChunkSize,
     )
 
     private companion object {
