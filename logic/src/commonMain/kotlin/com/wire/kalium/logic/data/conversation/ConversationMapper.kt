@@ -266,12 +266,12 @@ internal class ConversationMapperImpl(
                     ConversationDetails.OneOne(
                         conversation = fromConversationViewToEntity(daoModel),
                         otherUser = OtherUser(
-                            id = otherUserId.requireField("otherUserID in OneOnOne").toModel(),
+                            id = (otherUserId ?: id).toModel(),
                             name = name,
                             accentId = accentId ?: 0,
                             userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                             availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
-                            deleted = userDeleted ?: false,
+                            deleted = userDeleted ?: (otherUserId == null),
                             botService = botService?.let { BotService(it.id, it.provider) },
                             handle = null,
                             completePicture = previewAssetId?.toModel(),
