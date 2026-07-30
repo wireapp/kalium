@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.meeting.CreateMeeting
 import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import dev.mokkery.MockMode
@@ -41,7 +42,7 @@ import kotlin.test.assertEquals
 class CreateNewMeetingUseCaseTest {
 
     @Test
-    fun givenRepositoryCreateSucceeds_whenInvoking_thenReturnsSuccess() = runTest {
+    fun givenRepositoryCreateSucceeds_whenInvoking_thenReturnsSuccessAndCallRefreshUsersWithoutMetadata() = runTest {
         val createMeeting = CREATE_MEETING
         val (arrangement, useCase) = Arrangement()
             .withCreateNewMeetingReturning(createMeeting, Either.Right(MLSAdditionResult.Empty))
@@ -54,6 +55,7 @@ class CreateNewMeetingUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cryptoTransactionProvider.transaction<MLSAdditionResult>("CreateNewMeeting", any())
             arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
+            arrangement.refreshUsersWithoutMetadata()
         }
     }
 
@@ -92,6 +94,7 @@ class CreateNewMeetingUseCaseTest {
 
     inner class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         internal val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
+        internal val refreshUsersWithoutMetadata = mock<RefreshUsersWithoutMetadataUseCase>(mode = MockMode.autoUnit)
 
         internal fun withCreateNewMeetingReturning(
             meeting: CreateMeeting,
@@ -112,6 +115,7 @@ class CreateNewMeetingUseCaseTest {
 
         internal fun arrange() = this to CreateNewMeetingUseCaseImpl(
             meetingRepository = meetingRepository,
+            refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
             transactionProvider = cryptoTransactionProvider
         )
     }
