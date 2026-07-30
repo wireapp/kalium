@@ -432,6 +432,12 @@ internal class MessageInsertExtensionImpl(
                 conversation_id = message.conversationId,
                 is_apps_enabled = content.isEnabled
             )
+
+            is MessageEntityContent.AdminlessDeleteReminder -> messagesQueries.insertSystemAdminlessDeleteReminder(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                deletion_scheduled_for = content.deletionScheduledFor.toEpochMilliseconds(),
+            )
         }
     }
 
@@ -496,6 +502,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.LegalHold,
                 is MessageEntityContent.NewConversationWithCellMessage,
                 is MessageEntityContent.ConversationAppsAccessChanged,
+                is MessageEntityContent.AdminlessDeleteReminder,
                 is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage,
                 is MessageEntityContent.CellEditorAccessMessage,
                 is MessageEntityContent.CellViewerAccessMessage,
@@ -608,5 +615,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.CellViewerAccessMessage -> MessageEntity.ContentType.CELL_VIEWER_ACCESS
 
         is MessageEntityContent.ConversationAppsAccessChanged -> MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED
+        is MessageEntityContent.AdminlessDeleteReminder -> MessageEntity.ContentType.ADMINLESS_DELETE_REMINDER
     }
 }

@@ -656,6 +656,29 @@ class MessageSystemContentTest : BaseMessageTest() {
     }
 
     // ============================================================
+    // ADMINLESS_DELETE_REMINDER Tests (integer_1 = deletion_scheduled_for)
+    // ============================================================
+
+    @Test
+    fun givenAdminlessDeleteReminder_whenInserted_thenScheduledDeletionIsPreserved() = runTest {
+        insertInitialData()
+        val scheduledDeletion = kotlinx.datetime.Instant.parse("2026-08-23T12:00:00Z")
+        val message = newSystemMessageEntity(
+            id = "adminlessDeleteReminder",
+            conversationId = TEST_CONVERSATION_1.id,
+            senderUserId = SELF_USER.id,
+            content = MessageEntityContent.AdminlessDeleteReminder(scheduledDeletion)
+        )
+
+        messageDAO.insertOrIgnoreMessage(message)
+
+        val result = messageDAO.getMessageById(message.id, message.conversationId)
+        assertNotNull(result)
+        val content = assertIs<MessageEntityContent.AdminlessDeleteReminder>(result.content)
+        assertEquals(scheduledDeletion, content.deletionScheduledFor)
+    }
+
+    // ============================================================
     // CASCADE Deletion Tests
     // ============================================================
 
