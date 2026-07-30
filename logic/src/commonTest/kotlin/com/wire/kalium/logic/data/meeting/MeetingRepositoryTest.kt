@@ -57,7 +57,6 @@ import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -307,7 +306,7 @@ class MeetingRepositoryTest {
         assertEquals(MLSAdditionResult.Empty, result.getOrNull())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-            arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(eq(response.conversation.id.toModel()))
+            arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(response.conversation.id.toModel())
         }
     }
 
