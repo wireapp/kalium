@@ -20,18 +20,18 @@ package com.wire.kalium.logic.feature.meeting
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
+import com.wire.kalium.logic.data.MockProtocolInfo
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -62,7 +62,7 @@ class EnsureMeetingIsMLSEstablishedUseCaseTest {
     @Test
     fun givenProteusConversation_whenInvoking_thenReturnsTrueAndDoesNotJoinMLSConversation() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withConversationReturning(Either.Right(TestConversation.GROUP()))
+            .withConversationReturning(Either.Right(MockConversation.group(id = CONVERSATION_ID)))
             .arrange()
 
         val result = useCase(CONVERSATION_ID)
@@ -104,10 +104,10 @@ class EnsureMeetingIsMLSEstablishedUseCaseTest {
 
         assertTrue(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.cryptoTransactionProvider.transaction<Unit>(eq("ensureMeetingIsMLSEstablished"), any())
+            arrangement.cryptoTransactionProvider.transaction<Unit>("ensureMeetingIsMLSEstablished", any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversation(eq(arrangement.transactionContext), eq(CONVERSATION_ID), any(), any())
+            arrangement.joinExistingMLSConversation(arrangement.transactionContext, CONVERSATION_ID, any(), any())
         }
     }
 
@@ -122,7 +122,7 @@ class EnsureMeetingIsMLSEstablishedUseCaseTest {
 
         assertFalse(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.joinExistingMLSConversation(eq(arrangement.transactionContext), eq(CONVERSATION_ID), any(), any())
+            arrangement.joinExistingMLSConversation(arrangement.transactionContext, CONVERSATION_ID, any(), any())
         }
     }
 
@@ -132,7 +132,7 @@ class EnsureMeetingIsMLSEstablishedUseCaseTest {
 
         fun withConversationReturning(result: Either<StorageFailure, Conversation>) = apply {
             everySuspend {
-                conversationRepository.getConversationById(eq(CONVERSATION_ID))
+                conversationRepository.getConversationById(CONVERSATION_ID)
             } returns result
         }
 
@@ -156,8 +156,9 @@ class EnsureMeetingIsMLSEstablishedUseCaseTest {
         val CONVERSATION_ID = ConversationId("conversation-id", "domain.example")
 
         fun mlsConversation(groupState: Conversation.ProtocolInfo.MLSCapable.GroupState): Conversation =
-            TestConversation.GROUP(
-                TestConversation.MLS_PROTOCOL_INFO.copy(groupState = groupState)
-            ).copy(id = CONVERSATION_ID)
+            MockConversation.group(
+                id = CONVERSATION_ID,
+                protocolInfo = MockProtocolInfo.mls().copy(groupState = groupState)
+            )
     }
 }
