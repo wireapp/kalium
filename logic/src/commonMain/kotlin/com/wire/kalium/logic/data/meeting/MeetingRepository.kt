@@ -52,9 +52,11 @@ import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import com.wire.kalium.util.DateTimeUtil.asStartOfDay
 import com.wire.kalium.util.DateTimeUtil.currentInstant
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
 
@@ -143,7 +145,7 @@ internal class MeetingDataSource(
         from = from,
     ).pagingDataFlow.map { pagingData -> pagingData.map(meetingMapper::fromDaoToModel) }
 
-    override suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit> =
+    override suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit> = withContext(NonCancellable) {
         wrapApiRequest {
             meetingApi.deleteMeeting(meetingId.toApi())
         }.flatMap {
@@ -151,21 +153,24 @@ internal class MeetingDataSource(
                 meetingDAO.deleteMeeting(meetingId.toDao())
             }
         }
+    }
 
     override suspend fun createNewMeeting(
         meeting: CreateMeeting,
         generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant,
         transactionContext: CryptoTransactionContext,
-    ): Either<CoreFailure, MLSAdditionResult> = wrapApiRequest {
-        meetingApi.createNewMeeting(request = meetingMapper.fromModelToApi(meeting))
-    }.flatMap { response ->
-        response.persist(
-            transactionContext = transactionContext,
-            otherParticipants = meeting.otherParticipants,
-            generateOccurrencesFrom = generateOccurrencesFrom,
-            generateOccurrencesUntil = generateOccurrencesUntil
-        )
+    ): Either<CoreFailure, MLSAdditionResult> = withContext(NonCancellable) {
+        wrapApiRequest {
+            meetingApi.createNewMeeting(request = meetingMapper.fromModelToApi(meeting))
+        }.flatMap { response ->
+            response.persist(
+                transactionContext = transactionContext,
+                otherParticipants = meeting.otherParticipants,
+                generateOccurrencesFrom = generateOccurrencesFrom,
+                generateOccurrencesUntil = generateOccurrencesUntil
+            )
+        }
     }
 
     private suspend fun CreateMeetingResponse.persist(
