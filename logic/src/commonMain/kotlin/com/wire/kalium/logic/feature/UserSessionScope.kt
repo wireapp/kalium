@@ -1987,7 +1987,10 @@ public class UserSessionScope internal constructor(
         )
 
     private val deleteConversationReminderEventHandler: DeleteConversationReminderEventHandler
-        get() = DeleteConversationReminderEventHandlerImpl()
+        get() = DeleteConversationReminderEventHandlerImpl(
+            persistMessage = persistMessage,
+            selfUserId = userId,
+        )
 
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
