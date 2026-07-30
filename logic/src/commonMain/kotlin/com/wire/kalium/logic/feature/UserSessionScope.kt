@@ -2953,6 +2953,9 @@ public class UserSessionScope internal constructor(
         MeetingScope(
             dispatcher = KaliumDispatcherImpl,
             meetingRepository = meetingRepository,
+            conversationRepository = conversationRepository,
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            transactionProvider = cryptoTransactionProvider
         )
     }
 
