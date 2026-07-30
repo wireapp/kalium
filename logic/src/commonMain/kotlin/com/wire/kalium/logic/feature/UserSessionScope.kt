@@ -495,6 +495,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpda
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.DeleteConversationReminderEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.DeleteConversationReminderEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
@@ -1983,6 +1985,10 @@ public class UserSessionScope internal constructor(
             currentPersistenceEventHookNotifier,
             userId,
         )
+
+    private val deleteConversationReminderEventHandler: DeleteConversationReminderEventHandler
+        get() = DeleteConversationReminderEventHandlerImpl()
+
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
             conversationRepository = conversationRepository,
@@ -2084,6 +2090,7 @@ public class UserSessionScope internal constructor(
             newMessageHandler,
             newConversationHandler,
             deletedConversationHandler,
+            deleteConversationReminderEventHandler,
             memberJoinHandler,
             memberLeaveHandler,
             memberChangeHandler,

@@ -56,6 +56,7 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonNull
@@ -314,7 +315,7 @@ internal sealed class Event(open val id: String) {
         internal data class DeletedConversation(
             override val id: String,
             override val conversationId: ConversationId,
-            val senderUserId: UserId,
+            val senderUserId: UserId?,
             val dateTime: Instant,
         ) : Conversation(id, conversationId) {
 
@@ -323,7 +324,25 @@ internal sealed class Event(open val id: String) {
                 idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 timestampIsoKey to dateTime,
-                senderUserIdKey to senderUserId.toLogString()
+                senderUserIdKey to senderUserId?.toLogString()
+            )
+        }
+
+        internal data class AdminlessDeleteReminder(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val senderUserId: UserId?,
+            val dateTime: Instant,
+            val deletionScheduledFor: Instant,
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.AdminlessDeleteReminder",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                senderUserIdKey to senderUserId?.toLogString(),
+                timestampIsoKey to dateTime.toIsoDateTimeString(),
+                "deletionScheduledFor" to deletionScheduledFor.toIsoDateTimeString(),
             )
         }
 
