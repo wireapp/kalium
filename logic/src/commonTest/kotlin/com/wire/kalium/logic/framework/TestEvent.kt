@@ -128,6 +128,14 @@ internal object TestEvent {
         Instant.parse("2022-03-30T15:36:00.000Z")
     )
 
+    fun adminlessDeleteReminder(eventId: String = "eventId") = Event.Conversation.AdminlessDeleteReminder(
+        id = eventId,
+        conversationId = TestConversation.ID,
+        senderUserId = TestUser.USER_ID,
+        dateTime = Instant.parse("2026-07-16T12:00:00.000Z"),
+        deletionScheduledFor = Instant.parse("2026-07-20T12:00:00.000Z"),
+    )
+
     fun renamedConversation(eventId: String = "eventId") = Event.Conversation.RenamedConversation(
         eventId,
         TestConversation.ID,

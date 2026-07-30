@@ -26,6 +26,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.DeleteConversationReminderEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -130,6 +131,23 @@ class ConversationEventReceiverTest {
             arrangement.deletedConversationEventHandler.handle(any(), eq(deletedConversationEvent))
         }
 
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenAdminlessDeleteReminderEvent_whenOnEventInvoked_thenDeleteConversationReminderHandlerShouldBeCalled() = runTest {
+        val reminderEvent = TestEvent.adminlessDeleteReminder()
+        val (arrangement, conversationEventReceiver) = Arrangement().arrange()
+
+        val result = conversationEventReceiver.onEvent(
+            arrangement.transactionContext,
+            reminderEvent,
+            TestEvent.liveDeliveryInfo
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.deleteConversationReminderEventHandler.handle(eq(reminderEvent))
+        }
         result.shouldSucceed()
     }
 
@@ -456,6 +474,7 @@ class ConversationEventReceiverTest {
         val newMessageEventHandler = mock<NewMessageEventHandler>()
         val newConversationEventHandler = mock<NewConversationEventHandler>()
         val deletedConversationEventHandler = mock<DeletedConversationEventHandler>()
+        val deleteConversationReminderEventHandler = mock<DeleteConversationReminderEventHandler>()
         val typingIndicatorHandler = mock<TypingIndicatorHandler>()
         val protocolUpdateEventHandler = mock<ProtocolUpdateEventHandler>()
         val channelAddPermissionUpdateEventHandler = mock<ChannelAddPermissionUpdateEventHandler>()
@@ -468,6 +487,7 @@ class ConversationEventReceiverTest {
             newMessageHandler = newMessageEventHandler,
             newConversationHandler = newConversationEventHandler,
             deletedConversationHandler = deletedConversationEventHandler,
+            deleteConversationReminderEventHandler = deleteConversationReminderEventHandler,
             memberJoinHandler = memberJoinEventHandler,
             memberLeaveHandler = memberLeaveEventHandler,
             memberChangeHandler = memberChangeEventHandler,
@@ -497,6 +517,7 @@ class ConversationEventReceiverTest {
             everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), any(), any()) } returns Unit
             everySuspend { newConversationEventHandler.handle(any(), any()) } returns Unit
             everySuspend { deletedConversationEventHandler.handle(any(), any()) } returns Unit
+            everySuspend { deleteConversationReminderEventHandler.handle(any()) } returns Unit
             everySuspend { memberJoinEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { memberLeaveEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Unit

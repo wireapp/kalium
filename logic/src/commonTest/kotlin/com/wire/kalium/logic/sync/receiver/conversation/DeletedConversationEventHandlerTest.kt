@@ -59,7 +59,7 @@ class DeletedConversationEventHandlerTest {
         val event = TestEvent.deletedConversation()
         val (arrangement, eventHandler) = arrange {
             withGetConversationByIdReturning(null)
-            withObserveUser(userId = event.senderUserId)
+            withObserveUser(userId = requireNotNull(event.senderUserId))
             withDeletingConversationSucceeding()
         }
 
@@ -79,7 +79,7 @@ class DeletedConversationEventHandlerTest {
         val otherUser = TestUser.OTHER
         val (arrangement, eventHandler) = arrange {
             withGetConversationByIdReturning(conversation)
-            withObserveUser(flowOf(otherUser), event.senderUserId)
+            withObserveUser(flowOf(otherUser), requireNotNull(event.senderUserId))
             withDeletingConversationSucceeding()
         }
 
@@ -105,13 +105,44 @@ class DeletedConversationEventHandlerTest {
     }
 
     @Test
+    fun givenDeletedConversationWithoutSender_whenHandlingIt_thenSchedulesAnonymousNotificationAndNotifiesHook() = runTest {
+        val event = TestEvent.deletedConversation().copy(senderUserId = null)
+        val conversation = TestConversation.CONVERSATION
+        val hookNotifier = RecordingPersistenceEventHookNotifier()
+        val (arrangement, eventHandler) = arrange(hookNotifier) {
+            withGetConversationByIdReturning(conversation)
+            withDeletingConversationSucceeding()
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        with(arrangement) {
+            verifySuspend(VerifyMode.exactly(1)) {
+                deleteConversation(any(), eq(TestConversation.ID))
+            }
+            verifySuspend(VerifyMode.not) {
+                userRepository.observeUser(any())
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                notificationEventsManager.scheduleDeleteConversationNotification(
+                    eq(EphemeralConversationNotification(event, conversation, null))
+                )
+            }
+        }
+        assertEquals(
+            ConversationDeleteEventData(event.conversationId) to TestUser.USER_ID,
+            hookNotifier.conversationDeleteCalls.single()
+        )
+    }
+
+    @Test
     fun givenADeletedConversationEvent_whenHandlingItWithError_thenNoSchedulingTheNotification() = runTest {
         val event = TestEvent.deletedConversation()
         val conversation = TestConversation.CONVERSATION
         val otherUser = TestUser.OTHER
         val (arrangement, eventHandler) = arrange {
             withGetConversationByIdReturning(conversation)
-            withObserveUser(flowOf(otherUser), event.senderUserId)
+            withObserveUser(flowOf(otherUser), requireNotNull(event.senderUserId))
             withDeletingConversationFailing()
         }
 
@@ -132,7 +163,7 @@ class DeletedConversationEventHandlerTest {
         val hookNotifier = RecordingPersistenceEventHookNotifier()
         val (arrangement, eventHandler) = arrange(hookNotifier) {
             withGetConversationByIdReturning(conversation)
-            withObserveUser(flowOf(otherUser), event.senderUserId)
+            withObserveUser(flowOf(otherUser), requireNotNull(event.senderUserId))
             withDeletingConversationSucceeding()
         }
 
@@ -152,7 +183,7 @@ class DeletedConversationEventHandlerTest {
         val hookNotifier = RecordingPersistenceEventHookNotifier()
         val (arrangement, eventHandler) = arrange(hookNotifier) {
             withGetConversationByIdReturning(conversation)
-            withObserveUser(flowOf(otherUser), event.senderUserId)
+            withObserveUser(flowOf(otherUser), requireNotNull(event.senderUserId))
             withDeletingConversationFailing()
         }
 
@@ -170,7 +201,7 @@ class DeletedConversationEventHandlerTest {
         val hookNotifier = RecordingPersistenceEventHookNotifier()
         val (arrangement, eventHandler) = arrange(hookNotifier) {
             withGetConversationByIdReturning(null)
-            withObserveUser(userId = event.senderUserId)
+            withObserveUser(userId = requireNotNull(event.senderUserId))
             withDeletingConversationSucceeding()
         }
 
