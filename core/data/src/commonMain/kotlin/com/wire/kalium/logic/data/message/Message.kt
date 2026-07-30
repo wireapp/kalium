@@ -347,6 +347,11 @@ sealed interface Message {
                     typeKey to "conversationReceiptModeChanged"
                 )
 
+                is MessageContent.AdminlessDeleteReminder -> mutableMapOf(
+                    typeKey to "adminlessDeleteReminder",
+                    "deletionScheduledFor" to content.deletionScheduledFor.toIsoDateTimeString()
+                )
+
                 MessageContent.HistoryLost -> mutableMapOf(
                     typeKey to "conversationMightLostHistory"
                 )

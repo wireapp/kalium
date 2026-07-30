@@ -18,12 +18,40 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.util.createEventProcessingLogger
 
 internal interface DeleteConversationReminderEventHandler {
     suspend fun handle(event: Event.Conversation.AdminlessDeleteReminder)
 }
 
-internal class DeleteConversationReminderEventHandlerImpl : DeleteConversationReminderEventHandler {
-    override suspend fun handle(event: Event.Conversation.AdminlessDeleteReminder) = Unit
+internal class DeleteConversationReminderEventHandlerImpl(
+    private val persistMessage: PersistMessageUseCase,
+    private val selfUserId: UserId,
+) : DeleteConversationReminderEventHandler {
+
+    override suspend fun handle(event: Event.Conversation.AdminlessDeleteReminder) {
+        val logger = kaliumLogger.createEventProcessingLogger(event)
+        persistMessage(
+            Message.System(
+                id = event.id,
+                content = MessageContent.AdminlessDeleteReminder(event.deletionScheduledFor),
+                conversationId = event.conversationId,
+                date = event.dateTime,
+                senderUserId = event.senderUserId ?: selfUserId,
+                status = Message.Status.Sent,
+                visibility = Message.Visibility.VISIBLE,
+                expirationData = null,
+            )
+        )
+            .onSuccess { logger.logSuccess() }
+            .onFailure(logger::logFailure)
+    }
 }
