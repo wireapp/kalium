@@ -19,9 +19,11 @@
 package com.wire.kalium.logic.feature.meeting
 
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.meeting.CreateMeeting
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 
 /**
  * Use case for creating a new meeting.
@@ -36,11 +38,16 @@ public interface CreateNewMeetingUseCase {
 
 internal class CreateNewMeetingUseCaseImpl(
     private val meetingRepository: MeetingRepository,
+    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val transactionProvider: CryptoTransactionProvider,
 ) : CreateNewMeetingUseCase {
 
-    override suspend operator fun invoke(createMeeting: CreateMeeting) =
-        transactionProvider.transaction("CreateNewMeeting") { transactionContext ->
+    override suspend operator fun invoke(createMeeting: CreateMeeting) = transactionProvider
+        .transaction("CreateNewMeeting") { transactionContext ->
             meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = transactionContext)
-        }.fold({ CreateNewMeetingUseCase.Result.Failure }, { CreateNewMeetingUseCase.Result.Success })
+        }
+        .onSuccess {
+            refreshUsersWithoutMetadata()
+        }
+        .fold({ CreateNewMeetingUseCase.Result.Failure }, { CreateNewMeetingUseCase.Result.Success })
 }
