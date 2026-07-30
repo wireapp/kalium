@@ -5290,6 +5290,10 @@ public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase$Re
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/meeting/EnsureMeetingIsMLSEstablishedUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase {
 	public abstract fun invoke (Landroidx/paging/PagingConfig;JLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;Landroidx/paging/PagingConfig;JLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
@@ -5301,6 +5305,7 @@ public final class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccu
 
 public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getDeleteMeeting ()Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase;
+	public final fun getEnsureMeetingIsMLSEstablished ()Lcom/wire/kalium/logic/feature/meeting/EnsureMeetingIsMLSEstablishedUseCase;
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
 	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
 }
