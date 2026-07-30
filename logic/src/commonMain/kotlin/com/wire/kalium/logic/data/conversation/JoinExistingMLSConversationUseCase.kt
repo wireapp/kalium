@@ -51,9 +51,8 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 /**
- * Use case for joining or establishing an MLS group for an existing conversation.
- * If the conversation is MLS-capable, it checks if it is already established. If not, it establishes the MLS group, otherwise it sends
- * an external commit to join an MLS conversation for which the user is a member, but has not yet joined the corresponding MLS group.
+ * Send an external commit to join an MLS conversation for which the user is a member,
+ * but has not yet joined the corresponding MLS group.
  */
 internal interface JoinExistingMLSConversationUseCase {
     suspend operator fun invoke(

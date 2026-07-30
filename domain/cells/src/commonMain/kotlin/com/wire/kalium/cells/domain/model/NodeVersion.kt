@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.model
 
+import kotlinx.datetime.Instant
+
 public data class NodeVersion(
     val id: String,
     val hash: String?,
@@ -26,7 +28,7 @@ public data class NodeVersion(
     val editorUrls: Map<String, PreSignedUrl>?,
     val filePreviews: List<FilePreview>?,
     val isHead: Boolean?,
-    val modifiedTime: String?,
+    val modifiedTime: Instant?,
     val ownerName: String?,
     val ownerUuid: String?,
     val getUrl: PreSignedUrl?,

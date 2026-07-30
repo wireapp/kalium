@@ -1646,6 +1646,36 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenOneOnOneWithOngoingCall_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
+        val newerConversation = conversationEntity1.copy(
+            lastModifiedDate = Instant.fromEpochMilliseconds(2)
+        )
+        val olderConversationWithCall = conversationEntity2.copy(
+            lastModifiedDate = Instant.fromEpochMilliseconds(1)
+        )
+        conversationDAO.insertConversation(newerConversation)
+        conversationDAO.insertConversation(olderConversationWithCall)
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(member1, MemberEntity(selfUserId, MemberEntity.Role.Member)),
+            newerConversation.id
+        )
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(member2, MemberEntity(selfUserId, MemberEntity.Role.Member)),
+            olderConversationWithCall.id
+        )
+
+        conversationDAO.getAllConversationDetailsWithEvents(
+            newActivitiesOnTop = true,
+            ongoingCallConversationIds = listOf(olderConversationWithCall.id)
+        ).first().let {
+            assertEquals(olderConversationWithCall.id, it[0].conversationViewEntity.id)
+            assertEquals(newerConversation.id, it[1].conversationViewEntity.id)
+        }
+    }
+
+    @Test
     fun givenConversationWithUnreadEvents_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
         val conversationEntity1 = conversationEntity1.copy(
             id = ConversationIDEntity("conversation1", "domain"),

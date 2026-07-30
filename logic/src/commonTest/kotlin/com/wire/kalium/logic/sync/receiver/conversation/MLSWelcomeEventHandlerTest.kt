@@ -429,7 +429,6 @@ class MLSWelcomeEventHandlerTest {
             CONVERSATION_ID,
             TestUser.USER_ID,
             Base64.encode(WELCOME),
-            timestampIso = "2022-03-30T15:36:00.000Z"
         )
         val WELCOME_BUNDLE = WelcomeBundle(MLS_GROUP_ID, null)
     }

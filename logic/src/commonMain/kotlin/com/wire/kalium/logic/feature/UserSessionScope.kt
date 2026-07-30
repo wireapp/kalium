@@ -2953,6 +2953,7 @@ public class UserSessionScope internal constructor(
         MeetingScope(
             dispatcher = KaliumDispatcherImpl,
             meetingRepository = meetingRepository,
+            refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
             transactionProvider = cryptoTransactionProvider
         )
     }
