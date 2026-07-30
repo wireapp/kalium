@@ -5265,6 +5265,27 @@ public abstract interface class com/wire/kalium/logic/feature/legalhold/ObserveL
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lkotlinx/coroutines/flow/Flow;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/meeting/CreateMeeting;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -5300,6 +5321,7 @@ public final class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccu
 }
 
 public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
+	public final fun getCreateNewMeeting ()Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase;
 	public final fun getDeleteMeeting ()Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase;
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
 	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
