@@ -26,6 +26,7 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.DeleteConversationReminderEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -52,6 +53,7 @@ internal class ConversationEventReceiverImpl(
     private val newMessageHandler: NewMessageEventHandler,
     private val newConversationHandler: NewConversationEventHandler,
     private val deletedConversationHandler: DeletedConversationEventHandler,
+    private val deleteConversationReminderEventHandler: DeleteConversationReminderEventHandler,
     private val memberJoinHandler: MemberJoinEventHandler,
     private val memberLeaveHandler: MemberLeaveEventHandler,
     private val memberChangeHandler: MemberChangeEventHandler,
@@ -94,6 +96,11 @@ internal class ConversationEventReceiverImpl(
 
             is Event.Conversation.DeletedConversation -> {
                 deletedConversationHandler.handle(transactionContext, event)
+                Either.Right(Unit)
+            }
+
+            is Event.Conversation.AdminlessDeleteReminder -> {
+                deleteConversationReminderEventHandler.handle(event)
                 Either.Right(Unit)
             }
 
