@@ -1383,6 +1383,10 @@ abstract interface com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase { 
     }
 }
 
+abstract interface com.wire.kalium.logic.feature.meeting/EnsureMeetingIsMLSEstablishedUseCase { // com.wire.kalium.logic.feature.meeting/EnsureMeetingIsMLSEstablishedUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/EnsureMeetingIsMLSEstablishedUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase { // com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant = ...): com.wire.kalium.logic.data.meeting/MeetingOccurrence? // com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant){}[0]
 }
@@ -4310,6 +4314,8 @@ final class com.wire.kalium.logic.feature.meeting/MeetingScope { // com.wire.kal
         final fun <get-createNewMeeting>(): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.createNewMeeting.<get-createNewMeeting>|<get-createNewMeeting>(){}[0]
     final val deleteMeeting // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeeting|{}deleteMeeting[0]
         final fun <get-deleteMeeting>(): com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeeting.<get-deleteMeeting>|<get-deleteMeeting>(){}[0]
+    final val ensureMeetingIsMLSEstablished // com.wire.kalium.logic.feature.meeting/MeetingScope.ensureMeetingIsMLSEstablished|{}ensureMeetingIsMLSEstablished[0]
+        final fun <get-ensureMeetingIsMLSEstablished>(): com.wire.kalium.logic.feature.meeting/EnsureMeetingIsMLSEstablishedUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.ensureMeetingIsMLSEstablished.<get-ensureMeetingIsMLSEstablished>|<get-ensureMeetingIsMLSEstablished>(){}[0]
     final val getNextMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextMeetingOccurrence|{}getNextMeetingOccurrence[0]
         final fun <get-getNextMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextMeetingOccurrence.<get-getNextMeetingOccurrence>|<get-getNextMeetingOccurrence>(){}[0]
     final val getPaginatedMeetingOccurrenceDetails // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails|{}getPaginatedMeetingOccurrenceDetails[0]
