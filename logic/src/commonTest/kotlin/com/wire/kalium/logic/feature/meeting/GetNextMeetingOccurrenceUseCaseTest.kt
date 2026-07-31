@@ -23,8 +23,10 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingOccurrence
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.feature.backup.UserId
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.MockMode
@@ -44,28 +46,28 @@ class GetNextMeetingOccurrenceUseCaseTest {
     @Test
     fun givenRepositoryReturnsOccurrence_whenInvoking_thenReturnsOccurrence() = runTest {
         val (arrangement, useCase) = Arrangement(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
-            .withNextMeetingOccurrenceReturning(MEETING_OCCURRENCE.meetingId, FROM, MEETING_OCCURRENCE.right())
+            .withNextMeetingOccurrenceReturning(MEETING.meetingId, FROM, MEETING_OCCURRENCE.right())
             .arrange()
 
-        val result = useCase(MEETING_OCCURRENCE.meetingId, FROM)
+        val result = useCase(MEETING.meetingId, FROM)
 
         assertEquals(MEETING_OCCURRENCE, result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.getNextMeetingOccurrence(MEETING_OCCURRENCE.meetingId, FROM)
+            arrangement.meetingRepository.getNextMeetingOccurrence(MEETING.meetingId, FROM)
         }
     }
 
     @Test
     fun givenRepositoryReturnsNull_whenInvoking_thenReturnsNull() = runTest {
         val (arrangement, useCase) = Arrangement(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
-            .withNextMeetingOccurrenceReturning(MEETING_OCCURRENCE.meetingId, FROM, StorageFailure.DataNotFound.left())
+            .withNextMeetingOccurrenceReturning(MEETING.meetingId, FROM, StorageFailure.DataNotFound.left())
             .arrange()
 
-        val result = useCase(MEETING_OCCURRENCE.meetingId, FROM)
+        val result = useCase(MEETING.meetingId, FROM)
 
         assertEquals(null, result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.getNextMeetingOccurrence(MEETING_OCCURRENCE.meetingId, FROM)
+            arrangement.meetingRepository.getNextMeetingOccurrence(MEETING.meetingId, FROM)
         }
     }
 
@@ -82,19 +84,23 @@ class GetNextMeetingOccurrenceUseCaseTest {
 
     private companion object {
         val FROM: Instant = Instant.parse("2026-06-01T10:00:00Z")
+        val MEETING: Meeting = Meeting(
+            meetingId = MeetingId("meeting1", "domain"),
+            conversationId = ConversationId("conversation1", "domain"),
+            creatorId = UserId("user1", "domain"),
+            title = "Meeting 1",
+            startTime = Instant.parse("2026-06-01T10:30:00Z"),
+            endTime = Instant.parse("2026-06-01T11:30:00Z"),
+            recurrence = null,
+        )
         val MEETING_OCCURRENCE: MeetingOccurrence = MeetingOccurrence(
+            meeting = MEETING,
             selfRole = MeetingOccurrence.SelfRole.Creator,
             conversationName = "Conversation 1",
             conversationType = MeetingOccurrence.ConversationType.Group,
             occurrenceId = "occurrence1",
             occurrenceStartTime = Instant.parse("2026-06-01T10:30:00Z"),
             occurrenceEndTime = Instant.parse("2026-06-01T11:30:00Z"),
-            meetingId = MeetingId("meeting1", "domain"),
-            conversationId = ConversationId("conversation1", "domain"),
-            title = "Meeting 1",
-            startTime = Instant.parse("2026-06-01T10:30:00Z"),
-            endTime = Instant.parse("2026-06-01T11:30:00Z"),
-            recurrence = null,
         )
     }
 }
