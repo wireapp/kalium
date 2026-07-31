@@ -40,7 +40,7 @@ jobs:
         uses: ./.github/actions/setup-java-gradle
 
       - name: Restore Kotlin/Native tooling cache (.konan)
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
         id: konan-cache
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:

@@ -17,10 +17,10 @@ runs:
     - name: Gradle Cache
       uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
       with:
-        # Only develop pushes and trusted, same-repository pull requests may use caches.
-        # Both cases write to their GitHub-managed ref scope; all other events are fully disabled.
-        cache-disabled: ${{ !((github.event_name == 'push' && github.ref == 'refs/heads/develop') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
-        cache-read-only: false
+        # Develop pushes and trusted, same-repository pull requests write to their ref scope.
+        # Merge queue validation may restore develop caches but must not write to its temporary ref.
+        cache-disabled: ${{ !((github.event_name == 'push' && github.ref == 'refs/heads/develop') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || github.event_name == 'merge_group') }}
+        cache-read-only: ${{ github.event_name == 'merge_group' }}
 
     - name: Validate Gradle wrapper
       uses: gradle/actions/wrapper-validation@6cfc8b8e8bb586cc164bef1c478c1eea3a4d6a19

@@ -1,8 +1,12 @@
 name: "Warm Konan Cache"
 
 on:
+  workflow_dispatch:
   push:
     branches: [ develop ]
+    paths:
+      - gradle.properties
+      - gradle/libs.versions.toml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
