@@ -31,6 +31,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.logic.sync.WorkSchedulerProviderImpl
+import com.wire.kalium.logic.util.DatabaseKeyLock
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
@@ -38,6 +39,7 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -60,16 +62,30 @@ public actual class CoreLogic(
         kaliumConfigs.shouldEncryptData()
     )
 
-    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
-        platformDatabaseData = PlatformDatabaseData(appContext),
-        queriesContext = KaliumDispatcherImpl.io,
-        passphrase = if (kaliumConfigs.shouldEncryptData()) {
-            SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret()
+    private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+
+    // The whole key transition — select/generate the key material, rekey the file, promote the new
+    // alias — has to happen under one lock. Locking only the endpoints would let a second SDK
+    // instance rekey the same file while this one is mid-migration.
+    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = DatabaseKeyLock.withLock {
+        val keyMaterial = if (kaliumConfigs.shouldEncryptData()) {
+            securityHelper.globalDBKeyMaterial(
+                databaseExists = appContext.getDatabasePath(FileNameUtil.globalDBName()).exists()
+            )
         } else {
             null
-        },
-        enableWAL = true
-    )
+        }
+        globalDatabaseProvider(
+            platformDatabaseData = PlatformDatabaseData(
+                context = appContext,
+                globalDatabaseLegacyKey = keyMaterial?.legacyKey,
+                onGlobalDatabaseMigratedToRawKey = securityHelper::clearGlobalDBLegacyKey
+            ),
+            queriesContext = KaliumDispatcherImpl.io,
+            passphrase = keyMaterial?.rawKey,
+            enableWAL = true
+        )
+    }
 
     public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)

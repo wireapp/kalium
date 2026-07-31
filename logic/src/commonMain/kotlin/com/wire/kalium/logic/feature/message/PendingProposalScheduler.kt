@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Schedule pending MLS proposals in a conversation to be committed at a given
@@ -72,7 +73,8 @@ internal class PendingProposalSchedulerImpl(
     private val mlsConversationRepository: Lazy<MLSConversationRepository>,
     private val subconversationRepository: Lazy<SubconversationRepository>,
     private val transactionProvider: CryptoTransactionProvider,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    parentContext: CoroutineContext = SupervisorJob(),
 ) : PendingProposalScheduler {
 
     /**
@@ -80,7 +82,7 @@ internal class PendingProposalSchedulerImpl(
      * This means using this dispatcher only a single coroutine will be processed at a time.
      */
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
-    private val commitPendingProposalsScope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val commitPendingProposalsScope = CoroutineScope(parentContext + dispatcher)
 
     init {
         commitPendingProposalsScope.launch {

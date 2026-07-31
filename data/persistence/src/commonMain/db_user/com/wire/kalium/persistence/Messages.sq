@@ -201,10 +201,18 @@ CREATE INDEX idx_system_content_type ON MessageSystemContent(content_type);
 
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
-SELECT isSelfMessage,
- IFNULL( isMentioningSelfUser, 0 ) == 1 AS  isMentioningSelfUser,
-	IFNULL( isQuotingSelfUser, 0 ) == 1 AS isQuotingSelfUser,
-	mutedStatus  FROM MessagePreview WHERE id = ? AND conversationId = ?)
+SELECT
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    IFNULL(Mention.user_id IS NOT NULL, 0) == 1 AS isMentioningSelfUser,
+    IFNULL(TextContent.is_quoting_self, 0) == 1 AS isQuotingSelfUser,
+    Conversation.muted_status AS mutedStatus
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN Conversation ON Message.conversation_id = Conversation.qualified_id
+LEFT JOIN MessageMention AS Mention ON Message.id = Mention.message_id AND SelfUser.id = Mention.user_id
+LEFT JOIN MessageTextContent AS TextContent
+    ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+WHERE Message.id = ? AND Message.conversation_id = ?)
 SELECT (
     CASE mutedStatus
     WHEN 'ALL_MUTED' THEN 0

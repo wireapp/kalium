@@ -1719,7 +1719,8 @@ public class UserSessionScope internal constructor(
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
             lazy { subconversationRepository },
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            parentContext = coroutineContext,
         )
 
     private val callManager: Lazy<CallManager> = lazy {
@@ -2706,7 +2707,7 @@ public class UserSessionScope internal constructor(
         get() = IsAllowedToRegisterMLSClientUseCaseImpl(
             featureSupport,
             mlsPublicKeysRepository,
-            userConfigRepository
+            featureConfigRepository
         )
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
@@ -2952,13 +2953,21 @@ public class UserSessionScope internal constructor(
         MeetingScope(
             dispatcher = KaliumDispatcherImpl,
             meetingRepository = meetingRepository,
+            conversationRepository = conversationRepository,
+            refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            transactionProvider = cryptoTransactionProvider
         )
     }
 
     private val meetingRepository: MeetingRepository
         get() = MeetingDataSource(
+            selfUserId = userId,
             meetingDAO = userStorage.database.meetingDao,
             meetingApi = authenticatedNetworkContainer.meetingApi,
+            mlsConversationRepository = mlsConversationRepository,
+            pendingActionsRepository = pendingActionsRepository,
+            persistConversations = persistConversationsUseCase,
         )
 
     private val syncMeetingsUseCase: SyncMeetingsUseCase

@@ -55,6 +55,7 @@ public interface GetPaginatedNodesUseCase {
             criteria = SortingCriteria.FOLDERS_FIRST_THEN_ALPHABETICAL,
             descending = true
         ),
+        isRecursive: Boolean = false
     ): Either<CoreFailure, PaginatedList<Node>>
 }
 
@@ -72,7 +73,8 @@ internal class GetPaginatedNodesUseCaseImpl(
         limit: Int,
         offset: Int,
         fileFilters: FileFilters,
-        sortingSpec: SortingSpec
+        sortingSpec: SortingSpec,
+        isRecursive: Boolean
     ): Either<CoreFailure, PaginatedList<Node>> {
 
         val attachments = attachmentsRepository.getAttachments().getOrElse { emptyList() }.filterIsInstance<CellAssetContent>()
@@ -85,6 +87,7 @@ internal class GetPaginatedNodesUseCaseImpl(
             offset = offset,
             fileFilters = fileFilters,
             sortingSpec = sortingSpec,
+            isRecursive = isRecursive
         ).map { nodes ->
             val visibleNodes = nodes.data.filterNot { it.isDraft }
 
