@@ -49,7 +49,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Handles sending a pending asset message, retrying the upload if the previous attempt failed due to
- * no network connectivity. This is called by [PendingMessagesSenderWorker] when network is restored.
+ * no network connectivity. This is called by pending-message retry when network is restored.
  *
  * Unlike [com.wire.kalium.logic.feature.message.RetryFailedMessageUseCase] which operates on
  * messages with [Message.Status.Failed] status, this use case operates on messages that remain

@@ -34,6 +34,7 @@ import kotlin.io.encoding.Base64
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class SecurityHelperTest {
@@ -43,6 +44,10 @@ class SecurityHelperTest {
     private lateinit var securityHelper: SecurityHelper
 
     private val userId = UserId("df8703fb-bbab-4b10-a369-0ef781a17cf5", "wire.com")
+    private val globalV1Alias = "global_db_passphrase_alias"
+    private val globalV2Alias = "global_db_passphrase_alias_v2"
+    private val userV1Alias = "user_db_secret_alias_$userId"
+    private val userV2Alias = "user_db_secret_alias_v2_$userId"
     private val mlsV1Alias = "mls_db_secret_alias_$userId"
     private val mlsV2Alias = "mls_db_secret_alias_v2_$userId"
     private val proteusV1Alias = "proteus_db_secret_alias_$userId"
@@ -57,22 +62,20 @@ class SecurityHelperTest {
     }
 
     @Test
-    fun whenCallingGlobalDBSecretTwice_thenTheSameValueIsReturned() = runTest {
-        every {
-            passphraseStorage.getPassphrase(any())
-        }.returns(null)
+    fun whenCallingGlobalDBKeyMaterialTwice_thenTheSameValueIsReturned() = runTest {
+        val storedSecret = Base64.encode(ByteArray(32) { it.toByte() })
+        every { passphraseStorage.getPassphrase(any()) }.returns(null)
         every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
-        val secret1 = securityHelper.globalDBSecret()
-        every {
-            passphraseStorage.getPassphrase(any())
-        }.returns(Base64.encode(secret1.value))
+        val secret1 = securityHelper.globalDBKeyMaterial(databaseExists = false).rawKey
+        every { passphraseStorage.getPassphrase(globalV2Alias) }.returns(storedSecret)
 
-        val secret2 = securityHelper.globalDBSecret()
-        assertTrue(secret1.value.contentEquals(secret2.value))
+        val secret2 = securityHelper.globalDBKeyMaterial(databaseExists = false).rawKey
 
-        verify(VerifyMode.exactly(2)) {
-            passphraseStorage.getPassphrase(any())
-        }
+        assertEquals(67, secret1.value.size)
+        assertEquals(
+            "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'",
+            secret2.value.decodeToString()
+        )
         verify(VerifyMode.exactly(1)) {
             passphraseStorage.setPassphrase(any(), any())
         }
@@ -80,24 +83,160 @@ class SecurityHelperTest {
 
     @Test
     fun whenCallingUserDBSecretTwice_thenTheSameValueIsReturned() = runTest {
-        every {
-            passphraseStorage.getPassphrase(any())
-        }.returns(null)
+        every { passphraseStorage.getPassphrase(any()) }.returns(null)
         every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
         val userId = UserId("df8703fb-bbab-4b10-a369-0ef781a17cf5", "wire.com")
-        val secret1 = securityHelper.userDBSecret(userId)
-        every {
-            passphraseStorage.getPassphrase(any())
-        }.returns(Base64.encode(secret1.value))
+        val secret1 = securityHelper.userDBSecret(userId, databaseExists = false)
+        every { passphraseStorage.getPassphrase(any()) }.returns(Base64.encode(ByteArray(32) { it.toByte() }))
 
-        val secret2 = securityHelper.userDBSecret(userId)
-        assertTrue(secret1.value.contentEquals(secret2.value))
-        verify(VerifyMode.exactly(2)) {
-            passphraseStorage.getPassphrase(any())
-        }
+        val secret2 = securityHelper.userDBSecret(userId, databaseExists = false)
+
+        assertEquals(secret1.value.size, secret2.value.size)
         verify(VerifyMode.exactly(1)) {
             passphraseStorage.setPassphrase(any(), any())
         }
+    }
+
+    @Test
+    fun givenExistingUserDatabaseAndOnlyV1Alias_whenGettingSecret_thenLegacySecretIsReturned() {
+        val secretBytes = ByteArray(32) { it.toByte() }
+        every { passphraseStorage.getPassphrase(userV2Alias) } returns null
+        every { passphraseStorage.getPassphrase(userV1Alias) } returns Base64.encode(secretBytes)
+
+        val secret = securityHelper.userDBSecret(userId, databaseExists = true)
+
+        assertTrue(secret.value.contentEquals(secretBytes))
+        verify(VerifyMode.not) { passphraseStorage.setPassphrase(any(), any()) }
+    }
+
+    @Test
+    fun givenNewUserDatabaseAndNoV2Alias_whenGettingSecret_thenNewV2RawSecretIsGenerated() {
+        every { passphraseStorage.getPassphrase(userV2Alias) } returns null
+        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
+
+        val secret = securityHelper.userDBSecret(userId, databaseExists = false)
+
+        assertEquals(67, secret.value.size)
+        assertEquals('x'.code.toByte(), secret.value.first())
+        assertEquals('\''.code.toByte(), secret.value.last())
+        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphrase(eq(userV2Alias), any()) }
+        verify(VerifyMode.not) { passphraseStorage.getPassphrase(userV1Alias) }
+    }
+
+    @Test
+    fun givenV2UserAlias_whenGettingSecret_thenStoredSecretIsReturnedAsRawKey() {
+        val secretBytes = ByteArray(32) { it.toByte() }
+        every { passphraseStorage.getPassphrase(userV2Alias) } returns Base64.encode(secretBytes)
+
+        val secret = securityHelper.userDBSecret(userId, databaseExists = true)
+
+        assertEquals(
+            "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'",
+            secret.value.decodeToString()
+        )
+        verify(VerifyMode.not) { passphraseStorage.getPassphrase(userV1Alias) }
+    }
+
+    @Test
+    fun givenV2UserAlias_whenGettingOptionalSecret_thenRawSecretIsReturnedForDatabaseExport() {
+        val secretBytes = ByteArray(32) { it.toByte() }
+        every { passphraseStorage.getPassphrase(userV2Alias) } returns Base64.encode(secretBytes)
+
+        val secret = securityHelper.userDBOrSecretNull(userId)
+
+        assertEquals(
+            "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'",
+            secret?.value?.decodeToString()
+        )
+        verify(VerifyMode.not) { passphraseStorage.getPassphrase(userV1Alias) }
+    }
+
+    @Test
+    fun givenExistingGlobalDatabaseAndOnlyV1Alias_whenGettingKeyMaterial_thenTheLegacyKeyIsReportedAlongsideAFreshRawKey() {
+        val v1SecretBytes = "historical-v1-secret".encodeToByteArray()
+        every { passphraseStorage.getPassphrase(globalV2Alias) } returns Base64.encode(ByteArray(32) { (it + 1).toByte() })
+        every { passphraseStorage.getPassphrase(globalV1Alias) } returns Base64.encode(v1SecretBytes)
+
+        val keyMaterial = securityHelper.globalDBKeyMaterial(databaseExists = true)
+
+        assertEquals(
+            "x'0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20'",
+            keyMaterial.rawKey.value.decodeToString()
+        )
+        assertTrue(keyMaterial.legacyKey.contentEquals(v1SecretBytes))
+    }
+
+    @Test
+    fun givenTheLegacyGlobalAliasIsGone_whenGettingKeyMaterial_thenNoMigrationIsReported() {
+        every { passphraseStorage.getPassphrase(globalV2Alias) } returns Base64.encode(ByteArray(32) { it.toByte() })
+        every { passphraseStorage.getPassphrase(globalV1Alias) } returns null
+
+        val keyMaterial = securityHelper.globalDBKeyMaterial(databaseExists = true)
+
+        assertEquals(
+            "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'",
+            keyMaterial.rawKey.value.decodeToString()
+        )
+        assertEquals(null, keyMaterial.legacyKey)
+        verify(VerifyMode.not) { passphraseStorage.setPassphrase(any(), any()) }
+    }
+
+    @Test
+    fun givenCompletedGlobalMigration_whenClearingTheLegacyKey_thenTheV1AliasIsRemoved() {
+        every { passphraseStorage.getPassphrase(globalV1Alias) } returns Base64.encode("historical".encodeToByteArray())
+        every { passphraseStorage.clearPassphrase(any()) } returns Unit
+
+        securityHelper.clearGlobalDBLegacyKey()
+
+        verify(VerifyMode.exactly(1)) { passphraseStorage.clearPassphrase(globalV1Alias) }
+    }
+
+    @Test
+    fun givenTheLegacyKeyIsAlreadyGone_whenClearingItAgain_thenNothingIsWritten() {
+        every { passphraseStorage.getPassphrase(globalV1Alias) } returns null
+
+        securityHelper.clearGlobalDBLegacyKey()
+
+        verify(VerifyMode.not) { passphraseStorage.clearPassphrase(any()) }
+    }
+
+    @Test
+    fun givenOnlyV1UserAlias_whenGettingOptionalSecret_thenLegacySecretIsReturnedForDatabaseExport() {
+        val secretBytes = ByteArray(32) { it.toByte() }
+        every { passphraseStorage.getPassphrase(userV2Alias) } returns null
+        every { passphraseStorage.getPassphrase(userV1Alias) } returns Base64.encode(secretBytes)
+
+        val secret = securityHelper.userDBOrSecretNull(userId)
+
+        assertTrue(secret?.value?.contentEquals(secretBytes) == true)
+    }
+
+    @Test
+    fun givenNoUserAliasAtAll_whenGettingOptionalSecret_thenNullIsReturned() {
+        every { passphraseStorage.getPassphrase(userV2Alias) } returns null
+        every { passphraseStorage.getPassphrase(userV1Alias) } returns null
+
+        assertEquals(null, securityHelper.userDBOrSecretNull(userId))
+    }
+
+    @Test
+    fun givenStoredV2SecretOfTheWrongSize_whenGettingSecret_thenItFailsInsteadOfBuildingAnInvalidRawKey() {
+        every { passphraseStorage.getPassphrase(userV2Alias) } returns Base64.encode(ByteArray(16))
+
+        assertFailsWith<IllegalArgumentException> { securityHelper.userDBSecret(userId, databaseExists = true) }
+    }
+
+    @Test
+    fun givenNewGlobalDatabaseAndNoV2Alias_whenGettingSecret_thenNewV2RawSecretIsGenerated() {
+        every { passphraseStorage.getPassphrase(globalV2Alias) } returns null
+        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
+
+        val keyMaterial = securityHelper.globalDBKeyMaterial(databaseExists = false)
+
+        assertEquals(67, keyMaterial.rawKey.value.size)
+        assertEquals(null, keyMaterial.legacyKey)
+        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphrase(eq(globalV2Alias), any()) }
+        verify(VerifyMode.not) { passphraseStorage.getPassphrase(globalV1Alias) }
     }
 
     @Test

@@ -48,6 +48,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
         public data class Success(val userId: UserId) : Result()
         public sealed class Failure : Result() {
             public data object UserAlreadyExists : Failure()
+            public data object SsoIdentityChanged : Failure()
             public data object NomadSingleUserViolation : Failure()
             public data class Generic(public val genericFailure: CoreFailure) : Failure()
         }
@@ -79,10 +80,38 @@ public class AddAuthenticatedUserUseCase internal constructor(
             { doesValidSessionExist ->
                 when (doesValidSessionExist) {
                     true -> onUserExist(session, replace)
-                    false -> storeUser(session)
+                    false -> onNoValidSession(session)
                 }
             }
         )
+
+    private suspend fun onNoValidSession(session: StoreSessionParam): Result =
+        sessionRepository.doesSessionExist(session.accountTokens.userId).fold(
+            { Result.Failure.Generic(it) },
+            { doesSessionExist ->
+                if (!doesSessionExist) {
+                    storeUser(session)
+                } else {
+                    checkRetainedSsoIdentity(session)
+                }
+            }
+        )
+
+    private suspend fun checkRetainedSsoIdentity(session: StoreSessionParam): Result =
+        sessionRepository.fullAccountInfo(session.accountTokens.userId).fold(
+            { Result.Failure.Generic(it) },
+            { retainedAccount ->
+                if (hasSsoIdentityChanged(retainedAccount.ssoIdentityProviderId, session.ssoIdentityProviderId)) {
+                    Result.Failure.SsoIdentityChanged
+                } else {
+                    storeUser(session)
+                }
+            }
+        )
+
+    private fun hasSsoIdentityChanged(previousIdpId: String?, currentIdpId: String?): Boolean =
+        // The IdP ID is supplied only by the email-based multi-ingress flow.
+        currentIdpId != null && previousIdpId != currentIdpId
 
     private suspend fun storeUser(session: StoreSessionParam): Result =
         sessionRepository.storeSession(session).onSuccess {

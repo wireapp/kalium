@@ -19,8 +19,10 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
@@ -139,7 +141,7 @@ internal class MLSMessageUnpackerImpl(
                         "groupID" to groupID.toLogString()
                     )
                 )
-                mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), groupID)
+                decryptMessageAndLogIfBuffered(mlsContext, messageEvent, groupID)
             }
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
@@ -151,9 +153,35 @@ internal class MLSMessageUnpackerImpl(
                         "protocolInfo" to protocolInfo.toLogMap()
                     )
                 )
-                mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), protocolInfo.groupId)
+                decryptMessageAndLogIfBuffered(mlsContext, messageEvent, protocolInfo.groupId)
             } else {
                 Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
+
+    private suspend fun decryptMessageAndLogIfBuffered(
+        mlsContext: MlsCoreCryptoContext,
+        messageEvent: Event.Conversation.NewMLSMessage,
+        groupId: GroupID
+    ): Either<CoreFailure, List<DecryptedMessageBundle>> {
+        val result = mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), groupId)
+        val bufferType = when ((result as? Either.Left)?.value) {
+            MLSFailure.BufferedFutureMessage -> "FUTURE_MESSAGE"
+            MLSFailure.BufferedCommit -> "COMMIT"
+            else -> return result
+        }
+        val localEpoch = mlsConversationRepository.getLocalGroupEpoch(mlsContext, groupId).getOrNull()
+        logger.logStructuredJson(
+            level = KaliumLogLevel.WARN,
+            leadingMessage = "MLS message buffered",
+            jsonStringKeyValues = buildMap {
+                putAll(messageEvent.toLogMap())
+                put("subConversationId", messageEvent.subconversationId?.toLogString())
+                put("groupId", groupId.toLogString())
+                put("localEpoch", localEpoch?.toString())
+                put("bufferType", bufferType)
+            }
+        )
+        return result
+    }
 }

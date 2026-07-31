@@ -32,13 +32,14 @@ jobs:
       checks: write # required to publish unit test check runs
       pull-requests: write # required to publish pull request comments
     runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: -Dorg.gradle.caching=true
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
     container: kubazwire/cryptobox:1.0.0@sha256:4791e83cd7c76418e623c5ba17e9396efacf4f742d960a340eb08a106263334b
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Install build dependencies
@@ -63,10 +64,13 @@ jobs:
         run: |
           ./gradlew :sample:samples:compileKotlinJvm
 
-      - name: Test with Gradle
+      - name: Test JVM with Gradle
+        run: ./gradlew jvmTest koverXmlReportJvmOnly -Djava.library.path=$LD_LIBRARY_PATH
+
+      - name: Test JS with Gradle
         run: |
-          ./gradlew jvmTest koverXmlReportJvmOnly -Djava.library.path=$LD_LIBRARY_PATH
-          ./gradlew jsTest -PUSE_UNIFIED_CORE_CRYPTO=true
+          ./gradlew --stop
+          ./gradlew jsTest -PUSE_UNIFIED_CORE_CRYPTO=true --no-daemon -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
 
       - name: Archive Test Reports
         if: always()
