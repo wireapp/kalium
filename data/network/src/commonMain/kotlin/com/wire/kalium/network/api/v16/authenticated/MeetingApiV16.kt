@@ -28,6 +28,7 @@ import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
 internal open class MeetingApiV16 internal constructor(
@@ -49,6 +50,13 @@ internal open class MeetingApiV16 internal constructor(
             setBody(request)
         }
     }
+
+    override suspend fun updateMeeting(meetingId: MeetingId, request: CreateMeetingRequest): NetworkResponse<CreateMeetingResponse> =
+        wrapRequest {
+            httpClient.put("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}") {
+                setBody(request)
+            }
+        }
 
     companion object {
         const val PATH_MEETINGS = "meetings"

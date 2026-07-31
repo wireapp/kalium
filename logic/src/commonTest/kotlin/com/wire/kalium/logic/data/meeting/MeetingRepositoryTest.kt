@@ -22,6 +22,9 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
@@ -34,8 +37,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
-import com.wire.kalium.network.api.model.ConversationId
-import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -60,7 +61,9 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import com.wire.kalium.network.api.model.ConversationId as ApiConversationId
 import com.wire.kalium.network.api.model.MeetingId as NetworkMeetingId
+import com.wire.kalium.network.api.model.UserId as ApiUserId
 
 class MeetingRepositoryTest {
 
@@ -68,8 +71,8 @@ class MeetingRepositoryTest {
     fun whenFetchAndPersistMeetings_thenMeetingsAreFetchedAndPersistedWithNowDateTime() = runTest {
         val meetingDTO = MeetingDTO(
             meetingId = NetworkMeetingId("meeting1", "domain"),
-            conversationId = ConversationId("conversation1", "domain"),
-            creatorId = UserId("user1", "domain"),
+            conversationId = ApiConversationId("conversation1", "domain"),
+            creatorId = ApiUserId("user1", "domain"),
             createdAt = Instant.parse("2026-06-01T00:00:00Z"),
             updatedAt = null,
             title = "Meeting 1",
@@ -190,7 +193,10 @@ class MeetingRepositoryTest {
         internal val meetingApi = mock<MeetingApi>(mode = MockMode.autoUnit)
         internal val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
         internal val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        internal val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         internal val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
+        internal val mlsContext = mock<MlsCoreCryptoContext>(mode = MockMode.autoUnit)
+        internal val transactionContext = mock<CryptoTransactionContext>(mode = MockMode.autoUnit)
         internal val meetingMapper = MapperProvider.meetingMapper()
         internal val conversationMapper = MapperProvider.conversationMapper(selfUserId)
         internal val idMapper = MapperProvider.idMapper()
@@ -221,7 +227,9 @@ class MeetingRepositoryTest {
             meetingApi = meetingApi,
             persistConversations = persistConversations,
             mlsConversationRepository = mlsConversationRepository,
+            conversationRepository = conversationRepository,
             pendingActionsRepository = pendingActionsRepository,
+            meetingMapper = meetingMapper,
             conversationMapper = conversationMapper,
             idMapper = idMapper,
         )

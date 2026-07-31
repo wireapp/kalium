@@ -30,6 +30,7 @@ interface MeetingApi : BaseApi {
     suspend fun fetchMeetings(): NetworkResponse<List<MeetingDTO>>
     suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit>
     suspend fun createNewMeeting(request: CreateMeetingRequest): NetworkResponse<CreateMeetingResponse>
+    suspend fun updateMeeting(meetingId: MeetingId, request: CreateMeetingRequest): NetworkResponse<CreateMeetingResponse>
 
     companion object {
         const val MIN_API_VERSION_MEETINGS = 16
