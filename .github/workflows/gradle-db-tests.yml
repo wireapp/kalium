@@ -4,6 +4,9 @@ on:
   merge_group:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+  push:
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}

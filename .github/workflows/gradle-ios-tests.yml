@@ -5,6 +5,9 @@ on:
   merge_group:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+  push:
+    branches:
+      - develop
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
@@ -40,7 +43,7 @@ jobs:
         uses: ./.github/actions/setup-java-gradle
 
       - name: Restore Kotlin/Native tooling cache (.konan)
-        if: ${{ github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
+        if: ${{ github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
         id: konan-cache
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
@@ -50,7 +53,9 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-konan-
 
       - name: iOS Tests
-        run: ./gradlew iOSOnlyAffectedTest
+        # Develop runs the complete suite to populate task outputs for future PRs.
+        # PR and merge-queue runs keep using affected-module detection.
+        run: ./gradlew ${{ github.event_name == 'push' && 'iosSimulatorArm64Test -PUSE_UNIFIED_CORE_CRYPTO=true' || 'iOSOnlyAffectedTest' }}
         env:
           # This system property is inherited by the nested Gradle process.
           GRADLE_OPTS: -Dorg.gradle.caching=true

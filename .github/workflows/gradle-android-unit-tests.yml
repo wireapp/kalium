@@ -4,6 +4,9 @@ on:
   merge_group:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+  push:
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
@@ -50,7 +53,9 @@ jobs:
           ./gradlew :sample:samples:compileAndroidHostTestSources
 
       - name: Android Unit Tests
-        run: ./gradlew androidUnitOnlyAffectedTest
+        # Develop runs the complete suite to populate task outputs for future PRs.
+        # PR and merge-queue runs keep using affected-module detection.
+        run: ./gradlew ${{ github.event_name == 'push' && 'testAndroidHostTest' || 'androidUnitOnlyAffectedTest' }}
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
