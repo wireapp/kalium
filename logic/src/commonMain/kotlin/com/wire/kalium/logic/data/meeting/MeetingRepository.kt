@@ -28,6 +28,7 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
@@ -37,6 +38,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.id.toApi
@@ -193,6 +195,7 @@ internal class MeetingDataSource(
                 )
             }.flatMap {
                 establishMLSGroupIfNeeded(transactionContext = transactionContext, otherParticipants = otherParticipants)
+                    .mapLeft { EstablishMLSFailure(conversationId = conversation.id.toModel()) }
             }
         }
     }
@@ -218,8 +221,6 @@ internal class MeetingDataSource(
                     pendingActionsRepository.enqueuePendingMLSGroupJoin(conversationId = conversation.id.toModel())
                 }
             }
-            // don't propagate the MLS establishment error, meeting creation succeeded, and MLS establishment can be retried later
-            Either.Right(MLSAdditionResult.Empty)
         }
     }
 
@@ -230,6 +231,8 @@ internal class MeetingDataSource(
 
         else -> false
     }
+
+    data class EstablishMLSFailure(val conversationId: ConversationId) : CoreFailure.FeatureFailure()
 }
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90

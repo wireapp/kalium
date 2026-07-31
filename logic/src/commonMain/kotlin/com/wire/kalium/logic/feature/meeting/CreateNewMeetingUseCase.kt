@@ -18,10 +18,14 @@
 
 package com.wire.kalium.logic.feature.meeting
 
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.meeting.CreateMeeting
+import com.wire.kalium.logic.data.meeting.MeetingDataSource.EstablishMLSFailure
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 
@@ -45,6 +49,13 @@ internal class CreateNewMeetingUseCaseImpl(
     override suspend operator fun invoke(createMeeting: CreateMeeting) = transactionProvider
         .transaction("CreateNewMeeting") { transactionContext ->
             meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = transactionContext)
+        }
+        .flatMapLeft {
+            when (it) {
+                // don't propagate the MLS establishment error, meeting creation succeeded, and MLS establishment can be retried later
+                is EstablishMLSFailure -> Either.Right(MLSAdditionResult.Empty)
+                else -> Either.Left(it)
+            }
         }
         .onSuccess {
             refreshUsersWithoutMetadata()
