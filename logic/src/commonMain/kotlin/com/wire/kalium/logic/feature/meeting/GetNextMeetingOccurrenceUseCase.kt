@@ -15,36 +15,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature.meeting
 
+import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.meeting.MeetingOccurrence
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.util.DateTimeUtil.currentInstant
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
 
-public class MeetingScope internal constructor(
+/**
+ * Use case for getting the next soonest occurrence of a meeting after a given point in time.
+ */
+public interface GetNextMeetingOccurrenceUseCase {
+    public suspend operator fun invoke(meetingId: MeetingId, from: Instant = currentInstant()): MeetingOccurrence?
+}
+
+internal class GetNextMeetingOccurrenceUseCaseImpl(
     private val dispatcher: KaliumDispatcher,
     private val meetingRepository: MeetingRepository,
-) {
-    public val getPaginatedMeetingOccurrenceDetails: GetPaginatedMeetingOccurrencesUseCase
-        get() = GetPaginatedMeetingOccurrencesUseCaseImpl(
-            dispatcher = dispatcher,
-            meetingRepository = meetingRepository,
-        )
-
-    public val observeMeetingOccurrence: ObserveMeetingOccurrenceUseCase
-        get() = ObserveMeetingOccurrenceUseCaseImpl(
-            dispatcher = dispatcher,
-            meetingRepository = meetingRepository,
-        )
-
-    public val deleteMeeting: DeleteMeetingUseCase
-        get() = DeleteMeetingUseCaseImpl(
-            meetingRepository = meetingRepository,
-        )
-
-    public val getNextMeetingOccurrence: GetNextMeetingOccurrenceUseCase
-        get() = GetNextMeetingOccurrenceUseCaseImpl(
-            dispatcher = dispatcher,
-            meetingRepository = meetingRepository,
-        )
+) : GetNextMeetingOccurrenceUseCase {
+    override suspend operator fun invoke(meetingId: MeetingId, from: Instant): MeetingOccurrence? = withContext(dispatcher.io) {
+        meetingRepository.getNextMeetingOccurrence(meetingId, from).getOrNull()
+    }
 }

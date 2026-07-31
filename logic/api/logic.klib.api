@@ -1365,6 +1365,10 @@ abstract interface com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase { 
     }
 }
 
+abstract interface com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase { // com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant = ...): com.wire.kalium.logic.data.meeting/MeetingOccurrence? // com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase { // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase|null[0]
     abstract suspend fun invoke(androidx.paging/PagingConfig, kotlin/Long, kotlinx.datetime/Instant = ...): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.meeting/MeetingOccurrence>> // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase.invoke|invoke(androidx.paging.PagingConfig;kotlin.Long;kotlinx.datetime.Instant){}[0]
 }
@@ -4277,6 +4281,8 @@ final class com.wire.kalium.logic.feature.incallreaction/SendInCallReactionUseCa
 final class com.wire.kalium.logic.feature.meeting/MeetingScope { // com.wire.kalium.logic.feature.meeting/MeetingScope|null[0]
     final val deleteMeeting // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeeting|{}deleteMeeting[0]
         final fun <get-deleteMeeting>(): com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeeting.<get-deleteMeeting>|<get-deleteMeeting>(){}[0]
+    final val getNextMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextMeetingOccurrence|{}getNextMeetingOccurrence[0]
+        final fun <get-getNextMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextMeetingOccurrence.<get-getNextMeetingOccurrence>|<get-getNextMeetingOccurrence>(){}[0]
     final val getPaginatedMeetingOccurrenceDetails // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails|{}getPaginatedMeetingOccurrenceDetails[0]
         final fun <get-getPaginatedMeetingOccurrenceDetails>(): com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails.<get-getPaginatedMeetingOccurrenceDetails>|<get-getPaginatedMeetingOccurrenceDetails>(){}[0]
     final val observeMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence|{}observeMeetingOccurrence[0]

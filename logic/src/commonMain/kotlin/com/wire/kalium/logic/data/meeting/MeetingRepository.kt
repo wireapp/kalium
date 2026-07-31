@@ -22,6 +22,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
@@ -38,6 +39,7 @@ import com.wire.kalium.util.DateTimeUtil.asStartOfDay
 import com.wire.kalium.util.DateTimeUtil.currentInstant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
@@ -62,6 +64,11 @@ internal interface MeetingRepository {
     ): Flow<PagingData<MeetingOccurrence>>
 
     suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit>
+
+    suspend fun getNextMeetingOccurrence(
+        meetingId: MeetingId,
+        from: Instant = currentInstant()
+    ): Either<StorageFailure, MeetingOccurrence>
 }
 
 internal class MeetingDataSource(
@@ -120,6 +127,15 @@ internal class MeetingDataSource(
                 meetingDAO.deleteMeeting(meetingId.toDao())
             }
         }
+
+    override suspend fun getNextMeetingOccurrence(
+        meetingId: MeetingId,
+        from: Instant
+    ): Either<StorageFailure, MeetingOccurrence> = wrapStorageRequest {
+        meetingDAO.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from)?.let { occurrenceId ->
+            meetingDAO.getMeetingOccurrenceDetailsFlow(occurrenceId).firstOrNull()?.let(meetingMapper::fromDaoToModel)
+        }
+    }
 }
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
