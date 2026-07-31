@@ -2979,7 +2979,7 @@ final class com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult { 
 }
 
 final class com.wire.kalium.logic.data.session/StoreSessionParam { // com.wire.kalium.logic.data.session/StoreSessionParam|null[0]
-    constructor <init>(kotlin/String, com.wire.kalium.logic.data.user/SsoId?, com.wire.kalium.logic.data.auth/AccountTokens, com.wire.kalium.logic.data.auth.login/ProxyCredentials?, kotlin/Boolean, com.wire.kalium.logic.data.user/SsoManagedBy? = ..., kotlin/String? = ...) // com.wire.kalium.logic.data.session/StoreSessionParam.<init>|<init>(kotlin.String;com.wire.kalium.logic.data.user.SsoId?;com.wire.kalium.logic.data.auth.AccountTokens;com.wire.kalium.logic.data.auth.login.ProxyCredentials?;kotlin.Boolean;com.wire.kalium.logic.data.user.SsoManagedBy?;kotlin.String?){}[0]
+    constructor <init>(kotlin/String, com.wire.kalium.logic.data.user/SsoId?, com.wire.kalium.logic.data.auth/AccountTokens, com.wire.kalium.logic.data.auth.login/ProxyCredentials?, kotlin/Boolean, com.wire.kalium.logic.data.user/SsoManagedBy? = ..., kotlin/String? = ..., kotlin/String? = ...) // com.wire.kalium.logic.data.session/StoreSessionParam.<init>|<init>(kotlin.String;com.wire.kalium.logic.data.user.SsoId?;com.wire.kalium.logic.data.auth.AccountTokens;com.wire.kalium.logic.data.auth.login.ProxyCredentials?;kotlin.Boolean;com.wire.kalium.logic.data.user.SsoManagedBy?;kotlin.String?;kotlin.String?){}[0]
 
     final val accountTokens // com.wire.kalium.logic.data.session/StoreSessionParam.accountTokens|{}accountTokens[0]
         final fun <get-accountTokens>(): com.wire.kalium.logic.data.auth/AccountTokens // com.wire.kalium.logic.data.session/StoreSessionParam.accountTokens.<get-accountTokens>|<get-accountTokens>(){}[0]
@@ -2995,6 +2995,8 @@ final class com.wire.kalium.logic.data.session/StoreSessionParam { // com.wire.k
         final fun <get-serverConfigId>(): kotlin/String // com.wire.kalium.logic.data.session/StoreSessionParam.serverConfigId.<get-serverConfigId>|<get-serverConfigId>(){}[0]
     final val ssoId // com.wire.kalium.logic.data.session/StoreSessionParam.ssoId|{}ssoId[0]
         final fun <get-ssoId>(): com.wire.kalium.logic.data.user/SsoId? // com.wire.kalium.logic.data.session/StoreSessionParam.ssoId.<get-ssoId>|<get-ssoId>(){}[0]
+    final val ssoIdentityProviderId // com.wire.kalium.logic.data.session/StoreSessionParam.ssoIdentityProviderId|{}ssoIdentityProviderId[0]
+        final fun <get-ssoIdentityProviderId>(): kotlin/String? // com.wire.kalium.logic.data.session/StoreSessionParam.ssoIdentityProviderId.<get-ssoIdentityProviderId>|<get-ssoIdentityProviderId>(){}[0]
 
     final fun component1(): kotlin/String // com.wire.kalium.logic.data.session/StoreSessionParam.component1|component1(){}[0]
     final fun component2(): com.wire.kalium.logic.data.user/SsoId? // com.wire.kalium.logic.data.session/StoreSessionParam.component2|component2(){}[0]
@@ -3003,7 +3005,8 @@ final class com.wire.kalium.logic.data.session/StoreSessionParam { // com.wire.k
     final fun component5(): kotlin/Boolean // com.wire.kalium.logic.data.session/StoreSessionParam.component5|component5(){}[0]
     final fun component6(): com.wire.kalium.logic.data.user/SsoManagedBy? // com.wire.kalium.logic.data.session/StoreSessionParam.component6|component6(){}[0]
     final fun component7(): kotlin/String? // com.wire.kalium.logic.data.session/StoreSessionParam.component7|component7(){}[0]
-    final fun copy(kotlin/String = ..., com.wire.kalium.logic.data.user/SsoId? = ..., com.wire.kalium.logic.data.auth/AccountTokens = ..., com.wire.kalium.logic.data.auth.login/ProxyCredentials? = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.user/SsoManagedBy? = ..., kotlin/String? = ...): com.wire.kalium.logic.data.session/StoreSessionParam // com.wire.kalium.logic.data.session/StoreSessionParam.copy|copy(kotlin.String;com.wire.kalium.logic.data.user.SsoId?;com.wire.kalium.logic.data.auth.AccountTokens;com.wire.kalium.logic.data.auth.login.ProxyCredentials?;kotlin.Boolean;com.wire.kalium.logic.data.user.SsoManagedBy?;kotlin.String?){}[0]
+    final fun component8(): kotlin/String? // com.wire.kalium.logic.data.session/StoreSessionParam.component8|component8(){}[0]
+    final fun copy(kotlin/String = ..., com.wire.kalium.logic.data.user/SsoId? = ..., com.wire.kalium.logic.data.auth/AccountTokens = ..., com.wire.kalium.logic.data.auth.login/ProxyCredentials? = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.user/SsoManagedBy? = ..., kotlin/String? = ..., kotlin/String? = ...): com.wire.kalium.logic.data.session/StoreSessionParam // com.wire.kalium.logic.data.session/StoreSessionParam.copy|copy(kotlin.String;com.wire.kalium.logic.data.user.SsoId?;com.wire.kalium.logic.data.auth.AccountTokens;com.wire.kalium.logic.data.auth.login.ProxyCredentials?;kotlin.Boolean;com.wire.kalium.logic.data.user.SsoManagedBy?;kotlin.String?;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.session/StoreSessionParam.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.session/StoreSessionParam.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.session/StoreSessionParam.toString|toString(){}[0]
@@ -3262,6 +3265,12 @@ final class com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase { // 
                 final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase.Result.Failure.NomadSingleUserViolation.equals|equals(kotlin.Any?){}[0]
                 final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase.Result.Failure.NomadSingleUserViolation.hashCode|hashCode(){}[0]
                 final fun toString(): kotlin/String // com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase.Result.Failure.NomadSingleUserViolation.toString|toString(){}[0]
+            }
+
+            final object SsoIdentityChanged : com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase.Result.Failure { // com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase.Result.Failure.SsoIdentityChanged|null[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase.Result.Failure.SsoIdentityChanged.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase.Result.Failure.SsoIdentityChanged.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase.Result.Failure.SsoIdentityChanged.toString|toString(){}[0]
             }
 
             final object UserAlreadyExists : com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase.Result.Failure { // com.wire.kalium.logic.feature.auth/AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists|null[0]
