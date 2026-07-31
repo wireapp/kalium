@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.IsMeetingsEnabledUseCase
@@ -51,7 +50,7 @@ internal class SyncMeetingsUseCaseImpl(
         true -> transactionProvider.transaction("SyncMeetings") {
             meetingRepository.fetchAndPersistMeetings()
                 .flatMap { meetings ->
-                    val creatorIds = meetings.map { it.creatorId.toModel() }.toSet()
+                    val creatorIds = meetings.map { it.creatorId }.toSet()
                     if (creatorIds.isEmpty()) {
                         Either.Right(Unit)
                     } else {

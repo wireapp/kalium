@@ -974,6 +974,75 @@ internal class EnrollE2EICertificateUseCaseTest {
     }
 
     @Test
+    fun givenNewClientRegistration_whenFinalizingEnrollment_thenRotateKeysWithNewClientCertificate() = coroutineScope.runTest {
+        val initializationResult = INITIALIZATION_RESULT.copy(isNewClientRegistration = true)
+        val expectedGroupId = (MLS_CONVERSATION.protocol as Conversation.ProtocolInfo.MLS).groupId
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
+            withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
+            withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
+            withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
+            withValidateDPoPChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
+            withValidateOIDCChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
+            withCheckOrderRequestResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
+            withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
+            withCertificateRequestResulting(Either.Right(ACME_RESPONSE))
+            withRotateKeysAndMigrateConversations(Either.Right(Unit))
+            withObserveConversationListResulting(listOf(MLS_CONVERSATION))
+            withSelfUserFetched(true)
+        }
+
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, initializationResult)
+
+        assertIs<FinalizeEnrollmentResult.Success>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.cryptoTransactionProvider.mlsTransaction<Unit>(eq("E2EIEnrollmentNewClient"), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(
+                eq(arrangement.mlsContext),
+                eq(ACME_RESPONSE.response.decodeToString()),
+                eq(listOf(expectedGroupId)),
+                eq(true)
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.initiateMLSClient(any())
+        }
+    }
+
+    @Test
+    fun givenNewClientRegistration_whenRotatingKeysFails_thenReturnFailure() = coroutineScope.runTest {
+        val initializationResult = INITIALIZATION_RESULT.copy(isNewClientRegistration = true)
+        val rotationFailure = E2EIFailure.RotationAndMigration(TEST_CORE_FAILURE)
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
+            withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
+            withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
+            withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
+            withValidateDPoPChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
+            withValidateOIDCChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
+            withCheckOrderRequestResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
+            withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
+            withCertificateRequestResulting(Either.Right(ACME_RESPONSE))
+            withRotateKeysAndMigrateConversations(rotationFailure.left())
+            withObserveConversationListResulting(listOf(MLS_CONVERSATION))
+            withSelfUserFetched(true)
+        }
+
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, initializationResult)
+
+        assertEquals(FinalizeEnrollmentResult.Failure.Generic(rotationFailure), result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.cryptoTransactionProvider.mlsTransaction<Unit>(eq("E2EIEnrollmentNewClient"), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), eq(true))
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.initiateMLSClient(any())
+        }
+    }
+
+    @Test
     fun givenCertEnrollForNewClient_whenEnrolling_thenUpdateSelfUserInfo() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
             withInitializingE2EIClientSucceed()

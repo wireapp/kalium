@@ -22,17 +22,20 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.UserId
-import com.wire.kalium.network.api.model.MeetingId as NetworkMeetingId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -57,6 +60,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import com.wire.kalium.network.api.model.MeetingId as NetworkMeetingId
 
 class MeetingRepositoryTest {
 
@@ -79,7 +83,8 @@ class MeetingRepositoryTest {
             .arrange()
         val generateOccurrencesFrom = Instant.parse("2026-05-01T00:00:00Z")
         val generateOccurrencesUntil = Instant.parse("2026-07-01T00:00:00Z")
-        val expectedMeeting = requireNotNull(arrangement.meetingMapper.fromApiToDao(meetingDTO))
+        val expectedMeetingEntity = requireNotNull(arrangement.meetingMapper.fromApiToDao(meetingDTO))
+        val expectedMeeting = arrangement.meetingMapper.fromDaoToModel(expectedMeetingEntity)
 
         val result = repository.fetchAndPersistMeetings(generateOccurrencesFrom, generateOccurrencesUntil)
 
@@ -88,7 +93,7 @@ class MeetingRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.fetchMeetings()
             arrangement.meetingDao.upsertMeetings(
-                meetings = listOf(expectedMeeting),
+                meetings = listOf(expectedMeetingEntity),
                 generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
             )
         }
@@ -180,9 +185,15 @@ class MeetingRepositoryTest {
     }
 
     inner class Arrangement {
+        internal val selfUserId = TestUser.SELF.id
         internal val meetingDao = mock<MeetingDao>(mode = MockMode.autoUnit)
         internal val meetingApi = mock<MeetingApi>(mode = MockMode.autoUnit)
+        internal val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
+        internal val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        internal val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
         internal val meetingMapper = MapperProvider.meetingMapper()
+        internal val conversationMapper = MapperProvider.conversationMapper(selfUserId)
+        internal val idMapper = MapperProvider.idMapper()
 
         internal fun withFetchMeetingsSuccess(result: List<MeetingDTO>) = apply {
             everySuspend { meetingApi.fetchMeetings() } returns NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value)
@@ -204,7 +215,16 @@ class MeetingRepositoryTest {
             everySuspend { meetingDao.getMeetingOccurrenceDetailsFlow(occurrenceId) } returns result
         }
 
-        internal fun arrange() = this to MeetingDataSource(meetingDAO = meetingDao, meetingApi = meetingApi)
+        internal fun arrange() = this to MeetingDataSource(
+            selfUserId = selfUserId,
+            meetingDAO = meetingDao,
+            meetingApi = meetingApi,
+            persistConversations = persistConversations,
+            mlsConversationRepository = mlsConversationRepository,
+            pendingActionsRepository = pendingActionsRepository,
+            conversationMapper = conversationMapper,
+            idMapper = idMapper,
+        )
     }
 
     private val MEETING_ENTITY = MeetingEntity(
