@@ -24,6 +24,7 @@ import androidx.paging.map
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
@@ -57,6 +58,7 @@ import com.wire.kalium.util.DateTimeUtil.currentInstant
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
@@ -89,6 +91,11 @@ internal interface MeetingRepository {
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil(),
         transactionContext: CryptoTransactionContext,
     ): Either<CoreFailure, MLSAdditionResult>
+
+    suspend fun getNextMeetingOccurrence(
+        meetingId: MeetingId,
+        from: Instant = currentInstant()
+    ): Either<StorageFailure, MeetingOccurrence>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -154,6 +161,15 @@ internal class MeetingDataSource(
             wrapStorageRequest {
                 meetingDAO.deleteMeeting(meetingId.toDao())
             }
+        }
+    }
+
+    override suspend fun getNextMeetingOccurrence(
+        meetingId: MeetingId,
+        from: Instant
+    ): Either<StorageFailure, MeetingOccurrence> = wrapStorageRequest {
+        meetingDAO.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from)?.let { occurrenceId ->
+            meetingDAO.getMeetingOccurrenceDetailsFlow(occurrenceId).firstOrNull()?.let(meetingMapper::fromDaoToModel)
         }
     }
 

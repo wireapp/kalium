@@ -46,6 +46,12 @@ public class MeetingScope internal constructor(
             meetingRepository = meetingRepository,
         )
 
+    public val getNextMeetingOccurrence: GetNextMeetingOccurrenceUseCase
+        get() = GetNextMeetingOccurrenceUseCaseImpl(
+            dispatcher = dispatcher,
+            meetingRepository = meetingRepository,
+        )
+
     public val createNewMeeting: CreateNewMeetingUseCase
         get() = CreateNewMeetingUseCaseImpl(
             meetingRepository = meetingRepository,

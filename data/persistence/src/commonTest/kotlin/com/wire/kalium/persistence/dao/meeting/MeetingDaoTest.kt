@@ -104,6 +104,40 @@ class MeetingDaoTest : BaseDatabaseTest() {
         }
 
     @Test
+    fun givenRecurringMeeting_whenGettingNextOccurrence_thenReturnsFirstOccurrenceThatHasNotStarted() =
+        runTest(dispatcher) {
+            val meetingStart = Instant.parse("2026-01-02T10:00:00Z")
+            val meeting = newMeeting(
+                startTime = meetingStart,
+                recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = meetingStart + 5.days)
+            )
+            val otherMeeting = newMeeting(
+                meetingId = QualifiedIDEntity("other-meeting", "wire.com"),
+                conversationId = QualifiedIDEntity("other-conversation", "wire.com"),
+                startTime = Instant.parse("2026-01-02T09:45:00Z"),
+                recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = meetingStart + 5.days)
+            )
+            insertMeetingDependencies(meeting)
+            insertMeetingDependencies(otherMeeting)
+            meetingDao.upsertMeetings(listOf(meeting, otherMeeting), GenerationLimit.Window(meetingStart - 1.days, meetingStart + 5.days))
+            val occurrenceIdsByStartTime = occurrencesFor(meeting).associate { it.occurrence_start to it.occurrence_id }
+
+            val beforeTodaysOccurrenceStartId = meetingDao.getNextMeetingOccurrenceDetailsId(
+                meetingId = meeting.meetingId,
+                from = Instant.parse("2026-01-02T09:30:00Z")
+            )
+            val atTodaysOccurrenceStartId = meetingDao.getNextMeetingOccurrenceDetailsId(meetingId = meeting.meetingId, from = meetingStart)
+            val afterTodaysOccurrenceStartId = meetingDao.getNextMeetingOccurrenceDetailsId(
+                meetingId = meeting.meetingId,
+                from = Instant.parse("2026-01-02T10:30:00Z")
+            )
+
+            assertEquals(occurrenceIdsByStartTime.getValue(meetingStart), beforeTodaysOccurrenceStartId)
+            assertEquals(occurrenceIdsByStartTime.getValue(meetingStart + 1.days), atTodaysOccurrenceStartId)
+            assertEquals(occurrenceIdsByStartTime.getValue(meetingStart + 1.days), afterTodaysOccurrenceStartId)
+        }
+
+    @Test
     fun givenGeneratedOccurrences_whenSameMeetingIsUpserted_thenOccurrencesAreNotDuplicated() = runTest(dispatcher) {
         val now = Clock.System.now()
         val meeting = newMeeting(
