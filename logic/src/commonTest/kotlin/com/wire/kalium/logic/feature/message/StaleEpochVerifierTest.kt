@@ -78,7 +78,7 @@ class StaleEpochVerifierTest {
     @Test
     fun givenMLSConversation_whenHandlingStaleEpoch_thenShouldFetchConversationAgain() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
-            withIsGroupOutOfSync(Either.Right(false))
+            withLocalGroupEpoch(Either.Right(REMOTE_EPOCH))
             withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
         }
 
@@ -96,7 +96,7 @@ class StaleEpochVerifierTest {
     @Test
     fun givenEpochIsLatest_whenHandlingStaleEpoch_thenShouldNotRejoinTheConversation() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
-            withIsGroupOutOfSync(Either.Right(false))
+            withLocalGroupEpoch(Either.Right(REMOTE_EPOCH))
             withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
         }
 
@@ -115,7 +115,7 @@ class StaleEpochVerifierTest {
     @Test
     fun givenStaleEpoch_whenHandlingStaleEpoch_thenShouldRejoinTheConversation() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
-            withIsGroupOutOfSync(Either.Right(true))
+            withLocalGroupEpoch(Either.Right(REMOTE_EPOCH - 1UL))
             withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
             withInsertLostCommitSystemMessage(Either.Right(Unit))
@@ -136,7 +136,7 @@ class StaleEpochVerifierTest {
     @Test
     fun givenRejoiningFails_whenHandlingStaleEpoch_thenShouldNotInsertLostCommitSystemMessage() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
-            withIsGroupOutOfSync(Either.Right(true))
+            withLocalGroupEpoch(Either.Right(REMOTE_EPOCH - 1UL))
             withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
             withJoinExistingMLSConversationUseCaseReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
@@ -151,7 +151,7 @@ class StaleEpochVerifierTest {
     @Test
     fun givenConversationIsRejoined_whenHandlingStaleEpoch_thenShouldInsertLostCommitSystemMessage() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
-            withIsGroupOutOfSync(Either.Right(true))
+            withLocalGroupEpoch(Either.Right(REMOTE_EPOCH - 1UL))
             withFetchConversationResponse(Either.Right(MLS_CONVERSATION_RESPONSE))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
             withInsertLostCommitSystemMessage(Either.Right(Unit))
@@ -169,7 +169,7 @@ class StaleEpochVerifierTest {
         val subConversationId = SubconversationId("subconversation-id")
         val (arrangement, staleEpochHandler) = arrange {
             withFetchRemoteSubConversationDetails(CONVERSATION_ID, subConversationId, Either.Right(TestSubConversationDetails))
-            withIsGroupOutOfSync(Either.Right(false))
+            withLocalGroupEpoch(Either.Right(TestSubConversationDetails.epoch))
         }
 
         val result = staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID, subConversationId, null)
@@ -181,10 +181,9 @@ class StaleEpochVerifierTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.isLocalGroupEpochStale(
+            arrangement.mlsConversationRepository.getLocalGroupEpoch(
                 mokkeryAny(),
-                mokkeryEq(TestSubConversationDetails.groupId),
-                mokkeryEq(TestSubConversationDetails.epoch)
+                mokkeryEq(TestSubConversationDetails.groupId)
             )
         }
     }
@@ -194,7 +193,7 @@ class StaleEpochVerifierTest {
         val subConversationId = SubconversationId("subconversation-id")
         val (arrangement, staleEpochHandler) = arrange {
             withFetchRemoteSubConversationDetails(CONVERSATION_ID, subConversationId, Either.Right(TestSubConversationDetails))
-            withIsGroupOutOfSync(Either.Right(true))
+            withLocalGroupEpoch(Either.Right(TestSubConversationDetails.epoch - 1UL))
             withFetchRemoteSubConversationGroupInfo(CONVERSATION_ID, subConversationId, Either.Right(TestGroupInfo))
             withJoinGroupByExternalCommit(TestSubConversationDetails.groupId, TestGroupInfo, Either.Right(Unit))
         }
@@ -241,7 +240,7 @@ class StaleEpochVerifierTest {
         val subConversationId = SubconversationId("subconversation-id")
         val (arrangement, staleEpochHandler) = arrange {
             withFetchRemoteSubConversationDetails(CONVERSATION_ID, subConversationId, Either.Right(TestSubConversationDetails))
-            withIsGroupOutOfSync(Either.Right(true))
+            withLocalGroupEpoch(Either.Right(TestSubConversationDetails.epoch - 1UL))
             withFetchRemoteSubConversationGroupInfo(CONVERSATION_ID, subConversationId, Either.Right(TestGroupInfo))
             withJoinGroupByExternalCommit(
                 TestSubConversationDetails.groupId,
@@ -270,7 +269,7 @@ class StaleEpochVerifierTest {
         val subConversationId = SubconversationId("subconversation-id")
         val (arrangement, staleEpochHandler) = arrange {
             withFetchRemoteSubConversationDetails(CONVERSATION_ID, subConversationId, Either.Right(TestSubConversationDetails))
-            withIsGroupOutOfSync(Either.Right(false))
+            withLocalGroupEpoch(Either.Right(TestSubConversationDetails.epoch))
         }
 
         val result = staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID, subConversationId, null)
@@ -307,7 +306,9 @@ class StaleEpochVerifierTest {
             val localProtocolInfo: Either<StorageFailure, Conversation.ProtocolInfo> = when (result) {
                 is Either.Left -> Either.Left(StorageFailure.Generic(IllegalStateException(result.value.toString())))
                 is Either.Right -> when (result.value.protocol) {
-                    ConvProtocol.MLS -> Either.Right(TestConversation.MLS_PROTOCOL_INFO)
+                    ConvProtocol.MLS -> Either.Right(
+                        TestConversation.MLS_PROTOCOL_INFO.copy(epoch = result.value.epoch ?: 0UL)
+                    )
                     else -> Either.Right(Conversation.ProtocolInfo.Proteus)
                 }
             }
@@ -317,8 +318,8 @@ class StaleEpochVerifierTest {
             } returns localProtocolInfo
         }
 
-        suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>) {
-            everySuspend { mlsConversationRepository.isLocalGroupEpochStale(mokkeryAny(), mokkeryAny(), mokkeryAny()) } returns result
+        suspend fun withLocalGroupEpoch(result: Either<CoreFailure, ULong>) {
+            everySuspend { mlsConversationRepository.getLocalGroupEpoch(mokkeryAny(), mokkeryAny()) } returns result
         }
 
         suspend fun withJoinExistingMLSConversationUseCaseReturning(result: Either<CoreFailure, Unit>) {
@@ -372,6 +373,7 @@ class StaleEpochVerifierTest {
         suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val CONVERSATION_ID = ConversationId("conversation-value", "conversation-domain")
+        const val REMOTE_EPOCH = 10UL
 
         val MLS_CONVERSATION_RESPONSE = ConversationResponse(
             creator = TestUser.USER_ID.value,
@@ -382,7 +384,7 @@ class StaleEpochVerifierTest {
             name = "mls-conversation",
             id = CONVERSATION_ID.toApi(),
             groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value,
-            epoch = TestConversation.MLS_PROTOCOL_INFO.epoch,
+            epoch = REMOTE_EPOCH,
             type = ConversationResponse.Type.GROUP,
             messageTimer = 0,
             teamId = null,
