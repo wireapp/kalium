@@ -356,10 +356,6 @@ sealed interface MessageContent {
         val isEnabled: Boolean
     ) : System
 
-    data class AdminlessDeleteReminder(
-        val deletionScheduledFor: Instant
-    ) : System
-
     data class ConversationReceiptModeChanged(
         val receiptMode: Boolean
     ) : System
@@ -531,7 +527,6 @@ fun MessageContent?.getType() = when (this) {
     MessageContent.CellEditorAccessMessage -> "CellEditorAccess"
     MessageContent.CellViewerAccessMessage -> "CellViewerAccess"
     is MessageContent.ConversationAppsEnabledChanged -> "ConversationAppsEnabledChanged"
-    is MessageContent.AdminlessDeleteReminder -> "AdminlessDeleteReminder"
     is MessageContent.MultipartEdited -> "MultipartEdited"
 }
 

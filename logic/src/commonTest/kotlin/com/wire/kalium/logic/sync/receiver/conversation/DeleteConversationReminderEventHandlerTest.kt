@@ -18,15 +18,11 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -39,67 +35,45 @@ import kotlin.test.Test
 class DeleteConversationReminderEventHandlerTest {
 
     @Test
-    fun givenReminderEventWithSender_whenHandling_thenPersistsExpectedSystemMessage() = runTest {
+    fun givenReminderEvent_whenHandling_thenStoresConversationDeletionTimestamp() = runTest {
         val event = TestEvent.adminlessDeleteReminder()
         val (arrangement, handler) = Arrangement().arrange()
 
         handler.handle(event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(eq(expectedMessage(event, event.senderUserId!!)))
+            arrangement.conversationDAO.insertAdminlessGroupDelete(
+                eq(event.conversationId.toDao()),
+                eq(event.deletionScheduledFor),
+            )
         }
     }
 
     @Test
-    fun givenReminderEventWithoutSender_whenHandling_thenUsesSelfUserAsSender() = runTest {
-        val event = TestEvent.adminlessDeleteReminder().copy(senderUserId = null)
-        val (arrangement, handler) = Arrangement().arrange()
-
-        handler.handle(event)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(eq(expectedMessage(event, TestUser.OTHER_USER_ID)))
-        }
-    }
-
-    @Test
-    fun givenSameReminderEventTwice_whenHandling_thenReusesEventIdForPersistence() = runTest {
+    fun givenStorageFailure_whenHandlingReminder_thenFailureIsContained() = runTest {
         val event = TestEvent.adminlessDeleteReminder()
-        val (arrangement, handler) = Arrangement().arrange()
-        val expected = expectedMessage(event, event.senderUserId!!)
+        val (_, handler) = Arrangement()
+            .withInsertFailure(IllegalStateException("storage failure"))
+            .arrange()
 
         handler.handle(event)
-        handler.handle(event)
-
-        verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.persistMessage.invoke(eq(expected))
-        }
     }
-
-    private fun expectedMessage(
-        event: Event.Conversation.AdminlessDeleteReminder,
-        senderUserId: UserId,
-    ) = Message.System(
-        id = event.id,
-        content = MessageContent.AdminlessDeleteReminder(event.deletionScheduledFor),
-        conversationId = event.conversationId,
-        date = event.dateTime,
-        senderUserId = senderUserId,
-        status = Message.Status.Sent,
-        visibility = Message.Visibility.VISIBLE,
-        expirationData = null,
-    )
 
     private class Arrangement {
-        val persistMessage = mock<PersistMessageUseCase>()
+        val conversationDAO = mock<ConversationDAO>()
 
         init {
-            everySuspend { persistMessage.invoke(any()) } returns Either.Right(Unit)
+            everySuspend {
+                conversationDAO.insertAdminlessGroupDelete(any(), any())
+            } returns Unit
         }
 
-        fun arrange() = this to DeleteConversationReminderEventHandlerImpl(
-            persistMessage = persistMessage,
-            selfUserId = TestUser.OTHER_USER_ID,
-        )
+        fun withInsertFailure(throwable: Throwable) = apply {
+            everySuspend {
+                conversationDAO.insertAdminlessGroupDelete(any(), any())
+            } throws throwable
+        }
+
+        fun arrange() = this to DeleteConversationReminderEventHandlerImpl(conversationDAO)
     }
 }

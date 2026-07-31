@@ -345,7 +345,6 @@ internal class MessageMapperImpl(
             MessageEntity.ContentType.CELL_EDITOR_ACCESS -> null
             MessageEntity.ContentType.CELL_VIEWER_ACCESS -> null
             MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> null
-            MessageEntity.ContentType.ADMINLESS_DELETE_REMINDER -> null
 
             MessageEntity.ContentType.MULTIPART -> LocalNotificationMessage.Text(
                 messageId = message.id,
@@ -524,7 +523,6 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
     is MessageEntityContent.CellViewerAccessMessage -> MessageContent.CellViewerAccessMessage
 
     is MessageEntityContent.ConversationAppsAccessChanged -> MessageContent.ConversationAppsEnabledChanged(isEnabled)
-    is MessageEntityContent.AdminlessDeleteReminder -> MessageContent.AdminlessDeleteReminder(deletionScheduledFor)
 }
 
 internal fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (this) {
@@ -857,7 +855,6 @@ internal fun MessageContent.System.toMessageEntityContent(): MessageEntityConten
     MessageContent.CellEditorAccessMessage -> MessageEntityContent.CellEditorAccessMessage
     MessageContent.CellViewerAccessMessage -> MessageEntityContent.CellViewerAccessMessage
     is MessageContent.ConversationAppsEnabledChanged -> MessageEntityContent.ConversationAppsAccessChanged(isEnabled)
-    is MessageContent.AdminlessDeleteReminder -> MessageEntityContent.AdminlessDeleteReminder(deletionScheduledFor)
 }
 
 internal fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {

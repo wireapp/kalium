@@ -262,7 +262,6 @@ object MessageMapper {
             MessageEntity.ContentType.CELL_EDITOR_ACCESS -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CELL_VIEWER_ACCESS -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> MessagePreviewEntityContent.Unknown
-            MessageEntity.ContentType.ADMINLESS_DELETE_REMINDER -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -539,7 +538,6 @@ object MessageMapper {
         newConversationReceiptMode: Boolean?,
         conversationReceiptModeChanged: Boolean?,
         messageTimerChanged: Long?,
-        adminlessDeletionScheduledFor: Long?,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
         buttonsJson: String,
@@ -630,7 +628,6 @@ object MessageMapper {
         quotedAssetName = quotedAssetName,
         quotedLocationName = quotedLocationName,
         isConversationAppsEnabled = isConversationAppsEnabled,
-        adminlessDeletionScheduledFor = adminlessDeletionScheduledFor,
         newConversationReceiptMode = newConversationReceiptMode,
         conversationReceiptModeChanged = conversationReceiptModeChanged,
         messageTimerChanged = messageTimerChanged,
@@ -730,7 +727,6 @@ object MessageMapper {
         newConversationReceiptMode: Boolean?,
         conversationReceiptModeChanged: Boolean?,
         messageTimerChanged: Long?,
-        adminlessDeletionScheduledFor: Long?,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
         buttonsJson: String,
@@ -865,12 +861,6 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> MessageEntityContent.ConversationAppsAccessChanged(
                 isEnabled = isConversationAppsEnabled ?: false
-            )
-
-            MessageEntity.ContentType.ADMINLESS_DELETE_REMINDER -> MessageEntityContent.AdminlessDeleteReminder(
-                deletionScheduledFor = Instant.fromEpochMilliseconds(
-                    adminlessDeletionScheduledFor.requireField("adminlessDeletionScheduledFor")
-                )
             )
 
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost

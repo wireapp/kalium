@@ -238,26 +238,6 @@ internal class MessageMapperTest {
         assertIs<MessageContent.LegalHold.ForConversation.Enabled>(messageContent)
     }
 
-    @Test
-    fun givenAdminlessDeleteReminder_whenMappingToEntityContent_thenScheduledDeletionIsPreserved() {
-        val scheduledDeletion = Instant.parse("2026-08-23T12:00:00Z")
-
-        val result = MessageContent.AdminlessDeleteReminder(scheduledDeletion).toMessageEntityContent()
-
-        assertIs<MessageEntityContent.AdminlessDeleteReminder>(result)
-        assertEquals(scheduledDeletion, result.deletionScheduledFor)
-    }
-
-    @Test
-    fun givenAdminlessDeleteReminderEntity_whenMappingToMessageContent_thenScheduledDeletionIsPreserved() {
-        val scheduledDeletion = Instant.parse("2026-08-23T12:00:00Z")
-
-        val result = MessageEntityContent.AdminlessDeleteReminder(scheduledDeletion).toMessageContent()
-
-        assertIs<MessageContent.AdminlessDeleteReminder>(result)
-        assertEquals(scheduledDeletion, result.deletionScheduledFor)
-    }
-
     class Arrangement {
 
         val messageMapper = MessageMapperImpl(UserId(value = "someValue", "someDomain"))

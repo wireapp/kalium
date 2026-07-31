@@ -453,12 +453,6 @@ insertSystemConversationAppsEnabledChanged:
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, boolean_1)
 VALUES(?, ?, 'CONVERSATION_APPS_ENABLED_CHANGED', :is_apps_enabled);
 
-insertSystemAdminlessDeleteReminder:
--- @NotifyCustomKey message_list_:conversation_id
--- @NotifyCustomKey MessageSystemContent
-INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, integer_1)
-VALUES(?, ?, 'ADMINLESS_DELETE_REMINDER', :deletion_scheduled_for);
-
 insertSystemConversationTimerChanged:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey MessageSystemContent

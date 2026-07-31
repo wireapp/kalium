@@ -83,7 +83,8 @@ data class Conversation(
     val mlsVerificationStatus: VerificationStatus,
     val proteusVerificationStatus: VerificationStatus,
     val legalHoldStatus: LegalHoldStatus,
-    val mlsPublicKeys: MLSPublicKeys? = null
+    val mlsPublicKeys: MLSPublicKeys? = null,
+    val adminlessGroupDeletionTimestamp: Instant? = null,
 ) {
 
     companion object {
