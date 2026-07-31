@@ -107,6 +107,7 @@ interface ConversationDAO {
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Boolean
+    suspend fun insertAdminlessGroupDelete(conversationId: QualifiedIDEntity, deletionTimestamp: Instant)
     suspend fun setConversationDeletedLocally(qualifiedID: QualifiedIDEntity, deletedLocally: Boolean)
 
     suspend fun updateConversationMutedStatus(

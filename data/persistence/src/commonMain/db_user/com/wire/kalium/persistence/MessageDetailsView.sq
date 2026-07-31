@@ -152,7 +152,6 @@ CASE WHEN SystemContent.content_type = 'CONVERSATION_APPS_ENABLED_CHANGED' THEN 
 CASE WHEN SystemContent.content_type = 'NEW_CONVERSATION_RECEIPT_MODE' THEN SystemContent.boolean_1 END AS newConversationReceiptMode,
 CASE WHEN SystemContent.content_type = 'CONVERSATION_RECEIPT_MODE_CHANGED' THEN SystemContent.boolean_1 END AS conversationReceiptModeChanged,
 CASE WHEN SystemContent.content_type = 'CONVERSATION_TIMER_CHANGED' THEN SystemContent.integer_1 END AS messageTimerChanged,
-CASE WHEN SystemContent.content_type = 'ADMINLESS_DELETE_REMINDER' THEN SystemContent.integer_1 END AS adminlessDeletionScheduledFor,
 FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
 FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList,
 
