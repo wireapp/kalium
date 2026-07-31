@@ -26,7 +26,6 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.mls.CipherSuite
@@ -281,7 +280,7 @@ class ClientRepositoryTest {
 
         val expected = listOf(
             Client(
-                id = PlainId(value = "client_id_1"),
+                id = ClientId(value = "client_id_1"),
                 type = ClientType.Permanent,
                 registrationTime = Instant.parse("1969-05-12T10:52:02.671Z"),
                 lastActive = Instant.parse("1969-05-12T10:52:02.671Z"),
@@ -295,7 +294,7 @@ class ClientRepositoryTest {
                 isAsyncNotificationsCapable = false
             ),
             Client(
-                id = PlainId(value = "client_id_2"),
+                id = ClientId(value = "client_id_2"),
                 type = ClientType.Permanent,
                 registrationTime = Instant.parse("2021-05-12T10:52:02.671Z"),
                 lastActive = Instant.parse("2021-05-12T10:52:02.671Z"),

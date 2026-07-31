@@ -3,7 +3,7 @@ name: "Warm Konan Cache"
 on:
   workflow_dispatch:
   push:
-    branches: [ develop, main ]
+    branches: [ develop ]
     paths:
       - gradle.properties
       - gradle/libs.versions.toml

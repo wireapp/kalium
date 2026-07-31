@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.conversation.Conversation.Type
 import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.message.UnreadEventType
@@ -501,8 +500,6 @@ enum class InteractionAvailability {
 data class MembersInfo(val self: Conversation.Member?, val otherMembers: List<Conversation.Member>)
 
 data class MemberDetails(val user: User, val role: Conversation.Member.Role)
-
-typealias ClientId = PlainId
 
 data class Recipient(val id: UserId, val clients: List<ClientId>)
 

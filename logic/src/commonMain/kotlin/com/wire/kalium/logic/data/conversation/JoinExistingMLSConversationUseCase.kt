@@ -45,14 +45,14 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 /**
- * Send an external commit to join an MLS conversation for which the user is a member,
- * but has not yet joined the corresponding MLS group.
+ * Use case for joining or establishing an MLS group for an existing conversation.
+ * If the conversation is MLS-capable, it checks if it is already established. If not, it establishes the MLS group, otherwise it sends
+ * an external commit to join an MLS conversation for which the user is a member, but has not yet joined the corresponding MLS group.
  */
 internal interface JoinExistingMLSConversationUseCase {
     suspend operator fun invoke(
@@ -287,7 +287,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             leadingMessage = "Establish Group",
                             jsonStringKeyValues = conversation.logData()
                         )
-                    }.map { Unit }
+                    }.map {}
             }
 
             type == Conversation.Type.OneOnOne || type is Conversation.Type.Group -> {
@@ -307,7 +307,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         leadingMessage = "Establish Group",
                         jsonStringKeyValues = conversation.logData()
                     )
-                }.map { Unit }
+                }.map {}
             }
 
             else -> {
@@ -325,30 +325,6 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         put("protocol", CreateConversationParam.Protocol.MLS.name)
         put("protocolInfo", protocol.toLogMap())
         failure?.let { put("errorInfo", "$it") }
-    }
-
-    private suspend fun syncEstablishedConversationMetadata(
-        transactionContext: CryptoTransactionContext,
-        conversation: Conversation
-    ): Either<CoreFailure, Unit> {
-        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable ?: return Either.Right(Unit)
-        return transactionContext.wrapInMLSContext { mlsContext ->
-            mlsConversationRepository.getLocalGroupEpoch(mlsContext, protocol.groupId)
-        }.flatMap { localEpoch ->
-            if (protocol.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED && protocol.epoch == localEpoch) {
-                Either.Right(Unit)
-            } else {
-                logger.d(
-                    "Updating local MLS metadata for ${conversation.id.toLogString()} to sync DB with local MLS state"
-                )
-                mlsConversationRepository.updateGroupIdAndState(
-                    conversation.id,
-                    protocol.groupId,
-                    localEpoch.toLong(),
-                    ConversationEntity.GroupState.ESTABLISHED
-                )
-            }
-        }
     }
 
     private data class RefreshedConversation(
