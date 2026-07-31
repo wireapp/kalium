@@ -104,6 +104,7 @@ class ObserveConversationListDetailsWithEventsUseCaseImplTest {
                 listOf(oneOnOneId, joinableGroupId),
                 result.map { it.conversationDetails.conversation.id }
             )
+            assertEquals(listOf(null, null), result.map { it.lastMessage })
         }
 
     @Test

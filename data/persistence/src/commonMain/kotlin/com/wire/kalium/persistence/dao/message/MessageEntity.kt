@@ -148,8 +148,7 @@ sealed interface MessageEntity {
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
         CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_PROTOCOL_CHANGED_DURING_CALL,
         CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD, MULTIPART,
-        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED, CONVERSATION_APPS_ENABLED_CHANGED,
-        ADMINLESS_DELETE_REMINDER
+        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED, CONVERSATION_APPS_ENABLED_CHANGED
     }
 
     enum class MemberChangeType {
@@ -371,7 +370,6 @@ sealed class MessageEntityContent {
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
     data class ConversationProtocolChanged(val protocol: ConversationEntity.Protocol) : System()
     data class ConversationAppsAccessChanged(val isEnabled: Boolean) : System()
-    data class AdminlessDeleteReminder(val deletionScheduledFor: Instant) : System()
     data object ConversationProtocolChangedDuringACall : System()
     data object HistoryLostProtocolChanged : System()
     data object HistoryLost : System()

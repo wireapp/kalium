@@ -394,7 +394,7 @@ internal class ConversationDataSource internal constructor(
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
-    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
 ) : ConversationRepository {
     override val extensions: ConversationRepositoryExtensions =
         ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)

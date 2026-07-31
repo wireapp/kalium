@@ -450,6 +450,13 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
+    override suspend fun insertAdminlessGroupDelete(
+        conversationId: QualifiedIDEntity,
+        deletionTimestamp: Instant,
+    ): Unit = withContext(writeDispatcher.value) {
+        conversationQueries.insertAdminlessGroupDelete(conversationId, deletionTimestamp)
+    }
+
     override suspend fun setConversationDeletedLocally(qualifiedID: QualifiedIDEntity, deletedLocally: Boolean): Unit =
         withContext(writeDispatcher.value) {
             conversationQueries.setDeletedLocally(deletedLocally = deletedLocally, qualifiedId = qualifiedID)

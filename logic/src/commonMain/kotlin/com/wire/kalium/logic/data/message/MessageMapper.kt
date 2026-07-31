@@ -343,7 +343,6 @@ internal class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> null
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> null
             MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> null
-            MessageEntity.ContentType.ADMINLESS_DELETE_REMINDER -> null
 
             MessageEntity.ContentType.MULTIPART -> LocalNotificationMessage.Text(
                 messageId = message.id,
@@ -519,7 +518,6 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
         MessageContent.NewConversationWithCellSelfDeleteDisabledMessage
 
     is MessageEntityContent.ConversationAppsAccessChanged -> MessageContent.ConversationAppsEnabledChanged(isEnabled)
-    is MessageEntityContent.AdminlessDeleteReminder -> MessageContent.AdminlessDeleteReminder(deletionScheduledFor)
 }
 
 internal fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (this) {
@@ -850,7 +848,6 @@ internal fun MessageContent.System.toMessageEntityContent(): MessageEntityConten
     MessageContent.NewConversationWithCellMessage -> MessageEntityContent.NewConversationWithCellMessage
     MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage
     is MessageContent.ConversationAppsEnabledChanged -> MessageEntityContent.ConversationAppsAccessChanged(isEnabled)
-    is MessageContent.AdminlessDeleteReminder -> MessageEntityContent.AdminlessDeleteReminder(deletionScheduledFor)
 }
 
 internal fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {

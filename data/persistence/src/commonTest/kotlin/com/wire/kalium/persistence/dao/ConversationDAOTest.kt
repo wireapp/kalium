@@ -61,6 +61,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -813,6 +814,76 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 assertNull(result)
             }
         }
+
+    @Test
+    fun givenConversation_whenAdminlessDeletionIsInserted_thenObservedDetailsContainTimestamp() = runTest {
+        val conversation = newConversationEntity("adminless-insert")
+        val deletionTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        conversationDAO.insertConversation(conversation)
+
+        conversationDAO.observeConversationDetailsById(conversation.id).test {
+            assertNull(awaitItem()?.adminlessGroupDeletionTimestamp)
+
+            conversationDAO.insertAdminlessGroupDelete(conversation.id, deletionTimestamp)
+
+            assertEquals(deletionTimestamp, awaitItem()?.adminlessGroupDeletionTimestamp)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+    }
+
+    @Test
+    fun givenAdminlessDeletionAlreadyExists_whenAnotherTimestampIsInserted_thenFirstTimestampWins() = runTest {
+        val conversation = newConversationEntity("adminless-duplicate")
+        val firstTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        val secondTimestamp = Instant.parse("2026-09-01T12:00:00Z")
+        conversationDAO.insertConversation(conversation)
+
+        conversationDAO.insertAdminlessGroupDelete(conversation.id, firstTimestamp)
+        conversationDAO.insertAdminlessGroupDelete(conversation.id, secondTimestamp)
+
+        assertEquals(
+            firstTimestamp,
+            conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp,
+        )
+    }
+
+    @Test
+    fun givenAdminlessDeletion_whenClearingContent_thenTimestampIsPreserved() = runTest {
+        val conversation = newConversationEntity("adminless-clear")
+        val user = newUserEntity("adminless-clear")
+        val message = newRegularMessageEntity(
+            id = "message-to-clear",
+            conversationId = conversation.id,
+            senderUserId = user.id,
+        )
+        val deletionTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        conversationDAO.insertConversation(conversation)
+        userDAO.upsertUser(user)
+        messageDAO.insertOrIgnoreMessage(message)
+        conversationDAO.insertAdminlessGroupDelete(conversation.id, deletionTimestamp)
+
+        conversationDAO.clearContent(conversation.id)
+
+        assertNull(messageDAO.getMessageById(message.id, conversation.id))
+        assertEquals(
+            deletionTimestamp,
+            conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp,
+        )
+    }
+
+    @Test
+    fun givenAdminlessDeletion_whenConversationIsHardDeleted_thenRecordIsCascadeDeleted() = runTest {
+        val conversation = newConversationEntity("adminless-delete")
+        val deletionTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        conversationDAO.insertConversation(conversation)
+        conversationDAO.insertAdminlessGroupDelete(conversation.id, deletionTimestamp)
+
+        conversationDAO.deleteConversationByQualifiedID(conversation.id)
+        conversationDAO.insertConversation(conversation)
+
+        assertNull(conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp)
+    }
 // Mateusz : This test is failing because of some weird issue, I do not want to block this feature
 // Therefore I will comment it, I am in very unstable and low bandwith internet now and to run test
 // I need new version of xCode which will take me ages to download untill I am home from the trip

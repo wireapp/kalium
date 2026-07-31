@@ -152,7 +152,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.NewConversationWithCellMessage -> false
             is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
             is MessageContent.ConversationAppsEnabledChanged -> false
-            is MessageContent.AdminlessDeleteReminder -> true
         }
 
     @Suppress("ComplexMethod", "LongMethod")
@@ -216,7 +215,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.History,
             is MessageContent.NewConversationWithCellMessage,
             is MessageContent.ConversationAppsEnabledChanged,
-            is MessageContent.AdminlessDeleteReminder,
             is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
         }
 }

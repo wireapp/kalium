@@ -187,7 +187,8 @@ internal class ConversationMapperImpl(
             archivedDateTime = archivedDateTime,
             mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
             proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus),
-            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus)
+            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus),
+            adminlessGroupDeletionTimestamp = adminlessGroupDeletionTimestamp,
         )
     }
 
@@ -222,7 +223,8 @@ internal class ConversationMapperImpl(
             archivedDateTime = archivedDateTime,
             mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
             proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus),
-            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus)
+            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus),
+            adminlessGroupDeletionTimestamp = adminlessGroupDeletionTimestamp,
         )
     }
 

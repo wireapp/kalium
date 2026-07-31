@@ -52,7 +52,7 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
         conversationFilter: ConversationFilter,
         strictMlsFilter: Boolean,
     ): Flow<List<ConversationDetailsWithEvents>> {
-        return when (conversationFilter) {
+        val conversations = when (conversationFilter) {
             ConversationFilter.Favorites -> {
                 when (val result = getFavoriteFolder()) {
                     GetFavoriteFolderUseCase.Result.Failure -> {
@@ -77,6 +77,7 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
                 conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter, strictMlsFilter)
                     .withJoinableCallsOnTop(moveJoinableCallsOnTop = !fromArchive)
         }
+        return conversations
     }
 
     private fun Flow<List<ConversationDetailsWithEvents>>.withJoinableCallsOnTop(
