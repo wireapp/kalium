@@ -1942,7 +1942,6 @@ class MLSConversationRepositoryTest {
                 TestConversation.ID,
                 TestUser.USER_ID,
                 Base64.encode(WELCOME),
-                timestampIso = "2022-03-30T15:36:00.000Z"
             )
             private val SIMPLE_CLIENT_RESPONSE = SimpleClientResponse("an ID", DeviceTypeDTO.Desktop)
 
