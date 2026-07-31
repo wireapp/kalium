@@ -97,9 +97,9 @@ SET
     editSupported = MAX(editSupported, COALESCE((SELECT ma.edit_supported FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1), 0))
 WHERE uuid IN (SELECT asset_id FROM MessageAttachments);
 
-PRAGMA legacy_alter_table = ON;
+PRAGMA legacy_alter_table = 1;
 ALTER TABLE MessageAttachments RENAME TO MessageAttachments_legacy;
-PRAGMA legacy_alter_table = OFF;
+PRAGMA legacy_alter_table = 0;
 
 CREATE TABLE MessageAttachments (
       asset_id TEXT NOT NULL,
