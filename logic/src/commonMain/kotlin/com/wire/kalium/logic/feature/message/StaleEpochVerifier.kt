@@ -23,7 +23,9 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -50,6 +52,7 @@ internal interface StaleEpochVerifier {
     ): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class StaleEpochVerifierImpl(
     private val systemMessageInserter: SystemMessageInserter,
     private val fetchConversationUseCase: FetchConversationUseCase,
@@ -67,24 +70,27 @@ internal class StaleEpochVerifierImpl(
         timestamp: Instant?
     ): Either<CoreFailure, Unit> {
         return if (subConversationId != null) {
-            verifySubConversationEpoch(transactionContext, conversationId, subConversationId)
+            verifySubConversationEpoch(transactionContext, conversationId, subConversationId, timestamp)
         } else {
-            verifyConversationEpoch(transactionContext, conversationId)
+            verifyConversationEpoch(transactionContext, conversationId, timestamp)
         }
     }
 
     private suspend fun verifyConversationEpoch(
         transactionContext: CryptoTransactionContext,
-        conversationId: ConversationId
+        conversationId: ConversationId,
+        timestamp: Instant?
     ): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch for conversation ${conversationId.toLogString()}")
         return getUpdatedConversationProtocolInfo(transactionContext, conversationId).flatMap { remoteMlsInfo ->
-            transactionContext.wrapInMLSContext {
-                mlsConversationRepository.isLocalGroupEpochStale(it, remoteMlsInfo.groupId, remoteMlsInfo.epoch)
-            }
-                .map { epochIsStale ->
-                    epochIsStale
-                }
+            compareEpochsAndLog(
+                transactionContext = transactionContext,
+                conversationId = conversationId,
+                subConversationId = null,
+                groupId = remoteMlsInfo.groupId,
+                remoteEpoch = remoteMlsInfo.epoch,
+                timestamp = timestamp
+            ).map { it.isLocalEpochStale }
         }.flatMap { hasMissedCommits ->
             if (hasMissedCommits) {
                 logger.w("Epoch stale due to missing commits, re-joining")
@@ -104,17 +110,21 @@ internal class StaleEpochVerifierImpl(
     private suspend fun verifySubConversationEpoch(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
-        subConversationId: SubconversationId
+        subConversationId: SubconversationId,
+        timestamp: Instant?
     ): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch for subconversation ${subConversationId.toLogString()}")
         return subconversationRepository.fetchRemoteSubConversationDetails(conversationId, subConversationId)
             .flatMap { subConversationDetails ->
-                transactionContext.wrapInMLSContext {
-                    mlsConversationRepository.isLocalGroupEpochStale(it, subConversationDetails.groupId, subConversationDetails.epoch)
-                }
-                    .map { epochIsStale ->
-                        epochIsStale
-                    }
+                compareEpochsAndLog(
+                    transactionContext = transactionContext,
+                    conversationId = conversationId,
+                    subConversationId = subConversationId,
+                    groupId = subConversationDetails.groupId,
+                    remoteEpoch = subConversationDetails.epoch,
+                    timestamp = timestamp
+                )
+                    .map { it.isLocalEpochStale }
                     .flatMap { hasMissedCommits ->
                         if (hasMissedCommits) {
                             logger.w("Epoch stale due to missing commits, joining by external commit")
@@ -132,6 +142,40 @@ internal class StaleEpochVerifierImpl(
                         }
                     }
             }
+    }
+
+    private suspend fun compareEpochsAndLog(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        subConversationId: SubconversationId?,
+        groupId: GroupID,
+        remoteEpoch: ULong,
+        timestamp: Instant?
+    ): Either<CoreFailure, EpochComparison> = transactionContext.wrapInMLSContext {
+        mlsConversationRepository.getLocalGroupEpoch(it, groupId)
+    }.map { localEpoch ->
+        EpochComparison(localEpoch, remoteEpoch).also { comparison ->
+            logger.logStructuredJson(
+                level = if (comparison.isLocalEpochStale) KaliumLogLevel.WARN else KaliumLogLevel.INFO,
+                leadingMessage = "MLS epoch comparison",
+                jsonStringKeyValues = mapOf(
+                    "conversationId" to conversationId.toLogString(),
+                    "subConversationId" to subConversationId?.toLogString(),
+                    "groupId" to groupId.toLogString(),
+                    "localEpoch" to comparison.localEpoch.toString(),
+                    "remoteEpoch" to comparison.remoteEpoch.toString(),
+                    "epochGap" to comparison.epochGap.toString(),
+                    "epochState" to comparison.state.name,
+                    "trigger" to if (timestamp == null) "SEND_FAILURE" else "RECEIVE_FAILURE",
+                    "messageTimestamp" to timestamp,
+                    "recoveryAction" to when {
+                        !comparison.isLocalEpochStale -> "NONE"
+                        subConversationId == null -> "REJOIN"
+                        else -> "EXTERNAL_COMMIT"
+                    }
+                )
+            )
+        }
     }
 
     @OptIn(ConversationPersistenceApi::class)
@@ -164,4 +208,23 @@ internal class StaleEpochVerifierImpl(
         val groupId: GroupID,
         val epoch: ULong
     )
+
+    private data class EpochComparison(
+        val localEpoch: ULong,
+        val remoteEpoch: ULong
+    ) {
+        val isLocalEpochStale: Boolean = localEpoch < remoteEpoch
+        val epochGap: ULong = if (isLocalEpochStale) remoteEpoch - localEpoch else localEpoch - remoteEpoch
+        val state: State = when {
+            isLocalEpochStale -> State.LOCAL_BEHIND_REMOTE
+            localEpoch > remoteEpoch -> State.LOCAL_AHEAD_OF_REMOTE
+            else -> State.IN_SYNC
+        }
+
+        enum class State {
+            LOCAL_BEHIND_REMOTE,
+            IN_SYNC,
+            LOCAL_AHEAD_OF_REMOTE
+        }
+    }
 }

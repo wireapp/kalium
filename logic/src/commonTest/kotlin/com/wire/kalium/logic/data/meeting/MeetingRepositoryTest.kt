@@ -49,7 +49,12 @@ import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
+import com.wire.kalium.persistence.dao.meeting.MeetingEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceDetailsEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -61,6 +66,8 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -154,6 +161,42 @@ class MeetingRepositoryTest {
         verifySuspend(VerifyMode.not) {
             arrangement.meetingDao.deleteMeeting(meetingId.toDao())
         }
+    }
+
+    @Suppress("UnusedFlow")
+    @Test
+    fun givenDaoReturnsOccurrence_whenGetNextMeetingOccurrence_thenReturnsMappedOccurrence() = runTest {
+        val meetingId = MEETING_OCCURRENCE_DETAILS.meeting.meetingId.toModel()
+        val from = Instant.parse("2026-06-01T10:00:00Z")
+        val occurrenceId = MEETING_OCCURRENCE_DETAILS.occurrence.occurrenceId
+        val (arrangement, repository) = Arrangement()
+            .withNextMeetingOccurrenceId(meetingId, from, occurrenceId)
+            .withMeetingOccurrenceDetailsFlow(occurrenceId, flowOf(MEETING_OCCURRENCE_DETAILS))
+            .arrange()
+
+        val result = repository.getNextMeetingOccurrence(meetingId, from)
+
+        assertIs<Either.Right<MeetingOccurrence>>(result).also {
+            assertEquals(arrangement.meetingMapper.fromDaoToModel(MEETING_OCCURRENCE_DETAILS), result.value)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from)
+            arrangement.meetingDao.getMeetingOccurrenceDetailsFlow(occurrenceId)
+        }
+    }
+
+    @Test
+    fun givenDaoReturnsNoOccurrenceId_whenGetNextMeetingOccurrence_thenReturnDataNotFound() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val from = Instant.parse("2026-06-01T10:00:00Z")
+        val (arrangement, repository) = Arrangement()
+            .withNextMeetingOccurrenceId(meetingId, from, null)
+            .arrange()
+
+        val result = repository.getNextMeetingOccurrence(meetingId, from)
+
+        assertIs<Either.Left<StorageFailure.DataNotFound>>(result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingDao.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from) }
     }
 
     @Test
@@ -361,6 +404,14 @@ class MeetingRepositoryTest {
             everySuspend { meetingApi.deleteMeeting(meetingId.toApi()) } returns NetworkResponse.Error(TestNetworkException.generic)
         }
 
+        internal fun withNextMeetingOccurrenceId(meetingId: MeetingId, from: Instant, result: String?) = apply {
+            everySuspend { meetingDao.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from) } returns result
+        }
+
+        internal fun withMeetingOccurrenceDetailsFlow(occurrenceId: String, result: Flow<MeetingOccurrenceDetailsEntity?>) = apply {
+            everySuspend { meetingDao.getMeetingOccurrenceDetailsFlow(occurrenceId) } returns result
+        }
+
         internal fun withCreateNewMeetingSuccess(meeting: CreateMeeting, response: CreateMeetingResponse) = apply {
             everySuspend {
                 meetingApi.createNewMeeting(meetingMapper.fromModelToApi(meeting)) } returns NetworkResponse.Success(
@@ -411,6 +462,33 @@ class MeetingRepositoryTest {
             idMapper = idMapper,
         )
     }
+
+    private val MEETING_ENTITY = MeetingEntity(
+        meetingId = QualifiedIDEntity("meeting1", "domain"),
+        conversationId = QualifiedIDEntity("conversation1", "domain"),
+        creatorId = QualifiedIDEntity("creator1", "domain"),
+        createdAt = Instant.parse("2026-06-01T08:00:00Z"),
+        updatedAt = null,
+        title = "Meeting 1",
+        startTime = Instant.parse("2026-06-01T10:00:00Z"),
+        endTime = Instant.parse("2026-06-01T11:00:00Z"),
+        trial = false,
+        recurrence = null,
+    )
+    private val MEETING_OCCURRENCE_DETAILS = MeetingOccurrenceDetailsEntity(
+        occurrence = MeetingOccurrenceEntity(
+            occurrenceId = "occurrence1",
+            meetingId = MEETING_ENTITY.meetingId,
+            occurrenceStart = Instant.parse("2026-06-01T10:00:00Z"),
+            occurrenceEnd = Instant.parse("2026-06-01T11:00:00Z"),
+        ),
+        meeting = MEETING_ENTITY,
+        conversationName = "Conversation 1",
+        conversationType = ConversationEntity.Type.GROUP,
+        otherUserPreviewAssetId = null,
+        channelAccess = null,
+        selfUserId = MEETING_ENTITY.creatorId,
+    )
 
     private val CREATE_MEETING = CreateMeeting(
         title = "Meeting 1",
