@@ -170,7 +170,7 @@ class MeetingRepositoryTest {
             .withCreateNewMeetingSuccess(createMeeting, response)
             .withPersistConversationsSuccess()
             .withTransactionMlsContext()
-            .withMlsGroupEstablished(MLSAdditionResult(setOf(TestUser.OTHER.id), emptySet(), emptySet()))
+            .withMlsGroupEstablished(expectedMLSAdditionResult)
             .arrange()
         val expectedMeetingEntity = requireNotNull(arrangement.meetingMapper.fromApiToDao(response.toMeetingDTO()))
 
@@ -182,7 +182,7 @@ class MeetingRepositoryTest {
         )
 
         assertTrue(result.isRight())
-        assertEquals(MLSAdditionResult.Empty, result.getOrNull())
+        assertEquals(expectedMLSAdditionResult, result.getOrNull())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.createNewMeeting(arrangement.meetingMapper.fromModelToApi(createMeeting))
             arrangement.persistConversations(
@@ -286,7 +286,7 @@ class MeetingRepositoryTest {
     }
 
     @Test
-    fun givenEstablishMlsGroupFails_whenCreateNewMeeting_thenFailureIsNotPropagatedAndRecoveryIsEnqueued() = runTest {
+    fun givenEstablishMlsGroupFails_whenCreateNewMeeting_thenEstablishMlsFailureIsReturnedAndRecoveryIsEnqueued() = runTest {
         val createMeeting = CREATE_MEETING
         val response = createMeetingResponse()
         val failure = CoreFailure.MissingKeyPackages(setOf(TestUser.OTHER.id))
@@ -302,8 +302,8 @@ class MeetingRepositoryTest {
             transactionContext = arrangement.transactionContext,
         )
 
-        assertTrue(result.isRight())
-        assertEquals(MLSAdditionResult.Empty, result.getOrNull())
+        val resultFailure = assertIs<Either.Left<MeetingDataSource.EstablishMLSFailure>>(result).value
+        assertEquals(response.conversation.id.toModel(), resultFailure.conversationId)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(response.conversation.id.toModel())
@@ -423,6 +423,8 @@ class MeetingRepositoryTest {
         ),
         otherParticipants = listOf(TestUser.OTHER.id)
     )
+
+    private val expectedMLSAdditionResult = MLSAdditionResult(setOf(TestUser.OTHER.id), emptySet(), emptySet())
 
     private fun createMeetingResponse(
         protocol: ConvProtocol = ConvProtocol.MLS,

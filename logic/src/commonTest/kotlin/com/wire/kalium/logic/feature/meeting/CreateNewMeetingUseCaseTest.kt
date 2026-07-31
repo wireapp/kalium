@@ -20,8 +20,10 @@ package com.wire.kalium.logic.feature.meeting
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.meeting.CreateMeeting
 import com.wire.kalium.logic.data.meeting.Meeting
+import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
@@ -72,6 +74,28 @@ class CreateNewMeetingUseCaseTest {
         assertEquals(CreateNewMeetingUseCase.Result.Failure, result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.refreshUsersWithoutMetadata()
+        }
+    }
+
+    @Test
+    fun givenRepositoryCreateReturnsEstablishMlsFailure_whenInvoking_thenReturnsSuccessAndCallRefreshUsersWithoutMetadata() = runTest {
+        val createMeeting = CREATE_MEETING
+        val establishMLSFailure = MeetingDataSource.EstablishMLSFailure(ConversationId("conversation", "domain"))
+        val (arrangement, useCase) = Arrangement()
+            .withCreateNewMeetingReturning(createMeeting, Either.Left(establishMLSFailure))
+            .withTransactionExecutingBlock()
+            .arrange()
+
+        val result = useCase(createMeeting)
+
+        assertEquals(CreateNewMeetingUseCase.Result.Success, result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.cryptoTransactionProvider.transaction<MLSAdditionResult>("CreateNewMeeting", any())
+            arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
+            arrangement.refreshUsersWithoutMetadata()
         }
     }
 
