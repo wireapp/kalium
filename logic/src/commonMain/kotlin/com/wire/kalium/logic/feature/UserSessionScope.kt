@@ -2954,6 +2954,7 @@ public class UserSessionScope internal constructor(
             dispatcher = KaliumDispatcherImpl,
             meetingRepository = meetingRepository,
             conversationRepository = conversationRepository,
+            refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             transactionProvider = cryptoTransactionProvider
         )
@@ -2961,8 +2962,12 @@ public class UserSessionScope internal constructor(
 
     private val meetingRepository: MeetingRepository
         get() = MeetingDataSource(
+            selfUserId = userId,
             meetingDAO = userStorage.database.meetingDao,
             meetingApi = authenticatedNetworkContainer.meetingApi,
+            mlsConversationRepository = mlsConversationRepository,
+            pendingActionsRepository = pendingActionsRepository,
+            persistConversations = persistConversationsUseCase,
         )
 
     private val syncMeetingsUseCase: SyncMeetingsUseCase

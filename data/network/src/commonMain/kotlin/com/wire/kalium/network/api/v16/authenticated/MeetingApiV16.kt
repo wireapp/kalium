@@ -18,6 +18,8 @@
 package com.wire.kalium.network.api.v16.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.api.v15.authenticated.MeetingApiV15
@@ -25,6 +27,8 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 internal open class MeetingApiV16 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -38,6 +42,12 @@ internal open class MeetingApiV16 internal constructor(
 
     override suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit> = wrapRequest {
         httpClient.delete("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}")
+    }
+
+    override suspend fun createNewMeeting(request: CreateMeetingRequest): NetworkResponse<CreateMeetingResponse> = wrapRequest {
+        httpClient.post(PATH_MEETINGS) {
+            setBody(request)
+        }
     }
 
     companion object {
