@@ -132,7 +132,7 @@ class EnsureMeetingIsMLSEstablishedUseCaseTest {
 
         fun withConversationReturning(result: Either<StorageFailure, Conversation>) = apply {
             everySuspend {
-                conversationRepository.getConversationById(CONVERSATION_ID)
+                conversationRepository.getNonDeletedConversationById(CONVERSATION_ID)
             } returns result
         }
 

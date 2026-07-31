@@ -41,17 +41,18 @@ internal class EnsureMeetingIsMLSEstablishedUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
 ) : EnsureMeetingIsMLSEstablishedUseCase {
-    override suspend operator fun invoke(conversationId: ConversationId) = conversationRepository.getConversationById(conversationId)
-        .flatMap { conversation ->
-            (conversation.protocol as? Conversation.ProtocolInfo.MLSCapable)?.let { mlsProtocolInfo ->
-                if (mlsProtocolInfo.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
-                    Either.Right(Unit) // MLS group is already established, return success
-                } else {
-                    transactionProvider.transaction("ensureMeetingIsMLSEstablished") { transactionContext ->
-                        joinExistingMLSConversation(transactionContext, conversationId)
+    override suspend operator fun invoke(conversationId: ConversationId) =
+        conversationRepository.getNonDeletedConversationById(conversationId)
+            .flatMap { conversation ->
+                (conversation.protocol as? Conversation.ProtocolInfo.MLSCapable)?.let { mlsProtocolInfo ->
+                    if (mlsProtocolInfo.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
+                        Either.Right(Unit) // MLS group is already established, return success
+                    } else {
+                        transactionProvider.transaction("ensureMeetingIsMLSEstablished") { transactionContext ->
+                            joinExistingMLSConversation(transactionContext, conversationId)
+                        }
                     }
-                }
-            } ?: Either.Right(Unit) // Conversation is not MLS-capable, return success
-        }
-        .isRight()
+                } ?: Either.Right(Unit) // Conversation is not MLS-capable, return success
+            }
+            .isRight()
 }
