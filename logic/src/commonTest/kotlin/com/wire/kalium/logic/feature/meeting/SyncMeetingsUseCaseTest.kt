@@ -20,14 +20,15 @@ package com.wire.kalium.logic.feature.meeting
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingRepository
-import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.IsMeetingsEnabledUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -127,7 +128,7 @@ class SyncMeetingsUseCaseTest {
 
         assertIs<Either.Right<Unit>>(result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingRepository.fetchAndPersistMeetings() }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.userRepository.fetchUsersIfUnknownByIds(setOf(MEETING.creatorId.toModel())) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userRepository.fetchUsersIfUnknownByIds(setOf(MEETING.creatorId)) }
     }
 
     inner class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -143,7 +144,7 @@ class SyncMeetingsUseCaseTest {
             everySuspend { meetingRepository.fetchAndPersistMeetings() } returns Either.Left(failure)
         }
 
-        internal fun withFetchMeetingsSuccessful(list: List<MeetingEntity>) = apply {
+        internal fun withFetchMeetingsSuccessful(list: List<Meeting>) = apply {
             everySuspend { meetingRepository.fetchAndPersistMeetings() } returns Either.Right(list)
         }
 
@@ -161,16 +162,13 @@ class SyncMeetingsUseCaseTest {
         }
     }
 
-    private val MEETING = MeetingEntity(
-        meetingId = QualifiedIDEntity("meetingId", "doman"),
-        conversationId = QualifiedIDEntity("conversationId", "domain"),
-        creatorId = QualifiedIDEntity("creatorId", "domain"),
-        createdAt = Instant.parse("2026-08-01T12:00:00.000Z"),
-        updatedAt = null,
+    private val MEETING = Meeting(
+        meetingId = MeetingId("meetingId", "doman"),
+        conversationId = ConversationId("conversationId", "domain"),
+        creatorId = UserId("creatorId", "domain"),
         title = "Meeting Title",
         startTime = Instant.parse("2026-08-01T12:00:00.000Z"),
         endTime = Instant.parse("2026-08-01T13:00:00.000Z"),
-        trial = false,
         recurrence = null
     )
 }
