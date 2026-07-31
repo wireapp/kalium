@@ -33,6 +33,7 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
+import com.wire.kalium.cryptography.MLSDecryptResult
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.RotateBundle
 import com.wire.kalium.cryptography.WelcomeBundle
@@ -133,6 +134,21 @@ class MLSConversationRepositoryTest {
                 arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
             }
         }
+
+    @Test
+    fun givenBufferedFutureMessage_whenDecryptingMessage_thenReturnBufferedFutureMessageFailure() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withDecryptMLSMessageReturning(MLSDecryptResult.BufferedFutureMessage)
+            .arrange()
+
+        val result = mlsConversationRepository.decryptMessage(
+            arrangement.mlsContext,
+            Arrangement.COMMIT,
+            Arrangement.GROUP_ID
+        )
+
+        result.shouldFail { assertEquals(MLSFailure.BufferedFutureMessage, it) }
+    }
 
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
@@ -1776,9 +1792,13 @@ class MLSConversationRepositoryTest {
         }
 
         fun withDecryptMLSMessageSuccessful(decryptedMessage: com.wire.kalium.cryptography.DecryptedMessageBundle) = apply {
+            withDecryptMLSMessageReturning(MLSDecryptResult.Success(listOf(decryptedMessage)))
+        }
+
+        fun withDecryptMLSMessageReturning(result: MLSDecryptResult) = apply {
             everySuspend {
                 mlsContext.decryptMessage(any(), any())
-            } returns listOf(decryptedMessage)
+            } returns result
         }
 
         fun withRemoveMemberSuccessful() = apply {

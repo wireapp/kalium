@@ -58,6 +58,7 @@ internal interface SessionRepository {
     fun allSessionsFlow(): Flow<List<AccountInfo>>
     suspend fun allValidSessions(): Either<StorageFailure, List<AccountInfo.Valid>>
     fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>>
+    suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
@@ -89,6 +90,7 @@ public data class StoreSessionParam(
     val isPersistentWebSocketEnabled: Boolean,
     val managedBy: SsoManagedBy? = null,
     val nomadServiceUrl: String? = null,
+    val ssoIdentityProviderId: String? = null,
 )
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -109,7 +111,8 @@ internal class SessionDataSource internal constructor(
                 managedByEntity = session.managedBy?.toDao(),
                 serverConfigId = session.serverConfigId,
                 isPersistentWebSocketEnabled = session.isPersistentWebSocketEnabled,
-                nomadServiceUrl = session.nomadServiceUrl
+                nomadServiceUrl = session.nomadServiceUrl,
+                ssoIdentityProviderId = session.ssoIdentityProviderId,
             )
         }.flatMap {
             wrapStorageRequest {
@@ -136,6 +139,9 @@ internal class SessionDataSource internal constructor(
             .map { it.map { AccountInfo.Valid(it.userIDEntity.toModel()) } }
             .wrapStorageRequest()
 
+    override suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
+        wrapStorageRequest { accountsDAO.doesAccountExist(userId.toDao()) }
+
     override suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
         wrapStorageRequest { accountsDAO.doesValidAccountExists(userId.toDao()) }
 
@@ -149,7 +155,15 @@ internal class SessionDataSource internal constructor(
                     .getOrElse { return Either.Left(it) }
 
                 val ssoId: SsoId? = sessionMapper.fromSsoIdEntity(it.ssoId)
-                Either.Right(Account(accountInfo, serverConfig, ssoId, it.nomadServiceUrl))
+                Either.Right(
+                    Account(
+                        info = accountInfo,
+                        serverConfig = serverConfig,
+                        ssoId = ssoId,
+                        nomadServiceUrl = it.nomadServiceUrl,
+                        ssoIdentityProviderId = it.ssoIdentityProviderId,
+                    )
+                )
             }
 
     override suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo> =
