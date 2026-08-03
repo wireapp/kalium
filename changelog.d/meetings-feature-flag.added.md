@@ -3,3 +3,4 @@ Added `UserSessionScope.isMeetingsEnabled` with `IsMeetingsEnabledUseCase` to le
   - ABI: additive
   - Source: additive
   - Behavior: meetings sync now respects the backend meetings feature flag in addition to API v16 support.
+  - Migration: consumers can use `UserSessionScope.isMeetingsEnabled()` before surfacing meetings UI.

@@ -8,7 +8,6 @@ The filename suffix controls the release-note section:
 
 ```text
 1234-backup-status-api.added.md
-1234-backup-status-api.migration.md
 ```
 
 Supported suffixes:
@@ -19,10 +18,10 @@ Supported suffixes:
 - `.removed.md`
 - `.fixed.md`
 - `.security.md`
-- `.migration.md`
 
-Keep fragments short and consumer-focused. Put compatibility details inline with
-the change they describe instead of creating a separate compatibility fragment:
+Keep fragments short and consumer-focused. Put compatibility and migration
+details inline with the change they describe instead of creating separate
+compatibility or migration fragments:
 
 ```markdown
 Added `BackupStatus.InProgress` for observing backup progress.
@@ -30,6 +29,7 @@ Added `BackupStatus.InProgress` for observing backup progress.
   - ABI: additive
   - Source: additive
   - Behavior: no behavior change unless consumers exhaustively match `BackupStatus`.
+  - Migration: no action required unless consumers exhaustively match `BackupStatus`.
 ```
 
 The changelog gate runs when ABI dumps change or when a pull request has an

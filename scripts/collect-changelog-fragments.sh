@@ -17,7 +17,7 @@ if [[ ! -d "$FRAGMENT_DIR" ]]; then
   exit 0
 fi
 
-fragment_pattern="^$FRAGMENT_DIR/[^/]+\\.(added|changed|deprecated|removed|fixed|security|migration)\\.md$"
+fragment_pattern="^$FRAGMENT_DIR/[^/]+\\.(added|changed|deprecated|removed|fixed|security)\\.md$"
 fragments=()
 if [[ -n "$BASE_REF" ]]; then
   while IFS= read -r fragment; do
@@ -40,8 +40,7 @@ else
         -name '*.deprecated.md' -o \
         -name '*.removed.md' -o \
         -name '*.fixed.md' -o \
-        -name '*.security.md' -o \
-        -name '*.migration.md' \) |
+        -name '*.security.md' \) |
       sort
   )
 fi

@@ -3,3 +3,4 @@ Added `UserSessionScope.meetings` with `GetPaginatedMeetingOccurrencesUseCase` t
   - ABI: additive
   - Source: additive
   - Behavior: no behavior change unless consumers use the new meetings scope APIs.
+  - Migration: no action required unless consumers want to surface meetings.

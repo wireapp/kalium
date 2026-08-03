@@ -29,7 +29,3 @@ name = "Fixed"
 [[tool.towncrier.type]]
 directory = "security"
 name = "Security"
-
-[[tool.towncrier.type]]
-directory = "migration"
-name = "Migration"

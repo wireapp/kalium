@@ -31,7 +31,6 @@ Fragments will use native Towncrier filenames:
 
 ```text
 changelog.d/1234-backup-status-api.added.md
-changelog.d/1234-backup-status-api.migration.md
 ```
 
 Supported suffixes are:
@@ -42,10 +41,9 @@ Supported suffixes are:
 - `.removed.md`
 - `.fixed.md`
 - `.security.md`
-- `.migration.md`
 
-Do not use a separate `.compatibility.md` type. Compatibility information belongs inline under the
-change it describes:
+Do not use separate `.compatibility.md` or `.migration.md` types. Compatibility and migration
+information belongs inline under the change it describes:
 
 ```markdown
 Added `BackupStatus.InProgress` for observing backup progress.
@@ -53,6 +51,7 @@ Added `BackupStatus.InProgress` for observing backup progress.
   - ABI: additive
   - Source: additive
   - Behavior: no behavior change unless consumers exhaustively match `BackupStatus`.
+  - Migration: no action required unless consumers exhaustively match `BackupStatus`.
 ```
 
 The release wrapper should only select fragments for `BASE_REF...HEAD_REF`, run
