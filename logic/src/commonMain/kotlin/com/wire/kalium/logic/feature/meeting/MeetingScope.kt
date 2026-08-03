@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.util.KaliumDispatcher
 
+@Suppress("LongParameterList")
 public class MeetingScope internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val meetingRepository: MeetingRepository,
