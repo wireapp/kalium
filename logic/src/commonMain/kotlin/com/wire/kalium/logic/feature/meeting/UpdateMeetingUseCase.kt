@@ -73,7 +73,7 @@ internal class UpdateMeetingUseCaseImpl(
                         ).flatMapLeft { failure ->
                             when (failure) {
                                 is EstablishMLSFailure -> {
-                                    when (MLSMessageFailureHandler.handleFailure(failure)) {
+                                    when (MLSMessageFailureHandler.handleFailure(failure.reason)) {
                                         is MLSMessageFailureResolution.Ignore -> {
                                             logger.logStructuredJson(
                                                 level = KaliumLogLevel.WARN,
