@@ -43,6 +43,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingFrequencyDTO
@@ -59,6 +60,7 @@ import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -74,6 +76,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.model.ConversationId as ApiConversationId
 import com.wire.kalium.network.api.model.MeetingId as NetworkMeetingId
@@ -272,6 +275,105 @@ class MeetingRepositoryTest {
     }
 
     @Test
+    fun givenPersistingMeetingFails_whenUpdateMeeting_thenReturnsStorageFailureAndDoesNotUpdateMlsMembers() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val meeting = CREATE_MEETING
+        val response = createMeetingResponse(epoch = 1UL)
+        val generateOccurrencesFrom = Instant.parse("2026-05-01T00:00:00Z")
+        val generateOccurrencesUntil = Instant.parse("2026-07-01T00:00:00Z")
+        val persistenceException = RuntimeException("An error occurred persisting the meeting")
+        val (arrangement, repository) = Arrangement()
+            .withUpdateMeetingSuccess(meetingId, meeting, response)
+            .withPersistConversationsSuccess()
+            .withPersistMeetingFailure(persistenceException)
+            .arrange()
+        val expectedMeetingEntity = requireNotNull(arrangement.meetingMapper.fromApiToDao(response.toMeetingDTO()))
+
+        val result = repository.updateMeeting(
+            meetingId = meetingId,
+            meeting = meeting,
+            generateOccurrencesFrom = generateOccurrencesFrom,
+            generateOccurrencesUntil = generateOccurrencesUntil,
+            transactionContext = arrangement.transactionContext,
+        )
+
+        assertIs<Either.Left<StorageFailure.Generic>>(result).also {
+            assertSame(persistenceException, it.value.rootCause)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingApi.updateMeeting(
+                meetingId = meetingId.toApi(),
+                request = arrangement.meetingMapper.fromModelToApi(meeting)
+            )
+            arrangement.persistConversations(
+                transactionContext = arrangement.transactionContext,
+                conversations = listOf(response.conversation),
+                invalidateMembers = true,
+                reason = ConversationSyncReason.Other,
+            )
+            arrangement.meetingDao.upsertMeetings(
+                meetings = listOf(expectedMeetingEntity),
+                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.getConversationMembers(any())
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any(), any())
+            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenMeetingConversationMlsGroupIsNotEstablished_whenUpdateMeeting_thenEstablishesMlsGroup() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val groupId = GroupID("group-id")
+        val meeting = CREATE_MEETING
+        val response = createMeetingResponse(
+            protocol = ConvProtocol.MLS,
+            groupId = groupId.value,
+            epoch = 0UL,
+            mlsCipherSuiteTag = 1,
+        )
+        val expectedMlsAdditionResult = MLSAdditionResult(setOf(TestUser.OTHER.id), emptySet(), emptySet())
+        val (arrangement, repository) = Arrangement()
+            .withUpdateMeetingSuccess(meetingId, meeting, response)
+            .withPersistConversationsSuccess()
+            .withMlsContext()
+            .withEstablishMlsGroupSuccess(groupId, meeting.otherParticipants + TestUser.SELF.id, expectedMlsAdditionResult)
+            .withConversationMembers(response.conversationId.toModel(), meeting.otherParticipants)
+            .arrange()
+
+        val result = repository.updateMeeting(
+            meetingId = meetingId,
+            meeting = meeting,
+            transactionContext = arrangement.transactionContext,
+        )
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistConversations(
+                transactionContext = arrangement.transactionContext,
+                conversations = listOf(response.conversation),
+                invalidateMembers = true,
+                reason = ConversationSyncReason.Other,
+            )
+            arrangement.mlsConversationRepository.establishMLSGroup(
+                mlsContext = arrangement.mlsContext,
+                groupID = groupId,
+                members = meeting.otherParticipants + TestUser.SELF.id,
+                publicKeys = null,
+                allowSkippingUsersWithoutKeyPackages = true
+            )
+            arrangement.conversationRepository.getConversationMembers(conversationId = response.conversationId.toModel())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any(), any())
+            arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), any(), any())
+        }
+    }
+
+    @Test
     fun givenEstablishedMlsGroupAndParticipantsChanged_whenUpdateMeeting_thenMlsMembersAreUpdated() = runTest {
         val participantToKeep = UserId("participant-keep", "domain")
         val participantToAdd = UserId("participant-add", "domain")
@@ -375,6 +477,10 @@ class MeetingRepositoryTest {
             everySuspend { persistConversations(any(), any(), any(), any()) } returns Either.Right(Unit)
         }
 
+        internal fun withPersistMeetingFailure(exception: Exception) = apply {
+            everySuspend { meetingDao.upsertMeetings(any(), any()) } throws exception
+        }
+
         internal fun withMlsContext() = apply {
             every { transactionContext.mls } returns mlsContext
         }
@@ -392,6 +498,12 @@ class MeetingRepositoryTest {
         internal fun withAddMembersToMlsGroupSuccess(groupId: GroupID, members: List<UserId>, result: MLSAdditionResult) = apply {
             everySuspend {
                 mlsConversationRepository.addMemberToMLSGroup(any(), groupId, members, any(), true)
+            } returns Either.Right(result)
+        }
+
+        internal fun withEstablishMlsGroupSuccess(groupId: GroupID, members: List<UserId>, result: MLSAdditionResult) = apply {
+            everySuspend {
+                mlsConversationRepository.establishMLSGroup(any(), groupId, members, null, true)
             } returns Either.Right(result)
         }
 
@@ -458,7 +570,7 @@ class MeetingRepositoryTest {
             interval = 1L,
             until = Instant.parse("2026-12-01T00:00:00Z")
         ),
-        conversationId: ApiConversationId = ApiConversationId("conversation1", "domain")
+        conversationId: ApiConversationId = ApiConversationId("conversation1", "domain"),
     ) = CreateMeetingResponse(
         meetingId = NetworkMeetingId("meeting1", "domain"),
         conversationId = conversationId,
@@ -476,6 +588,7 @@ class MeetingRepositoryTest {
             epoch = epoch,
             protocol = protocol,
             mlsCipherSuiteTag = mlsCipherSuiteTag,
+            conversationGroupType = ConversationResponse.GroupType.Meeting,
         )
     )
 }
