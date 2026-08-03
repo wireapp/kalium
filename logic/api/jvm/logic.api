@@ -5349,10 +5349,32 @@ public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getGetNextMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase;
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
 	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
+	public final fun getUpdateMeeting ()Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase {
 	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/meeting/CreateMeeting;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/logic/feature/message/DeleteMessageUseCase {

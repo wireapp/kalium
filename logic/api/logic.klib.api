@@ -1399,6 +1399,24 @@ abstract interface com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenc
     abstract suspend fun invoke(kotlin/String): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.meeting/MeetingOccurrence?> // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase.invoke|invoke(kotlin.String){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.meeting/CreateMeeting): com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.meeting.CreateMeeting){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result|null[0]
+        final object Failure : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 abstract interface com.wire.kalium.logic.feature.message.draft/GetMessageDraftUseCase { // com.wire.kalium.logic.feature.message.draft/GetMessageDraftUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.data.message.draft/MessageDraft? // com.wire.kalium.logic.feature.message.draft/GetMessageDraftUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
@@ -4322,6 +4340,8 @@ final class com.wire.kalium.logic.feature.meeting/MeetingScope { // com.wire.kal
         final fun <get-getPaginatedMeetingOccurrenceDetails>(): com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails.<get-getPaginatedMeetingOccurrenceDetails>|<get-getPaginatedMeetingOccurrenceDetails>(){}[0]
     final val observeMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence|{}observeMeetingOccurrence[0]
         final fun <get-observeMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence.<get-observeMeetingOccurrence>|<get-observeMeetingOccurrence>(){}[0]
+    final val updateMeeting // com.wire.kalium.logic.feature.meeting/MeetingScope.updateMeeting|{}updateMeeting[0]
+        final fun <get-updateMeeting>(): com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.updateMeeting.<get-updateMeeting>|<get-updateMeeting>(){}[0]
 }
 
 final class com.wire.kalium.logic.feature.message.composite/SendButtonActionConfirmationMessageUseCase { // com.wire.kalium.logic.feature.message.composite/SendButtonActionConfirmationMessageUseCase|null[0]
