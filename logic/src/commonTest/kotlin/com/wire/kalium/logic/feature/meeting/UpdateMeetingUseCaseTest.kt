@@ -97,16 +97,16 @@ class UpdateMeetingUseCaseTest {
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-        internal val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
-        internal val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
-        internal val refreshUsersWithoutMetadata = mock<RefreshUsersWithoutMetadataUseCase>(mode = MockMode.autoUnit)
-        internal val resetMLSConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val refreshUsersWithoutMetadata = mock<RefreshUsersWithoutMetadataUseCase>(mode = MockMode.autoUnit)
+        val resetMLSConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
 
-        internal fun withInsertIncompleteUsersSuccess(meeting: CreateMeeting) = apply {
+        fun withInsertIncompleteUsersSuccess(meeting: CreateMeeting) = apply {
             everySuspend { userRepository.insertOrIgnoreIncompleteUsers(meeting.otherParticipants) } returns Either.Right(Unit)
         }
 
-        internal fun withUpdateMeetingReturning(
+        fun withUpdateMeetingReturning(
             meetingId: MeetingId,
             meeting: CreateMeeting,
             result: Either<CoreFailure, MLSAdditionResult>
@@ -122,11 +122,11 @@ class UpdateMeetingUseCaseTest {
             } returns result
         }
 
-        internal fun withResetConversationReturning(conversationId: ConversationId, result: ResetMLSConversationResult) = apply {
+        fun withResetConversationReturning(conversationId: ConversationId, result: ResetMLSConversationResult) = apply {
             everySuspend { resetMLSConversation(conversationId, transactionContext) } returns result
         }
 
-        internal suspend fun arrange(): Pair<Arrangement, UpdateMeetingUseCase> {
+        suspend fun arrange(): Pair<Arrangement, UpdateMeetingUseCase> {
             withTransactionReturning(Either.Right(MLSAdditionResult.Empty))
             return this to UpdateMeetingUseCaseImpl(
                 meetingRepository = meetingRepository,
