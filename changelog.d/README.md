@@ -1,27 +1,35 @@
 # Changelog Fragments
 
-Add one Markdown fragment for each pull request that changes Kalium's public API,
-ABI, or consumer-facing behavior.
+Add one or more Towncrier Markdown fragments for each pull request that changes
+Kalium's public API, ABI, or consumer-facing behavior.
 
-Name fragments after the pull request or issue when possible:
+Name fragments after the pull request, issue, or changed feature when possible.
+The filename suffix controls the release-note section:
 
 ```text
-1234-added-backup-status-api.md
+1234-backup-status-api.added.md
+1234-backup-status-api.migration.md
 ```
 
-Keep fragments short and consumer-focused:
+Supported suffixes:
+
+- `.added.md`
+- `.changed.md`
+- `.deprecated.md`
+- `.removed.md`
+- `.fixed.md`
+- `.security.md`
+- `.migration.md`
+
+Keep fragments short and consumer-focused. Put compatibility details inline with
+the change they describe instead of creating a separate compatibility fragment:
 
 ```markdown
-### Added
-- Added `BackupStatus.InProgress` for observing backup progress.
+Added `BackupStatus.InProgress` for observing backup progress.
 
-### Migration
-No action required unless consumers exhaustively match `BackupStatus`.
-
-### Compatibility
-ABI: additive.
-Source: additive.
-Behavior: no behavior change.
+  - ABI: additive
+  - Source: additive
+  - Behavior: no behavior change unless consumers exhaustively match `BackupStatus`.
 ```
 
 The changelog gate runs when ABI dumps change or when a pull request has an

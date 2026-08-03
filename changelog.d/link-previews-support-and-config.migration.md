@@ -1,0 +1,1 @@
+Consumers can replace app-local link preview settings with `UserScope.observeLinkPreviewsEnabled` and `UserScope.persistLinkPreviewsStatusConfig`. Clients that prefetch sender-side previews while composing text messages can use `MessageScope.detectLinkPreviewTarget` together with `MessageScope.generateLinkPreview`.

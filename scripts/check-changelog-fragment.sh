@@ -85,7 +85,7 @@ PY
 
 has_changelog_fragment=false
 fragment_files="$(
-  grep -E '^changelog\.d/[^/]+\.md$' <<< "$added_or_modified_files" |
+  grep -E '^changelog\.d/[^/]+\.(added|changed|deprecated|removed|fixed|security|migration)\.md$' <<< "$added_or_modified_files" |
     grep -v '^changelog\.d/README\.md$' || true
 )"
 if [[ -n "$fragment_files" ]]; then
