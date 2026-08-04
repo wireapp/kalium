@@ -23,11 +23,7 @@ import android.os.Build
 internal actual class SecureRandom actual constructor() {
 
     private val random
-        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            java.security.SecureRandom.getInstanceStrong()
-        } else {
-            java.security.SecureRandom()
-        }
+        get() = java.security.SecureRandom.getInstanceStrong()
 
     actual fun nextBytes(length: Int): ByteArray = ByteArray(length).apply {
         random.nextBytes(this)
