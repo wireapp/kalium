@@ -90,9 +90,12 @@ public class AppleAvsRuntimePlugin : Plugin<Project> {
             )
             cachedArchive.set(cache.archiveFile)
             outputMarker.set(runtimeDirectory.map { it.file("state/archive-ready") })
-            // Existence is enough: the archive only ever reaches this path after a checksum
-            // match, and extractAvsXcframework re-verifies it before reading it.
-            outputs.upToDateWhen { cache.archiveFile.get().asFile.isFile }
+            outputs.upToDateWhen {
+                isArchiveCacheReady(
+                    cache.archiveFile.get().asFile,
+                    AvsRuntimeArtifact.archiveSha256,
+                )
+            }
         }
 
     private fun Project.registerExtractAvsRuntimeTask(
@@ -125,15 +128,13 @@ public class AppleAvsRuntimePlugin : Plugin<Project> {
         cache: AvsCacheLocations,
         prepareArchive: TaskProvider<PrepareAvsXcframeworkTask>,
     ) {
-        tasks.register("extractAvsDebugSymbols", Sync::class.java) {
+        tasks.register("extractAvsDebugSymbols", ExtractAvsDebugSymbolsTask::class.java) {
             group = TASK_GROUP
             description = "Extracts AVS dSYMs for crash symbolication"
             dependsOn(prepareArchive)
-            from(cache.archiveFile.map { zipTree(it.asFile) }) {
-                include("avs.xcframework/*/dSYMs/**")
-                includeEmptyDirs = false
-            }
-            into(runtimeDirectory.map { it.dir("debug-symbols") })
+            cachedArchive.set(cache.archiveFile)
+            expectedSha256.set(AvsRuntimeArtifact.archiveSha256)
+            outputDirectory.set(runtimeDirectory.map { it.dir("debug-symbols") })
         }
     }
 

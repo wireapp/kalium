@@ -94,28 +94,38 @@ public abstract class EmbedAvsForXcodeTask : DefaultTask() {
             // A secure timestamp is required for Developer ID distribution and notarization, and is
             // pointless for iOS and local development signing. Hardened runtime is deliberately not
             // applied here: it belongs on the app and its executables, not on a nested framework.
-            val requiresSecureTimestamp = platform == AvsApplePlatform.MACOS &&
-                codeSignIdentityName.orNull.orEmpty().startsWith(DEVELOPER_ID_IDENTITY_PREFIX)
+            val requiresSecureTimestamp = requiresSecureTimestamp(
+                platform,
+                codeSignIdentityName.orNull.orEmpty(),
+            )
             execOperations.exec {
-                commandLine(
-                    buildList {
-                        add("/usr/bin/codesign")
-                        add("--force")
-                        add("--sign")
-                        add(identity)
-                        // Frameworks must not carry entitlements, so only the identifier is kept.
-                        add("--preserve-metadata=identifier")
-                        if (requiresSecureTimestamp) add("--timestamp")
-                        add(destination.absolutePath)
-                    }
-                )
+                commandLine(codesignCommand(identity, destination, requiresSecureTimestamp))
             }
         }
 
         logger.lifecycle("Embedded AVS framework at ${destination.absolutePath}")
     }
-
-    private companion object {
-        const val DEVELOPER_ID_IDENTITY_PREFIX = "Developer ID"
-    }
 }
+
+internal fun requiresSecureTimestamp(
+    platform: AvsApplePlatform,
+    identityName: String,
+): Boolean =
+    platform == AvsApplePlatform.MACOS && identityName.startsWith(DEVELOPER_ID_IDENTITY_PREFIX)
+
+internal fun codesignCommand(
+    identity: String,
+    destination: File,
+    requiresSecureTimestamp: Boolean,
+): List<String> = buildList {
+    add("/usr/bin/codesign")
+    add("--force")
+    add("--sign")
+    add(identity)
+    // Frameworks must not carry entitlements, so only the identifier is kept.
+    add("--preserve-metadata=identifier")
+    if (requiresSecureTimestamp) add("--timestamp")
+    add(destination.absolutePath)
+}
+
+private const val DEVELOPER_ID_IDENTITY_PREFIX = "Developer ID"

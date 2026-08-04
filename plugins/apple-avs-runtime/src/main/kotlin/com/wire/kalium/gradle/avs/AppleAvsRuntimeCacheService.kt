@@ -109,7 +109,9 @@ internal object AppleAvsRuntimeCacheService {
 
                 normalizeMacosFramework(temporary, execOperations)
                 validateExtractedFrameworks(temporary)
-                temporary.resolve(AVS_CACHE_READY_MARKER).writeText(cacheMarker(expectedSha256))
+                temporary.resolve(AVS_CACHE_READY_MARKER).writeText(
+                    frameworkCacheMarker(temporary, expectedSha256)
+                )
 
                 fileSystemOperations.delete { delete(destination) }
                 moveAtomically(temporary, destination)
@@ -265,14 +267,20 @@ internal fun frameworkCacheDirectoryName(): String =
 
 internal fun cacheMarker(checksum: String): String = "sha256=$checksum\n"
 
+internal fun isArchiveCacheReady(archive: File, checksum: String): Boolean =
+    archive.isFile && runCatching { archive.sha256() == checksum }.getOrDefault(false)
+
 internal fun isFrameworkCacheReady(directory: File, checksum: String): Boolean =
-    directory.resolve(AVS_CACHE_READY_MARKER).let { marker ->
-        marker.isFile && marker.readText() == cacheMarker(checksum)
-    } && AvsApplePlatform.entries.all { platform ->
-        directory.resolve(
-            "avs.xcframework/${platform.xcframeworkSlice}/avs.framework/avs"
-        ).isFile
-    }
+    runCatching {
+        val marker = directory.resolve(AVS_CACHE_READY_MARKER)
+        val allBinariesPresent = AvsApplePlatform.entries.all { platform ->
+            directory.resolve(
+                "avs.xcframework/${platform.xcframeworkSlice}/avs.framework/avs"
+            ).isFile
+        }
+        marker.isFile && allBinariesPresent &&
+            marker.readText() == frameworkCacheMarker(directory, checksum)
+    }.getOrDefault(false)
 
 /** Verifies a freshly downloaded or copied archive before it is published into the cache. */
 private fun verifyChecksum(archive: File, expectedSha256: String) {
@@ -291,7 +299,7 @@ private fun verifyChecksum(archive: File, expectedSha256: String) {
  * [AppleAvsRuntimeCacheService.prepareArchive] then downloads it again on the next build instead of
  * leaving the build permanently broken.
  */
-private fun verifyCachedArchive(archive: File, expectedSha256: String) {
+internal fun verifyCachedArchive(archive: File, expectedSha256: String) {
     if (!archive.isFile) {
         throw GradleException("The AVS XCFramework archive is missing: ${archive.absolutePath}")
     }
