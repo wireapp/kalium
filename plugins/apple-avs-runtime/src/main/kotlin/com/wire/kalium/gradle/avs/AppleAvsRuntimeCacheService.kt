@@ -122,7 +122,6 @@ internal object AppleAvsRuntimeCacheService {
     }
 
     private fun download(archiveUrl: String, destination: File) {
-    private fun download(archiveUrl: String, destination: File) {
         val uri = try {
             URI(archiveUrl)
         } catch (exception: Exception) {
@@ -151,23 +150,6 @@ internal object AppleAvsRuntimeCacheService {
         }
 
         val connection = uri.toURL().openConnection().apply {
-            connectTimeout = DOWNLOAD_CONNECT_TIMEOUT_MILLIS
-            readTimeout = DOWNLOAD_READ_TIMEOUT_MILLIS
-            setRequestProperty("User-Agent", "kalium-apple-avs-runtime-gradle-plugin")
-        }
-        if (connection is HttpURLConnection) {
-            connection.instanceFollowRedirects = true
-            val responseCode = connection.responseCode
-            if (responseCode !in HTTP_SUCCESS_RANGE) {
-                throw GradleException(
-                    "Failed to download AVS XCFramework: HTTP $responseCode from $archiveUrl"
-                )
-            }
-        }
-        connection.getInputStream().use { input ->
-            Files.copy(input, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
-        }
-    }
             connectTimeout = DOWNLOAD_CONNECT_TIMEOUT_MILLIS
             readTimeout = DOWNLOAD_READ_TIMEOUT_MILLIS
             setRequestProperty("User-Agent", "kalium-apple-avs-runtime-gradle-plugin")
