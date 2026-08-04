@@ -332,10 +332,7 @@ git commit -m "Update Kalium submodule"
 
 ### Swift Package Manager (Experimental)
 
-This local wrapper declares only Kalium and is incomplete for AVS-enabled
-builds. Use the submodule integration until the package proposed in
-[ADR 0010](adr/0010-distribute-kalium-and-avs-with-swift-package-manager.md)
-publishes both Kalium and AVS binary targets.
+If you prefer SPM over submodules, you can reference the built XCFramework:
 
 ### Importing in Swift
 
