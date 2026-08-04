@@ -177,14 +177,6 @@ public class AppleAvsRuntimePlugin : Plugin<Project> {
 
     private fun Project.configureKotlinMultiplatform(runtimeTasks: AvsRuntimeTasks) {
         pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
-            val appleAvsDisabled = providers.gradleProperty("kalium.disableAppleAvs")
-                .map { it.toBoolean() }
-                .getOrElse(false)
-            if (appleAvsDisabled) {
-                logger.info("Apple AVS runtime linking is disabled by kalium.disableAppleAvs")
-                return@withPlugin
-            }
-
             val kotlin = extensions.getByType(KotlinMultiplatformExtension::class.java)
             kotlin.targets.withType(KotlinNativeTarget::class.java).configureEach {
                 val platform = AvsApplePlatform.forKotlinTarget(name) ?: return@configureEach
