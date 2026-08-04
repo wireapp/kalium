@@ -51,7 +51,7 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingResponse
+import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.toMeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
@@ -222,7 +222,7 @@ internal class MeetingDataSource(
         }
     }
 
-    private suspend fun CreateMeetingResponse.updateMembers(
+    private suspend fun UpsertMeetingResponse.updateMembers(
         meeting: CreateMeeting,
         transactionContext: CryptoTransactionContext,
     ) = conversationRepository.getConversationMembers(conversationId.toModel())
@@ -260,7 +260,7 @@ internal class MeetingDataSource(
             }
         }
 
-    private suspend fun CreateMeetingResponse.persist(
+    private suspend fun UpsertMeetingResponse.persist(
         transactionContext: CryptoTransactionContext,
         otherParticipants: List<UserId>,
         generateOccurrencesFrom: Instant,
@@ -285,7 +285,7 @@ internal class MeetingDataSource(
         }
     }
 
-    private suspend fun CreateMeetingResponse.establishMLSGroupIfNeeded(
+    private suspend fun UpsertMeetingResponse.establishMLSGroupIfNeeded(
         transactionContext: CryptoTransactionContext,
         otherParticipants: List<UserId>,
     ): Either<CoreFailure, MLSAdditionResult> = when {

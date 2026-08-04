@@ -26,7 +26,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class CreateMeetingRequest(
+data class UpsertMeetingRequest(
     @SerialName("start_time") val startTime: Instant,
     @SerialName("end_time") val endTime: Instant,
     @SerialName("title") val title: String,
@@ -34,7 +34,7 @@ data class CreateMeetingRequest(
 )
 
 @Serializable
-data class CreateMeetingResponse(
+data class UpsertMeetingResponse(
     @SerialName("qualified_id") val meetingId: MeetingId,
     @SerialName("qualified_conversation") val conversationId: ConversationId,
     @SerialName("qualified_creator") val creatorId: UserId,
@@ -48,7 +48,7 @@ data class CreateMeetingResponse(
     @SerialName("conversation") val conversation: ConversationResponse,
 )
 
-fun CreateMeetingResponse.toMeetingDTO(): MeetingDTO = MeetingDTO(
+fun UpsertMeetingResponse.toMeetingDTO(): MeetingDTO = MeetingDTO(
     meetingId = meetingId,
     conversationId = conversationId,
     creatorId = creatorId,

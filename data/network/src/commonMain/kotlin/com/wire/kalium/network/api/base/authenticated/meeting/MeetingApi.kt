@@ -18,8 +18,8 @@
 
 package com.wire.kalium.network.api.base.authenticated.meeting
 
-import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
-import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingResponse
+import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.base.authenticated.BaseApi
 import com.wire.kalium.network.api.model.MeetingId
@@ -29,8 +29,8 @@ import com.wire.kalium.network.utils.NetworkResponse
 interface MeetingApi : BaseApi {
     suspend fun fetchMeetings(): NetworkResponse<List<MeetingDTO>>
     suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit>
-    suspend fun createNewMeeting(request: CreateMeetingRequest): NetworkResponse<CreateMeetingResponse>
-    suspend fun updateMeeting(meetingId: MeetingId, request: CreateMeetingRequest): NetworkResponse<CreateMeetingResponse>
+    suspend fun createNewMeeting(request: UpsertMeetingRequest): NetworkResponse<UpsertMeetingResponse>
+    suspend fun updateMeeting(meetingId: MeetingId, request: UpsertMeetingRequest): NetworkResponse<UpsertMeetingResponse>
 
     companion object {
         const val MIN_API_VERSION_MEETINGS = 16

@@ -18,8 +18,8 @@
 package com.wire.kalium.network.api.v16.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
-import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingResponse
+import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.api.v15.authenticated.MeetingApiV15
@@ -45,13 +45,13 @@ internal open class MeetingApiV16 internal constructor(
         httpClient.delete("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}")
     }
 
-    override suspend fun createNewMeeting(request: CreateMeetingRequest): NetworkResponse<CreateMeetingResponse> = wrapRequest {
+    override suspend fun createNewMeeting(request: UpsertMeetingRequest): NetworkResponse<UpsertMeetingResponse> = wrapRequest {
         httpClient.post(PATH_MEETINGS) {
             setBody(request)
         }
     }
 
-    override suspend fun updateMeeting(meetingId: MeetingId, request: CreateMeetingRequest): NetworkResponse<CreateMeetingResponse> =
+    override suspend fun updateMeeting(meetingId: MeetingId, request: UpsertMeetingRequest): NetworkResponse<UpsertMeetingResponse> =
         wrapRequest {
             httpClient.put("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}") {
                 setBody(request)
