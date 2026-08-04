@@ -80,7 +80,6 @@ internal class UpdateMeetingUseCaseImpl(
                                                 leadingMessage = "Update Meeting external commit Ignored",
                                                 jsonStringKeyValues = logData(meetingId, failure.conversationId, failure)
                                             )
-                                            Either.Right(MLSAdditionResult.Empty)
                                         }
 
                                         is MLSMessageFailureResolution.ResetConversation -> {
@@ -92,7 +91,7 @@ internal class UpdateMeetingUseCaseImpl(
                                             resetMLSConversation(
                                                 conversationId = failure.conversationId,
                                                 transactionContext = transactionContext,
-                                            ).toEither().map { MLSAdditionResult.Empty }
+                                            )
                                         }
 
                                         else -> {
@@ -101,7 +100,6 @@ internal class UpdateMeetingUseCaseImpl(
                                                 leadingMessage = "Update Meeting external commit Failure",
                                                 jsonStringKeyValues = logData(meetingId, failure.conversationId, failure)
                                             )
-                                            Either.Left(failure)
                                         }
                                     }
                                     // don't propagate the MLS establishment error, edit succeeded, MLS establishment can be retried later
