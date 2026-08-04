@@ -122,7 +122,52 @@ internal object AppleAvsRuntimeCacheService {
     }
 
     private fun download(archiveUrl: String, destination: File) {
-        val connection = URI(archiveUrl).toURL().openConnection().apply {
+    private fun download(archiveUrl: String, destination: File) {
+        val uri = try {
+            URI(archiveUrl)
+        } catch (exception: Exception) {
+            throw GradleException("Invalid archive URL: $archiveUrl", exception)
+        }
+
+        // Restrict downloads to approved HTTPS hosts to prevent SSRF.
+        // Update this allowlist only for trusted release hosts used by this plugin.
+        val allowedHosts = setOf(
+            "github.com",
+            "githubusercontent.com",
+            "objects.githubusercontent.com",
+            "release-assets.githubusercontent.com",
+        )
+
+        val host = uri.host?.lowercase()
+            ?: throw GradleException("Unsupported archive URL: missing host")
+
+        if (
+            uri.scheme != "https" ||
+            uri.userInfo != null ||
+            (uri.port != -1 && uri.port != 443) ||
+            host !in allowedHosts
+        ) {
+            throw GradleException("Unsupported archive URL: $archiveUrl")
+        }
+
+        val connection = uri.toURL().openConnection().apply {
+            connectTimeout = DOWNLOAD_CONNECT_TIMEOUT_MILLIS
+            readTimeout = DOWNLOAD_READ_TIMEOUT_MILLIS
+            setRequestProperty("User-Agent", "kalium-apple-avs-runtime-gradle-plugin")
+        }
+        if (connection is HttpURLConnection) {
+            connection.instanceFollowRedirects = true
+            val responseCode = connection.responseCode
+            if (responseCode !in HTTP_SUCCESS_RANGE) {
+                throw GradleException(
+                    "Failed to download AVS XCFramework: HTTP $responseCode from $archiveUrl"
+                )
+            }
+        }
+        connection.getInputStream().use { input ->
+            Files.copy(input, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
             connectTimeout = DOWNLOAD_CONNECT_TIMEOUT_MILLIS
             readTimeout = DOWNLOAD_READ_TIMEOUT_MILLIS
             setRequestProperty("User-Agent", "kalium-apple-avs-runtime-gradle-plugin")
