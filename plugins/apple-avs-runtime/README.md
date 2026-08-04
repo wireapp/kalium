@@ -95,8 +95,7 @@ CI or offline builds can provide the same official archive:
 kalium.avs.archive=/absolute/path/avs.xcframework.zip
 ```
 
-The plugin still verifies the baked checksum. `kalium.disableAppleAvs=true` is
-supported only when building Kalium from source.
+The plugin still verifies the baked checksum.
 
 ## Download and cache behavior
 

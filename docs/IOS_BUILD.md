@@ -337,30 +337,6 @@ builds. Use the submodule integration until the package proposed in
 [ADR 0010](adr/0010-distribute-kalium-and-avs-with-swift-package-manager.md)
 publishes both Kalium and AVS binary targets.
 
-For a no-AVS source build, you can reference the built XCFramework:
-
-1. Build the XCFramework as shown above
-2. Create a `Package.swift` wrapper in your project:
-
-```swift
-// swift-tools-version:5.7
-import PackageDescription
-
-let package = Package(
-    name: "KaliumWrapper",
-    platforms: [.iOS(.v14)],
-    products: [
-        .library(name: "Kalium", targets: ["Kalium"])
-    ],
-    targets: [
-        .binaryTarget(
-            name: "Kalium",
-            path: "Frameworks/kalium/logic/build/logic.xcframework"
-        )
-    ]
-)
-```
-
 ### Importing in Swift
 
 Once integrated, import and use Kalium in your Swift code:

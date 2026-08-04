@@ -35,7 +35,6 @@ kaliumLibrary {
 
 val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
     ?: error("USE_UNIFIED_CORE_CRYPTO not set")
-val disableAppleAvs: Boolean = findProperty("kalium.disableAppleAvs")?.toString()?.toBoolean() ?: false
 
 kotlin {
     explicitApi()
@@ -143,10 +142,8 @@ kotlin {
             getByName("macosArm64Main")
         ).forEach { appleTargetMain ->
             appleTargetMain.kotlin.srcDir(appleCallSourceDir)
-            if (!disableAppleAvs) {
-                appleTargetMain.dependencies {
-                    implementation(libs.avsKmp)
-                }
+            appleTargetMain.dependencies {
+                implementation(libs.avsKmp)
             }
         }
 
