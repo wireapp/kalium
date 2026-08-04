@@ -116,10 +116,10 @@ no build is using them and will be recreated on demand.
 
 The archive is verified against the baked checksum every time it enters the
 cache and again before it is unpacked; a mismatch discards the entry so the next
-build re-downloads it. The *extracted* framework slices are not re-hashed on a
-cache hit — they are gated by a ready marker plus the presence of each slice
-binary, and that marker lives in the same directory as the binaries it vouches
-for.
+build re-downloads it. Extracted framework contents are re-hashed on cache hits
+and compared with their ready marker, which detects incomplete writes and
+accidental changes. The marker lives in the same directory as the binaries it
+vouches for.
 
 So anything able to write into the cache directory can substitute the framework
 that later builds link and embed. Treat it exactly like the Gradle dependency
