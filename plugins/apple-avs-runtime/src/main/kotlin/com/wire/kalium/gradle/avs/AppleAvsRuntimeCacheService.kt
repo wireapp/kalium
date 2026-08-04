@@ -25,6 +25,7 @@ import org.gradle.process.ExecOperations
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URI
+import java.net.URISyntaxException
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
 import java.nio.channels.OverlappingFileLockException
@@ -122,32 +123,7 @@ internal object AppleAvsRuntimeCacheService {
     }
 
     private fun download(archiveUrl: String, destination: File) {
-        val uri = try {
-            URI(archiveUrl)
-        } catch (exception: Exception) {
-            throw GradleException("Invalid archive URL: $archiveUrl", exception)
-        }
-
-        // Restrict downloads to approved HTTPS hosts to prevent SSRF.
-        // Update this allowlist only for trusted release hosts used by this plugin.
-        val allowedHosts = setOf(
-            "github.com",
-            "githubusercontent.com",
-            "objects.githubusercontent.com",
-            "release-assets.githubusercontent.com",
-        )
-
-        val host = uri.host?.lowercase()
-            ?: throw GradleException("Unsupported archive URL: missing host")
-
-        if (
-            uri.scheme != "https" ||
-            uri.userInfo != null ||
-            (uri.port != -1 && uri.port != 443) ||
-            host !in allowedHosts
-        ) {
-            throw GradleException("Unsupported archive URL: $archiveUrl")
-        }
+        val uri = validatedArchiveUri(archiveUrl)
 
         val connection = uri.toURL().openConnection().apply {
             connectTimeout = DOWNLOAD_CONNECT_TIMEOUT_MILLIS
@@ -155,16 +131,48 @@ internal object AppleAvsRuntimeCacheService {
             setRequestProperty("User-Agent", "kalium-apple-avs-runtime-gradle-plugin")
         }
         if (connection is HttpURLConnection) {
-            connection.instanceFollowRedirects = true
-            val responseCode = connection.responseCode
-            if (responseCode !in HTTP_SUCCESS_RANGE) {
-                throw GradleException(
-                    "Failed to download AVS XCFramework: HTTP $responseCode from $archiveUrl"
-                )
-            }
+            validateHttpResponse(connection, archiveUrl)
         }
         connection.getInputStream().use { input ->
             Files.copy(input, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+
+    private fun validatedArchiveUri(archiveUrl: String): URI {
+        val uri = parseArchiveUri(archiveUrl)
+        val host = uri.host?.lowercase()
+            ?: throw GradleException("Unsupported archive URL: missing host")
+
+        if (!isAllowedDownloadUri(uri, host)) {
+            throw GradleException("Unsupported archive URL: $archiveUrl")
+        }
+        return uri
+    }
+
+    private fun parseArchiveUri(archiveUrl: String): URI =
+        try {
+            URI(archiveUrl)
+        } catch (exception: URISyntaxException) {
+            throw GradleException("Invalid archive URL: $archiveUrl", exception)
+        }
+
+    // Restrict downloads to approved HTTPS hosts to prevent SSRF.
+    // Update this allowlist only for trusted release hosts used by this plugin.
+    private fun isAllowedDownloadUri(uri: URI, host: String): Boolean =
+        when {
+            uri.scheme != HTTPS_SCHEME -> false
+            uri.userInfo != null -> false
+            uri.port !in ALLOWED_HTTPS_PORTS -> false
+            else -> host in ALLOWED_DOWNLOAD_HOSTS
+        }
+
+    private fun validateHttpResponse(connection: HttpURLConnection, archiveUrl: String) {
+        connection.instanceFollowRedirects = true
+        val responseCode = connection.responseCode
+        if (responseCode !in HTTP_SUCCESS_RANGE) {
+            throw GradleException(
+                "Failed to download AVS XCFramework: HTTP $responseCode from $archiveUrl"
+            )
         }
     }
 
@@ -264,9 +272,19 @@ internal object AppleAvsRuntimeCacheService {
     private const val CACHE_LOCK_TIMEOUT_MINUTES = 10L
     private const val HTTP_SUCCESS_MIN = 200
     private const val HTTP_SUCCESS_MAX = 299
+    private const val DEFAULT_PORT = -1
+    private const val HTTPS_PORT = 443
+    private const val HTTPS_SCHEME = "https"
     private val CACHE_LOCK_TIMEOUT_NANOS =
         TimeUnit.MINUTES.toNanos(CACHE_LOCK_TIMEOUT_MINUTES)
     private val HTTP_SUCCESS_RANGE = HTTP_SUCCESS_MIN..HTTP_SUCCESS_MAX
+    private val ALLOWED_HTTPS_PORTS = setOf(DEFAULT_PORT, HTTPS_PORT)
+    private val ALLOWED_DOWNLOAD_HOSTS = setOf(
+        "github.com",
+        "githubusercontent.com",
+        "objects.githubusercontent.com",
+        "release-assets.githubusercontent.com",
+    )
     private val IOS_ONLY_MACOS_PLIST_KEYS = listOf(
         "BuildMachineOSBuild",
         "DTCompiler",
