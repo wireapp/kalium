@@ -228,37 +228,46 @@ internal class MeetingDataSource(
     ) = conversationRepository.getConversationMembers(conversationId.toModel())
         .map { it.filterNot { it == selfUserId } } // exclude self user from current members
         .flatMap { currentMembers ->
-            val membersToAdd = meeting.otherParticipants.filterNot { it in currentMembers }
-            val membersToRemove = currentMembers.filterNot { it in meeting.otherParticipants }
-            if ((membersToAdd + membersToRemove).isNotEmpty() && conversation.groupId != null && conversation.mlsCipherSuiteTag != null) {
-                transactionContext.wrapInMLSContext { mlsContext ->
-                    when {
-                        membersToRemove.isNotEmpty() -> mlsConversationRepository.removeMembersFromMLSGroup(
-                            mlsContext = mlsContext,
-                            groupID = idMapper.fromGroupIDEntity(conversation.groupId!!),
-                            userIdList = membersToRemove,
-                        )
-
-                        else -> Either.Right(Unit)
-                    }.flatMap {
-                        when {
-                            membersToAdd.isNotEmpty() -> mlsConversationRepository.addMemberToMLSGroup(
-                                mlsContext = mlsContext,
-                                groupID = idMapper.fromGroupIDEntity(conversation.groupId!!),
-                                userIdList = membersToAdd,
-                                cipherSuite = CipherSuite.fromTag(conversation.mlsCipherSuiteTag!!),
-                                allowPartialMemberList = true
-                            )
-
-                            else -> Either.Right(MLSAdditionResult.Empty)
-                        }
-                    }
-                }.mapLeft { EstablishMLSFailure(conversationId = conversation.id.toModel(), reason = it) }
-            } else {
-                // no members to add and remove, or no group ID or cipher suite tag, so nothing to do
-                Either.Right(MLSAdditionResult.Empty)
-            }
+            updateMembers(
+                membersToAdd = meeting.otherParticipants.filterNot { it in currentMembers },
+                membersToRemove = currentMembers.filterNot { it in meeting.otherParticipants },
+                transactionContext = transactionContext
+            )
         }
+
+    private suspend fun UpsertMeetingResponse.updateMembers(
+        membersToAdd: List<UserId>,
+        membersToRemove: List<UserId>,
+        transactionContext: CryptoTransactionContext,
+    ): Either<CoreFailure, MLSAdditionResult> =
+        if ((membersToAdd + membersToRemove).isNotEmpty() && conversation.groupId != null && conversation.mlsCipherSuiteTag != null) {
+        transactionContext.wrapInMLSContext { mlsContext ->
+            when {
+                membersToRemove.isNotEmpty() -> mlsConversationRepository.removeMembersFromMLSGroup(
+                    mlsContext = mlsContext,
+                    groupID = idMapper.fromGroupIDEntity(conversation.groupId!!),
+                    userIdList = membersToRemove,
+                )
+
+                else -> Either.Right(Unit)
+            }.flatMap {
+                when {
+                    membersToAdd.isNotEmpty() -> mlsConversationRepository.addMemberToMLSGroup(
+                        mlsContext = mlsContext,
+                        groupID = idMapper.fromGroupIDEntity(conversation.groupId!!),
+                        userIdList = membersToAdd,
+                        cipherSuite = CipherSuite.fromTag(conversation.mlsCipherSuiteTag!!),
+                        allowPartialMemberList = true
+                    )
+
+                    else -> Either.Right(MLSAdditionResult.Empty)
+                }
+            }
+        }.mapLeft { EstablishMLSFailure(conversationId = conversation.id.toModel(), reason = it) }
+    } else {
+        // no members to add and remove, or no group ID or cipher suite tag, so nothing to do
+        Either.Right(MLSAdditionResult.Empty)
+    }
 
     private suspend fun UpsertMeetingResponse.persist(
         transactionContext: CryptoTransactionContext,
