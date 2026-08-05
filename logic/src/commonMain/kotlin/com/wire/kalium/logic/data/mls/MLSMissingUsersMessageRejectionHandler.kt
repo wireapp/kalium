@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.client.wrapInMLSContext
@@ -71,7 +72,7 @@ internal class MLSMissingUsersMessageRejectionHandlerImpl(
                 groupID = groupId,
                 userIdList = missingUsers,
                 cipherSuite = cipherSuite
-            )
+            ).map {}
         }
     }
 }

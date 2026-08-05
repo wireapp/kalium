@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.meeting.Meeting.Recurrence.Companion.SUPPORTED_RECURRENCES
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.authenticated.meeting.CreateMeetingRequest
+import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingFrequencyDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingRecurrenceDTO
@@ -39,7 +39,7 @@ internal interface MeetingMapper {
     fun fromDaoToModel(meeting: MeetingOccurrenceDetailsEntity): MeetingOccurrence
     fun fromDaoToModel(recurrence: RecurrenceEntity): Meeting.Recurrence
     fun fromModelToDao(recurrence: Meeting.Recurrence): RecurrenceEntity
-    fun fromModelToApi(createMeeting: CreateMeeting): CreateMeetingRequest
+    fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest
 }
 
 internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : MeetingMapper {
@@ -119,11 +119,11 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         until = recurrence.until
     )
 
-    override fun fromModelToApi(createMeeting: CreateMeeting): CreateMeetingRequest = CreateMeetingRequest(
-        title = createMeeting.title,
-        startTime = createMeeting.startTime,
-        endTime = createMeeting.endTime,
-        recurrence = createMeeting.recurrence?.let {
+    override fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest = UpsertMeetingRequest(
+        title = upsertMeeting.title,
+        startTime = upsertMeeting.startTime,
+        endTime = upsertMeeting.endTime,
+        recurrence = upsertMeeting.recurrence?.let {
             MeetingRecurrenceDTO(
                 frequency = it.frequency.toDaoFrequency().toApiFrequency(),
                 interval = it.interval,
