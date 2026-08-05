@@ -2959,6 +2959,8 @@ public class UserSessionScope internal constructor(
             dispatcher = KaliumDispatcherImpl,
             meetingRepository = meetingRepository,
             conversationRepository = conversationRepository,
+            userRepository = userRepository,
+            resetMLSConversation = resetMlsConversation,
             refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             transactionProvider = cryptoTransactionProvider
@@ -2971,6 +2973,7 @@ public class UserSessionScope internal constructor(
             meetingDAO = userStorage.database.meetingDao,
             meetingApi = authenticatedNetworkContainer.meetingApi,
             mlsConversationRepository = mlsConversationRepository,
+            conversationRepository = conversationRepository,
             pendingActionsRepository = pendingActionsRepository,
             persistConversations = persistConversationsUseCase,
         )

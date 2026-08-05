@@ -20,14 +20,16 @@ package com.wire.kalium.logic.data.mls
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
 
-internal fun interface MLSMemberAdder {
+internal interface MLSMemberAdder {
     suspend fun addMemberToMLSGroup(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID,
         userIdList: List<UserId>,
-        cipherSuite: CipherSuite
-    ): Either<CoreFailure, Unit>
+        cipherSuite: CipherSuite,
+        allowPartialMemberList: Boolean = false,
+    ): Either<CoreFailure, MLSAdditionResult>
 }
