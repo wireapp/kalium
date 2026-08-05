@@ -56,7 +56,7 @@ val avsRuntimeMetadata = requireNotNull(
             "archiveSha256" to "8692b5ce021fe577d40f722c465d53f91700a07b2f5fc373857878cfd6a15a45",
             "macosMinimumVersion" to "15.0",
         ),
-        "10.4.33" to mapOf(
+        "10.4.34" to mapOf(
             "archiveSha256" to "e86d87c619f86d0941a8362cc00eb0127646b9509534676f7e73b6b9b1a0f50e",
             "macosMinimumVersion" to "15.0",
         ),
