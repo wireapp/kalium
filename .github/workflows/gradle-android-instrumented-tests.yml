@@ -4,6 +4,9 @@ on:
   merge_group:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+  push:
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
@@ -25,6 +28,9 @@ jobs:
       checks: write # required to publish unit test check runs
       pull-requests: write # required to publish pull request comments
     runs-on: ubuntu-latest
+    env:
+      # Inherited by the nested Gradle process started by connectedAndroidOnlyAffectedTest.
+      GRADLE_OPTS: -Dorg.gradle.caching=true
     strategy:
       matrix:
         api-level: [ 31 ]
@@ -32,8 +38,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
-          fetch-depth: 0
           persist-credentials: false
+
+      - name: Fetch develop for affected module detection
+        run: git fetch --no-tags --depth=1 origin develop:refs/remotes/origin/develop
 
       # trying https://github.com/actions/runner-images/issues/10386#issuecomment-2271613335
       - name: Free Disk Space Before Build
@@ -107,7 +115,9 @@ jobs:
           ram-size: 4096M
           heap-size: 2048M
           disable-animations: true
-          script: ./gradlew connectedAndroidOnlyAffectedTest
+          # Develop runs the complete suite to populate task outputs for future PRs.
+          # PR and merge-queue runs keep using affected-module detection.
+          script: ./gradlew ${{ github.event_name == 'push' && 'connectedAndroidDeviceTest' || 'connectedAndroidOnlyAffectedTest' }}
 
       - name: Archive Test Reports
         if: always()
