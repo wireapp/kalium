@@ -56,9 +56,16 @@ val avsRuntimeMetadata = requireNotNull(
             "archiveSha256" to "8692b5ce021fe577d40f722c465d53f91700a07b2f5fc373857878cfd6a15a45",
             "macosMinimumVersion" to "15.0",
         ),
+        "10.4.33" to mapOf(
+            "archiveSha256" to "e86d87c619f86d0941a8362cc00eb0127646b9509534676f7e73b6b9b1a0f50e",
+            "macosMinimumVersion" to "15.0",
+        ),
     )[avsVersion]
 ) {
-    "No Apple AVS XCFramework metadata is registered for SDK AVS version $avsVersion"
+    "Apple AVS runtime metadata is missing for AVS $avsVersion. " +
+        "Either select a registered AVS version in gradle/libs.versions.toml or add an " +
+        "avsRuntimeMetadata entry for $avsVersion with the official archiveSha256 and " +
+        "macosMinimumVersion."
 }
 val avsArchiveSha256 = avsRuntimeMetadata.getValue("archiveSha256")
 val avsMacosMinimumVersion = avsRuntimeMetadata.getValue("macosMinimumVersion")
