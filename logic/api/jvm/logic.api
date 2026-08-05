@@ -2757,7 +2757,7 @@ public abstract interface class com/wire/kalium/logic/feature/client/ClearNewCli
 }
 
 public abstract interface class com/wire/kalium/logic/feature/client/ClientFingerprintUseCase {
-	public abstract fun invoke-w2IqG5I (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/ClientId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/client/ClientScope {
@@ -2957,7 +2957,7 @@ public final class com/wire/kalium/logic/feature/client/NewClientResult$InOtherA
 }
 
 public abstract interface class com/wire/kalium/logic/feature/client/ObserveClientDetailsUseCase {
-	public abstract fun invoke-w2IqG5I (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/ClientId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/client/ObserveClientsByUserIdUseCase {
@@ -3122,20 +3122,20 @@ public final class com/wire/kalium/logic/feature/client/SelfClientsResult$Failur
 }
 
 public final class com/wire/kalium/logic/feature/client/SelfClientsResult$Success : com/wire/kalium/logic/feature/client/SelfClientsResult {
-	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/List;Lcom/wire/kalium/logic/data/conversation/ClientId;)V
 	public final fun component1 ()Ljava/util/List;
-	public final fun component2-yVTI4NQ ()Ljava/lang/String;
-	public final fun copy-wP7qDnQ (Ljava/util/List;Ljava/lang/String;)Lcom/wire/kalium/logic/feature/client/SelfClientsResult$Success;
-	public static synthetic fun copy-wP7qDnQ$default (Lcom/wire/kalium/logic/feature/client/SelfClientsResult$Success;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/client/SelfClientsResult$Success;
+	public final fun component2 ()Lcom/wire/kalium/logic/data/conversation/ClientId;
+	public final fun copy (Ljava/util/List;Lcom/wire/kalium/logic/data/conversation/ClientId;)Lcom/wire/kalium/logic/feature/client/SelfClientsResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/client/SelfClientsResult$Success;Ljava/util/List;Lcom/wire/kalium/logic/data/conversation/ClientId;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/client/SelfClientsResult$Success;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getClients ()Ljava/util/List;
-	public final fun getCurrentClientId-yVTI4NQ ()Ljava/lang/String;
+	public final fun getCurrentClientId ()Lcom/wire/kalium/logic/data/conversation/ClientId;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/logic/feature/client/UpdateClientVerificationStatusUseCase {
-	public final fun invoke-3LRGQ9A (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/ClientId;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/client/UpdateClientVerificationStatusUseCase$Result {
@@ -4910,7 +4910,7 @@ public final class com/wire/kalium/logic/feature/e2ei/usecase/GetMLSClientIdenti
 }
 
 public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/GetMLSClientIdentityUseCase {
-	public abstract fun invoke-gKbwWUs (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/conversation/ClientId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/GetMembersE2EICertificateStatusesUseCase {
@@ -5063,14 +5063,14 @@ public final class com/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountRe
 }
 
 public final class com/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountResult$Success : com/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountResult {
-	public synthetic fun <init> (Ljava/lang/String;IZLkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1-bia2tVM ()Ljava/lang/String;
+	public fun <init> (Lcom/wire/kalium/logic/data/conversation/ClientId;IZ)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/conversation/ClientId;
 	public final fun component2 ()I
 	public final fun component3 ()Z
-	public final fun copy-E0KOR1c (Ljava/lang/String;IZ)Lcom/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountResult$Success;
-	public static synthetic fun copy-E0KOR1c$default (Lcom/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountResult$Success;Ljava/lang/String;IZILjava/lang/Object;)Lcom/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountResult$Success;
+	public final fun copy (Lcom/wire/kalium/logic/data/conversation/ClientId;IZ)Lcom/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountResult$Success;Lcom/wire/kalium/logic/data/conversation/ClientId;IZILjava/lang/Object;)Lcom/wire/kalium/logic/feature/keypackage/MLSKeyPackageCountResult$Success;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getClientId-bia2tVM ()Ljava/lang/String;
+	public final fun getClientId ()Lcom/wire/kalium/logic/data/conversation/ClientId;
 	public final fun getCount ()I
 	public final fun getNeedsRefill ()Z
 	public fun hashCode ()I
@@ -6665,7 +6665,7 @@ public final class com/wire/kalium/logic/feature/sessionreset/ResetSessionResult
 }
 
 public abstract interface class com/wire/kalium/logic/feature/sessionreset/ResetSessionUseCase {
-	public abstract fun invoke-SeVJ9qg (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/ClientId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/team/DeleteTeamConversationUseCase {

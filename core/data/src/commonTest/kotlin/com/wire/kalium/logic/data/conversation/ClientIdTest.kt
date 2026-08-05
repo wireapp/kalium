@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,16 +16,23 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.util
-internal actual class SecureRandom actual constructor() {
+package com.wire.kalium.logic.data.conversation
 
-    private val random
-        get() = java.security.SecureRandom.getInstanceStrong()
+import kotlinx.serialization.json.Json
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
-    actual fun nextBytes(length: Int): ByteArray = ByteArray(length).apply {
-        random.nextBytes(this)
+class ClientIdTest {
+
+    @Test
+    fun givenClientId_whenSerializingAndDeserializing_thenUsesStringRepresentation() {
+        val encoded = Json.encodeToString(ClientId(CLIENT_ID))
+
+        assertEquals("\"$CLIENT_ID\"", encoded)
+        assertEquals(ClientId(CLIENT_ID), Json.decodeFromString<ClientId>(encoded))
     }
 
-    actual fun nextInt(bound: Int): Int = random.nextInt(bound)
-
+    private companion object {
+        const val CLIENT_ID = "client-id"
+    }
 }
