@@ -39,7 +39,7 @@ internal interface MeetingMapper {
     fun fromDaoToModel(meeting: MeetingOccurrenceDetailsEntity): MeetingOccurrence
     fun fromDaoToModel(recurrence: RecurrenceEntity): Meeting.Recurrence
     fun fromModelToDao(recurrence: Meeting.Recurrence): RecurrenceEntity
-    fun fromModelToApi(createMeeting: CreateMeeting): UpsertMeetingRequest
+    fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest
 }
 
 internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : MeetingMapper {
@@ -119,11 +119,11 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         until = recurrence.until
     )
 
-    override fun fromModelToApi(createMeeting: CreateMeeting): UpsertMeetingRequest = UpsertMeetingRequest(
-        title = createMeeting.title,
-        startTime = createMeeting.startTime,
-        endTime = createMeeting.endTime,
-        recurrence = createMeeting.recurrence?.let {
+    override fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest = UpsertMeetingRequest(
+        title = upsertMeeting.title,
+        startTime = upsertMeeting.startTime,
+        endTime = upsertMeeting.endTime,
+        recurrence = upsertMeeting.recurrence?.let {
             MeetingRecurrenceDTO(
                 frequency = it.frequency.toDaoFrequency().toApiFrequency(),
                 interval = it.interval,

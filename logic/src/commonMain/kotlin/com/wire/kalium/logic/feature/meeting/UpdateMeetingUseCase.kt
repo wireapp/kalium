@@ -32,7 +32,7 @@ import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
-import com.wire.kalium.logic.data.meeting.CreateMeeting
+import com.wire.kalium.logic.data.meeting.UpsertMeeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource.EstablishMLSFailure
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.user.UserRepository
@@ -44,7 +44,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailur
  * Use case for updating existing meeting.
  */
 public interface UpdateMeetingUseCase {
-    public suspend operator fun invoke(meetingId: MeetingId, meeting: CreateMeeting): Result
+    public suspend operator fun invoke(meetingId: MeetingId, updateMeeting: UpsertMeeting): Result
     public sealed interface Result {
         public data object Success : Result
         public data object Failure : Result // TODO: Add more specific error types in the future
@@ -60,14 +60,14 @@ internal class UpdateMeetingUseCaseImpl(
 ) : UpdateMeetingUseCase {
     private val logger = kaliumLogger.withTextTag("UpdateMeetingUseCase")
 
-    override suspend operator fun invoke(meetingId: MeetingId, meeting: CreateMeeting) =
-        userRepository.insertOrIgnoreIncompleteUsers(meeting.otherParticipants)
+    override suspend operator fun invoke(meetingId: MeetingId, updateMeeting: UpsertMeeting) =
+        userRepository.insertOrIgnoreIncompleteUsers(updateMeeting.otherParticipants)
             .flatMap {
                 transactionProvider
                     .transaction("UpdateMeeting") { transactionContext ->
                         meetingRepository.updateMeeting(
                             meetingId = meetingId,
-                            meeting = meeting,
+                            meeting = updateMeeting,
                             transactionContext = transactionContext
                         ).flatMapLeft { failure ->
                             when (failure) {

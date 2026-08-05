@@ -89,7 +89,7 @@ internal interface MeetingRepository {
     suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit>
 
     suspend fun createNewMeeting(
-        meeting: CreateMeeting,
+        meeting: UpsertMeeting,
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil(),
         transactionContext: CryptoTransactionContext,
@@ -97,7 +97,7 @@ internal interface MeetingRepository {
 
     suspend fun updateMeeting(
         meetingId: MeetingId,
-        meeting: CreateMeeting,
+        meeting: UpsertMeeting,
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil(),
         transactionContext: CryptoTransactionContext,
@@ -186,7 +186,7 @@ internal class MeetingDataSource(
     }
 
     override suspend fun createNewMeeting(
-        meeting: CreateMeeting,
+        meeting: UpsertMeeting,
         generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant,
         transactionContext: CryptoTransactionContext,
@@ -205,7 +205,7 @@ internal class MeetingDataSource(
 
     override suspend fun updateMeeting(
         meetingId: MeetingId,
-        meeting: CreateMeeting,
+        meeting: UpsertMeeting,
         generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant,
         transactionContext: CryptoTransactionContext
@@ -223,7 +223,7 @@ internal class MeetingDataSource(
     }
 
     private suspend fun UpsertMeetingResponse.updateMembers(
-        meeting: CreateMeeting,
+        meeting: UpsertMeeting,
         transactionContext: CryptoTransactionContext,
     ) = conversationRepository.getConversationMembers(conversationId.toModel())
         .map { it.filterNot { it == selfUserId } } // exclude self user from current members
