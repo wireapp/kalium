@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
-import com.wire.kalium.logic.data.meeting.CreateMeeting
+import com.wire.kalium.logic.data.meeting.UpsertMeeting
 import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
@@ -52,18 +52,18 @@ class UpdateMeetingUseCaseTest {
     @Test
     fun givenUpdateMeetingSucceeds_whenInvoking_thenReturnsSuccessAndRefreshesUsersWithoutMetadata() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withInsertIncompleteUsersSuccess(CREATE_MEETING)
-            .withUpdateMeetingReturning(MEETING_ID, CREATE_MEETING, Either.Right(MLSAdditionResult.Empty))
+            .withInsertIncompleteUsersSuccess(UPSERT_MEETING)
+            .withUpdateMeetingReturning(MEETING_ID, UPSERT_MEETING, Either.Right(MLSAdditionResult.Empty))
             .arrange()
 
-        val result = useCase(MEETING_ID, CREATE_MEETING)
+        val result = useCase(MEETING_ID, UPSERT_MEETING)
 
         assertEquals(UpdateMeetingUseCase.Result.Success, result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.insertOrIgnoreIncompleteUsers(CREATE_MEETING.otherParticipants)
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(UPSERT_MEETING.otherParticipants)
             arrangement.meetingRepository.updateMeeting(
                 meetingId = MEETING_ID,
-                meeting = CREATE_MEETING,
+                meeting = UPSERT_MEETING,
                 generateOccurrencesFrom = any(),
                 generateOccurrencesUntil = any(),
                 transactionContext = arrangement.transactionContext
@@ -82,12 +82,12 @@ class UpdateMeetingUseCaseTest {
             reason = MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex)
         )
         val (arrangement, useCase) = Arrangement()
-            .withInsertIncompleteUsersSuccess(CREATE_MEETING)
-            .withUpdateMeetingReturning(MEETING_ID, CREATE_MEETING, Either.Left(establishMlsFailure))
+            .withInsertIncompleteUsersSuccess(UPSERT_MEETING)
+            .withUpdateMeetingReturning(MEETING_ID, UPSERT_MEETING, Either.Left(establishMlsFailure))
             .withResetConversationReturning(CONVERSATION_ID, ResetMLSConversationResult.Success)
             .arrange()
 
-        val result = useCase(MEETING_ID, CREATE_MEETING)
+        val result = useCase(MEETING_ID, UPSERT_MEETING)
 
         assertEquals(UpdateMeetingUseCase.Result.Success, result)
         verifySuspend(VerifyMode.exactly(1)) {
@@ -102,13 +102,13 @@ class UpdateMeetingUseCaseTest {
         val refreshUsersWithoutMetadata = mock<RefreshUsersWithoutMetadataUseCase>(mode = MockMode.autoUnit)
         val resetMLSConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
 
-        fun withInsertIncompleteUsersSuccess(meeting: CreateMeeting) = apply {
+        fun withInsertIncompleteUsersSuccess(meeting: UpsertMeeting) = apply {
             everySuspend { userRepository.insertOrIgnoreIncompleteUsers(meeting.otherParticipants) } returns Either.Right(Unit)
         }
 
         fun withUpdateMeetingReturning(
             meetingId: MeetingId,
-            meeting: CreateMeeting,
+            meeting: UpsertMeeting,
             result: Either<CoreFailure, MLSAdditionResult>
         ) = apply {
             everySuspend {
@@ -141,7 +141,7 @@ class UpdateMeetingUseCaseTest {
     private companion object {
         val MEETING_ID = MeetingId("meetingId", "domain")
         val CONVERSATION_ID = ConversationId("conversationId", "domain")
-        val CREATE_MEETING = CreateMeeting(
+        val UPSERT_MEETING = UpsertMeeting(
             title = "Meeting",
             startTime = Instant.parse("2026-08-01T12:00:00.000Z"),
             endTime = Instant.parse("2026-08-01T13:00:00.000Z"),

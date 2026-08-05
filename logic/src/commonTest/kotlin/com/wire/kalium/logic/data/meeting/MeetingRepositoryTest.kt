@@ -677,20 +677,16 @@ class MeetingRepositoryTest {
             everySuspend { mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any()) } returns Either.Left(failure)
         }
 
-        internal fun withUpdateMeetingSuccess(meetingId: MeetingId, meeting: CreateMeeting, result: UpsertMeetingResponse) = apply {
+        internal fun withUpdateMeetingSuccess(meetingId: MeetingId, meeting: UpsertMeeting, result: UpsertMeetingResponse) = apply {
             everySuspend {
                 meetingApi.updateMeeting(meetingId = meetingId.toApi(), request = meetingMapper.fromModelToApi(meeting))
             } returns NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value)
         }
 
-        internal fun withUpdateMeetingFailure(meetingId: MeetingId, meeting: CreateMeeting) = apply {
+        internal fun withUpdateMeetingFailure(meetingId: MeetingId, meeting: UpsertMeeting) = apply {
             everySuspend {
                 meetingApi.updateMeeting(meetingId = meetingId.toApi(), request = meetingMapper.fromModelToApi(meeting))
             } returns NetworkResponse.Error(TestNetworkException.generic)
-        }
-
-        internal fun withPersistMeetingFailure(exception: Exception) = apply {
-            everySuspend { meetingDao.upsertMeetings(any(), any()) } throws exception
         }
 
         internal fun withMlsContext() = apply {
