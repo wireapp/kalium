@@ -49,9 +49,9 @@ runs:
     - name: Set up Gradle
       uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
       with:
-        # Enhanced caching uses GitHub's ref-scoped cache while keeping rolling,
-        # cross-commit Gradle state for the long-lived develop branch.
-        cache-provider: enhanced
+        # Basic caching uses the MIT-licensed provider backed by GitHub's
+        # ref-scoped Actions cache.
+        cache-provider: basic
         cache-disabled: ${{ steps.cache_policy.outputs.enabled != 'true' }}
         cache-read-only: ${{ steps.cache_policy.outputs.read_only == 'true' }}
 
