@@ -1799,6 +1799,10 @@ abstract interface com.wire.kalium.logic.feature.user/ObserveFileSharingStatusUs
     abstract fun invoke(): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.configuration/FileSharingStatus> // com.wire.kalium.logic.feature.user/ObserveFileSharingStatusUseCase.invoke|invoke(){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.user/ObserveIsMeetingsEnabledUseCase { // com.wire.kalium.logic.feature.user/ObserveIsMeetingsEnabledUseCase|null[0]
+    abstract suspend fun invoke(): kotlinx.coroutines.flow/Flow<kotlin/Boolean> // com.wire.kalium.logic.feature.user/ObserveIsMeetingsEnabledUseCase.invoke|invoke(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.user/ObserveSelfUserUseCase { // com.wire.kalium.logic.feature.user/ObserveSelfUserUseCase|null[0]
     abstract suspend fun invoke(): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.user/SelfUser> // com.wire.kalium.logic.feature.user/ObserveSelfUserUseCase.invoke|invoke(){}[0]
 }
@@ -5277,6 +5281,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-observeFileSharingStatus>(): com.wire.kalium.logic.feature.user/ObserveFileSharingStatusUseCase // com.wire.kalium.logic.feature/UserSessionScope.observeFileSharingStatus.<get-observeFileSharingStatus>|<get-observeFileSharingStatus>(){}[0]
     final val observeGuestRoomLinkFeatureFlag // com.wire.kalium.logic.feature/UserSessionScope.observeGuestRoomLinkFeatureFlag|{}observeGuestRoomLinkFeatureFlag[0]
         final fun <get-observeGuestRoomLinkFeatureFlag>(): com.wire.kalium.logic.feature.user.guestroomlink/ObserveGuestRoomLinkFeatureFlagUseCase // com.wire.kalium.logic.feature/UserSessionScope.observeGuestRoomLinkFeatureFlag.<get-observeGuestRoomLinkFeatureFlag>|<get-observeGuestRoomLinkFeatureFlag>(){}[0]
+    final val observeIsMeetingsEnabled // com.wire.kalium.logic.feature/UserSessionScope.observeIsMeetingsEnabled|{}observeIsMeetingsEnabled[0]
+        final fun <get-observeIsMeetingsEnabled>(): com.wire.kalium.logic.feature.user/ObserveIsMeetingsEnabledUseCase // com.wire.kalium.logic.feature/UserSessionScope.observeIsMeetingsEnabled.<get-observeIsMeetingsEnabled>|<get-observeIsMeetingsEnabled>(){}[0]
     final val observeLegalHoldChangeNotifiedForSelf // com.wire.kalium.logic.feature/UserSessionScope.observeLegalHoldChangeNotifiedForSelf|{}observeLegalHoldChangeNotifiedForSelf[0]
         final fun <get-observeLegalHoldChangeNotifiedForSelf>(): com.wire.kalium.logic.feature.legalhold/ObserveLegalHoldChangeNotifiedForSelfUseCase // com.wire.kalium.logic.feature/UserSessionScope.observeLegalHoldChangeNotifiedForSelf.<get-observeLegalHoldChangeNotifiedForSelf>|<get-observeLegalHoldChangeNotifiedForSelf>(){}[0]
     final val observeLegalHoldForSelfUser // com.wire.kalium.logic.feature/UserSessionScope.observeLegalHoldForSelfUser|{}observeLegalHoldForSelfUser[0]

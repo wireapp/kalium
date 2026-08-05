@@ -948,6 +948,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getObserveE2EIRequired ()Lcom/wire/kalium/logic/feature/user/ObserveE2EIRequiredUseCase;
 	public final fun getObserveFileSharingStatus ()Lcom/wire/kalium/logic/feature/user/ObserveFileSharingStatusUseCase;
 	public final fun getObserveGuestRoomLinkFeatureFlag ()Lcom/wire/kalium/logic/feature/user/guestroomlink/ObserveGuestRoomLinkFeatureFlagUseCase;
+	public final fun getObserveIsMeetingsEnabled ()Lcom/wire/kalium/logic/feature/user/ObserveIsMeetingsEnabledUseCase;
 	public final fun getObserveLegalHoldChangeNotifiedForSelf ()Lcom/wire/kalium/logic/feature/legalhold/ObserveLegalHoldChangeNotifiedForSelfUseCase;
 	public final fun getObserveLegalHoldForSelfUser ()Lcom/wire/kalium/logic/feature/legalhold/ObserveLegalHoldStateForSelfUserUseCase;
 	public final fun getObserveLegalHoldRequest ()Lcom/wire/kalium/logic/feature/legalhold/ObserveLegalHoldRequestUseCase;
@@ -6898,6 +6899,10 @@ public abstract interface class com/wire/kalium/logic/feature/user/ObserveE2EIRe
 
 public abstract interface class com/wire/kalium/logic/feature/user/ObserveFileSharingStatusUseCase {
 	public abstract fun invoke ()Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/user/ObserveIsMeetingsEnabledUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/user/ObserveSelfUserUseCase {

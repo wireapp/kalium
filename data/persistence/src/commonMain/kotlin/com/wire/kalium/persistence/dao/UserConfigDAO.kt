@@ -90,6 +90,7 @@ interface UserConfigDAO {
     suspend fun setMlsFaultyKeysRepairExecuted(repaired: Boolean)
     suspend fun setMeetingsEnabled(enabled: Boolean)
     suspend fun isMeetingsEnabled(): Boolean
+    fun observeIsMeetingsEnabled(): Flow<Boolean>
 }
 
 @Suppress("TooManyFunctions")
@@ -327,6 +328,9 @@ internal class UserConfigDAOImpl internal constructor(
 
     override suspend fun isMeetingsEnabled(): Boolean =
         metadataDAO.valueByKey(MEETINGS_ENABLED)?.toBoolean() ?: false
+
+    override fun observeIsMeetingsEnabled(): Flow<Boolean> =
+        metadataDAO.valueByKeyFlow(MEETINGS_ENABLED).map { it?.toBoolean() ?: false }
 
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"

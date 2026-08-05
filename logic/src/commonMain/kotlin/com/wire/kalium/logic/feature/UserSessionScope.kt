@@ -407,6 +407,8 @@ import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveIsMeetingsEnabledUseCase
+import com.wire.kalium.logic.feature.user.ObserveIsMeetingsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
@@ -2241,7 +2243,7 @@ public class UserSessionScope internal constructor(
         get() = PreventAdminlessGroupsConfigHandler(userConfigRepository)
 
     private val meetingsConfigHandler
-        get() = MeetingsConfigHandler(userConfigRepository)
+        get() = MeetingsConfigHandler(userConfigRepository, slowSyncRepository)
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
@@ -2640,6 +2642,9 @@ public class UserSessionScope internal constructor(
 
     public val isMeetingsEnabled: IsMeetingsEnabledUseCase
         get() = IsMeetingsEnabledUseCaseImpl(userConfigRepository, featureSupport)
+
+    public val observeIsMeetingsEnabled: ObserveIsMeetingsEnabledUseCase
+        get() = ObserveIsMeetingsEnabledUseCaseImpl(userConfigRepository, featureSupport)
 
     public val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)

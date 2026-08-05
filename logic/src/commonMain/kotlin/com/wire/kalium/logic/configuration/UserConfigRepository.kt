@@ -174,6 +174,7 @@ internal interface UserConfigRepository {
     suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit>
     suspend fun setMeetingsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isMeetingsEnabled(): Boolean
+    fun observeIsMeetingsEnabled(): Flow<Boolean>
 }
 
 @Suppress("TooManyFunctions")
@@ -663,4 +664,5 @@ internal class UserConfigDataSource internal constructor(
         userConfigDAO.setMeetingsEnabled(enabled)
     }
     override suspend fun isMeetingsEnabled(): Boolean = userConfigDAO.isMeetingsEnabled()
+    override fun observeIsMeetingsEnabled(): Flow<Boolean> = userConfigDAO.observeIsMeetingsEnabled()
 }
