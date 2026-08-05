@@ -493,18 +493,18 @@ internal class MLSConversationDataSource(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID,
         userIdList: List<UserId>,
-        cipherSuite: CipherSuite
-    ): Either<CoreFailure, Unit> =
+        cipherSuite: CipherSuite,
+        allowPartialMemberList: Boolean,
+    ): Either<CoreFailure, MLSAdditionResult> =
         internalAddMemberToMLSGroup(
             mlsContext = mlsContext,
             groupID = groupID,
             userIdList = userIdList,
             retryOnStaleMessage = true,
             retryOnMissingUsers = true,
-            allowPartialMemberList = false,
+            allowPartialMemberList = allowPartialMemberList,
             cipherSuite = cipherSuite
         )
-            .map { }
 
     private suspend fun internalAddMemberToMLSGroup(
         mlsContext: MlsCoreCryptoContext,
