@@ -5275,7 +5275,7 @@ public abstract interface class com/wire/kalium/logic/feature/legalhold/ObserveL
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/meeting/CreateMeeting;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/meeting/UpsertMeeting;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase$Result {
@@ -5357,7 +5357,7 @@ public abstract interface class com/wire/kalium/logic/feature/meeting/ObserveMee
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/meeting/CreateMeeting;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/meeting/UpsertMeeting;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result {
