@@ -21,7 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.meeting.CreateMeeting
+import com.wire.kalium.logic.data.meeting.UpsertMeeting
 import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
@@ -83,7 +83,10 @@ class CreateNewMeetingUseCaseTest {
     @Test
     fun givenRepositoryCreateReturnsEstablishMlsFailure_whenInvoking_thenReturnsSuccessAndCallRefreshUsersWithoutMetadata() = runTest {
         val createMeeting = CREATE_MEETING
-        val establishMLSFailure = MeetingDataSource.EstablishMLSFailure(ConversationId("conversation", "domain"))
+        val establishMLSFailure = MeetingDataSource.EstablishMLSFailure(
+            conversationId = ConversationId("conversation", "domain"),
+            reason = CoreFailure.MissingClientRegistration,
+        )
         val (arrangement, useCase) = Arrangement()
             .withCreateNewMeetingReturning(createMeeting, Either.Left(establishMLSFailure))
             .withTransactionExecutingBlock()
@@ -121,7 +124,7 @@ class CreateNewMeetingUseCaseTest {
         internal val refreshUsersWithoutMetadata = mock<RefreshUsersWithoutMetadataUseCase>(mode = MockMode.autoUnit)
 
         internal fun withCreateNewMeetingReturning(
-            meeting: CreateMeeting,
+            meeting: UpsertMeeting,
             result: Either<CoreFailure, MLSAdditionResult>
         ) = apply {
             everySuspend { meetingRepository.createNewMeeting(meeting = meeting, transactionContext = transactionContext) } returns result
@@ -145,7 +148,7 @@ class CreateNewMeetingUseCaseTest {
     }
 }
 
-private val CREATE_MEETING = CreateMeeting(
+private val CREATE_MEETING = UpsertMeeting(
     title = "Meeting 1",
     startTime = Instant.parse("2026-06-01T10:00:00Z"),
     endTime = Instant.parse("2026-06-01T11:00:00Z"),

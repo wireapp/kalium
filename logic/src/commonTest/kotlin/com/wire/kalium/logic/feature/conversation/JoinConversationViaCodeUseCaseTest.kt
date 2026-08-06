@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
@@ -402,7 +403,7 @@ class JoinConversationViaCodeUseCaseTest {
         suspend fun withAddMemberToMLSGroupSucceeds(): Arrangement = apply {
             everySuspend {
                 mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
-            } returns Either.Right(Unit)
+            } returns Either.Right(MLSAdditionResult.Empty)
         }
 
         fun arrange() = useCase to this

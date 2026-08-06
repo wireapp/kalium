@@ -69,7 +69,7 @@ data class Meeting(
     }
 }
 
-data class CreateMeeting(
+data class UpsertMeeting(
     val title: String,
     val startTime: Instant,
     val endTime: Instant,

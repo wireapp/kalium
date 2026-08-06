@@ -21,10 +21,13 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -43,7 +46,7 @@ class MLSMissingUsersMessageRejectionHandlerTest {
 
     @Test
     fun givenConversationIsNotMLS_whenHandling_thenShouldReturnConversationDoesNotSupportMLS() = runTest {
-        val memberAdder = MLSMemberAdder { _, _, _, _ -> throw IllegalStateException("This should not be called in this test") }
+        val memberAdder = MLSMemberAdder { throw IllegalStateException("This should not be called in this test") }
         val subject = MLSMissingUsersMessageRejectionHandlerImpl(
             mlsMemberAdder = memberAdder,
             protocolGetter = { _ -> Either.Right(Conversation.ProtocolInfo.Proteus) },
@@ -64,7 +67,7 @@ class MLSMissingUsersMessageRejectionHandlerTest {
 
     @Test
     fun givenEmptyMissingUserList_whenHandling_thenShouldReturnSucceed() = runTest {
-        val memberAdder = MLSMemberAdder { _, _, _, _ -> throw IllegalStateException("This should not be called in this test") }
+        val memberAdder = MLSMemberAdder { throw IllegalStateException("This should not be called in this test") }
         val subject = MLSMissingUsersMessageRejectionHandlerImpl(
             mlsMemberAdder = memberAdder,
             protocolGetter = { _ -> throw IllegalStateException("This should not be called in this test") },
@@ -84,7 +87,7 @@ class MLSMissingUsersMessageRejectionHandlerTest {
     @Test
     fun givenGettingProtocolFails_whenHandling_thenShouldBubbleUpTheFailure() = runTest {
         val expectedFailure = CoreFailure.DevelopmentAPINotAllowedOnProduction
-        val memberAdder = MLSMemberAdder { _, _, _, _ -> throw IllegalStateException("This should not be called in this test") }
+        val memberAdder = MLSMemberAdder { throw IllegalStateException("This should not be called in this test") }
         val groupID = GroupID("test")
         val subject = MLSMissingUsersMessageRejectionHandlerImpl(
             mlsMemberAdder = memberAdder,
@@ -107,7 +110,7 @@ class MLSMissingUsersMessageRejectionHandlerTest {
     @Test
     fun givenMLSCapableConversationAndUserList_whenHandling_thenShouldAttemptToAddMembers() = runTest {
         var memberAddedCalled = false
-        val memberAdder = MLSMemberAdder { _, _, _, _ -> Either.Right(Unit).also { memberAddedCalled = true } }
+        val memberAdder = MLSMemberAdder { Either.Right(MLSAdditionResult.Empty).also { memberAddedCalled = true } }
         val groupID = GroupID("test")
         val subject = MLSMissingUsersMessageRejectionHandlerImpl(
             mlsMemberAdder = memberAdder,
@@ -140,7 +143,7 @@ class MLSMissingUsersMessageRejectionHandlerTest {
     @Test
     fun givenAddingMemberFails_whenHandling_thenShouldBubbleUpTheFailure() = runTest {
         val expectedFailure = CoreFailure.DevelopmentAPINotAllowedOnProduction
-        val memberAdder = MLSMemberAdder { _, _, _, _ -> Either.Left(expectedFailure) }
+        val memberAdder = MLSMemberAdder { Either.Left(expectedFailure) }
         val groupID = GroupID("test")
         val subject = MLSMissingUsersMessageRejectionHandlerImpl(
             mlsMemberAdder = memberAdder,
@@ -170,4 +173,13 @@ class MLSMissingUsersMessageRejectionHandlerTest {
         }
     }
 
+    private fun MLSMemberAdder(addMemberToMLSGroup: suspend () -> Either<CoreFailure, MLSAdditionResult>) = object : MLSMemberAdder {
+        override suspend fun addMemberToMLSGroup(
+            mlsContext: MlsCoreCryptoContext,
+            groupID: GroupID,
+            userIdList: List<UserId>,
+            cipherSuite: CipherSuite,
+            allowPartialMemberList: Boolean
+        ): Either<CoreFailure, MLSAdditionResult> = addMemberToMLSGroup()
+    }
 }
