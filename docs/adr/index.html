@@ -1291,12 +1291,12 @@ is not something we'll run in default CI without more work.</li>
             </div>
             
             <div class="panel panel-default">
-                <div class="panel-heading adr-unknown">
+                <div class="panel-heading adr-accepted">
                     <h4 class="panel-title">
                         <a data-toggle="collapse" href="#collapse9">9. Public API, ABI, and Changelog Governance</a>
 
                         
-                        <i class="adr-icon fas fa-fw fa-question"></i>
+                        <i class="adr-icon fas fa-fw fa-check"></i>
                         
 
                     </h4>
@@ -1305,7 +1305,7 @@ is not something we'll run in default CI without more work.</li>
                     <div class="panel-body"><h1>9. Public API, ABI, and Changelog Governance</h1>
 <p>Date: 2026-06-15</p>
 <h2>Status</h2>
-<p>Implemented</p>
+<p>Accepted</p>
 <h2>Context</h2>
 <p>Kalium is consumed as an SDK by external Android, JVM, iOS, and multiplatform clients. Those
 consumers need two guarantees when upgrading:</p>
@@ -1463,6 +1463,92 @@ local targets do not create false confidence or false failures.</li>
 <ul>
 <li><a href="https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html">Kotlin backward compatibility guidelines</a></li>
 <li><a href="https://kotlinlang.org/docs/gradle-binary-compatibility-validation.html">Kotlin Gradle Plugin ABI validation</a></li>
+</ul>
+</div>
+                </div>
+            </div>
+            
+            <div class="panel panel-default">
+                <div class="panel-heading adr-accepted">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse10">10. Towncrier-Native Consumer Changelog Fragments</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-check"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse10" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>10. Towncrier-Native Consumer Changelog Fragments</h1>
+<p>Date: 2026-08-03</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Context</h2>
+<p>ADR 9 requires consumer-facing changelog fragments for public API, ABI, and behavior changes. Its
+example fragment format used one Markdown file with internal <code>### Added</code>, <code>### Migration</code>, and
+<code>### Compatibility</code> sections.</p>
+<p>That format was easy to author but required custom parsing during release. The first collector
+concatenated fragments directly, which produced duplicated section headings. It also rendered
+compatibility as a detached section, making it unclear which compatibility note belonged to which
+change.</p>
+<p>The existing release workflow must remain a two-step process:</p>
+<ol>
+<li>generate the Git changelog for the tag range</li>
+<li>prepend curated consumer-facing changelog notes</li>
+</ol>
+<h2>Decision</h2>
+<p>Use Towncrier to render consumer-facing changelog fragments, while keeping the generated Git
+changelog as the second part of the release body.</p>
+<p>Fragments will use native Towncrier filenames:</p>
+<pre><code class="language-text">changelog.d/1234-backup-status-api.added.md
+</code></pre>
+<p>Supported suffixes are:</p>
+<ul>
+<li><code>.added.md</code></li>
+<li><code>.changed.md</code></li>
+<li><code>.deprecated.md</code></li>
+<li><code>.removed.md</code></li>
+<li><code>.fixed.md</code></li>
+<li><code>.security.md</code></li>
+</ul>
+<p>Do not use separate <code>.compatibility.md</code> or <code>.migration.md</code> types. Compatibility and migration
+information belongs inline under the change it describes:</p>
+<pre><code class="language-markdown">Added `BackupStatus.InProgress` for observing backup progress.
+
+  - ABI: additive
+  - Source: additive
+  - Behavior: no behavior change unless consumers exhaustively match `BackupStatus`.
+  - Migration: no action required unless consumers exhaustively match `BackupStatus`.
+</code></pre>
+<p>The release wrapper should only select fragments for <code>BASE_REF...HEAD_REF</code>, run
+<code>towncrier build --draft --version &quot;$CURRENT_TAG&quot;</code> in a temporary directory, and prepend the output
+to the Git changelog. It should not parse changelog Markdown.</p>
+<p>Towncrier is pinned in <code>scripts/changelog-requirements.txt</code> so Renovate can manage updates through
+the <code>pip_requirements</code> manager.</p>
+<h2>Consequences</h2>
+<p><strong>Easier:</strong></p>
+<ul>
+<li>Release-note grouping is handled by Towncrier instead of custom Markdown parsing.</li>
+<li>Repeated section headings are eliminated.</li>
+<li>Compatibility impact stays attached to the relevant change.</li>
+<li>The release body remains compatible with the existing workflow: consumer notes first, Git
+changelog second.</li>
+<li>Renovate can update the Towncrier dependency from a standard requirements file.</li>
+</ul>
+<p><strong>More difficult:</strong></p>
+<ul>
+<li>A pull request may need more than one fragment file.</li>
+<li>Authors must use filename suffixes instead of internal <code>###</code> headings.</li>
+<li>Reviewers must check that ABI/source/behavior impact is included inline when relevant.</li>
+<li>Release CI now installs a small Python changelog toolchain.</li>
+</ul>
+<p>This ADR supersedes only the changelog fragment format shown in ADR 9. ADR 9's API, ABI, review,
+and changelog requirement policy remains in force.</p>
+<h2>References</h2>
+<ul>
+<li><a href="0009-public-api-abi-and-changelog-governance.md">ADR 9: Public API, ABI, and Changelog Governance</a></li>
+<li><a href="https://towncrier.readthedocs.io/">Towncrier documentation</a></li>
 </ul>
 </div>
                 </div>
