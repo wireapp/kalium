@@ -288,7 +288,7 @@ internal class ConversationGroupRepositoryImpl(
                                         GroupID(protocol.groupId),
                                         userIdList,
                                         CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
-                                    )
+                                    ).map {}
                                 }
                             }
 

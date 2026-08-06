@@ -1475,7 +1475,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulAddMemberToMLSGroup()
             .withAddingMemberToMlsGroupResults(
                 KEY_PACKAGES_NOT_AVAILABLE_FAILURE,
-                Either.Right(Unit)
+                Either.Right(MLSAdditionResult.Empty)
             )
             .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
@@ -1528,7 +1528,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulAddMemberToMLSGroup()
             .withAddingMemberToMlsGroupResults(
                 buildCommitBundleFederatedFailure("otherDomain"),
-                Either.Right(Unit)
+                Either.Right(MLSAdditionResult.Empty)
             )
             .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
@@ -2024,13 +2024,13 @@ class ConversationGroupRepositoryTest {
         suspend fun withSuccessfulAddMemberToMLSGroup() = apply {
             everySuspend {
                 mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            }.returns(Either.Right(MLSAdditionResult.Empty))
         }
 
         /**
          * Mocks sequentially responses from [MLSConversationRepository] with [result].
          */
-        suspend fun withAddingMemberToMlsGroupResults(vararg results: Either<CoreFailure, Unit>) = apply {
+        suspend fun withAddingMemberToMlsGroupResults(vararg results: Either<CoreFailure, MLSAdditionResult>) = apply {
             everySuspend {
                 mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
             } sequentiallyReturns results.asList()
