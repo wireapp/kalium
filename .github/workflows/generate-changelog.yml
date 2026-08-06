@@ -39,15 +39,19 @@ jobs:
           echo -e "CURRENT_TAG = $CURRENT_TAG"
           echo -e "Node.js version = $(node --version)"
 
-      - name: 'Generate changelog'
+      - name: 'Generate git changelog'
         run: |
           echo "{}" > ./package.json
           npx generate-changelog@1.8.0 -t "$PREVIOUS_TAG...$CURRENT_TAG"
+
+      - name: 'Install Towncrier'
+        run: python3 -m pip install --requirement scripts/changelog-requirements.txt
 
       - name: 'Collect consumer-facing changelog fragments'
         env:
           BASE_REF: ${{ env.PREVIOUS_TAG }}
           HEAD_REF: ${{ env.CURRENT_TAG }}
+          CURRENT_TAG: ${{ env.CURRENT_TAG }}
         run: scripts/collect-changelog-fragments.sh
 
       - name: 'Attach changelog to tag'
