@@ -103,21 +103,23 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Android Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           api-level: ${{ matrix.api-level }}
           arch: ${{ steps.avd-info.outputs.arch }}
-          target: ${{ steps.avd-info.outputs.target }}
-          cores: 4
-          ram-size: 4096M
-          heap-size: 2048M
+          target: aosp_atd
+          cores: 2
+          ram-size: 3072M
+          heap-size: 1024M
           disable-animations: true
+          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
+          emulator-boot-timeout: 900
           # Develop runs the complete suite to populate task outputs for future PRs.
           # PR and merge-queue runs keep using affected-module detection.
-          script: ./gradlew ${{ github.event_name == 'push' && 'connectedAndroidDeviceTest' || 'connectedAndroidOnlyAffectedTest' }}
+          script: ./gradlew --no-daemon ${{ github.event_name == 'push' && 'connectedAndroidDeviceTest' || 'connectedAndroidOnlyAffectedTest' }}
 
       - name: Archive Test Reports
         if: always()
