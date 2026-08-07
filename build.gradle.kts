@@ -144,10 +144,11 @@ kover {
 }
 
 rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin::class.java) {
-    // For unknown reasons, yarn.lock checks are failing on Github Actions
-    // Considering JS support is quite experimental for us, we can live with this for now
-    rootProject.the<YarnRootExtension>().yarnLockMismatchReport =
-        YarnLockMismatchReport.WARNING
+    rootProject.the<YarnRootExtension>().apply {
+        yarnLockMismatchReport = YarnLockMismatchReport.FAIL
+        reportNewYarnLock = true
+        yarnLockAutoReplace = false
+    }
 }
 
 rootProject.plugins.withType<NodeJsPlugin> {
