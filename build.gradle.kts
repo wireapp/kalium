@@ -110,6 +110,9 @@ val kaliumProjectVersion: Provider<String> = providers.gradleProperty("kalium.pu
 
 allprojects {
     version = kaliumProjectVersion.get()
+    plugins.withType<NodeJsPlugin> {
+        the<NodeJsEnvSpec>().version = libs.versions.node.get()
+    }
     repositories {
         google()
         mavenCentral()
@@ -149,12 +152,6 @@ rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
         reportNewYarnLock = true
         yarnLockAutoReplace = false
     }
-}
-
-rootProject.plugins.withType<NodeJsPlugin> {
-    rootProject.the<NodeJsEnvSpec>().version = "18.18.0"
-    // If we want to use the downloaded Node instead of system Node:
-    // rootProject.the<NodeJsEnvSpec>().download.set(true)
 }
 
 tasks.dokkaHtmlMultiModule.configure {}

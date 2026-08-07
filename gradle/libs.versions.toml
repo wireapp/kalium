@@ -1,5 +1,7 @@
 [versions]
 kotlin = "2.3.20"
+# renovate: datasource=node-version depName=node versioning=node
+node = "24.19.0"
 ksp = "2.3.6"
 activity-compose = "1.13.0"
 app-compat = "1.6.1"
@@ -39,7 +41,7 @@ sqlJs = "1.14.1"
 # renovate: datasource=npm depName=webpack
 webpack = "5.109.2"
 # renovate: datasource=npm depName=copy-webpack-plugin
-copyWebpackPlugin = "13.0.1"
+copyWebpackPlugin = "14.0.0"
 sqlcipher-android = "4.13.0"
 pbandk = "0.16.0"
 turbine = "1.1.0"

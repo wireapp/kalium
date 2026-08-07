@@ -19,14 +19,14 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Update npm dependencies declared in the Gradle version catalog.",
+      "description": "Update JS tooling declared in the Gradle version catalog.",
       "managerFilePatterns": [
         "/^gradle\\/libs\\.versions\\.toml$/"
       ],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\s+[A-Za-z0-9_.-]+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>[a-z-]+))?\\s+[A-Za-z0-9_.-]+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
       ],
-      "versioningTemplate": "npm"
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}npm{{/if}}"
     }
   ],
   "packageRules": [
@@ -57,14 +57,19 @@
       }
     },
     {
-      "description": "Keep copy-webpack-plugin compatible with the pinned Node 18 runtime.",
+      "description": "Keep Node.js updates on the current LTS major and group all runtime pins.",
       "matchManagers": [
-        "custom.regex"
+        "custom.regex",
+        "github-actions"
       ],
       "matchPackageNames": [
-        "copy-webpack-plugin"
+        "node",
+        "actions/node-versions"
       ],
-      "allowedVersions": "<14"
+      "allowedVersions": ">=24 <25",
+      "groupName": "Node.js runtime",
+      "groupSlug": "nodejs-runtime",
+      "minimumReleaseAge": "14 days"
     },
     {
       "description": "Group SBOM Python toolchain updates into a single PR.",
