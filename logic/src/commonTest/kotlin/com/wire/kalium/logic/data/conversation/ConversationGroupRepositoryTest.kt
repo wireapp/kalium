@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
 import com.wire.kalium.logic.data.legalhold.ids
 import com.wire.kalium.logic.data.message.MessageContent
@@ -125,7 +126,7 @@ class ConversationGroupRepositoryTest {
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any(), any())
             }
         }
     }
@@ -158,7 +159,7 @@ class ConversationGroupRepositoryTest {
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any(), any())
             }
         }
     }
@@ -266,7 +267,7 @@ class ConversationGroupRepositoryTest {
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any(), any())
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
@@ -314,7 +315,7 @@ class ConversationGroupRepositoryTest {
             }
 
             verifySuspend(VerifyMode.exactly(0)) {
-                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any(), any())
             }
 
             verifySuspend(VerifyMode.exactly(0)) {
@@ -353,7 +354,7 @@ class ConversationGroupRepositoryTest {
             }
 
             verifySuspend(VerifyMode.exactly(0)) {
-                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any(), any())
             }
 
             verifySuspend(VerifyMode.exactly(0)) {
@@ -410,7 +411,7 @@ class ConversationGroupRepositoryTest {
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any(), any())
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
@@ -461,7 +462,7 @@ class ConversationGroupRepositoryTest {
             }
 
             verifySuspend(VerifyMode.exactly(0)) {
-                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any(), any())
             }
 
             verifySuspend(VerifyMode.exactly(0)) {
@@ -504,8 +505,45 @@ class ConversationGroupRepositoryTest {
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any(), any())
             }
+        }
+    }
+
+    @Test
+    fun givenMLSGroupEstablishFails_whenCreatingConversation_thenPendingConversationIsReturned() = runTest {
+        val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
+        val establishFailure = CoreFailure.Unknown(UnsupportedOperationException("establish failed"))
+        val requestedMembers = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID)
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(conversationResponse, emptyMap(), 201)))
+            .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
+            .withInsertConversationSuccess()
+            .withMlsConversationEstablishFailure(establishFailure)
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withConversationAppsAccessIfEnabled()
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversationWithPendingResult(
+            GROUP_NAME,
+            requestedMembers,
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
+        )
+
+        val pendingResult = assertIs<CreateGroupConversationResult.PendingMLSGroupCreation>(result)
+        assertEquals(conversationResponse.id.toModel(), pendingResult.conversationId)
+        assertEquals(establishFailure, pendingResult.cause)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationApi.createNewConversation(any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.newConversationMembersRepository.persistMembersAdditionToTheConversation(
+                any(),
+                any(),
+                eq(requestedMembers),
+            )
         }
     }
 
@@ -1849,13 +1887,19 @@ class ConversationGroupRepositoryTest {
                 TestUser.SELF.id,
                 selfTeamIdProvider,
                 legalHoldHandler,
-                cryptoTransactionProvider
+                cryptoTransactionProvider,
             )
 
         suspend fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement = apply {
             everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             }.returns(Either.Right(additionResult))
+        }
+
+        suspend fun withMlsConversationEstablishFailure(failure: CoreFailure): Arrangement = apply {
+            everySuspend {
+                mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+            }.returns(Either.Left(failure))
         }
 
         /**
@@ -2125,7 +2169,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withSuccessfulNewConversationMemberHandled() = apply {
             everySuspend {
-                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 

@@ -988,7 +988,7 @@ public class UserSessionScope internal constructor(
             userId,
             selfTeamId,
             legalHoldHandler,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
         )
 
     private val newConversationMembersRepository: NewConversationMembersRepository

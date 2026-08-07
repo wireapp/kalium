@@ -223,7 +223,9 @@ public class ConversationScope internal constructor(
             syncManager,
             currentClientIdProvider,
             newGroupConversationSystemMessagesCreator,
-            refreshUsersWithoutMetadata
+            refreshUsersWithoutMetadata,
+            transactionProvider,
+            joinExistingMLSConversation,
         )
 
     public val createRegularGroup: CreateRegularGroupUseCase

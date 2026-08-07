@@ -622,6 +622,7 @@ abstract interface com.wire.kalium.logic.feature.conversation.channel/UpdateChan
 
 abstract interface com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase { // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase|null[0]
     abstract suspend fun invoke(kotlin/String, kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID>, com.wire.kalium.logic.data.conversation/CreateConversationParam): com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase.invoke|invoke(kotlin.String;kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>;com.wire.kalium.logic.data.conversation.CreateConversationParam){}[0]
+    abstract suspend fun retryPendingMLSGroupCreation(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase.retryPendingMLSGroupCreation|retryPendingMLSGroupCreation(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation.delete/DeleteConversationLocallyUseCase { // com.wire.kalium.logic.feature.conversation.delete/DeleteConversationLocallyUseCase|null[0]
@@ -2303,6 +2304,15 @@ sealed interface com.wire.kalium.logic.feature.conversation.createconversation/C
 
         final val domains // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.domains|{}domains[0]
             final fun <get-domains>(): kotlin.collections/List<kotlin/String> // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.domains.<get-domains>|<get-domains>(){}[0]
+    }
+
+    final class PendingMLSGroupCreation : com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult { // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation|null[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.common.error.CoreFailure){}[0]
+
+        final val cause // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation.cause|{}cause[0]
+            final fun <get-cause>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation.cause.<get-cause>|<get-cause>(){}[0]
+        final val conversationId // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation.conversationId|{}conversationId[0]
+            final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
     }
 
     final class Success : com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult { // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.Success|null[0]

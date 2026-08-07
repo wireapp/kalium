@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
+import com.wire.kalium.logic.data.conversation.CreateGroupConversationResult
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
@@ -36,6 +38,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.MockMode
@@ -136,7 +140,11 @@ class GroupConversationCreatorTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationGroupRepository.createGroupConversation(eq(name), eq(members), eq(conversationOptions))
+            arrangement.conversationGroupRepository.createGroupConversationWithPendingResult(
+                eq(name),
+                eq(members),
+                eq(conversationOptions)
+            )
         }
     }
 
@@ -209,7 +217,77 @@ class GroupConversationCreatorTest {
         }
     }
 
-    private class Arrangement {
+    @Test
+    fun givenMLSGroupEstablishFails_whenCreatingGroupConversation_thenPendingConversationIsReturned() = runTest {
+        val conversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO)
+        val rootCause = StorageFailure.DataNotFound
+        val (_, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withCurrentClientIdReturning(ClientId("client-id"))
+            .withCreateGroupConversationReturning(
+                CreateGroupConversationResult.PendingMLSGroupCreation(conversation.id, rootCause)
+            )
+            .arrange()
+
+        val result = createGroupConversation(
+            conversation.name.orEmpty(),
+            listOf(TestUser.USER_ID),
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
+        )
+
+        assertIs<ConversationCreationResult.PendingMLSGroupCreation>(result)
+        assertEquals(conversation.id, result.conversationId)
+        assertEquals(rootCause, result.cause)
+    }
+
+    @Test
+    fun givenPendingMLSGroup_whenRetryingCreation_thenExistingConversationIsEstablished() = runTest {
+        val conversation = TestConversation.GROUP(
+            TestConversation.MLS_PROTOCOL_INFO.copy(
+                groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
+            )
+        )
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withConversationReturning(conversation)
+            .withJoiningExistingMLSConversationSucceeding()
+            .withUpdateConversationModifiedDateSucceeding()
+            .withPersistingReadReceiptsSystemMessage()
+            .withTransactionInvokingBlock()
+            .arrange()
+
+        val result = createGroupConversation.retryPendingMLSGroupCreation(conversation.id)
+
+        assertIs<ConversationCreationResult.Success>(result)
+        assertEquals(conversation.id, result.conversation.id)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversation.invoke(any(), conversation.id)
+        }
+    }
+
+    @Test
+    fun givenMLSGroupWasAlreadyRecovered_whenRetryingCreation_thenEstablishIsNotRepeated() = runTest {
+        val conversation = TestConversation.GROUP(
+            TestConversation.MLS_PROTOCOL_INFO.copy(
+                groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+            )
+        )
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withConversationReturning(conversation)
+            .withUpdateConversationModifiedDateSucceeding()
+            .withPersistingReadReceiptsSystemMessage()
+            .arrange()
+
+        val result = createGroupConversation.retryPendingMLSGroupCreation(conversation.id)
+
+        assertIs<ConversationCreationResult.Success>(result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.joinExistingMLSConversation.invoke(any(), any())
+        }
+    }
+
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
@@ -217,6 +295,7 @@ class GroupConversationCreatorTest {
         val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
         val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
         val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>(mode = MockMode.autoUnit)
+        val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
 
         private val createGroupConversation = GroupConversationCreatorImpl(
             conversationRepository,
@@ -224,7 +303,9 @@ class GroupConversationCreatorTest {
             syncManager,
             currentClientIdProvider,
             newGroupConversationSystemMessagesCreator,
-            refreshUsersWithoutMetadata
+            refreshUsersWithoutMetadata,
+            cryptoTransactionProvider,
+            joinExistingMLSConversation,
         )
 
         suspend fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -251,15 +332,31 @@ class GroupConversationCreatorTest {
         }
 
         suspend fun withCreateGroupConversationFailingWith(coreFailure: CoreFailure) =
-            withCreateGroupConversationReturning(Either.Left(coreFailure))
+            withCreateGroupConversationReturning(CreateGroupConversationResult.Failure(coreFailure))
 
         suspend fun withCreateGroupConversationReturning(conversation: Conversation) =
-            withCreateGroupConversationReturning(Either.Right(conversation))
+            withCreateGroupConversationReturning(CreateGroupConversationResult.Success(conversation))
 
-        private suspend fun withCreateGroupConversationReturning(result: Either<CoreFailure, Conversation>) = apply {
+        suspend fun withCreateGroupConversationReturning(result: CreateGroupConversationResult) = apply {
             everySuspend {
-                conversationGroupRepository.createGroupConversation(any(), any(), any())
+                conversationGroupRepository.createGroupConversationWithPendingResult(any(), any(), any())
             } returns result
+        }
+
+        suspend fun withConversationReturning(conversation: Conversation) = apply {
+            everySuspend {
+                conversationRepository.getConversationById(conversation.id)
+            } returns Either.Right(conversation)
+        }
+
+        suspend fun withJoiningExistingMLSConversationSucceeding() = apply {
+            everySuspend {
+                joinExistingMLSConversation.invoke(any(), any())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withTransactionInvokingBlock() = apply {
+            withTransactionReturning(Either.Right(Unit))
         }
 
         suspend fun withCurrentClientIdReturning(clientId: ClientId) = apply {
