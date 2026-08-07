@@ -110,12 +110,12 @@ jobs:
         with:
           api-level: ${{ matrix.api-level }}
           arch: ${{ steps.avd-info.outputs.arch }}
-          target: aosp_atd
+          target: ${{ steps.avd-info.outputs.target }}
           cores: 2
           ram-size: 3072M
           heap-size: 1024M
           disable-animations: true
-          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
+          emulator-options: -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           emulator-boot-timeout: 900
           # Develop runs the complete suite to populate task outputs for future PRs.
           # PR and merge-queue runs keep using affected-module detection.
