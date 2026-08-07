@@ -26,6 +26,21 @@
       "minimumReleaseAge": "14 days"
     },
     {
+      "description": "Regenerate the Kotlin JS/Wasm Yarn lockfile after Gradle dependency updates.",
+      "matchManagers": [
+        "gradle"
+      ],
+      "postUpgradeTasks": {
+        "commands": [
+          "./gradlew kotlinUpgradeYarnLock -PUSE_UNIFIED_CORE_CRYPTO=true"
+        ],
+        "fileFilters": [
+          "kotlin-js-store/yarn.lock"
+        ],
+        "executionMode": "branch"
+      }
+    },
+    {
       "description": "Group SBOM Python toolchain updates into a single PR.",
       "matchManagers": [
         "pip_requirements"

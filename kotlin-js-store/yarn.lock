@@ -222,6 +222,11 @@
     "@webassemblyjs/ast" "1.14.1"
     "@xtuc/long" "4.2.2"
 
+"@wireapp/core-crypto@9.3.3":
+  version "9.3.3"
+  resolved "https://registry.yarnpkg.com/@wireapp/core-crypto/-/core-crypto-9.3.3.tgz#bf926b0ca1bf35fae00fe8f8e8c2ca68dbbe8824"
+  integrity sha512-AjMI1Yv8sSoiWo2dz2n4ApAhktKY4X0juL91g3UA5IlgoBCG9/BfziPNH8Mb9zq4ITFRWGmWNBX7AsF6qIKlTA==
+
 "@xtuc/ieee754@^1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@xtuc/ieee754/-/ieee754-1.2.0.tgz#eef014a3145ae477a1cbc00cd1e552336dceb790"
