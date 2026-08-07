@@ -6,6 +6,7 @@
   ],
   "enabledManagers": [
     "github-actions",
+    "custom.regex",
     "gradle",
     "gradle-wrapper",
     "pip_requirements"
@@ -15,10 +16,24 @@
   ],
   "prConcurrentLimit": 5,
   "commitMessagePrefix": "chore(deps): [WPB-9777]",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update npm dependencies declared in the Gradle version catalog.",
+      "managerFilePatterns": [
+        "/^gradle\\/libs\\.versions\\.toml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\s+[A-Za-z0-9_.-]+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "versioningTemplate": "npm"
+    }
+  ],
   "packageRules": [
     {
-      "description": "Match Dependabot's 14 day cooldown for Gradle and pip updates.",
+      "description": "Match Dependabot's 14 day cooldown for Gradle, npm catalog, and pip updates.",
       "matchManagers": [
+        "custom.regex",
         "gradle",
         "gradle-wrapper",
         "pip_requirements"
@@ -26,19 +41,30 @@
       "minimumReleaseAge": "14 days"
     },
     {
-      "description": "Regenerate the Kotlin JS/Wasm Yarn lockfile after Gradle dependency updates.",
+      "description": "Regenerate the Kotlin JS/Wasm Yarn lockfile after Gradle or npm catalog dependency updates.",
       "matchManagers": [
+        "custom.regex",
         "gradle"
       ],
       "postUpgradeTasks": {
         "commands": [
-          "./gradlew kotlinUpgradeYarnLock -PUSE_UNIFIED_CORE_CRYPTO=true"
+          "./gradlew kotlinUpgradeYarnLock --rerun-tasks -PUSE_UNIFIED_CORE_CRYPTO=true"
         ],
         "fileFilters": [
           "kotlin-js-store/yarn.lock"
         ],
         "executionMode": "branch"
       }
+    },
+    {
+      "description": "Keep copy-webpack-plugin compatible with the pinned Node 18 runtime.",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "copy-webpack-plugin"
+      ],
+      "allowedVersions": "<14"
     },
     {
       "description": "Group SBOM Python toolchain updates into a single PR.",
