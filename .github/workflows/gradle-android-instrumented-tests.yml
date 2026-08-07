@@ -111,7 +111,7 @@ jobs:
           api-level: ${{ matrix.api-level }}
           arch: ${{ steps.avd-info.outputs.arch }}
           target: ${{ steps.avd-info.outputs.target }}
-          cores: 3
+          cores: 2
           ram-size: 4096M
           heap-size: 2048M
           disable-animations: true
