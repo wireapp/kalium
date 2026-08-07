@@ -111,15 +111,15 @@ jobs:
           api-level: ${{ matrix.api-level }}
           arch: ${{ steps.avd-info.outputs.arch }}
           target: ${{ steps.avd-info.outputs.target }}
-          cores: 2
-          ram-size: 3072M
-          heap-size: 1024M
+          cores: 3
+          ram-size: 4096M
+          heap-size: 2048M
           disable-animations: true
           emulator-options: -no-window -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           emulator-boot-timeout: 900
           # Develop runs the complete suite to populate task outputs for future PRs.
           # PR and merge-queue runs keep using affected-module detection.
-          script: ./gradlew --no-daemon ${{ github.event_name == 'push' && 'connectedAndroidDeviceTest' || 'connectedAndroidOnlyAffectedTest' }}
+          script: ./gradlew ${{ github.event_name == 'push' && 'connectedAndroidDeviceTest' || 'connectedAndroidOnlyAffectedTest' }}
 
       - name: Archive Test Reports
         if: always()
