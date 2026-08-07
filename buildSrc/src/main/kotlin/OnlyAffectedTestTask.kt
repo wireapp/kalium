@@ -103,9 +103,17 @@ open class OnlyAffectedTestTask : DefaultTask() {
 
     private fun runTargetTasks(targetTasks: List<String>) {
         println("\uD83D\uDD27 Running ${targetTasks.size} test tasks in a single Gradle invocation.")
+        targetTasks.forEachIndexed { index, taskName ->
+            println("[${index + 1}/${targetTasks.size}] Scheduled $taskName")
+        }
         val execOperations = services.get<ExecOperations>()
         execOperations.exec {
-            args(targetTasks)
+            args(
+                listOf(
+                    "-Dorg.gradle.logging.level=lifecycle",
+                    "--console=plain"
+                ) + targetTasks
+            )
             executable(if (System.getProperty("os.name").lowercase().contains("windows")) "gradlew.bat" else "./gradlew")
         }
     }
