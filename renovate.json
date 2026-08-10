@@ -30,8 +30,22 @@
       "matchManagers": [
         "pip_requirements"
       ],
+      "matchFileNames": [
+        "scripts/sbom-requirements.txt"
+      ],
       "groupName": "SBOM Python toolchain",
       "groupSlug": "sbom-python-toolchain"
+    },
+    {
+      "description": "Group changelog Python toolchain updates into a single PR.",
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "matchFileNames": [
+        "scripts/changelog-requirements.txt"
+      ],
+      "groupName": "Changelog Python toolchain",
+      "groupSlug": "changelog-python-toolchain"
     },
     {
       "description": "Leave Wire crypto and AVS updates to Dependabot so they do not consume Renovate PR slots.",
