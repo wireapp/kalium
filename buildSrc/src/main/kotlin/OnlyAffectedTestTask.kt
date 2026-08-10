@@ -105,12 +105,15 @@ open class OnlyAffectedTestTask : DefaultTask() {
         println("\uD83D\uDD27 Running ${targetTasks.size} test tasks in a single Gradle invocation.")
         val execOperations = services.get<ExecOperations>()
         execOperations.exec {
-            args(
-                listOf(
-                    "-Dorg.gradle.logging.level=lifecycle",
-                    "--console=plain"
-                ) + targetTasks
-            )
+            val gradleArgs = buildList {
+                add("-Dorg.gradle.logging.level=lifecycle")
+                add("--console=plain")
+                if (configuration == TestTaskConfiguration.ANDROID_INSTRUMENTED_TEST_TASK) {
+                    add("--max-workers=2")
+                }
+                addAll(targetTasks)
+            }
+            args(gradleArgs)
             executable(if (System.getProperty("os.name").lowercase().contains("windows")) "gradlew.bat" else "./gradlew")
         }
     }
