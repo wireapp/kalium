@@ -106,7 +106,11 @@ jobs:
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew packageAndroidDeviceTest
+        run: |
+          # Build/dex/package test APKs before starting the emulator, so QEMU does not compete with the heaviest Android build work.
+          ./gradlew packageAndroidDeviceTest
+          # Stop prebuild daemons before booting the emulator to free memory/CPU for the connected test phase.
+          ./gradlew --stop
 
       - name: Android Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a
