@@ -18,27 +18,17 @@
 
 package com.wire.kalium.util
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.wire.kalium.util.DateTimeUtil.MILLISECONDS_DIGITS
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatterBuilder
-import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 actual open class PlatformDateTimeUtil actual constructor() {
 
-    private val isoDateTimeFormat = SimpleDateFormat(DateTimeUtil.iso8601Pattern, Locale.getDefault()).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
-
     private val secondsDateTimeFormat = SimpleDateFormat(DateTimeUtil.simplePattern, Locale.getDefault())
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private val isoDateTimeFormatter = DateTimeFormatterBuilder().appendInstant(MILLISECONDS_DIGITS).toFormatter()
 
     /**
@@ -50,19 +40,13 @@ actual open class PlatformDateTimeUtil actual constructor() {
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     actual fun fromInstantToIsoDateTimeString(instant: Instant): String =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            isoDateTimeFormatter.format(instant.toJavaInstant())
-        else
-            isoDateTimeFormat.format(Date(instant.toEpochMilliseconds()))
+        isoDateTimeFormatter.format(instant.toJavaInstant())
 
     /**
      * Parse [kotlinx.datetime.Instant] into date-time string in simplified format with up to seconds precision.
      * @return date in simplified format (YYYY-MM-DD_HH:mm:ss)
      */
-    actual fun fromInstantToSimpleDateTimeString(instant: Instant): String {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            secondsDateTimeFormat.format(System.currentTimeMillis())
-        else
-            secondsDateTimeFormat.format(Date(Clock.System.now().toEpochMilliseconds()))
-    }
+    actual fun fromInstantToSimpleDateTimeString(instant: Instant): String =
+        secondsDateTimeFormat.format(System.currentTimeMillis())
+
 }

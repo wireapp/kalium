@@ -95,6 +95,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.math.max
 import kotlin.time.toDuration
 import kotlin.uuid.Uuid
@@ -152,7 +153,7 @@ internal interface CallRepository {
 
     suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata)
     suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata>
-    suspend fun fetchServerTime(): String?
+    suspend fun fetchServerTime(): Instant?
     fun updateCallQualityData(conversationId: ConversationId, callQualityData: CallQualityData)
     fun observeCallQualityData(conversationId: ConversationId): Flow<CallQualityData>
 }
@@ -757,10 +758,10 @@ internal class CallDataSource(
     override fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo? =
         _callMetadataProfile[conversationId]?.protocol
 
-    override suspend fun fetchServerTime(): String? {
+    override suspend fun fetchServerTime(): Instant? {
         val result = serverTimeApi.getServerTime()
         return if (result.isSuccessful()) {
-            result.value.time
+            Instant.parse(result.value.time)
         } else {
             null
         }
