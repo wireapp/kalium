@@ -110,6 +110,9 @@ val kaliumProjectVersion: Provider<String> = providers.gradleProperty("kalium.pu
 
 allprojects {
     version = kaliumProjectVersion.get()
+    plugins.withType<NodeJsPlugin> {
+        the<NodeJsEnvSpec>().version = libs.versions.node.get()
+    }
     repositories {
         google()
         mavenCentral()
@@ -144,16 +147,11 @@ kover {
 }
 
 rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin::class.java) {
-    // For unknown reasons, yarn.lock checks are failing on Github Actions
-    // Considering JS support is quite experimental for us, we can live with this for now
-    rootProject.the<YarnRootExtension>().yarnLockMismatchReport =
-        YarnLockMismatchReport.WARNING
-}
-
-rootProject.plugins.withType<NodeJsPlugin> {
-    rootProject.the<NodeJsEnvSpec>().version = "18.18.0"
-    // If we want to use the downloaded Node instead of system Node:
-    // rootProject.the<NodeJsEnvSpec>().download.set(true)
+    rootProject.the<YarnRootExtension>().apply {
+        yarnLockMismatchReport = YarnLockMismatchReport.FAIL
+        reportNewYarnLock = true
+        yarnLockAutoReplace = false
+    }
 }
 
 tasks.dokkaHtmlMultiModule.configure {}

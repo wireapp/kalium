@@ -102,9 +102,9 @@ kotlin {
             dependencies {
                 implementation(libs.sqldelight.jsDriver)
                 implementation(npm("@cashapp/sqldelight-sqljs-worker", libs.versions.sqldelightSqljsWorker.get()))
-                implementation(npm("sql.js", "1.8.0"))
-                implementation(devNpm("webpack", "^5.1.0"))
-                implementation(devNpm("copy-webpack-plugin", "9.1.0"))
+                implementation(npm("sql.js", libs.versions.sqlJs.get()))
+                implementation(devNpm("webpack", libs.versions.webpack.get()))
+                implementation(devNpm("copy-webpack-plugin", libs.versions.copyWebpackPlugin.get()))
             }
         }
         val jsTest by getting

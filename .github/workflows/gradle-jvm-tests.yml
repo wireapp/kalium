@@ -134,7 +134,7 @@ jobs:
         run: ls -R
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
-          node-version: 18
+          node-version: 24.19.0
       - name: Install datadog-ci
         run: npm install -g @datadog/datadog-ci
       - name: "Upload results"
