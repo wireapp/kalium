@@ -43,6 +43,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.configurePersistenceDebug
 import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
+import kotlinx.coroutines.flow.Flow
 
 @Suppress("TooManyFunctions")
 public abstract class CoreLogicCommon internal constructor(
@@ -105,6 +106,18 @@ public abstract class CoreLogicCommon internal constructor(
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     public abstract fun getSessionScope(userId: UserId): UserSessionScope
+
+    /**
+     * Opens and migrates the user's database away from the main thread before exposing the session.
+     */
+    public suspend fun prepareUserSession(userId: UserId): PrepareUserSessionResult =
+        userSessionScopeProvider.value.prepare(userId)
+
+    /**
+     * Observes the current in-process preparation state without starting preparation.
+     */
+    public fun observeUserSessionPreparation(userId: UserId): Flow<UserSessionPreparationState> =
+        userSessionScopeProvider.value.observePreparation(userId)
 
     internal abstract suspend fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
 

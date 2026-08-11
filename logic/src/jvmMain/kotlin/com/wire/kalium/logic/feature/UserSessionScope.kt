@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
+import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
@@ -48,12 +49,13 @@ internal fun UserSessionScope(
     rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
+    userStorage: UserStorage,
     userStorageProvider: UserStorageProvider,
     userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
     logoutCallback: LogoutCallback,
-    userAgent: String
+    userAgent: String,
 ): UserSessionScope {
 
     val clientConfig: ClientConfig = ClientConfigImpl()
@@ -70,6 +72,7 @@ internal fun UserSessionScope(
         dataStoragePaths,
         kaliumConfigs,
         userSessionScopeProvider,
+        userStorage,
         userStorageProvider,
         userAuthenticatedNetworkProvider,
         clientConfig,

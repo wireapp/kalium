@@ -61,7 +61,14 @@ internal actual open class UserSessionScopeProviderImpl(
         userAgent,
 ),
     UserSessionScopeProvider {
-    override fun create(userId: UserId): UserSessionScope {
+    override fun storageParameters(userId: UserId): UserStorageSessionParameters =
+        UserStorageSessionParameters(
+            platformProperties = createPlatformUserStorageProperties(userId),
+            shouldEncryptData = kaliumConfigs.shouldEncryptData(),
+            dbInvalidationControlEnabled = kaliumConfigs.dbInvalidationControlEnabled,
+        )
+
+    override fun create(userId: UserId, preparedStorage: PreparedUserStorage): UserSessionScope {
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
         val rootStoragePath = "$rootAccountPath/storage"
         val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
@@ -69,11 +76,7 @@ internal actual open class UserSessionScopeProviderImpl(
         val dbPath = DBFolder("$rootAccountPath/database")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
         return UserSessionScope(
-            PlatformUserStorageProperties(
-                rootPath = rootPathsProvider.rootPath,
-                keychainConfig = keychainConfig,
-                rootStoragePath = rootStoragePath,
-            ),
+            preparedStorage.parameters.platformProperties,
             userId,
             globalScope,
             globalCallManager,
@@ -83,13 +86,22 @@ internal actual open class UserSessionScopeProviderImpl(
             rootPathsProvider,
             dataStoragePaths,
             kaliumConfigs,
+            preparedStorage.storage,
             userStorageProvider,
             userAuthenticatedNetworkProvider,
             this,
             networkStateObserver,
             logoutCallback,
-            userAgent
+            userAgent,
         )
     }
 
+    private fun createPlatformUserStorageProperties(userId: UserId): PlatformUserStorageProperties {
+        val rootStoragePath = "${rootPathsProvider.rootAccountPath(userId)}/storage"
+        return PlatformUserStorageProperties(
+            rootPath = rootPathsProvider.rootPath,
+            keychainConfig = keychainConfig,
+            rootStoragePath = rootStoragePath,
+        )
+    }
 }

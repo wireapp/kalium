@@ -589,6 +589,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
+import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.DelicateKaliumApi
@@ -623,6 +624,7 @@ public class UserSessionScope internal constructor(
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val userStorage: UserStorage,
     private val userStorageProvider: UserStorageProvider,
     private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
     private val clientConfig: ClientConfig,
@@ -632,13 +634,6 @@ public class UserSessionScope internal constructor(
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
-
-    private val userStorage = userStorageProvider.getOrCreate(
-        userId,
-        platformUserStorageProperties,
-        kaliumConfigs.shouldEncryptData(),
-        kaliumConfigs.dbInvalidationControlEnabled
-    )
     private var _clientId: ClientId? = null
 
     @OptIn(DelicateKaliumApi::class) // Use the uncached client ID in order to create the cache itself.

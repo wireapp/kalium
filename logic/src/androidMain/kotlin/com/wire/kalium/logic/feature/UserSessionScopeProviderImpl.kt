@@ -33,11 +33,14 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.util.DatabaseKeyLock
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
+import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.UserStorageProvider
 
 @Suppress("LongParameterList")
@@ -63,7 +66,27 @@ internal actual open class UserSessionScopeProviderImpl(
 ),
     UserSessionScopeProvider {
 
-    override fun create(userId: UserId): UserSessionScope {
+    override fun storageParameters(userId: UserId): UserStorageSessionParameters {
+        val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+        val platformProperties = PlatformUserStorageProperties(appContext) { storageUserId ->
+            // The existence check has to be inside the lock: it decides whether a legacy or a raw
+            // key is used, so reading it outside would race with a concurrent database creation.
+            DatabaseKeyLock.withLock {
+                val userIdEntity = storageUserId.toDao()
+                val databaseExists = appContext
+                    .getDatabasePath(FileNameUtil.userDBName(userIdEntity))
+                    .exists()
+                securityHelper.userDBSecret(storageUserId, databaseExists)
+            }
+        }
+        return UserStorageSessionParameters(
+            platformProperties = platformProperties,
+            shouldEncryptData = kaliumConfigs.shouldEncryptData(),
+            dbInvalidationControlEnabled = kaliumConfigs.dbInvalidationControlEnabled,
+        )
+    }
+
+    override fun create(userId: UserId, preparedStorage: PreparedUserStorage): UserSessionScope {
         val userIdEntity = userId.toDao()
         val rootFileSystemPath = AssetsStorageFolder("${appContext.filesDir}/${userId.domain}/${userId.value}")
         val dbPath = DBFolder("${appContext.getDatabasePath(FileNameUtil.userDBName(userIdEntity))}")
@@ -81,7 +104,9 @@ internal actual open class UserSessionScopeProviderImpl(
             rootPathsProvider = rootPathsProvider,
             dataStoragePaths = dataStoragePaths,
             kaliumConfigs = kaliumConfigs,
+            userStorage = preparedStorage.storage,
             userStorageProvider = userStorageProvider,
+            platformUserStorageProperties = preparedStorage.parameters.platformProperties,
             userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
             userSessionScopeProvider = this,
             networkStateObserver = networkStateObserver,

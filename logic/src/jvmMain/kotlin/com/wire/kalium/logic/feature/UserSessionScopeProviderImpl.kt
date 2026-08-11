@@ -63,22 +63,22 @@ internal actual open class UserSessionScopeProviderImpl(
 ),
     UserSessionScopeProvider {
 
-    override fun create(userId: UserId): UserSessionScope {
+    override fun storageParameters(userId: UserId): UserStorageSessionParameters =
+        UserStorageSessionParameters(
+            platformProperties = createPlatformUserStorageProperties(userId),
+            shouldEncryptData = kaliumConfigs.shouldEncryptData(),
+            dbInvalidationControlEnabled = kaliumConfigs.dbInvalidationControlEnabled,
+        )
+
+    override fun create(userId: UserId, preparedStorage: PreparedUserStorage): UserSessionScope {
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
         val rootStoragePath = "$rootAccountPath/storage"
-        val databaseInfo = if (useInMemoryDatabase) {
-            DatabaseStorageType.InMemory
-        } else {
-            DatabaseStorageType.FiledBacked(
-                File(rootStoragePath)
-            )
-        }
         val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
         val dbPath = DBFolder("$rootAccountPath/database")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
         return UserSessionScope(
-            PlatformUserStorageProperties(rootPathsProvider.rootPath, databaseInfo),
+            preparedStorage.parameters.platformProperties,
             userId,
             globalScope,
             globalCallManager,
@@ -88,12 +88,23 @@ internal actual open class UserSessionScopeProviderImpl(
             rootPathsProvider,
             dataStoragePaths,
             kaliumConfigs,
+            preparedStorage.storage,
             userStorageProvider,
             userAuthenticatedNetworkProvider,
             this,
             networkStateObserver,
             logoutCallback,
-            userAgent
+            userAgent,
         )
+    }
+
+    private fun createPlatformUserStorageProperties(userId: UserId): PlatformUserStorageProperties {
+        val rootStoragePath = "${rootPathsProvider.rootAccountPath(userId)}/storage"
+        val databaseInfo = if (useInMemoryDatabase) {
+            DatabaseStorageType.InMemory
+        } else {
+            DatabaseStorageType.FiledBacked(File(rootStoragePath))
+        }
+        return PlatformUserStorageProperties(rootPathsProvider.rootPath, databaseInfo)
     }
 }

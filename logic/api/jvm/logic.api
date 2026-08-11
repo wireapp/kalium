@@ -19,6 +19,8 @@ public abstract class com/wire/kalium/logic/CoreLogicCommon {
 	public abstract fun getSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/UserSessionScope;
 	protected final fun getUserAgent ()Ljava/lang/String;
 	public final fun globalScope (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun observeUserSessionPreparation (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lkotlinx/coroutines/flow/Flow;
+	public final fun prepareUserSession (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun registerLogger (Lcom/wire/kalium/logger/KaliumLogger$Config;)V
 	public final fun sessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public final fun versionedAuthenticationScope (Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;)Lcom/wire/kalium/logic/feature/auth/autoVersioningAuth/AutoVersionAuthScopeUseCase;
@@ -54,6 +56,83 @@ public final class com/wire/kalium/logic/GlobalKaliumScope : kotlinx/coroutines/
 	public final fun getValidateUserHandleUseCase ()Lcom/wire/kalium/logic/feature/auth/ValidateUserHandleUseCase;
 	public final fun isCrossBackendLoginBlocked ()Lcom/wire/kalium/logic/feature/server/IsCrossBackendLoginBlockedUseCase;
 	public final fun isCurrentSessionNomadAccount ()Lcom/wire/kalium/logic/feature/session/IsCurrentSessionNomadAccountUseCase;
+}
+
+public abstract class com/wire/kalium/logic/PrepareUserSessionResult {
+}
+
+public final class com/wire/kalium/logic/PrepareUserSessionResult$Failure : com/wire/kalium/logic/PrepareUserSessionResult {
+	public final fun getReason ()Lcom/wire/kalium/logic/UserSessionPreparationFailure;
+}
+
+public final class com/wire/kalium/logic/PrepareUserSessionResult$Success : com/wire/kalium/logic/PrepareUserSessionResult {
+	public final fun getSessionScope ()Lcom/wire/kalium/logic/feature/UserSessionScope;
+}
+
+public abstract class com/wire/kalium/logic/UserSessionPreparationFailure {
+}
+
+public final class com/wire/kalium/logic/UserSessionPreparationFailure$ApplicationUpdateRequired : com/wire/kalium/logic/UserSessionPreparationFailure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationFailure$ApplicationUpdateRequired;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/UserSessionPreparationFailure$InsufficientStorage : com/wire/kalium/logic/UserSessionPreparationFailure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationFailure$InsufficientStorage;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/UserSessionPreparationFailure$SupportRequired : com/wire/kalium/logic/UserSessionPreparationFailure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationFailure$SupportRequired;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/UserSessionPreparationFailure$TemporarilyUnavailable : com/wire/kalium/logic/UserSessionPreparationFailure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationFailure$TemporarilyUnavailable;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class com/wire/kalium/logic/UserSessionPreparationState {
+}
+
+public final class com/wire/kalium/logic/UserSessionPreparationState$Failed : com/wire/kalium/logic/UserSessionPreparationState {
+	public final fun getReason ()Lcom/wire/kalium/logic/UserSessionPreparationFailure;
+}
+
+public final class com/wire/kalium/logic/UserSessionPreparationState$MigratingDatabase : com/wire/kalium/logic/UserSessionPreparationState {
+	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationState$MigratingDatabase;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/UserSessionPreparationState$NotStarted : com/wire/kalium/logic/UserSessionPreparationState {
+	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationState$NotStarted;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/UserSessionPreparationState$OpeningDatabase : com/wire/kalium/logic/UserSessionPreparationState {
+	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationState$OpeningDatabase;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/UserSessionPreparationState$Ready : com/wire/kalium/logic/UserSessionPreparationState {
+	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationState$Ready;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/logic/configuration/AppLockTeamConfig {
