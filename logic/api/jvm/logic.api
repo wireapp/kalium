@@ -62,7 +62,7 @@ public abstract class com/wire/kalium/logic/PrepareUserSessionResult {
 }
 
 public final class com/wire/kalium/logic/PrepareUserSessionResult$Failure : com/wire/kalium/logic/PrepareUserSessionResult {
-	public final fun getReason ()Lcom/wire/kalium/logic/UserSessionPreparationFailure;
+	public final fun getFailure ()Lcom/wire/kalium/logic/UserSessionPreparationFailure;
 }
 
 public final class com/wire/kalium/logic/PrepareUserSessionResult$Success : com/wire/kalium/logic/PrepareUserSessionResult {
@@ -70,41 +70,30 @@ public final class com/wire/kalium/logic/PrepareUserSessionResult$Success : com/
 }
 
 public abstract class com/wire/kalium/logic/UserSessionPreparationFailure {
+	public abstract fun getException ()Ljava/lang/Throwable;
 }
 
 public final class com/wire/kalium/logic/UserSessionPreparationFailure$ApplicationUpdateRequired : com/wire/kalium/logic/UserSessionPreparationFailure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationFailure$ApplicationUpdateRequired;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+	public fun getException ()Ljava/lang/Throwable;
 }
 
 public final class com/wire/kalium/logic/UserSessionPreparationFailure$InsufficientStorage : com/wire/kalium/logic/UserSessionPreparationFailure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationFailure$InsufficientStorage;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+	public fun getException ()Ljava/lang/Throwable;
 }
 
 public final class com/wire/kalium/logic/UserSessionPreparationFailure$SupportRequired : com/wire/kalium/logic/UserSessionPreparationFailure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationFailure$SupportRequired;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+	public fun getException ()Ljava/lang/Throwable;
 }
 
 public final class com/wire/kalium/logic/UserSessionPreparationFailure$TemporarilyUnavailable : com/wire/kalium/logic/UserSessionPreparationFailure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/UserSessionPreparationFailure$TemporarilyUnavailable;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+	public fun getException ()Ljava/lang/Throwable;
 }
 
 public abstract class com/wire/kalium/logic/UserSessionPreparationState {
 }
 
 public final class com/wire/kalium/logic/UserSessionPreparationState$Failed : com/wire/kalium/logic/UserSessionPreparationState {
-	public final fun getReason ()Lcom/wire/kalium/logic/UserSessionPreparationFailure;
+	public final fun getFailure ()Lcom/wire/kalium/logic/UserSessionPreparationFailure;
 }
 
 public final class com/wire/kalium/logic/UserSessionPreparationState$MigratingDatabase : com/wire/kalium/logic/UserSessionPreparationState {

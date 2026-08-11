@@ -8323,8 +8323,8 @@ sealed class com.wire.kalium.logic.sync/SyncRequestResult { // com.wire.kalium.l
 
 sealed class com.wire.kalium.logic/PrepareUserSessionResult { // com.wire.kalium.logic/PrepareUserSessionResult|null[0]
     final class Failure : com.wire.kalium.logic/PrepareUserSessionResult { // com.wire.kalium.logic/PrepareUserSessionResult.Failure|null[0]
-        final val reason // com.wire.kalium.logic/PrepareUserSessionResult.Failure.reason|{}reason[0]
-            final fun <get-reason>(): com.wire.kalium.logic/UserSessionPreparationFailure // com.wire.kalium.logic/PrepareUserSessionResult.Failure.reason.<get-reason>|<get-reason>(){}[0]
+        final val failure // com.wire.kalium.logic/PrepareUserSessionResult.Failure.failure|{}failure[0]
+            final fun <get-failure>(): com.wire.kalium.logic/UserSessionPreparationFailure // com.wire.kalium.logic/PrepareUserSessionResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
     }
 
     final class Success : com.wire.kalium.logic/PrepareUserSessionResult { // com.wire.kalium.logic/PrepareUserSessionResult.Success|null[0]
@@ -8334,35 +8334,34 @@ sealed class com.wire.kalium.logic/PrepareUserSessionResult { // com.wire.kalium
 }
 
 sealed class com.wire.kalium.logic/UserSessionPreparationFailure { // com.wire.kalium.logic/UserSessionPreparationFailure|null[0]
-    final object ApplicationUpdateRequired : com.wire.kalium.logic/UserSessionPreparationFailure { // com.wire.kalium.logic/UserSessionPreparationFailure.ApplicationUpdateRequired|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic/UserSessionPreparationFailure.ApplicationUpdateRequired.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic/UserSessionPreparationFailure.ApplicationUpdateRequired.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic/UserSessionPreparationFailure.ApplicationUpdateRequired.toString|toString(){}[0]
+    abstract val exception // com.wire.kalium.logic/UserSessionPreparationFailure.exception|{}exception[0]
+        abstract fun <get-exception>(): kotlin/Throwable // com.wire.kalium.logic/UserSessionPreparationFailure.exception.<get-exception>|<get-exception>(){}[0]
+
+    final class ApplicationUpdateRequired : com.wire.kalium.logic/UserSessionPreparationFailure { // com.wire.kalium.logic/UserSessionPreparationFailure.ApplicationUpdateRequired|null[0]
+        final val exception // com.wire.kalium.logic/UserSessionPreparationFailure.ApplicationUpdateRequired.exception|{}exception[0]
+            final fun <get-exception>(): kotlin/Throwable // com.wire.kalium.logic/UserSessionPreparationFailure.ApplicationUpdateRequired.exception.<get-exception>|<get-exception>(){}[0]
     }
 
-    final object InsufficientStorage : com.wire.kalium.logic/UserSessionPreparationFailure { // com.wire.kalium.logic/UserSessionPreparationFailure.InsufficientStorage|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic/UserSessionPreparationFailure.InsufficientStorage.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic/UserSessionPreparationFailure.InsufficientStorage.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic/UserSessionPreparationFailure.InsufficientStorage.toString|toString(){}[0]
+    final class InsufficientStorage : com.wire.kalium.logic/UserSessionPreparationFailure { // com.wire.kalium.logic/UserSessionPreparationFailure.InsufficientStorage|null[0]
+        final val exception // com.wire.kalium.logic/UserSessionPreparationFailure.InsufficientStorage.exception|{}exception[0]
+            final fun <get-exception>(): kotlin/Throwable // com.wire.kalium.logic/UserSessionPreparationFailure.InsufficientStorage.exception.<get-exception>|<get-exception>(){}[0]
     }
 
-    final object SupportRequired : com.wire.kalium.logic/UserSessionPreparationFailure { // com.wire.kalium.logic/UserSessionPreparationFailure.SupportRequired|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic/UserSessionPreparationFailure.SupportRequired.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic/UserSessionPreparationFailure.SupportRequired.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic/UserSessionPreparationFailure.SupportRequired.toString|toString(){}[0]
+    final class SupportRequired : com.wire.kalium.logic/UserSessionPreparationFailure { // com.wire.kalium.logic/UserSessionPreparationFailure.SupportRequired|null[0]
+        final val exception // com.wire.kalium.logic/UserSessionPreparationFailure.SupportRequired.exception|{}exception[0]
+            final fun <get-exception>(): kotlin/Throwable // com.wire.kalium.logic/UserSessionPreparationFailure.SupportRequired.exception.<get-exception>|<get-exception>(){}[0]
     }
 
-    final object TemporarilyUnavailable : com.wire.kalium.logic/UserSessionPreparationFailure { // com.wire.kalium.logic/UserSessionPreparationFailure.TemporarilyUnavailable|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic/UserSessionPreparationFailure.TemporarilyUnavailable.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic/UserSessionPreparationFailure.TemporarilyUnavailable.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic/UserSessionPreparationFailure.TemporarilyUnavailable.toString|toString(){}[0]
+    final class TemporarilyUnavailable : com.wire.kalium.logic/UserSessionPreparationFailure { // com.wire.kalium.logic/UserSessionPreparationFailure.TemporarilyUnavailable|null[0]
+        final val exception // com.wire.kalium.logic/UserSessionPreparationFailure.TemporarilyUnavailable.exception|{}exception[0]
+            final fun <get-exception>(): kotlin/Throwable // com.wire.kalium.logic/UserSessionPreparationFailure.TemporarilyUnavailable.exception.<get-exception>|<get-exception>(){}[0]
     }
 }
 
 sealed class com.wire.kalium.logic/UserSessionPreparationState { // com.wire.kalium.logic/UserSessionPreparationState|null[0]
     final class Failed : com.wire.kalium.logic/UserSessionPreparationState { // com.wire.kalium.logic/UserSessionPreparationState.Failed|null[0]
-        final val reason // com.wire.kalium.logic/UserSessionPreparationState.Failed.reason|{}reason[0]
-            final fun <get-reason>(): com.wire.kalium.logic/UserSessionPreparationFailure // com.wire.kalium.logic/UserSessionPreparationState.Failed.reason.<get-reason>|<get-reason>(){}[0]
+        final val failure // com.wire.kalium.logic/UserSessionPreparationState.Failed.failure|{}failure[0]
+            final fun <get-failure>(): com.wire.kalium.logic/UserSessionPreparationFailure // com.wire.kalium.logic/UserSessionPreparationState.Failed.failure.<get-failure>|<get-failure>(){}[0]
     }
 
     final object MigratingDatabase : com.wire.kalium.logic/UserSessionPreparationState { // com.wire.kalium.logic/UserSessionPreparationState.MigratingDatabase|null[0]
