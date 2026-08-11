@@ -169,7 +169,7 @@ internal class CallManagerImpl internal constructor(
         } else {
             message.conversationId
         }
-        val callConversationType = getCallConversationType(targetConversationId)
+        val (callConversationType, isMeeting) = getCallConversationType(targetConversationId)
         val type = callMapper.toConversationType(callConversationType)
         val received = AppleAvs.bridge.receiveCallingMessage(
             handle = handle,
@@ -179,7 +179,8 @@ internal class CallManagerImpl internal constructor(
             conversationId = federatedIdMapper.parseToFederatedId(targetConversationId),
             senderUserId = federatedIdMapper.parseToFederatedId(message.senderUserId),
             senderClientId = message.senderClientId.value,
-            conversationType = callMapper.toConversationTypeCalling(type).avsValue
+            conversationType = callMapper.toConversationTypeCalling(type).avsValue,
+            meeting = isMeeting
         )
         callingLogger.i("$tagWithUserId: wcall_recv_msg() forwarded=$received")
     }
@@ -188,7 +189,8 @@ internal class CallManagerImpl internal constructor(
         conversationId: ConversationId,
         callType: CallType,
         conversationTypeCalling: ConversationTypeCalling,
-        isAudioCbr: Boolean
+        isAudioCbr: Boolean,
+        isMeeting: Boolean
     ) {
         callingLogger.d("$tagWithUserId: starting call for conversationId: ${conversationId.toLogString()}..")
         val isCameraOn = callType == CallType.VIDEO
@@ -212,7 +214,8 @@ internal class CallManagerImpl internal constructor(
                     conversationId = federatedIdMapper.parseToFederatedId(conversationId),
                     callType = avsCallType.avsValue,
                     conversationType = conversationTypeCalling.avsValue,
-                    audioCbr = isAudioCbr
+                    audioCbr = isAudioCbr,
+                    meeting = isMeeting
                 )
                 callingLogger.d("$tagWithUserId: wcall_start() called -> ${conversationId.toLogString()}")
             }
