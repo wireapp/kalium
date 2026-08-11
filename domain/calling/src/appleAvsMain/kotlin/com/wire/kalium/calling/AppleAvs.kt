@@ -36,6 +36,7 @@ import avs.wcall_set_background
 import avs.wcall_set_clients_for_conv
 import avs.wcall_set_epoch_info
 import avs.wcall_set_group_changed_handler
+import avs.wcall_set_log_handler
 import avs.wcall_set_mute
 import avs.wcall_set_mute_handler
 import avs.wcall_set_network_quality_handler
@@ -76,6 +77,11 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
 
     private val readyHandler = staticCFunction { version: Int, arg: COpaquePointer? ->
         callbacks(arg)?.onReady(version)
+        Unit
+    }
+
+    private val logHandler = staticCFunction { level: Int, message: CPointer<ByteVar>?, _: COpaquePointer? ->
+        handles.values.forEach { it.stableRef.get().onLog(level, message.string().orEmpty()) }
         Unit
     }
 
@@ -249,6 +255,7 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
         return runCatching {
             wcall_setup()
             wcall_run()
+            wcall_set_log_handler(logHandler, null)
             isStarted = true
             true
         }.getOrElse {

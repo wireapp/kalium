@@ -355,6 +355,15 @@ internal class CallManagerImpl internal constructor(
             onCallingReady()
         }
 
+        override fun onLog(level: Int, message: String) {
+            when (level) {
+                0 -> callingLogger.d("[AVS] $message")
+                1 -> callingLogger.i("[AVS] $message")
+                2 -> callingLogger.w("[AVS] $message")
+                3 -> callingLogger.e("[AVS] $message")
+            }
+        }
+
         override fun onSend(
             context: COpaquePointer?,
             conversationId: String?,

@@ -56,6 +56,7 @@ interface AppleAvsBridge {
 
 interface AppleAvsCallbacks {
     fun onReady(version: Int)
+    fun onLog(level: Int, message: String)
     fun onSend(
         context: COpaquePointer?,
         conversationId: String?,
