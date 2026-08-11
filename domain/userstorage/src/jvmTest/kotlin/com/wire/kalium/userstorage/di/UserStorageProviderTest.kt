@@ -172,14 +172,14 @@ class UserStorageProviderTest {
             dbInvalidationControlEnabled = false,
         )
         observer.join()
+        val storage = assertIs<UserStoragePreparationResult.Success>(result).storage
 
-        val success = assertIs<UserStoragePreparationResult.Success>(result)
         assertEquals(
             listOf(
                 UserStorageState.NotStarted,
                 UserStorageState.OpeningDatabase,
                 UserStorageState.MigratingDatabase,
-                UserStorageState.Ready(success.storage),
+                UserStorageState.Ready(storage),
             ),
             states,
         )
@@ -228,8 +228,7 @@ class UserStorageProviderTest {
             provider.prepare(testUserId, testProperties, false, false)
         }
 
-        assertIs<UserStoragePreparationResult.Success>(first.await())
-        assertIs<UserStoragePreparationResult.Success>(second.await())
+        assertSame(first.await(), second.await())
         assertEquals(1, createCount.get())
 
         cleanup(provider)
@@ -273,16 +272,22 @@ class UserStorageProviderTest {
     @Test
     fun givenRetryableFailure_whenPreparingAgain_thenNewAttemptStarts() = runBlocking {
         val createCount = AtomicInteger(0)
-        val provider = TestUserStorageProvider(createCount, failuresRemaining = AtomicInteger(1))
+        val expected = IllegalStateException("database is locked")
+        val provider = TestUserStorageProvider(
+            createCount,
+            failuresRemaining = AtomicInteger(1),
+            failure = expected,
+        )
 
-        val first = provider.prepare(testUserId, testProperties, false, false)
+        val first = assertIs<UserStoragePreparationResult.Failure>(
+            provider.prepare(testUserId, testProperties, false, false)
+        )
         val second = provider.prepare(testUserId, testProperties, false, false)
 
-        assertEquals(
-            UserStoragePreparationFailure.TemporarilyUnavailable,
-            assertIs<UserStoragePreparationResult.Failure>(first).reason,
-        )
-        assertIs<UserStoragePreparationResult.Success>(second)
+        assertIs<UserStoragePreparationFailure.TemporarilyUnavailable>(first.failure)
+        assertSame(expected, first.failure.exception)
+        val storage = assertIs<UserStoragePreparationResult.Success>(second).storage
+        assertSame(storage, provider.get(testUserId))
         assertEquals(2, createCount.get())
 
         cleanup(provider)
@@ -291,60 +296,64 @@ class UserStorageProviderTest {
     @Test
     fun givenFatalFailure_whenPreparingAgain_thenFailedAttemptIsReused() = runBlocking {
         val createCount = AtomicInteger(0)
+        val expected = IllegalStateException("file is not a database")
         val provider = TestUserStorageProvider(
             createCount,
             failuresRemaining = AtomicInteger(1),
-            failureMessage = "file is not a database",
+            failure = expected,
+        )
+        val states = mutableListOf<UserStorageState>()
+        val observer = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
+            provider.observe(testUserId).take(3).toList(states)
+        }
+
+        val first = assertIs<UserStoragePreparationResult.Failure>(
+            provider.prepare(testUserId, testProperties, false, false)
+        )
+        observer.join()
+        val second = assertIs<UserStoragePreparationResult.Failure>(
+            provider.prepare(testUserId, testProperties, false, false)
         )
 
-        val first = provider.prepare(testUserId, testProperties, false, false)
-        val second = provider.prepare(testUserId, testProperties, false, false)
-
-        assertEquals(
-            UserStoragePreparationFailure.SupportRequired,
-            assertIs<UserStoragePreparationResult.Failure>(first).reason,
-        )
-        assertEquals(
-            UserStoragePreparationFailure.SupportRequired,
-            assertIs<UserStoragePreparationResult.Failure>(second).reason,
-        )
+        assertIs<UserStoragePreparationFailure.SupportRequired>(first.failure)
+        assertSame(first.failure, second.failure)
+        assertSame(expected, first.failure.exception)
+        assertEquals(UserStorageState.NotStarted, states[0])
+        assertEquals(UserStorageState.OpeningDatabase, states[1])
+        assertSame(first.failure, assertIs<UserStorageState.Failed>(states[2]).failure)
         assertEquals(1, createCount.get())
 
         cleanup(provider)
     }
 
     @Test
-    fun givenNestedLockedError_whenClassifyingFailure_thenTemporarilyUnavailableIsReturned() {
-        val result = IllegalStateException(
+    fun givenNestedLockedError_whenClassifyingFailure_thenOriginalExceptionIsRetained() {
+        val expected = IllegalStateException(
             "Could not open database",
             IllegalStateException("database is locked"),
-        ).toUserStoragePreparationFailure()
+        )
+        val result = expected.toUserStoragePreparationFailure()
 
-        assertEquals(UserStoragePreparationFailure.TemporarilyUnavailable, result)
+        assertIs<UserStoragePreparationFailure.TemporarilyUnavailable>(result)
+        assertSame(expected, result.exception)
     }
 
     @Test
-    fun givenDiskFullError_whenClassifyingFailure_thenInsufficientStorageIsReturned() {
-        val result = IllegalStateException("SQLITE_FULL: database or disk is full")
-            .toUserStoragePreparationFailure()
+    fun givenDiskFullError_whenClassifyingFailure_thenOriginalExceptionIsRetained() {
+        val expected = IllegalStateException("SQLITE_FULL: database or disk is full")
+        val result = expected.toUserStoragePreparationFailure()
 
-        assertEquals(UserStoragePreparationFailure.InsufficientStorage, result)
+        assertIs<UserStoragePreparationFailure.InsufficientStorage>(result)
+        assertSame(expected, result.exception)
     }
 
     @Test
-    fun givenDowngradeError_whenClassifyingFailure_thenApplicationUpdateRequiredIsReturned() {
-        val result = IllegalStateException("Database downgrade is not supported")
-            .toUserStoragePreparationFailure()
+    fun givenUnknownDatabaseError_whenClassifyingFailure_thenOriginalExceptionIsRetained() {
+        val expected = IllegalStateException("file is not a database")
+        val result = expected.toUserStoragePreparationFailure()
 
-        assertEquals(UserStoragePreparationFailure.ApplicationUpdateRequired, result)
-    }
-
-    @Test
-    fun givenUnknownDatabaseError_whenClassifyingFailure_thenSupportRequiredIsReturned() {
-        val result = IllegalStateException("file is not a database")
-            .toUserStoragePreparationFailure()
-
-        assertEquals(UserStoragePreparationFailure.SupportRequired, result)
+        assertIs<UserStoragePreparationFailure.SupportRequired>(result)
+        assertSame(expected, result.exception)
     }
 
     private fun cleanup(vararg providers: UserStorageProvider) {
@@ -356,7 +365,7 @@ class UserStorageProviderTest {
         private val createCount: AtomicInteger,
         private val reportsMigration: Boolean = false,
         private val failuresRemaining: AtomicInteger = AtomicInteger(0),
-        private val failureMessage: String = "database is locked",
+        private val failure: IllegalStateException = IllegalStateException("database is locked"),
     ) : UserStorageProvider() {
 
         override fun create(
@@ -367,7 +376,7 @@ class UserStorageProviderTest {
         ): UserStorage {
             createCount.incrementAndGet()
             if (failuresRemaining.getAndUpdate { current -> (current - 1).coerceAtLeast(0) } > 0) {
-                error(failureMessage)
+                throw failure
             }
             val userIdEntity = UserIDEntity(userId.value, userId.domain)
             return UserStorage(inMemoryDatabase(userIdEntity, KaliumDispatcherImpl.io))

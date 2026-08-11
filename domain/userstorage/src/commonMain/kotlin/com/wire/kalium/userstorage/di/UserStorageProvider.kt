@@ -82,7 +82,7 @@ public abstract class UserStorageProvider {
             )
         ) {
             is UserStoragePreparationResult.Success -> result.storage
-            is UserStoragePreparationResult.Failure -> throw result.exception
+            is UserStoragePreparationResult.Failure -> throw result.failure.exception
         }
     }
 
@@ -151,7 +151,7 @@ public abstract class UserStorageProvider {
             if (failure.canRetry) {
                 session.preparation.compareAndSet(preparation, null)
             }
-            UserStoragePreparationResult.Failure(failure, exception)
+            UserStoragePreparationResult.Failure(failure)
         }
     }
 

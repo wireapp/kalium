@@ -23,10 +23,9 @@ public sealed interface UserStoragePreparationResult {
     /** Storage is open and ready to use. */
     public data class Success(public val storage: UserStorage) : UserStoragePreparationResult
 
-    /** Storage preparation stopped with [reason]. */
+    /** Storage preparation stopped with [failure]. */
     public class Failure internal constructor(
-        public val reason: UserStoragePreparationFailure,
-        internal val exception: Throwable,
+        public val failure: UserStoragePreparationFailure,
     ) : UserStoragePreparationResult
 }
 
@@ -44,23 +43,33 @@ public sealed interface UserStorageState {
     /** Storage is open and ready to use. */
     public data class Ready(public val storage: UserStorage) : UserStorageState
 
-    /** Storage preparation stopped with [reason]. */
-    public data class Failed(public val reason: UserStoragePreparationFailure) : UserStorageState
+    /** Storage preparation stopped with [failure]. */
+    public data class Failed(public val failure: UserStoragePreparationFailure) : UserStorageState
 }
 
-/** Storage-level reason why opening the user database failed. */
+/** Typed storage preparation failure that retains the original [exception]. */
 public sealed interface UserStoragePreparationFailure {
+    public val exception: Throwable
+
     /** The user must free storage before trying again. */
-    public data object InsufficientStorage : UserStoragePreparationFailure
+    public class InsufficientStorage internal constructor(
+        public override val exception: Throwable,
+    ) : UserStoragePreparationFailure
 
     /** The database is temporarily busy or locked and can be tried again. */
-    public data object TemporarilyUnavailable : UserStoragePreparationFailure
+    public class TemporarilyUnavailable internal constructor(
+        public override val exception: Throwable,
+    ) : UserStoragePreparationFailure
 
     /** This app version cannot safely open the database. */
-    public data object ApplicationUpdateRequired : UserStoragePreparationFailure
+    public class ApplicationUpdateRequired internal constructor(
+        public override val exception: Throwable,
+    ) : UserStoragePreparationFailure
 
     /** Automatic recovery is unsafe and the user needs support. */
-    public data object SupportRequired : UserStoragePreparationFailure
+    public class SupportRequired internal constructor(
+        public override val exception: Throwable,
+    ) : UserStoragePreparationFailure
 }
 
 internal val UserStoragePreparationFailure.canRetry: Boolean
@@ -76,19 +85,19 @@ internal fun Throwable.toUserStoragePreparationFailure(): UserStoragePreparation
     return when {
         messages.contains("database or disk is full") ||
             messages.contains("disk full") ||
-            messages.contains("sqlite_full") -> UserStoragePreparationFailure.InsufficientStorage
+            messages.contains("sqlite_full") -> UserStoragePreparationFailure.InsufficientStorage(this)
 
         messages.contains("database is busy") ||
             messages.contains("database is locked") ||
             messages.contains("sqlite_busy") ||
-            messages.contains("sqlite_locked") -> UserStoragePreparationFailure.TemporarilyUnavailable
+            messages.contains("sqlite_locked") -> UserStoragePreparationFailure.TemporarilyUnavailable(this)
 
         messages.contains("downgrade") ||
             messages.contains("newer database version") ||
             messages.contains("syntax error") ||
             messages.contains("no such table") ||
-            messages.contains("no such column") -> UserStoragePreparationFailure.ApplicationUpdateRequired
+            messages.contains("no such column") -> UserStoragePreparationFailure.ApplicationUpdateRequired(this)
 
-        else -> UserStoragePreparationFailure.SupportRequired
+        else -> UserStoragePreparationFailure.SupportRequired(this)
     }
 }
