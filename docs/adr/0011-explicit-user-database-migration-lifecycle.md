@@ -292,6 +292,45 @@ database or device-size buckets.
 An index migration must also include the query it improves, query-plan evidence, migration time,
 peak disk use, database growth, read improvement, and write cost on representative database sizes.
 
+## End-to-end preparation pipeline
+
+All database-dependent entry points converge on the same per-user preparation operation. The
+storage session owns the single in-flight attempt and publishes state for observers.
+
+```mermaid
+flowchart TD
+    UI_ENTRY["UI or app startup"] --> PREPARE["CoreLogic.prepareUserSession(userId)"]
+    APP_ENTRY["Service, receiver, or extension"] --> PREPARE
+    WM_ENTRY["Existing WorkManager job"] --> WRAPPER["WrapperWorker"]
+    WRAPPER --> PREPARE
+
+    PREPARE --> SCOPE_PROVIDER["UserSessionScopeProvider.prepare"]
+    SCOPE_PROVIDER --> STORAGE_PROVIDER["UserStorageProvider.prepare(userId)"]
+    STORAGE_PROVIDER --> USER_SESSION["Per-user UserStorageSession<br/>single in-flight attempt"]
+
+    USER_SESSION --> OPENING["OpeningDatabase"]
+    OPENING --> DATABASE["UserDatabaseBuilder.open"]
+    DATABASE -->|"schema is current"| READY["Ready"]
+    DATABASE -->|"migration callback"| MIGRATING["MigratingDatabase"]
+    MIGRATING -->|"migration commits"| READY
+    DATABASE -->|"open or migration error"| FAILURE["Classify failure"]
+
+    READY --> SESSION_SCOPE["UserSessionScope"]
+    SESSION_SCOPE --> CONSUMER["Database-dependent consumer"]
+    SESSION_SCOPE --> INNER_WORKER["Create and run inner WorkManager worker"]
+
+    USER_SESSION -.->|"state flow; observation does not start preparation"| OBSERVER["observeUserSessionPreparation(userId)"]
+    OBSERVER --> STATE_UI["Migration UI or state observer"]
+
+    FAILURE --> APP_FAILURE["UI, service, or receiver failure handling"]
+    FAILURE --> RETRY["Retry policy"]
+    RETRY --> PREPARE
+    FAILURE --> WORK_FAILURE["WorkManager retry or failure result"]
+```
+
+`WrapperWorker` is a preparation gate for existing background work; it is not a dedicated migration
+worker. Migration starts only when one of the entry points calls `prepareUserSession`.
+
 ## Consequences
 
 **Easier:**
