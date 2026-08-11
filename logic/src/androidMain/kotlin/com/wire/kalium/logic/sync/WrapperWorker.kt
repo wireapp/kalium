@@ -224,7 +224,7 @@ public class WrapperWorkerFactory(
         return runCatching {
             when (val preparation = coreLogic.prepareUserSession(validUserId)) {
                 is PrepareUserSessionResult.Success -> action(preparation.sessionScope)
-                is PrepareUserSessionResult.Failure -> PreparationFailureWorker(preparation.reason)
+                is PrepareUserSessionResult.Failure -> PreparationFailureWorker(preparation.failure)
             }
         }.getOrElse { error ->
             kaliumLogger.logStructuredJson(
@@ -395,13 +395,13 @@ private class MissingWorker(
 }
 
 private class PreparationFailureWorker(
-    private val reason: UserSessionPreparationFailure,
+    private val failure: UserSessionPreparationFailure,
 ) : DefaultWorker {
     override suspend fun doWork(): KaliumResult {
-        kaliumLogger.w("Skipping user worker because session preparation failed: $reason")
+        kaliumLogger.w("Skipping user worker because session preparation failed: ${failure::class.simpleName}")
         return if (
-            reason is UserSessionPreparationFailure.InsufficientStorage ||
-            reason is UserSessionPreparationFailure.TemporarilyUnavailable
+            failure is UserSessionPreparationFailure.InsufficientStorage ||
+            failure is UserSessionPreparationFailure.TemporarilyUnavailable
         ) {
             KaliumResult.Retry
         } else {
