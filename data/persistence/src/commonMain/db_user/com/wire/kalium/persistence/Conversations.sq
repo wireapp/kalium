@@ -302,6 +302,9 @@ WHERE type IN ('GROUP', 'CHANNEL', 'MEETING') AND protocol IS 'MIXED' AND team_i
 selectByQualifiedId:
 SELECT * FROM Conversation WHERE qualified_id = ? AND deleted_locally = 0;
 
+selectByQualifiedIds:
+SELECT * FROM Conversation WHERE qualified_id IN ?;
+
 selectConversationByQualifiedId:
 SELECT
     Conversation.*
@@ -429,7 +432,13 @@ updateConversationGroupIdAndProtocolInfo {
 -- @NotifyCustomKey conversation_list_membership
 -- @NotifyCustomKey Conversation
 UPDATE Conversation
-SET mls_group_id = :groupId, protocol = :protocol, mls_cipher_suite = :mls_cipher_suite
+SET mls_group_id = :groupId,
+    protocol = :protocol,
+    mls_cipher_suite = :mls_cipher_suite,
+    receipt_mode = CASE
+        WHEN :protocol = 'MLS' AND type != 'ONE_ON_ONE' THEN 'DISABLED'
+        ELSE receipt_mode
+    END
 WHERE qualified_id = :qualified_id AND
  protocol != :protocol;
 SELECT changes();

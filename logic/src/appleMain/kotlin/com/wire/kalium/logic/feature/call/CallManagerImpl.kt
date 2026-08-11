@@ -85,7 +85,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
@@ -133,7 +132,7 @@ internal class CallManagerImpl internal constructor(
     private val initializeServerTimeOffsetJob: Deferred<Unit> = scope.async(start = CoroutineStart.LAZY) {
         callRepository.fetchServerTime()?.let { serverTime ->
             callingLogger.d("$tagWithUserId: Computing server time offset: $serverTime")
-            serverTimeHandler.computeTimeOffset(Instant.parse(serverTime).epochSeconds)
+            serverTimeHandler.computeTimeOffset(serverTime.epochSeconds)
         } ?: callingLogger.w("$tagWithUserId: Failed to fetch server time for offset computation.")
     }
 
@@ -642,7 +641,7 @@ internal class CallManagerImpl internal constructor(
     private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean = when (callStatus) {
         CallStatus.MISSED -> true
         CallStatus.CLOSED -> callMetadata?.let { metadata ->
-            metadata.establishedTime.isNullOrEmpty() &&
+            metadata.establishedTime == null &&
                     metadata.callStatus != CallStatus.CLOSED_INTERNALLY &&
                     metadata.callStatus != CallStatus.REJECTED &&
                     metadata.callStatus != CallStatus.STARTED

@@ -20,6 +20,7 @@ package com.wire.kalium.cells.data.model
 import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.toDto
 import com.wire.kalium.cells.sdk.kmp.model.RestVersion
+import kotlinx.datetime.Instant
 
 internal fun RestVersion.toDto() = NodeVersionDTO(
     id = versionId,
@@ -46,7 +47,7 @@ internal fun NodeVersionDTO.toModel() = NodeVersion(
     editorUrls = editorUrls,
     filePreviews = filePreviews,
     isHead = isHead,
-    modifiedTime = modifiedTime,
+    modifiedTime = modifiedTime?.toLongOrNull()?.let { Instant.fromEpochSeconds(it) },
     ownerName = ownerName,
     ownerUuid = ownerUuid,
     getUrl = getUrl,

@@ -53,8 +53,7 @@ import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_REC
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
-import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import kotlinx.datetime.Instant
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
@@ -152,7 +151,6 @@ internal class EventMapper(
             id,
             eventContentDTO.qualifiedConversation.toModel(),
             eventContentDTO.qualifiedFrom.toModel(),
-            eventContentDTO.time,
             eventContentDTO.status.status.toModel()
         )
 
@@ -322,7 +320,6 @@ internal class EventMapper(
         eventContentDTO.qualifiedConversation.toModel(),
         eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.message,
-        timestampIso = eventContentDTO.time?.toIsoDateTimeString() ?: DateTimeUtil.currentIsoDateTimeString()
     )
 
     private fun newMessage(
@@ -473,7 +470,7 @@ internal class EventMapper(
                 Event.Conversation.MemberChanged.MemberChangedRole(
                     id = id,
                     conversationId = eventContentDTO.qualifiedConversation.toModel(),
-                    timestampIso = eventContentDTO.time,
+                    dateTime = Instant.parse(eventContentDTO.time),
                     member = Conversation.Member(
                         id = eventContentDTO.roleChange.qualifiedUserId.toModel(),
                         role = roleMapper.fromApi(eventContentDTO.roleChange.role.orEmpty())
@@ -485,8 +482,9 @@ internal class EventMapper(
                 Event.Conversation.MemberChanged.MemberMutedStatusChanged(
                     id = id,
                     conversationId = eventContentDTO.qualifiedConversation.toModel(),
-                    timestampIso = eventContentDTO.time,
-                    mutedConversationChangedTime = eventContentDTO.roleChange.mutedRef.orEmpty(),
+                    mutedConversationChangedTime = eventContentDTO.roleChange.mutedRef
+                        ?.let(Instant::parse)
+                        ?: Instant.parse(eventContentDTO.time),
                     mutedConversationStatus = mapConversationMutedStatus(eventContentDTO.roleChange.mutedStatus)
                 )
             }
@@ -495,8 +493,9 @@ internal class EventMapper(
                 Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
                     id = id,
                     conversationId = eventContentDTO.qualifiedConversation.toModel(),
-                    timestampIso = eventContentDTO.time,
-                    archivedConversationChangedTime = eventContentDTO.roleChange.archivedRef.orEmpty(),
+                    archivedConversationChangedTime = eventContentDTO.roleChange.archivedRef
+                        ?.let(Instant::parse)
+                        ?: Instant.parse(eventContentDTO.time),
                     isArchiving = eventContentDTO.roleChange.isArchiving ?: false
                 )
             }
@@ -597,6 +596,11 @@ internal class EventMapper(
             (featureConfigUpdatedDTO.data as FeatureConfigData.PreventAdminlessGroups).toModel()
         )
 
+        is FeatureConfigData.Meetings -> Event.FeatureConfig.MeetingsConfigUpdated(
+            id,
+            (featureConfigUpdatedDTO.data as FeatureConfigData.Meetings).toModel()
+        )
+
         // These features are NOT received through events. As FeatureConfig Events are deprecated
         is FeatureConfigData.ConsumableNotifications,
         is FeatureConfigData.Apps,
@@ -617,7 +621,7 @@ internal class EventMapper(
         id = id,
         conversationId = deletedConversationDTO.qualifiedConversation.toModel(),
         senderUserId = deletedConversationDTO.qualifiedFrom.toModel(),
-        timestampIso = deletedConversationDTO.time
+        dateTime = Instant.parse(deletedConversationDTO.time)
     )
 
     internal fun conversationRenamed(

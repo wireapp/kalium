@@ -24,8 +24,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.logger.logStructuredJson
-import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.network.CurrentNetwork
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
@@ -45,6 +43,8 @@ internal actual class NetworkStateObserverImpl(
     connectivityManager: ConnectivityManager,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : NetworkStateObserver {
+
+    private val logger = kaliumLogger.withTextTag(NetworkStateObserver.TAG)
 
     constructor(
         appContext: Context,
@@ -82,22 +82,26 @@ internal actual class NetworkStateObserverImpl(
                 networkCapabilities: NetworkCapabilities
             ) {
                 super.onCapabilitiesChanged(network, networkCapabilities)
-                val loggerMessage = mutableMapOf<String, String>().apply {
-                    put("internet", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).toString())
-                    put("validated", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED).toString())
-                    put("not restricted", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED).toString())
+                val networkState = networkCapabilities.toState()
+                val telemetry = mutableMapOf<String, Any?>().apply {
+                    put("networkId", network.networkHandle.toString())
+                    put("networkType", networkCapabilities.toCurrentNetworkType().name)
+                    put("networkState", networkState.telemetryName())
+                    put("internet", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
+                    put("validated", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
+                    put("notRestricted", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED))
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        put("foreground", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_FOREGROUND).toString())
-                        put("not congested", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_CONGESTED).toString())
-                        put("not suspended", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED).toString())
+                        put("foreground", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_FOREGROUND))
+                        put("notCongested", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_CONGESTED))
+                        put("notSuspended", networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED))
                     }
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        put("signalStrength", networkCapabilities.signalStrength.toString())
+                        put("signalStrength", networkCapabilities.signalStrength)
                     }
                 }
-                kaliumLogger.logStructuredJson(KaliumLogLevel.INFO, "${NetworkStateObserver.TAG} capabilities changed", loggerMessage)
+                logger.logNetworkTelemetry(NetworkTelemetryEvent.NETWORK_CAPABILITIES_CHANGED, data = telemetry)
                 defaultNetworkDataStateFlow.update {
                     DefaultNetworkData.Connected(
                         network,
@@ -107,32 +111,47 @@ internal actual class NetworkStateObserverImpl(
             }
 
             override fun onLost(network: Network) {
-                kaliumLogger.i("${NetworkStateObserver.TAG} lost connection")
                 defaultNetworkDataStateFlow.update { DefaultNetworkData.NotConnected }
+                logNetworkEvent(
+                    event = NetworkTelemetryEvent.NETWORK_LOST,
+                    network = network,
+                    networkState = NetworkState.NotConnected,
+                )
                 super.onLost(network)
             }
 
             override fun onUnavailable() {
-                kaliumLogger.i("${NetworkStateObserver.TAG} connection unavailable")
                 defaultNetworkDataStateFlow.update { DefaultNetworkData.NotConnected }
+                logNetworkEvent(
+                    event = NetworkTelemetryEvent.NETWORK_UNAVAILABLE,
+                    networkState = NetworkState.NotConnected,
+                )
                 super.onUnavailable()
             }
 
             override fun onAvailable(network: Network) {
-                kaliumLogger.i("${NetworkStateObserver.TAG} connection available")
                 defaultNetworkDataStateFlow.update { DefaultNetworkData.Connected(network) }
+                logNetworkEvent(
+                    event = NetworkTelemetryEvent.NETWORK_AVAILABLE,
+                    network = network,
+                    networkState = NetworkState.ConnectedWithoutInternet,
+                )
                 super.onAvailable(network)
             }
 
             override fun onLosing(network: Network, maxMsToLive: Int) {
-                kaliumLogger.i("${NetworkStateObserver.TAG} losing connection maxMsToLive: $maxMsToLive")
+                logNetworkEvent(
+                    event = NetworkTelemetryEvent.NETWORK_LOSING,
+                    network = network,
+                    networkState = defaultNetworkDataStateFlow.value.toState(),
+                    data = mapOf("maxMsToLive" to maxMsToLive),
+                )
                 super.onLosing(network, maxMsToLive)
             }
 
             override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
-                kaliumLogger.i("${NetworkStateObserver.TAG} block connection changed to $blocked")
                 defaultNetworkDataStateFlow.update {
-                    val updatedValue = when (it) {
+                    when (it) {
                         is DefaultNetworkData.Connected -> {
                             it.copy(isBlocked = blocked)
                         }
@@ -142,13 +161,33 @@ internal actual class NetworkStateObserverImpl(
                             else DefaultNetworkData.Connected(network)
                         }
                     }
-                    kaliumLogger.d("${NetworkStateObserver.TAG} default network state $it changed to $updatedValue")
-                    updatedValue
                 }
+                logNetworkEvent(
+                    event = NetworkTelemetryEvent.NETWORK_BLOCKED_STATUS_CHANGED,
+                    network = network,
+                    networkState = defaultNetworkDataStateFlow.value.toState(),
+                    data = mapOf("blocked" to blocked),
+                )
                 super.onBlockedStatusChanged(network, blocked)
             }
         }
         connectivityManager.registerDefaultNetworkCallback(callback)
+    }
+
+    private fun logNetworkEvent(
+        event: NetworkTelemetryEvent,
+        networkState: NetworkState,
+        network: Network? = null,
+        data: Map<String, Any?> = emptyMap(),
+    ) {
+        logger.logNetworkTelemetry(
+            event = event,
+            data = buildMap {
+                network?.networkHandle?.toString()?.let { put("networkId", it) }
+                put("networkState", networkState.telemetryName())
+                putAll(data)
+            }
+        )
     }
 
     private fun NetworkCapabilities?.hasInternetValidated(): Boolean {
@@ -198,4 +237,5 @@ internal actual class NetworkStateObserverImpl(
             val isBlocked: Boolean = false
         ) : DefaultNetworkData()
     }
+
 }

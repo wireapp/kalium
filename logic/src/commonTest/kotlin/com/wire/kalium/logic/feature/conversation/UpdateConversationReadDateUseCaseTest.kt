@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.InstantConversationWorkQueue
@@ -31,6 +33,7 @@ import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
@@ -80,6 +83,38 @@ class UpdateConversationReadDateUseCaseTest {
         }
         verifySuspend(VerifyMode.not) {
             arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenLastReadWasAlreadyPersistedLocally_whenQueuedWorkRuns_thenShouldSyncOtherSelfClients() = runTest {
+        val lastRead = Clock.System.now()
+        val conversationId = TestConversation.CONVERSATION.id
+        val (arrangement, updateConversationReadDateUseCase) = arrange {
+            withObserveByIdReturning(
+                TestConversation.CONVERSATION.copy(lastReadDate = lastRead)
+            )
+        }
+
+        updateConversationReadDateUseCase(conversationId, lastRead)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.sendConfirmation(any(), any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.updateConversationReadDate(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(
+                message = matching { message ->
+                    val content = message.content
+                    assertIs<MessageContent.LastRead>(content)
+                    assertEquals(conversationId, content.conversationId)
+                    assertEquals(lastRead, content.time)
+                    true
+                },
+                messageTarget = any()
+            )
         }
     }
 
@@ -162,6 +197,46 @@ class UpdateConversationReadDateUseCaseTest {
                     assertIs<MessageTarget.Conversation>(target)
                     true
                 }
+            )
+        }
+    }
+
+    @Test
+    fun givenMLSGroupConversation_whenUpdatingLastRead_thenShouldPersistAndSyncWithoutSendingReceipt() = runTest {
+        val persistedLastRead = Clock.System.now()
+        val newLastRead = persistedLastRead + 1.seconds
+        val conversation = TestConversation.MLS_CONVERSATION.copy(
+            type = Conversation.Type.Group.Regular,
+            lastReadDate = persistedLastRead
+        )
+        val (arrangement, updateConversationReadDateUseCase) = arrange {
+            withObserveByIdReturning(conversation)
+            withRealSendConfirmation(conversation)
+        }
+
+        updateConversationReadDateUseCase(conversation.id, newLastRead)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.updateConversationReadDate(eq(conversation.id), eq(newLastRead))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(
+                message = matching { it.content is MessageContent.LastRead },
+                messageTarget = any()
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSender.sendMessage(
+                message = matching { it.content is MessageContent.Receipt },
+                messageTarget = any()
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.receiptMessageRepository.getPendingConfirmationMessagesByConversationAfterDate(
+                any(),
+                any(),
+                any(),
+                any()
             )
         }
     }
@@ -262,7 +337,10 @@ class UpdateConversationReadDateUseCaseTest {
         val selfConversationIdProvider = mock<SelfConversationIdProvider>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
-        val sendConfirmation = mock<SendConfirmationUseCase>(mode = MockMode.autoUnit)
+        val receiptMessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
+        private val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
+        private val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
+        var sendConfirmation: SendConfirmationUseCase = mock<SendConfirmationUseCase>(mode = MockMode.autoUnit)
         val persistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
 
         var workQueue: ConversationWorkQueue = InstantConversationWorkQueue()
@@ -296,6 +374,21 @@ class UpdateConversationReadDateUseCaseTest {
             everySuspend {
                 conversationRepository.observeConversationById(eq(conversation.id))
             } returns flowOf(Either.Right(conversation))
+        }
+
+        suspend fun withRealSendConfirmation(conversation: Conversation) {
+            everySuspend {
+                conversationRepository.getConversationById(eq(conversation.id))
+            } returns Either.Right(conversation)
+            sendConfirmation = SendConfirmationUseCase(
+                currentClientIdProvider = { Either.Right(currentClientId) },
+                syncManager = syncManager,
+                messageSender = messageSender,
+                selfUserId = selfUserID,
+                conversationRepository = conversationRepository,
+                messageRepository = receiptMessageRepository,
+                userPropertyRepository = userPropertyRepository
+            )
         }
 
         suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) {

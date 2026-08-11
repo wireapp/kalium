@@ -1,26 +1,72 @@
 name: Setup Java and Gradle
-description: Setup java and gradle with cache for jobs
+description: Set up Java and trusted Gradle caching for CI jobs
+
 inputs:
   enable-kvm:
-    description: 'Whether to enable KVM'
+    description: Whether to enable KVM on Linux
     required: false
-    default: false
+    default: "false"
+
 runs:
   using: composite
   steps:
-    - name: Set up JDK
-      uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9
+    - name: Set up JDK 21
+      uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
       with:
-        java-version: '21'
-        distribution: 'temurin'
+        java-version: "21"
+        distribution: temurin
 
-    - name: Gradle Cache
-      uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
+    - name: Resolve Gradle cache policy
+      id: cache_policy
+      shell: bash
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        REF: ${{ github.ref }}
+        REPOSITORY: ${{ github.repository }}
+        PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+        PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        MERGE_GROUP_BASE_REF: ${{ github.event.merge_group.base_ref }}
+      run: |
+        enabled=false
+        read_only=false
 
-    - name: Validate Gradle wrapper
-      uses: gradle/actions/wrapper-validation@6cfc8b8e8bb586cc164bef1c478c1eea3a4d6a19
+        # Only the trusted develop lifecycle can restore or save Gradle state.
+        if [[ "${EVENT_NAME}" == "push" && "${REF}" == "refs/heads/develop" ]]; then
+          enabled=true
+        elif [[ "${EVENT_NAME}" == "pull_request" &&
+                "${PR_BASE_REF}" == "develop" &&
+                "${PR_HEAD_REPOSITORY}" == "${REPOSITORY}" ]]; then
+          enabled=true
+        elif [[ "${EVENT_NAME}" == "merge_group" &&
+                "${MERGE_GROUP_BASE_REF}" == "refs/heads/develop" ]]; then
+          enabled=true
+          read_only=true
+        fi
 
-    - name: Enable KVM (Linux only)
+        echo "enabled=${enabled}" >> "$GITHUB_OUTPUT"
+        echo "read_only=${read_only}" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+      with:
+        # Basic caching uses the MIT-licensed provider backed by GitHub's
+        # ref-scoped Actions cache.
+        cache-provider: basic
+        cache-disabled: ${{ steps.cache_policy.outputs.enabled != 'true' }}
+        cache-read-only: ${{ steps.cache_policy.outputs.read_only == 'true' }}
+
+    - name: Enable Gradle build cache
+      if: ${{ steps.cache_policy.outputs.enabled == 'true' }}
+      shell: bash
+      run: | # zizmor: ignore[github-env] line breaks are rejected before the trusted value is preserved.
+        if [[ "${GRADLE_OPTS-}" == *$'\n'* || "${GRADLE_OPTS-}" == *$'\r'* ]]; then
+          echo "::error::GRADLE_OPTS must not contain line breaks"
+          exit 1
+        fi
+        gradle_opts="${GRADLE_OPTS:+${GRADLE_OPTS} }-Dorg.gradle.caching=true"
+        printf 'GRADLE_OPTS=%s\n' "${gradle_opts}" >> "$GITHUB_ENV"
+
+    - name: Enable KVM
       if: ${{ inputs.enable-kvm == 'true' && runner.os == 'Linux' }}
       shell: bash
       run: |

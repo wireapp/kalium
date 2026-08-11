@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync
 
 import android.content.Context
+import android.content.Intent
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -31,6 +32,7 @@ import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorker
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
@@ -87,15 +89,20 @@ internal actual open class UserSessionWorkSchedulerImpl(
     val userId: UserId get() = scope.userId
 
     actual override fun scheduleSendingOfPendingMessages() {
-        WorkManager.getInstance(appContext).enqueueUniqueWork(
-            PendingMessagesSenderWorker.NAME_PREFIX + userId.value,
-            ExistingWorkPolicy.APPEND,
-            buildConnectedOneTimeWorkRequest(PendingMessagesSenderWorker::class, userId)
-        )
+        notifyPendingMessagesForegroundSync(PendingMessagesForegroundSync.ACTION_SENDING_OF_PENDING_MESSAGES_SCHEDULED)
     }
 
     actual override fun cancelScheduledSendingOfPendingMessages() {
-        WorkManager.getInstance(appContext).cancelUniqueWork(PendingMessagesSenderWorker.NAME_PREFIX + userId.value)
+        notifyPendingMessagesForegroundSync(PendingMessagesForegroundSync.ACTION_SENDING_OF_PENDING_MESSAGES_CANCELLED)
+    }
+
+    private fun notifyPendingMessagesForegroundSync(action: String) {
+        appContext.sendBroadcast(
+            Intent(action)
+                .setPackage(appContext.packageName)
+                .putExtra(PendingMessagesForegroundSync.EXTRA_USER_ID_VALUE, userId.value)
+                .putExtra(PendingMessagesForegroundSync.EXTRA_USER_ID_DOMAIN, userId.domain)
+        )
     }
 
     actual override fun schedulePeriodicUserConfigSync() {
@@ -143,6 +150,14 @@ internal actual open class UserSessionWorkSchedulerImpl(
             )
         }
     }
+
+    actual override fun schedulePeriodicMeetingOccurrencesSync() {
+        WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
+            MeetingOccurrencesSyncWorker.NAME + userId.value + "-periodic",
+            ExistingPeriodicWorkPolicy.KEEP,
+            buildConnectedPeriodicWorkRequest(MeetingOccurrencesSyncWorker::class, userId)
+        )
+    }
 }
 
 private fun buildConnectedPeriodicWorkRequest(
@@ -179,21 +194,6 @@ private fun buildConnectedPeriodicWorkRequest(
         .let {
             if (resetBackoff) it.setNextScheduleTimeOverride(System.currentTimeMillis()) else it.clearNextScheduleTimeOverride()
         }
-        .build()
-}
-
-private fun buildConnectedOneTimeWorkRequest(
-    worker: KClass<out DefaultWorker>,
-    userId: UserId? = null
-): OneTimeWorkRequest {
-    val inputData = WrapperWorkerFactory.workData(worker, userId)
-    val connectedConstraint = Constraints.Builder()
-        .setRequiredNetworkType(NetworkType.CONNECTED)
-        .build()
-    return OneTimeWorkRequest.Builder(workerClass)
-        .setConstraints(connectedConstraint)
-        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-        .setInputData(inputData)
         .build()
 }
 

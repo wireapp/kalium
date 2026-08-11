@@ -222,7 +222,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusRemotely(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            DateTimeUtil.currentInstant().toEpochMilliseconds()
+            DateTimeUtil.currentInstant()
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -244,7 +244,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateArchivedStatusRemotely(
             TestConversation.ID,
             isArchived,
-            DateTimeUtil.currentInstant().toEpochMilliseconds()
+            DateTimeUtil.currentInstant()
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -265,7 +265,7 @@ class ConversationRepositoryTest {
         conversationRepository.updateMutedStatusLocally(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
-            DateTimeUtil.currentInstant().toEpochMilliseconds()
+            DateTimeUtil.currentInstant()
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -1597,7 +1597,6 @@ class ConversationRepositoryTest {
             id = "some_id",
             conversationId = CONVERSATION_ENTITY_ID,
             content = MessagePreviewEntityContent.Text("sender", "Hey"),
-            date = "2022-03-30T15:36:00.000Z",
             visibility = MessageEntity.Visibility.VISIBLE,
             isSelfMessage = false,
             senderUserId = USER_ENTITY_ID

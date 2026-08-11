@@ -71,8 +71,6 @@ internal interface ClientRepository {
     suspend fun retainedClientId(): Either<CoreFailure, ClientId>
     suspend fun clearRetainedClientId(): Either<CoreFailure, Unit>
     suspend fun clearClientHasConsumableNotifications(): Either<CoreFailure, Unit>
-    suspend fun setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit>
-    suspend fun shouldUpdateClientConsumableNotificationsCapability(): Boolean
     suspend fun observeClientHasConsumableNotifications(): Flow<Boolean>
     suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
@@ -157,15 +155,6 @@ internal class ClientDataSource(
         wrapStorageRequest {
             clientRegistrationStorage.clearClientHasConsumableNotifications()
         }
-
-    override suspend fun setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            clientRegistrationStorage.setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate)
-        }
-
-    override suspend fun shouldUpdateClientConsumableNotificationsCapability(): Boolean {
-        return clientRegistrationStorage.shouldUpdateClientConsumableNotificationsCapability()
-    }
 
     override suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.clearHasRegisteredMLSClient() }

@@ -22,6 +22,7 @@ import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
+import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncScheduler
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
@@ -35,7 +36,8 @@ internal interface GlobalWorkScheduler : UpdateApiVersionsScheduler {
     val scope: GlobalKaliumScope
 }
 
-internal interface UserSessionWorkScheduler : MessageSendingScheduler, UserConfigSyncScheduler, AudioNormalizedLoudnessScheduler {
+internal interface UserSessionWorkScheduler :
+    MessageSendingScheduler, UserConfigSyncScheduler, AudioNormalizedLoudnessScheduler, MeetingOccurrencesSyncScheduler {
     val scope: UserSessionScope
 }
 
@@ -43,11 +45,13 @@ internal expect class WorkSchedulerProviderImpl : WorkSchedulerProvider {
     override fun globalWorkScheduler(scope: GlobalKaliumScope): GlobalWorkScheduler
     override fun userSessionWorkScheduler(scope: UserSessionScope): UserSessionWorkScheduler
 }
+
 internal expect class GlobalWorkSchedulerImpl : GlobalWorkScheduler {
     override val scope: GlobalKaliumScope
     override fun schedulePeriodicApiVersionUpdate()
     override fun scheduleImmediateApiVersionUpdate()
 }
+
 internal expect class UserSessionWorkSchedulerImpl : UserSessionWorkScheduler {
     override val scope: UserSessionScope
     override fun scheduleSendingOfPendingMessages()
@@ -55,4 +59,5 @@ internal expect class UserSessionWorkSchedulerImpl : UserSessionWorkScheduler {
     override fun schedulePeriodicUserConfigSync()
     override fun resetBackoffForPeriodicUserConfigSync()
     override fun scheduleBuildingAudioNormalizedLoudness(conversationId: ConversationId, messageId: String)
+    override fun schedulePeriodicMeetingOccurrencesSync()
 }

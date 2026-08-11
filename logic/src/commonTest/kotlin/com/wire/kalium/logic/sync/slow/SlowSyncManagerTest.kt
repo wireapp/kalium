@@ -23,11 +23,11 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
+import com.wire.kalium.logic.fakes.network.FakeNetworkStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.network.NetworkState
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -42,6 +42,8 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -52,10 +54,13 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import okio.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -63,6 +68,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 
@@ -363,9 +369,53 @@ class SlowSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
+        verify(VerifyMode.exactly(2)) {
+            arrangement.exponentialDurationHelper.reset()
+        }
+    }
+
+    @Test
+    fun whenResettingRetryBackoff_thenShouldResetExponentialDuration() = runTest {
+        val (arrangement, slowSyncManager) = Arrangement().arrange()
+
+        slowSyncManager.resetRetryBackoff()
+
         verify(VerifyMode.exactly(1)) {
             arrangement.exponentialDurationHelper.reset()
         }
+    }
+
+    @Test
+    fun givenBackoffHasGrown_whenResettingDuringSyncAndNextAttemptFails_thenShouldUseMinimumDelay() = runTest {
+        val failureSignal = CompletableDeferred<Unit>()
+        val exponentialDurationHelper = ExponentialDurationHelper(1.seconds, 10.minutes)
+        val workerFlow = flow<SlowSyncStep> {
+            failureSignal.await()
+            throw IOException("Connection failed")
+        }
+        val (arrangement, slowSyncManager) = Arrangement(
+            exponentialDurationHelper = exponentialDurationHelper,
+            configureDefaultExponentialDuration = false,
+        ).arrange {
+            withSatisfiedCriteria()
+            withSlowSyncWorkerReturning(workerFlow)
+            withIgnoringFailureRecovery()
+        }
+        val syncJob = slowSyncManager.performSyncFlow().launchIn(backgroundScope)
+        runCurrent()
+        exponentialDurationHelper.next()
+        exponentialDurationHelper.next()
+
+        slowSyncManager.resetRetryBackoff()
+        failureSignal.complete(Unit)
+        runCurrent()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.slowSyncRepository.updateSlowSyncStatus(
+                matches<SlowSyncStatus> { it is SlowSyncStatus.Failed && it.retryDelay == 1.seconds }
+            )
+        }
+        syncJob.cancel()
     }
 
     @Test
@@ -387,14 +437,51 @@ class SlowSyncManagerTest {
         }
     }
 
-    private class Arrangement {
+    @Test
+    fun givenSlowSyncIsBackingOff_whenNetworkReconnects_thenShouldResetDelayAndRetryImmediately() = runTest {
+        val reconnectResult = CompletableDeferred<Boolean>()
+        val exponentialDurationHelper = RecordingExponentialDurationHelper(10.minutes)
+        var attempts = 0
+        val workerFlow = flow<SlowSyncStep> {
+            attempts++
+            throw IOException("Network unavailable")
+        }
+        val (arrangement, slowSyncManager) = Arrangement(
+            exponentialDurationHelper = exponentialDurationHelper,
+            configureDefaultExponentialDuration = false,
+        ).arrange {
+            withSatisfiedCriteria()
+            withSlowSyncWorkerReturning(workerFlow)
+            withRecoveringFromFailure()
+            withReconnectWaitOverride {
+                if (attempts == 1) reconnectResult.await() else awaitCancellation()
+            }
+        }
+
+        val syncJob = slowSyncManager.performSyncFlow().launchIn(backgroundScope)
+        runCurrent()
+        assertEquals(1, attempts)
+        assertEquals(1, arrangement.networkStateObserver.reconnectWaitCallCount)
+        assertEquals(1, exponentialDurationHelper.resetCount)
+
+        reconnectResult.complete(true)
+        runCurrent()
+
+        assertEquals(2, attempts)
+        assertEquals(2, arrangement.networkStateObserver.reconnectWaitCallCount)
+        assertEquals(2, exponentialDurationHelper.resetCount)
+        syncJob.cancel()
+    }
+
+    private class Arrangement(
+        val exponentialDurationHelper: ExponentialDurationHelper = mock(mode = MockMode.autoUnit),
+        private val configureDefaultExponentialDuration: Boolean = true,
+    ) {
         val slowSyncCriteriaProvider: SlowSyncCriteriaProvider = mock()
         val slowSyncRepository: SlowSyncRepository = mock(mode = MockMode.autoUnit)
         val slowSyncWorker: SlowSyncWorker = mock()
         val slowSyncRecoveryHandler: SlowSyncRecoveryHandler = mock()
-        val networkStateObserver: NetworkStateObserver = mock(mode = MockMode.autoUnit)
-        val exponentialDurationHelper: ExponentialDurationHelper =
-            mock(mode = MockMode.autoUnit)
+        val networkStateObserver = FakeNetworkStateObserver()
         val syncMigrationStepsProvider: SyncMigrationStepsProvider = mock()
 
 
@@ -431,10 +518,18 @@ class SlowSyncManagerTest {
             }
         }
 
+        suspend fun withIgnoringFailureRecovery() = apply {
+            everySuspend {
+                slowSyncRecoveryHandler.recover(any(), any())
+            } returns Unit
+        }
+
         fun withNetworkState(networkStateFlow: StateFlow<NetworkState>) = apply {
-            every {
-                networkStateObserver.observeNetworkState()
-            } returns networkStateFlow
+            networkStateObserver.networkStateFlow = networkStateFlow
+        }
+
+        fun withReconnectWaitOverride(override: suspend (Duration) -> Boolean) = apply {
+            networkStateObserver.reconnectWaitOverride = override
         }
 
         fun withNextExponentialDuration(duration: Duration) = apply {
@@ -475,7 +570,9 @@ class SlowSyncManagerTest {
         suspend fun arrange(block: suspend Arrangement.() -> Unit = { }) = run {
             withLastSlowSyncPerformedAt(flowOf(null))
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
-            withNextExponentialDuration(1.seconds)
+            if (configureDefaultExponentialDuration) {
+                withNextExponentialDuration(1.seconds)
+            }
             withLastSlowSyncPerformedOnANewVersion()
             apply {
                 everySuspend {
@@ -485,5 +582,19 @@ class SlowSyncManagerTest {
             block()
             this to slowSyncManager
         }
+    }
+
+    private class RecordingExponentialDurationHelper(
+        private val duration: Duration,
+    ) : ExponentialDurationHelper {
+
+        var resetCount: Int = 0
+            private set
+
+        override fun reset() {
+            resetCount++
+        }
+
+        override fun next(): Duration = duration
     }
 }

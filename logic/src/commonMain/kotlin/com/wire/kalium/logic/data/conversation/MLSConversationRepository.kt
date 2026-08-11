@@ -41,6 +41,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.cryptography.MLSDecryptResult
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.client.toDao
@@ -348,14 +349,19 @@ internal class MLSConversationDataSource(
                 idMapper.toCryptoModel(groupID),
                 message
             )
-                .let { messages ->
-                    messages.map {
+        }.flatMap { result ->
+            when (result) {
+                MLSDecryptResult.BufferedFutureMessage -> Left(MLSFailure.BufferedFutureMessage)
+                MLSDecryptResult.BufferedCommit -> Left(MLSFailure.BufferedCommit)
+                is MLSDecryptResult.Success -> wrapMLSRequest {
+                    result.messages.map {
                         it.crlNewDistributionPoints?.let { newDistributionPoints ->
                             checkRevocationList(mlsContext, newDistributionPoints)
                         }
                         it.toModel(groupID)
                     }
                 }
+            }
         }
     }
 
@@ -487,18 +493,18 @@ internal class MLSConversationDataSource(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID,
         userIdList: List<UserId>,
-        cipherSuite: CipherSuite
-    ): Either<CoreFailure, Unit> =
+        cipherSuite: CipherSuite,
+        allowPartialMemberList: Boolean,
+    ): Either<CoreFailure, MLSAdditionResult> =
         internalAddMemberToMLSGroup(
             mlsContext = mlsContext,
             groupID = groupID,
             userIdList = userIdList,
             retryOnStaleMessage = true,
             retryOnMissingUsers = true,
-            allowPartialMemberList = false,
+            allowPartialMemberList = allowPartialMemberList,
             cipherSuite = cipherSuite
         )
-            .map { }
 
     private suspend fun internalAddMemberToMLSGroup(
         mlsContext: MlsCoreCryptoContext,

@@ -47,6 +47,7 @@ internal interface CellsRepository {
             criteria = SortingCriteria.FOLDERS_FIRST_THEN_ALPHABETICAL,
             descending = true
         ),
+        isRecursive: Boolean = false
     ): Either<NetworkFailure, PaginatedList<CellNode>>
 
     suspend fun getNodesByPath(

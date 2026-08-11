@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
@@ -94,8 +94,8 @@ class SelfClientsUseCaseTest {
     private companion object {
         val CLIENT = TestClient.CLIENT
         val CLIENTS_LIST = listOf(
-            CLIENT.copy(id = PlainId(value = "client_id_1")),
-            CLIENT.copy(id = PlainId(value = "client_id_2"))
+            CLIENT.copy(id = ClientId(value = "client_id_1")),
+            CLIENT.copy(id = ClientId(value = "client_id_2"))
         )
     }
 

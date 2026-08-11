@@ -38,7 +38,7 @@ import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
@@ -86,6 +86,16 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun getConversationById(
         qualifiedID: QualifiedIDEntity
     ): ConversationEntity? = observeConversationById(qualifiedID).first()
+
+    override suspend fun getConversationsByIds(
+        qualifiedIDs: List<QualifiedIDEntity>
+    ): List<ConversationEntity> = withContext(readDispatcher.value) {
+        if (qualifiedIDs.isEmpty()) {
+            emptyList()
+        } else {
+            conversationQueries.selectByQualifiedIds(qualifiedIDs, conversationMapper::fromViewToModel).awaitAsList()
+        }
+    }
 
     override suspend fun getNonDeletedConversationById(
         qualifiedID: QualifiedIDEntity
@@ -349,6 +359,7 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(readDispatcher.value)
     }
 
+    @DebugKaliumApi("Legacy conversation-list query retained for tests and performance benchmarks.")
     override fun getAllConversationDetailsWithEvents(
         fromArchive: Boolean,
         onlyInteractionEnabled: Boolean,
@@ -447,12 +458,12 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
-        mutedStatusTimestamp: Long
+        mutedStatusTimestamp: Instant
     ) {
         withContext(writeDispatcher.value) {
             conversationQueries.updateConversationMutingStatus(
                 mutedStatus,
-                mutedStatusTimestamp,
+                mutedStatusTimestamp.toEpochMilliseconds(),
                 conversationId
             )
         }
@@ -461,12 +472,12 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateConversationArchivedStatus(
         conversationId: QualifiedIDEntity,
         isArchived: Boolean,
-        archivedStatusTimestamp: Long
+        archivedStatusTimestamp: Instant
     ) {
         withContext(writeDispatcher.value) {
             conversationQueries.updateConversationArchivingStatus(
                 isArchived,
-                Instant.parse(archivedStatusTimestamp.toIsoDateTimeString()),
+                archivedStatusTimestamp,
                 conversationId
             )
         }

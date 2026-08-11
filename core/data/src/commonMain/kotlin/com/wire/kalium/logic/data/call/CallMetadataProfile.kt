@@ -42,7 +42,7 @@ data class CallMetadata(
     val conversationType: Conversation.Type,
     val callerName: String?,
     val callerTeamName: String?,
-    val establishedTime: String? = null,
+    val establishedTime: Instant? = null,
     val callStatus: CallStatus,
     val participants: List<ParticipantMinimized> = emptyList(),
     val maxParticipants: Int = 0, // Was used for tracking

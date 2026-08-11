@@ -96,7 +96,6 @@ internal interface RegisterClientUseCase {
 
 @Suppress("LongParameterList")
 internal class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constructor(
-    private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
@@ -129,7 +128,7 @@ internal class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) intern
                 kaliumLogger.withTextTag(TAG).e("There was an error while registering the client $error")
                 RegisterClientResult.Failure.Generic(error)
             }, { registerClientParam ->
-                val params = registerClientParam.withConsumableNotificationCapabilityWhenAllowed()
+                val params = registerClientParam.withSupportedCapabilities()
                 clientRepository.registerClient(params)
                     // todo? separate this in mls client usesCase register! separate everything
                     .flatMap { registeredClient ->
@@ -154,19 +153,12 @@ internal class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) intern
     }
 
     /**
-     * Depending if the build is able to use async notifications and the BE allows it, then add the capability for
-     * [ClientCapability.ConsumableNotifications] otherwise fallback to the current behavior,
-     * just with the [ClientCapability.LegalHoldImplicitConsent] capability.
-     *
-     * When ACK is stable from BE perspective, this can be later moved to the API level, like it was before this change.
+     * Ensure the always-supported client capabilities are present on registration.
      */
-    private suspend fun RegisterClientParameters.withConsumableNotificationCapabilityWhenAllowed(): RegisterClientParameters {
+    private fun RegisterClientParameters.withSupportedCapabilities(): RegisterClientParameters {
         return this.copy(
             capabilities = capabilities.orEmpty().toMutableSet().apply {
                 add(ClientCapability.LegalHoldImplicitConsent)
-                if (isAllowedToUseAsyncNotifications()) {
-                    add(ClientCapability.ConsumableNotifications)
-                }
             }.toList()
         )
     }

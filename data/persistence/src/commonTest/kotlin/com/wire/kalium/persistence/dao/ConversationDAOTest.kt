@@ -382,7 +382,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.updateConversationMutedStatus(
             conversationId = conversationEntity3.id,
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
-            mutedStatusTimestamp = 1649702788L
+            mutedStatusTimestamp = Instant.fromEpochMilliseconds(1649702788L)
         )
 
         val result = conversationDAO.getConversationDetailsById(conversationEntity3.id)
@@ -597,7 +597,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenNewValue_whenUpdatingProtocol_thenItsUpdatedAndReportedAsChanged() = runTest(dispatcher) {
-        val conversation = conversationEntity5
+        val conversation = conversationEntity5.copy(receiptMode = ConversationEntity.ReceiptMode.ENABLED)
         val groupId = "groupId"
         val updatedCipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
         val updatedProtocol = ConversationEntity.Protocol.MLS
@@ -610,6 +610,49 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(conversationDAO.getConversationDetailsById(conversation.id)?.protocol, updatedProtocol)
         assertEquals(conversationDAO.getConversationDetailsById(conversation.id)?.mlsGroupId, groupId)
         assertEquals(conversationDAO.getConversationDetailsById(conversation.id)?.mlsCipherSuite, updatedCipherSuite)
+        assertEquals(
+            ConversationEntity.ReceiptMode.DISABLED,
+            conversationDAO.getConversationDetailsById(conversation.id)?.receiptMode
+        )
+    }
+
+    @Test
+    fun givenReadReceiptsEnabled_whenUpdatingProtocolToMixed_thenReadReceiptsRemainEnabled() = runTest(dispatcher) {
+        val conversation = conversationEntity5.copy(receiptMode = ConversationEntity.ReceiptMode.ENABLED)
+
+        conversationDAO.insertConversation(conversation)
+        conversationDAO.updateConversationProtocolAndCipherSuite(
+            conversation.id,
+            groupID = "groupId",
+            protocol = ConversationEntity.Protocol.MIXED,
+            cipherSuite = ConversationEntity.CipherSuite.UNKNOWN
+        )
+
+        assertEquals(
+            ConversationEntity.ReceiptMode.ENABLED,
+            conversationDAO.getConversationDetailsById(conversation.id)?.receiptMode
+        )
+    }
+
+    @Test
+    fun givenOneOnOneConversation_whenUpdatingProtocolToMLS_thenReadReceiptsRemainEnabled() = runTest(dispatcher) {
+        val conversation = conversationEntity5.copy(
+            type = ConversationEntity.Type.ONE_ON_ONE,
+            receiptMode = ConversationEntity.ReceiptMode.ENABLED
+        )
+
+        conversationDAO.insertConversation(conversation)
+        conversationDAO.updateConversationProtocolAndCipherSuite(
+            conversation.id,
+            groupID = "groupId",
+            protocol = ConversationEntity.Protocol.MLS,
+            cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
+        )
+
+        assertEquals(
+            ConversationEntity.ReceiptMode.ENABLED,
+            conversationDAO.getConversationDetailsById(conversation.id)?.receiptMode
+        )
     }
 
     @Test
@@ -1603,6 +1646,36 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenOneOnOneWithOngoingCall_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
+        val newerConversation = conversationEntity1.copy(
+            lastModifiedDate = Instant.fromEpochMilliseconds(2)
+        )
+        val olderConversationWithCall = conversationEntity2.copy(
+            lastModifiedDate = Instant.fromEpochMilliseconds(1)
+        )
+        conversationDAO.insertConversation(newerConversation)
+        conversationDAO.insertConversation(olderConversationWithCall)
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(member1, MemberEntity(selfUserId, MemberEntity.Role.Member)),
+            newerConversation.id
+        )
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(member2, MemberEntity(selfUserId, MemberEntity.Role.Member)),
+            olderConversationWithCall.id
+        )
+
+        conversationDAO.getAllConversationDetailsWithEvents(
+            newActivitiesOnTop = true,
+            ongoingCallConversationIds = listOf(olderConversationWithCall.id)
+        ).first().let {
+            assertEquals(olderConversationWithCall.id, it[0].conversationViewEntity.id)
+            assertEquals(newerConversation.id, it[1].conversationViewEntity.id)
+        }
+    }
+
+    @Test
     fun givenConversationWithUnreadEvents_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
         val conversationEntity1 = conversationEntity1.copy(
             id = ConversationIDEntity("conversation1", "domain"),
@@ -2512,7 +2585,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationDAO.updateConversationMutedStatus(
                 conversationEntity1.id,
                 ConversationEntity.MutedStatus.MENTIONS_MUTED,
-                Clock.System.now().toEpochMilliseconds()
+                Clock.System.now()
             )
             val result2 = awaitItem()
             assertEquals(ConversationEntity.MutedStatus.MENTIONS_MUTED, result2?.mutedStatus)

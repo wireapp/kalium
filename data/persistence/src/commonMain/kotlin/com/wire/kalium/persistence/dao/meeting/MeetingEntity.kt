@@ -18,6 +18,7 @@
 package com.wire.kalium.persistence.dao.meeting
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.datetime.Instant
 
 data class MeetingEntity(
@@ -28,15 +29,38 @@ data class MeetingEntity(
     val updatedAt: Instant?,
     val title: String,
     val startTime: Instant,
-    val endTime: Instant?,
+    val endTime: Instant,
     val trial: Boolean,
     val recurrence: RecurrenceEntity?
 ) {
     data class RecurrenceEntity(
         val frequency: Frequency,
-        val interval: Long,
+        val interval: Long?,
         val until: Instant?
     ) {
-        enum class Frequency { DAILY, WEEKLY, MONTHLY, YEARLY }
+        enum class Frequency { DAILY, WEEKLY }
     }
 }
+
+data class MeetingOccurrenceEntity(
+    val occurrenceId: String,
+    val meetingId: QualifiedIDEntity,
+    val occurrenceStart: Instant,
+    val occurrenceEnd: Instant
+)
+
+data class MeetingOccurrenceDetailsEntity(
+    val occurrence: MeetingOccurrenceEntity,
+    val meeting: MeetingEntity,
+    val conversationName: String?,
+    val conversationType: ConversationEntity.Type,
+    val otherUserPreviewAssetId: QualifiedIDEntity?,
+    val channelAccess: ConversationEntity.ChannelAccess?,
+    val selfUserId: QualifiedIDEntity?,
+    val participantPreviewAssetIds: List<QualifiedIDEntity> = emptyList()
+)
+
+data class MeetingParticipantPreviewAssetEntity(
+    val conversationId: QualifiedIDEntity,
+    val previewAssetId: QualifiedIDEntity?
+)

@@ -87,4 +87,10 @@ internal actual open class UserSessionWorkSchedulerImpl(
             "Scheduling of building normalized loudness is not supported on JVM. Audio normalized loudness building won't be scheduled."
         )
     }
+
+    actual override fun schedulePeriodicMeetingOccurrencesSync() {
+        kaliumLogger.withFeatureId(SYNC).w(
+            "Scheduling of meeting occurrences sync is not supported on JVM. Meeting occurrences won't be scheduled for syncing."
+        )
+    }
 }

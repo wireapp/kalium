@@ -182,49 +182,16 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMixedStatusMessages_whenLoadingPageInsidePendingSegment_thenOnlyPendingMessagesAreReturned() = runTest {
-        populatePendingAndNonPendingMessageData()
+    fun givenMessagesWithMixedStatuses_whenLoadingMessages_thenMessagesAreOrderedOnlyByDate() = runTest {
+        populateOldPendingMessageData()
 
         val result = getPager().pagingSource.refresh()
 
         assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
         assertContentEquals(
-            (0 until PAGE_SIZE).map { "pending-$it" },
+            listOf("new-sent", "middle-sent", "old-pending"),
             result.data.map { it.id }
         )
-        assertEquals(0, result.itemsBefore)
-        assertEquals(MIXED_MESSAGE_COUNT - PAGE_SIZE, result.itemsAfter)
-    }
-
-    @Test
-    fun givenMixedStatusMessages_whenLoadingPageAcrossPendingBoundary_thenPendingAndNonPendingMessagesAreReturned() = runTest {
-        populatePendingAndNonPendingMessageData()
-
-        val result = getPager().pagingSource.nextPageForOffset(PAGE_SIZE)
-
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
-        assertContentEquals(
-            listOf("pending-20", "pending-21", "pending-22", "pending-23", "pending-24") +
-                (0 until 15).map { "non-pending-$it" },
-            result.data.map { it.id }
-        )
-        assertEquals(PAGE_SIZE, result.itemsBefore)
-        assertEquals(MIXED_MESSAGE_COUNT - PAGE_SIZE * 2, result.itemsAfter)
-    }
-
-    @Test
-    fun givenMixedStatusMessages_whenLoadingPageInsideNonPendingSegment_thenOnlyNonPendingMessagesAreReturned() = runTest {
-        populatePendingAndNonPendingMessageData()
-
-        val result = getPager().pagingSource.nextPageForOffset(PAGE_SIZE * 2)
-
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
-        assertContentEquals(
-            (15 until 35).map { "non-pending-$it" },
-            result.data.map { it.id }
-        )
-        assertEquals(PAGE_SIZE * 2, result.itemsBefore)
-        assertEquals(MIXED_MESSAGE_COUNT - PAGE_SIZE * 3, result.itemsAfter)
     }
 
     @Test
@@ -473,44 +440,39 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessages(messages)
     }
 
-    private suspend fun populatePendingAndNonPendingMessageData() {
+    private suspend fun populateOldPendingMessageData() {
         userDAO.upsertUser(newUserEntity(qualifiedID = USER_ID))
         conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
-        val messages = buildList<MessageEntity> {
-            repeat(PENDING_MESSAGE_COUNT) {
-                add(
-                    newRegularMessageEntity(
-                        id = "pending-$it",
-                        conversationId = CONVERSATION_ID,
-                        senderUserId = USER_ID,
-                        status = MessageEntity.Status.PENDING,
-                        content = MessageEntityContent.Text("pending message $it"),
-                        date = Instant.fromEpochSeconds(PENDING_MESSAGE_COUNT - it.toLong())
-                    )
-                )
-            }
-            repeat(NON_PENDING_MESSAGE_COUNT) {
-                add(
-                    newRegularMessageEntity(
-                        id = "non-pending-$it",
-                        conversationId = CONVERSATION_ID,
-                        senderUserId = USER_ID,
-                        status = MessageEntity.Status.SENT,
-                        content = MessageEntityContent.Text("non-pending message $it"),
-                        date = Instant.fromEpochSeconds(NON_PENDING_MESSAGE_COUNT - it.toLong())
-                    )
-                )
-            }
-        }
-        messageDAO.insertOrIgnoreMessages(messages)
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                newRegularMessageEntity(
+                    id = "old-pending",
+                    conversationId = CONVERSATION_ID,
+                    senderUserId = USER_ID,
+                    status = MessageEntity.Status.PENDING,
+                    date = Instant.fromEpochSeconds(1),
+                ),
+                newRegularMessageEntity(
+                    id = "middle-sent",
+                    conversationId = CONVERSATION_ID,
+                    senderUserId = USER_ID,
+                    status = MessageEntity.Status.SENT,
+                    date = Instant.fromEpochSeconds(2),
+                ),
+                newRegularMessageEntity(
+                    id = "new-sent",
+                    conversationId = CONVERSATION_ID,
+                    senderUserId = USER_ID,
+                    status = MessageEntity.Status.SENT,
+                    date = Instant.fromEpochSeconds(3),
+                ),
+            )
+        )
     }
 
     private companion object {
         const val MESSAGE_COUNT = 100
         const val PAGE_SIZE = 20
-        const val PENDING_MESSAGE_COUNT = 25
-        const val NON_PENDING_MESSAGE_COUNT = 40
-        const val MIXED_MESSAGE_COUNT = PENDING_MESSAGE_COUNT + NON_PENDING_MESSAGE_COUNT
         val USER_ID = UserIDEntity("user", "domain")
         val CONVERSATION_ID = ConversationIDEntity("conversation", "domain")
         val OTHER_CONVERSATION_ID = ConversationIDEntity("otherConversation", "domain")

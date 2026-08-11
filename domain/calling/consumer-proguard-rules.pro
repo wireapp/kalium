@@ -6,6 +6,9 @@
 -keep class com.waz.call.CaptureDevice { *; }
 -keep class com.waz.media.manager.** { *; }
 -keep class com.waz.service.call.** { *; }
+-keep class org.jni_zero.JniZero {
+    private static java.lang.Object[] init();
+}
 -dontwarn org.webrtc.CalledByNative
 -dontwarn org.webrtc.JniCommon
 -dontwarn org.webrtc.audio.AudioDeviceModule

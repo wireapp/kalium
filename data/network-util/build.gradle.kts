@@ -24,7 +24,9 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform()
+    multiplatform {
+        enableJsTests.set(false)
+    }
 }
 
 kotlin {
@@ -34,6 +36,12 @@ kotlin {
                 api(projects.core.logger)
 
                 implementation(libs.coroutines.core)
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.coroutines.test)
             }
         }
     }

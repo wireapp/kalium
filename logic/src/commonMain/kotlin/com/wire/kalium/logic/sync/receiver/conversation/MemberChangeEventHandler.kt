@@ -35,9 +35,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlinx.datetime.Instant
 
 internal interface MemberChangeEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged)
@@ -58,7 +56,7 @@ internal class MemberChangeEventHandlerImpl(
                 conversationRepository.updateMutedStatusLocally(
                     event.conversationId,
                     event.mutedConversationStatus,
-                    DateTimeUtil.currentInstant().toEpochMilliseconds()
+                    event.mutedConversationChangedTime
                 )
                 eventLogger.logSuccess()
             }
@@ -67,7 +65,7 @@ internal class MemberChangeEventHandlerImpl(
                 conversationRepository.updateArchivedStatusLocally(
                     event.conversationId,
                     event.isArchiving,
-                    DateTimeUtil.currentInstant().toEpochMilliseconds()
+                    event.archivedConversationChangedTime
                 )
                 eventLogger.logSuccess()
             }
@@ -130,7 +128,7 @@ internal class MemberChangeEventHandlerImpl(
                     members = listOf(promotedMember.id)
                 ),
                 conversationId = event.conversationId,
-                date = Instant.parse(event.timestampIso),
+                date = event.dateTime,
                 senderUserId = selfUserId,
                 status = Message.Status.Sent,
                 visibility = Message.Visibility.VISIBLE,

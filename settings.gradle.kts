@@ -22,12 +22,14 @@
 // rootProject.name = "Kalium"
 
 // Assume that all folders that contain a build.gradle.kts and are not buildSrc should be included
+val pluginsDirectory = file("plugins").toPath()
 rootDir
     .walk()
     .maxDepth(3)
     .filter { it != rootDir }
     .filter {
         it.name != "buildSrc" && it.isDirectory &&
+                !it.toPath().startsWith(pluginsDirectory) &&
                 file("${it.absolutePath}/build.gradle.kts").exists()
     }.forEach {
         val projectPath = it.relativeTo(rootDir).path.replace(File.separator, ":")
@@ -35,6 +37,7 @@ rootDir
     }
 
 pluginManagement {
+    includeBuild("plugins/apple-avs-runtime")
     repositories {
         gradlePluginPortal()
         google()
@@ -49,11 +52,6 @@ plugins {
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-    }
-    versionCatalogs {
-        create("awssdk") {
-            from("aws.sdk.kotlin:version-catalog:1.5.89")
-        }
     }
 }
 

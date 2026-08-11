@@ -275,7 +275,7 @@ class MLSMigratorTest {
         suspend fun withAddMembersSucceeds() = apply {
             everySuspend {
                 mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
-            } returns Either.Right(Unit)
+            } returns Either.Right(MLSAdditionResult.Empty)
         }
 
         suspend fun withEstablishedCall() = apply {

@@ -34,11 +34,13 @@ import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
+import com.wire.kalium.logic.data.featureConfig.MeetingsConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppsFeatureHandler
@@ -58,9 +60,10 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -837,6 +840,63 @@ class SyncFeatureConfigsUseCaseTest {
         }
     }
 
+    @Test
+    fun givenMeetingsFeatureIsEnabled_whenSyncing_thenSetMeetingsEnabled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(FeatureConfigTest.newModel(meetingsConfigModel = MeetingsConfigModel(Status.ENABLED)))
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigDAO.setMeetingsEnabled(true)
+        }
+    }
+
+    @Test
+    fun givenMeetingsFeatureWasDisabledAndIsEnabled_whenSyncing_thenClearLastSlowSyncCompletionInstant() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(FeatureConfigTest.newModel(meetingsConfigModel = MeetingsConfigModel(Status.ENABLED)))
+            .withGetSupportedProtocolsReturning(null)
+            .withMeetingsEnabledReturning(false)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
+        }
+    }
+
+    @Test
+    fun givenMeetingsFeatureIsDisabled_whenSyncing_thenSetMeetingsDisabled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(FeatureConfigTest.newModel(meetingsConfigModel = MeetingsConfigModel(Status.DISABLED)))
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigDAO.setMeetingsEnabled(false)
+        }
+    }
+
+    @Test
+    fun givenMeetingsFeatureNotPresent_whenSyncing_thenSetMeetingsDisabled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(FeatureConfigTest.newModel(meetingsConfigModel = null))
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigDAO.setMeetingsEnabled(false)
+        }
+    }
+
     @OptIn(ExperimentalStdlibApi::class)
     private fun TestScope.arrangement() = Arrangement(coroutineContext[CoroutineDispatcher]!! as TestDispatcher)
 
@@ -847,6 +907,7 @@ class SyncFeatureConfigsUseCaseTest {
         val channelsConfigurationStorage = ChannelsConfigurationStorage(userDatabase.builder.metadataDAO)
         var kaliumConfigs = KaliumConfigs()
         val userConfigDAO: UserConfigDAO = mock<UserConfigDAO>(mode = MockMode.autoUnit)
+        val slowSyncRepository: SlowSyncRepository = mock(mode = MockMode.autoUnit)
 
         var userConfigRepository: UserConfigRepository = UserConfigDataSource(
             inMemoryStorage,
@@ -868,6 +929,7 @@ class SyncFeatureConfigsUseCaseTest {
                         isStatusChanged = false
                     )
                 )
+                withMeetingsEnabledReturning(false)
             }
         }
 
@@ -926,6 +988,12 @@ class SyncFeatureConfigsUseCaseTest {
             } returns result
         }
 
+        suspend fun withMeetingsEnabledReturning(enabled: Boolean) = apply {
+            everySuspend {
+                userConfigDAO.isMeetingsEnabled()
+            } returns enabled
+        }
+
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
             this.kaliumConfigs = changeConfigs(this.kaliumConfigs)
         }
@@ -951,6 +1019,7 @@ class SyncFeatureConfigsUseCaseTest {
                 EnableUserProfileQRCodeConfigHandler(userConfigRepository),
                 AssetAuditLogConfigHandler(userConfigRepository),
                 PreventAdminlessGroupsConfigHandler(userConfigRepository),
+                MeetingsConfigHandler(userConfigRepository, slowSyncRepository),
             )
             return this to syncFeatureConfigsUseCase
         }

@@ -20,17 +20,17 @@ package com.wire.kalium.logic.feature.meeting
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingRepository
-import com.wire.kalium.logic.data.toModel
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.feature.user.IsMeetingsEnabledUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
-import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
@@ -39,14 +39,37 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class SyncMeetingsUseCaseTest {
 
     @Test
-    fun givenMeetingFeatureNotSupported_whenInvoking_thenSkipAndReturnUnit() = runTest {
+    fun givenMeetingsEnabled_whenCheckingIsEnabled_thenReturnTrue() = runTest {
+        val (_, useCase) = Arrangement()
+            .withMeetingsEnabled(true)
+            .arrange()
+
+        val result = useCase.isEnabled()
+
+        assertEquals(true, result)
+    }
+
+    @Test
+    fun givenMeetingsDisabled_whenCheckingIsEnabled_thenReturnFalse() = runTest {
+        val (_, useCase) = Arrangement()
+            .withMeetingsEnabled(false)
+            .arrange()
+
+        val result = useCase.isEnabled()
+
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun givenMeetingsDisabled_whenInvoking_thenSkipAndReturnUnit() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withMeetingSupportEnabled(false)
+            .withMeetingsEnabled(false)
             .arrange()
 
         val result = useCase()
@@ -58,7 +81,7 @@ class SyncMeetingsUseCaseTest {
     @Test
     fun givenFeatureNotSupportedFailure_whenInvoking_thenSkipAndReturnUnit() = runTest {
         val (_, useCase) = Arrangement()
-            .withMeetingSupportEnabled(true)
+            .withMeetingsEnabled(true)
             .withFetchMeetingsFailed(NetworkFailure.FeatureNotSupported)
             .arrange()
 
@@ -70,7 +93,7 @@ class SyncMeetingsUseCaseTest {
     @Test
     fun givenOtherFailure_whenInvoking_thenReturnFailure() = runTest {
         val (_, useCase) = Arrangement()
-            .withMeetingSupportEnabled(true)
+            .withMeetingsEnabled(true)
             .withFetchMeetingsFailed(NetworkFailure.NoNetworkConnection(null))
             .arrange()
 
@@ -82,7 +105,7 @@ class SyncMeetingsUseCaseTest {
     @Test
     fun givenNoMeetingsFetched_whenInvoking_thenDoNotFetchUsers() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withMeetingSupportEnabled(true)
+            .withMeetingsEnabled(true)
             .withFetchMeetingsSuccessful(emptyList())
             .arrange()
 
@@ -96,7 +119,7 @@ class SyncMeetingsUseCaseTest {
     @Test
     fun givenSuccess_whenInvoking_thenExecuteRequestsAndReturnUnit() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withMeetingSupportEnabled(true)
+            .withMeetingsEnabled(true)
             .withFetchMeetingsSuccessful(listOf(MEETING))
             .withFetchUsersSuccessful()
             .arrange()
@@ -105,23 +128,23 @@ class SyncMeetingsUseCaseTest {
 
         assertIs<Either.Right<Unit>>(result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingRepository.fetchAndPersistMeetings() }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.userRepository.fetchUsersIfUnknownByIds(setOf(MEETING.creatorId.toModel())) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userRepository.fetchUsersIfUnknownByIds(setOf(MEETING.creatorId)) }
     }
 
     inner class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         internal val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
         internal val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
-        internal val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
+        internal val isMeetingsEnabledUseCase = mock<IsMeetingsEnabledUseCase>(mode = MockMode.autoUnit)
 
-        internal fun withMeetingSupportEnabled(enabled: Boolean) = apply {
-            every { featureSupport.isMeetingsSupported } returns enabled
+        internal fun withMeetingsEnabled(enabled: Boolean) = apply {
+            everySuspend { isMeetingsEnabledUseCase() } returns enabled
         }
 
         internal fun withFetchMeetingsFailed(failure: CoreFailure) = apply {
             everySuspend { meetingRepository.fetchAndPersistMeetings() } returns Either.Left(failure)
         }
 
-        internal fun withFetchMeetingsSuccessful(list: List<MeetingEntity>) = apply {
+        internal fun withFetchMeetingsSuccessful(list: List<Meeting>) = apply {
             everySuspend { meetingRepository.fetchAndPersistMeetings() } returns Either.Right(list)
         }
 
@@ -132,23 +155,20 @@ class SyncMeetingsUseCaseTest {
         internal suspend fun arrange() = this to SyncMeetingsUseCaseImpl(
             meetingRepository = meetingRepository,
             userRepository = userRepository,
-            featureSupport = featureSupport,
+            isMeetingsEnabledUseCase = isMeetingsEnabledUseCase,
             transactionProvider = cryptoTransactionProvider
         ).also {
             withTransactionReturning(Either.Right(Unit))
         }
     }
 
-    private val MEETING = MeetingEntity(
-        meetingId = QualifiedIDEntity("meetingId", "doman"),
-        conversationId = QualifiedIDEntity("conversationId", "domain"),
-        creatorId = QualifiedIDEntity("creatorId", "domain"),
-        createdAt = Instant.parse("2026-08-01T12:00:00.000Z"),
-        updatedAt = null,
+    private val MEETING = Meeting(
+        meetingId = MeetingId("meetingId", "doman"),
+        conversationId = ConversationId("conversationId", "domain"),
+        creatorId = UserId("creatorId", "domain"),
         title = "Meeting Title",
         startTime = Instant.parse("2026-08-01T12:00:00.000Z"),
-        endTime = null,
-        trial = false,
+        endTime = Instant.parse("2026-08-01T13:00:00.000Z"),
         recurrence = null
     )
 }

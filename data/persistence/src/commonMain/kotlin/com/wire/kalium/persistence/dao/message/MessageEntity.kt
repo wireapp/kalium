@@ -286,8 +286,8 @@ sealed class MessageEntityContent {
              */
             val isVerified: Boolean,
             val senderName: String?,
-            val dateTime: String,
-            val editTimestamp: String?,
+            val dateTime: Instant,
+            val editTimestamp: Instant?,
             val visibility: MessageEntity.Visibility,
             val contentType: MessageEntity.ContentType,
             val textBody: String?,
@@ -409,7 +409,6 @@ data class MessagePreviewEntity(
     val id: String,
     val conversationId: QualifiedIDEntity,
     val content: MessagePreviewEntityContent,
-    val date: String,
     val visibility: MessageEntity.Visibility,
     val isSelfMessage: Boolean,
     val senderUserId: QualifiedIDEntity,

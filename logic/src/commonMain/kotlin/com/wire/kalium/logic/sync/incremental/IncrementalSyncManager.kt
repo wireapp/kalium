@@ -19,14 +19,20 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.sync.SyncExceptionHandler
+import com.wire.kalium.logic.sync.SyncTelemetryComponent
+import com.wire.kalium.logic.sync.SyncTelemetryEvent
 import com.wire.kalium.logic.sync.SyncType
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
+import com.wire.kalium.logic.sync.delayBeforeSyncRetry
+import com.wire.kalium.logic.sync.logSyncTelemetry
+import com.wire.kalium.logic.sync.telemetryData
 import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.util.ExponentialDurationHelper
@@ -82,6 +88,11 @@ internal interface IncrementalSyncManager {
      */
     fun performSyncFlow(): Flow<IncrementalSyncStatus>
 
+    /**
+     * Resets the accumulated retry backoff without interrupting an ongoing sync attempt.
+     */
+    fun resetRetryBackoff()
+
     companion object {
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes
@@ -104,24 +115,46 @@ internal fun IncrementalSyncManager(
 
     private val logger = userScopedLogger.withFeatureId(SYNC).withTextTag("IncrementalSyncManager")
 
+    override fun resetRetryBackoff() {
+        exponentialDurationHelper.reset()
+        logger.logSyncTelemetry(
+            event = SyncTelemetryEvent.RETRY_BACKOFF_RESET,
+            component = SyncTelemetryComponent.INCREMENTAL,
+            data = mapOf("reason" to "NEW_SYNC_REQUEST")
+        )
+    }
+
     private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {
-            logger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
+            logger.logSyncTelemetry(
+                event = SyncTelemetryEvent.EXECUTION_STOPPED,
+                component = SyncTelemetryComponent.INCREMENTAL,
+                data = mapOf("reason" to "CANCELLED")
+            )
             withContext(NonCancellable) {
                 incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
             }
         },
         onFailure = { failure ->
-            logger.i("ExceptionHandler error $failure")
             val delay = exponentialDurationHelper.next()
+            logger.logSyncTelemetry(
+                event = SyncTelemetryEvent.SYNC_FAILED,
+                component = SyncTelemetryComponent.INCREMENTAL,
+                level = KaliumLogLevel.WARN,
+                data = failure.telemetryData() +
+                    ("retryDelayInMillis" to delay.inWholeMilliseconds)
+            )
             incrementalSyncRepository.updateIncrementalSyncState(
                 IncrementalSyncStatus.Failed(failure, delay)
             )
 
             incrementalSyncRecoveryHandler.recover(failure = failure) {
-                logger.i("Triggering delay($delay) and waiting for reconnection")
-                networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
-                logger.i("Delay and waiting for connection finished - retrying")
+                networkStateObserver.delayBeforeSyncRetry(
+                    retryDelay = delay,
+                    exponentialDurationHelper = exponentialDurationHelper,
+                    logger = logger,
+                    syncType = SyncType.INCREMENTAL,
+                )
                 onRetry()
             }
         }
@@ -139,6 +172,11 @@ internal fun IncrementalSyncManager(
             }
             // Always start sync with a fresh retry delay
             exponentialDurationHelper.reset()
+            logger.logSyncTelemetry(
+                event = SyncTelemetryEvent.RETRY_BACKOFF_RESET,
+                component = SyncTelemetryComponent.INCREMENTAL,
+                data = mapOf("reason" to "SYNC_COLLECTION_STARTED")
+            )
             launch { doIncrementalSync() }
         }
     }
@@ -159,6 +197,12 @@ internal fun IncrementalSyncManager(
                     EventSource.LIVE -> {
                         syncLogger.logSyncCompleted(duration = Clock.System.now() - syncData.second)
                         exponentialDurationHelper.reset()
+                        logger.logSyncTelemetry(
+                            event = SyncTelemetryEvent.RETRY_BACKOFF_RESET,
+                            component = SyncTelemetryComponent.INCREMENTAL,
+                            level = KaliumLogLevel.DEBUG,
+                            data = mapOf("reason" to "SYNC_LIVE")
+                        )
                         userSessionWorkScheduler.resetBackoffForPeriodicUserConfigSync()
                         IncrementalSyncStatus.Live
                     }
@@ -169,7 +213,11 @@ internal fun IncrementalSyncManager(
                 if (eventSource == EventSource.LIVE) Uuid.random().toString() to Clock.System.now() else syncData
             }.collect()
         incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
-        logger.i("IncrementalSync stopped.")
+        logger.logSyncTelemetry(
+            event = SyncTelemetryEvent.EXECUTION_STOPPED,
+            component = SyncTelemetryComponent.INCREMENTAL,
+            data = mapOf("reason" to "EVENT_FLOW_COMPLETED")
+        )
     } catch (t: Throwable) {
         exceptionHandler.handleException(t)
     }

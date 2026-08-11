@@ -140,7 +140,9 @@ internal fun SendConfirmationUseCase(
         }, { conversation ->
             when (conversation.type) {
                 Conversation.Type.OneOnOne -> userPropertyRepository.getReadReceiptsStatus()
-                else -> conversation.receiptMode == Conversation.ReceiptMode.ENABLED
+                else ->
+                    conversation.protocol !is Conversation.ProtocolInfo.MLS &&
+                        conversation.receiptMode == Conversation.ReceiptMode.ENABLED
             }
         })
 
