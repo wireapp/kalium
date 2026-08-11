@@ -21,7 +21,9 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.async.coroutines.synchronous
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -38,6 +40,44 @@ actual fun userDatabaseBuilder(
     dispatcher: CoroutineDispatcher,
     enableWAL: Boolean,
     dbInvalidationControlEnabled: Boolean
+): UserDatabaseBuilder = createUserDatabaseBuilder(
+    platformDatabaseData = platformDatabaseData,
+    userId = userId,
+    passphrase = passphrase,
+    dispatcher = dispatcher,
+    enableWAL = enableWAL,
+    dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+    schema = UserDatabase.Schema.synchronous()
+)
+
+@Suppress("LongParameterList")
+internal actual fun userDatabaseBuilderWithMigrationObserver(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean,
+    onMigrationStarted: () -> Unit
+): UserDatabaseBuilder = createUserDatabaseBuilder(
+    platformDatabaseData = platformDatabaseData,
+    userId = userId,
+    passphrase = passphrase,
+    dispatcher = dispatcher,
+    enableWAL = enableWAL,
+    dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+    schema = UserDatabase.Schema.synchronous().withMigrationObserver(onMigrationStarted)
+)
+
+@Suppress("LongParameterList")
+private fun createUserDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean,
+    schema: SqlSchema<QueryResult.Value<Unit>>
 ): UserDatabaseBuilder {
     val rawDriver = when (platformDatabaseData.storageData) {
         is StorageData.FileBacked -> {
@@ -47,14 +87,14 @@ actual fun userDatabaseBuilder(
                 null,
                 null
             )
-            databaseDriver(platformDatabaseData.storageData.storePath, FileNameUtil.userDBName(userId), UserDatabase.Schema.synchronous()) {
+            databaseDriver(platformDatabaseData.storageData.storePath, FileNameUtil.userDBName(userId), schema) {
                 isWALEnabled = enableWAL
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
         }
 
         StorageData.InMemory ->
-            databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema.synchronous()) {
+            databaseDriver(null, FileNameUtil.userDBName(userId), schema) {
                 isWALEnabled = false
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }

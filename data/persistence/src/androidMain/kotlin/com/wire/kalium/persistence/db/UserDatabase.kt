@@ -23,7 +23,9 @@ package com.wire.kalium.persistence.db
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.async.coroutines.synchronous
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -43,6 +45,44 @@ actual fun userDatabaseBuilder(
     dispatcher: CoroutineDispatcher,
     enableWAL: Boolean,
     dbInvalidationControlEnabled: Boolean
+): UserDatabaseBuilder = createUserDatabaseBuilder(
+    platformDatabaseData = platformDatabaseData,
+    userId = userId,
+    passphrase = passphrase,
+    dispatcher = dispatcher,
+    enableWAL = enableWAL,
+    dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+    schema = UserDatabase.Schema.synchronous()
+)
+
+@Suppress("LongParameterList")
+internal actual fun userDatabaseBuilderWithMigrationObserver(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean,
+    onMigrationStarted: () -> Unit
+): UserDatabaseBuilder = createUserDatabaseBuilder(
+    platformDatabaseData = platformDatabaseData,
+    userId = userId,
+    passphrase = passphrase,
+    dispatcher = dispatcher,
+    enableWAL = enableWAL,
+    dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+    schema = UserDatabase.Schema.synchronous().withMigrationObserver(onMigrationStarted)
+)
+
+@Suppress("LongParameterList")
+private fun createUserDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean,
+    schema: SqlSchema<QueryResult.Value<Unit>>
 ): UserDatabaseBuilder {
     val dbName = FileNameUtil.userDBName(userId)
     val isEncryptionEnabled = passphrase != null
@@ -50,7 +90,7 @@ actual fun userDatabaseBuilder(
         context = platformDatabaseData.context,
         dbName = dbName,
         passphrase = passphrase?.value,
-        schema = UserDatabase.Schema.synchronous()
+        schema = schema
     ) {
         isWALEnabled = enableWAL
     }

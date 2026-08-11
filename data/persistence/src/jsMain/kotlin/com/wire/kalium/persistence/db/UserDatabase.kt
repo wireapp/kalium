@@ -71,6 +71,24 @@ actual fun userDatabaseBuilder(
     )
 }
 
+@Suppress("LongParameterList")
+internal actual fun userDatabaseBuilderWithMigrationObserver(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean,
+    onMigrationStarted: () -> Unit
+): UserDatabaseBuilder = userDatabaseBuilder(
+    platformDatabaseData = platformDatabaseData,
+    userId = userId,
+    passphrase = passphrase,
+    dispatcher = dispatcher,
+    enableWAL = enableWAL,
+    dbInvalidationControlEnabled = dbInvalidationControlEnabled
+)
+
 actual fun userDatabaseDriverByPath(
     platformDatabaseData: PlatformDatabaseData,
     path: String,

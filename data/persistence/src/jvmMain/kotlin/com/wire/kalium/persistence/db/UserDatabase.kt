@@ -21,7 +21,9 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.async.coroutines.synchronous
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -38,6 +40,44 @@ actual fun userDatabaseBuilder(
     dispatcher: CoroutineDispatcher,
     enableWAL: Boolean,
     dbInvalidationControlEnabled: Boolean
+): UserDatabaseBuilder = createUserDatabaseBuilder(
+    platformDatabaseData = platformDatabaseData,
+    userId = userId,
+    passphrase = passphrase,
+    dispatcher = dispatcher,
+    enableWAL = enableWAL,
+    dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+    schema = UserDatabase.Schema.synchronous()
+)
+
+@Suppress("LongParameterList")
+internal actual fun userDatabaseBuilderWithMigrationObserver(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean,
+    onMigrationStarted: () -> Unit
+): UserDatabaseBuilder = createUserDatabaseBuilder(
+    platformDatabaseData = platformDatabaseData,
+    userId = userId,
+    passphrase = passphrase,
+    dispatcher = dispatcher,
+    enableWAL = enableWAL,
+    dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+    schema = UserDatabase.Schema.synchronous().withMigrationObserver(onMigrationStarted)
+)
+
+@Suppress("LongParameterList")
+private fun createUserDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean,
+    schema: SqlSchema<QueryResult.Value<Unit>>
 ): UserDatabaseBuilder {
     val storageData = platformDatabaseData.storageData
     if (storageData is StorageData.InMemory) {
@@ -50,7 +90,6 @@ actual fun userDatabaseBuilder(
         throw NotImplementedError("Encrypted DB is not supported on JVM")
     }
 
-    val schema = UserDatabase.Schema.synchronous()
     val databasePath = storageData.file.resolve(DATABASE_NAME)
 
     // Make sure all intermediate directories exist

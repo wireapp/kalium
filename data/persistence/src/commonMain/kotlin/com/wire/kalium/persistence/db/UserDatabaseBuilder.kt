@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.db.AfterVersion
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
@@ -146,6 +147,63 @@ expect fun userDatabaseBuilder(
     enableWAL: Boolean = true,
     dbInvalidationControlEnabled: Boolean = false
 ): UserDatabaseBuilder
+
+/**
+ * Creates a user database while reporting when SQLDelight starts a schema migration.
+ *
+ * This uses the same driver and generated schema path as [userDatabaseBuilder]. The callback is
+ * only a lifecycle signal; it does not replace or split SQLDelight migrations.
+ */
+@Suppress("LongParameterList")
+fun userDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean = true,
+    dbInvalidationControlEnabled: Boolean = false,
+    onMigrationStarted: () -> Unit
+): UserDatabaseBuilder = userDatabaseBuilderWithMigrationObserver(
+    platformDatabaseData = platformDatabaseData,
+    userId = userId,
+    passphrase = passphrase,
+    dispatcher = dispatcher,
+    enableWAL = enableWAL,
+    dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+    onMigrationStarted = onMigrationStarted
+)
+
+@Suppress("LongParameterList")
+internal expect fun userDatabaseBuilderWithMigrationObserver(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret?,
+    dispatcher: CoroutineDispatcher,
+    enableWAL: Boolean,
+    dbInvalidationControlEnabled: Boolean,
+    onMigrationStarted: () -> Unit
+): UserDatabaseBuilder
+
+internal fun SqlSchema<QueryResult.Value<Unit>>.withMigrationObserver(
+    onMigrationStarted: () -> Unit
+): SqlSchema<QueryResult.Value<Unit>> {
+    val delegate = this
+    return object : SqlSchema<QueryResult.Value<Unit>> {
+        override val version: Long = delegate.version
+
+        override fun create(driver: SqlDriver): QueryResult.Value<Unit> = delegate.create(driver)
+
+        override fun migrate(
+            driver: SqlDriver,
+            oldVersion: Long,
+            newVersion: Long,
+            vararg callbacks: AfterVersion
+        ): QueryResult.Value<Unit> {
+            onMigrationStarted()
+            return delegate.migrate(driver, oldVersion, newVersion, *callbacks)
+        }
+    }
+}
 
 /**
  * Opens a database driver for an arbitrary path.
