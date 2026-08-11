@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2025 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,24 @@
  */
 package com.wire.kalium.cells.data
 
-internal object MetadataHeaders {
-    const val DRAFT_MODE = "draft-mode"
-    const val CREATE_RESOURCE_UUID = "create-resource-uuid"
-    const val CREATE_VERSION_ID = "create-version-id"
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.writeFully
+import kotlinx.io.IOException
+
+internal suspend fun ByteWriteChannel.writeUploadBytes(bytes: ByteArray) {
+    try {
+        writeFully(bytes)
+    } catch (cause: IOException) {
+        throw RetryableTransportException(cause.message.orEmpty())
+    }
 }
+
+internal suspend fun ByteWriteChannel.flushUpload() {
+    try {
+        flush()
+    } catch (cause: IOException) {
+        throw RetryableTransportException(cause.message.orEmpty())
+    }
+}
+
+internal class RetryableTransportException(message: String) : Exception(message)
