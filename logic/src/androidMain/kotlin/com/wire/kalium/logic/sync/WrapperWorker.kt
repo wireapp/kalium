@@ -32,6 +32,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.PrepareUserSessionResult
+import com.wire.kalium.logic.UserSessionPreparationFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
@@ -40,21 +42,20 @@ import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorker
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlin.reflect.KClass
 import androidx.work.ListenableWorker.Result as AndroidResult
 import com.wire.kalium.logic.sync.Result as KaliumResult
 
 public class WrapperWorker internal constructor(
-    private val innerWorker: DefaultWorker,
+    private val innerWorker: suspend () -> DefaultWorker,
     appContext: Context,
     params: WorkerParameters,
     private val foregroundNotificationDetailsProvider: ForegroundNotificationDetailsProvider
 ) :
     CoroutineWorker(appContext, params) {
 
-    override suspend fun doWork(): AndroidResult = when (innerWorker.doWork()) {
+    override suspend fun doWork(): AndroidResult = when (innerWorker().doWork()) {
         is KaliumResult.Failure -> AndroidResult.failure()
         is KaliumResult.Retry -> AndroidResult.retry()
         is KaliumResult.Success -> AndroidResult.success()
@@ -103,11 +104,15 @@ public class WrapperWorkerFactory(
             return null // delegate to default factory
         }
 
-        val innerWorker = resolveInnerWorker(workerParameters)
-        return WrapperWorker(innerWorker, appContext, workerParameters, foregroundNotificationDetailsProvider)
+        return WrapperWorker(
+            innerWorker = { resolveInnerWorker(workerParameters) },
+            appContext = appContext,
+            params = workerParameters,
+            foregroundNotificationDetailsProvider = foregroundNotificationDetailsProvider,
+        )
     }
 
-    private fun resolveInnerWorker(workerParameters: WorkerParameters): DefaultWorker {
+    private suspend fun resolveInnerWorker(workerParameters: WorkerParameters): DefaultWorker {
         val userId = workerParameters.getSerializable<UserId>(USER_ID_KEY)
         val workerType = workerParameters.inputData.getString(WORKER_TYPE_KEY)
         val innerWorkerClassName = workerParameters.inputData.getString(WORKER_CLASS_KEY)
@@ -191,7 +196,7 @@ public class WrapperWorkerFactory(
         }
     }
 
-    private fun createAudioNormalizedLoudnessWorker(
+    private suspend fun createAudioNormalizedLoudnessWorker(
         userId: UserId?,
         workerParameters: WorkerParameters
     ): DefaultWorker? = withSessionScope(userId) { sessionScope ->
@@ -214,10 +219,13 @@ public class WrapperWorkerFactory(
         }
     }
 
-    private fun withSessionScope(userId: UserId?, action: (UserSessionScope) -> DefaultWorker): DefaultWorker? {
+    private suspend fun withSessionScope(userId: UserId?, action: (UserSessionScope) -> DefaultWorker): DefaultWorker? {
         val validUserId = validateSessionUserId(userId) ?: return null
         return runCatching {
-            action(coreLogic.getSessionScope(validUserId))
+            when (val preparation = coreLogic.prepareUserSession(validUserId)) {
+                is PrepareUserSessionResult.Success -> action(preparation.sessionScope)
+                is PrepareUserSessionResult.Failure -> PreparationFailureWorker(preparation.reason)
+            }
         }.getOrElse { error ->
             kaliumLogger.logStructuredJson(
                 level = KaliumLogLevel.ERROR,
@@ -234,7 +242,7 @@ public class WrapperWorkerFactory(
         }
     }
 
-    private fun validateSessionUserId(userId: UserId?): UserId? = when {
+    private suspend fun validateSessionUserId(userId: UserId?): UserId? = when {
         userId == null -> {
             logSessionScopeUnavailable(KaliumLogLevel.WARN, SESSION_SCOPE_REASON_MISSING_USER_ID)
             null
@@ -257,11 +265,9 @@ public class WrapperWorkerFactory(
         )
     }
 
-    private fun isValidSession(userId: UserId): Boolean = runCatching {
-        runBlocking {
-            coreLogic.globalScope {
-                doesValidSessionExist(userId).let { it is DoesValidSessionExistResult.Success && it.doesValidSessionExist }
-            }
+    private suspend fun isValidSession(userId: UserId): Boolean = runCatching {
+        coreLogic.globalScope {
+            doesValidSessionExist(userId).let { it is DoesValidSessionExistResult.Success && it.doesValidSessionExist }
         }
     }.getOrElse { error ->
         kaliumLogger.logStructuredJson(
@@ -385,6 +391,22 @@ private class MissingWorker(
         )
         kaliumLogger.e("Skipping worker due to wrapper fallback, class: $workerClassName, reason: $fallbackReason")
         return KaliumResult.Failure
+    }
+}
+
+private class PreparationFailureWorker(
+    private val reason: UserSessionPreparationFailure,
+) : DefaultWorker {
+    override suspend fun doWork(): KaliumResult {
+        kaliumLogger.w("Skipping user worker because session preparation failed: $reason")
+        return if (
+            reason is UserSessionPreparationFailure.InsufficientStorage ||
+            reason is UserSessionPreparationFailure.TemporarilyUnavailable
+        ) {
+            KaliumResult.Retry
+        } else {
+            KaliumResult.Failure
+        }
     }
 }
 
