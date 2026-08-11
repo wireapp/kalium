@@ -81,9 +81,7 @@ internal abstract class UserSessionScopeProviderCommon(
     override fun get(userId: UserId): UserSessionScope? = userScopeStorage.get(userId)
 
     override suspend fun prepare(userId: UserId): PrepareUserSessionResult {
-        get(userId)?.let {
-            return PrepareUserSessionResult.Success(it)
-        }
+        get(userId)?.let { return PrepareUserSessionResult.Success(it) }
 
         val parameters = storageParameters(userId)
         return when (
@@ -102,7 +100,7 @@ internal abstract class UserSessionScopeProviderCommon(
             }
 
             is UserStoragePreparationResult.Failure ->
-                PrepareUserSessionResult.Failure(result.reason.toUserSessionPreparationFailure())
+                PrepareUserSessionResult.Failure(result.failure.toUserSessionPreparationFailure())
         }
     }
 
@@ -114,7 +112,7 @@ internal abstract class UserSessionScopeProviderCommon(
                 UserStorageState.MigratingDatabase -> UserSessionPreparationState.MigratingDatabase
                 is UserStorageState.Ready -> UserSessionPreparationState.Ready
                 is UserStorageState.Failed ->
-                    UserSessionPreparationState.Failed(state.reason.toUserSessionPreparationFailure())
+                    UserSessionPreparationState.Failed(state.failure.toUserSessionPreparationFailure())
             }
         }
 

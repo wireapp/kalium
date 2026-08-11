@@ -18,36 +18,33 @@
 
 package com.wire.kalium.logic
 
-import com.wire.kalium.userstorage.di.UserStoragePreparationFailure
 import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertSame
 
 class UserSessionPreparationTest {
     @Test
-    fun givenInsufficientStorage_whenMappingFailure_thenInsufficientStorageIsReturned() {
-        val result = UserStoragePreparationFailure.InsufficientStorage.toUserSessionPreparationFailure()
+    fun givenTypedFailures_whenCreated_thenEachRetainsOriginalException() {
+        val expected = IllegalStateException("database preparation failed")
+        val failures = listOf(
+            UserSessionPreparationFailure.InsufficientStorage(expected),
+            UserSessionPreparationFailure.TemporarilyUnavailable(expected),
+            UserSessionPreparationFailure.ApplicationUpdateRequired(expected),
+            UserSessionPreparationFailure.SupportRequired(expected),
+        )
 
-        assertEquals(UserSessionPreparationFailure.InsufficientStorage, result)
+        failures.forEach { failure -> assertSame(expected, failure.exception) }
     }
 
     @Test
-    fun givenTemporarilyUnavailable_whenMappingFailure_thenTemporarilyUnavailableIsReturned() {
-        val result = UserStoragePreparationFailure.TemporarilyUnavailable.toUserSessionPreparationFailure()
+    fun givenFailure_whenExposedByResultAndState_thenTypedFailureIsRetained() {
+        val failure = UserSessionPreparationFailure.SupportRequired(
+            IllegalStateException("database preparation failed")
+        )
 
-        assertEquals(UserSessionPreparationFailure.TemporarilyUnavailable, result)
-    }
+        val result = PrepareUserSessionResult.Failure(failure)
+        val state = UserSessionPreparationState.Failed(failure)
 
-    @Test
-    fun givenApplicationUpdateRequired_whenMappingFailure_thenApplicationUpdateRequiredIsReturned() {
-        val result = UserStoragePreparationFailure.ApplicationUpdateRequired.toUserSessionPreparationFailure()
-
-        assertEquals(UserSessionPreparationFailure.ApplicationUpdateRequired, result)
-    }
-
-    @Test
-    fun givenSupportRequired_whenMappingFailure_thenSupportRequiredIsReturned() {
-        val result = UserStoragePreparationFailure.SupportRequired.toUserSessionPreparationFailure()
-
-        assertEquals(UserSessionPreparationFailure.SupportRequired, result)
+        assertSame(failure, result.failure)
+        assertSame(failure, state.failure)
     }
 }

@@ -28,9 +28,9 @@ public sealed class PrepareUserSessionResult {
         public val sessionScope: UserSessionScope
     ) : PrepareUserSessionResult()
 
-    /** Preparation did not complete. */
+    /** Preparation did not complete; [failure] retains the original exception. */
     public class Failure internal constructor(
-        public val reason: UserSessionPreparationFailure
+        public val failure: UserSessionPreparationFailure
     ) : PrepareUserSessionResult()
 }
 
@@ -48,31 +48,48 @@ public sealed class UserSessionPreparationState {
     /** The user session is ready to use. */
     public data object Ready : UserSessionPreparationState()
 
-    /** Preparation stopped with [reason]. */
+    /** Preparation stopped with [failure]. */
     public class Failed internal constructor(
-        public val reason: UserSessionPreparationFailure
+        public val failure: UserSessionPreparationFailure
     ) : UserSessionPreparationState()
 }
 
-/** Actionable reason why user session preparation failed. */
+/** Actionable preparation failure that retains the original [exception]. */
 public sealed class UserSessionPreparationFailure {
+    public abstract val exception: Throwable
+
     /** The user must free storage before trying again. */
-    public data object InsufficientStorage : UserSessionPreparationFailure()
+    public class InsufficientStorage internal constructor(
+        public override val exception: Throwable,
+    ) : UserSessionPreparationFailure()
 
     /** The database is temporarily busy or locked and can be tried again. */
-    public data object TemporarilyUnavailable : UserSessionPreparationFailure()
+    public class TemporarilyUnavailable internal constructor(
+        public override val exception: Throwable,
+    ) : UserSessionPreparationFailure()
 
     /** This app version cannot safely prepare the database. */
-    public data object ApplicationUpdateRequired : UserSessionPreparationFailure()
+    public class ApplicationUpdateRequired internal constructor(
+        public override val exception: Throwable,
+    ) : UserSessionPreparationFailure()
 
     /** Automatic recovery is unsafe and the user needs support. */
-    public data object SupportRequired : UserSessionPreparationFailure()
+    public class SupportRequired internal constructor(
+        public override val exception: Throwable,
+    ) : UserSessionPreparationFailure()
 }
 
 internal fun UserStoragePreparationFailure.toUserSessionPreparationFailure(): UserSessionPreparationFailure =
     when (this) {
-        UserStoragePreparationFailure.InsufficientStorage -> UserSessionPreparationFailure.InsufficientStorage
-        UserStoragePreparationFailure.TemporarilyUnavailable -> UserSessionPreparationFailure.TemporarilyUnavailable
-        UserStoragePreparationFailure.ApplicationUpdateRequired -> UserSessionPreparationFailure.ApplicationUpdateRequired
-        UserStoragePreparationFailure.SupportRequired -> UserSessionPreparationFailure.SupportRequired
+        is UserStoragePreparationFailure.InsufficientStorage ->
+            UserSessionPreparationFailure.InsufficientStorage(exception)
+
+        is UserStoragePreparationFailure.TemporarilyUnavailable ->
+            UserSessionPreparationFailure.TemporarilyUnavailable(exception)
+
+        is UserStoragePreparationFailure.ApplicationUpdateRequired ->
+            UserSessionPreparationFailure.ApplicationUpdateRequired(exception)
+
+        is UserStoragePreparationFailure.SupportRequired ->
+            UserSessionPreparationFailure.SupportRequired(exception)
     }

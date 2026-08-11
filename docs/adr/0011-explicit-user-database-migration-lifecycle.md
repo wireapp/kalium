@@ -83,7 +83,7 @@ public fun observeUserSessionPreparation(
 ): Flow<UserSessionPreparationState>
 ```
 
-The preparation result is concrete and Swift-friendly, following ADR 7:
+The result contains either the ready scope or a typed failure:
 
 ```kotlin
 public sealed class PrepareUserSessionResult {
@@ -92,7 +92,7 @@ public sealed class PrepareUserSessionResult {
     ) : PrepareUserSessionResult()
 
     public class Failure internal constructor(
-        public val reason: UserSessionPreparationFailure
+        public val failure: UserSessionPreparationFailure
     ) : PrepareUserSessionResult()
 }
 ```
@@ -107,25 +107,38 @@ public sealed class UserSessionPreparationState {
     public data object Ready : UserSessionPreparationState()
 
     public class Failed internal constructor(
-        public val reason: UserSessionPreparationFailure
+        public val failure: UserSessionPreparationFailure
     ) : UserSessionPreparationState()
 }
 ```
 
-Failures are small and actionable. Kalium does not expose raw database errors, encryption details,
-database paths, or schema versions.
+Every typed failure retains the exact exception raised while opening or migrating the database:
 
 ```kotlin
 public sealed class UserSessionPreparationFailure {
-    public data object InsufficientStorage : UserSessionPreparationFailure()
-    public data object TemporarilyUnavailable : UserSessionPreparationFailure()
-    public data object ApplicationUpdateRequired : UserSessionPreparationFailure()
-    public data object SupportRequired : UserSessionPreparationFailure()
+    public abstract val exception: Throwable
+
+    public class InsufficientStorage internal constructor(
+        public override val exception: Throwable
+    ) : UserSessionPreparationFailure()
+
+    public class TemporarilyUnavailable internal constructor(
+        public override val exception: Throwable
+    ) : UserSessionPreparationFailure()
+
+    public class ApplicationUpdateRequired internal constructor(
+        public override val exception: Throwable
+    ) : UserSessionPreparationFailure()
+
+    public class SupportRequired internal constructor(
+        public override val exception: Throwable
+    ) : UserSessionPreparationFailure()
 }
 ```
 
-`InsufficientStorage` and `TemporarilyUnavailable` may be tried again. The other failures stop
-automatic retries for the current app version.
+Apps may handle the typed failure or rethrow `failure.exception` without losing its type, message,
+cause chain, or stack trace. They remain responsible for deciding how much diagnostic detail is safe
+to show to users.
 
 Observing the state does not start preparation. The state is only for UI. The suspending
 `prepareUserSession` operation is the gate that every database user must call.
@@ -191,8 +204,8 @@ The change will follow the current module boundaries:
   and report when SQLDelight starts an upgrade.
 - `:domain:userstorage` will own one entry and state flow per user database, coordinate its shared
   preparation attempt, and cache storage only after preparation succeeds.
-- `:logic` will expose the public API, map internal errors to the public failure types, and create
-  `UserSessionScope` only after storage is ready.
+- `:logic` will expose the public API, map storage failure types while retaining their original
+  exceptions, and create `UserSessionScope` only after storage is ready.
 - Android and iOS will call the new API from startup and every background entry point that needs the
   user database.
 
@@ -207,8 +220,9 @@ There is one preparation operation for each physical user database in a process.
 - A repeated call after `Ready` returns the cached scope immediately.
 - Cancelling one caller only cancels that caller's wait. It does not cancel work used by another
   caller.
-- A retryable failure allows a later call to start a new attempt.
-- A failure that needs an app update or support does not enter an automatic retry loop.
+- A transient storage-full, busy, or locked failure allows a later call to start a new attempt.
+- Other failures do not enter an automatic retry loop, but their original exceptions still reach
+  every caller waiting for that preparation attempt.
 
 If the process stops during migration, the next call opens the database again. SQLDelight and the
 platform driver read the stored schema version and run any migration that was not committed. The app
@@ -232,7 +246,8 @@ The API will be introduced in steps:
    successful preparation is a programming error and must fail fast instead of opening or migrating
    the database.
 
-`prepareUserSession` returns the ready scope, so new callers do not need another lookup API.
+`prepareUserSession` returns the ready scope inside `Success`, so new callers do not need another
+lookup API.
 
 The additive API and later behavior change must follow the ABI and changelog rules in ADR 9.
 
