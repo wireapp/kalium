@@ -31,16 +31,57 @@ public actual class PlatformUserStorageProvider : UserStorageProvider() {
         shouldEncryptData: Boolean,
         platformProperties: PlatformUserStorageProperties,
         dbInvalidationControlEnabled: Boolean
+    ): UserStorage = createUserStorage(
+        userId = userId,
+        shouldEncryptData = shouldEncryptData,
+        platformProperties = platformProperties,
+        dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+        onMigrationStarted = null
+    )
+
+    override fun create(
+        userId: UserId,
+        shouldEncryptData: Boolean,
+        platformProperties: PlatformUserStorageProperties,
+        dbInvalidationControlEnabled: Boolean,
+        onMigrationStarted: () -> Unit
+    ): UserStorage = createUserStorage(
+        userId = userId,
+        shouldEncryptData = shouldEncryptData,
+        platformProperties = platformProperties,
+        dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+        onMigrationStarted = onMigrationStarted
+    )
+
+    @Suppress("LongParameterList", "UnusedParameter") // User databases are not encrypted on Apple yet.
+    private fun createUserStorage(
+        userId: UserId,
+        shouldEncryptData: Boolean,
+        platformProperties: PlatformUserStorageProperties,
+        dbInvalidationControlEnabled: Boolean,
+        onMigrationStarted: (() -> Unit)?
     ): UserStorage {
         val userIdEntity = UserIDEntity(userId.value, userId.domain)
-        val database = userDatabaseBuilder(
-            platformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(platformProperties.rootStoragePath)),
-            userId = userIdEntity,
-            passphrase = null,
-            dispatcher = KaliumDispatcherImpl.io,
-            enableWAL = true,
-            dbInvalidationControlEnabled = dbInvalidationControlEnabled
-        )
+        val database = if (onMigrationStarted == null) {
+            userDatabaseBuilder(
+                platformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(platformProperties.rootStoragePath)),
+                userId = userIdEntity,
+                passphrase = null,
+                dispatcher = KaliumDispatcherImpl.io,
+                enableWAL = true,
+                dbInvalidationControlEnabled = dbInvalidationControlEnabled
+            )
+        } else {
+            userDatabaseBuilder(
+                platformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(platformProperties.rootStoragePath)),
+                userId = userIdEntity,
+                passphrase = null,
+                dispatcher = KaliumDispatcherImpl.io,
+                enableWAL = true,
+                dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+                onMigrationStarted = onMigrationStarted
+            )
+        }
         return UserStorage(database)
     }
 }

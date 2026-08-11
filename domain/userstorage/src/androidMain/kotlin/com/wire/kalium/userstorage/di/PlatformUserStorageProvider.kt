@@ -30,6 +30,35 @@ public actual class PlatformUserStorageProvider : UserStorageProvider() {
         shouldEncryptData: Boolean,
         platformProperties: PlatformUserStorageProperties,
         dbInvalidationControlEnabled: Boolean
+    ): UserStorage = createUserStorage(
+        userId = userId,
+        shouldEncryptData = shouldEncryptData,
+        platformProperties = platformProperties,
+        dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+        onMigrationStarted = null
+    )
+
+    override fun create(
+        userId: UserId,
+        shouldEncryptData: Boolean,
+        platformProperties: PlatformUserStorageProperties,
+        dbInvalidationControlEnabled: Boolean,
+        onMigrationStarted: () -> Unit
+    ): UserStorage = createUserStorage(
+        userId = userId,
+        shouldEncryptData = shouldEncryptData,
+        platformProperties = platformProperties,
+        dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+        onMigrationStarted = onMigrationStarted
+    )
+
+    @Suppress("LongParameterList")
+    private fun createUserStorage(
+        userId: UserId,
+        shouldEncryptData: Boolean,
+        platformProperties: PlatformUserStorageProperties,
+        dbInvalidationControlEnabled: Boolean,
+        onMigrationStarted: (() -> Unit)?
     ): UserStorage {
         val userIdEntity = UserIDEntity(userId.value, userId.domain)
 
@@ -38,14 +67,26 @@ public actual class PlatformUserStorageProvider : UserStorageProvider() {
         } else {
             null
         }
-        val database = userDatabaseBuilder(
-            platformDatabaseData = PlatformDatabaseData(platformProperties.applicationContext),
-            userId = userIdEntity,
-            passphrase = databasePassphrase,
-            dispatcher = KaliumDispatcherImpl.io,
-            enableWAL = true,
-            dbInvalidationControlEnabled = dbInvalidationControlEnabled
-        )
+        val database = if (onMigrationStarted == null) {
+            userDatabaseBuilder(
+                platformDatabaseData = PlatformDatabaseData(platformProperties.applicationContext),
+                userId = userIdEntity,
+                passphrase = databasePassphrase,
+                dispatcher = KaliumDispatcherImpl.io,
+                enableWAL = true,
+                dbInvalidationControlEnabled = dbInvalidationControlEnabled
+            )
+        } else {
+            userDatabaseBuilder(
+                platformDatabaseData = PlatformDatabaseData(platformProperties.applicationContext),
+                userId = userIdEntity,
+                passphrase = databasePassphrase,
+                dispatcher = KaliumDispatcherImpl.io,
+                enableWAL = true,
+                dbInvalidationControlEnabled = dbInvalidationControlEnabled,
+                onMigrationStarted = onMigrationStarted
+            )
+        }
         return UserStorage(database)
     }
 }

@@ -24,9 +24,19 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.clearInMemoryDatabase
 import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -134,13 +144,219 @@ class UserStorageProviderTest {
         cleanup(firstProvider, secondProvider)
     }
 
+    @Test
+    fun givenNoPreparation_whenObservingStorage_thenStateIsNotStarted() = runBlocking {
+        val createCount = AtomicInteger(0)
+        val provider = TestUserStorageProvider(createCount)
+        val state = provider.observe(testUserId)
+
+        assertSame(state, provider.observe(testUserId))
+        assertEquals(UserStorageState.NotStarted, state.first())
+        assertEquals(0, createCount.get())
+
+        cleanup(provider)
+    }
+
+    @Test
+    fun givenMigrationStarts_whenPreparingStorage_thenOneStorageFlowReportsLifecycle() = runBlocking {
+        val provider = TestUserStorageProvider(AtomicInteger(0), reportsMigration = true)
+        val states = mutableListOf<UserStorageState>()
+        val observer = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
+            provider.observe(testUserId).take(4).toList(states)
+        }
+
+        val result = provider.prepare(
+            userId = testUserId,
+            platformUserStorageProperties = testProperties,
+            shouldEncryptData = false,
+            dbInvalidationControlEnabled = false,
+        )
+        observer.join()
+
+        val success = assertIs<UserStoragePreparationResult.Success>(result)
+        assertEquals(
+            listOf(
+                UserStorageState.NotStarted,
+                UserStorageState.OpeningDatabase,
+                UserStorageState.MigratingDatabase,
+                UserStorageState.Ready(success.storage),
+            ),
+            states,
+        )
+
+        cleanup(provider)
+    }
+
+    @Test
+    fun givenMigrationStartsThroughSynchronousAccessor_whenCreatingStorage_thenSameFlowReportsLifecycle() = runBlocking {
+        val provider = TestUserStorageProvider(AtomicInteger(0), reportsMigration = true)
+        val states = mutableListOf<UserStorageState>()
+        val observer = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
+            provider.observe(testUserId).take(4).toList(states)
+        }
+
+        val storage = provider.getOrCreate(
+            userId = testUserId,
+            platformUserStorageProperties = testProperties,
+            shouldEncryptData = false,
+            dbInvalidationControlEnabled = false,
+        )
+        observer.join()
+
+        assertEquals(
+            listOf(
+                UserStorageState.NotStarted,
+                UserStorageState.OpeningDatabase,
+                UserStorageState.MigratingDatabase,
+                UserStorageState.Ready(storage),
+            ),
+            states,
+        )
+
+        cleanup(provider)
+    }
+
+    @Test
+    fun givenConcurrentCallers_whenPreparingStorage_thenStorageIsCreatedOnce() = runBlocking {
+        val createCount = AtomicInteger(0)
+        val provider = TestUserStorageProvider(createCount)
+
+        val first = async {
+            provider.prepare(testUserId, testProperties, false, false)
+        }
+        val second = async {
+            provider.prepare(testUserId, testProperties, false, false)
+        }
+
+        assertIs<UserStoragePreparationResult.Success>(first.await())
+        assertIs<UserStoragePreparationResult.Success>(second.await())
+        assertEquals(1, createCount.get())
+
+        cleanup(provider)
+    }
+
+    @Test
+    fun givenConcurrentCallers_whenOneCallerIsCancelled_thenSharedPreparationContinues() = runBlocking {
+        val createCount = AtomicInteger(0)
+        val preparationStarted = CountDownLatch(1)
+        val continuePreparation = CountDownLatch(1)
+        val provider = object : UserStorageProvider() {
+            override fun create(
+                userId: UserId,
+                shouldEncryptData: Boolean,
+                platformProperties: PlatformUserStorageProperties,
+                dbInvalidationControlEnabled: Boolean,
+            ): UserStorage {
+                createCount.incrementAndGet()
+                preparationStarted.countDown()
+                continuePreparation.await()
+                return UserStorage(inMemoryDatabase(testUserIdEntity, KaliumDispatcherImpl.io))
+            }
+        }
+
+        val cancelled = async(start = CoroutineStart.UNDISPATCHED) {
+            provider.prepare(testUserId, testProperties, false, false)
+        }
+        val waiting = async(start = CoroutineStart.UNDISPATCHED) {
+            provider.prepare(testUserId, testProperties, false, false)
+        }
+        preparationStarted.await()
+        cancelled.cancel()
+        continuePreparation.countDown()
+
+        assertIs<UserStoragePreparationResult.Success>(waiting.await())
+        assertEquals(1, createCount.get())
+
+        cleanup(provider)
+    }
+
+    @Test
+    fun givenRetryableFailure_whenPreparingAgain_thenNewAttemptStarts() = runBlocking {
+        val createCount = AtomicInteger(0)
+        val provider = TestUserStorageProvider(createCount, failuresRemaining = AtomicInteger(1))
+
+        val first = provider.prepare(testUserId, testProperties, false, false)
+        val second = provider.prepare(testUserId, testProperties, false, false)
+
+        assertEquals(
+            UserStoragePreparationFailure.TemporarilyUnavailable,
+            assertIs<UserStoragePreparationResult.Failure>(first).reason,
+        )
+        assertIs<UserStoragePreparationResult.Success>(second)
+        assertEquals(2, createCount.get())
+
+        cleanup(provider)
+    }
+
+    @Test
+    fun givenFatalFailure_whenPreparingAgain_thenFailedAttemptIsReused() = runBlocking {
+        val createCount = AtomicInteger(0)
+        val provider = TestUserStorageProvider(
+            createCount,
+            failuresRemaining = AtomicInteger(1),
+            failureMessage = "file is not a database",
+        )
+
+        val first = provider.prepare(testUserId, testProperties, false, false)
+        val second = provider.prepare(testUserId, testProperties, false, false)
+
+        assertEquals(
+            UserStoragePreparationFailure.SupportRequired,
+            assertIs<UserStoragePreparationResult.Failure>(first).reason,
+        )
+        assertEquals(
+            UserStoragePreparationFailure.SupportRequired,
+            assertIs<UserStoragePreparationResult.Failure>(second).reason,
+        )
+        assertEquals(1, createCount.get())
+
+        cleanup(provider)
+    }
+
+    @Test
+    fun givenNestedLockedError_whenClassifyingFailure_thenTemporarilyUnavailableIsReturned() {
+        val result = IllegalStateException(
+            "Could not open database",
+            IllegalStateException("database is locked"),
+        ).toUserStoragePreparationFailure()
+
+        assertEquals(UserStoragePreparationFailure.TemporarilyUnavailable, result)
+    }
+
+    @Test
+    fun givenDiskFullError_whenClassifyingFailure_thenInsufficientStorageIsReturned() {
+        val result = IllegalStateException("SQLITE_FULL: database or disk is full")
+            .toUserStoragePreparationFailure()
+
+        assertEquals(UserStoragePreparationFailure.InsufficientStorage, result)
+    }
+
+    @Test
+    fun givenDowngradeError_whenClassifyingFailure_thenApplicationUpdateRequiredIsReturned() {
+        val result = IllegalStateException("Database downgrade is not supported")
+            .toUserStoragePreparationFailure()
+
+        assertEquals(UserStoragePreparationFailure.ApplicationUpdateRequired, result)
+    }
+
+    @Test
+    fun givenUnknownDatabaseError_whenClassifyingFailure_thenSupportRequiredIsReturned() {
+        val result = IllegalStateException("file is not a database")
+            .toUserStoragePreparationFailure()
+
+        assertEquals(UserStoragePreparationFailure.SupportRequired, result)
+    }
+
     private fun cleanup(vararg providers: UserStorageProvider) {
         providers.forEach { it.remove(testUserId)?.database?.nuke() }
         clearInMemoryDatabase(testUserIdEntity)
     }
 
     private class TestUserStorageProvider(
-        private val createCount: AtomicInteger
+        private val createCount: AtomicInteger,
+        private val reportsMigration: Boolean = false,
+        private val failuresRemaining: AtomicInteger = AtomicInteger(0),
+        private val failureMessage: String = "database is locked",
     ) : UserStorageProvider() {
 
         override fun create(
@@ -150,8 +366,24 @@ class UserStorageProviderTest {
             dbInvalidationControlEnabled: Boolean
         ): UserStorage {
             createCount.incrementAndGet()
+            if (failuresRemaining.getAndUpdate { current -> (current - 1).coerceAtLeast(0) } > 0) {
+                error(failureMessage)
+            }
             val userIdEntity = UserIDEntity(userId.value, userId.domain)
             return UserStorage(inMemoryDatabase(userIdEntity, KaliumDispatcherImpl.io))
+        }
+
+        override fun create(
+            userId: UserId,
+            shouldEncryptData: Boolean,
+            platformProperties: PlatformUserStorageProperties,
+            dbInvalidationControlEnabled: Boolean,
+            onMigrationStarted: () -> Unit,
+        ): UserStorage {
+            if (reportsMigration) {
+                onMigrationStarted()
+            }
+            return create(userId, shouldEncryptData, platformProperties, dbInvalidationControlEnabled)
         }
     }
 }

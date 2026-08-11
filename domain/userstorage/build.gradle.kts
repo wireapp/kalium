@@ -70,25 +70,11 @@ kotlin {
             kotlin.srcDir(generateUserStorageCacheConfig)
             dependencies {
                 implementation(projects.core.data)
+                implementation(projects.core.util)
                 api(projects.data.persistence)
                 implementation(libs.coroutines.core)
                 implementation(libs.concurrentCollections)
                 implementation(libs.statelyCommons)
-            }
-        }
-        val androidMain by getting {
-            dependencies {
-                implementation(projects.core.util)
-            }
-        }
-        val jvmMain by getting {
-            dependencies {
-                implementation(projects.core.util)
-            }
-        }
-        val appleMain by getting {
-            dependencies {
-                implementation(projects.core.util)
             }
         }
     }
