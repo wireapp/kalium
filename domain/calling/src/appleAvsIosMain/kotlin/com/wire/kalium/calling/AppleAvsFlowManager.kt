@@ -43,10 +43,5 @@ actual class AppleAvsFlowManager actual constructor() {
         flowManager.setVideoCaptureDevice(deviceId = deviceId, forConversation = forConversation)
     }
 
-    actual fun startAudio() {
-        mediaManager.startAudio()
-        flowManager
-    }
-
     actual fun startIfAvailable(): Boolean = AppleAvs.bridge.startIfAvailable()
 }
