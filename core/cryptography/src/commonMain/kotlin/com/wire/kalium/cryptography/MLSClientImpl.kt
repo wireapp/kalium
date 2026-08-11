@@ -24,7 +24,6 @@ import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCryptoClient
 import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
-import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.MlsException
 import com.wire.crypto.toClientId
 import com.wire.crypto.toExternalSenderKey
@@ -154,40 +153,27 @@ class MLSClientImpl(
             return context.encryptMessage(groupId.toCrypto(), message)
         }
 
-        @Suppress("TooGenericExceptionCaught")
         override suspend fun decryptMessage(
             groupId: MLSGroupId,
             message: ByteArray,
-        ): List<DecryptedMessageBundle> {
-            var decryptedMessage: DecryptedMessage? = null
-            try {
-                val result = context.decryptMessage(
-                    groupId.toCrypto(),
-                    message
-                )
-                decryptedMessage = result
-
-            } catch (throwable: Throwable) {
-                val isBufferedFutureError = throwable is CoreCryptoException.Mls
-                        && (
-                        throwable.mlsError is MlsException.BufferedFutureMessage
-                                || throwable.mlsError is MlsException.BufferedCommit
-                        )
-                if (!isBufferedFutureError) {
-                    throw throwable
-                }
-            }
-
-            if (decryptedMessage == null) {
-                return emptyList()
-            }
+        ): MLSDecryptResult = try {
+            val decryptedMessage = context.decryptMessage(
+                groupId.toCrypto(),
+                message
+            )
 
             val mainMessageBundle = listOf(decryptedMessage.toBundle())
             val bufferedBundles = decryptedMessage.bufferedMessages
                 ?.map { it.toBundle() }
                 ?: emptyList()
 
-            return mainMessageBundle + bufferedBundles
+            MLSDecryptResult.Success(mainMessageBundle + bufferedBundles)
+        } catch (throwable: CoreCryptoException.Mls) {
+            when (throwable.mlsError) {
+                is MlsException.BufferedFutureMessage -> MLSDecryptResult.BufferedFutureMessage
+                is MlsException.BufferedCommit -> MLSDecryptResult.BufferedCommit
+                else -> throw throwable
+            }
         }
 
         override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {

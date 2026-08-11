@@ -4,6 +4,9 @@ on:
   merge_group:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+  push:
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
@@ -24,7 +27,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Java and Gradle
@@ -33,7 +35,7 @@ jobs:
       # Probably redundant since this is part of the test suite, leaving as a separate step for clarity and artifacting purposes.
       - name: Verify DB Migrations
         env:
-          GRADLE_OPTS: "-Xmx6G -XX:+UseParallelGC -XX:MaxMetaspaceSize=2g"
+          GRADLE_OPTS: "-Xmx6G -XX:+UseParallelGC -XX:MaxMetaspaceSize=2g -Dorg.gradle.caching=true"
         run: |
           ./gradlew :data:persistence:jvmTest --tests com.wire.kalium.persistence.migrations.VerifyDatabaseMigrationsTest
 

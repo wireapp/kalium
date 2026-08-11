@@ -24,6 +24,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -114,7 +115,7 @@ public class JoinConversationViaCodeUseCase internal constructor(
                                 protocol.groupId,
                                 listOf(selfUserId),
                                 protocol.cipherSuite
-                            )
+                            ).map {}
                         }
                     }
 

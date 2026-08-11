@@ -18,12 +18,25 @@
 
 package com.wire.kalium.logic.feature.meeting
 
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.util.KaliumDispatcher
 
+@Suppress("LongParameterList")
 public class MeetingScope internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val meetingRepository: MeetingRepository,
+    private val userRepository: UserRepository,
+    private val conversationRepository: ConversationRepository,
+    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
+    private val resetMLSConversation: ResetMLSConversationUseCase,
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val transactionProvider: CryptoTransactionProvider,
 ) {
     public val getPaginatedMeetingOccurrenceDetails: GetPaginatedMeetingOccurrencesUseCase
         get() = GetPaginatedMeetingOccurrencesUseCaseImpl(
@@ -40,5 +53,34 @@ public class MeetingScope internal constructor(
     public val deleteMeeting: DeleteMeetingUseCase
         get() = DeleteMeetingUseCaseImpl(
             meetingRepository = meetingRepository,
+        )
+
+    public val getNextMeetingOccurrence: GetNextMeetingOccurrenceUseCase
+        get() = GetNextMeetingOccurrenceUseCaseImpl(
+            dispatcher = dispatcher,
+            meetingRepository = meetingRepository,
+        )
+
+    public val ensureMeetingIsMLSEstablished: EnsureMeetingIsMLSEstablishedUseCase
+        get() = EnsureMeetingIsMLSEstablishedUseCaseImpl(
+            transactionProvider = transactionProvider,
+            conversationRepository = conversationRepository,
+            joinExistingMLSConversation = joinExistingMLSConversation,
+        )
+
+    public val createNewMeeting: CreateNewMeetingUseCase
+        get() = CreateNewMeetingUseCaseImpl(
+            meetingRepository = meetingRepository,
+            refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
+            transactionProvider = transactionProvider,
+        )
+
+    public val updateMeeting: UpdateMeetingUseCase
+        get() = UpdateMeetingUseCaseImpl(
+            meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
+            resetMLSConversation = resetMLSConversation,
+            transactionProvider = transactionProvider,
         )
 }

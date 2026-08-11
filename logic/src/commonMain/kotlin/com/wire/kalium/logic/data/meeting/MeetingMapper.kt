@@ -20,8 +20,9 @@ package com.wire.kalium.logic.data.meeting
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.meeting.MeetingOccurrence.Recurrence.Companion.SUPPORTED_RECURRENCES
+import com.wire.kalium.logic.data.meeting.Meeting.Recurrence.Companion.SUPPORTED_RECURRENCES
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingFrequencyDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingRecurrenceDTO
@@ -33,8 +34,12 @@ import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceDetailsEntity
 internal interface MeetingMapper {
     fun fromApiToDao(meeting: MeetingDTO): MeetingEntity?
     fun fromApiToDao(recurrence: MeetingRecurrenceDTO): RecurrenceEntity?
+    fun fromDaoToApi(recurrence: RecurrenceEntity): MeetingRecurrenceDTO
+    fun fromDaoToModel(meeting: MeetingEntity): Meeting
     fun fromDaoToModel(meeting: MeetingOccurrenceDetailsEntity): MeetingOccurrence
-    fun fromDaoToModel(recurrence: RecurrenceEntity): MeetingOccurrence.Recurrence
+    fun fromDaoToModel(recurrence: RecurrenceEntity): Meeting.Recurrence
+    fun fromModelToDao(recurrence: Meeting.Recurrence): RecurrenceEntity
+    fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest
 }
 
 internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : MeetingMapper {
@@ -62,28 +67,37 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         ?.let { RecurrenceEntity(frequency = it, interval = recurrence.interval, until = recurrence.until) }
         ?.takeIf { it.isSupported() }
 
+    override fun fromDaoToApi(recurrence: RecurrenceEntity): MeetingRecurrenceDTO =
+        MeetingRecurrenceDTO(frequency = recurrence.frequency.toApiFrequency(), interval = recurrence.interval, until = recurrence.until)
+
+    override fun fromDaoToModel(meeting: MeetingEntity): Meeting = Meeting(
+        meetingId = meeting.meetingId.toModel(),
+        conversationId = meeting.conversationId.toModel(),
+        creatorId = meeting.creatorId.toModel(),
+        title = meeting.title,
+        startTime = meeting.startTime,
+        endTime = meeting.endTime,
+        recurrence = meeting.recurrence?.let { fromDaoToModel(it) },
+    )
+
     override fun fromDaoToModel(meeting: MeetingOccurrenceDetailsEntity): MeetingOccurrence = MeetingOccurrence(
-        meetingId = meeting.meeting.meetingId.toModel(),
-        conversationId = meeting.meeting.conversationId.toModel(),
+        meeting = fromDaoToModel(meeting.meeting),
         conversationName = meeting.conversationName.orEmpty(),
         conversationType = when (meeting.conversationType) {
-            ConversationEntity.Type.ONE_ON_ONE ->
-                MeetingOccurrence.ConversationType.OneOnOne(previewPicture = meeting.otherUserPreviewAssetId?.toModel())
+            ConversationEntity.Type.ONE_ON_ONE -> MeetingOccurrence.ConversationType.OneOnOne(
+                previewPicture = meeting.otherUserPreviewAssetId?.toModel()
+            )
 
-            ConversationEntity.Type.GROUP if meeting.conversationType is ConversationEntity.Type.MEETING ->
-                MeetingOccurrence.ConversationType.Meeting(previewPictures = meeting.participantPreviewAssetIds.map { it.toModel() })
+            ConversationEntity.Type.MEETING -> MeetingOccurrence.ConversationType.Meeting(
+                previewPictures = meeting.participantPreviewAssetIds.map { it.toModel() }
+            )
 
-            ConversationEntity.Type.GROUP if meeting.conversationType is ConversationEntity.Type.CHANNEL ->
-                MeetingOccurrence.ConversationType.Channel(
-                    isPrivateChannel = meeting.channelAccess != ConversationEntity.ChannelAccess.PUBLIC
-                )
+            ConversationEntity.Type.CHANNEL -> MeetingOccurrence.ConversationType.Channel(
+                isPrivateChannel = meeting.channelAccess != ConversationEntity.ChannelAccess.PUBLIC
+            )
 
             else -> MeetingOccurrence.ConversationType.Group
         },
-        title = meeting.meeting.title,
-        startTime = meeting.occurrence.occurrenceStart,
-        endTime = meeting.occurrence.occurrenceEnd,
-        recurrence = meeting.meeting.recurrence?.let { fromDaoToModel(it) },
         selfRole = when (meeting.meeting.creatorId) {
             meeting.selfUserId -> MeetingOccurrence.SelfRole.Creator
             else -> MeetingOccurrence.SelfRole.Member
@@ -93,15 +107,39 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         occurrenceEndTime = meeting.occurrence.occurrenceEnd
     )
 
-    override fun fromDaoToModel(recurrence: RecurrenceEntity): MeetingOccurrence.Recurrence = MeetingOccurrence.Recurrence(
+    override fun fromDaoToModel(recurrence: RecurrenceEntity): Meeting.Recurrence = Meeting.Recurrence(
         frequency = recurrence.frequency.toFrequency(),
         interval = recurrence.interval ?: 1L,
         until = recurrence.until
     )
 
-    private fun RecurrenceEntity.Frequency.toFrequency(): MeetingOccurrence.Recurrence.Frequency = when (this) {
-        RecurrenceEntity.Frequency.DAILY -> MeetingOccurrence.Recurrence.Frequency.DAILY
-        RecurrenceEntity.Frequency.WEEKLY -> MeetingOccurrence.Recurrence.Frequency.WEEKLY
+    override fun fromModelToDao(recurrence: Meeting.Recurrence): RecurrenceEntity = RecurrenceEntity(
+        frequency = recurrence.frequency.toDaoFrequency(),
+        interval = recurrence.interval,
+        until = recurrence.until
+    )
+
+    override fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest = UpsertMeetingRequest(
+        title = upsertMeeting.title,
+        startTime = upsertMeeting.startTime,
+        endTime = upsertMeeting.endTime,
+        recurrence = upsertMeeting.recurrence?.let {
+            MeetingRecurrenceDTO(
+                frequency = it.frequency.toDaoFrequency().toApiFrequency(),
+                interval = it.interval,
+                until = it.until
+            )
+        }
+    )
+
+    private fun RecurrenceEntity.Frequency.toFrequency(): Meeting.Recurrence.Frequency = when (this) {
+        RecurrenceEntity.Frequency.DAILY -> Meeting.Recurrence.Frequency.DAILY
+        RecurrenceEntity.Frequency.WEEKLY -> Meeting.Recurrence.Frequency.WEEKLY
+    }
+
+    private fun Meeting.Recurrence.Frequency.toDaoFrequency(): RecurrenceEntity.Frequency = when (this) {
+        Meeting.Recurrence.Frequency.DAILY -> RecurrenceEntity.Frequency.DAILY
+        Meeting.Recurrence.Frequency.WEEKLY -> RecurrenceEntity.Frequency.WEEKLY
     }
 
     private fun MeetingFrequencyDTO.toDaoFrequency(): RecurrenceEntity.Frequency? = when (this) {
@@ -109,6 +147,11 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         MeetingFrequencyDTO.WEEKLY -> RecurrenceEntity.Frequency.WEEKLY
         MeetingFrequencyDTO.MONTHLY,
         MeetingFrequencyDTO.YEARLY -> null
+    }
+
+    private fun RecurrenceEntity.Frequency.toApiFrequency(): MeetingFrequencyDTO = when (this) {
+        RecurrenceEntity.Frequency.DAILY -> MeetingFrequencyDTO.DAILY
+        RecurrenceEntity.Frequency.WEEKLY -> MeetingFrequencyDTO.WEEKLY
     }
 
     private fun RecurrenceEntity.isSupported() = fromDaoToModel(this).let {

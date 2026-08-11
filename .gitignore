@@ -114,3 +114,5 @@ generated/
 .claude
 .venv
 __pycache__/
+AGENTS.md
+CLAUDE.md

@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
+    id("com.wire.kalium.apple-avs-runtime")
     alias(libs.plugins.ksp)
     alias(libs.plugins.mokkery)
     alias(libs.plugins.skie)
@@ -34,7 +35,6 @@ kaliumLibrary {
 
 val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
     ?: error("USE_UNIFIED_CORE_CRYPTO not set")
-val disableAppleAvs: Boolean = findProperty("kalium.disableAppleAvs")?.toString()?.toBoolean() ?: false
 
 kotlin {
     explicitApi()
@@ -142,10 +142,8 @@ kotlin {
             getByName("macosArm64Main")
         ).forEach { appleTargetMain ->
             appleTargetMain.kotlin.srcDir(appleCallSourceDir)
-            if (!disableAppleAvs) {
-                appleTargetMain.dependencies {
-                    implementation(libs.avsKmp)
-                }
+            appleTargetMain.dependencies {
+                implementation(libs.avsKmp)
             }
         }
 

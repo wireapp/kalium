@@ -4,6 +4,9 @@ on:
   merge_group:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+  push:
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
@@ -25,12 +28,17 @@ jobs:
       checks: write # required to publish unit test check runs
       pull-requests: write # required to publish pull request comments
     runs-on: ubuntu-latest
+    env:
+      # Inherited by the nested Gradle process started by androidUnitOnlyAffectedTest.
+      GRADLE_OPTS: -Dorg.gradle.caching=true
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
-          fetch-depth: 0
           persist-credentials: false
+
+      - name: Fetch develop for affected module detection
+        run: git fetch --no-tags --depth=1 origin develop:refs/remotes/origin/develop
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
@@ -45,7 +53,9 @@ jobs:
           ./gradlew :sample:samples:compileAndroidHostTestSources
 
       - name: Android Unit Tests
-        run: ./gradlew androidUnitOnlyAffectedTest
+        # Develop runs the complete suite to populate task outputs for future PRs.
+        # PR and merge-queue runs keep using affected-module detection.
+        run: ./gradlew ${{ github.event_name == 'push' && 'testAndroidHostTest' || 'androidUnitOnlyAffectedTest' }}
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -95,7 +105,7 @@ jobs:
           name: test-results
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
-          node-version: 18
+          node-version: 24.19.0
       - name: Install datadog-ci
         run: npm install -g @datadog/datadog-ci
       - name: "Upload results"

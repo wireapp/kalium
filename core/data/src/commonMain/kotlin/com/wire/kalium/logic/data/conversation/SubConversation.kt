@@ -20,13 +20,14 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
+import kotlinx.datetime.Instant
 
 data class SubConversation(
     val id: SubconversationId,
     val parentId: ConversationId,
     val groupId: GroupID,
     val epoch: ULong,
-    val epochTimestamp: String?,
+    val epochTimestamp: Instant?,
     val mlsCipherSuiteTag: Int?,
 
     val members: List<SubconversationMember>,
