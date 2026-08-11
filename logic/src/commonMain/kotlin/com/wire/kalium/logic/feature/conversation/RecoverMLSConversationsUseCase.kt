@@ -36,6 +36,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.user.UserId
 
 internal sealed class RecoverMLSConversationsResult {
     internal data object Success : RecoverMLSConversationsResult()
@@ -57,6 +58,7 @@ internal class RecoverMLSConversationsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
+    private val selfUserId: UserId,
 ) : RecoverMLSConversationsUseCase {
     override suspend operator fun invoke(transactionContext: CryptoTransactionContext): RecoverMLSConversationsResult =
         if (!featureSupport.isMLSSupported ||
@@ -81,32 +83,39 @@ internal class RecoverMLSConversationsUseCaseImpl(
     ): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
         return if (protocol is Conversation.ProtocolInfo.MLS) {
-            transactionContext.wrapInMLSContext { mlsContext ->
-                mlsConversationRepository.isLocalGroupEpochStale(mlsContext, protocol.groupId, protocol.epoch)
+            conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
+                if (selfUserId !in members) {
+                    kaliumLogger.d("Skipping MLS recovery for ${conversation.id.toLogString()}: self user is no longer a member")
+                    Either.Right(Unit)
+                } else {
+                    transactionContext.wrapInMLSContext { mlsContext ->
+                        mlsConversationRepository.isLocalGroupEpochStale(mlsContext, protocol.groupId, protocol.epoch)
+                    }
+                        .fold({ checkEpochFailure ->
+                            if (checkEpochFailure is MLSFailure.ConversationNotFound) {
+                                kaliumLogger.w(
+                                    "Marking ${protocol.groupId.toLogString()} as PENDING_AFTER_RESET: " +
+                                        "group not found in local MLS state, will retry join on next sync"
+                                )
+                                conversationRepository.updateConversationGroupState(
+                                    protocol.groupId,
+                                    GroupState.PENDING_AFTER_RESET
+                                )
+                                Either.Right(Unit)
+                            } else {
+                                Either.Left(checkEpochFailure)
+                            }
+                        }, { isGroupOutOfSync ->
+                            if (isGroupOutOfSync) {
+                                joinExistingMLSConversationUseCase(transactionContext, conversation.id).onFailure { joinFailure ->
+                                    Either.Left(joinFailure)
+                                }
+                            } else {
+                                Either.Right(Unit)
+                            }
+                        })
+                }
             }
-                .fold({ checkEpochFailure ->
-                    if (checkEpochFailure is MLSFailure.ConversationNotFound) {
-                        kaliumLogger.w(
-                            "Marking ${protocol.groupId.toLogString()} as PENDING_AFTER_RESET: " +
-                                "group not found in local MLS state, will retry join on next sync"
-                        )
-                        conversationRepository.updateConversationGroupState(
-                            protocol.groupId,
-                            GroupState.PENDING_AFTER_RESET
-                        )
-                        Either.Right(Unit)
-                    } else {
-                        Either.Left(checkEpochFailure)
-                    }
-                }, { isGroupOutOfSync ->
-                    if (isGroupOutOfSync) {
-                        joinExistingMLSConversationUseCase(transactionContext, conversation.id).onFailure { joinFailure ->
-                            Either.Left(joinFailure)
-                        }
-                    } else {
-                        Either.Right(Unit)
-                    }
-                })
         } else {
             Either.Right(Unit)
         }
