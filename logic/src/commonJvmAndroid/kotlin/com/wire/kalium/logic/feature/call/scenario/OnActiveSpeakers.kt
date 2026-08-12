@@ -24,13 +24,12 @@ import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.data.call.CallActiveSpeakers
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.serialization.json.Json
 
 internal class OnActiveSpeakers(
     private val callRepository: CallRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val jsonDecoder: Json = KtxSerializer.json
+    private val jsonDecoder: Json,
 ) : ActiveSpeakersHandler {
 
     override fun onActiveSpeakersChanged(inst: Handle, conversationId: String, data: String, arg: Pointer?) {
