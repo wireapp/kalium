@@ -182,6 +182,7 @@ internal class CallManagerImpl internal constructor(
             runBlocking { callRepository.updateIsCbrEnabled(isEnabled) }
         }.keepingStrongReference()
 
+    @Suppress("LongMethod")
     private fun startHandleAsync(): Deferred<Handle> {
         return scope.async(start = CoroutineStart.LAZY) {
             val mediaManagerStartJob = launch {
