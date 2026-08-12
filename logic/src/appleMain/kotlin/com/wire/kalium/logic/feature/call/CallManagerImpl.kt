@@ -357,6 +357,15 @@ internal class CallManagerImpl internal constructor(
             onCallingReady()
         }
 
+        override fun onLog(level: Int, message: String) {
+            when (level) {
+                AVS_LOG_DEBUG_LEVEL -> callingLogger.d("[AVS] $message")
+                AVS_LOG_INFO_LEVEL -> callingLogger.i("[AVS] $message")
+                AVS_LOG_WARNING_LEVEL -> callingLogger.w("[AVS] $message")
+                AVS_LOG_ERROR_LEVEL -> callingLogger.e("[AVS] $message")
+            }
+        }
+
         override fun onSend(
             context: COpaquePointer?,
             conversationId: String?,
@@ -680,6 +689,10 @@ internal class CallManagerImpl internal constructor(
         private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
         private const val AVS_SEND_SUCCESS_STATUS_CODE = 200
         private const val AVS_SEND_FAILURE_STATUS_CODE = 400
+        private const val AVS_LOG_DEBUG_LEVEL = 0
+        private const val AVS_LOG_INFO_LEVEL = 1
+        private const val AVS_LOG_WARNING_LEVEL = 2
+        private const val AVS_LOG_ERROR_LEVEL = 3
         private const val TAG = "CallManager"
         private val DEFAULT_WAIT_UNTIL_CONNECTED_TIMEOUT = 15.seconds
     }
