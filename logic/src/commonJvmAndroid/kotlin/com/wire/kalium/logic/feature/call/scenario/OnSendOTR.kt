@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.messaging.sending.MessageTarget
+import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -41,7 +42,7 @@ internal class OnSendOTR(
     private val selfClientId: String,
     private val callMapper: CallMapper,
     private val callingMessageSender: CallingMessageSender,
-    private val jsonDecoder: Json = Json { ignoreUnknownKeys = true }
+    private val jsonDecoder: Json = KtxSerializer.json
 ) : SendHandler {
     @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
     override fun onSend(

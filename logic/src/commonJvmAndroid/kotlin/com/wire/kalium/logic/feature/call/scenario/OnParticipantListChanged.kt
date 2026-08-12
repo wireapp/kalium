@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -42,7 +43,7 @@ internal class OnParticipantListChanged internal constructor(
     private val callHelper: CallHelper,
     private val endCall: suspend (conversationId: ConversationId) -> Unit,
     private val callingScope: CoroutineScope,
-    private val jsonDecoder: Json = Json { ignoreUnknownKeys = true }
+    private val jsonDecoder: Json = KtxSerializer.json
 ) : ParticipantChangedHandler {
 
     override fun onParticipantChanged(remoteConversationId: String, data: String, arg: Pointer?) {

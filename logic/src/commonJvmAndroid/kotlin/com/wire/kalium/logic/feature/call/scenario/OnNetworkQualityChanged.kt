@@ -25,12 +25,13 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.call.CallQualityData
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.serialization.json.Json
 
 internal class OnNetworkQualityChanged(
     private val callRepository: CallRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val jsonDecoder: Json = Json { ignoreUnknownKeys = true }
+    private val jsonDecoder: Json = KtxSerializer.json
 ) : NetworkQualityChangedHandler {
 
     override fun onNetworkQualityChanged(
