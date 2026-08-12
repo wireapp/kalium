@@ -84,6 +84,21 @@ internal class MLSMessageApiV5Test : ApiTest() {
         }
 
     @Test
+    fun givenFailedToSendUsers_whenSendingMessage_thenUsersAreParsed() = runTest {
+        val expected = SendMLSMessageResponseJson.validMessageSentWithFailedToSendJson.serializableData
+        val networkClient = mockAuthenticatedNetworkClient(
+            SendMLSMessageResponseJson.validMessageSentWithFailedToSendJson.rawJson,
+            statusCode = HttpStatusCode.Created
+        )
+        val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
+
+        val response = mlsMessageApi.sendMessage(MESSAGE)
+
+        assertTrue(response.isSuccessful())
+        assertEquals(expected, response.value)
+    }
+
+    @Test
     fun givenCommitBundle_whenSendingBundle_theRequestShouldFail() =
         runTest {
             val mlsMessageApi: MLSMessageApi = MLSMessageApiV0()

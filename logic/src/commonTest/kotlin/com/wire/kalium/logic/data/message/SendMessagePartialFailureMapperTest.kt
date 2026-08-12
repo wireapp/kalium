@@ -44,11 +44,16 @@ class SendMessagePartialFailureMapperTest {
     fun testFromMlsDTOMapping() {
         val expectedUsersFailedToSend = listOf(TEST_USER_ID, OTHER_USER_ID_2)
         assertEquals(
-            MessageSent(Instant.parse("2022-04-21T20:56:22.393Z"), expectedUsersFailedToSend),
+            MessageSent(
+                time = Instant.parse("2022-04-21T20:56:22.393Z"),
+                missing = expectedUsersFailedToSend
+            ),
             mapper.fromMlsDTO(
-                SendMLSMessageResponse(Instant.parse("2022-04-21T20:56:22.393Z"),
-                    emptyList(),
-                    expectedUsersFailedToSend.map { it.toApi() })
+                SendMLSMessageResponse(
+                    time = Instant.parse("2022-04-21T20:56:22.393Z"),
+                    events = emptyList(),
+                    failedToSend = expectedUsersFailedToSend.map { it.toApi() }
+                )
             )
         )
     }

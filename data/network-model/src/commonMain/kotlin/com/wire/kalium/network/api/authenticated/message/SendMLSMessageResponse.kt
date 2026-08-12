@@ -30,6 +30,7 @@ data class SendMLSMessageResponse(
     val time: Instant,
     @SerialName("events")
     val events: List<EventContentDTO>,
+    /** Federated users who could not be reached and did not receive the message. */
     @SerialName("failed_to_send")
     val failedToSend: List<QualifiedID> = emptyList()
 )

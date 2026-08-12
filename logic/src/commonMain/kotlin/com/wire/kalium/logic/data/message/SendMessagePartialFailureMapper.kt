@@ -51,18 +51,10 @@ internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMa
     }
 
     override fun fromMlsDTO(sendMLSMessageResponse: SendMLSMessageResponse): MessageSent {
-        return when {
-            sendMLSMessageResponse.failedToSend.isNotEmpty() -> MessageSent(
-                time = sendMLSMessageResponse.time,
-                failedToConfirmClients = sendMLSMessageResponse.failedToSend.map { it.toModel() }
-            )
-
-            else -> {
-                MessageSent(
-                    time = sendMLSMessageResponse.time
-                )
-            }
-        }
+        return MessageSent(
+            time = sendMLSMessageResponse.time,
+            missing = sendMLSMessageResponse.failedToSend.map { it.toModel() }
+        )
     }
 
     private fun mapNestedUsersIntoUserIds(nestedUsersMap: QualifiedUserIdToClientMap?) =

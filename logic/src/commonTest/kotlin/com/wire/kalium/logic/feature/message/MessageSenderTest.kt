@@ -953,15 +953,17 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenARemoteMlsConversationPartiallyFails_whenSendingAMessage_ThenReturnSuccessAndPersistFailedToSendUsers() {
+    fun givenARemoteMlsConversationPartiallyFails_whenSendingAMessage_thenPersistNoClientsToDeliver() {
         // given
         val (arrangement, messageSender) = arrange {
             withSendMlsMessage(
-                sendMlsMessageWithResult = Either.Right(MessageSent(MESSAGE_SENT_TIME, listOf(TEST_MEMBER_2))),
+                sendMlsMessageWithResult = Either.Right(
+                    MessageSent(time = MESSAGE_SENT_TIME, missing = listOf(TEST_MEMBER_2))
+                ),
             )
             withWaitUntilLiveOrFailure()
             withPromoteMessageToSentUpdatingServerTime()
-            withSendMessagePartialSuccess()
+            withFailedClientsPartialSuccess()
         }
 
         arrangement.testScope.runTest {
@@ -971,7 +973,7 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.messageRepository.persistRecipientsDeliveryFailure(any(), any(), eq(listOf(TEST_MEMBER_2)))
+                arrangement.messageRepository.persistNoClientsToDeliverFailure(any(), any(), eq(listOf(TEST_MEMBER_2)))
             }
         }
     }

@@ -556,8 +556,25 @@ internal class MessageSenderImpl internal constructor(
         }
 
     private suspend fun handleMlsRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
-        if (messageSent.failedToConfirmClients.isEmpty()) Either.Right(Unit)
-        else {
-            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failedToConfirmClients)
+        (
+            if (messageSent.failedToConfirmClients.isEmpty()) {
+                Either.Right(Unit)
+            } else {
+                messageRepository.persistRecipientsDeliveryFailure(
+                    message.conversationId,
+                    message.id,
+                    messageSent.failedToConfirmClients
+                )
+            }
+        ).flatMap {
+            if (messageSent.missing.isEmpty()) {
+                Either.Right(Unit)
+            } else {
+                messageRepository.persistNoClientsToDeliverFailure(
+                    message.conversationId,
+                    message.id,
+                    messageSent.missing
+                )
+            }
         }
 }

@@ -19,6 +19,7 @@
 package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.model.QualifiedID
 import kotlinx.datetime.Instant
 
 object SendMLSMessageResponseJson {
@@ -37,5 +38,27 @@ object SendMLSMessageResponseJson {
     val validMessageSentJson = ValidJsonProvider(
         SendMLSMessageResponse(TIME, emptyList()),
         emptyResponse
+    )
+
+    private val failedToSendResponse = { response: SendMLSMessageResponse ->
+        val failedUser = response.failedToSend.single()
+        """
+        |{
+        |   "time": "${response.time}",
+        |   "events": [],
+        |   "failed_to_send": [
+        |       {"id": "${failedUser.value}", "domain": "${failedUser.domain}"}
+        |   ]
+        |}
+        """.trimMargin()
+    }
+
+    val validMessageSentWithFailedToSendJson = ValidJsonProvider(
+        SendMLSMessageResponse(
+            time = TIME,
+            events = emptyList(),
+            failedToSend = listOf(QualifiedID("failed-user", "unreachable.example.com"))
+        ),
+        failedToSendResponse
     )
 }
