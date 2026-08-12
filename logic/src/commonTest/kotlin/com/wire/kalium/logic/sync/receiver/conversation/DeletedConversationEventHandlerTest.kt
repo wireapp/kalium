@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
@@ -180,6 +181,29 @@ class DeletedConversationEventHandlerTest {
         val (data, selfUserId) = hookNotifier.conversationDeleteCalls.single()
         assertEquals(event.conversationId, data.conversationId)
         assertEquals(TestUser.USER_ID, selfUserId)
+    }
+
+    @Test
+    fun givenADeletedMeetingTypeConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationWithoutTheNotification() = runTest {
+        val event = TestEvent.deletedConversation()
+        val conversation = MockConversation.group(event.conversationId).copy(type = Conversation.Type.Group.Meeting)
+        val otherUser = TestUser.OTHER
+        val (arrangement, eventHandler) = arrange {
+            withGetConversationByIdReturning(conversation)
+            withObserveUser(flowOf(otherUser), event.senderUserId)
+            withDeletingConversationSucceeding()
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        with(arrangement) {
+            verifySuspend(VerifyMode.exactly(1)) {
+                deleteConversation(any(), event.conversationId)
+            }
+            verifySuspend(VerifyMode.exactly(0)) {
+                notificationEventsManager.scheduleDeleteConversationNotification(any())
+            }
+        }
     }
 
     private suspend fun arrange(

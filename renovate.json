@@ -6,6 +6,7 @@
   ],
   "enabledManagers": [
     "github-actions",
+    "custom.regex",
     "gradle",
     "gradle-wrapper",
     "pip_requirements"
@@ -15,10 +16,24 @@
   ],
   "prConcurrentLimit": 5,
   "commitMessagePrefix": "chore(deps): [WPB-9777]",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update JS tooling declared in the Gradle version catalog.",
+      "managerFilePatterns": [
+        "/^gradle\\/libs\\.versions\\.toml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>[a-z-]+))?\\s+[A-Za-z0-9_.-]+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}npm{{/if}}"
+    }
+  ],
   "packageRules": [
     {
-      "description": "Match Dependabot's 14 day cooldown for Gradle and pip updates.",
+      "description": "Match Dependabot's 14 day cooldown for Gradle, npm catalog, and pip updates.",
       "matchManagers": [
+        "custom.regex",
         "gradle",
         "gradle-wrapper",
         "pip_requirements"
@@ -26,12 +41,57 @@
       "minimumReleaseAge": "14 days"
     },
     {
+      "description": "Regenerate the Kotlin JS/Wasm Yarn lockfile after Gradle or npm catalog dependency updates.",
+      "matchManagers": [
+        "custom.regex",
+        "gradle"
+      ],
+      "postUpgradeTasks": {
+        "commands": [
+          "./gradlew kotlinUpgradeYarnLock --rerun-tasks -PUSE_UNIFIED_CORE_CRYPTO=true"
+        ],
+        "fileFilters": [
+          "kotlin-js-store/yarn.lock"
+        ],
+        "executionMode": "branch"
+      }
+    },
+    {
+      "description": "Keep Node.js updates on the current LTS major and group all runtime pins.",
+      "matchManagers": [
+        "custom.regex",
+        "github-actions"
+      ],
+      "matchPackageNames": [
+        "node",
+        "actions/node-versions"
+      ],
+      "allowedVersions": ">=24 <25",
+      "groupName": "Node.js runtime",
+      "groupSlug": "nodejs-runtime",
+      "minimumReleaseAge": "14 days"
+    },
+    {
       "description": "Group SBOM Python toolchain updates into a single PR.",
       "matchManagers": [
         "pip_requirements"
       ],
+      "matchFileNames": [
+        "scripts/sbom-requirements.txt"
+      ],
       "groupName": "SBOM Python toolchain",
       "groupSlug": "sbom-python-toolchain"
+    },
+    {
+      "description": "Group changelog Python toolchain updates into a single PR.",
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "matchFileNames": [
+        "scripts/changelog-requirements.txt"
+      ],
+      "groupName": "Changelog Python toolchain",
+      "groupSlug": "changelog-python-toolchain"
     },
     {
       "description": "Leave Wire crypto and AVS updates to Dependabot so they do not consume Renovate PR slots.",

@@ -157,9 +157,10 @@ internal class ObservableMLSConversationRepository(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID,
         userIdList: List<UserId>,
-        cipherSuite: CipherSuite
-    ): Either<CoreFailure, Unit> = delegate
-        .addMemberToMLSGroup(mlsContext, groupID, userIdList, cipherSuite)
+        cipherSuite: CipherSuite,
+        allowPartialMemberList: Boolean,
+    ): Either<CoreFailure, MLSAdditionResult> = delegate
+        .addMemberToMLSGroup(mlsContext, groupID, userIdList, cipherSuite, allowPartialMemberList)
         .onSuccess { hookNotifier.onCryptoStateChanged(userId) }
 
     override suspend fun rotateKeysAndMigrateConversations(

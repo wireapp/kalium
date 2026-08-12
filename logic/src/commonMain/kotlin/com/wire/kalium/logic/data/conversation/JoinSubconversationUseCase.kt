@@ -29,14 +29,11 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
-import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -67,12 +64,13 @@ internal class JoinSubconversationUseCaseImpl(
     ): Either<CoreFailure, Unit> = transactionProvider.mlsTransaction("JoinSubconversation") { mlsContext ->
         wrapApiRequest {
             conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
-        }.flatMap { subconversationDetails ->
+        }.flatMap { response ->
+            val subconversationDetails = response.toModel()
             joinOrEstablishWithSubconversationDetails(mlsContext, subconversationDetails).onSuccess {
                 subconversationRepository.insertSubconversation(
                     conversationId,
                     subconversationId,
-                    GroupID(subconversationDetails.groupId)
+                    subconversationDetails.groupId
                 )
             }
         }
@@ -80,36 +78,36 @@ internal class JoinSubconversationUseCaseImpl(
 
     private suspend fun joinOrEstablishWithSubconversationDetails(
         mlsContext: MlsCoreCryptoContext,
-        subconversationDetails: SubconversationResponse
+        subconversationDetails: SubConversation
     ): Either<CoreFailure, Unit> =
         if (subconversationDetails.epoch > INITIAL_EPOCH) {
             if (subconversationDetails.timeElapsedSinceLastEpochChange().inWholeHours > STALE_EPOCH_DURATION_IN_HOURS) {
                 wrapApiRequest {
                     conversationApi.deleteSubconversation(
-                        subconversationDetails.parentId,
-                        subconversationDetails.id,
+                        subconversationDetails.parentId.toApi(),
+                        subconversationDetails.id.toApi(),
                         SubconversationDeleteRequest(
                             subconversationDetails.epoch,
-                            subconversationDetails.groupId
+                            subconversationDetails.groupId.value
                         )
                     )
                 }.flatMap {
                     mlsConversationRepository.establishMLSSubConversationGroup(
                         mlsContext,
-                        GroupID(subconversationDetails.groupId),
-                        subconversationDetails.parentId.toModel()
+                        subconversationDetails.groupId,
+                        subconversationDetails.parentId
                     )
                 }
             } else {
                 wrapApiRequest {
                     conversationApi.fetchSubconversationGroupInfo(
-                        subconversationDetails.parentId,
-                        subconversationDetails.id
+                        subconversationDetails.parentId.toApi(),
+                        subconversationDetails.id.toApi()
                     )
                 }.flatMap { groupInfo ->
                     mlsConversationRepository.joinGroupByExternalCommit(
                         mlsContext,
-                        GroupID(subconversationDetails.groupId),
+                        subconversationDetails.groupId,
                         groupInfo
 
                     ).flatMapLeft {
@@ -124,8 +122,8 @@ internal class JoinSubconversationUseCaseImpl(
         } else {
             mlsConversationRepository.establishMLSSubConversationGroup(
                 mlsContext,
-                GroupID(subconversationDetails.groupId),
-                subconversationDetails.parentId.toModel()
+                subconversationDetails.groupId,
+                subconversationDetails.parentId
             )
         }
 
@@ -153,5 +151,5 @@ internal class JoinSubconversationUseCaseImpl(
 private fun Instant.timeElapsedUntilNow(): Duration =
     Clock.System.now().minus(this)
 
-private fun SubconversationResponse.timeElapsedSinceLastEpochChange(): Duration =
-    epochTimestamp?.let { Instant.parse(it) }?.timeElapsedUntilNow() ?: Duration.ZERO
+private fun SubConversation.timeElapsedSinceLastEpochChange(): Duration =
+    epochTimestamp?.timeElapsedUntilNow() ?: Duration.ZERO

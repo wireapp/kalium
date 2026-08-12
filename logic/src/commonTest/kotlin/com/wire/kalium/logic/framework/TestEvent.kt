@@ -71,14 +71,14 @@ internal object TestEvent {
         eventId,
         TestConversation.ID,
         MutedConversationStatus.AllAllowed,
-        "2022-03-30T15:36:00.000Zp"
+        Instant.parse("2022-03-30T15:36:00.000Z")
     )
 
     fun memberChangeArchivedStatus(eventId: String = "eventId", isArchiving: Boolean = true) =
         Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
             eventId,
             TestConversation.ID,
-            "2022-03-31T16:36:00.000Zp",
+            Instant.parse("2022-03-31T16:36:00.000Z"),
             isArchiving,
         )
 

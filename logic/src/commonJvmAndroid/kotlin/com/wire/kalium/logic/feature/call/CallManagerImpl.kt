@@ -82,6 +82,7 @@ import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -94,7 +95,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Instant
+import kotlinx.serialization.json.Json
 import java.util.Collections
 import kotlin.io.encoding.Base64
 
@@ -120,7 +121,8 @@ internal class CallManagerImpl internal constructor(
     private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase,
     private val selfUserId: UserId,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
-    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val jsonDecoder: Json = KtxSerializer.json
 ) : CallManager {
     private val tagWithUserId = "$TAG(${selfUserId.toLogString()})"
     private val job = SupervisorJob()
@@ -153,7 +155,7 @@ internal class CallManagerImpl internal constructor(
     private val initializeServerTimeOffsetJob: Deferred<Unit> = scope.async(start = CoroutineStart.LAZY) {
         callRepository.fetchServerTime()?.let { serverTime ->
             callingLogger.d("$tagWithUserId: Computing server time offset: $serverTime")
-            serverTimeHandler.computeTimeOffset(Instant.parse(serverTime).epochSeconds)
+            serverTimeHandler.computeTimeOffset(serverTime.epochSeconds)
         } ?: run {
             callingLogger.w("$tagWithUserId: Failed to fetch server time for offset computation.")
         }
@@ -180,6 +182,7 @@ internal class CallManagerImpl internal constructor(
             runBlocking { callRepository.updateIsCbrEnabled(isEnabled) }
         }.keepingStrongReference()
 
+    @Suppress("LongMethod")
     private fun startHandleAsync(): Deferred<Handle> {
         return scope.async(start = CoroutineStart.LAZY) {
             val mediaManagerStartJob = launch {
@@ -213,6 +216,7 @@ internal class CallManagerImpl internal constructor(
                     selfClientId = selfClientId,
                     callMapper = callMapper,
                     callingMessageSender = callingMessageSender,
+                    jsonDecoder = jsonDecoder
                 ).keepingStrongReference(),
                 sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope, networkStateObserver)
                     .keepingStrongReference(),
@@ -572,7 +576,8 @@ internal class CallManagerImpl internal constructor(
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper),
                     callHelper = CallHelperImpl(userConfigRepository, callRepository),
                     endCall = { endCall(it) },
-                    callingScope = scope
+                    callingScope = scope,
+                    jsonDecoder = jsonDecoder
                 ).keepingStrongReference()
 
                 wcall_set_participant_changed_handler(
@@ -589,7 +594,8 @@ internal class CallManagerImpl internal constructor(
         withCalling {
             val onNetworkQualityChanged = OnNetworkQualityChanged(
                 callRepository = callRepository,
-                qualifiedIdMapper = qualifiedIdMapper
+                qualifiedIdMapper = qualifiedIdMapper,
+                jsonDecoder = jsonDecoder
             ).keepingStrongReference()
             wcall_set_network_quality_handler(
                 inst = deferredHandle.await(),
@@ -632,7 +638,8 @@ internal class CallManagerImpl internal constructor(
             withCalling {
                 val activeSpeakersHandler = OnActiveSpeakers(
                     callRepository = callRepository,
-                    qualifiedIdMapper = qualifiedIdMapper
+                    qualifiedIdMapper = qualifiedIdMapper,
+                    jsonDecoder = jsonDecoder
                 ).keepingStrongReference()
 
                 wcall_set_active_speaker_handler(

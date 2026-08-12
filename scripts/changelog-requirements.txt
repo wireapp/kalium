@@ -1,0 +1,4 @@
+# Python toolchain for rendering consumer-facing changelog fragments.
+# Renovate tracks pip requirements files through the pip_requirements manager.
+
+towncrier==25.8.0

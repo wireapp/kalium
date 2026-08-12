@@ -256,7 +256,7 @@ internal sealed class Event(open val id: String) {
                 override val id: String,
                 override val conversationId: ConversationId,
                 val mutedConversationStatus: MutedConversationStatus,
-                val mutedConversationChangedTime: String
+                val mutedConversationChangedTime: Instant
             ) : MemberChanged(id, conversationId) {
 
                 override fun toLogMap(): Map<String, Any?> = mapOf(
@@ -271,7 +271,7 @@ internal sealed class Event(open val id: String) {
             internal data class MemberArchivedStatusChanged(
                 override val id: String,
                 override val conversationId: ConversationId,
-                val archivedConversationChangedTime: String,
+                val archivedConversationChangedTime: Instant,
                 val isArchiving: Boolean
             ) : MemberChanged(id, conversationId) {
 
