@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.network.tools.KtxSerializer
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
@@ -89,6 +90,6 @@ class OnActiveSpeakersTest {
             } returns (Unit)
         }
 
-        fun arrange() = this to OnActiveSpeakers(callRepository, qualifiedIdMapper)
+        fun arrange() = this to OnActiveSpeakers(callRepository, qualifiedIdMapper, KtxSerializer.json)
     }
 }

@@ -42,7 +42,7 @@ internal class OnParticipantListChanged internal constructor(
     private val callHelper: CallHelper,
     private val endCall: suspend (conversationId: ConversationId) -> Unit,
     private val callingScope: CoroutineScope,
-    private val jsonDecoder: Json = Json
+    private val jsonDecoder: Json,
 ) : ParticipantChangedHandler {
 
     override fun onParticipantChanged(remoteConversationId: String, data: String, arg: Pointer?) {

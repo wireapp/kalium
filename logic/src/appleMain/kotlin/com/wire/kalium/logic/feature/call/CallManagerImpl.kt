@@ -57,6 +57,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -110,7 +111,8 @@ internal class CallManagerImpl internal constructor(
     private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase,
     private val selfUserId: UserId,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
-    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val jsonDecoder: Json = KtxSerializer.json
 ) : CallManager {
     private val tagWithUserId = "$TAG(${selfUserId.toLogString()})"
     private val job = SupervisorJob()
@@ -355,6 +357,15 @@ internal class CallManagerImpl internal constructor(
             onCallingReady()
         }
 
+        override fun onLog(level: Int, message: String) {
+            when (level) {
+                AVS_LOG_DEBUG_LEVEL -> callingLogger.d("[AVS] $message")
+                AVS_LOG_INFO_LEVEL -> callingLogger.i("[AVS] $message")
+                AVS_LOG_WARNING_LEVEL -> callingLogger.w("[AVS] $message")
+                AVS_LOG_ERROR_LEVEL -> callingLogger.e("[AVS] $message")
+            }
+        }
+
         override fun onSend(
             context: COpaquePointer?,
             conversationId: String?,
@@ -373,7 +384,7 @@ internal class CallManagerImpl internal constructor(
                     CallingMessageTarget.Self
                 } else {
                     val specificTarget = targetRecipientsJson?.let { recipientsJson ->
-                        callMapper.toClientMessageTarget(Json.decodeFromString<CallClientList>(recipientsJson))
+                        callMapper.toClientMessageTarget(jsonDecoder.decodeFromString<CallClientList>(recipientsJson))
                     } ?: MessageTarget.Conversation()
                     CallingMessageTarget.HostConversation(specificTarget)
                 }
@@ -501,7 +512,7 @@ internal class CallManagerImpl internal constructor(
 
         override fun onNetworkQualityChanged(conversationId: String?, userId: String?, clientId: String?, qualityInfoJson: String?) {
             if (conversationId == null || qualityInfoJson == null) return
-            val callQualityData = Json.decodeFromString<com.wire.kalium.logic.data.call.CallQualityData>(qualityInfoJson)
+            val callQualityData = jsonDecoder.decodeFromString<com.wire.kalium.logic.data.call.CallQualityData>(qualityInfoJson)
             callRepository.updateCallQualityData(qualifiedIdMapper.fromStringToQualifiedID(conversationId), callQualityData)
         }
 
@@ -521,7 +532,7 @@ internal class CallManagerImpl internal constructor(
 
         override fun onActiveSpeakersChanged(handle: UInt, conversationId: String?, data: String?) {
             if (conversationId == null || data == null) return
-            val callActiveSpeakers = Json.decodeFromString<CallActiveSpeakers>(data)
+            val callActiveSpeakers = jsonDecoder.decodeFromString<CallActiveSpeakers>(data)
             val activeSpeakers = callActiveSpeakers.activeSpeakers.filter { activeSpeaker ->
                 activeSpeaker.audioLevel > 0 || activeSpeaker.audioLevelNow > 0
             }.groupBy({ qualifiedIdMapper.fromStringToQualifiedID(it.userId) }) { it.clientId }
@@ -593,7 +604,7 @@ internal class CallManagerImpl internal constructor(
     )
 
     private suspend fun handleParticipantsChanged(conversationId: String, data: String) {
-        val participantsChange = Json.decodeFromString<CallParticipants>(data)
+        val participantsChange = jsonDecoder.decodeFromString<CallParticipants>(data)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         val participants = participantsChange.members.map { member ->
             participantMapper.fromCallMemberToParticipantMinimized(member)
@@ -678,6 +689,10 @@ internal class CallManagerImpl internal constructor(
         private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
         private const val AVS_SEND_SUCCESS_STATUS_CODE = 200
         private const val AVS_SEND_FAILURE_STATUS_CODE = 400
+        private const val AVS_LOG_DEBUG_LEVEL = 0
+        private const val AVS_LOG_INFO_LEVEL = 1
+        private const val AVS_LOG_WARNING_LEVEL = 2
+        private const val AVS_LOG_ERROR_LEVEL = 3
         private const val TAG = "CallManager"
         private val DEFAULT_WAIT_UNTIL_CONNECTED_TIMEOUT = 15.seconds
     }
