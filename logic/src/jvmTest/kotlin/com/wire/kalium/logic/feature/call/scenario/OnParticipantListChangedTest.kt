@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.network.tools.KtxSerializer
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
@@ -160,6 +161,7 @@ class OnParticipantListChangedTest {
                 isEndCallInvoked = true
             },
             callingScope = testScope,
+            jsonDecoder = KtxSerializer.json
         )
 
         fun withParticipantMapper() = apply {
