@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.network.tools.KtxSerializer
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
@@ -120,6 +121,27 @@ class OnParticipantListChangedTest {
             assertFalse { arrangement.isEndCallInvoked }
         }
 
+    @Test
+    fun givenParticipantListHasUnknownKeys_whenParticipantListChangedCallBackHappens_thenUpdateCallParticipants() =
+        testScope.runTest {
+            val (arrangement, onParticipantListChanged) = Arrangement()
+                .withParticipantMapper()
+                .withShouldEndSFTOneOnOneCall(false)
+                .arrange()
+
+            onParticipantListChanged.onParticipantChanged(
+                REMOTE_CONVERSATION_ID, dataWithUnknownKeys, null
+            )
+            yield()
+
+            verify(VerifyMode.exactly(2)) {
+                arrangement.participantMapper.fromCallMemberToParticipantMinimized(any())
+            }
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.updateCallParticipants(any(), any())
+            }
+        }
 
     internal class Arrangement {
         val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
@@ -139,6 +161,7 @@ class OnParticipantListChangedTest {
                 isEndCallInvoked = true
             },
             callingScope = testScope,
+            jsonDecoder = KtxSerializer.json
         )
 
         fun withParticipantMapper() = apply {
@@ -186,6 +209,30 @@ class OnParticipantListChangedTest {
                   "aestab": "1",
                   "vrecv": "1",
                   "muted": "0"
+                }
+              ]
+            }
+        """
+        private val dataWithUnknownKeys = """
+            {
+              "convid": "c9mGRDNE7YRVRbk6jokwXNXPgU1n37iS",
+              "ignored": true,
+              "members": [
+                {
+                  "userid": "userid1",
+                  "clientid": "clientid1",
+                  "aestab": "1",
+                  "vrecv": "1",
+                  "muted": "0",
+                  "unknownfield": false
+                },
+                {
+                  "userid": "userid2",
+                  "clientid": "clientid2",
+                  "aestab": "1",
+                  "vrecv": "1",
+                  "muted": "0",
+                  "unknownfield": false
                 }
               ]
             }

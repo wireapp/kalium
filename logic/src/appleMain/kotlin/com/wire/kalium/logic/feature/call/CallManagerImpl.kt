@@ -86,6 +86,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
@@ -110,7 +111,8 @@ internal class CallManagerImpl internal constructor(
     private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase,
     private val selfUserId: UserId,
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
-    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val jsonDecoder: Json = KtxSerializer.json
 ) : CallManager {
     private val tagWithUserId = "$TAG(${selfUserId.toLogString()})"
     private val job = SupervisorJob()
@@ -373,7 +375,7 @@ internal class CallManagerImpl internal constructor(
                     CallingMessageTarget.Self
                 } else {
                     val specificTarget = targetRecipientsJson?.let { recipientsJson ->
-                        callMapper.toClientMessageTarget(KtxSerializer.json.decodeFromString<CallClientList>(recipientsJson))
+                        callMapper.toClientMessageTarget(jsonDecoder.decodeFromString<CallClientList>(recipientsJson))
                     } ?: MessageTarget.Conversation()
                     CallingMessageTarget.HostConversation(specificTarget)
                 }
@@ -501,7 +503,7 @@ internal class CallManagerImpl internal constructor(
 
         override fun onNetworkQualityChanged(conversationId: String?, userId: String?, clientId: String?, qualityInfoJson: String?) {
             if (conversationId == null || qualityInfoJson == null) return
-            val callQualityData = KtxSerializer.json.decodeFromString<com.wire.kalium.logic.data.call.CallQualityData>(qualityInfoJson)
+            val callQualityData = jsonDecoder.decodeFromString<com.wire.kalium.logic.data.call.CallQualityData>(qualityInfoJson)
             callRepository.updateCallQualityData(qualifiedIdMapper.fromStringToQualifiedID(conversationId), callQualityData)
         }
 
@@ -521,7 +523,7 @@ internal class CallManagerImpl internal constructor(
 
         override fun onActiveSpeakersChanged(handle: UInt, conversationId: String?, data: String?) {
             if (conversationId == null || data == null) return
-            val callActiveSpeakers = KtxSerializer.json.decodeFromString<CallActiveSpeakers>(data)
+            val callActiveSpeakers = jsonDecoder.decodeFromString<CallActiveSpeakers>(data)
             val activeSpeakers = callActiveSpeakers.activeSpeakers.filter { activeSpeaker ->
                 activeSpeaker.audioLevel > 0 || activeSpeaker.audioLevelNow > 0
             }.groupBy({ qualifiedIdMapper.fromStringToQualifiedID(it.userId) }) { it.clientId }
@@ -593,7 +595,7 @@ internal class CallManagerImpl internal constructor(
     )
 
     private suspend fun handleParticipantsChanged(conversationId: String, data: String) {
-        val participantsChange = KtxSerializer.json.decodeFromString<CallParticipants>(data)
+        val participantsChange = jsonDecoder.decodeFromString<CallParticipants>(data)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         val participants = participantsChange.members.map { member ->
             participantMapper.fromCallMemberToParticipantMinimized(member)
