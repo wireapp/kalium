@@ -89,8 +89,7 @@ class ParticipantMapperTest {
             clientId = "dummyClientId",
             aestab = 0,
             vrecv = 0,
-            isMuted = 0,
-            pstn = false,
+            isMuted = 0
         )
 
         private val DUMMY_USER_ID = QualifiedID(

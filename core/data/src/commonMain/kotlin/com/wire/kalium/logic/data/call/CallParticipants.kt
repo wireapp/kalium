@@ -40,5 +40,4 @@ data class CallMember(
     val vrecv: Int,
     @SerialName("muted")
     val isMuted: Int,
-    val pstn: Boolean,
 )
