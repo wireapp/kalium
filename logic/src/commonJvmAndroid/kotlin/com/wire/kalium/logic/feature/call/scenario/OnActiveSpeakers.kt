@@ -28,11 +28,12 @@ import kotlinx.serialization.json.Json
 
 internal class OnActiveSpeakers(
     private val callRepository: CallRepository,
-    private val qualifiedIdMapper: QualifiedIdMapper
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    private val jsonDecoder: Json = Json { ignoreUnknownKeys = true }
 ) : ActiveSpeakersHandler {
 
     override fun onActiveSpeakersChanged(inst: Handle, conversationId: String, data: String, arg: Pointer?) {
-        val callActiveSpeakers = Json.decodeFromString<CallActiveSpeakers>(data)
+        val callActiveSpeakers = jsonDecoder.decodeFromString<CallActiveSpeakers>(data)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         val onlyActiveSpeakers = callActiveSpeakers.activeSpeakers.filter { activeSpeaker ->

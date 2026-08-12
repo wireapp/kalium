@@ -29,7 +29,8 @@ import kotlinx.serialization.json.Json
 
 internal class OnNetworkQualityChanged(
     private val callRepository: CallRepository,
-    private val qualifiedIdMapper: QualifiedIdMapper
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    private val jsonDecoder: Json = Json { ignoreUnknownKeys = true }
 ) : NetworkQualityChangedHandler {
 
     override fun onNetworkQualityChanged(
@@ -41,7 +42,7 @@ internal class OnNetworkQualityChanged(
     ) {
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         qualityInfoJson?.let { qualityInfoJson ->
-            val callQualityData = Json.decodeFromString<CallQualityData>(qualityInfoJson)
+            val callQualityData = jsonDecoder.decodeFromString<CallQualityData>(qualityInfoJson)
             callRepository.updateCallQualityData(conversationId = conversationIdWithDomain, callQualityData = callQualityData)
             callingLogger.i(
                 "[OnNetworkQualityChanged] - ConversationId: ${conversationId.obfuscateId()}" +

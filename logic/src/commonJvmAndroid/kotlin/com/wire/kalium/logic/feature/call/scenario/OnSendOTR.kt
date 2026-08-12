@@ -41,6 +41,7 @@ internal class OnSendOTR(
     private val selfClientId: String,
     private val callMapper: CallMapper,
     private val callingMessageSender: CallingMessageSender,
+    private val jsonDecoder: Json = Json { ignoreUnknownKeys = true }
 ) : SendHandler {
     @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
     override fun onSend(
@@ -71,7 +72,7 @@ internal class OnSendOTR(
                 } else {
                     callingLogger.i("[OnSendOTR] -> Decoding Recipients")
                     val specificTarget = targetRecipientsJson?.let { recipientsJson ->
-                        val callClientList = Json.decodeFromString<CallClientList>(recipientsJson)
+                        val callClientList = jsonDecoder.decodeFromString<CallClientList>(recipientsJson)
 
                         callingLogger.i("[OnSendOTR] -> Mapping Recipients")
                         callMapper.toClientMessageTarget(callClientList = callClientList)

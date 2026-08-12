@@ -120,6 +120,27 @@ class OnParticipantListChangedTest {
             assertFalse { arrangement.isEndCallInvoked }
         }
 
+    @Test
+    fun givenParticipantListHasUnknownKeys_whenParticipantListChangedCallBackHappens_thenUpdateCallParticipants() =
+        testScope.runTest {
+            val (arrangement, onParticipantListChanged) = Arrangement()
+                .withParticipantMapper()
+                .withShouldEndSFTOneOnOneCall(false)
+                .arrange()
+
+            onParticipantListChanged.onParticipantChanged(
+                REMOTE_CONVERSATION_ID, dataWithUnknownKeys, null
+            )
+            yield()
+
+            verify(VerifyMode.exactly(2)) {
+                arrangement.participantMapper.fromCallMemberToParticipantMinimized(any())
+            }
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.updateCallParticipants(any(), any())
+            }
+        }
 
     internal class Arrangement {
         val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
@@ -186,6 +207,30 @@ class OnParticipantListChangedTest {
                   "aestab": "1",
                   "vrecv": "1",
                   "muted": "0"
+                }
+              ]
+            }
+        """
+        private val dataWithUnknownKeys = """
+            {
+              "convid": "c9mGRDNE7YRVRbk6jokwXNXPgU1n37iS",
+              "ignored": true,
+              "members": [
+                {
+                  "userid": "userid1",
+                  "clientid": "clientid1",
+                  "aestab": "1",
+                  "vrecv": "1",
+                  "muted": "0",
+                  "unknownfield": false
+                },
+                {
+                  "userid": "userid2",
+                  "clientid": "clientid2",
+                  "aestab": "1",
+                  "vrecv": "1",
+                  "muted": "0",
+                  "unknownfield": false
                 }
               ]
             }
