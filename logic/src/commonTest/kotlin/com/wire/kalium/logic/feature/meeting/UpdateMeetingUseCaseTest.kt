@@ -96,6 +96,35 @@ class UpdateMeetingUseCaseTest {
         }
     }
 
+    @Test
+    fun givenUpdateMeetingFailsWithUpdateConversationNameFailure_whenInvoking_thenReturnsUpdateConversationNameFailure() = runTest {
+        val updateConversationNameFailure = MeetingDataSource.UpdateConversationNameFailure(
+            conversationId = CONVERSATION_ID,
+            reason = CoreFailure.MissingClientRegistration,
+        )
+        val (arrangement, useCase) = Arrangement()
+            .withInsertIncompleteUsersSuccess(UPSERT_MEETING)
+            .withUpdateMeetingReturning(MEETING_ID, UPSERT_MEETING, Either.Left(updateConversationNameFailure))
+            .arrange()
+
+        val result = useCase(MEETING_ID, UPSERT_MEETING)
+
+        assertEquals(UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure(CONVERSATION_ID), result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingRepository.updateMeeting(
+                meetingId = MEETING_ID,
+                meeting = UPSERT_MEETING,
+                generateOccurrencesFrom = any(),
+                generateOccurrencesUntil = any(),
+                transactionContext = arrangement.transactionContext
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.resetMLSConversation(any(), any())
+            arrangement.refreshUsersWithoutMetadata()
+        }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
         val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)

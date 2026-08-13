@@ -138,6 +138,47 @@ class MeetingDaoTest : BaseDatabaseTest() {
         }
 
     @Test
+    fun givenStoredMeetings_whenGettingMeeting_thenReturnsMeeting() = runTest(dispatcher) {
+        val meetingStart = Instant.parse("2026-01-03T10:00:00Z")
+        val meeting = newMeeting(
+            meetingId = QualifiedIDEntity("meeting-to-fetch", "wire.com"),
+            conversationId = QualifiedIDEntity("conversation-to-fetch", "wire.com"),
+            startTime = meetingStart,
+            recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.WEEKLY, interval = 2, until = meetingStart + 28.days)
+        ).copy(
+            updatedAt = Instant.parse("2026-01-02T12:00:00Z"),
+            title = "Fetched meeting",
+            trial = true
+        )
+        val otherMeeting = newMeeting(
+            meetingId = QualifiedIDEntity("other-meeting", "wire.com"),
+            conversationId = QualifiedIDEntity("other-conversation", "wire.com"),
+            startTime = meetingStart + 1.days
+        )
+        insertMeetingDependencies(meeting)
+        insertMeetingDependencies(otherMeeting)
+        meetingDao.upsertMeetings(
+            listOf(meeting, otherMeeting),
+            GenerationLimit.Window(meetingStart - 1.days, meetingStart + GENERATION_DAYS.days)
+        )
+
+        assertEquals(meeting, meetingDao.getMeeting(meeting.meetingId))
+    }
+
+    @Test
+    fun givenNoStoredMeetingForId_whenGettingMeeting_thenReturnsNull() = runTest(dispatcher) {
+        val meetingStart = Instant.parse("2026-01-03T10:00:00Z")
+        val meeting = newMeeting(startTime = meetingStart)
+        insertMeetingDependencies(meeting)
+        meetingDao.upsertMeetings(
+            listOf(meeting),
+            GenerationLimit.Window(meetingStart - 1.days, meetingStart + GENERATION_DAYS.days)
+        )
+
+        assertEquals(null, meetingDao.getMeeting(QualifiedIDEntity("missing-meeting", "wire.com")))
+    }
+
+    @Test
     fun givenGeneratedOccurrences_whenSameMeetingIsUpserted_thenOccurrencesAreNotDuplicated() = runTest(dispatcher) {
         val now = Clock.System.now()
         val meeting = newMeeting(
