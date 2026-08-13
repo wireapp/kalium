@@ -5390,9 +5390,23 @@ public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeet
 public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result {
 }
 
-public final class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure;
+public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$Other : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$Other;
 	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$UpdateConversationNameFailure : com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$UpdateConversationNameFailure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$UpdateConversationNameFailure;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase$Result$Failure$UpdateConversationNameFailure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
