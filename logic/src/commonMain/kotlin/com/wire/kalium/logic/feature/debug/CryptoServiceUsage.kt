@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,22 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.util
+package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.cryptography.utils.CryptoUsage
-import com.wire.kalium.cryptography.utils.recordCryptoService
+import com.wire.kalium.util.DebugKaliumApi
 
-internal actual class SecureRandom actual constructor() {
-
-    private val random
-        get() = java.security.SecureRandom.getInstanceStrong().also {
-            recordCryptoService(CryptoUsage.DATABASE_SECRET, "SecureRandom.getInstanceStrong()", it.algorithm, it.provider)
-        }
-
-    actual fun nextBytes(length: Int): ByteArray = ByteArray(length).apply {
-        random.nextBytes(this)
-    }
-
-    actual fun nextInt(bound: Int): Int = random.nextInt(bound)
-
-}
+/**
+ * Which security provider served one cryptographic call site, as observed when it ran.
+ *
+ * @param lookup the lookup the call site performed, as written in the source.
+ */
+@DebugKaliumApi("Debug-only view of the provider that served one cryptographic call site.")
+public data class CryptoServiceUsage(
+    val usage: CryptoUsage,
+    val lookup: String,
+    val algorithm: String,
+    val providerName: String,
+    val providerVersion: String,
+)

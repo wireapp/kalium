@@ -19,16 +19,23 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.util.DebugKaliumApi
 
-@DebugKaliumApi("Debug-only state of a single platform crypto service.")
-public sealed interface CryptoServiceState {
+/**
+ * A cryptographic call site in kalium.
+ *
+ * Mirrors the enum of the same name in `core:cryptography`, which kalium depends on with `implementation`
+ * and therefore cannot expose to callers.
+ */
+@DebugKaliumApi("Debug-only identifier of a cryptographic call site in kalium.")
+public enum class CryptoUsage {
+    /** `AESEncrypt.encryptFile` / `encryptData`, IV generation. */
+    ASSET_ENCRYPTION_IV,
 
-    @DebugKaliumApi("Debug-only resolved crypto service.")
-    public data class Resolved(
-        val algorithm: String,
-        val providerName: String,
-        val providerVersion: String,
-    ) : CryptoServiceState
+    /** `AESEncrypt.generateRandomAES256Key`. */
+    ASSET_KEY,
 
-    @DebugKaliumApi("Debug-only unavailable crypto service.")
-    public data class Unavailable(val reason: String) : CryptoServiceState
+    /** `AESEncrypt` and `AESDecrypt`, asset payloads. */
+    ASSET_CIPHER,
+
+    /** `SecurityHelper` database secrets and `RandomPassword`, via kalium's `SecureRandom` wrapper. */
+    DATABASE_SECRET,
 }

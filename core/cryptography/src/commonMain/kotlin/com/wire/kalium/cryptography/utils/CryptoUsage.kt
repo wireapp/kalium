@@ -15,18 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.cryptography.utils
 
-/**
- * Apple platforms use SecRandomCopyBytes and CommonCrypto rather than a pluggable provider registry,
- * so there is nothing to enumerate here.
- */
-actual fun cryptoServiceReport(): CryptoServiceReport = CryptoServiceReport(
-    strongSecureRandom = CryptoServiceStatus.Failed(NO_PROVIDER_REGISTRY),
-    aesKeyGenerator = CryptoServiceStatus.Failed(NO_PROVIDER_REGISTRY),
-    secureRandomAlgorithms = emptyList(),
-    keyGeneratorAlgorithms = emptyList(),
-)
+/** A cryptographic call site in kalium. */
+enum class CryptoUsage {
+    /** `AESEncrypt.encryptFile` / `encryptData`, IV generation. */
+    ASSET_ENCRYPTION_IV,
 
-private const val NO_PROVIDER_REGISTRY = "Apple platforms expose no security provider registry"
+    /** `AESEncrypt.generateRandomAES256Key`. */
+    ASSET_KEY,
+
+    /** `AESEncrypt` and `AESDecrypt`, asset payloads. */
+    ASSET_CIPHER,
+
+    /** `SecurityHelper` database secrets and `RandomPassword`, via kalium's `SecureRandom` wrapper. */
+    DATABASE_SECRET,
+}

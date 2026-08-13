@@ -15,18 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.cryptography.utils
 
 /**
- * The Web Crypto API exposes a fixed algorithm set rather than a pluggable provider registry,
- * so there is nothing to enumerate here.
+ * Which security provider served a cryptographic call site, as observed when it ran.
+ *
+ * @param lookup the lookup the call site performed, as written in the source.
  */
-actual fun cryptoServiceReport(): CryptoServiceReport = CryptoServiceReport(
-    strongSecureRandom = CryptoServiceStatus.Failed(NO_PROVIDER_REGISTRY),
-    aesKeyGenerator = CryptoServiceStatus.Failed(NO_PROVIDER_REGISTRY),
-    secureRandomAlgorithms = emptyList(),
-    keyGeneratorAlgorithms = emptyList(),
+data class CryptoServiceRecord(
+    val lookup: String,
+    val algorithm: String,
+    val providerName: String,
+    val providerVersion: String,
 )
-
-private const val NO_PROVIDER_REGISTRY = "Web Crypto exposes no security provider registry"

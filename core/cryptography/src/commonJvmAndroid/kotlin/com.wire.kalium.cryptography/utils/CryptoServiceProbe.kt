@@ -15,14 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.debug
+@file:JvmName("CryptoServiceProbeJvm")
 
-import com.wire.kalium.util.DebugKaliumApi
+package com.wire.kalium.cryptography.utils
 
-@DebugKaliumApi("Debug-only view of the platform randomness and key generation services.")
-public data class CryptoServiceInfo(
-    val strongSecureRandom: CryptoServiceState,
-    val aesKeyGenerator: CryptoServiceState,
-    val secureRandomAlgorithms: List<String>,
-    val keyGeneratorAlgorithms: List<String>,
-)
+actual fun probeCryptoServices() {
+    assetIvRandom()
+    assetCipher()
+    generateRandomAES256Key()
+}

@@ -18,16 +18,24 @@
 
 package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.cryptography.utils.CryptoServiceReport
-import com.wire.kalium.cryptography.utils.CryptoServiceStatus
-import com.wire.kalium.cryptography.utils.cryptoServiceReport
-import com.wire.kalium.util.DebugKaliumApi
+import com.wire.kalium.cryptography.utils.CryptoServiceRegistry
+import com.wire.kalium.cryptography.utils.probeCryptoServices
+import com.wire.kalium.logic.util.SecureRandom
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.withContext
+import com.wire.kalium.util.DebugKaliumApi
+import com.wire.kalium.cryptography.utils.CryptoUsage as CryptographyCryptoUsage
 
-@DebugKaliumApi("Debug-only API for inspecting the platform randomness and key generation services.")
+@DebugKaliumApi("Debug-only API for inspecting which security provider served each of kalium's crypto call sites.")
 public interface GetCryptoServiceReportUseCase {
-    public suspend operator fun invoke(): CryptoServiceInfo
+    /**
+     * Reports which security provider served each cryptographic call site in kalium, as observed when it
+     * ran. Only used in the debug menu.
+     *
+     * Call sites that have not run yet are probed by performing the very same lookup they perform, so
+     * every entry is a provider the platform actually handed back rather than one assumed on its behalf.
+     */
+    public suspend operator fun invoke(): List<CryptoServiceUsage>
 }
 
 @OptIn(DebugKaliumApi::class)
@@ -35,26 +43,34 @@ internal class GetCryptoServiceReportUseCaseImpl(
     private val dispatcher: KaliumDispatcher,
 ) : GetCryptoServiceReportUseCase {
 
-    override suspend fun invoke(): CryptoServiceInfo = withContext(dispatcher.io) {
-        cryptoServiceReport().toCryptoServiceInfo()
+    // Probing resolves a strong secure random, which can block while the platform gathers entropy.
+    override suspend fun invoke(): List<CryptoServiceUsage> = withContext(dispatcher.io) {
+        probeCryptoServices()
+        probeDatabaseSecretRandom()
+        CryptoServiceRegistry.recorded().map { (usage, record) ->
+            CryptoServiceUsage(
+                usage = usage.toLogicUsage(),
+                lookup = record.lookup,
+                algorithm = record.algorithm,
+                providerName = record.providerName,
+                providerVersion = record.providerVersion,
+            )
+        }
+    }
+
+    /**
+     * The database secret is generated through kalium's own [SecureRandom], not the cryptography module,
+     * so probe it here. Pulling a single byte is enough to resolve the provider and is thrown away.
+     */
+    private fun probeDatabaseSecretRandom() {
+        SecureRandom().nextBytes(1)
     }
 }
 
 @OptIn(DebugKaliumApi::class)
-private fun CryptoServiceReport.toCryptoServiceInfo(): CryptoServiceInfo = CryptoServiceInfo(
-    strongSecureRandom = strongSecureRandom.toCryptoServiceState(),
-    aesKeyGenerator = aesKeyGenerator.toCryptoServiceState(),
-    secureRandomAlgorithms = secureRandomAlgorithms,
-    keyGeneratorAlgorithms = keyGeneratorAlgorithms,
-)
-
-@OptIn(DebugKaliumApi::class)
-private fun CryptoServiceStatus.toCryptoServiceState(): CryptoServiceState = when (this) {
-    is CryptoServiceStatus.Resolved -> CryptoServiceState.Resolved(
-        algorithm = algorithm,
-        providerName = providerName,
-        providerVersion = providerVersion,
-    )
-
-    is CryptoServiceStatus.Failed -> CryptoServiceState.Unavailable(reason = reason)
+private fun CryptographyCryptoUsage.toLogicUsage(): CryptoUsage = when (this) {
+    CryptographyCryptoUsage.ASSET_ENCRYPTION_IV -> CryptoUsage.ASSET_ENCRYPTION_IV
+    CryptographyCryptoUsage.ASSET_KEY -> CryptoUsage.ASSET_KEY
+    CryptographyCryptoUsage.ASSET_CIPHER -> CryptoUsage.ASSET_CIPHER
+    CryptographyCryptoUsage.DATABASE_SECRET -> CryptoUsage.DATABASE_SECRET
 }

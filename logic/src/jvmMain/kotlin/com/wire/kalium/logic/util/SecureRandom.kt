@@ -15,15 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.util
+
+import com.wire.kalium.cryptography.utils.CryptoUsage
+import com.wire.kalium.cryptography.utils.recordCryptoService
 
 internal actual class SecureRandom actual constructor() {
 
-    private val random get() = java.security.SecureRandom.getInstanceStrong()
+    private val random
+        get() = java.security.SecureRandom.getInstanceStrong().also {
+            recordCryptoService(CryptoUsage.DATABASE_SECRET, "SecureRandom.getInstanceStrong()", it.algorithm, it.provider)
+        }
 
     actual fun nextBytes(length: Int): ByteArray = ByteArray(length).apply {
         random.nextBytes(this)
     }
+
     actual fun nextInt(bound: Int): Int = random.nextInt(bound)
+
 }
