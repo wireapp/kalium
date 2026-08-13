@@ -351,50 +351,55 @@ SELECT
     ConversationDetails.otherUserId AS otherUserId,
     ConversationDetails.accentId AS otherUserAccentId,
     ConversationDetails.userDeleted AS otherUserDeleted,
-    ConversationDetails.is_channel AS isChannel,
     root.root_message_id AS rootMessageId,
     root.thread_id AS threadId,
     root.visible_reply_count AS visibleReplyCount,
     root.created_at AS createdAt,
     root.last_reply_date AS lastReplyDate,
     Message.expire_after_millis AS rootMessageExpireAfterMillis,
-    preview.id AS previewId,
-    preview.conversationId AS previewConversationId,
-    preview.contentType AS previewContentType,
-    preview.date AS previewDate,
-    preview.visibility AS previewVisibility,
-    preview.senderUserId AS previewSenderUserId,
-    preview.isEphemeral AS previewIsEphemeral,
-    preview.senderName AS previewSenderName,
-    preview.senderConnectionStatus AS previewSenderConnectionStatus,
-    preview.senderIsDeleted AS previewSenderIsDeleted,
-    preview.selfUserId AS previewSelfUserId,
-    preview.isSelfMessage AS previewIsSelfMessage,
-    preview.memberChangeList AS previewMemberChangeList,
-    preview.memberChangeType AS previewMemberChangeType,
-    preview.updateConversationName AS previewUpdateConversationName,
-    preview.conversationName AS previewConversationName,
-    preview.isMentioningSelfUser AS previewIsMentioningSelfUser,
-    preview.isQuotingSelfUser AS previewIsQuotingSelfUser,
-    preview.text AS previewText,
-    preview.assetMimeType AS previewAssetMimeType,
-    preview.isUnread AS previewIsUnread,
-    preview.shouldNotify AS previewShouldNotify,
-    preview.mutedStatus AS previewMutedStatus,
-    preview.conversationType AS previewConversationType
+    Message.id AS previewId,
+    Message.conversation_id AS previewConversationId,
+    Message.content_type AS previewContentType,
+    Message.visibility AS previewVisibility,
+    Message.sender_user_id AS previewSenderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS previewIsEphemeral,
+    PreviewSender.name AS previewSenderName,
+    PreviewSender.connection_status AS previewSenderConnectionStatus,
+    PreviewSender.deleted AS previewSenderIsDeleted,
+    SelfUser.id AS previewSelfUserId,
+    (Message.sender_user_id = SelfUser.id) AS previewIsSelfMessage,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS previewMemberChangeList,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS previewMemberChangeType,
+    CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS previewUpdateConversationName,
+    PreviewConversation.name AS previewConversationName,
+    (Mention.user_id IS NOT NULL) AS previewIsMentioningSelfUser,
+    TextContent.is_quoting_self AS previewIsQuotingSelfUser,
+    TextContent.text_body AS previewText,
+    AssetContent.asset_mime_type AS previewAssetMimeType,
+    (Message.creation_date > PreviewConversation.last_read_date) AS previewIsUnread,
+    IFNULL((Message.creation_date > IFNULL(PreviewConversation.last_notified_date, 0)), FALSE) AS previewShouldNotify,
+    PreviewConversation.muted_status AS previewMutedStatus,
+    PreviewConversation.type AS previewConversationType
 FROM MessageThreadRoot AS root
 JOIN ConversationDetails
     ON ConversationDetails.qualifiedId = root.conversation_id
 JOIN Message
     ON Message.id = root.root_message_id
     AND Message.conversation_id = root.conversation_id
-JOIN MessagePreview AS preview
-    ON preview.id = root.root_message_id
-    AND preview.conversationId = root.conversation_id
+LEFT JOIN SelfUser
+LEFT JOIN User AS PreviewSender ON Message.sender_user_id = PreviewSender.qualified_id
+LEFT JOIN Conversation AS PreviewConversation ON Message.conversation_id = PreviewConversation.qualified_id
+LEFT JOIN MessageSystemContent AS SystemContent
+    ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id
+LEFT JOIN MessageMention AS Mention ON Message.id = Mention.message_id AND SelfUser.id = Mention.user_id
+LEFT JOIN MessageAssetContent AS AssetContent
+    ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent
+    ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
+        ConversationDetails.type IN ('GROUP', 'CHANNEL')
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL))
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1)
         OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL)
@@ -409,7 +414,7 @@ WHERE
     AND ConversationDetails.isActive
     AND ConversationDetails.deletedLocally = 0
     AND root.is_following = 1
-ORDER BY COALESCE(root.last_reply_date, preview.date, root.created_at) DESC, root.thread_id DESC;
+ORDER BY COALESCE(root.last_reply_date, Message.creation_date, root.created_at) DESC, root.thread_id DESC;
 
 selectConversationThreads:
 SELECT
@@ -422,48 +427,53 @@ SELECT
     ConversationDetails.otherUserId AS otherUserId,
     ConversationDetails.accentId AS otherUserAccentId,
     ConversationDetails.userDeleted AS otherUserDeleted,
-    ConversationDetails.is_channel AS isChannel,
     root.root_message_id AS rootMessageId,
     root.thread_id AS threadId,
     root.visible_reply_count AS visibleReplyCount,
     root.created_at AS createdAt,
     root.last_reply_date AS lastReplyDate,
     Message.expire_after_millis AS rootMessageExpireAfterMillis,
-    preview.id AS previewId,
-    preview.conversationId AS previewConversationId,
-    preview.contentType AS previewContentType,
-    preview.date AS previewDate,
-    preview.visibility AS previewVisibility,
-    preview.senderUserId AS previewSenderUserId,
-    preview.isEphemeral AS previewIsEphemeral,
-    preview.senderName AS previewSenderName,
-    preview.senderConnectionStatus AS previewSenderConnectionStatus,
-    preview.senderIsDeleted AS previewSenderIsDeleted,
-    preview.selfUserId AS previewSelfUserId,
-    preview.isSelfMessage AS previewIsSelfMessage,
-    preview.memberChangeList AS previewMemberChangeList,
-    preview.memberChangeType AS previewMemberChangeType,
-    preview.updateConversationName AS previewUpdateConversationName,
-    preview.conversationName AS previewConversationName,
-    preview.isMentioningSelfUser AS previewIsMentioningSelfUser,
-    preview.isQuotingSelfUser AS previewIsQuotingSelfUser,
-    preview.text AS previewText,
-    preview.assetMimeType AS previewAssetMimeType,
-    preview.isUnread AS previewIsUnread,
-    preview.shouldNotify AS previewShouldNotify,
-    preview.mutedStatus AS previewMutedStatus,
-    preview.conversationType AS previewConversationType
+    Message.id AS previewId,
+    Message.conversation_id AS previewConversationId,
+    Message.content_type AS previewContentType,
+    Message.visibility AS previewVisibility,
+    Message.sender_user_id AS previewSenderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS previewIsEphemeral,
+    PreviewSender.name AS previewSenderName,
+    PreviewSender.connection_status AS previewSenderConnectionStatus,
+    PreviewSender.deleted AS previewSenderIsDeleted,
+    SelfUser.id AS previewSelfUserId,
+    (Message.sender_user_id = SelfUser.id) AS previewIsSelfMessage,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS previewMemberChangeList,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS previewMemberChangeType,
+    CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS previewUpdateConversationName,
+    PreviewConversation.name AS previewConversationName,
+    (Mention.user_id IS NOT NULL) AS previewIsMentioningSelfUser,
+    TextContent.is_quoting_self AS previewIsQuotingSelfUser,
+    TextContent.text_body AS previewText,
+    AssetContent.asset_mime_type AS previewAssetMimeType,
+    (Message.creation_date > PreviewConversation.last_read_date) AS previewIsUnread,
+    IFNULL((Message.creation_date > IFNULL(PreviewConversation.last_notified_date, 0)), FALSE) AS previewShouldNotify,
+    PreviewConversation.muted_status AS previewMutedStatus,
+    PreviewConversation.type AS previewConversationType
 FROM MessageThreadRoot AS root
 JOIN ConversationDetails
     ON ConversationDetails.qualifiedId = root.conversation_id
 JOIN Message
     ON Message.id = root.root_message_id
     AND Message.conversation_id = root.conversation_id
-JOIN MessagePreview AS preview
-    ON preview.id = root.root_message_id
-    AND preview.conversationId = root.conversation_id
+LEFT JOIN SelfUser
+LEFT JOIN User AS PreviewSender ON Message.sender_user_id = PreviewSender.qualified_id
+LEFT JOIN Conversation AS PreviewConversation ON Message.conversation_id = PreviewConversation.qualified_id
+LEFT JOIN MessageSystemContent AS SystemContent
+    ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id
+LEFT JOIN MessageMention AS Mention ON Message.id = Mention.message_id AND SelfUser.id = Mention.user_id
+LEFT JOIN MessageAssetContent AS AssetContent
+    ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent
+    ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 WHERE root.conversation_id = :conversation_id
-ORDER BY COALESCE(root.last_reply_date, preview.date, root.created_at) DESC, root.thread_id DESC;
+ORDER BY COALESCE(root.last_reply_date, Message.creation_date, root.created_at) DESC, root.thread_id DESC;
 
 countByConversationAndThreadIdAndVisibility:
 SELECT COUNT(*)

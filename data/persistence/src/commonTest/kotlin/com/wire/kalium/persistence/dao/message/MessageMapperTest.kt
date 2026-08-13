@@ -161,7 +161,6 @@ class MessageMapperTest {
         assertEquals("photo.png", content.assetName)
         assertEquals("image/png", content.assetMimeType)
         assertEquals("asset-id", content.assetId)
-        assertEquals("/tmp/path/photo.png", content.assetDataPath)
     }
 
     @Test

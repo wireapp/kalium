@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessageThreadsQueries
 import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper

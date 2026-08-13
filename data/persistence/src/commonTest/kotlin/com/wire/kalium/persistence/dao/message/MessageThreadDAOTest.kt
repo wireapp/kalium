@@ -18,15 +18,14 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.paging.PagingConfig
-import app.cash.paging.PagingSource
-import app.cash.paging.PagingSourceLoadParamsRefresh
-import app.cash.paging.PagingSourceLoadResultPage
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
@@ -52,7 +51,7 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
 
-    private val conversation = newConversationEntity("Thread Test")
+    private val conversation = newConversationEntity("Thread Test").copy(type = ConversationEntity.Type.GROUP)
     private val senderUser = newUserEntity("thread-user")
     private val senderUserDetails = newUserDetailsEntity("thread-user")
     private val selfUserId = UserIDEntity("thread-self", "thread-domain")
@@ -325,9 +324,9 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
             pagingConfig = PagingConfig(pageSize = 50),
             startingOffset = 0
         )
-        val page = pager.pagingSource.load(PagingSourceLoadParamsRefresh<Int>(null, 50, false))
+        val page = pager.pagingSource.load(PagingSource.LoadParams.Refresh<Int>(null, 50, false))
 
-        assertIs<PagingSourceLoadResultPage<Int, ThreadMessageEntity>>(page)
+        assertIs<PagingSource.LoadResult.Page<Int, ThreadMessageEntity>>(page)
         val ids = page.data.map { it.message.id }
         assertContains(ids, root.id)
         assertContains(ids, reply.id)
@@ -426,7 +425,7 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
     @Test
     fun givenThreadsAcrossConversations_whenObservingGlobalThreads_thenThreadsAreSortedByLatestActivity() = runTest {
         insertInitialData()
-        val secondConversation = newConversationEntity("Second Thread Test")
+        val secondConversation = newConversationEntity("Second Thread Test").copy(type = ConversationEntity.Type.GROUP)
         conversationDAO.insertConversation(secondConversation)
 
         val firstRoot = createMessage(
