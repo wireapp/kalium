@@ -145,6 +145,7 @@ private object DisabledAppleCallManager : CallManager {
         callType: CallType,
         conversationTypeCalling: ConversationTypeCalling,
         isAudioCbr: Boolean,
+        isMeeting: Boolean
     ) = Unit
 
     override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean) = Unit

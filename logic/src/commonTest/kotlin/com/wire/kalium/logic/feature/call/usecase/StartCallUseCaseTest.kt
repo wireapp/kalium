@@ -22,37 +22,39 @@ import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.sync.SyncStateObserver
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
-import dev.mokkery.verify.VerifyMode
-import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
-import dev.mokkery.verifySuspend
-import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.any
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
 class StartCallUseCaseTest {
 
+    private fun TestScope.testDispatcher(): KaliumDispatcher = StandardTestDispatcher(testScheduler).testKaliumDispatcher()
+
     @Test
     fun givenAnIncomingCall_whenStartingANewCall_thenAnswerCallUseCaseShouldBeInvokedOnce() =
         runTest {
-            val conversationId = TestConversation.ID
+            val conversationId = MockConversation.ID
 
-            val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
+            val (arrangement, startCall) = Arrangement(testDispatcher())
                 .withWaitingForSyncSucceeding()
                 .withAnIncomingCall()
                 .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
@@ -61,19 +63,19 @@ class StartCallUseCaseTest {
             startCall.invoke(conversationId)
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.answerCall.invoke(eq(conversationId))
+                arrangement.answerCall.invoke(conversationId)
             }
 
             verifySuspend(VerifyMode.not) {
-                arrangement.callManager.startCall(any(), any(), any(), any())
+                arrangement.callManager.startCall(any(), any(), any(), any(), any())
             }
         }
 
     @Test
     fun givenCallingParamsAndSyncSucceeds_whenRunningUseCase_thenInvokeStartCallOnce() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
-        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
+        val (arrangement, startCall) = Arrangement(testDispatcher())
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
             .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
@@ -82,7 +84,7 @@ class StartCallUseCaseTest {
         startCall.invoke(conversationId, CallType.AUDIO)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), any(), eq(false))
+            arrangement.callManager.startCall(conversationId, CallType.AUDIO, any(), false, false)
         }
 
         verifySuspend(VerifyMode.not) {
@@ -92,9 +94,9 @@ class StartCallUseCaseTest {
 
     @Test
     fun givenCallingParamsAndSyncSucceeds_whenRunningUseCase_thenReturnSuccess() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
-        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
+        val (arrangement, startCall) = Arrangement(testDispatcher())
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
             .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
@@ -110,9 +112,9 @@ class StartCallUseCaseTest {
 
     @Test
     fun givenCallingParamsAndSyncFails_whenRunningUseCase_thenStartCallIsNotInvoked() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
-        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
+        val (arrangement, startCall) = Arrangement(testDispatcher())
             .withWaitingForSyncFailing()
             .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.OneOnOne)
             .arrange()
@@ -120,15 +122,15 @@ class StartCallUseCaseTest {
         startCall.invoke(conversationId, CallType.AUDIO)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.callManager.startCall(any(), any(), any(), any())
+            arrangement.callManager.startCall(any(), any(), any(), any(), any())
         }
     }
 
     @Test
     fun givenCallingParamsAndSyncFails_whenRunningUseCase_thenShouldReturnSyncFailure() = runTest {
-        val conversationId = TestConversation.ID
+        val conversationId = MockConversation.ID
 
-        val (_, startCall) = Arrangement(testKaliumDispatcher)
+        val (_, startCall) = Arrangement(testDispatcher())
             .withWaitingForSyncFailing()
             .arrange()
 
@@ -138,10 +140,30 @@ class StartCallUseCaseTest {
     }
 
     @Test
-    fun givenCbrEnabled_WhenStartingACall_thenStartTheCallOnCBR() = runTest {
-        val conversationId = TestConversation.ID
+    fun givenMeetingConversation_whenRunningUseCase_thenStartCallReceivesMeetingFlag() = runTest {
+        val conversationId = MockConversation.ID
 
-        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
+        val (arrangement, startCall) = Arrangement(testDispatcher())
+            .withWaitingForSyncSucceeding()
+            .withNoIncomingCall()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.ConferenceMls, isMeeting = true)
+            .arrange()
+
+        startCall.invoke(conversationId, CallType.AUDIO)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callManager.startCall(conversationId, CallType.AUDIO, any(), false, true)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.answerCall.invoke(any())
+        }
+    }
+
+    @Test
+    fun givenCbrEnabled_WhenStartingACall_thenStartTheCallOnCBR() = runTest {
+        val conversationId = MockConversation.ID
+
+        val (arrangement, startCall) = Arrangement(testDispatcher())
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
             .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
@@ -150,14 +172,14 @@ class StartCallUseCaseTest {
         startCall.invoke(conversationId, CallType.AUDIO)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), any(), eq(true))
+            arrangement.callManager.startCall(conversationId, CallType.AUDIO, any(), true, false)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.answerCall.invoke(any())
         }
     }
 
-    private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
+    private class Arrangement(dispatcher: KaliumDispatcher) {
         val callManager = mock<CallManager>(mode = MockMode.autoUnit)
         val syncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
         val answerCall = mock<AnswerCallUseCase>(mode = MockMode.autoUnit)
@@ -186,29 +208,29 @@ class StartCallUseCaseTest {
             dispatcher
         )
 
-        suspend fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
-        suspend fun withAnIncomingCall() = apply {
+        fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
+        fun withAnIncomingCall() = apply {
             everySuspend {
                 callRepository.incomingCallsFlow()
-            } returns (flowOf(listOf(TestCall.groupIncomingCall(TestConversation.ID))))
+            } returns (flowOf(listOf(TestCall.groupIncomingCall(MockConversation.ID))))
         }
 
-        suspend fun withCallConversationTypeUseCaseReturning(result: ConversationTypeCalling) = apply {
+        fun withCallConversationTypeUseCaseReturning(type: ConversationTypeCalling, isMeeting: Boolean = false) = apply {
             everySuspend {
                 getCallConversationType.invoke(any())
-            } returns (result)
+            } returns (GetCallConversationTypeProvider.Result(type, isMeeting))
         }
 
-        suspend fun withNoIncomingCall() = apply {
+        fun withNoIncomingCall() = apply {
             everySuspend {
                 callRepository.incomingCallsFlow()
             } returns (flowOf(listOf()))
         }
 
-        suspend fun withWaitingForSyncFailing() =
+        fun withWaitingForSyncFailing() =
             withSyncReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
 
-        private suspend fun withSyncReturning(result: Either<CoreFailure, Unit>) = apply {
+        private fun withSyncReturning(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
                 syncStateObserver.waitUntilLiveOrFailure()
             } returns (result)

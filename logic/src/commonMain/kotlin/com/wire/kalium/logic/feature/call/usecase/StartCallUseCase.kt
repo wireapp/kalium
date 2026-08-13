@@ -63,13 +63,14 @@ public class StartCallUseCase internal constructor(
                 }
             }
 
-            val callConversationType = getCallConversationType(conversationId)
+            val (callConversationType, isMeeting) = getCallConversationType(conversationId)
 
             callManager.value.startCall(
                 conversationId = conversationId,
                 callType = callType,
                 conversationTypeCalling = callConversationType,
-                isAudioCbr = kaliumConfigs.forceConstantBitrateCalls
+                isAudioCbr = kaliumConfigs.forceConstantBitrateCalls,
+                isMeeting = isMeeting
             )
             return@withContext Result.Success
         })
