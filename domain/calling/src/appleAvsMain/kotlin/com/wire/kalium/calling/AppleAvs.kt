@@ -36,6 +36,7 @@ import avs.wcall_set_background
 import avs.wcall_set_clients_for_conv
 import avs.wcall_set_epoch_info
 import avs.wcall_set_group_changed_handler
+import avs.wcall_set_log_handler
 import avs.wcall_set_mute
 import avs.wcall_set_mute_handler
 import avs.wcall_set_network_quality_handler
@@ -76,6 +77,11 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
 
     private val readyHandler = staticCFunction { version: Int, arg: COpaquePointer? ->
         callbacks(arg)?.onReady(version)
+        Unit
+    }
+
+    private val logHandler = staticCFunction { level: Int, message: CPointer<ByteVar>?, _: COpaquePointer? ->
+        handles.values.forEach { it.stableRef.get().onLog(level, message.string().orEmpty()) }
         Unit
     }
 
@@ -249,6 +255,7 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
         return runCatching {
             wcall_setup()
             wcall_run()
+            wcall_set_log_handler(logHandler, null)
             isStarted = true
             true
         }.getOrElse {
@@ -308,7 +315,8 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
         conversationId: String,
         senderUserId: String,
         senderClientId: String,
-        conversationType: Int
+        conversationType: Int,
+        meeting: Boolean
     ): Boolean {
         if (!startIfAvailable()) return false
         if (payload.isEmpty()) return false
@@ -325,7 +333,7 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
                     userid = senderUserId,
                     clientid = senderClientId,
                     conv_type = conversationType,
-                    meeting = 0
+                    meeting = meeting.toAvsInt()
                 )
             }
             true
@@ -351,8 +359,22 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
         wcall_config_update(handle, error, json)
     }
 
-    override fun startCall(handle: UInt, conversationId: String, callType: Int, conversationType: Int, audioCbr: Boolean): Int =
-        if (startIfAvailable()) wcall_start(handle, conversationId, callType, conversationType, audioCbr.toAvsInt(), 0) else -1
+    override fun startCall(
+        handle: UInt,
+        conversationId: String,
+        callType: Int,
+        conversationType: Int,
+        audioCbr: Boolean,
+        meeting: Boolean
+    ): Int =
+        if (startIfAvailable()) wcall_start(
+            wuser = handle,
+            convid = conversationId,
+            call_type = callType,
+            conv_type = conversationType,
+            audio_cbr = audioCbr.toAvsInt(),
+            meeting = meeting.toAvsInt()
+        ) else -1
 
     override fun answerCall(handle: UInt, conversationId: String, callType: Int, audioCbr: Boolean): Int =
         if (startIfAvailable()) wcall_answer(handle, conversationId, callType, audioCbr.toAvsInt()) else -1

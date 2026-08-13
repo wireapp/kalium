@@ -33,7 +33,7 @@ class GetCallConversationTypeProviderTest {
                     groupId = GroupID("groupId"),
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                     epoch = 1.toULong(),
-                    cipherSuite = CipherSuite.Companion.fromTag(1),
+                    cipherSuite = CipherSuite.fromTag(1),
                     keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
                 )
             )
@@ -43,7 +43,32 @@ class GetCallConversationTypeProviderTest {
         val result = provider(ConversationId("some-id", "some-domain"))
 
         // Then
-        assertEquals(ConversationTypeCalling.ConferenceMls, result)
+        assertEquals(GetCallConversationTypeProvider.Result(ConversationTypeCalling.ConferenceMls, false), result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
+    }
+
+    @Test
+    fun givenMeetingConversationWithMLSProtocol_whenGettingCallType_thenReturnConferenceMlsWithMeetingFlag() = runTest {
+        // Given
+        val (arrangement, provider) = arrange {
+            withGetConversationTypeAndProtocolInfoSuccess(
+                type = Conversation.Type.Group.Meeting,
+                protocolInfo = Conversation.ProtocolInfo.MLS(
+                    groupId = GroupID("groupId"),
+                    groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                    epoch = 1.toULong(),
+                    cipherSuite = CipherSuite.fromTag(1),
+                    keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
+                )
+            )
+        }
+
+        // When
+        val result = provider(ConversationId("some-id", "some-domain"))
+
+        // Then
+        assertEquals(GetCallConversationTypeProvider.Result(ConversationTypeCalling.ConferenceMls, true), result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
@@ -63,7 +88,7 @@ class GetCallConversationTypeProviderTest {
         val result = provider(ConversationId("some-id", "some-domain"))
 
         // Then
-        assertEquals(ConversationTypeCalling.OneOnOne, result)
+        assertEquals(GetCallConversationTypeProvider.Result(ConversationTypeCalling.OneOnOne, false), result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
@@ -83,7 +108,7 @@ class GetCallConversationTypeProviderTest {
         val result = provider(ConversationId("some-id", "some-domain"))
 
         // Then
-        assertEquals(ConversationTypeCalling.Conference, result)
+        assertEquals(GetCallConversationTypeProvider.Result(ConversationTypeCalling.Conference, false), result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
@@ -102,7 +127,7 @@ class GetCallConversationTypeProviderTest {
         val result = provider(ConversationId("some-id", "some-domain"))
 
         // Then
-        assertEquals(ConversationTypeCalling.Unknown, result)
+        assertEquals(GetCallConversationTypeProvider.Result.Unknown, result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
@@ -122,7 +147,7 @@ class GetCallConversationTypeProviderTest {
         val result = provider(ConversationId("some-id", "some-domain"))
 
         // Then
-        assertEquals(ConversationTypeCalling.Unknown, result)
+        assertEquals(GetCallConversationTypeProvider.Result.Unknown, result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
@@ -141,7 +166,7 @@ class GetCallConversationTypeProviderTest {
         val result = provider(ConversationId("some-id", "some-domain"))
 
         // Then
-        assertEquals(ConversationTypeCalling.Unknown, result)
+        assertEquals(GetCallConversationTypeProvider.Result.Unknown, result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
@@ -156,7 +181,7 @@ class GetCallConversationTypeProviderTest {
                     groupId = GroupID("groupId"),
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                     epoch = 1.toULong(),
-                    cipherSuite = CipherSuite.Companion.fromTag(1),
+                    cipherSuite = CipherSuite.fromTag(1),
                     keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
                 )
             )
@@ -166,14 +191,14 @@ class GetCallConversationTypeProviderTest {
         val result = provider(ConversationId("some-id", "some-domain"))
 
         // Then
-        assertEquals(ConversationTypeCalling.Conference, result)
+        assertEquals(GetCallConversationTypeProvider.Result(ConversationTypeCalling.Conference, false), result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
 
     @Test
     fun givenGroupConversationWithProteusProtocol_whenGettingCallType_thenReturnConference() = runTest {
-        val (arrangement, getCallConversationType) = arrange {
+        val (_, getCallConversationType) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
                 type = Conversation.Type.Group.Regular,
                 protocolInfo = Conversation.ProtocolInfo.Proteus
@@ -182,12 +207,12 @@ class GetCallConversationTypeProviderTest {
 
         val result = getCallConversationType(ConversationId("some-id", "some-domain"))
 
-        assertEquals(ConversationTypeCalling.Conference, result)
+        assertEquals(GetCallConversationTypeProvider.Result(ConversationTypeCalling.Conference, false), result)
     }
 
     @Test
     fun givenChannelWithProteusProtocol_whenGettingCallType_thenReturnConference() = runTest {
-        val (arrangement, getCallConversationType) = arrange {
+        val (_, getCallConversationType) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
                 type = Conversation.Type.Group.Channel,
                 protocolInfo = Conversation.ProtocolInfo.Proteus
@@ -196,19 +221,19 @@ class GetCallConversationTypeProviderTest {
 
         val result = getCallConversationType(ConversationId("some-id", "some-domain"))
 
-        assertEquals(ConversationTypeCalling.Conference, result)
+        assertEquals(GetCallConversationTypeProvider.Result(ConversationTypeCalling.Conference, false), result)
     }
 
     @Test
     fun givenOneOnOneMLSConversationWithSFTEnabled_whenGettingCallType_thenReturnConferenceMls() = runTest {
-        val (arrangement, getCallConversationType) = arrange {
+        val (_, getCallConversationType) = arrange {
             withGetConversationTypeAndProtocolInfoSuccess(
                 type = Conversation.Type.OneOnOne,
                 protocolInfo = Conversation.ProtocolInfo.MLS(
                     groupId = GroupID("groupId"),
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                     epoch = 1.toULong(),
-                    cipherSuite = CipherSuite.Companion.fromTag(1),
+                    cipherSuite = CipherSuite.fromTag(1),
                     keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
                 )
             )
@@ -217,18 +242,18 @@ class GetCallConversationTypeProviderTest {
 
         val result = getCallConversationType(ConversationId("some-id", "some-domain"))
 
-        assertEquals(ConversationTypeCalling.ConferenceMls, result)
+        assertEquals(GetCallConversationTypeProvider.Result(ConversationTypeCalling.ConferenceMls, false), result)
     }
 
     @Test
     fun givenGetConversationTypeAndProtocolInfoFails_whenGettingCallType_thenReturnUnknown() = runTest {
-        val (arrangement, getCallConversationType) = arrange {
+        val (_, getCallConversationType) = arrange {
             withGetConversationTypeAndProtocolInfoFailure(Either.Left(StorageFailure.DataNotFound))
         }
 
         val result = getCallConversationType(ConversationId("some-id", "some-domain"))
 
-        assertEquals(ConversationTypeCalling.Unknown, result)
+        assertEquals(GetCallConversationTypeProvider.Result.Unknown, result)
     }
 
     private class Arrangement {
@@ -240,15 +265,15 @@ class GetCallConversationTypeProviderTest {
             conversationMetaDataRepository = conversationMetaDataRepository
         )
 
-        suspend fun withShouldUseSFTForOneOnOneCalls() = apply {
+        fun withShouldUseSFTForOneOnOneCalls() = apply {
             everySuspend { userConfigRepository.shouldUseSFTForOneOnOneCalls() } returns (Either.Right(true))
         }
 
-        suspend fun withShouldNotUseSFTForOneOnOneCalls() = apply {
+        fun withShouldNotUseSFTForOneOnOneCalls() = apply {
             everySuspend { userConfigRepository.shouldUseSFTForOneOnOneCalls() } returns (Either.Right(false))
         }
 
-        suspend fun withGetConversationTypeAndProtocolInfoSuccess(
+        fun withGetConversationTypeAndProtocolInfoSuccess(
             type: Conversation.Type,
             protocolInfo: Conversation.ProtocolInfo
         ) = apply {
@@ -257,13 +282,13 @@ class GetCallConversationTypeProviderTest {
             } returns (Either.Right(Pair(type, protocolInfo)))
         }
 
-        suspend fun withSFTCheckFailure() = apply {
+        fun withSFTCheckFailure() = apply {
             everySuspend {
                 userConfigRepository.shouldUseSFTForOneOnOneCalls()
             } returns (Either.Left(StorageFailure.DataNotFound))
         }
 
-        suspend fun withGetConversationTypeAndProtocolInfoFailure(result: Either.Left<StorageFailure>) {
+        fun withGetConversationTypeAndProtocolInfoFailure(result: Either.Left<StorageFailure>) {
             everySuspend {
                 conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any())
             } returns (result)

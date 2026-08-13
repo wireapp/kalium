@@ -21,25 +21,32 @@ import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
+import com.wire.kalium.logic.data.id.ConversationId
 
 /**
  * This class is responsible for providing the conversation type for a call.
  */
 internal interface GetCallConversationTypeProvider {
-    suspend operator fun invoke(conversationId: ConversationId): ConversationTypeCalling
+    suspend operator fun invoke(conversationId: ConversationId): Result
+
+    data class Result(val conversationTypeCalling: ConversationTypeCalling, val isMeeting: Boolean) {
+        companion object {
+            val Unknown = Result(ConversationTypeCalling.Unknown, false)
+        }
+    }
 }
 
 internal class GetCallConversationTypeProviderImpl(
     private val userConfigRepository: UserConfigRepository,
     private val conversationMetaDataRepository: ConversationMetaDataRepository,
 ) : GetCallConversationTypeProvider {
-    override suspend fun invoke(conversationId: ConversationId): ConversationTypeCalling {
+    override suspend fun invoke(conversationId: ConversationId): GetCallConversationTypeProvider.Result {
         return conversationMetaDataRepository.getConversationTypeAndProtocolInfo(conversationId)
             .flatMap { (type: Conversation.Type, protocolInfo: Conversation.ProtocolInfo) ->
                 when (type) {
@@ -55,9 +62,14 @@ internal class GetCallConversationTypeProviderImpl(
                     Conversation.Type.Self -> {
                         ConversationTypeCalling.Unknown.right()
                     }
+                }.map { conversationTypeCalling ->
+                    GetCallConversationTypeProvider.Result(
+                        conversationTypeCalling = conversationTypeCalling,
+                        isMeeting = type is Conversation.Type.Group.Meeting
+                    )
                 }
             }.fold(
-                { ConversationTypeCalling.Unknown },
+                { GetCallConversationTypeProvider.Result.Unknown },
                 { it }
             )
     }

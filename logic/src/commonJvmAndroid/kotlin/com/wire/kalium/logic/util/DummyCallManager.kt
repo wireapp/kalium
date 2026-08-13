@@ -37,7 +37,8 @@ internal class DummyCallManager : CallManager {
         conversationId: ConversationId,
         callType: CallType,
         conversationTypeCalling: ConversationTypeCalling,
-        isAudioCbr: Boolean
+        isAudioCbr: Boolean,
+        isMeeting: Boolean
     ) {
     }
 

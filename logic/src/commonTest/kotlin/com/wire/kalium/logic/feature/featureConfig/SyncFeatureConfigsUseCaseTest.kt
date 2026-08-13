@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.channels.ChannelsFeatureConfigurationHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.AppsFeatureHandler
@@ -854,6 +855,21 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
+    fun givenMeetingsFeatureWasDisabledAndIsEnabled_whenSyncing_thenClearLastSlowSyncCompletionInstant() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(FeatureConfigTest.newModel(meetingsConfigModel = MeetingsConfigModel(Status.ENABLED)))
+            .withGetSupportedProtocolsReturning(null)
+            .withMeetingsEnabledReturning(false)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
+        }
+    }
+
+    @Test
     fun givenMeetingsFeatureIsDisabled_whenSyncing_thenSetMeetingsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = arrangement()
             .withRemoteFeatureConfigsSucceeding(FeatureConfigTest.newModel(meetingsConfigModel = MeetingsConfigModel(Status.DISABLED)))
@@ -868,7 +884,7 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenMeetingsFeatureNotPresent_whenSyncing_thenSetMeetingsIsNotCalled() = runTest {
+    fun givenMeetingsFeatureNotPresent_whenSyncing_thenSetMeetingsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = arrangement()
             .withRemoteFeatureConfigsSucceeding(FeatureConfigTest.newModel(meetingsConfigModel = null))
             .withGetSupportedProtocolsReturning(null)
@@ -876,8 +892,8 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        verifySuspend(VerifyMode.not) {
-            arrangement.userConfigDAO.setMeetingsEnabled(any())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigDAO.setMeetingsEnabled(false)
         }
     }
 
@@ -891,6 +907,7 @@ class SyncFeatureConfigsUseCaseTest {
         val channelsConfigurationStorage = ChannelsConfigurationStorage(userDatabase.builder.metadataDAO)
         var kaliumConfigs = KaliumConfigs()
         val userConfigDAO: UserConfigDAO = mock<UserConfigDAO>(mode = MockMode.autoUnit)
+        val slowSyncRepository: SlowSyncRepository = mock(mode = MockMode.autoUnit)
 
         var userConfigRepository: UserConfigRepository = UserConfigDataSource(
             inMemoryStorage,
@@ -912,6 +929,7 @@ class SyncFeatureConfigsUseCaseTest {
                         isStatusChanged = false
                     )
                 )
+                withMeetingsEnabledReturning(false)
             }
         }
 
@@ -970,6 +988,12 @@ class SyncFeatureConfigsUseCaseTest {
             } returns result
         }
 
+        suspend fun withMeetingsEnabledReturning(enabled: Boolean) = apply {
+            everySuspend {
+                userConfigDAO.isMeetingsEnabled()
+            } returns enabled
+        }
+
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
             this.kaliumConfigs = changeConfigs(this.kaliumConfigs)
         }
@@ -995,7 +1019,7 @@ class SyncFeatureConfigsUseCaseTest {
                 EnableUserProfileQRCodeConfigHandler(userConfigRepository),
                 AssetAuditLogConfigHandler(userConfigRepository),
                 PreventAdminlessGroupsConfigHandler(userConfigRepository),
-                MeetingsConfigHandler(userConfigRepository),
+                MeetingsConfigHandler(userConfigRepository, slowSyncRepository),
             )
             return this to syncFeatureConfigsUseCase
         }

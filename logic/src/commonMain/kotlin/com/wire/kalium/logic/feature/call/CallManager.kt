@@ -39,7 +39,8 @@ internal interface CallManager {
         conversationId: ConversationId,
         callType: CallType,
         conversationTypeCalling: ConversationTypeCalling,
-        isAudioCbr: Boolean
+        isAudioCbr: Boolean,
+        isMeeting: Boolean
     )
 
     suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean = false)

@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.seconds
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -97,6 +98,31 @@ class BackupDataSourceTest {
         // Then
         assertEquals(testMessages.size, result.data.size)
         assertTrue(result.totalPages > 0)
+    }
+
+    @Test
+    fun givenSelfDeletingMessages_whenGettingMessages_thenShouldNotExportThem() = runTest {
+        // Given
+        val conversation = createTestConversation("1")
+        val regularMessage = createTestMessage(conversation.id, "regular", userId)
+        val selfDeletingMessageNotStarted = createTestMessage(conversation.id, "self-deleting-not-started", userId).copy(
+            expirationData = Message.ExpirationData(expireAfter = 10.seconds)
+        )
+        val selfDeletingMessageStarted = createTestMessage(conversation.id, "self-deleting-started", userId).copy(
+            expirationData = Message.ExpirationData(
+                expireAfter = 10.seconds,
+                selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.Started(Instant.fromEpochMilliseconds(10_000))
+            )
+        )
+        subject.insertUsers(listOf(createTestUser(userId.value)))
+        subject.insertConversations(listOf(conversation))
+        subject.insertMessages(listOf(regularMessage, selfDeletingMessageNotStarted, selfDeletingMessageStarted))
+
+        // When
+        val result = subject.getMessages().first()
+
+        // Then
+        assertEquals(listOf(regularMessage.id), result.data.map { it.id })
     }
 
     @Test

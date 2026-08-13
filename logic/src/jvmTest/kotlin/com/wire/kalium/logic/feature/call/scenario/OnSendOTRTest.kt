@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.network.tools.KtxSerializer
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
@@ -136,6 +137,7 @@ class OnSendOTRTest {
             "self_client_id",
             callMapper,
             messageSender,
+            KtxSerializer.json
         )
 
         companion object {

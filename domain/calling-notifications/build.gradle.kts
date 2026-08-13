@@ -18,6 +18,7 @@
 
 plugins {
     id(libs.plugins.kalium.library.get().pluginId)
+    id("com.wire.kalium.apple-avs-runtime")
 }
 
 kaliumLibrary {

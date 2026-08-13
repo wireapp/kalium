@@ -19,16 +19,24 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MeetingsConfigModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 
 internal class MeetingsConfigHandler(
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val slowSyncRepository: SlowSyncRepository,
 ) {
-    internal suspend fun handle(model: MeetingsConfigModel?): Either<CoreFailure, Unit> =
-        when {
-            model == null -> Either.Right(Unit)
-            else -> userConfigRepository.setMeetingsEnabled(model.status == Status.ENABLED)
-        }
+    internal suspend fun handle(model: MeetingsConfigModel?): Either<CoreFailure, Unit> {
+        val newState = model?.status == Status.ENABLED
+        val previousState = userConfigRepository.isMeetingsEnabled()
+        return userConfigRepository.setMeetingsEnabled(newState)
+            .onSuccess {
+                if (newState && previousState != newState) { // Meetings feature has been enabled
+                    slowSyncRepository.clearLastSlowSyncCompletionInstant() // restart slow sync to fetch meetings
+                }
+            }
+    }
 }

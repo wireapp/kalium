@@ -74,6 +74,7 @@ jobs:
       - name: Setup Node for npm publish (Trusted Publisher)
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
+          node-version: 24.19.0
           package-manager-cache: false
           scope: "@wireapp"
 
