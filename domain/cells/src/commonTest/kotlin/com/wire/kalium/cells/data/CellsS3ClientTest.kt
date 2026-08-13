@@ -42,6 +42,7 @@ import kotlinx.io.IOException
 import okio.FileSystem
 import okio.ForwardingFileSystem
 import okio.Path.Companion.toPath
+import okio.SYSTEM
 import okio.Source
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
@@ -51,6 +52,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class CellsS3ClientTest {
 
@@ -644,16 +646,22 @@ class CellsS3ClientTest {
         var requestCount = 0
         val sinkFailure = okio.IOException("sink write failed")
         val destination = okio.Buffer()
-        val failingSink = object : okio.ForwardingSink(destination) {
+        val failingSink = object : okio.Sink {
             private var writeCount = 0
 
             override fun write(source: okio.Buffer, byteCount: Long) {
                 writeCount++
                 if (writeCount == 1) {
-                    super.write(source, PARTIAL_SINK_WRITE_SIZE)
+                    destination.write(source, PARTIAL_SINK_WRITE_SIZE)
                 }
                 throw sinkFailure
             }
+
+            override fun flush() = destination.flush()
+
+            override fun timeout() = destination.timeout()
+
+            override fun close() = destination.close()
         }
         val client = createClient(
             httpClient = HttpClient(
@@ -867,7 +875,7 @@ class CellsS3ClientTest {
         const val EXPECTED_ATTEMPTS = 3
         const val TEST_DOWNLOAD_SIZE = 20 * 1024
         const val TEST_STREAM_CHUNK_SIZE = 1024
-        const val STREAM_ASSERTION_TIMEOUT_MILLIS = 5_000L
+        val STREAM_ASSERTION_TIMEOUT_MILLIS = 5_000L.milliseconds
         const val PARTIAL_SINK_WRITE_SIZE = 3L
         const val DEFAULT_TEST_MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024L
         val TEST_CREDENTIALS = S3Credentials("access-token", "gateway-secret")
