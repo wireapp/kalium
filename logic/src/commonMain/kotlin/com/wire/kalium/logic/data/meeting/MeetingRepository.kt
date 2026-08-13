@@ -218,7 +218,7 @@ internal class MeetingDataSource(
             conversationRepository.getConversationById(conversationId = meetingEntity.conversationId.toModel())
         }.flatMap { conversation ->
             updateMembers(
-                conversationId = conversation.id,
+                conversation = conversation,
                 upsertMeeting = meeting,
                 transactionContext = transactionContext
             ).flatMap { mlsAdditionResult ->
@@ -240,28 +240,26 @@ internal class MeetingDataSource(
         }
 
     private suspend fun updateMembers(
-        conversationId: ConversationId,
+        conversation: Conversation,
         upsertMeeting: UpsertMeeting,
         transactionContext: CryptoTransactionContext,
-    ): Either<CoreFailure, MLSAdditionResult> =
-        conversationRepository.getConversationById(conversationId)
-            .flatMap { conversation ->
-                val mlsCapableProtocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
-                if (mlsCapableProtocol?.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
-                    conversationRepository.getConversationMembers(conversation.id)
-                        .map { it.filterNot { it == selfUserId } } // exclude self user from current members
-                        .flatMap { currentMembers ->
-                            updateMembers(
-                                mlsCapableProtocol = mlsCapableProtocol,
-                                membersToAdd = upsertMeeting.otherParticipants.filterNot { it in currentMembers },
-                                membersToRemove = currentMembers.filterNot { it in upsertMeeting.otherParticipants },
-                                transactionContext = transactionContext
-                            )
-                        }
-                } else {
-                    Either.Right(MLSAdditionResult.Empty) // no MLS-capable protocol or not established, so no need to update members
+    ): Either<CoreFailure, MLSAdditionResult> {
+        val mlsCapableProtocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
+        return if (mlsCapableProtocol?.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
+            conversationRepository.getConversationMembers(conversation.id)
+                .map { it.filterNot { it == selfUserId } } // exclude self user from current members
+                .flatMap { currentMembers ->
+                    updateMembers(
+                        mlsCapableProtocol = mlsCapableProtocol,
+                        membersToAdd = upsertMeeting.otherParticipants.filterNot { it in currentMembers },
+                        membersToRemove = currentMembers.filterNot { it in upsertMeeting.otherParticipants },
+                        transactionContext = transactionContext
+                    )
                 }
-            }
+        } else {
+            Either.Right(MLSAdditionResult.Empty) // no MLS-capable protocol or not established, so no need to update members
+        }
+    }
 
     private suspend fun updateMembers(
         mlsCapableProtocol: Conversation.ProtocolInfo.MLSCapable,
