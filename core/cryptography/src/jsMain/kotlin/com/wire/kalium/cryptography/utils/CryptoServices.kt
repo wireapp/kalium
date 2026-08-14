@@ -15,12 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:JvmName("CryptoServiceProbeJvm")
 
 package com.wire.kalium.cryptography.utils
 
-actual fun probeCryptoServices() {
-    assetIvRandom()
-    assetCipher()
-    generateRandomAES256Key()
-}
+actual fun cryptoServices(): List<CryptoServiceInfo> = emptyList()

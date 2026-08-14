@@ -40,14 +40,14 @@ internal class AESEncrypt {
         var encryptedDataSize = 0L
         try {
             // Fetch AES256 Algorithm
-            val cipher = assetCipher()
+            val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
             // Parse Secret Key from our custom AES256Key model object
             val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
 
             // Create random iv
             val iv = ByteArray(IV_SIZE)
-            assetIvRandom().nextBytes(iv)
+            SecureRandom().nextBytes(iv)
 
             // Init the encryption
             cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey, IvParameterSpec(iv))
@@ -83,14 +83,14 @@ internal class AESEncrypt {
 
     internal fun encryptData(assetData: PlainData, key: AES256Key): EncryptedData {
         // Fetch AES256 Algorithm
-        val cipher = assetCipher()
+        val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
         // Parse Secret Key from our custom AES256Key model object
         val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
 
         // Create random iv
         val iv = ByteArray(IV_SIZE)
-        assetIvRandom().nextBytes(iv)
+        SecureRandom().nextBytes(iv)
 
         // Do the encryption
         cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey, IvParameterSpec(iv))
@@ -103,7 +103,6 @@ internal class AESEncrypt {
     internal fun generateRandomAES256Key(): AES256Key {
         // AES256 Symmetric secret key generation
         val keygen = KeyGenerator.getInstance(KEY_ALGORITHM)
-            .also { recordCryptoService(CryptoUsage.ASSET_KEY, "KeyGenerator.getInstance(\"$KEY_ALGORITHM\")", it.algorithm, it.provider) }
         keygen.init(AES_KEYGEN_SIZE)
         return AES256Key(keygen.generateKey().encoded)
     }
@@ -116,7 +115,7 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
         var size = 0L
         try {
             // Fetch AES256 Algorithm
-            val cipher = assetCipher()
+            val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
             // Parse Secret Key from our custom AES256Key model object
             val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
@@ -153,7 +152,7 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
 
     internal fun decryptData(encryptedData: EncryptedData): PlainData {
         // Fetch AES256 Algorithm
-        val cipher = assetCipher()
+        val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
         // Parse Secret Key from our custom AES256Key model object
         val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
@@ -169,15 +168,23 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
     }
 }
 
-/** The asset cipher, noted for the security providers debug screen. */
-internal fun assetCipher(): Cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION).also {
-    recordCryptoService(CryptoUsage.ASSET_CIPHER, "Cipher.getInstance(\"$KEY_ALGORITHM_CONFIGURATION\")", it.algorithm, it.provider)
-}
-
-/** The randomness behind asset IVs, noted for the security providers debug screen. */
-internal fun assetIvRandom(): SecureRandom = SecureRandom().also {
-    recordCryptoService(CryptoUsage.ASSET_ENCRYPTION_IV, "SecureRandom()", it.algorithm, it.provider)
-}
+/**
+ * Which providers serve asset crypto, for the security providers debug screen.
+ *
+ * Lives here, next to the call sites, so it shares their algorithm constants: change a constant and this
+ * follows automatically instead of quietly reporting the old one.
+ */
+internal fun assetCryptoServices(): List<CryptoServiceInfo> = listOfNotNull(
+    cryptoServiceInfo("Asset encryption IV", "SecureRandom()") {
+        SecureRandom().run { algorithm to provider }
+    },
+    cryptoServiceInfo("Asset AES-256 key", "KeyGenerator.getInstance(\"$KEY_ALGORITHM\")") {
+        KeyGenerator.getInstance(KEY_ALGORITHM).run { algorithm to provider }
+    },
+    cryptoServiceInfo("Asset cipher", "Cipher.getInstance(\"$KEY_ALGORITHM_CONFIGURATION\")") {
+        Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION).run { algorithm to provider }
+    },
+)
 
 private const val KEY_ALGORITHM = "AES"
 private const val KEY_ALGORITHM_CONFIGURATION = "AES/CBC/PKCS5PADDING"

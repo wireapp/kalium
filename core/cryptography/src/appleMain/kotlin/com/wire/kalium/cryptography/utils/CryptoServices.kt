@@ -15,19 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 package com.wire.kalium.cryptography.utils
 
-/** A cryptographic call site in kalium. */
-enum class CryptoUsage {
-    /** `AESEncrypt.encryptFile` / `encryptData`, IV generation. */
-    ASSET_ENCRYPTION_IV,
-
-    /** `AESEncrypt.generateRandomAES256Key`. */
-    ASSET_KEY,
-
-    /** `AESEncrypt` and `AESDecrypt`, asset payloads. */
-    ASSET_CIPHER,
-
-    /** `SecurityHelper` database secrets and `RandomPassword`, via kalium's `SecureRandom` wrapper. */
-    DATABASE_SECRET,
-}
+actual fun cryptoServices(): List<CryptoServiceInfo> = emptyList()

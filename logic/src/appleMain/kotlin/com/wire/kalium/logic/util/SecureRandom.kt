@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.util
 
+import com.wire.kalium.cryptography.utils.CryptoServiceInfo
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import platform.Security.SecRandomCopyBytes
@@ -43,4 +44,7 @@ internal actual class SecureRandom actual constructor() {
         // TODO replace with SecRandomCopyBytes?
         return arc4random_uniform(bound.toUInt()).toInt()
     }
+
+    /** Apple platforms have no security provider registry, so there is nothing to report. */
+    actual fun serviceInfo(): CryptoServiceInfo? = null
 }

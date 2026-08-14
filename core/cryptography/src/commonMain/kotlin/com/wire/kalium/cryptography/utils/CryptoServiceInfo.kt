@@ -18,11 +18,14 @@
 package com.wire.kalium.cryptography.utils
 
 /**
- * Which security provider served a cryptographic call site, as observed when it ran.
+ * Which security provider serves one cryptographic lookup, read off the instance the platform returned.
  *
- * @param lookup the lookup the call site performed, as written in the source.
+ * @param name what the lookup is for, e.g. `Asset cipher`.
+ * @param lookup the lookup performed, as written in the source, e.g. `KeyGenerator.getInstance("AES")`.
+ * @param algorithm the algorithm the returned instance reports, e.g. `AES/CBC/PKCS5PADDING`.
  */
-data class CryptoServiceRecord(
+data class CryptoServiceInfo(
+    val name: String,
     val lookup: String,
     val algorithm: String,
     val providerName: String,

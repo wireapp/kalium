@@ -20,13 +20,15 @@ package com.wire.kalium.logic.feature.debug
 import com.wire.kalium.util.DebugKaliumApi
 
 /**
- * Which security provider served one cryptographic call site, as observed when it ran.
+ * Which security provider serves one cryptographic lookup in kalium.
  *
- * @param lookup the lookup the call site performed, as written in the source.
+ * @param name what the lookup is for, e.g. `Asset cipher`.
+ * @param lookup the lookup performed, as written in the source, e.g. `KeyGenerator.getInstance("AES")`.
+ * @param algorithm the algorithm the resolved instance reports, e.g. `AES/CBC/PKCS5PADDING`.
  */
-@DebugKaliumApi("Debug-only view of the provider that served one cryptographic call site.")
+@DebugKaliumApi("Debug-only view of the provider that serves one cryptographic lookup.")
 public data class CryptoServiceUsage(
-    val usage: CryptoUsage,
+    val name: String,
     val lookup: String,
     val algorithm: String,
     val providerName: String,

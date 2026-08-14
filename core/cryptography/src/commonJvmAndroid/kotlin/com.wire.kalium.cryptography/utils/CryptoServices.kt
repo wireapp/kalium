@@ -15,36 +15,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:JvmName("CryptoServiceRecordingJvm")
+@file:JvmName("CryptoServicesJvm")
 
 package com.wire.kalium.cryptography.utils
 
 import java.security.Provider
 
+actual fun cryptoServices(): List<CryptoServiceInfo> = assetCryptoServices()
+
 /**
- * Notes that [usage] was served by [provider], for the security providers debug screen.
+ * Performs [resolve] and reads the algorithm and provider off the instance it returned, so what is reported
+ * is what the platform actually handed back.
  *
- * Call this straight after a JCA lookup, passing the instance's own algorithm and provider so that what is
- * reported is what the platform actually handed back.
+ * Null when the lookup fails: a debug screen must not bring down the caller over a missing algorithm.
  *
- * @param lookup the lookup performed, as written in the source, e.g. `KeyGenerator.getInstance("AES")`.
+ * @param name what the lookup is for, e.g. `Asset cipher`.
+ * @param lookup the lookup performed, as written in the source. Interpolate the same constants [resolve]
+ * uses, so this cannot describe a lookup the call sites do not make.
+ * @param resolve the JCA lookup, returning its result's `algorithm` and `provider`.
  */
-fun recordCryptoService(usage: CryptoUsage, lookup: String, algorithm: String, provider: Provider) {
-    CryptoServiceRegistry.record(
-        usage = usage,
-        record = CryptoServiceRecord(
+fun cryptoServiceInfo(name: String, lookup: String, resolve: () -> Pair<String, Provider>): CryptoServiceInfo? =
+    runCatching(resolve).getOrNull()?.let { (algorithm, provider) ->
+        CryptoServiceInfo(
+            name = name,
             lookup = lookup,
             algorithm = algorithm,
             providerName = provider.name,
             providerVersion = provider.versionString(),
-        ),
-    )
-}
+        )
+    }
 
 /**
  * `Provider.getVersionStr()` needs API 28 and `Provider.getVersion()` is deprecated, so read the version
  * out of the provider's own property map, where it is registered under this key.
  */
-internal fun Provider.versionString(): String = getProperty(PROVIDER_VERSION_PROPERTY).orEmpty()
+private fun Provider.versionString(): String = getProperty(PROVIDER_VERSION_PROPERTY).orEmpty()
 
 private const val PROVIDER_VERSION_PROPERTY = "Provider.id version"

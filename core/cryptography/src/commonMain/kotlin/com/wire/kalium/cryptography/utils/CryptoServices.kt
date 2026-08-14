@@ -19,17 +19,16 @@
 package com.wire.kalium.cryptography.utils
 
 /**
- * Fills [CryptoServiceRegistry] for the call sites in this module that have not run yet.
+ * Which security provider serves each cryptographic lookup in this module.
  *
- * Most crypto paths only execute on a specific user action — asset encryption needs an upload, for
- * instance — which would leave the security providers debug screen almost empty. This runs the same
- * lookups the call sites run, by calling the very functions they call, so nothing here can claim a
- * provider that real usage would not have got. If a call site has already recorded, this simply records
- * the same result again.
+ * Which implementation backs an algorithm is decided at runtime by walking the installed security
+ * providers, so it varies per device, per OEM and per OS version. This performs the same lookups the call
+ * sites perform, from the same file and with the same algorithm constants, and reads the provider off what
+ * comes back.
  *
- * Only performs lookups. No key is persisted and no crypto state is mutated.
+ * Only for the security providers debug screen. Performs lookups and nothing else: no key is persisted and
+ * no crypto state is mutated.
  *
- * `SecureRandom.getInstanceStrong()` can block while the platform gathers entropy, so call this off the
- * main thread.
+ * Empty on platforms that have no security provider registry.
  */
-expect fun probeCryptoServices()
+expect fun cryptoServices(): List<CryptoServiceInfo>
