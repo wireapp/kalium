@@ -51,6 +51,7 @@ internal object MLSMessageFailureHandler {
             is MLSFailure.Disabled,
             MLSFailure.CommitForMissingProposal,
             MLSFailure.OrphanWelcome,
+            MLSFailure.ConversationNotFound,
             is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
 
             MLSFailure.ConversationAlreadyExists,

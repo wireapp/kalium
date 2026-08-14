@@ -20,6 +20,7 @@ package com.wire.kalium.common.error
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.MlsException
 
+@Suppress("CyclomaticComplexMethod")
 actual fun mapMLSException(exception: Exception): MLSFailure =
     if (exception is CoreCryptoException.Mls) {
         when (exception.v1) {
@@ -34,10 +35,11 @@ actual fun mapMLSException(exception: Exception): MLSFailure =
             is MlsException.MessageEpochTooOld -> MLSFailure.MessageEpochTooOld
 
             is MlsException.Other -> {
-                if ((exception.v1 as MlsException.Other).v1
-                        .startsWith(COMMIT_FOR_MISSING_PROPOSAL)
-                ) {
+                val otherError = (exception.v1 as MlsException.Other).v1
+                if (otherError.startsWith(COMMIT_FOR_MISSING_PROPOSAL)) {
                     MLSFailure.CommitForMissingProposal
+                } else if (otherError.startsWith(CONVERSATION_NOT_FOUND)) {
+                    MLSFailure.ConversationNotFound
                 } else {
                     MLSFailure.Other
                 }
@@ -50,3 +52,4 @@ actual fun mapMLSException(exception: Exception): MLSFailure =
     }
 
 private const val COMMIT_FOR_MISSING_PROPOSAL = "Incoming message is a commit for which we have not yet received all the proposals"
+private const val CONVERSATION_NOT_FOUND = "Couldn't find conversation"
