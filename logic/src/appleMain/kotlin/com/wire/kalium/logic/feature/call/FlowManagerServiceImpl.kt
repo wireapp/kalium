@@ -60,6 +60,5 @@ internal actual open class FlowManagerServiceImpl(
             kaliumLogger.w("AVS iOS smoke: startFlowManager could not start AVS")
             return
         }
-        flowManager.startAudio()
     }
 }

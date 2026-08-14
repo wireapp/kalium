@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,28 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.call
+package com.wire.kalium.calling
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlin.test.Test
+import kotlin.test.assertTrue
 
-@Suppress("EnforceSerializableFields")
-@Serializable
-data class CallParticipants(
-    @SerialName("convid")
-    val conversationId: String,
-    val members: List<CallMember>
-)
+class AppleAvsRuntimeLinkingTest {
+    @Test
+    fun givenAppleAvsRuntimeLinked_whenStartingRepeatedly_thenStartsSuccessfully() {
+        val flowManager = AppleAvsFlowManager()
 
-@Suppress("EnforceSerializableFields")
-@Serializable
-data class CallMember(
-    @SerialName("userid")
-    val userId: String,
-    @SerialName("clientid")
-    val clientId: String,
-    val aestab: Int,
-    val vrecv: Int,
-    @SerialName("muted")
-    val isMuted: Int,
-)
+        assertTrue(flowManager.startIfAvailable())
+        assertTrue(flowManager.startIfAvailable())
+    }
+}

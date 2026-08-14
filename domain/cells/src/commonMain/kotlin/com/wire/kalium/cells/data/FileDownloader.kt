@@ -20,6 +20,11 @@ package com.wire.kalium.cells.data
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import io.ktor.client.HttpClient
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.contentLength
+import io.ktor.http.isSuccess
+import okio.IOException
 import okio.Sink
 
 public interface FileDownloader {
@@ -30,6 +35,29 @@ public interface FileDownloader {
     ): Either<NetworkFailure, Unit>
 }
 
-internal expect fun fileDownloader(
+internal fun fileDownloader(
     httpClient: HttpClient
-): FileDownloader
+): FileDownloader = FileDownloaderImpl(httpClient)
+
+private class FileDownloaderImpl(
+    private val httpClient: HttpClient,
+) : FileDownloader {
+    override suspend fun downloadViaPresignedUrl(
+        presignedUrl: String,
+        outFileSink: Sink,
+        onProgressUpdate: (Long, Long) -> Unit,
+    ): Either<NetworkFailure, Unit> = httpClient.prepareGet(presignedUrl).execute { response ->
+        if (!response.status.isSuccess()) {
+            val exception = IOException("Download failed: ${response.status}")
+            return@execute Either.Left(NetworkFailure.ServerMiscommunication(exception))
+        }
+
+        response.bodyAsChannel().copyToSink(
+            sink = outFileSink,
+            contentLength = response.contentLength(),
+            onProgressUpdate = onProgressUpdate,
+        )
+
+        Either.Right(Unit)
+    }
+}

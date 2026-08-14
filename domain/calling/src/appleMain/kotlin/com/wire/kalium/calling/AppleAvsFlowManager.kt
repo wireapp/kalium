@@ -21,6 +21,5 @@ package com.wire.kalium.calling
 expect class AppleAvsFlowManager() {
     fun attachVideoView(view: Any?): Boolean
     fun setVideoCaptureDevice(deviceId: String, forConversation: String)
-    fun startAudio()
     fun startIfAvailable(): Boolean
 }

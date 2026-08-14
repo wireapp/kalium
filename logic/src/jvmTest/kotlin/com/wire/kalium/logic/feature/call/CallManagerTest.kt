@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.calling.Calling
+import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.callbacks.ReadyHandler
 import com.wire.kalium.calling.types.Handle
@@ -30,6 +31,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -111,8 +113,63 @@ internal class CallManagerTest {
                 CALL_CONV_ID.toString(),
                 USER_ID.toString(),
                 CLIENT_ID.value,
+                ConversationTypeCalling.Conference.avsValue,
+                0
+            )
+        }
+    }
+
+    @Test
+    @Suppress("FunctionNaming") // native function has that name
+    fun givenCallManager_whenCallingMessageIsReceivedForMeeting_then_wcall_recv_msg_IsCalledWithMeetingFlag() = runTest {
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .onGetCallConversationTypeReturning(ConversationTypeCalling.ConferenceMls, isMeeting = true)
+            .arrange()
+        callManager.waitUntilInitialized()
+
+        callManager.onCallingMessageReceived(content = CALL_CONTENT, message = CALL_MESSAGE,)
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.calling.wcall_recv_msg(
+                BASE_HANDLE,
+                matches { it.contentEquals(CALL_CONTENT.value.toByteArray()) },
+                CALL_CONTENT.value.toByteArray().size,
                 any(),
-                any()
+                any(),
+                CALL_CONV_ID.toString(),
+                USER_ID.toString(),
+                CLIENT_ID.value,
+                ConversationTypeCalling.ConferenceMls.avsValue,
+                1
+            )
+        }
+    }
+
+    @Test
+    @Suppress("FunctionNaming") // native function has that name
+    fun givenMeetingCallManager_whenStartingCallForMeeting_then_wcall_start_IsCalledWithMeetingFlag() = runTest {
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withCreateCallReturning()
+            .withCallMetadataReturning(CALL_CONV_ID, CALL_METADATA)
+            .onWcallStartReturning(0)
+            .arrange()
+
+        callManager.startCall(
+            conversationId = CALL_CONV_ID,
+            callType = CallType.AUDIO,
+            conversationTypeCalling = ConversationTypeCalling.ConferenceMls,
+            isAudioCbr = false,
+            isMeeting = true
+        )
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.calling.wcall_start(
+                inst = BASE_HANDLE,
+                conversationId = CALL_CONV_ID.toString(),
+                callType = CallTypeCalling.AUDIO.avsValue,
+                convType = ConversationTypeCalling.ConferenceMls.avsValue,
+                audioCbr = 0,
+                meeting = 1
             )
         }
     }
@@ -213,8 +270,18 @@ internal class CallManagerTest {
             every { calling.wcall_recv_msg(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns result
         }
 
-        fun onGetCallConversationTypeReturning(result: ConversationTypeCalling) = apply {
-            everySuspend { getCallConversationType(any()) } returns result
+        fun onWcallStartReturning(result: Int) = apply {
+            every { calling.wcall_start(any(), any(), any(), any(), any(), any()) } returns result
+        }
+
+        fun onGetCallConversationTypeReturning(result: ConversationTypeCalling, isMeeting: Boolean = false) = apply {
+            everySuspend { getCallConversationType(any()) } returns GetCallConversationTypeProvider.Result(result, isMeeting)
+        }
+
+        fun withCreateCallReturning() = apply {
+            everySuspend {
+                callRepository.createCall(any(), any(), any(), any(), any(), any(), any())
+            } returns Unit
         }
 
         fun withFetchServerTimeReturning() = apply {
@@ -225,7 +292,7 @@ internal class CallManagerTest {
             everySuspend { callRepository.getCallMetadata(conversationId) } returns callMetadata
         }
 
-        suspend fun arrange() = this to CallManagerImpl(
+        fun arrange() = this to CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
             currentClientIdProvider = currentClientIdProvider,
@@ -246,7 +313,9 @@ internal class CallManagerTest {
             flowManagerService = flowManagerService,
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata,
             selfUserId = selfUserId
-        ).also {
+        )
+
+        init {
             onCurrentClientIdReturning(CLIENT_ID.right())
             onParseToFederatedIdReturning(selfUserId, selfUserId.toString())
             onParseToFederatedIdReturning(USER_ID, USER_ID.toString())

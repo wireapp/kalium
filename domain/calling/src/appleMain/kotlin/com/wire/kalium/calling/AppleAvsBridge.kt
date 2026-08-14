@@ -34,12 +34,13 @@ interface AppleAvsBridge {
         conversationId: String,
         senderUserId: String,
         senderClientId: String,
-        conversationType: Int
+        conversationType: Int,
+        meeting: Boolean
     ): Boolean
     fun respondToSend(handle: UInt, status: Int, reason: String, context: COpaquePointer?)
     fun respondToSft(handle: UInt, error: Int, data: ByteArray, context: COpaquePointer?)
     fun updateConfig(handle: UInt, error: Int, json: String)
-    fun startCall(handle: UInt, conversationId: String, callType: Int, conversationType: Int, audioCbr: Boolean): Int
+    fun startCall(handle: UInt, conversationId: String, callType: Int, conversationType: Int, audioCbr: Boolean, meeting: Boolean): Int
     fun answerCall(handle: UInt, conversationId: String, callType: Int, audioCbr: Boolean): Int
     fun endCall(handle: UInt, conversationId: String)
     fun rejectCall(handle: UInt, conversationId: String): Int
@@ -56,6 +57,7 @@ interface AppleAvsBridge {
 
 interface AppleAvsCallbacks {
     fun onReady(version: Int)
+    fun onLog(level: Int, message: String)
     fun onSend(
         context: COpaquePointer?,
         conversationId: String?,
