@@ -65,6 +65,7 @@ private suspend fun ByteReadChannel.copyAvailableTo(
         }
         read = readAvailable(buffer)
     }
+    closedCause?.let { throw it }
     return total
 }
 
