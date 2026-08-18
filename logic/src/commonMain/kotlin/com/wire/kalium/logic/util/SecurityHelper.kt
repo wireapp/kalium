@@ -21,6 +21,7 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.cryptography.MlsDBSecret
 import com.wire.kalium.cryptography.ProteusDBSecret
 import com.wire.kalium.cryptography.migrateDatabaseKey
+import com.wire.kalium.cryptography.utils.CryptoServiceInfo
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
@@ -30,6 +31,13 @@ import kotlin.io.encoding.Base64
 internal expect class SecureRandom internal constructor() {
     fun nextBytes(length: Int): ByteArray
     fun nextInt(bound: Int): Int
+
+    /**
+     * Which security provider serves this randomness, for the security providers debug screen.
+     *
+     * Null on platforms with no security provider registry.
+     */
+    fun serviceInfo(): CryptoServiceInfo?
 }
 
 internal interface SecurityHelper {
