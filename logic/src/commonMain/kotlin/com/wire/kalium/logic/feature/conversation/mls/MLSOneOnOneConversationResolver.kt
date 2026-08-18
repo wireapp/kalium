@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
@@ -29,6 +30,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 
 /**
@@ -55,7 +57,8 @@ internal interface MLSOneOnOneConversationResolver {
 internal class MLSOneOnOneConversationResolverImpl(
     private val conversationRepository: ConversationRepository,
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
-    private val fetchMLSOneToOneConversation: FetchMLSOneToOneConversationUseCase
+    private val fetchMLSOneToOneConversation: FetchMLSOneToOneConversationUseCase,
+    private val mlsConversationRepository: MLSConversationRepository,
 ) : MLSOneOnOneConversationResolver {
 
     override suspend fun invoke(
@@ -64,28 +67,45 @@ internal class MLSOneOnOneConversationResolverImpl(
         allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, ConversationId> =
         conversationRepository.getConversationsByUserId(userId).flatMap { conversations ->
-            // Look for an existing MLS-capable conversation one-on-one
-            val initializedMLSOneOnOne = conversations.firstOrNull {
+            val establishedMLSOneOnOnes = conversations.filter {
                 val isOneOnOne = it.type == Conversation.Type.OneOnOne
                 val protocol = it.protocol
-                val isMLSInitialized = protocol is Conversation.ProtocolInfo.MLSCapable &&
+                val isMLSInitialized = protocol is Conversation.ProtocolInfo.MLS &&
                         protocol.groupState == GroupState.ESTABLISHED
                 isOneOnOne && isMLSInitialized
             }
 
-            if (initializedMLSOneOnOne != null) {
-                kaliumLogger.d("Already established mls group for one-on-one with ${userId.toLogString()}, skipping.")
-                Either.Right(initializedMLSOneOnOne.id)
-            } else {
-                kaliumLogger.d("Establishing mls group for one-on-one with ${userId.toLogString()}")
-                fetchMLSOneToOneConversation(transactionContext, userId).flatMap { conversation ->
-                    joinExistingMLSConversationUseCase(
-                        transactionContext = transactionContext,
-                        conversationId = conversation.id,
-                        mlsPublicKeys = conversation.mlsPublicKeys,
-                        allowJoinByExternalCommit = allowJoinByExternalCommit
-                    ).map { conversation.id }
+            findEstablishedMLSOneOnOneInCoreCrypto(transactionContext, establishedMLSOneOnOnes).flatMap { establishedConversation ->
+                if (establishedConversation != null) {
+                    kaliumLogger.d("Already established mls group for one-on-one with ${userId.toLogString()}, skipping.")
+                    Either.Right(establishedConversation.id)
+                } else {
+                    kaliumLogger.d("Establishing mls group for one-on-one with ${userId.toLogString()}")
+                    fetchMLSOneToOneConversation(transactionContext, userId).flatMap { conversation ->
+                        joinExistingMLSConversationUseCase(
+                            transactionContext = transactionContext,
+                            conversationId = conversation.id,
+                            mlsPublicKeys = conversation.mlsPublicKeys,
+                            allowJoinByExternalCommit = allowJoinByExternalCommit
+                        ).map { conversation.id }
+                    }
                 }
             }
         }
+
+    private suspend fun findEstablishedMLSOneOnOneInCoreCrypto(
+        transactionContext: CryptoTransactionContext,
+        candidates: List<Conversation>,
+    ): Either<CoreFailure, Conversation?> = if (candidates.isEmpty()) {
+        Either.Right(null)
+    } else transactionContext.wrapInMLSContext { mlsContext ->
+        for (candidate in candidates) {
+            val protocol = candidate.protocol as Conversation.ProtocolInfo.MLS
+            when (val result = mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, protocol.groupId)) {
+                is Either.Left -> return@wrapInMLSContext result
+                is Either.Right -> if (result.value) return@wrapInMLSContext Either.Right(candidate)
+            }
+        }
+        Either.Right(null)
+    }
 }

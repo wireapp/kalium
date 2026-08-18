@@ -1428,7 +1428,8 @@ public class UserSessionScope internal constructor(
         get() = MLSOneOnOneConversationResolverImpl(
             conversationRepository,
             joinExistingMLSConversationUseCase,
-            fetchMLSOneToOneConversationUseCase
+            fetchMLSOneToOneConversationUseCase,
+            mlsConversationRepository,
         )
 
     private val oneOnOneMigrator: OneOnOneMigrator
