@@ -266,7 +266,7 @@ internal class CallManagerImpl internal constructor(
         } else {
             message.conversationId
         }
-        val callConversationType = getCallConversationType(targetConversationId)
+        val (callConversationType, isMeeting) = getCallConversationType(targetConversationId)
         val type = callMapper.toConversationType(callConversationType)
 
         wcall_recv_msg(
@@ -279,7 +279,7 @@ internal class CallManagerImpl internal constructor(
             userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
             clientId = message.senderClientId.value,
             convType = callMapper.toConversationTypeCalling(type).avsValue,
-            meeting = false.toInt()
+            meeting = isMeeting.toInt()
         )
         callingLogger.i("$tagWithUserId: wcall_recv_msg() called")
     }
@@ -288,7 +288,8 @@ internal class CallManagerImpl internal constructor(
         conversationId: ConversationId,
         callType: CallType,
         conversationTypeCalling: ConversationTypeCalling,
-        isAudioCbr: Boolean
+        isAudioCbr: Boolean,
+        isMeeting: Boolean
     ) {
         callingLogger.d(
             "$tagWithUserId: starting call for conversationId: " +
@@ -321,7 +322,7 @@ internal class CallManagerImpl internal constructor(
                             callType = avsCallType.avsValue,
                             convType = conversationTypeCalling.avsValue,
                             audioCbr = isAudioCbr.toInt(),
-                            meeting = false.toInt()
+                            meeting = isMeeting.toInt()
                         )
                         callingLogger.d(
                             "$tagWithUserId: wcall_start() called -> Call for conversationId: " +
@@ -340,7 +341,7 @@ internal class CallManagerImpl internal constructor(
                     callType = avsCallType.avsValue,
                     convType = conversationTypeCalling.avsValue,
                     audioCbr = isAudioCbr.toInt(),
-                    meeting = false.toInt()
+                    meeting = isMeeting.toInt()
                 )
                 callingLogger.d(
                     "$tagWithUserId: wcall_start() called -> Call for conversationId: " +

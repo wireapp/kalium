@@ -286,6 +286,9 @@ public class DebugScope internal constructor(
     public val getFeatureConfig: GetFeatureConfigUseCase
         get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
 
+    public val getCryptoServiceReport: GetCryptoServiceReportUseCase
+        get() = GetCryptoServiceReportUseCaseImpl(dispatcher)
+
     public val getDebugE2EICertificateExpiration: GetDebugE2EICertificateExpirationUseCase
         get() = GetDebugE2EICertificateExpirationUseCaseImpl(e2EIClientProvider)
 

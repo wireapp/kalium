@@ -18,11 +18,19 @@
 package com.wire.kalium.cells.data
 
 import io.ktor.http.HttpHeaders
+import io.ktor.util.date.GMTDate
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 
 class AwsSigV4SignerTest {
+
+    @Test
+    fun givenJanuaryDateWithSingleDigitFields_whenConvertingToAwsSigningDate_thenUsesOneBasedMonthAndZeroPadding() {
+        val result = GMTDate(1_767_323_045_000L).toAwsSigningDate()
+
+        assertEquals(AwsSigningDate(date = "20260102", dateTime = "20260102T030405Z"), result)
+    }
 
     @Test
     fun givenAwsSigV4Example_whenSigning_thenCanonicalRequestAndSignatureMatch() {

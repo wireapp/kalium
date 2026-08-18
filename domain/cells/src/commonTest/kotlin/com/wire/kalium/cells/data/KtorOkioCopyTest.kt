@@ -25,13 +25,18 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.close
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
 import okio.Buffer
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class KtorOkioCopyTest {
@@ -49,6 +54,18 @@ class KtorOkioCopyTest {
         assertTrue(progressUpdates.isNotEmpty())
         assertEquals(input.size.toLong(), progressUpdates.last())
         assertTrue(progressUpdates.zipWithNext().all { (previous, next) -> next > previous })
+    }
+
+    @Test
+    fun givenChannelAlreadyClosedWithFailure_whenCopyingToSink_thenPropagatesFailure() = runTest {
+        val failure = IOException("connection lost")
+        val input = ByteChannel().apply { close(failure) }
+
+        val exception = assertFailsWith<IOException> {
+            input.copyToSink(Buffer())
+        }
+
+        assertSame(failure, exception.cause)
     }
 
     @Test
