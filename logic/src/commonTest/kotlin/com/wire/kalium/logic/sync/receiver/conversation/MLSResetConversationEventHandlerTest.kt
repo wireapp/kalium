@@ -24,11 +24,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.feature.call.usecase.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -44,12 +46,16 @@ import kotlin.test.Test
 class MLSResetConversationEventHandlerTest {
 
     @Test
-    fun givenMLSContextIsNull_whenHandlingEvent_thenShouldDoNothing() = runTest {
+    fun givenMLSContextIsNull_whenHandlingEvent_thenShouldOnlyEndCall() = runTest {
         val (arrangement, handler) = arrange {
             withMLSContextNull()
         }
 
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.endCallOnMLSReset(eq(CONVERSATION_ID))
+        }
 
         verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
@@ -219,7 +225,8 @@ class MLSResetConversationEventHandlerTest {
 
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
-        verifySuspend(VerifyMode.exactly(1)) {
+        verifySuspend(VerifyMode.order) {
+            arrangement.endCallOnMLSReset(eq(CONVERSATION_ID))
             arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
         }
 
@@ -241,6 +248,7 @@ class MLSResetConversationEventHandlerTest {
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
         val mlsConversationRepository = mock<MLSConversationRepository>()
+        val endCallOnMLSReset = mock<EndCallOnMLSResetUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withLeaveGroupSucceeding() = apply {
             everySuspend {
@@ -291,7 +299,8 @@ class MLSResetConversationEventHandlerTest {
         suspend fun arrange() = run {
             block()
             this@Arrangement to MLSResetConversationEventHandlerImpl(
-                mlsConversationRepository = mlsConversationRepository
+                mlsConversationRepository = mlsConversationRepository,
+                endCallOnMLSReset = endCallOnMLSReset,
             )
         }
     }

@@ -355,15 +355,25 @@ internal class CallDataSource(
         }
     }
 
-    override suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus) {
+    override suspend fun updateCallStatusById(
+        conversationId: ConversationId,
+        status: CallStatus
+    ) = mutexProvider.withLock(conversationId) {
+
+        val currentStatus = _callMetadataProfile.value[conversationId]?.callStatus
+
+        if (currentStatus == CallStatus.CLOSED && status != CallStatus.CLOSED) {
+            return@withLock
+        }
+
         updateCallStatusInDatabaseById(conversationId, status)
 
-        _callMetadataProfile.update(conversationId) { callMetadata ->
-            callMetadata.copy(
+        _callMetadataProfile.update(conversationId) { metadata ->
+            metadata.copy(
                 callStatus = status,
                 establishedTime = when (status) {
                     CallStatus.ESTABLISHED -> DateTimeUtil.currentInstant()
-                    else -> callMetadata.establishedTime
+                    else -> metadata.establishedTime
                 },
             )
         }
