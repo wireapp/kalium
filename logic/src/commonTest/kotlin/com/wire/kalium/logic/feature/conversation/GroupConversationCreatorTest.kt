@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.conversation.CreateGroupConversationResult
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreatorImpl
@@ -44,6 +45,7 @@ import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -247,9 +249,14 @@ class GroupConversationCreatorTest {
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
             )
         )
+        val establishedConversation = conversation.copy(
+            protocol = (conversation.protocol as Conversation.ProtocolInfo.MLS).copy(
+                groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+            )
+        )
         val (arrangement, createGroupConversation) = Arrangement()
             .withWaitingForSyncSucceeding()
-            .withConversationReturning(conversation)
+            .withConversationsReturning(conversation, establishedConversation)
             .withJoiningExistingMLSConversationSucceeding()
             .withUpdateConversationModifiedDateSucceeding()
             .withPersistingReadReceiptsSystemMessage()
@@ -262,6 +269,29 @@ class GroupConversationCreatorTest {
         assertEquals(conversation.id, result.conversation.id)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversation.invoke(any(), conversation.id)
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(conversation.id))
+        }
+    }
+
+    @Test
+    fun givenJoinReturnsSuccessButConversationIsStillPending_whenRetryingCreation_thenRecoveryRemainsQueued() = runTest {
+        val conversation = TestConversation.GROUP(
+            TestConversation.MLS_PROTOCOL_INFO.copy(
+                groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
+            )
+        )
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withConversationReturning(conversation)
+            .withJoiningExistingMLSConversationSucceeding()
+            .withTransactionInvokingBlock()
+            .arrange()
+
+        val result = createGroupConversation.retryPendingMLSGroupCreation(conversation.id)
+
+        assertIs<ConversationCreationResult.UnknownFailure>(result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any())
         }
     }
 
@@ -296,6 +326,7 @@ class GroupConversationCreatorTest {
         val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
         val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>(mode = MockMode.autoUnit)
         val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
 
         private val createGroupConversation = GroupConversationCreatorImpl(
             conversationRepository,
@@ -306,6 +337,7 @@ class GroupConversationCreatorTest {
             refreshUsersWithoutMetadata,
             cryptoTransactionProvider,
             joinExistingMLSConversation,
+            pendingActionsRepository,
         )
 
         suspend fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -347,6 +379,12 @@ class GroupConversationCreatorTest {
             everySuspend {
                 conversationRepository.getConversationById(conversation.id)
             } returns Either.Right(conversation)
+        }
+
+        suspend fun withConversationsReturning(vararg conversations: Conversation) = apply {
+            everySuspend {
+                conversationRepository.getConversationById(conversations.first().id)
+            } sequentiallyReturns conversations.map { Either.Right(it) }
         }
 
         suspend fun withJoiningExistingMLSConversationSucceeding() = apply {

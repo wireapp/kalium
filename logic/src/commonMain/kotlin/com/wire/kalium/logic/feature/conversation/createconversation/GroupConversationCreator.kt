@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.conversation.createconversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -33,6 +34,7 @@ import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.conversation.CreateGroupConversationResult
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -68,6 +70,7 @@ internal interface GroupConversationCreator {
 /**
  * Implementation of [GroupConversationCreator].
  */
+@Suppress("LongParameterList")
 internal class GroupConversationCreatorImpl(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
@@ -77,6 +80,7 @@ internal class GroupConversationCreatorImpl(
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val pendingActionsRepository: PendingActionsRepository,
 ) : GroupConversationCreator {
 
     override suspend fun invoke(
@@ -91,11 +95,13 @@ internal class GroupConversationCreatorImpl(
             { it }
         )
 
-        return when (val result = conversationGroupRepository.createGroupConversationWithPendingResult(
-            name,
-            userIdList,
-            options.copy(creatorClientId = clientId)
-        )) {
+        return when (
+            val result = conversationGroupRepository.createGroupConversationWithPendingResult(
+                name,
+                userIdList,
+                options.copy(creatorClientId = clientId)
+            )
+        ) {
             is CreateGroupConversationResult.Failure -> result.cause.toCreationFailure()
             is CreateGroupConversationResult.PendingMLSGroupCreation ->
                 ConversationCreationResult.PendingMLSGroupCreation(result.conversationId, result.cause)
@@ -115,12 +121,29 @@ internal class GroupConversationCreatorImpl(
                     joinExistingMLSConversation(transactionContext, conversationId)
                 }.flatMap {
                     conversationRepository.getConversationById(conversationId)
+                }.flatMap { recoveredConversation ->
+                    if (recoveredConversation.isMLSEstablished()) {
+                        Either.Right(recoveredConversation)
+                    } else {
+                        Either.Left(MLSFailure.Other("MLS group is still pending after creation retry"))
+                    }
                 }
             }
         }.fold(
             { failure -> failure.toCreationFailure() },
-            { conversation -> finishSuccessfulCreation(conversation) }
+            { conversation ->
+                val result = finishSuccessfulCreation(conversation)
+                if (result is ConversationCreationResult.Success) {
+                    pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(conversationId))
+                }
+                result
+            }
         )
+
+    private fun Conversation.isMLSEstablished(): Boolean {
+        val mlsProtocol = protocol as? Conversation.ProtocolInfo.MLSCapable
+        return mlsProtocol?.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+    }
 
     private suspend fun finishSuccessfulCreation(conversation: Conversation): ConversationCreationResult =
         Either.Right(conversation).onSuccess {

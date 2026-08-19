@@ -25,6 +25,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -511,7 +512,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenMLSGroupEstablishFails_whenCreatingConversation_thenPendingConversationIsReturned() = runTest {
+    fun givenMLSGroupEstablishFails_whenCreatingConversation_thenExistingConversationIsQueuedForRecovery() = runTest {
         val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
         val establishFailure = CoreFailure.Unknown(UnsupportedOperationException("establish failed"))
         val requestedMembers = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID)
@@ -544,6 +545,9 @@ class ConversationGroupRepositoryTest {
                 any(),
                 eq(requestedMembers),
             )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(conversationResponse.id.toModel())
         }
     }
 
@@ -1873,6 +1877,7 @@ class ConversationGroupRepositoryTest {
         val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator = mock(mode = MockMode.autoUnit)
         val legalHoldHandler: LegalHoldHandler = mock(mode = MockMode.autoUnit)
         val localEventRepository: LocalEventRepository = mock(mode = MockMode.autoUnit)
+        val pendingActionsRepository: PendingActionsRepository = mock(mode = MockMode.autoUnit)
 
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
@@ -1888,6 +1893,7 @@ class ConversationGroupRepositoryTest {
                 selfTeamIdProvider,
                 legalHoldHandler,
                 cryptoTransactionProvider,
+                pendingActionsRepository,
             )
 
         suspend fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement = apply {

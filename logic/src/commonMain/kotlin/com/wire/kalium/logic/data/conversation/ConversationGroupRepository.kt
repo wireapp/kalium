@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.message.MessageContent.MemberChange.FailedToAdd
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.service.ServiceId
@@ -117,7 +118,7 @@ internal sealed interface CreateGroupConversationResult {
     }
 }
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LargeClass", "LongParameterList", "TooManyFunctions")
 internal class ConversationGroupRepositoryImpl(
     private val mlsConversationRepository: MLSConversationRepository,
     private val localEventRepository: LocalEventRepository,
@@ -131,6 +132,7 @@ internal class ConversationGroupRepositoryImpl(
     private val teamIdProvider: SelfTeamIdProvider,
     private val legalHoldHandler: LegalHoldHandler,
     private val transactionProvider: CryptoTransactionProvider,
+    private val pendingActionsRepository: PendingActionsRepository,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
@@ -240,6 +242,7 @@ internal class ConversationGroupRepositoryImpl(
             establishResult.fold({ failure ->
                 if (protocol is Conversation.ProtocolInfo.MLSCapable) {
                     val conversationId = conversationEntity.id.toModel()
+                    pendingActionsRepository.enqueuePendingMLSGroupJoin(conversationId)
                     CreateGroupConversationResult.PendingMLSGroupCreation(conversationId, failure)
                 } else {
                     CreateGroupConversationResult.Failure(failure)
