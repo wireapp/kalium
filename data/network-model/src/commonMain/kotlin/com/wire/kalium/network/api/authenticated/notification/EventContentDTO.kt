@@ -43,6 +43,7 @@ import com.wire.kalium.network.api.authenticated.notification.user.RemoveClientE
 import com.wire.kalium.network.api.authenticated.notification.user.UserUpdateEventData
 import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.tools.KtxSerializer
@@ -189,6 +190,15 @@ sealed class EventContentDTO {
         @Serializable
         @SerialName("conversation.create")
         data class NewConversationDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("time") val time: Instant,
+            @SerialName("data") val data: ConversationResponse,
+        ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.create-meeting")
+        data class NewMeetingConversationDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             @SerialName("time") val time: Instant,
@@ -484,6 +494,16 @@ sealed class EventContentDTO {
 
     @Serializable
     data class Unknown(val type: String? = null) : EventContentDTO()
+
+    @Serializable
+    sealed class Meeting : EventContentDTO() {
+        @Serializable
+        @SerialName("meeting.create")
+        data class MeetingCreateDTO(
+            @SerialName("qualified_id") val qualifiedMeetingId: MeetingId,
+            @SerialName("time") val time: Instant,
+        ) : Meeting()
+    }
 }
 
 @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)

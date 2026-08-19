@@ -73,6 +73,12 @@ internal interface MeetingRepository {
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
     ): Either<CoreFailure, List<Meeting>>
 
+    suspend fun fetchAndPersistMeeting(
+        meetingId: MeetingId,
+        generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
+        generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
+    ): Either<CoreFailure, Meeting>
+
     suspend fun syncMeetingOccurrences(
         removeOlderThan: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
@@ -140,6 +146,25 @@ internal class MeetingDataSource(
                         }
                     }
                     .map { meetingMapper.fromDaoToModel(it) }
+            }
+        }
+
+    override suspend fun fetchAndPersistMeeting(
+        meetingId: MeetingId,
+        generateOccurrencesFrom: Instant,
+        generateOccurrencesUntil: Instant
+    ): Either<CoreFailure, Meeting> =
+        wrapApiRequest {
+            meetingApi.fetchMeeting(meetingId.toApi())
+        }.flatMap { meetingDTO ->
+            wrapStorageRequest {
+                meetingMapper.fromApiToDao(meetingDTO)?.let { meetingEntity ->
+                    meetingDAO.upsertMeetings(
+                        meetings = listOf(meetingEntity),
+                        generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+                    )
+                    meetingMapper.fromDaoToModel(meetingEntity)
+                }
             }
         }
 
