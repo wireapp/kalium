@@ -29,6 +29,24 @@ class DebugExtension(
     private val metaDataDao: MetadataDAO,
 ) {
 
+    /**
+     * Reads the SQLCipher version from the already-open database driver. No key material or database
+     * contents are exposed by this query.
+     */
+    fun sqlCipherVersion(): String? =
+        if (!isEncrypted) {
+            null
+        } else {
+            sqlDriver.executeQuery(
+                identifier = null,
+                sql = "PRAGMA cipher_version",
+                mapper = { cursor ->
+                    QueryResult.Value(if (cursor.next().value) cursor.getString(0) else null)
+                },
+                parameters = 0,
+            ).value
+        }
+
     suspend fun observeIsProfilingEnabled(): Flow<Boolean> =
         metaDataDao.valueByKeyFlow(KEY_CIPHER_PROFILE)
             .map { state ->

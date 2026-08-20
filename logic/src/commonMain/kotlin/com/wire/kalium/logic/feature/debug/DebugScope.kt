@@ -127,6 +127,10 @@ public class DebugScope internal constructor(
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
+    @DebugKaliumApi("Debug-only API for inspecting the active SQLCipher version.")
+    public val getSqlCipherVersion: GetSqlCipherVersionUseCase
+        get() = GetSqlCipherVersionUseCase(userStorage)
+
     @OptIn(InternalKaliumApi::class)
     public val establishSession: EstablishSessionUseCase
         get() = EstablishSessionUseCaseImpl(sessionEstablisher, transactionProvider)
@@ -285,6 +289,9 @@ public class DebugScope internal constructor(
 
     public val getFeatureConfig: GetFeatureConfigUseCase
         get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
+
+    public val getCryptoServiceReport: GetCryptoServiceReportUseCase
+        get() = GetCryptoServiceReportUseCaseImpl(dispatcher)
 
     public val getDebugE2EICertificateExpiration: GetDebugE2EICertificateExpirationUseCase
         get() = GetDebugE2EICertificateExpirationUseCaseImpl(e2EIClientProvider)

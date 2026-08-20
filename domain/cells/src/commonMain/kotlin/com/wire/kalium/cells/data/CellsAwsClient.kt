@@ -25,6 +25,7 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.Deferred
 import okio.FileSystem
 import okio.Path
+import okio.SYSTEM
 import okio.Sink
 
 internal interface CellsAwsClient {
@@ -61,6 +62,3 @@ internal fun cellsAwsClient(
     },
     fileSystem = FileSystem.SYSTEM,
 )
-
-private suspend fun Deferred<CellsCredentials?>.awaitOrThrow(): CellsCredentials =
-    await() ?: error("Cells credentials are not available")
