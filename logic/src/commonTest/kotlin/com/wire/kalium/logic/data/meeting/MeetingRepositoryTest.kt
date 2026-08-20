@@ -367,6 +367,7 @@ class MeetingRepositoryTest {
 
         val resultFailure = assertIs<Either.Left<MeetingDataSource.EstablishMLSFailure>>(result).value
         assertEquals(response.conversation.id.toModel(), resultFailure.conversationId)
+        assertIs<CoreFailure.MissingKeyPackages>(resultFailure.reason)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.createNewMeeting(arrangement.meetingMapper.fromModelToApi(createMeeting))
             arrangement.persistConversations(

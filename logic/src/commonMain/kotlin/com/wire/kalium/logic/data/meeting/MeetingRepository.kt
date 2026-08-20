@@ -337,7 +337,6 @@ internal class MeetingDataSource(
                 )
             }.flatMap {
                 establishMLSGroupIfNeeded(transactionContext = transactionContext, otherParticipants = otherParticipants)
-                    .mapLeft { EstablishMLSFailure(conversationId = conversation.id.toModel(), reason = it) }
             }
         }
     }
