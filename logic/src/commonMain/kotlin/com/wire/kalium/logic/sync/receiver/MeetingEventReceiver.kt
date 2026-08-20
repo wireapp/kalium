@@ -34,7 +34,7 @@ internal class MeetingEventReceiverImpl(
         transactionContext: CryptoTransactionContext,
         event: Event.Meeting,
         deliveryInfo: EventDeliveryInfo
-    ): Either<CoreFailure, Unit> = when(event) {
+    ): Either<CoreFailure, Unit> = when (event) {
         is Event.Meeting.Create -> meetingCreateEventHandler.handle(event)
     }
 
