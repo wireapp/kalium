@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -269,6 +270,12 @@ internal object TestEvent {
 
     fun newUnknownFeatureUpdate() = Event.FeatureConfig.UnknownFeatureUpdated(
         id = "eventId",
+    )
+
+    fun meetingCreateEvent() = Event.Meeting.Create(
+        id = "eventId",
+        meetingId = MeetingId("meetingId", "domain"),
+        dateTime = Instant.UNIX_FIRST_DATE
     )
 
     fun Event.wrapInEnvelope(

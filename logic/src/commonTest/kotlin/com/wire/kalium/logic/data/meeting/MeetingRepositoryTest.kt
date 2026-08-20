@@ -121,6 +121,92 @@ class MeetingRepositoryTest {
     }
 
     @Test
+    fun whenFetchAndPersistMeeting_thenMeetingIsFetchedAndPersistedWithNowDateTime() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val meetingDTO = MeetingDTO(
+            meetingId = NetworkMeetingId("meeting1", "domain"),
+            conversationId = ApiConversationId("conversation1", "domain"),
+            creatorId = ApiUserId("user1", "domain"),
+            createdAt = Instant.parse("2026-06-01T00:00:00Z"),
+            updatedAt = null,
+            title = "Meeting 1",
+            startTime = Instant.parse("2026-06-01T10:00:00Z"),
+            endTime = Instant.parse("2026-06-01T11:00:00Z"),
+            trial = false,
+            recurrence = null,
+        )
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingSuccess(meetingId, meetingDTO)
+            .arrange()
+        val generateOccurrencesFrom = Instant.parse("2026-05-01T00:00:00Z")
+        val generateOccurrencesUntil = Instant.parse("2026-07-01T00:00:00Z")
+        val expectedMeetingEntity = requireNotNull(arrangement.meetingMapper.fromApiToDao(meetingDTO))
+        val expectedMeeting = arrangement.meetingMapper.fromDaoToModel(expectedMeetingEntity)
+
+        val result = repository.fetchAndPersistMeeting(meetingId, generateOccurrencesFrom, generateOccurrencesUntil)
+
+        assertTrue(result.isRight())
+        assertEquals(expectedMeeting, result.getOrNull())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingApi.fetchMeeting(meetingId = meetingId.toApi())
+            arrangement.meetingDao.upsertMeetings(
+                meetings = listOf(expectedMeetingEntity),
+                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+            )
+        }
+    }
+
+    @Test
+    fun givenApiFetchMeetingFails_whenFetchAndPersistMeeting_thenReturnsNetworkFailureAndMeetingIsNotPersistedLocally() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingFailure(meetingId)
+            .arrange()
+
+        val result = repository.fetchAndPersistMeeting(meetingId)
+
+        assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingApi.fetchMeeting(meetingId.toApi())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.meetingDao.upsertMeetings(any(), any())
+        }
+    }
+
+    @Test
+    fun givenPersistingMeetingFails_whenFetchAndPersistMeeting_thenReturnsStorageFailure() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val meetingDTO = MeetingDTO(
+            meetingId = NetworkMeetingId("meeting1", "domain"),
+            conversationId = ApiConversationId("conversation1", "domain"),
+            creatorId = ApiUserId("user1", "domain"),
+            createdAt = Instant.parse("2026-06-01T00:00:00Z"),
+            updatedAt = null,
+            title = "Meeting 1",
+            startTime = Instant.parse("2026-06-01T10:00:00Z"),
+            endTime = Instant.parse("2026-06-01T11:00:00Z"),
+            trial = false,
+            recurrence = null,
+        )
+        val persistenceException = RuntimeException("An error occurred persisting the meeting")
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingSuccess(meetingId, meetingDTO)
+            .withPersistMeetingFailure(persistenceException)
+            .arrange()
+
+        val result = repository.fetchAndPersistMeeting(meetingId)
+
+        assertIs<Either.Left<StorageFailure.Generic>>(result).also {
+            assertSame(persistenceException, it.value.rootCause)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingApi.fetchMeeting(meetingId.toApi())
+            arrangement.meetingDao.upsertMeetings(any(), any())
+        }
+    }
+
+    @Test
     fun whenSyncMeetingOccurrences_thenDaoMethodsAreCalledWithProperDateTimes() = runTest {
         val (arrangement, repository) = Arrangement().arrange()
         val generateOccurrencesUntil = Instant.parse("2026-07-01T00:00:00Z")
@@ -616,6 +702,14 @@ class MeetingRepositoryTest {
 
         internal fun withFetchMeetingsSuccess(result: List<MeetingDTO>) = apply {
             everySuspend { meetingApi.fetchMeetings() } returns NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value)
+        }
+
+        internal fun withFetchMeetingSuccess(id: MeetingId, result: MeetingDTO) = apply {
+            everySuspend { meetingApi.fetchMeeting(id.toApi()) } returns NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value)
+        }
+
+        internal fun withFetchMeetingFailure(id: MeetingId) = apply {
+            everySuspend { meetingApi.fetchMeeting(id.toApi()) } returns NetworkResponse.Error(TestNetworkException.generic)
         }
 
         internal fun withDeleteMeetingSuccess(meetingId: MeetingId) = apply {
