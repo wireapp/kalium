@@ -475,6 +475,7 @@ internal class EventMapper(
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         timestampIso = eventContentDTO.time,
         roleChange = eventContentDTO.roleChange,
+        time = eventContentDTO.time,
     )
 
     private fun memberUpdate(
@@ -485,6 +486,7 @@ internal class EventMapper(
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         timestampIso = eventContentDTO.time,
         roleChange = eventContentDTO.roleChange,
+        time = eventContentDTO.time,
     )
 
     private fun memberUpdate(
@@ -492,6 +494,7 @@ internal class EventMapper(
         conversationId: ConversationId,
         timestampIso: String,
         roleChange: ConversationRoleChange,
+        time: String,
     ): Event.Conversation.MemberChanged {
         return when {
             roleChange.role?.isNotEmpty() == true -> {
@@ -512,7 +515,7 @@ internal class EventMapper(
                     conversationId = conversationId,
                     mutedConversationChangedTime = roleChange.mutedRef
                         ?.let(Instant::parse)
-                        ?: Instant.parse(eventContentDTO.time),
+                        ?: Instant.parse(time),
                     mutedConversationStatus = mapConversationMutedStatus(roleChange.mutedStatus)
                 )
             }
@@ -523,7 +526,7 @@ internal class EventMapper(
                     conversationId = conversationId,
                     archivedConversationChangedTime = roleChange.archivedRef
                         ?.let(Instant::parse)
-                        ?: Instant.parse(eventContentDTO.time),
+                        ?: Instant.parse(time),
                     isArchiving = roleChange.isArchiving ?: false
                 )
             }
