@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.persistence.dao
 
-import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
