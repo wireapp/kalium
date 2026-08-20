@@ -32,7 +32,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -103,32 +102,16 @@ class SyncMeetingsUseCaseTest {
     }
 
     @Test
-    fun givenNoMeetingsFetched_whenInvoking_thenDoNotFetchUsers() = runTest {
-        val (arrangement, useCase) = Arrangement()
-            .withMeetingsEnabled(true)
-            .withFetchMeetingsSuccessful(emptyList())
-            .arrange()
-
-        val result = useCase()
-
-        assertIs<Either.Right<Unit>>(result)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingRepository.fetchAndPersistMeetings() }
-        verifySuspend(VerifyMode.not) { arrangement.userRepository.fetchUsersIfUnknownByIds(any()) }
-    }
-
-    @Test
     fun givenSuccess_whenInvoking_thenExecuteRequestsAndReturnUnit() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withMeetingsEnabled(true)
             .withFetchMeetingsSuccessful(listOf(MEETING))
-            .withFetchUsersSuccessful()
             .arrange()
 
         val result = useCase()
 
         assertIs<Either.Right<Unit>>(result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingRepository.fetchAndPersistMeetings() }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.userRepository.fetchUsersIfUnknownByIds(setOf(MEETING.creatorId)) }
     }
 
     inner class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -148,13 +131,8 @@ class SyncMeetingsUseCaseTest {
             everySuspend { meetingRepository.fetchAndPersistMeetings() } returns Either.Right(list)
         }
 
-        internal fun withFetchUsersSuccessful() = apply {
-            everySuspend { userRepository.fetchUsersIfUnknownByIds(any()) } returns Either.Right(Unit)
-        }
-
         internal suspend fun arrange() = this to SyncMeetingsUseCaseImpl(
             meetingRepository = meetingRepository,
-            userRepository = userRepository,
             isMeetingsEnabledUseCase = isMeetingsEnabledUseCase,
             transactionProvider = cryptoTransactionProvider
         ).also {

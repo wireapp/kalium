@@ -50,6 +50,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
@@ -120,6 +121,7 @@ internal class MeetingDataSource(
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationRepository: ConversationRepository,
     private val pendingActionsRepository: PendingActionsRepository,
+    private val userRepository: UserRepository,
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -135,6 +137,14 @@ internal class MeetingDataSource(
                 meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
                     .also { meetingsToPersist ->
                         if (meetingsToPersist.isNotEmpty()) {
+                            val creatorIds = meetingsToPersist.map { it.creatorId.toModel() }.toSet()
+                            if (creatorIds.isNotEmpty()) {
+                                // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
+                                // foreign key constraint violation and try to fetch the user details from the server if possible
+                                userRepository.insertOrIgnoreIncompleteUsers(creatorIds.toList())
+                                userRepository.fetchUsersIfUnknownByIds(creatorIds)
+                            }
+
                             meetingDAO.upsertMeetings(
                                 meetings = meetingsToPersist,
                                 generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)

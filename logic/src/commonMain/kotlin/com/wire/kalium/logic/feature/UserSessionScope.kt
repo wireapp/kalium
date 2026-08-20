@@ -2986,13 +2986,13 @@ public class UserSessionScope internal constructor(
             mlsConversationRepository = mlsConversationRepository,
             conversationRepository = conversationRepository,
             pendingActionsRepository = pendingActionsRepository,
+            userRepository = userRepository,
             persistConversations = persistConversationsUseCase,
         )
 
     private val syncMeetingsUseCase: SyncMeetingsUseCase
         get() = SyncMeetingsUseCaseImpl(
             meetingRepository = meetingRepository,
-            userRepository = userRepository,
             isMeetingsEnabledUseCase = isMeetingsEnabled,
             transactionProvider = cryptoTransactionProvider
         )
