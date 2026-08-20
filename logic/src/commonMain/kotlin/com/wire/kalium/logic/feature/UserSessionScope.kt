@@ -3001,6 +3001,7 @@ public class UserSessionScope internal constructor(
             mlsConversationRepository = mlsConversationRepository,
             conversationRepository = conversationRepository,
             pendingActionsRepository = pendingActionsRepository,
+            userRepository = userRepository,
             persistConversations = persistConversationsUseCase,
         )
 

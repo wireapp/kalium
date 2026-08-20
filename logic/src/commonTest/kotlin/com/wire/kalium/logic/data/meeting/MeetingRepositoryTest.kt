@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -87,20 +88,12 @@ class MeetingRepositoryTest {
 
     @Test
     fun whenFetchAndPersistMeetings_thenMeetingsAreFetchedAndPersistedWithNowDateTime() = runTest {
-        val meetingDTO = MeetingDTO(
-            meetingId = NetworkMeetingId("meeting1", "domain"),
-            conversationId = ApiConversationId("conversation1", "domain"),
-            creatorId = ApiUserId("user1", "domain"),
-            createdAt = Instant.parse("2026-06-01T00:00:00Z"),
-            updatedAt = null,
-            title = "Meeting 1",
-            startTime = Instant.parse("2026-06-01T10:00:00Z"),
-            endTime = Instant.parse("2026-06-01T11:00:00Z"),
-            trial = false,
-            recurrence = null,
-        )
+        val creatorId = UserId("user1", "domain")
+        val meetingDTO = meetingDTO(creatorId = creatorId.toApi())
         val (arrangement, repository) = Arrangement()
             .withFetchMeetingsSuccess(listOf(meetingDTO))
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
+            .withFetchUsersIfUnknownSuccess(setOf(creatorId))
             .arrange()
         val generateOccurrencesFrom = Instant.parse("2026-05-01T00:00:00Z")
         val generateOccurrencesUntil = Instant.parse("2026-07-01T00:00:00Z")
@@ -123,20 +116,12 @@ class MeetingRepositoryTest {
     @Test
     fun whenFetchAndPersistMeeting_thenMeetingIsFetchedAndPersistedWithNowDateTime() = runTest {
         val meetingId = MeetingId("meeting1", "domain")
-        val meetingDTO = MeetingDTO(
-            meetingId = NetworkMeetingId("meeting1", "domain"),
-            conversationId = ApiConversationId("conversation1", "domain"),
-            creatorId = ApiUserId("user1", "domain"),
-            createdAt = Instant.parse("2026-06-01T00:00:00Z"),
-            updatedAt = null,
-            title = "Meeting 1",
-            startTime = Instant.parse("2026-06-01T10:00:00Z"),
-            endTime = Instant.parse("2026-06-01T11:00:00Z"),
-            trial = false,
-            recurrence = null,
-        )
+        val creatorId = UserId("user1", "domain")
+        val meetingDTO = meetingDTO(meetingId = meetingId.toApi(), creatorId = creatorId.toApi())
         val (arrangement, repository) = Arrangement()
             .withFetchMeetingSuccess(meetingId, meetingDTO)
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
+            .withFetchUsersIfUnknownSuccess(setOf(creatorId))
             .arrange()
         val generateOccurrencesFrom = Instant.parse("2026-05-01T00:00:00Z")
         val generateOccurrencesUntil = Instant.parse("2026-07-01T00:00:00Z")
@@ -153,6 +138,28 @@ class MeetingRepositoryTest {
                 meetings = listOf(expectedMeetingEntity),
                 generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
             )
+        }
+    }
+
+    @Test
+    fun whenFetchAndPersistMeeting_thenCreatorIsPreparedOnceBeforePersistingMeeting() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val creatorId = UserId("user1", "domain")
+        val meetingDTO = meetingDTO(meetingId = meetingId.toApi(), creatorId = creatorId.toApi())
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingSuccess(meetingId, meetingDTO)
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
+            .withFetchUsersIfUnknownSuccess(setOf(creatorId))
+            .arrange()
+        val expectedMeetingEntity = requireNotNull(arrangement.meetingMapper.fromApiToDao(meetingDTO))
+
+        val result = repository.fetchAndPersistMeeting(meetingId)
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exhaustiveOrder) {
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(userIds = listOf(creatorId))
+            arrangement.userRepository.fetchUsersIfUnknownByIds(ids = setOf(creatorId))
+            arrangement.meetingDao.upsertMeetings(meetings = listOf(expectedMeetingEntity), generateOccurrencesWindow = any())
         }
     }
 
@@ -177,21 +184,13 @@ class MeetingRepositoryTest {
     @Test
     fun givenPersistingMeetingFails_whenFetchAndPersistMeeting_thenReturnsStorageFailure() = runTest {
         val meetingId = MeetingId("meeting1", "domain")
-        val meetingDTO = MeetingDTO(
-            meetingId = NetworkMeetingId("meeting1", "domain"),
-            conversationId = ApiConversationId("conversation1", "domain"),
-            creatorId = ApiUserId("user1", "domain"),
-            createdAt = Instant.parse("2026-06-01T00:00:00Z"),
-            updatedAt = null,
-            title = "Meeting 1",
-            startTime = Instant.parse("2026-06-01T10:00:00Z"),
-            endTime = Instant.parse("2026-06-01T11:00:00Z"),
-            trial = false,
-            recurrence = null,
-        )
+        val creatorId = UserId("user1", "domain")
+        val meetingDTO = meetingDTO(meetingId = meetingId.toApi(), creatorId = creatorId.toApi())
         val persistenceException = RuntimeException("An error occurred persisting the meeting")
         val (arrangement, repository) = Arrangement()
             .withFetchMeetingSuccess(meetingId, meetingDTO)
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
+            .withFetchUsersIfUnknownSuccess(setOf(creatorId))
             .withPersistMeetingFailure(persistenceException)
             .arrange()
 
@@ -694,6 +693,7 @@ class MeetingRepositoryTest {
         internal val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
         internal val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         internal val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
+        internal val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         internal val transactionContext = mock<CryptoTransactionContext>(mode = MockMode.autoUnit)
         internal val mlsContext = mock<MlsCoreCryptoContext>(mode = MockMode.autoUnit)
         internal val meetingMapper = MapperProvider.meetingMapper()
@@ -702,6 +702,14 @@ class MeetingRepositoryTest {
 
         internal fun withFetchMeetingsSuccess(result: List<MeetingDTO>) = apply {
             everySuspend { meetingApi.fetchMeetings() } returns NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value)
+        }
+
+        internal fun withInsertOrIgnoreIncompleteUsersSuccess(userIds: List<UserId>) = apply {
+            everySuspend { userRepository.insertOrIgnoreIncompleteUsers(userIds) } returns Either.Right(Unit)
+        }
+
+        internal fun withFetchUsersIfUnknownSuccess(userIds: Set<UserId>) = apply {
+            everySuspend { userRepository.fetchUsersIfUnknownByIds(userIds) } returns Either.Right(Unit)
         }
 
         internal fun withFetchMeetingSuccess(id: MeetingId, result: MeetingDTO) = apply {
@@ -734,7 +742,8 @@ class MeetingRepositoryTest {
 
         internal fun withCreateNewMeetingSuccess(meeting: UpsertMeeting, response: UpsertMeetingResponse) = apply {
             everySuspend {
-                meetingApi.createNewMeeting(meetingMapper.fromModelToApi(meeting)) } returns NetworkResponse.Success(
+                meetingApi.createNewMeeting(meetingMapper.fromModelToApi(meeting))
+            } returns NetworkResponse.Success(
                 value = response,
                 headers = mapOf(),
                 httpCode = HttpStatusCode.Created.value
@@ -817,6 +826,7 @@ class MeetingRepositoryTest {
             mlsConversationRepository = mlsConversationRepository,
             conversationRepository = conversationRepository,
             pendingActionsRepository = pendingActionsRepository,
+            userRepository = userRepository,
             meetingMapper = meetingMapper,
             conversationMapper = conversationMapper,
             idMapper = idMapper,
@@ -863,6 +873,25 @@ class MeetingRepositoryTest {
     )
 
     private val expectedMLSAdditionResult = MLSAdditionResult(setOf(TestUser.OTHER.id), emptySet(), emptySet())
+
+    private fun meetingDTO(
+        meetingId: NetworkMeetingId = NetworkMeetingId("meeting1", "domain"),
+        conversationId: ApiConversationId = ApiConversationId("conversation1", "domain"),
+        creatorId: ApiUserId = ApiUserId("user1", "domain"),
+        title: String = "Meeting 1",
+        recurrence: MeetingRecurrenceDTO? = null,
+    ) = MeetingDTO(
+        meetingId = meetingId,
+        conversationId = conversationId,
+        creatorId = creatorId,
+        createdAt = Instant.parse("2026-06-01T00:00:00Z"),
+        updatedAt = null,
+        title = title,
+        startTime = Instant.parse("2026-06-01T10:00:00Z"),
+        endTime = Instant.parse("2026-06-01T11:00:00Z"),
+        trial = false,
+        recurrence = recurrence,
+    )
 
     private fun upsertMeetingResponse(
         protocol: ConvProtocol = ConvProtocol.MLS,

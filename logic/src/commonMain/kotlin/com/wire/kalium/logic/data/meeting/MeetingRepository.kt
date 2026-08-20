@@ -49,6 +49,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
@@ -65,6 +66,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
+import kotlin.collections.map
 import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
@@ -124,6 +126,7 @@ internal class MeetingDataSource(
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationRepository: ConversationRepository,
     private val pendingActionsRepository: PendingActionsRepository,
+    private val userRepository: UserRepository,
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -159,6 +162,11 @@ internal class MeetingDataSource(
         }.flatMap { meetingDTO ->
             wrapStorageRequest {
                 meetingMapper.fromApiToDao(meetingDTO)?.let { meetingEntity ->
+                    // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
+                    // foreign key constraint violation and try to fetch the user details from the server if possible
+                    userRepository.insertOrIgnoreIncompleteUsers(listOf(meetingEntity.creatorId.toModel()))
+                    userRepository.fetchUsersIfUnknownByIds(setOf(meetingEntity.creatorId.toModel()))
+
                     meetingDAO.upsertMeetings(
                         meetings = listOf(meetingEntity),
                         generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
@@ -266,33 +274,33 @@ internal class MeetingDataSource(
         transactionContext: CryptoTransactionContext,
     ): Either<CoreFailure, MLSAdditionResult> =
         if ((membersToAdd + membersToRemove).isNotEmpty() && conversation.groupId != null && conversation.mlsCipherSuiteTag != null) {
-        transactionContext.wrapInMLSContext { mlsContext ->
-            when {
-                membersToRemove.isNotEmpty() -> mlsConversationRepository.removeMembersFromMLSGroup(
-                    mlsContext = mlsContext,
-                    groupID = idMapper.fromGroupIDEntity(conversation.groupId!!),
-                    userIdList = membersToRemove,
-                )
-
-                else -> Either.Right(Unit)
-            }.flatMap {
+            transactionContext.wrapInMLSContext { mlsContext ->
                 when {
-                    membersToAdd.isNotEmpty() -> mlsConversationRepository.addMemberToMLSGroup(
+                    membersToRemove.isNotEmpty() -> mlsConversationRepository.removeMembersFromMLSGroup(
                         mlsContext = mlsContext,
                         groupID = idMapper.fromGroupIDEntity(conversation.groupId!!),
-                        userIdList = membersToAdd,
-                        cipherSuite = CipherSuite.fromTag(conversation.mlsCipherSuiteTag!!),
-                        allowPartialMemberList = true
+                        userIdList = membersToRemove,
                     )
 
-                    else -> Either.Right(MLSAdditionResult.Empty)
+                    else -> Either.Right(Unit)
+                }.flatMap {
+                    when {
+                        membersToAdd.isNotEmpty() -> mlsConversationRepository.addMemberToMLSGroup(
+                            mlsContext = mlsContext,
+                            groupID = idMapper.fromGroupIDEntity(conversation.groupId!!),
+                            userIdList = membersToAdd,
+                            cipherSuite = CipherSuite.fromTag(conversation.mlsCipherSuiteTag!!),
+                            allowPartialMemberList = true
+                        )
+
+                        else -> Either.Right(MLSAdditionResult.Empty)
+                    }
                 }
-            }
-        }.mapLeft { EstablishMLSFailure(conversationId = conversation.id.toModel(), reason = it) }
-    } else {
-        // no members to add and remove, or no group ID or cipher suite tag, so nothing to do
-        Either.Right(MLSAdditionResult.Empty)
-    }
+            }.mapLeft { EstablishMLSFailure(conversationId = conversation.id.toModel(), reason = it) }
+        } else {
+            // no members to add and remove, or no group ID or cipher suite tag, so nothing to do
+            Either.Right(MLSAdditionResult.Empty)
+        }
 
     private suspend fun UpsertMeetingResponse.persist(
         transactionContext: CryptoTransactionContext,
