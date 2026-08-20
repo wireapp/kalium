@@ -221,7 +221,7 @@ class DeletedConversationEventHandlerTest {
         val otherUser = TestUser.OTHER
         val (arrangement, eventHandler) = arrange {
             withGetConversationByIdReturning(conversation)
-            withObserveUser(flowOf(otherUser), event.senderUserId)
+            withObserveUser(flowOf(otherUser), requireNotNull(event.senderUserId))
             withDeletingConversationSucceeding()
         }
 
