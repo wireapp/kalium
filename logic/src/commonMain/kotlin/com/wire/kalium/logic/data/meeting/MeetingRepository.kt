@@ -29,11 +29,13 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
@@ -47,10 +49,10 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.toMeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
@@ -209,64 +211,110 @@ internal class MeetingDataSource(
         generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant,
         transactionContext: CryptoTransactionContext
-    ): Either<CoreFailure, MLSAdditionResult> = wrapApiRequest {
-        meetingApi.updateMeeting(meetingId = meetingId.toApi(), request = meetingMapper.fromModelToApi(meeting))
-    }.flatMap { response ->
-        response.persist(
-            transactionContext = transactionContext,
-            otherParticipants = meeting.otherParticipants,
-            generateOccurrencesFrom = generateOccurrencesFrom,
-            generateOccurrencesUntil = generateOccurrencesUntil
-        ).flatMap {
-            response.updateMembers(meeting = meeting, transactionContext = transactionContext)
+    ): Either<CoreFailure, MLSAdditionResult> =
+        wrapStorageRequest {
+            meetingDAO.getMeeting(meetingId.toDao())
+        }.flatMap { meetingEntity ->
+            conversationRepository.getConversationById(conversationId = meetingEntity.conversationId.toModel())
+        }.flatMap { conversation ->
+            updateMembers(
+                conversation = conversation,
+                upsertMeeting = meeting,
+                transactionContext = transactionContext
+            ).flatMap { mlsAdditionResult ->
+                wrapApiRequest {
+                    meetingApi.updateMeeting(meetingId = meetingId.toApi(), request = meetingMapper.fromModelToApi(meeting))
+                }.flatMap { response ->
+                    response.updateConversationName(conversation = conversation, upsertMeeting = meeting) { response ->
+                        response.persist(
+                            transactionContext = transactionContext,
+                            otherParticipants = meeting.otherParticipants,
+                            generateOccurrencesFrom = generateOccurrencesFrom,
+                            generateOccurrencesUntil = generateOccurrencesUntil
+                        )
+                    }
+                }.map { mlsEstablishmentResult ->
+                    if (mlsEstablishmentResult == MLSAdditionResult.Empty) mlsAdditionResult else mlsEstablishmentResult
+                }
+            }
+        }
+
+    private suspend fun updateMembers(
+        conversation: Conversation,
+        upsertMeeting: UpsertMeeting,
+        transactionContext: CryptoTransactionContext,
+    ): Either<CoreFailure, MLSAdditionResult> {
+        val mlsCapableProtocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
+        return if (mlsCapableProtocol?.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
+            conversationRepository.getConversationMembers(conversation.id)
+                .map { it.filterNot { it == selfUserId } } // exclude self user from current members
+                .flatMap { currentMembers ->
+                    updateMembers(
+                        mlsCapableProtocol = mlsCapableProtocol,
+                        membersToAdd = upsertMeeting.otherParticipants.filterNot { it in currentMembers },
+                        membersToRemove = currentMembers.filterNot { it in upsertMeeting.otherParticipants },
+                        transactionContext = transactionContext
+                    )
+                }
+        } else {
+            Either.Right(MLSAdditionResult.Empty) // no MLS-capable protocol or not established, so no need to update members
         }
     }
 
-    private suspend fun UpsertMeetingResponse.updateMembers(
-        meeting: UpsertMeeting,
-        transactionContext: CryptoTransactionContext,
-    ) = conversationRepository.getConversationMembers(conversationId.toModel())
-        .map { it.filterNot { it == selfUserId } } // exclude self user from current members
-        .flatMap { currentMembers ->
-            updateMembers(
-                membersToAdd = meeting.otherParticipants.filterNot { it in currentMembers },
-                membersToRemove = currentMembers.filterNot { it in meeting.otherParticipants },
-                transactionContext = transactionContext
-            )
-        }
-
-    private suspend fun UpsertMeetingResponse.updateMembers(
+    private suspend fun updateMembers(
+        mlsCapableProtocol: Conversation.ProtocolInfo.MLSCapable,
         membersToAdd: List<UserId>,
         membersToRemove: List<UserId>,
         transactionContext: CryptoTransactionContext,
     ): Either<CoreFailure, MLSAdditionResult> =
-        if ((membersToAdd + membersToRemove).isNotEmpty() && conversation.groupId != null && conversation.mlsCipherSuiteTag != null) {
-        transactionContext.wrapInMLSContext { mlsContext ->
-            when {
-                membersToRemove.isNotEmpty() -> mlsConversationRepository.removeMembersFromMLSGroup(
-                    mlsContext = mlsContext,
-                    groupID = idMapper.fromGroupIDEntity(conversation.groupId!!),
-                    userIdList = membersToRemove,
-                )
-
-                else -> Either.Right(Unit)
-            }.flatMap {
+        if ((membersToAdd + membersToRemove).isNotEmpty()) {
+            transactionContext.wrapInMLSContext { mlsContext ->
                 when {
-                    membersToAdd.isNotEmpty() -> mlsConversationRepository.addMemberToMLSGroup(
+                    membersToRemove.isNotEmpty() -> mlsConversationRepository.removeMembersFromMLSGroup(
                         mlsContext = mlsContext,
-                        groupID = idMapper.fromGroupIDEntity(conversation.groupId!!),
-                        userIdList = membersToAdd,
-                        cipherSuite = CipherSuite.fromTag(conversation.mlsCipherSuiteTag!!),
-                        allowPartialMemberList = true
+                        groupID = mlsCapableProtocol.groupId,
+                        userIdList = membersToRemove,
                     )
 
-                    else -> Either.Right(MLSAdditionResult.Empty)
+                    else -> Either.Right(Unit)
+                }.flatMap {
+                    when {
+                        membersToAdd.isNotEmpty() -> mlsConversationRepository.addMemberToMLSGroup(
+                            mlsContext = mlsContext,
+                            groupID = mlsCapableProtocol.groupId,
+                            userIdList = membersToAdd,
+                            cipherSuite = mlsCapableProtocol.cipherSuite,
+                            allowPartialMemberList = true
+                        )
+
+                        else -> Either.Right(MLSAdditionResult.Empty)
+                    }
                 }
             }
-        }.mapLeft { EstablishMLSFailure(conversationId = conversation.id.toModel(), reason = it) }
-    } else {
-        // no members to add and remove, or no group ID or cipher suite tag, so nothing to do
-        Either.Right(MLSAdditionResult.Empty)
+        } else {
+            // no members to add and remove, or no group ID or cipher suite tag, so nothing to do
+            Either.Right(MLSAdditionResult.Empty)
+        }
+
+    private suspend fun <T> UpsertMeetingResponse.updateConversationName(
+        conversation: Conversation,
+        upsertMeeting: UpsertMeeting,
+        action: suspend (UpsertMeetingResponse) -> Either<CoreFailure, T>,
+    ): Either<CoreFailure, T> {
+        val changeConversationNameResult = when {
+            conversation.name == upsertMeeting.title -> Either.Right(ConversationRenameResponse.Unchanged) // no need to execute the change
+            else -> conversationRepository.changeConversationName(conversationId = conversation.id, conversationName = upsertMeeting.title)
+        }
+        val updatedResponse = changeConversationNameResult.fold(
+            { this },
+            { this.copy(conversation = this.conversation.copy(name = upsertMeeting.title)) }
+        )
+        return action(updatedResponse).flatMap { actionResult ->
+            changeConversationNameResult.fold(
+                { Either.Left(UpdateConversationNameFailure(conversationId = conversation.id, reason = it)) },
+                { Either.Right(actionResult) }
+            )
+        }
     }
 
     private suspend fun UpsertMeetingResponse.persist(
@@ -289,7 +337,6 @@ internal class MeetingDataSource(
                 )
             }.flatMap {
                 establishMLSGroupIfNeeded(transactionContext = transactionContext, otherParticipants = otherParticipants)
-                    .mapLeft { EstablishMLSFailure(conversationId = conversation.id.toModel(), reason = it) }
             }
         }
     }
@@ -314,6 +361,8 @@ internal class MeetingDataSource(
                 if (it.isMLSRetryableError()) {
                     pendingActionsRepository.enqueuePendingMLSGroupJoin(conversationId = conversation.id.toModel())
                 }
+            }.mapLeft {
+                EstablishMLSFailure(conversationId = conversation.id.toModel(), reason = it)
             }
         }
     }
@@ -327,6 +376,7 @@ internal class MeetingDataSource(
     }
 
     data class EstablishMLSFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
+    data class UpdateConversationNameFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
 }
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
