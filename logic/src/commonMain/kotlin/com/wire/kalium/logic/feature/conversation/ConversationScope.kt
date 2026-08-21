@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
@@ -151,6 +152,7 @@ public class ConversationScope internal constructor(
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val pendingActionsRepository: PendingActionsRepository,
     internal val dispatcher: KaliumDispatcher,
 ) {
 
@@ -223,7 +225,10 @@ public class ConversationScope internal constructor(
             syncManager,
             currentClientIdProvider,
             newGroupConversationSystemMessagesCreator,
-            refreshUsersWithoutMetadata
+            refreshUsersWithoutMetadata,
+            transactionProvider,
+            joinExistingMLSConversation,
+            pendingActionsRepository,
         )
 
     public val createRegularGroup: CreateRegularGroupUseCase

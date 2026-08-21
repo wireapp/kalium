@@ -990,7 +990,8 @@ public class UserSessionScope internal constructor(
             userId,
             selfTeamId,
             legalHoldHandler,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            pendingActionsRepository,
         )
 
     private val newConversationMembersRepository: NewConversationMembersRepository
@@ -1471,7 +1472,8 @@ public class UserSessionScope internal constructor(
             pendingActionsRepository = pendingActionsRepository,
             syncStateObserver = syncStateObserver.value,
             transactionProvider = cryptoTransactionProvider,
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            conversationRepository = conversationRepository,
         )
 
     private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase
@@ -2464,6 +2466,7 @@ public class UserSessionScope internal constructor(
             currentPersistenceEventHookNotifier,
             memberJoinHandler,
             joinExistingMLSConversationUseCase,
+            pendingActionsRepository,
             KaliumDispatcherImpl,
         )
     }

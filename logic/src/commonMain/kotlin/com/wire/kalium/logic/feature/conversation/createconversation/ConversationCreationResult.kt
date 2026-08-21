@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.conversation.createconversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 
 public sealed interface ConversationCreationResult {
     /**
@@ -36,6 +37,14 @@ public sealed interface ConversationCreationResult {
      */
     public data object SyncFailure : ConversationCreationResult
     public data object Forbidden : ConversationCreationResult
+
+    /**
+     * The backend conversation exists, but its local MLS group still needs to be established.
+     */
+    public class PendingMLSGroupCreation(
+        public val conversationId: ConversationId,
+        public val cause: CoreFailure,
+    ) : ConversationCreationResult
 
     /**
      * Other, unknown failure.

@@ -298,7 +298,9 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             mlsContext,
                             protocol.groupId,
                             members,
-                            publicKeys
+                            publicKeys,
+                            allowSkippingUsersWithoutKeyPackages =
+                                protocol.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION,
                         )
                     }
                 }.onSuccess {
