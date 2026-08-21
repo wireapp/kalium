@@ -32,6 +32,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
@@ -51,6 +52,7 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.Test
@@ -70,6 +72,19 @@ class SessionManagerTest {
         assertFailsWith<FailureToRefreshTokenException> {
             sessionManager.updateToken(arrangement.accessTokenApi, "egal")
         }
+    }
+
+    @Test
+    fun givenInvalidCredentialsOnRefresh_whenRefreshingToken_thenShouldExpireSessionWithoutRetryableFailure() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
+        val (arrangement, sessionManager) = arrange {
+            withTokenRefresherResult(Either.Left(failure))
+        }
+
+        assertFailsWith<CancellationException> {
+            sessionManager.updateToken(arrangement.accessTokenApi, "refreshToken")
+        }
+        assertEquals(listOf(LogoutReason.SESSION_EXPIRED), arrangement.logoutReasons)
     }
 
     @Test
@@ -230,7 +245,8 @@ class SessionManagerTest {
         private val userId = TestUser.USER_ID
         private val tokenStorage = mock<AuthTokenStorage>()
 
-        private val logout = { _: LogoutReason -> }
+        val logoutReasons = mutableListOf<LogoutReason>()
+        private val logout = { reason: LogoutReason -> logoutReasons += reason }
         private val serverConfigMapper = mock<ServerConfigMapper>()
 
         private val sessionMapper = MapperProvider.sessionMapper()
