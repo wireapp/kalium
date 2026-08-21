@@ -21,10 +21,12 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestEvent.meetingCreateEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
+import com.wire.kalium.logic.sync.receiver.MeetingEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
@@ -137,6 +139,22 @@ class EventProcessorTest {
             .shouldFail { assertEquals(failure, it) }
     }
 
+    @Test
+    fun givenAMeetingEvent_whenSyncing_thenTheMeetingEventHandlerIsCalled() = runTest {
+        // Given
+        val event = meetingCreateEvent()
+        val (arrangement, eventProcessor) = Arrangement(this).arrange {
+            withMeetingEventReceiverReturning(Either.Right(Unit))
+        }
+
+        // When
+        eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
+
+        // Then
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingEventReceiver.onEvent(any(), event, any())
+        }
+    }
 
     @Test
     fun givenUserPropertiesHandlerFails_whenSyncing_thenReturnsFailure() = runTest {
@@ -242,6 +260,7 @@ class EventProcessorTest {
         val featureConfigEventReceiver = mock<FeatureConfigEventReceiver>(mode = MockMode.autoUnit)
         val userPropertiesEventReceiver = mock<UserPropertiesEventReceiver>()
         val federationEventReceiver = mock<FederationEventReceiver>(mode = MockMode.autoUnit)
+        val meetingEventReceiver = mock<MeetingEventReceiver>(mode = MockMode.autoUnit)
 
         suspend fun withConversationEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
@@ -275,6 +294,12 @@ class EventProcessorTest {
 
         suspend fun withTeamEventReceiverSucceeding() = withTeamEventReceiverReturning(Either.Right(Unit))
 
+        fun withMeetingEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
+            everySuspend {
+                meetingEventReceiver.onEvent(any(), any(), any())
+            } returns result
+        }
+
         suspend fun withUserPropertiesEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
                 userPropertiesEventReceiver.onEvent(any(), any(), any())
@@ -306,6 +331,7 @@ class EventProcessorTest {
                 featureConfigEventReceiver,
                 userPropertiesEventReceiver,
                 federationEventReceiver,
+                meetingEventReceiver,
                 processingScope
             )
         }

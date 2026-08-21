@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
+import com.wire.kalium.logic.sync.receiver.MeetingEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
@@ -97,6 +98,7 @@ internal class EventProcessorImpl(
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
     private val federationEventReceiver: FederationEventReceiver,
+    private val meetingEventReceiver: MeetingEventReceiver,
     private val processingScope: CoroutineScope,
     logger: KaliumLogger = kaliumLogger,
 ) : EventProcessor {
@@ -142,6 +144,7 @@ internal class EventProcessorImpl(
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             is Event.Federation -> federationEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             is Event.Team.MemberLeave -> teamEventReceiver.onEvent(transactionContext, event, deliveryInfo)
+            is Event.Meeting -> meetingEventReceiver.onEvent(transactionContext, event, deliveryInfo)
         }.map { event.id }
     }
 

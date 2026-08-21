@@ -56,6 +56,7 @@ import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallModerationActionsDataSource
 import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.call.InCallReactionsDataSource
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
@@ -246,6 +247,7 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.EndCallOnMLSResetUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
@@ -479,6 +481,8 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.MeetingEventReceiver
+import com.wire.kalium.logic.sync.receiver.MeetingEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
@@ -556,6 +560,8 @@ import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -988,7 +994,8 @@ public class UserSessionScope internal constructor(
             userId,
             selfTeamId,
             legalHoldHandler,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            pendingActionsRepository,
         )
 
     private val newConversationMembersRepository: NewConversationMembersRepository
@@ -1290,6 +1297,7 @@ public class UserSessionScope internal constructor(
             featureConfigEventReceiver = featureConfigEventReceiver,
             userPropertiesEventReceiver = userPropertiesEventReceiver,
             federationEventReceiver = federationEventReceiver,
+            meetingEventReceiver = meetingEventReceiver,
             processingScope = this@UserSessionScope,
             logger = userScopedLogger,
         )
@@ -1469,7 +1477,8 @@ public class UserSessionScope internal constructor(
             pendingActionsRepository = pendingActionsRepository,
             syncStateObserver = syncStateObserver.value,
             transactionProvider = cryptoTransactionProvider,
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            conversationRepository = conversationRepository,
         )
 
     private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase
@@ -1755,6 +1764,13 @@ public class UserSessionScope internal constructor(
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
+        )
+    }
+
+    private val endCallOnMLSReset: EndCallOnMLSResetUseCase by lazy {
+        EndCallOnMLSResetUseCaseImpl(
+            callManager = callManager,
+            callRepository = callRepository,
         )
     }
 
@@ -2077,6 +2093,7 @@ public class UserSessionScope internal constructor(
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
         get() = MLSResetConversationEventHandlerImpl(
             mlsConversationRepository = mlsConversationRepository,
+            endCallOnMLSReset = endCallOnMLSReset,
         )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
@@ -2275,6 +2292,16 @@ public class UserSessionScope internal constructor(
             meetingsConfigHandler,
         )
 
+    private val meetingCreateEventHandler: MeetingCreateEventHandler
+        get() = MeetingCreateEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
+    private val meetingEventReceiver: MeetingEventReceiver
+        get() = MeetingEventReceiverImpl(
+            meetingCreateEventHandler = meetingCreateEventHandler
+        )
+
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
             authenticatedNetworkContainer.preKeyApi,
@@ -2454,6 +2481,7 @@ public class UserSessionScope internal constructor(
             currentPersistenceEventHookNotifier,
             memberJoinHandler,
             joinExistingMLSConversationUseCase,
+            pendingActionsRepository,
             KaliumDispatcherImpl,
         )
     }
@@ -2950,6 +2978,7 @@ public class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             fetchConversationUseCase = fetchConversationUseCase,
+            endCallOnMLSReset = endCallOnMLSReset,
             kaliumConfigs = kaliumConfigs,
         )
 
