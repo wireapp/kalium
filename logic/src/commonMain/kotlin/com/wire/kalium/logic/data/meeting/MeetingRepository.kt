@@ -162,20 +162,19 @@ internal class MeetingDataSource(
         wrapApiRequest {
             meetingApi.fetchMeeting(meetingId.toApi())
         }.flatMap { meetingDTO ->
-            wrapStorageRequest {
-                meetingMapper.fromApiToDao(meetingDTO)?.let { meetingEntity ->
-                    // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
-                    // foreign key constraint violation and try to fetch the user details from the server if possible
-                    userRepository.insertOrIgnoreIncompleteUsers(listOf(meetingEntity.creatorId.toModel()))
-                    userRepository.fetchUsersIfUnknownByIds(setOf(meetingEntity.creatorId.toModel()))
-
+            meetingMapper.fromApiToDao(meetingDTO)?.let { meetingEntity ->
+                // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
+                // foreign key constraint violation and try to fetch the user details from the server if possible
+                userRepository.insertOrIgnoreIncompleteUsers(listOf(meetingEntity.creatorId.toModel()))
+                userRepository.fetchUsersIfUnknownByIds(setOf(meetingEntity.creatorId.toModel()))
+                wrapStorageRequest {
                     meetingDAO.upsertMeetings(
                         meetings = listOf(meetingEntity),
                         generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
                     )
                     meetingMapper.fromDaoToModel(meetingEntity)
                 }
-            }
+            } ?: Either.Left(MeetingNotSupportedFailure)
         }
 
     override suspend fun syncMeetingOccurrences(
@@ -410,6 +409,7 @@ internal class MeetingDataSource(
 
     data class EstablishMLSFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
     data class UpdateConversationNameFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
+    data object MeetingNotSupportedFailure : CoreFailure.FeatureFailure()
 }
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90

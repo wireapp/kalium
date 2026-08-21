@@ -167,6 +167,30 @@ class MeetingRepositoryTest {
     }
 
     @Test
+    fun givenUnsupportedMeeting_whenFetchAndPersistMeeting_thenReturnsMeetingNotSupportedFailureAndMeetingIsNotPersistedLocally() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val meetingDTO = meetingDTO(
+            meetingId = meetingId.toApi(),
+            recurrence = MeetingRecurrenceDTO(frequency = MeetingFrequencyDTO.WEEKLY, interval = 7L, until = null)
+        )
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingSuccess(meetingId, meetingDTO)
+            .arrange()
+
+        val result = repository.fetchAndPersistMeeting(meetingId)
+
+        assertEquals(MeetingDataSource.MeetingNotSupportedFailure, assertIs<Either.Left<CoreFailure>>(result).value)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingApi.fetchMeeting(meetingId.toApi())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
+            arrangement.userRepository.fetchUsersIfUnknownByIds(any())
+            arrangement.meetingDao.upsertMeetings(any(), any())
+        }
+    }
+
+    @Test
     fun givenApiFetchMeetingFails_whenFetchAndPersistMeeting_thenReturnsNetworkFailureAndMeetingIsNotPersistedLocally() = runTest {
         val meetingId = MeetingId("meeting1", "domain")
         val (arrangement, repository) = Arrangement()

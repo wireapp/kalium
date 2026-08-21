@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.meetingCreateEvent
@@ -81,6 +82,22 @@ class MeetingEventReceiverTest {
         val (arrangement, eventReceiver) = Arrangement()
             .withRepositoryBackedCreateHandler()
             .withFetchAndPersistMeetingReturning(event, NetworkFailure.FeatureNotSupported)
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingRepository.fetchAndPersistMeeting(event.meetingId)
+        }
+    }
+
+    @Test
+    fun givenMeetingNotSupportedFailure_whenProcessingCreateEvent_thenReturnSuccess() = runTest {
+        val event = meetingCreateEvent()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withRepositoryBackedCreateHandler()
+            .withFetchAndPersistMeetingReturning(event, MeetingDataSource.MeetingNotSupportedFailure)
             .arrange()
 
         val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)

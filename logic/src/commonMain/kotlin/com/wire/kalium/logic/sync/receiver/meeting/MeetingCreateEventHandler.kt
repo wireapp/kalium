@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
@@ -41,12 +42,21 @@ internal class MeetingCreateEventHandlerImpl(
     override suspend fun handle(event: Event.Meeting.Create): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         return meetingRepository.fetchAndPersistMeeting(event.meetingId)
+            .onSuccess { eventLogger.logSuccess() }
             .flatMapLeft { failure ->
                 when {
                     failure is NetworkFailure.FeatureNotSupported -> {
                         eventLogger.logComplete(
                             status = EventLoggingStatus.SKIPPED,
                             extraInfo = arrayOf("info" to "Meetings feature not supported by current API version")
+                        )
+                        Either.Right(Unit)
+                    }
+
+                    failure is MeetingDataSource.MeetingNotSupportedFailure -> {
+                        eventLogger.logComplete(
+                            status = EventLoggingStatus.SKIPPED,
+                            extraInfo = arrayOf("info" to "Meeting not supported by current API version")
                         )
                         Either.Right(Unit)
                     }
@@ -65,7 +75,6 @@ internal class MeetingCreateEventHandlerImpl(
                     }
                 }
             }
-            .onSuccess { eventLogger.logSuccess() }
             .map {}
     }
 }
