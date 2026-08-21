@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.UpsertMeeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource.EstablishMLSFailure
 import com.wire.kalium.logic.data.meeting.MeetingRepository
@@ -47,7 +48,10 @@ public interface UpdateMeetingUseCase {
     public suspend operator fun invoke(meetingId: MeetingId, updateMeeting: UpsertMeeting): Result
     public sealed interface Result {
         public data object Success : Result
-        public data object Failure : Result // TODO: Add more specific error types in the future
+        public sealed interface Failure : Result { // TODO: Add more specific error types in the future
+            public data class UpdateConversationNameFailure(val conversationId: ConversationId) : Failure
+            public data object Other : Failure
+        }
     }
 }
 
@@ -110,10 +114,14 @@ internal class UpdateMeetingUseCaseImpl(
                         }
                     }
             }
-            .onSuccess {
-                refreshUsersWithoutMetadata()
-            }
-            .fold({ UpdateMeetingUseCase.Result.Failure }, { UpdateMeetingUseCase.Result.Success })
+            .onSuccess { refreshUsersWithoutMetadata() }
+            .fold({ it.toResult() }, { UpdateMeetingUseCase.Result.Success })
+
+    private fun CoreFailure.toResult() = when (this) {
+        is MeetingDataSource.UpdateConversationNameFailure ->
+            UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure(conversationId)
+        else -> UpdateMeetingUseCase.Result.Failure.Other
+    }
 
     private fun logData(meetingId: MeetingId, conversationId: ConversationId, failure: CoreFailure? = null): Map<String, Any> = buildMap {
         put("meetingId", meetingId.toLogString())
