@@ -41,7 +41,6 @@ interface MeetingDao {
         generateOccurrencesWindow: GenerationLimit.Window,
         removeMeetingsAbsentFromUpsertList: Boolean = false,
     )
-    suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesWindow: GenerationLimit.Window)
     suspend fun removeOutdatedMeetings(olderThan: Instant)
     suspend fun insertMissingOccurrences(generateOccurrencesWindow: GenerationLimit.Window)
     fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?>

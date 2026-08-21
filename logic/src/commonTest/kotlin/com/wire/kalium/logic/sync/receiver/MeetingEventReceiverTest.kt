@@ -26,8 +26,10 @@ import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.meetingCreateEvent
+import com.wire.kalium.logic.framework.TestEvent.meetingDeleteEvent
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
 import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
@@ -109,6 +111,37 @@ class MeetingEventReceiverTest {
     }
 
     @Test
+    fun givenDeleteEvent_whenProcessingEvent_thenDeleteHandlerIsInvoked() = runTest {
+        val event = meetingDeleteEvent()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withMeetingDeleteHandlerReturning(event, Either.Right(Unit))
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDeleteEventHandler.handle(event)
+        }
+    }
+
+    @Test
+    fun givenDeleteHandlerFails_whenProcessingEvent_thenFailureIsReturned() = runTest {
+        val event = meetingDeleteEvent()
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withMeetingDeleteHandlerReturning(event, Either.Left(failure))
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        assertSame(failure, assertIs<Either.Left<CoreFailure>>(result).value)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDeleteEventHandler.handle(event)
+        }
+    }
+
+    @Test
     fun givenMeetingNotFoundFailure_whenProcessingCreateEvent_thenReturnSuccess() = runTest {
         val event = meetingCreateEvent()
         val failure = serverMiscommunicationFailure(code = 404, label = "meeting-not-found")
@@ -127,11 +160,13 @@ class MeetingEventReceiverTest {
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val meetingCreateEventHandler = mock<MeetingCreateEventHandler>(mode = MockMode.autoUnit)
+        val meetingDeleteEventHandler = mock<MeetingDeleteEventHandler>(mode = MockMode.autoUnit)
         val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
-        private var handler: MeetingCreateEventHandler = meetingCreateEventHandler
+        private var createHandler: MeetingCreateEventHandler = meetingCreateEventHandler
+        private var deleteHandler: MeetingDeleteEventHandler = meetingDeleteEventHandler
 
         fun withRepositoryBackedCreateHandler() = apply {
-            handler = MeetingCreateEventHandlerImpl(meetingRepository)
+            createHandler = MeetingCreateEventHandlerImpl(meetingRepository)
         }
 
         fun withMeetingCreateHandlerReturning(event: Event.Meeting.Create, result: Either<CoreFailure, Unit>) = apply {
@@ -142,8 +177,13 @@ class MeetingEventReceiverTest {
             everySuspend { meetingRepository.fetchAndPersistMeeting(event.meetingId) } returns Either.Left(failure)
         }
 
+        fun withMeetingDeleteHandlerReturning(event: Event.Meeting.Delete, result: Either<CoreFailure, Unit>) = apply {
+            everySuspend { meetingDeleteEventHandler.handle(event) } returns result
+        }
+
         fun arrange() = this to MeetingEventReceiverImpl(
-            meetingCreateEventHandler = handler,
+            meetingCreateEventHandler = createHandler,
+            meetingDeleteEventHandler = deleteHandler,
         )
     }
 }
