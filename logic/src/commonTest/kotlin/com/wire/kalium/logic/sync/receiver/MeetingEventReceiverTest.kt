@@ -22,15 +22,11 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.meeting.MeetingDataSource
-import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.meetingCreateEvent
 import com.wire.kalium.logic.framework.TestEvent.meetingDeleteEvent
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
-import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
-import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import dev.mokkery.MockMode
@@ -79,38 +75,6 @@ class MeetingEventReceiverTest {
     }
 
     @Test
-    fun givenFeatureNotSupportedFailure_whenProcessingCreateEvent_thenReturnSuccess() = runTest {
-        val event = meetingCreateEvent()
-        val (arrangement, eventReceiver) = Arrangement()
-            .withRepositoryBackedCreateHandler()
-            .withFetchAndPersistMeetingReturning(event, NetworkFailure.FeatureNotSupported)
-            .arrange()
-
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        assertTrue(result.isRight())
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.fetchAndPersistMeeting(event.meetingId)
-        }
-    }
-
-    @Test
-    fun givenMeetingNotSupportedFailure_whenProcessingCreateEvent_thenReturnSuccess() = runTest {
-        val event = meetingCreateEvent()
-        val (arrangement, eventReceiver) = Arrangement()
-            .withRepositoryBackedCreateHandler()
-            .withFetchAndPersistMeetingReturning(event, MeetingDataSource.MeetingNotSupportedFailure)
-            .arrange()
-
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        assertTrue(result.isRight())
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.fetchAndPersistMeeting(event.meetingId)
-        }
-    }
-
-    @Test
     fun givenDeleteEvent_whenProcessingEvent_thenDeleteHandlerIsInvoked() = runTest {
         val event = meetingDeleteEvent()
         val (arrangement, eventReceiver) = Arrangement()
@@ -141,40 +105,13 @@ class MeetingEventReceiverTest {
         }
     }
 
-    @Test
-    fun givenMeetingNotFoundFailure_whenProcessingCreateEvent_thenReturnSuccess() = runTest {
-        val event = meetingCreateEvent()
-        val failure = serverMiscommunicationFailure(code = 404, label = "meeting-not-found")
-        val (arrangement, eventReceiver) = Arrangement()
-            .withRepositoryBackedCreateHandler()
-            .withFetchAndPersistMeetingReturning(event, failure)
-            .arrange()
-
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        assertTrue(result.isRight())
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.fetchAndPersistMeeting(event.meetingId)
-        }
-    }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val meetingCreateEventHandler = mock<MeetingCreateEventHandler>(mode = MockMode.autoUnit)
         val meetingDeleteEventHandler = mock<MeetingDeleteEventHandler>(mode = MockMode.autoUnit)
-        val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
-        private var createHandler: MeetingCreateEventHandler = meetingCreateEventHandler
-        private var deleteHandler: MeetingDeleteEventHandler = meetingDeleteEventHandler
-
-        fun withRepositoryBackedCreateHandler() = apply {
-            createHandler = MeetingCreateEventHandlerImpl(meetingRepository)
-        }
 
         fun withMeetingCreateHandlerReturning(event: Event.Meeting.Create, result: Either<CoreFailure, Unit>) = apply {
             everySuspend { meetingCreateEventHandler.handle(event) } returns result
-        }
-
-        fun withFetchAndPersistMeetingReturning(event: Event.Meeting.Create, failure: CoreFailure) = apply {
-            everySuspend { meetingRepository.fetchAndPersistMeeting(event.meetingId) } returns Either.Left(failure)
         }
 
         fun withMeetingDeleteHandlerReturning(event: Event.Meeting.Delete, result: Either<CoreFailure, Unit>) = apply {
@@ -182,8 +119,8 @@ class MeetingEventReceiverTest {
         }
 
         fun arrange() = this to MeetingEventReceiverImpl(
-            meetingCreateEventHandler = createHandler,
-            meetingDeleteEventHandler = deleteHandler,
+            meetingCreateEventHandler = meetingCreateEventHandler,
+            meetingDeleteEventHandler = meetingDeleteEventHandler,
         )
     }
 }
