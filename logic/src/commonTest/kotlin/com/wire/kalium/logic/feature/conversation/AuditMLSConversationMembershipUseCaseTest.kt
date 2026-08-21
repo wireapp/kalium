@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -33,6 +34,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
+import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -51,7 +53,8 @@ class AuditMLSConversationMembershipUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withConversations(listOf(MLS_CONVERSATION, MIXED_CONVERSATION))
             .withGroupExists(MLS_GROUP_ID, exists = true)
-            .withGroupExists(MIXED_GROUP_ID, exists = false)
+            .withGroupCheckResults(MIXED_GROUP_ID, Either.Right(false), Either.Right(true))
+            .withConversationById(MIXED_CONVERSATION)
             .withJoinSuccessful()
             .arrange()
 
@@ -81,7 +84,8 @@ class AuditMLSConversationMembershipUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withConversations(listOf(MLS_CONVERSATION, MIXED_CONVERSATION))
             .withGroupCheckFailed(MLS_GROUP_ID)
-            .withGroupExists(MIXED_GROUP_ID, exists = false)
+            .withGroupCheckResults(MIXED_GROUP_ID, Either.Right(false), Either.Right(true))
+            .withConversationById(MIXED_CONVERSATION)
             .withJoinSuccessful()
             .arrange()
 
@@ -94,6 +98,114 @@ class AuditMLSConversationMembershipUseCaseTest {
                 any(),
                 eq(true)
             )
+        }
+        assertIs<AuditMLSConversationMembershipResult.Failure>(result)
+    }
+
+    @Test
+    fun givenJoinSucceedsButGroupIsStillMissing_whenAuditing_thenFailureIsReturned() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withConversations(listOf(MIXED_CONVERSATION))
+            .withGroupCheckResults(MIXED_GROUP_ID, Either.Right(false), Either.Right(false))
+            .withConversationById(MIXED_CONVERSATION)
+            .withJoinSuccessful()
+            .arrange()
+
+        val result = useCase(arrangement.transactionContext)
+
+        val failure = assertIs<AuditMLSConversationMembershipResult.Failure>(result)
+        assertIs<MLSFailure.ConversationNotFound>(failure.failure)
+    }
+
+    @Test
+    fun givenJoinSucceedsButPostJoinGroupCheckFails_whenAuditing_thenFailureIsReturned() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withConversations(listOf(MIXED_CONVERSATION))
+            .withGroupCheckResults(
+                MIXED_GROUP_ID,
+                Either.Right(false),
+                Either.Left(MLSFailure.ConversationNotFound)
+            )
+            .withConversationById(MIXED_CONVERSATION)
+            .withJoinSuccessful()
+            .arrange()
+
+        val result = useCase(arrangement.transactionContext)
+
+        val failure = assertIs<AuditMLSConversationMembershipResult.Failure>(result)
+        assertIs<MLSFailure.ConversationNotFound>(failure.failure)
+    }
+
+    @Test
+    fun givenGroupIdChangesDuringJoin_whenAuditing_thenRefreshedGroupIsVerified() = runTest {
+        val refreshedConversation = MIXED_CONVERSATION.copy(
+            protocol = (MIXED_CONVERSATION.protocol as Conversation.ProtocolInfo.Mixed).copy(groupId = REFRESHED_GROUP_ID)
+        )
+        val (arrangement, useCase) = Arrangement()
+            .withConversations(listOf(MIXED_CONVERSATION))
+            .withGroupExists(MIXED_GROUP_ID, exists = false)
+            .withGroupExists(REFRESHED_GROUP_ID, exists = true)
+            .withConversationById(refreshedConversation)
+            .withJoinSuccessful()
+            .arrange()
+
+        val result = useCase(arrangement.transactionContext)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.hasEstablishedMLSGroup(any(), eq(MIXED_GROUP_ID))
+            arrangement.mlsConversationRepository.hasEstablishedMLSGroup(any(), eq(REFRESHED_GROUP_ID))
+        }
+        assertIs<AuditMLSConversationMembershipResult.Success>(result)
+    }
+
+    @Test
+    fun givenConversationReloadFailsAfterJoin_whenAuditing_thenFailureIsReturned() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withConversations(listOf(MIXED_CONVERSATION))
+            .withGroupExists(MIXED_GROUP_ID, exists = false)
+            .withConversationByIdFailed(MIXED_CONVERSATION.id)
+            .withJoinSuccessful()
+            .arrange()
+
+        val result = useCase(arrangement.transactionContext)
+
+        val failure = assertIs<AuditMLSConversationMembershipResult.Failure>(result)
+        assertIs<StorageFailure.DataNotFound>(failure.failure)
+    }
+
+    @Test
+    fun givenConversationIsNoLongerMLSCapableAfterJoin_whenAuditing_thenFailureIsReturned() = runTest {
+        val refreshedConversation = MIXED_CONVERSATION.copy(protocol = Conversation.ProtocolInfo.Proteus)
+        val (arrangement, useCase) = Arrangement()
+            .withConversations(listOf(MIXED_CONVERSATION))
+            .withGroupExists(MIXED_GROUP_ID, exists = false)
+            .withConversationById(refreshedConversation)
+            .withJoinSuccessful()
+            .arrange()
+
+        val result = useCase(arrangement.transactionContext)
+
+        val failure = assertIs<AuditMLSConversationMembershipResult.Failure>(result)
+        val unknownFailure = assertIs<CoreFailure.Unknown>(failure.failure)
+        assertIs<IllegalStateException>(unknownFailure.rootCause)
+    }
+
+    @Test
+    fun givenPostJoinVerificationFails_whenAuditing_thenRemainingConversationsAreAttempted() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withConversations(listOf(MLS_CONVERSATION, MIXED_CONVERSATION))
+            .withGroupCheckResults(MLS_GROUP_ID, Either.Right(false), Either.Right(false))
+            .withGroupCheckResults(MIXED_GROUP_ID, Either.Right(false), Either.Right(true))
+            .withConversationById(MLS_CONVERSATION)
+            .withConversationById(MIXED_CONVERSATION)
+            .withJoinSuccessful()
+            .arrange()
+
+        val result = useCase(arrangement.transactionContext)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(MLS_CONVERSATION.id), any(), eq(true))
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(MIXED_CONVERSATION.id), any(), eq(true))
         }
         assertIs<AuditMLSConversationMembershipResult.Failure>(result)
     }
@@ -141,6 +253,24 @@ class AuditMLSConversationMembershipUseCaseTest {
             } returns Either.Left(MLSFailure.ConversationNotFound)
         }
 
+        suspend fun withGroupCheckResults(groupID: GroupID, vararg results: Either<MLSFailure, Boolean>) = apply {
+            everySuspend {
+                mlsConversationRepository.hasEstablishedMLSGroup(any(), eq(groupID))
+            } sequentiallyReturns results.toList()
+        }
+
+        suspend fun withConversationById(conversation: Conversation) = apply {
+            everySuspend {
+                conversationRepository.getNonDeletedConversationById(eq(conversation.id))
+            } returns Either.Right(conversation)
+        }
+
+        suspend fun withConversationByIdFailed(conversationId: ConversationId) = apply {
+            everySuspend {
+                conversationRepository.getNonDeletedConversationById(eq(conversationId))
+            } returns Either.Left(StorageFailure.DataNotFound)
+        }
+
         suspend fun withJoinSuccessful() = apply {
             everySuspend {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
@@ -157,6 +287,7 @@ class AuditMLSConversationMembershipUseCaseTest {
     private companion object {
         val MLS_GROUP_ID = GroupID("mls-group")
         val MIXED_GROUP_ID = GroupID("mixed-group")
+        val REFRESHED_GROUP_ID = GroupID("refreshed-group")
         val MLS_CONVERSATION = TestConversation.GROUP(
             protocolInfo = Conversation.ProtocolInfo.MLS(
                 groupId = MLS_GROUP_ID,

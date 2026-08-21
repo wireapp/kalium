@@ -19,9 +19,11 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -31,6 +33,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 
 internal sealed interface AuditMLSConversationMembershipResult {
     data object Success : AuditMLSConversationMembershipResult
@@ -118,12 +121,29 @@ internal class AuditMLSConversationMembershipUseCaseImpl(
                     transactionContext = transactionContext,
                     conversationId = conversation.id,
                     allowJoinByExternalCommit = true
-                ).onSuccess {
+                ).flatMap {
+                    verifyMembershipAfterRejoin(transactionContext, conversation.id)
+                }.onSuccess {
                     logger.d("Successfully rejoined MLS group for conversation ${conversation.id.toLogString()}")
                 }.onFailure { failure ->
                     logger.d("Failed to rejoin MLS group for conversation ${conversation.id.toLogString()}: $failure")
                 }
             }
+        }
+    }
+
+    private suspend fun verifyMembershipAfterRejoin(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> = conversationRepository.getNonDeletedConversationById(conversationId).flatMap { conversation ->
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
+            ?: return@flatMap CoreFailure.Unknown(
+                IllegalStateException("Expected MLS-capable protocol after rejoining ${conversationId.toLogString()}")
+            ).left()
+        transactionContext.wrapInMLSContext { mlsContext ->
+            mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, protocol.groupId)
+        }.flatMap { exists ->
+            if (exists) Either.Right(Unit) else Either.Left(MLSFailure.ConversationNotFound)
         }
     }
 }
