@@ -56,6 +56,7 @@ import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallModerationActionsDataSource
 import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.call.InCallReactionsDataSource
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
@@ -246,7 +247,6 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnMLSResetUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdaterImpl

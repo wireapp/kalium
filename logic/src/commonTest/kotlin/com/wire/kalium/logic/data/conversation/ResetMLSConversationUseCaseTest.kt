@@ -33,10 +33,10 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import dev.mokkery.answering.calls
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.call.usecase.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement

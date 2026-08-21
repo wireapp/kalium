@@ -20,15 +20,12 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-
-internal interface EndCallOnMLSResetUseCase {
-    suspend operator fun invoke(conversationId: ConversationId)
-}
 
 @Suppress("TooGenericExceptionCaught")
 internal class EndCallOnMLSResetUseCaseImpl(
