@@ -141,6 +141,8 @@ internal class EventMapper(
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.ChannelAddPermissionUpdate -> conversationChannelPermissionUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.MlsResetConversationDTO -> mlsConversationReset(id, eventContentDTO)
+            is EventContentDTO.Conversation.NewMeetingConversationDTO -> newMeetingConversation(id, eventContentDTO)
+            is EventContentDTO.Meeting.MeetingCreateDTO -> meetingCreate(id, eventContentDTO)
         }
 
     private fun conversationTyping(
@@ -661,6 +663,25 @@ internal class EventMapper(
         supportedProtocols = event.userData.supportedProtocols?.toModel()
     )
 
+    private fun newMeetingConversation(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.NewMeetingConversationDTO,
+    ) = Event.Conversation.NewConversation(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        senderUserId = eventContentDTO.qualifiedFrom.toModel(),
+        dateTime = eventContentDTO.time,
+        conversation = eventContentDTO.data
+    )
+
+    private fun meetingCreate(
+        id: String,
+        event: EventContentDTO.Meeting.MeetingCreateDTO,
+    ) = Event.Meeting.Create(
+        id = id,
+        meetingId = event.qualifiedMeetingId.toModel(),
+        dateTime = event.time
+    )
 }
 
 private fun MemberLeaveReasonDTO.toModel(): MemberLeaveReason = when (this) {

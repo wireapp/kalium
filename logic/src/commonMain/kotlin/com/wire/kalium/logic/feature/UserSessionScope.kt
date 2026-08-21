@@ -481,6 +481,8 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.MeetingEventReceiver
+import com.wire.kalium.logic.sync.receiver.MeetingEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
@@ -558,6 +560,8 @@ import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -1293,6 +1297,7 @@ public class UserSessionScope internal constructor(
             featureConfigEventReceiver = featureConfigEventReceiver,
             userPropertiesEventReceiver = userPropertiesEventReceiver,
             federationEventReceiver = federationEventReceiver,
+            meetingEventReceiver = meetingEventReceiver,
             processingScope = this@UserSessionScope,
             logger = userScopedLogger,
         )
@@ -2287,6 +2292,16 @@ public class UserSessionScope internal constructor(
             meetingsConfigHandler,
         )
 
+    private val meetingCreateEventHandler: MeetingCreateEventHandler
+        get() = MeetingCreateEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
+    private val meetingEventReceiver: MeetingEventReceiver
+        get() = MeetingEventReceiverImpl(
+            meetingCreateEventHandler = meetingCreateEventHandler
+        )
+
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
             authenticatedNetworkContainer.preKeyApi,
@@ -3000,6 +3015,7 @@ public class UserSessionScope internal constructor(
             mlsConversationRepository = mlsConversationRepository,
             conversationRepository = conversationRepository,
             pendingActionsRepository = pendingActionsRepository,
+            userRepository = userRepository,
             persistConversations = persistConversationsUseCase,
         )
 
