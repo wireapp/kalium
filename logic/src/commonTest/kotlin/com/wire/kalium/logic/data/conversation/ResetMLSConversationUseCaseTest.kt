@@ -33,6 +33,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import dev.mokkery.answering.calls
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
@@ -115,6 +116,10 @@ class ResetMLSConversationUseCaseTest {
         verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
         }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.endCallOnMLSReset(any())
+        }
     }
 
     @Test
@@ -128,6 +133,49 @@ class ResetMLSConversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
+        }
+    }
+
+    @Test
+    fun givenResetIsAccepted_whenUseCaseCalled_thenCallIsEndedBeforeLeavingGroup() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .arrange()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        verifySuspend(VerifyMode.order) {
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
+            arrangement.endCallOnMLSReset(eq(TEST_CONVERSATION_ID))
+            arrangement.mlsConversationRepository.leaveGroup(any(), any())
+        }
+    }
+
+    @Test
+    fun givenResetFails_whenUseCaseCalled_thenCallIsNotEnded() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withResetMlsConversationResponses(NetworkFailure.NoNetworkConnection(null).left())
+            .arrange()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.endCallOnMLSReset(any())
+        }
+    }
+
+    @Test
+    fun givenResetIsAcceptedAndConversationSyncFails_whenUseCaseCalled_thenCallIsStillEnded() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withFetchConversationResult(NetworkFailure.NoNetworkConnection(null).left())
+            .arrange()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.endCallOnMLSReset(eq(TEST_CONVERSATION_ID))
         }
     }
 
@@ -167,6 +215,10 @@ class ResetMLSConversationUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(remoteEpoch))
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.endCallOnMLSReset(eq(TEST_CONVERSATION_ID))
         }
     }
 
@@ -388,6 +440,7 @@ class ResetMLSConversationUseCaseTest {
         val conversationRepository: ConversationRepository = mock(mode = MockMode.autoUnit)
         val mlsConversationRepository: MLSConversationRepository = mock(mode = MockMode.autoUnit)
         val fetchConversationUseCase: FetchConversationUseCase = mock(mode = MockMode.autoUnit)
+        val endCallOnMLSReset: EndCallOnMLSResetUseCase = mock(mode = MockMode.autoUnit)
         var kaliumConfigs = KaliumConfigs(isMlsResetEnabled = true)
         private var remoteConversationResponses: List<ConversationResponse> = listOf(TestConversation.CONVERSATION_RESPONSE.copy(
             protocol = ConvProtocol.MLS,
@@ -396,6 +449,7 @@ class ResetMLSConversationUseCaseTest {
         ))
         private var resetConversationResults: List<Either<NetworkFailure, Unit>> = listOf(Unit.right())
         private var conversations: List<Conversation> = listOf(TestConversation.MLS_CONVERSATION)
+        private var fetchConversationResult: Either<CoreFailure, Unit> = Unit.right()
 
         fun withCompileTimeFlagDisabled() = apply {
             kaliumConfigs = kaliumConfigs.copy(isMlsResetEnabled = false)
@@ -444,6 +498,10 @@ class ResetMLSConversationUseCaseTest {
 
         fun withResetMlsConversationResponses(vararg results: Either<NetworkFailure, Unit>) = apply {
             resetConversationResults = results.toList()
+        }
+
+        fun withFetchConversationResult(result: Either<CoreFailure, Unit>) = apply {
+            fetchConversationResult = result
         }
 
         fun withLeaveGroupFailing() = apply {
@@ -513,7 +571,7 @@ class ResetMLSConversationUseCaseTest {
 
             everySuspend {
                 fetchConversationUseCase(any(), any(), reason = eq(ConversationSyncReason.ConversationReset))
-            } returns Unit.right()
+            } returns fetchConversationResult
 
             everySuspend {
                 conversationRepository.getConversationMembers(any())
@@ -526,6 +584,7 @@ class ResetMLSConversationUseCaseTest {
                 conversationRepository = conversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
                 fetchConversationUseCase = fetchConversationUseCase,
+                endCallOnMLSReset = endCallOnMLSReset,
                 kaliumConfigs = kaliumConfigs,
             )
         }
