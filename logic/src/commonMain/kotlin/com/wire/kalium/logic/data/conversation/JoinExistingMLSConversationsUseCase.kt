@@ -96,7 +96,9 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
     private suspend fun getPendingConversations(): Either<CoreFailure, List<Conversation>> =
         conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingJoin ->
             conversationRepository.getConversationsByGroupState(GroupState.PENDING_AFTER_RESET).flatMap { pendingAfterReset ->
-                Either.Right(pendingJoin + pendingAfterReset)
+                conversationRepository.getConversationsByGroupState(GroupState.PENDING_CREATION).flatMap { pendingCreation ->
+                    Either.Right((pendingJoin + pendingAfterReset + pendingCreation).distinctBy { it.id })
+                }
             }
         }
 

@@ -56,6 +56,7 @@ import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallModerationActionsDataSource
 import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.call.InCallReactionsDataSource
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
@@ -246,6 +247,7 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.EndCallOnMLSResetUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
@@ -994,7 +996,8 @@ public class UserSessionScope internal constructor(
             userId,
             selfTeamId,
             legalHoldHandler,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            pendingActionsRepository,
         )
 
     private val newConversationMembersRepository: NewConversationMembersRepository
@@ -1476,7 +1479,8 @@ public class UserSessionScope internal constructor(
             pendingActionsRepository = pendingActionsRepository,
             syncStateObserver = syncStateObserver.value,
             transactionProvider = cryptoTransactionProvider,
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            conversationRepository = conversationRepository,
         )
 
     private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase
@@ -1762,6 +1766,13 @@ public class UserSessionScope internal constructor(
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
+        )
+    }
+
+    private val endCallOnMLSReset: EndCallOnMLSResetUseCase by lazy {
+        EndCallOnMLSResetUseCaseImpl(
+            callManager = callManager,
+            callRepository = callRepository,
         )
     }
 
@@ -2084,6 +2095,7 @@ public class UserSessionScope internal constructor(
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
         get() = MLSResetConversationEventHandlerImpl(
             mlsConversationRepository = mlsConversationRepository,
+            endCallOnMLSReset = endCallOnMLSReset,
         )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
@@ -2477,6 +2489,7 @@ public class UserSessionScope internal constructor(
             currentPersistenceEventHookNotifier,
             memberJoinHandler,
             joinExistingMLSConversationUseCase,
+            pendingActionsRepository,
             KaliumDispatcherImpl,
         )
     }
@@ -2973,6 +2986,7 @@ public class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             fetchConversationUseCase = fetchConversationUseCase,
+            endCallOnMLSReset = endCallOnMLSReset,
             kaliumConfigs = kaliumConfigs,
         )
 

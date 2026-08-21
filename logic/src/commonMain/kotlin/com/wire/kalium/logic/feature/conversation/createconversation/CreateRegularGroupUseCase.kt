@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.conversation.createconversation
 
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 
 /**
@@ -26,6 +27,7 @@ import com.wire.kalium.logic.data.user.UserId
  */
 public interface CreateRegularGroupUseCase {
     public suspend operator fun invoke(name: String, userIdList: List<UserId>, options: CreateConversationParam): ConversationCreationResult
+    public suspend fun retryPendingMLSGroupCreation(conversationId: ConversationId): ConversationCreationResult
 }
 
 /**
@@ -41,4 +43,7 @@ internal class CreateRegularGroupUseCaseImpl(
         options: CreateConversationParam
     ): ConversationCreationResult =
         createGroupConversation(name, userIdList, options.copy(groupType = CreateConversationParam.GroupType.REGULAR_GROUP))
+
+    override suspend fun retryPendingMLSGroupCreation(conversationId: ConversationId): ConversationCreationResult =
+        createGroupConversation.retryPendingMLSGroupCreation(conversationId)
 }
