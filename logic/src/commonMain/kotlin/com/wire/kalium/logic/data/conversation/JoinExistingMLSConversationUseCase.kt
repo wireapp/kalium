@@ -137,11 +137,13 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             conversation.type == Conversation.Type.OneOnOne -> {
                 logger.d("Refreshing oneOnOne conversation metadata before rejoining ${conversation.id.toLogString()}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
-                    fetchMLSOneToOneConversation(transactionContext, members.first()).map { refreshedConversation ->
-                        RefreshedConversation(
-                            conversation = refreshedConversation,
-                            publicKeys = refreshedConversation.mlsPublicKeys ?: currentPublicKeys
-                        )
+                    getOtherMember(conversation.id, members).flatMap { otherMember ->
+                        fetchMLSOneToOneConversation(transactionContext, otherMember).map { refreshedConversation ->
+                            RefreshedConversation(
+                                conversation = refreshedConversation,
+                                publicKeys = refreshedConversation.mlsPublicKeys ?: currentPublicKeys
+                            )
+                        }
                     }
                 }
             }
@@ -189,9 +191,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         )
                         // Re-fetch the current epoch and try again
                         if (conversation.type == Conversation.Type.OneOnOne) {
-                            conversationRepository.getConversationMembers(conversation.id).flatMap {
-                                fetchMLSOneToOneConversation(transactionContext, it.first()).map {
-                                    it.mlsPublicKeys
+                            conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
+                                getOtherMember(conversation.id, members).flatMap { otherMember ->
+                                    fetchMLSOneToOneConversation(transactionContext, otherMember).map {
+                                        it.mlsPublicKeys
+                                    }
                                 }
                             }
                         } else {
@@ -329,6 +333,19 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
         }
     }
+
+    private fun getOtherMember(
+        conversationId: ConversationId,
+        members: List<UserId>
+    ): Either<CoreFailure, UserId> = members.singleOrNull { it != selfUserId }
+        ?.let { Either.Right(it) }
+        ?: Either.Left(
+            CoreFailure.Unknown(
+                IllegalStateException(
+                    "Expected exactly one other member in one-on-one conversation ${conversationId.toLogString()}"
+                )
+            )
+        )
 
     private fun Conversation.logData(
         failure: CoreFailure? = null
