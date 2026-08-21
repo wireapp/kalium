@@ -71,6 +71,13 @@ deleteMeeting:
 DELETE FROM Meeting
 WHERE meeting_id = ?;
 
+deleteAllMeetings:
+DELETE FROM Meeting;
+
+deleteMeetingsNotIn:
+DELETE FROM Meeting
+WHERE meeting_id NOT IN :meetingIds;
+
 deleteMeetingOccurrences:
 DELETE FROM MeetingOccurrence
 WHERE meeting_id = ?;

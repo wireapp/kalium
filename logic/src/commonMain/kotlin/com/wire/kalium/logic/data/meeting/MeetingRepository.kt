@@ -98,6 +98,8 @@ internal interface MeetingRepository {
 
     suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit>
 
+    suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<CoreFailure, Unit>
+
     suspend fun createNewMeeting(
         meeting: UpsertMeeting,
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
@@ -146,7 +148,8 @@ internal class MeetingDataSource(
                         if (meetingsToPersist.isNotEmpty()) {
                             meetingDAO.upsertMeetings(
                                 meetings = meetingsToPersist,
-                                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+                                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
+                                removeMeetingsAbsentFromUpsertList = true,
                             )
                         }
                     }
@@ -204,10 +207,12 @@ internal class MeetingDataSource(
         wrapApiRequest {
             meetingApi.deleteMeeting(meetingId.toApi())
         }.flatMap {
-            wrapStorageRequest {
-                meetingDAO.deleteMeeting(meetingId.toDao())
-            }
+            deleteMeetingLocally(meetingId)
         }
+    }
+
+    override suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<CoreFailure, Unit> = wrapStorageRequest {
+        meetingDAO.deleteMeeting(meetingId.toDao())
     }
 
     override suspend fun getNextMeetingOccurrence(
