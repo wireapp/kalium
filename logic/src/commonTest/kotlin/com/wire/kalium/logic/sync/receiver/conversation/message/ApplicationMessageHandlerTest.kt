@@ -18,13 +18,18 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import co.touchlab.kermit.LogWriter
+import co.touchlab.kermit.Severity
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -64,6 +69,9 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class ApplicationMessageHandlerTest {
 
@@ -406,7 +414,65 @@ class ApplicationMessageHandlerTest {
         }
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    @Test
+    fun givenHistoryClientsRequest_whenHandling_thenMessageIsSafelySkipped() = runTest {
+        assertHistoryMessageIsSafelySkipped(
+            content = MessageContent.History.ClientsRequest,
+            expectedMessageType = "History.ClientsRequest",
+        )
+    }
+
+    @Test
+    fun givenHistoryClientsResponse_whenHandling_thenMessageIsSafelySkipped() = runTest {
+        assertHistoryMessageIsSafelySkipped(
+            content = MessageContent.History.ClientsResponse(listOf(HISTORY_CLIENT)),
+            expectedMessageType = "History.ClientsResponse",
+        )
+    }
+
+    @Test
+    fun givenHistoryNewClientAvailable_whenHandling_thenMessageIsSafelySkipped() = runTest {
+        assertHistoryMessageIsSafelySkipped(
+            content = MessageContent.History.NewClientAvailable(HISTORY_CLIENT),
+            expectedMessageType = "History.NewClientAvailable",
+        )
+    }
+
+    private suspend fun assertHistoryMessageIsSafelySkipped(
+        content: MessageContent.History,
+        expectedMessageType: String,
+    ) {
+        val logWriter = RecordingLogWriter()
+        val (arrangement, messageHandler) = Arrangement(recordingLogger(logWriter)).arrange()
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val protoContent = ProtoContent.Readable(
+            messageUid = "messageId",
+            messageContent = content,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        val logEntry = logWriter.entries.single()
+        assertEquals(Severity.Warn, logEntry.severity)
+        assertContains(logEntry.message, "\"outcome\":\"skipped\"")
+        assertContains(logEntry.message, "\"reason\":\"unsupported\"")
+        assertContains(logEntry.message, "\"messageType\":\"$expectedMessageType\"")
+        assertFalse(logEntry.message.contains(HISTORY_CLIENT.id))
+        assertFalse(logEntry.message.contains(HISTORY_CLIENT_SECRET_MARKER))
+    }
+
+    private class Arrangement(
+        kaliumLogger: KaliumLogger = KaliumLogger.disabled(),
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val persistMessage = mock<PersistMessageUseCase>(MockMode.autoUnit)
         val messageRepository = mock<MessageRepository>(MockMode.autoUnit)
@@ -450,7 +516,8 @@ class ApplicationMessageHandlerTest {
             messageCompositeEditHandler,
             callingMessageHandler,
             linkPreviewImagesResolver,
-            TestUser.SELF.id
+            TestUser.SELF.id,
+            kaliumLogger,
         )
 
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
@@ -500,5 +567,36 @@ class ApplicationMessageHandlerTest {
         }
 
         fun arrange() = this to applicationMessageHandler
+    }
+
+    private class RecordingLogWriter : LogWriter() {
+        val entries = mutableListOf<LogEntry>()
+
+        override fun log(severity: Severity, message: String, tag: String, throwable: Throwable?) {
+            entries += LogEntry(severity, message)
+        }
+    }
+
+    private data class LogEntry(
+        val severity: Severity,
+        val message: String,
+    )
+
+    private companion object {
+        const val HISTORY_CLIENT_SECRET_MARKER = "history-client-secret"
+
+        val HISTORY_CLIENT = HistoryClient(
+            id = "history-client-id",
+            creationTime = kotlinx.datetime.Instant.DISTANT_PAST,
+            secret = HistoryClient.Secret(HISTORY_CLIENT_SECRET_MARKER.encodeToByteArray()),
+        )
+
+        fun recordingLogger(logWriter: LogWriter) = KaliumLogger(
+            config = KaliumLogger.Config(
+                initialLevel = KaliumLogLevel.DEBUG,
+                initialLogWriterList = listOf(logWriter),
+            ),
+            tag = "ApplicationMessageHandlerTest",
+        )
     }
 }
