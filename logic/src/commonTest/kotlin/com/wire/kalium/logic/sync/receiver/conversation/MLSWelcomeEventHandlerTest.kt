@@ -29,8 +29,6 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
@@ -342,8 +340,6 @@ class MLSWelcomeEventHandlerTest {
         val fetchConversationIfUnknown = mock<FetchConversationIfUnknownUseCase>()
         val oneOnOneResolver = mock<OneOnOneResolver>()
         val refillKeyPackagesUseCase = mock<RefillKeyPackagesUseCase>()
-        val checkRevocationList = mock<RevocationListChecker>()
-        val certificateRevocationListRepository = mock<CertificateRevocationListRepository>()
         val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>()
 
         suspend fun withMLSClientProcessingOfWelcomeMessageFailsWith(exception: Exception) = apply {
@@ -405,8 +401,6 @@ class MLSWelcomeEventHandlerTest {
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
                 refillKeyPackages = refillKeyPackagesUseCase,
-                revocationListChecker = checkRevocationList,
-                certificateRevocationListRepository = certificateRevocationListRepository,
                 joinExistingMLSConversation = joinExistingMLSConversation,
                 fetchConversationIfUnknown = fetchConversationIfUnknown
             )

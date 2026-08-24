@@ -17,8 +17,13 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import co.touchlab.kermit.LogWriter
+import co.touchlab.kermit.Severity
+import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import dev.mokkery.MockMode
@@ -29,6 +34,8 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertEquals
 
 class ACMECertificatesSyncUseCaseTest {
 
@@ -77,7 +84,27 @@ class ACMECertificatesSyncUseCaseTest {
         }
     }
 
+    @Test
+    fun givenPkiRefreshFails_whenDailyWorkerRuns_thenEachFailureIsLogged() = runTest {
+        val logWriter = RecordingLogWriter()
+        val (_, useCase) = arrange(recordingLogger(logWriter)) {
+            withE2EIEnabledAndMLSEnabled(true)
+            withPkiRefreshFailures()
+        }
+
+        useCase()
+
+        val warningMessages = logWriter.entries
+            .filter { it.severity == Severity.Warn }
+            .map { it.message }
+        assertEquals(3, warningMessages.size)
+        assertContains(warningMessages[0], "Refreshing PKI trust anchors failed")
+        assertContains(warningMessages[1], "Refreshing PKI federation certificates failed")
+        assertContains(warningMessages[2], "Checking installed X.509 credentials failed")
+    }
+
     private class Arrangement(
+        private val logger: KaliumLogger,
         private val configure: suspend Arrangement.() -> Unit
     ) {
         val e2eiRepository = mock<E2EIRepository>(mode = MockMode.autoUnit)
@@ -88,7 +115,7 @@ class ACMECertificatesSyncUseCaseTest {
             this@Arrangement to ACMECertificatesSyncUseCaseImpl(
                 e2eiRepository = e2eiRepository,
                 isE2EIEnabledUseCase = isE2EIEnabledUseCase,
-                kaliumLogger = kaliumLogger
+                kaliumLogger = logger
             )
         }
 
@@ -101,9 +128,39 @@ class ACMECertificatesSyncUseCaseTest {
             everySuspend { e2eiRepository.fetchFederationCertificates() } returns Either.Right(Unit)
             everySuspend { e2eiRepository.checkCredentials() } returns Either.Right(Unit)
         }
+
+        suspend fun withPkiRefreshFailures() {
+            val failure: Either<E2EIFailure, Unit> = Either.Left(
+                E2EIFailure.Generic(IllegalStateException("refresh failed"))
+            )
+            everySuspend { e2eiRepository.fetchAndSetTrustAnchors() } returns failure
+            everySuspend { e2eiRepository.fetchFederationCertificates() } returns failure
+            everySuspend { e2eiRepository.checkCredentials() } returns failure
+        }
     }
 
+    private class RecordingLogWriter : LogWriter() {
+        val entries = mutableListOf<LogEntry>()
+
+        override fun log(severity: Severity, message: String, tag: String, throwable: Throwable?) {
+            entries += LogEntry(severity, message)
+        }
+    }
+
+    private data class LogEntry(val severity: Severity, val message: String)
+
     private companion object {
-        suspend fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        suspend fun arrange(
+            logger: KaliumLogger = kaliumLogger,
+            configure: suspend Arrangement.() -> Unit
+        ) = Arrangement(logger, configure).arrange()
+
+        fun recordingLogger(logWriter: LogWriter) = KaliumLogger(
+            config = KaliumLogger.Config(
+                initialLevel = KaliumLogLevel.DEBUG,
+                initialLogWriterList = listOf(logWriter)
+            ),
+            tag = "ACMECertificatesSyncUseCaseTest"
+        )
     }
 }

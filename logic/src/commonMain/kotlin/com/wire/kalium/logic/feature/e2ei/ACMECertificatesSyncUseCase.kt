@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
@@ -39,9 +40,15 @@ internal class ACMECertificatesSyncUseCaseImpl(
     override suspend operator fun invoke() {
         if (isE2EIEnabledUseCase()) {
             logger.i("Refreshing PKI certificates and checking installed credentials")
-            e2eiRepository.fetchAndSetTrustAnchors()
-            e2eiRepository.fetchFederationCertificates()
-            e2eiRepository.checkCredentials()
+            e2eiRepository.fetchAndSetTrustAnchors().onFailure { failure ->
+                logger.w("Refreshing PKI trust anchors failed: $failure")
+            }
+            e2eiRepository.fetchFederationCertificates().onFailure { failure ->
+                logger.w("Refreshing PKI federation certificates failed: $failure")
+            }
+            e2eiRepository.checkCredentials().onFailure { failure ->
+                logger.w("Checking installed X.509 credentials failed: $failure")
+            }
         }
     }
 }

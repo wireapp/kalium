@@ -383,11 +383,8 @@ class E2EIRepositoryTest {
     }
 
     @Test
-    fun givenFetchFlagIsFalse_whenRefreshingTrustAnchors_thenStillReconcilesAuthoritativeBundle() = runTest {
-        val (arrangement, repository) = Arrangement().arrange {
-            everySuspend { userConfigRepository.getShouldFetchE2EITrustAnchor() } returns false
-            everySuspend { coreCrypto.getPkiTrustAnchors() } returns listOf("previous-trust-anchor")
-        }
+    fun whenRefreshingTrustAnchors_thenReconcilesAuthoritativeBundle() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
 
         repository.fetchAndSetTrustAnchors().shouldSucceed()
 
@@ -432,7 +429,6 @@ class E2EIRepositoryTest {
                 Unit.right()
             }
             everySuspend { userConfigRepository.getE2EISettings() } returns E2EI_SETTINGS.right()
-            everySuspend { userConfigRepository.getShouldFetchE2EITrustAnchor() } returns true
             everySuspend { userConfigRepository.setE2EIAcquisitionSnapshot(any()) } calls { invocation ->
                 persistedSnapshot = invocation.args[0] as ByteArray
                 Unit.right()

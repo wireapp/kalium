@@ -125,23 +125,6 @@ class UserConfigDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenNoValueStoredForShouldFetchE2EITrustAnchorHasRun_whenCalled_thenReturnTrue() = runTest {
-        assertTrue(userConfigDAO.getShouldFetchE2EITrustAnchorHasRun())
-    }
-
-    @Test
-    fun givenShouldFetchE2EITrustAnchorHasRunIsSetToFalse_whenCalled_thenReturnFalse() = runTest {
-        userConfigDAO.setShouldFetchE2EITrustAnchors(false)
-        assertFalse(userConfigDAO.getShouldFetchE2EITrustAnchorHasRun())
-    }
-
-    @Test
-    fun givenShouldFetchE2EITrustAnchorHasRunIsSetToTrue_whenCalled_thenReturnTrue() = runTest {
-        userConfigDAO.setShouldFetchE2EITrustAnchors(true)
-        assertTrue(userConfigDAO.getShouldFetchE2EITrustAnchorHasRun())
-    }
-
-    @Test
     fun givenE2EIAcquisitionSnapshot_whenStoredAndDeleted_thenItCanNoLongerBeRead() = runTest {
         val snapshot = "opaque-snapshot"
 

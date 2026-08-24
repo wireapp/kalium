@@ -65,8 +65,6 @@ interface UserConfigDAO {
     suspend fun deletePreviousTrackingIdentifier()
     suspend fun getNextTimeForCallFeedback(): Long?
     suspend fun setNextTimeForCallFeedback(timestamp: Long)
-    suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
-    suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
     suspend fun setE2EIAcquisitionSnapshot(snapshot: String)
     suspend fun getE2EIAcquisitionSnapshot(): String?
     suspend fun deleteE2EIAcquisitionSnapshot()
@@ -248,13 +246,6 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun setNextTimeForCallFeedback(timestamp: Long) =
         metadataDAO.insertValue(timestamp.toString(), NEXT_TIME_TO_ASK_CALL_FEEDBACK)
 
-    override suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
-        metadataDAO.insertValue(value = shouldFetch.toString(), key = SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)
-    }
-
-    override suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
-        metadataDAO.valueByKey(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)?.toBoolean() ?: true
-
     override suspend fun setE2EIAcquisitionSnapshot(snapshot: String) {
         metadataDAO.insertValue(value = snapshot, key = E2EI_ACQUISITION_SNAPSHOT)
     }
@@ -371,7 +362,6 @@ internal class UserConfigDAOImpl internal constructor(
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
         private const val ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY = "analytics_tracking_identifier_previous"
         private const val ANALYTICS_TRACKING_IDENTIFIER_KEY = "analytics_tracking_identifier"
-        const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
         private const val E2EI_ACQUISITION_SNAPSHOT = "e2ei_acquisition_snapshot"
         private const val E2EI_ROTATION_CHECKPOINT = "e2ei_rotation_checkpoint"
         const val MLS_CONVERSATIONS_RESET = "mls_conversations_reset"

@@ -40,8 +40,6 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -65,10 +63,8 @@ internal class MLSWelcomeEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val oneOnOneResolver: OneOnOneResolver,
     private val refillKeyPackages: RefillKeyPackagesUseCase,
-    @Suppress("UNUSED_PARAMETER") revocationListChecker: RevocationListChecker,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
-    private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
-    @Suppress("UNUSED_PARAMETER") certificateRevocationListRepository: CertificateRevocationListRepository
+    private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(
         transactionContext: CryptoTransactionContext,

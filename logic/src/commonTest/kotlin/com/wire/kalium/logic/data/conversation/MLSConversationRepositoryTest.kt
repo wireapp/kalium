@@ -51,8 +51,6 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arr
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
@@ -590,9 +588,6 @@ class MLSConversationRepositoryTest {
             arrangement.conversationDAO.updateConversationGroupState(any(), any())
         }
 
-        verifySuspend(VerifyMode.not) {
-            arrangement.checkRevocationList.check(any(), any())
-        }
     }
 
     @Test
@@ -1405,8 +1400,6 @@ class MLSConversationRepositoryTest {
         val previousCredentialRef: CryptoCredentialRef = mock(mode = MockMode.autoUnit)
         val newCredentialRef: CryptoCredentialRef = mock(mode = MockMode.autoUnit)
         val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock(mode = MockMode.autoUnit)
-        val checkRevocationList: RevocationListChecker = mock(mode = MockMode.autoUnit)
-        val certificateRevocationListRepository: CertificateRevocationListRepository = mock(mode = MockMode.autoUnit)
         val epochChangesObserver: EpochChangesObserver = mock(mode = MockMode.autoUnit)
         val mlsClient: MLSClient = mock(mode = MockMode.autoUnit)
         val epochsFlow = MutableSharedFlow<GroupID>()
@@ -1421,8 +1414,6 @@ class MLSConversationRepositoryTest {
             mlsPublicKeysRepository,
             proposalTimersFlow,
             keyPackageLimitsProvider,
-            checkRevocationList,
-            certificateRevocationListRepository,
             mutex = Mutex()
         )
 

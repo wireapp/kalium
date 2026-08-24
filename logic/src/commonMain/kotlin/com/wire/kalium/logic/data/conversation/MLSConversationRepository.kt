@@ -47,8 +47,6 @@ import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.client.toDao
 import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -337,8 +335,6 @@ internal class MLSConversationDataSource(
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
-    @Suppress("UNUSED_PARAMETER") revocationListChecker: RevocationListChecker,
-    @Suppress("UNUSED_PARAMETER") certificateRevocationListRepository: CertificateRevocationListRepository,
     private val mutex: Mutex,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),

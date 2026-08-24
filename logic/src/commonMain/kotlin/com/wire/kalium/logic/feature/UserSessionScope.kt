@@ -132,8 +132,6 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
-import com.wire.kalium.logic.data.e2ei.RevocationListCheckerImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -898,13 +896,6 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    private val checkRevocationList: RevocationListChecker
-        get() = RevocationListCheckerImpl(
-            certificateRevocationListRepository = certificateRevocationListRepository,
-            featureSupport = featureSupport,
-            userConfigRepository = userConfigRepository
-        )
-
     private val mlsMutex: Mutex = Mutex()
 
     private val mlsConversationRepository: MLSConversationRepository
@@ -917,8 +908,6 @@ public class UserSessionScope internal constructor(
                 mlsPublicKeysRepository,
                 proposalTimersFlow,
                 keyPackageLimitsProvider,
-                checkRevocationList,
-                certificateRevocationListRepository,
                 mutex = mlsMutex
             ),
             userId = userId,
@@ -2040,8 +2029,6 @@ public class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             oneOnOneResolver = oneOnOneResolver,
             refillKeyPackages = client.refillKeyPackages,
-            revocationListChecker = checkRevocationList,
-            certificateRevocationListRepository = certificateRevocationListRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             fetchConversationIfUnknown = fetchConversationIfUnknownUseCase
         )

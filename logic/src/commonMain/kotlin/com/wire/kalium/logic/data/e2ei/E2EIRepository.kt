@@ -138,7 +138,6 @@ internal interface E2EIRepository {
         checkpoint: E2EIRotationCheckpoint
     ): Either<E2EIFailure, Unit>
 
-    suspend fun clearCredentialAcquisition()
     suspend fun discoveryUrl(): Either<E2EIFailure, String>
 }
 
@@ -206,7 +205,6 @@ internal class E2EIRepositoryImpl(
         { trustAnchors ->
             wrapCoreCryptoInterop {
                 coreCrypto.reconcilePkiTrustAnchors(trustAnchors.decodeToString())
-                userConfigRepository.setShouldFetchE2EITrustAnchors(shouldFetch = false)
                 cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
             }
         }
@@ -247,10 +245,6 @@ internal class E2EIRepositoryImpl(
         transactionProvider: CryptoTransactionProvider,
         checkpoint: E2EIRotationCheckpoint
     ): Either<E2EIFailure, Unit> = rotationWorkflow.rotate(transactionProvider, checkpoint)
-
-    override suspend fun clearCredentialAcquisition() {
-        userConfigRepository.deleteE2EIAcquisitionSnapshot()
-    }
 
     override suspend fun discoveryUrl(): Either<E2EIFailure, String> = dependencies.discoveryUrl()
 
