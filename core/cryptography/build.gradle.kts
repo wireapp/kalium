@@ -57,7 +57,11 @@ kotlin {
         browser {
             testTask {
                 useKarma {
-                    useChromeHeadless()
+                    if (providers.environmentVariable("CI").isPresent) {
+                        useChromeHeadlessNoSandbox()
+                    } else {
+                        useChromeHeadless()
+                    }
                 }
             }
         }
