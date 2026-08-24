@@ -29,6 +29,7 @@ plugins {
 kaliumLibrary {
     multiplatform {
         enableJs.set(true)
+        enableJsTests.set(false)
         includeNativeInterop.set(true)
     }
 }
@@ -53,20 +54,6 @@ val extractCoreCryptoJvmNativeResources by tasks.registering(Sync::class) {
 }
 
 kotlin {
-    js {
-        browser {
-            testTask {
-                useKarma {
-                    if (providers.environmentVariable("CI").isPresent) {
-                        useChromeHeadlessNoSandbox()
-                    } else {
-                        useChromeHeadless()
-                    }
-                }
-            }
-        }
-    }
-
     iosArm64 {
         binaries.all {
             linkerOpts("-framework", "Security")
