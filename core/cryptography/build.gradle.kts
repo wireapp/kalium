@@ -142,12 +142,7 @@ kotlin {
                 implementation(libs.coreCryptoKmp)
             }
         }
-        val jsMain by getting {
-            kotlin.srcDir("src/coreCryptoMain/kotlin")
-            dependencies {
-                implementation(npm("@wireapp/core-crypto", libs.versions.core.crypto.get()))
-            }
-        }
+        val jsMain by getting
         val jsTest by getting
     }
 }

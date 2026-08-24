@@ -32,7 +32,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-// Proteus is not implemented on iOS after removing cryptobox.
+// Proteus is not implemented on iOS or JS after removing cryptobox.
+@IgnoreJS
 @IgnoreIOS
 class ProteusClientTest : BaseProteusClientTest() {
 

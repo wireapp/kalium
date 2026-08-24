@@ -29,6 +29,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@IgnoreJS
 @IgnoreIOS
 class MLSClientTest : BaseMLSClientTest() {
 
