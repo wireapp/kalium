@@ -29,9 +29,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -138,12 +136,10 @@ public class UserScope internal constructor(
     private val clientRepository: ClientRepository,
     public val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
-    private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val slowSyncRepository: SlowSyncRepository,
     private val sessionManager: SessionManager,
     private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val checkRevocationList: RevocationListChecker,
     private val userScopedLogger: KaliumLogger,
     private val teamUrlUseCase: GetTeamUrlUseCase,
     private val isMLSEnabledUseCase: IsMLSEnabledUseCase,

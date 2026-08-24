@@ -22,9 +22,8 @@ import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
@@ -64,26 +63,25 @@ internal class EI2EIClientProviderImpl(
     override suspend fun getX509CredentialAcquisitionConfig(
         acmeDirectoryUrl: String,
         clientId: ClientId?
-    ): Either<E2EIFailure, X509CredentialAcquisitionConfig> {
-        val currentClientId = clientId ?: currentClientIdProvider().fold(
-            { return E2EIFailure.GettingE2EIClient(it).left() },
-            { it }
-        )
-        val selfUser = getSelfUserInfo().fold({ return it.left() }, { it })
-        val (_, defaultCipherSuite) = mlsClientProvider.getOrFetchMLSConfig().getOrElse {
-            return E2EIFailure.GettingE2EIClient(it).left()
-        }
-
-        return X509CredentialAcquisitionConfig(
-            acmeDirectoryUrl = acmeDirectoryUrl,
-            cipherSuite = defaultCipherSuite.toCrypto(),
-            displayName = requireNotNull(selfUser.name),
-            clientId = CryptoQualifiedClientId(currentClientId.value, selfUser.id.toCrypto()),
-            handle = requireNotNull(selfUser.handle),
-            teamId = selfUser.teamId?.value,
-            validity = currentE2EIExpiry()
-        ).right()
-    }
+    ): Either<E2EIFailure, X509CredentialAcquisitionConfig> =
+        (clientId?.right() ?: currentClientIdProvider().mapLeft(E2EIFailure::GettingE2EIClient))
+            .flatMap { currentClientId ->
+                getSelfUserInfo().flatMap { selfUser ->
+                    mlsClientProvider.getOrFetchMLSConfig()
+                        .mapLeft(E2EIFailure::GettingE2EIClient)
+                        .map { (_, defaultCipherSuite) ->
+                            X509CredentialAcquisitionConfig(
+                                acmeDirectoryUrl = acmeDirectoryUrl,
+                                cipherSuite = defaultCipherSuite.toCrypto(),
+                                displayName = requireNotNull(selfUser.name),
+                                clientId = CryptoQualifiedClientId(currentClientId.value, selfUser.id.toCrypto()),
+                                handle = requireNotNull(selfUser.handle),
+                                teamId = selfUser.teamId?.value,
+                                validity = currentE2EIExpiry()
+                            )
+                        }
+                }
+            }
 
     override suspend fun setDebugCertificateExpirationOverride(seconds: Long?) {
         mutex.withLock {

@@ -22,14 +22,17 @@ import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCredentialRef
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.PkiEnvironmentHooks
 import com.wire.kalium.cryptography.PkiHttpHeader
@@ -39,6 +42,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.PreparedX509KeyPackages
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -59,7 +63,9 @@ import io.ktor.http.Url
 import io.ktor.http.encodedPath
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.cancellation.CancellationException
@@ -73,24 +79,43 @@ internal data class E2EIAuthenticationRequest(
 
 @Serializable
 internal enum class E2EIRotationPhase {
+    @SerialName("INTENT")
     INTENT,
+
+    @SerialName("ACQUIRED")
     ACQUIRED,
+
+    @SerialName("CREDENTIAL_INSTALLED")
     CREDENTIAL_INSTALLED,
+
+    @SerialName("KEY_PACKAGES_PREPARED")
     KEY_PACKAGES_PREPARED,
+
+    @SerialName("BACKEND_REPLACED")
     BACKEND_REPLACED
 }
 
 @Serializable
 internal data class E2EIRotationCheckpoint(
+    @SerialName("certificateChain")
     val certificateChain: String? = null,
+    @SerialName("preExistingCredentialIds")
     val preExistingCredentialIds: List<String>,
+    @SerialName("previousCredentialId")
     val previousCredentialId: String?,
+    @SerialName("newCredentialId")
     val newCredentialId: String? = null,
+    @SerialName("groupIds")
     val groupIds: List<String>,
+    @SerialName("migratedGroupIds")
     val migratedGroupIds: List<String> = emptyList(),
+    @SerialName("isNewClient")
     val isNewClient: Boolean,
+    @SerialName("phase")
     val phase: E2EIRotationPhase = E2EIRotationPhase.INTENT,
+    @SerialName("keyPackages")
     val keyPackages: List<String> = emptyList(),
+    @SerialName("cipherSuiteTag")
     val cipherSuiteTag: Int? = null
 )
 
@@ -133,221 +158,38 @@ internal class E2EIRepositoryImpl(
 
     // Keep configure + its dependent operation atomic across periodic refresh and acquisition.
     private val pkiEnvironmentMutex = Mutex()
+    private val dependencies = E2EIRepositoryDependencies(
+        e2EIApi = e2EIApi,
+        acmeApi = acmeApi,
+        pkiHttpClient = pkiHttpClient,
+        e2EIClientProvider = e2EIClientProvider,
+        mlsClientProvider = mlsClientProvider,
+        currentClientIdProvider = currentClientIdProvider,
+        mlsConversationRepository = mlsConversationRepository,
+        userConfigRepository = userConfigRepository,
+        selfUserId = selfUserId,
+        cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier
+    )
+    private val checkpointStore = E2EIRotationCheckpointStore(userConfigRepository)
+    private val acquisitionWorkflow = E2EICredentialAcquisitionWorkflow(
+        dependencies = dependencies,
+        checkpointStore = checkpointStore,
+        pkiEnvironmentMutex = pkiEnvironmentMutex,
+        fetchTrustAnchors = ::fetchAndSetTrustAnchors,
+        fetchFederationCertificates = ::fetchFederationCertificates
+    )
+    private val rotationWorkflow = E2EICredentialRotationWorkflow(dependencies, checkpointStore)
 
-    @Suppress("TooGenericExceptionCaught")
     override suspend fun startCredentialAcquisition(
         isNewClient: Boolean
-    ): Either<E2EIFailure, E2EIAuthenticationRequest> {
-        loadRotationCheckpoint().fold(
-            { return it.left() },
-            { pendingRotation ->
-                if (pendingRotation != null) {
-                    return E2EIFailure.Generic(
-                        IllegalStateException("An X.509 credential rotation is already pending")
-                    ).left()
-                }
-            }
-        )
-        clearCredentialAcquisition()
-        val discoveryUrl = discoveryUrl().fold({ return it.left() }, { it })
-        val clientId = currentClientIdProvider().fold(
-            { return E2EIFailure.GettingE2EIClient(it).left() },
-            { it }
-        )
-        val coreCrypto = mlsClientProvider.getCoreCrypto(clientId).fold(
-            { return E2EIFailure.MissingMLSClient(it).left() },
-            { it }
-        )
-        val hooks = KaliumPkiEnvironmentHooks(
-            httpClient = pkiHttpClient,
-            acmeApi = acmeApi,
-            e2EIApi = e2EIApi,
-            currentClientIdProvider = currentClientIdProvider,
-            userConfigRepository = userConfigRepository,
-            idToken = null,
-            directGetUrls = setOf(discoveryUrl)
-        )
+    ): Either<E2EIFailure, E2EIAuthenticationRequest> = acquisitionWorkflow.start(isNewClient)
 
-        return pkiEnvironmentMutex.withLock {
-            try {
-                coreCrypto.configurePkiEnvironment(hooks)
-                fetchAndSetTrustAnchors(coreCrypto, discoveryUrl).fold({ return it.left() }, {})
-                fetchFederationCertificates(coreCrypto, discoveryUrl).fold({ return it.left() }, {})
-                val config = e2EIClientProvider.getX509CredentialAcquisitionConfig(discoveryUrl, clientId)
-                    .fold({ return it.left() }, { it })
-                val existingCredentialRef = if (isNewClient) {
-                    null
-                } else {
-                    mlsClientProvider.getMLSClient(clientId).getOrFail {
-                        return E2EIFailure.MissingMLSClient(it).left()
-                    }.getCredentialRef(CredentialType.X509)
-                }
-
-                coreCrypto.startX509CredentialAcquisition(config, existingCredentialRef).close()
-                E2EIFailure.Generic(
-                    IllegalStateException("Core Crypto completed credential acquisition before authentication")
-                ).left()
-            } catch (exception: CancellationException) {
-                throw exception
-            } catch (exception: Exception) {
-                hooks.authenticationRequest?.right() ?: E2EIFailure.Generic(exception).left()
-            }
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
     override suspend fun resumeCredentialAcquisition(
         idToken: String,
         groupIdList: List<GroupID>,
         isNewClient: Boolean
-    ): Either<E2EIFailure, E2EIRotationCheckpoint> {
-        val clientId = currentClientIdProvider().fold(
-            { return E2EIFailure.GettingE2EIClient(it).left() },
-            { it }
-        )
-        val mlsClient = mlsClientProvider.getMLSClient(clientId).fold(
-            { return E2EIFailure.MissingMLSClient(it).left() },
-            { it }
-        )
-        val loadedCheckpoint = when (val result = loadRotationCheckpoint()) {
-            is Either.Left -> return result.value.left()
-            is Either.Right -> result.value
-        }
-        var checkpoint: E2EIRotationCheckpoint
-        if (loadedCheckpoint == null) {
-            val existingCredentialIds = when (val result = getX509CredentialIds(mlsClient)) {
-                is Either.Left -> return result.value.left()
-                is Either.Right -> result.value
-            }
-            checkpoint = E2EIRotationCheckpoint(
-                preExistingCredentialIds = existingCredentialIds,
-                previousCredentialId = if (isNewClient) null else existingCredentialIds.firstOrNull(),
-                groupIds = groupIdList.map(GroupID::value).distinct(),
-                isNewClient = isNewClient
-            )
-            persistRotationCheckpoint(checkpoint).fold({ return it.left() }, {})
-        } else {
-            checkpoint = loadedCheckpoint
-            if (checkpoint.isNewClient != isNewClient) {
-                return E2EIFailure.Generic(
-                    IllegalStateException("The pending X.509 rotation belongs to another enrollment mode")
-                ).left()
-            }
-            val mergedGroupIds = (checkpoint.groupIds + groupIdList.map(GroupID::value)).distinct()
-            if (mergedGroupIds != checkpoint.groupIds) {
-                checkpoint = checkpoint.copy(groupIds = mergedGroupIds)
-                persistRotationCheckpoint(checkpoint).fold({ return it.left() }, {})
-            }
-        }
-
-        if (checkpoint.phase == E2EIRotationPhase.CREDENTIAL_INSTALLED ||
-            checkpoint.phase == E2EIRotationPhase.KEY_PACKAGES_PREPARED ||
-            checkpoint.phase == E2EIRotationPhase.BACKEND_REPLACED
-        ) {
-            return deleteAcquisitionSnapshot().fold(
-                { it.left() },
-                { checkpoint.right() }
-            )
-        }
-
-        val currentCredentialIds = when (val result = getX509CredentialIds(mlsClient)) {
-            is Either.Left -> return result.value.left()
-            is Either.Right -> result.value
-        }
-        val newlyInstalledCredentialIds = currentCredentialIds
-            .filterNot(checkpoint.preExistingCredentialIds.toSet()::contains)
-        if (newlyInstalledCredentialIds.size > 1) {
-            return E2EIFailure.Generic(
-                IllegalStateException("More than one new X.509 credential was installed during rotation recovery")
-            ).left()
-        }
-        newlyInstalledCredentialIds.singleOrNull()?.let { recoveredCredentialId ->
-            if (checkpoint.certificateChain == null) {
-                return E2EIFailure.Generic(
-                    IllegalStateException(
-                        "The installed X.509 credential was recovered, but its certificate checkpoint is missing"
-                    )
-                ).left()
-            }
-            val installedCheckpoint = checkpoint.copy(
-                newCredentialId = recoveredCredentialId,
-                phase = E2EIRotationPhase.CREDENTIAL_INSTALLED
-            )
-            persistRotationCheckpoint(installedCheckpoint).fold({ return it.left() }, {})
-            return deleteAcquisitionSnapshot().fold(
-                { it.left() },
-                { installedCheckpoint.right() }
-            )
-        }
-
-        val snapshot = userConfigRepository.getE2EIAcquisitionSnapshot().getOrFail {
-            return E2EIFailure.GettingE2EIClient(it).left()
-        } ?: return E2EIFailure.Generic(
-            IllegalStateException("No paused X.509 credential acquisition is available")
-        ).left()
-        val coreCrypto = mlsClientProvider.getCoreCrypto(clientId).fold(
-            { return E2EIFailure.MissingMLSClient(it).left() },
-            { it }
-        )
-        val discoveryUrl = discoveryUrl().fold({ return it.left() }, { it })
-        val hooks = KaliumPkiEnvironmentHooks(
-            httpClient = pkiHttpClient,
-            acmeApi = acmeApi,
-            e2EIApi = e2EIApi,
-            currentClientIdProvider = currentClientIdProvider,
-            userConfigRepository = userConfigRepository,
-            idToken = idToken,
-            directGetUrls = setOf(discoveryUrl)
-        )
-
-        return pkiEnvironmentMutex.withLock {
-            try {
-                coreCrypto.configurePkiEnvironment(hooks)
-                val credential = coreCrypto.resumeX509CredentialAcquisition(snapshot)
-                try {
-                    val acquiredCheckpoint = checkpoint.copy(
-                        certificateChain = credential.exportPem(),
-                        phase = E2EIRotationPhase.ACQUIRED
-                    )
-
-                    // Persist the certificate before installation. If the process dies after the
-                    // credential is installed, set-difference recovery can restore its reference.
-                    persistRotationCheckpoint(acquiredCheckpoint).fold(
-                        { return@withLock it.left() },
-                        {}
-                    )
-
-                    val newCredentialRef = coreCrypto.installCredential(credential)
-                    val installedCheckpoint = try {
-                        acquiredCheckpoint.copy(
-                            newCredentialId = newCredentialRef.rotationCredentialId(),
-                            phase = E2EIRotationPhase.CREDENTIAL_INSTALLED
-                        )
-                    } finally {
-                        newCredentialRef.close()
-                    }
-                    persistRotationCheckpoint(installedCheckpoint).fold(
-                        { it.left() },
-                        {
-                            deleteAcquisitionSnapshot().fold(
-                                { it.left() },
-                                {
-                                    cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
-                                    installedCheckpoint.right()
-                                }
-                            )
-                        }
-                    )
-                } finally {
-                    credential.close()
-                }
-            } catch (exception: CancellationException) {
-                throw exception
-            } catch (exception: Exception) {
-                E2EIFailure.Generic(exception).left()
-            }
-        }
-    }
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> =
+        acquisitionWorkflow.resume(idToken, groupIdList, isNewClient)
 
     override suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit> = withConfiguredCoreCrypto { coreCrypto ->
         discoveryUrl().fold(
@@ -359,21 +201,16 @@ internal class E2EIRepositoryImpl(
     private suspend fun fetchAndSetTrustAnchors(
         coreCrypto: CoreCryptoCentral,
         discoveryUrl: String
-    ): Either<E2EIFailure, Unit> {
-        return wrapApiRequest { acmeApi.getTrustAnchors(discoveryUrl) }.fold(
-            { E2EIFailure.TrustAnchors(it).left() },
-            { trustAnchors ->
-                try {
-                    coreCrypto.reconcilePkiTrustAnchors(trustAnchors.decodeToString())
-                    userConfigRepository.setShouldFetchE2EITrustAnchors(shouldFetch = false)
-                    cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
-                    Unit.right()
-                } catch (exception: Exception) {
-                    E2EIFailure.Generic(exception).left()
-                }
+    ): Either<E2EIFailure, Unit> = wrapApiRequest { acmeApi.getTrustAnchors(discoveryUrl) }.fold(
+        { E2EIFailure.TrustAnchors(it).left() },
+        { trustAnchors ->
+            wrapCoreCryptoInterop {
+                coreCrypto.reconcilePkiTrustAnchors(trustAnchors.decodeToString())
+                userConfigRepository.setShouldFetchE2EITrustAnchors(shouldFetch = false)
+                cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
             }
-        )
-    }
+        }
+    )
 
     override suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit> = withConfiguredCoreCrypto { coreCrypto ->
         discoveryUrl().fold(
@@ -391,164 +228,77 @@ internal class E2EIRepositoryImpl(
         { E2EIFailure.IntermediateCert(it).left() },
         { certificates ->
             certificates.foldToEitherWhileRight(Unit) { certificate, _ ->
-                try {
+                wrapCoreCryptoInterop {
                     coreCrypto.addPkiIntermediateCertificate(certificate)
                     cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
-                    Unit.right()
-                } catch (exception: Exception) {
-                    E2EIFailure.Generic(exception).left()
                 }
             }
         }
     )
 
     override suspend fun checkCredentials(): Either<E2EIFailure, Unit> = withConfiguredCoreCrypto { coreCrypto ->
-        try {
+        wrapCoreCryptoInterop {
             coreCrypto.checkCredentials()
             cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
-            Unit.right()
-        } catch (exception: Exception) {
-            E2EIFailure.Generic(exception).left()
         }
     }
 
     override suspend fun rotateKeysAndMigrateConversations(
         transactionProvider: CryptoTransactionProvider,
         checkpoint: E2EIRotationCheckpoint
-    ): Either<E2EIFailure, Unit> {
-        val clientId = currentClientIdProvider().fold(
-            { return E2EIFailure.RotationAndMigration(it).left() },
-            { it }
-        )
-        val mlsClient = mlsClientProvider.getMLSClient(clientId).fold(
-            { return E2EIFailure.MissingMLSClient(it).left() },
-            { it }
-        )
-        val newCredentialId = checkpoint.newCredentialId ?: return E2EIFailure.Generic(
-            IllegalStateException("The acquired X.509 credential has not been installed")
-        ).left()
-        val credentialRefs = try {
-            mlsClient.getCredentialRefs(CredentialType.X509)
-        } catch (exception: CancellationException) {
-            throw exception
-        } catch (exception: Exception) {
-            return E2EIFailure.Generic(exception).left()
-        }
-        val newCredentialRef = credentialRefs.firstOrNull { it.rotationCredentialId() == newCredentialId }
-            ?: run {
-                credentialRefs.forEach(CryptoCredentialRef::close)
-                return E2EIFailure.Generic(
-                    IllegalStateException("The installed X.509 credential is no longer available")
-                ).left()
-            }
-        val previousCredentialRef = checkpoint.previousCredentialId?.let { previousId ->
-            credentialRefs.firstOrNull { it.rotationCredentialId() == previousId }
-        }
-
-        try {
-            var currentCheckpoint = checkpoint
-            if (currentCheckpoint.isNewClient) {
-                runRotationTransaction<Unit>(transactionProvider, "E2EISelectNewClientCredential") { mlsContext ->
-                    mlsContext.selectCredential(newCredentialRef)
-                }.fold({ return it.left() }, {})
-                return deleteRotationCheckpoint()
-            }
-
-            currentCheckpoint.groupIds
-                .filterNot(currentCheckpoint.migratedGroupIds::contains)
-                .forEach { groupIdValue ->
-                    val groupId = GroupID(groupIdValue)
-                    runRotationTransaction<Unit>(transactionProvider, "E2EIMigrateConversation") { mlsContext ->
-                        mlsConversationRepository.migrateConversationCredential(
-                            mlsContext,
-                            newCredentialRef,
-                            groupId
-                        )
-                    }.fold({ return it.left() }, {})
-
-                    currentCheckpoint = currentCheckpoint.copy(
-                        migratedGroupIds = (currentCheckpoint.migratedGroupIds + groupIdValue).distinct()
-                    )
-                    persistRotationCheckpoint(currentCheckpoint).fold({ return it.left() }, {})
-                }
-
-            if (currentCheckpoint.phase == E2EIRotationPhase.CREDENTIAL_INSTALLED) {
-                val preparedKeyPackages = runRotationTransaction(
-                    transactionProvider,
-                    "E2EIPrepareKeyPackages"
-                ) { mlsContext ->
-                    mlsConversationRepository.prepareX509KeyPackages(mlsContext, newCredentialRef)
-                }.fold({ return it.left() }, { it })
-
-                currentCheckpoint = currentCheckpoint.copy(
-                    phase = E2EIRotationPhase.KEY_PACKAGES_PREPARED,
-                    keyPackages = preparedKeyPackages.keyPackages.map(Base64::encode),
-                    cipherSuiteTag = preparedKeyPackages.cipherSuite.tag
-                )
-                persistRotationCheckpoint(currentCheckpoint).fold({ return it.left() }, {})
-            }
-
-            if (currentCheckpoint.phase == E2EIRotationPhase.KEY_PACKAGES_PREPARED) {
-                val cipherSuiteTag = currentCheckpoint.cipherSuiteTag ?: return E2EIFailure.Generic(
-                    IllegalStateException("The key-package checkpoint has no cipher suite")
-                ).left()
-                val preparedKeyPackages = PreparedX509KeyPackages(
-                    keyPackages = currentCheckpoint.keyPackages.map(Base64::decode),
-                    cipherSuite = CipherSuite.fromTag(cipherSuiteTag)
-                )
-                mlsConversationRepository.replaceX509KeyPackages(clientId, preparedKeyPackages)
-                    .fold({ return it.left() }, {})
-
-                currentCheckpoint = currentCheckpoint.copy(phase = E2EIRotationPhase.BACKEND_REPLACED)
-                persistRotationCheckpoint(currentCheckpoint).fold({ return it.left() }, {})
-            }
-
-            if (currentCheckpoint.phase == E2EIRotationPhase.BACKEND_REPLACED) {
-                runRotationTransaction<Unit>(transactionProvider, "E2EICleanupPreviousCredential") { mlsContext ->
-                    mlsConversationRepository.removePreviousX509Credential(
-                        mlsContext,
-                        newCredentialRef,
-                        previousCredentialRef
-                    )
-                }.fold({ return it.left() }, {})
-                return deleteRotationCheckpoint()
-            }
-
-            return Unit.right()
-        } finally {
-            credentialRefs.forEach(CryptoCredentialRef::close)
-        }
-    }
+    ): Either<E2EIFailure, Unit> = rotationWorkflow.rotate(transactionProvider, checkpoint)
 
     override suspend fun clearCredentialAcquisition() {
         userConfigRepository.deleteE2EIAcquisitionSnapshot()
     }
 
-    private suspend fun getX509CredentialIds(
-        mlsClient: com.wire.kalium.cryptography.MLSClient
-    ): Either<E2EIFailure, List<String>> {
-        val refs = try {
-            mlsClient.getCredentialRefs(CredentialType.X509)
-        } catch (exception: CancellationException) {
-            throw exception
-        } catch (exception: Exception) {
-            return E2EIFailure.Generic(exception).left()
+    override suspend fun discoveryUrl(): Either<E2EIFailure, String> = dependencies.discoveryUrl()
+
+    private suspend fun withConfiguredCoreCrypto(
+        block: suspend (CoreCryptoCentral) -> Either<E2EIFailure, Unit>
+    ): Either<E2EIFailure, Unit> = mlsClientProvider.getCoreCrypto()
+        .mapLeft(E2EIFailure::MissingMLSClient)
+        .flatMap { coreCrypto ->
+            pkiEnvironmentMutex.withLock {
+                wrapCoreCryptoInterop {
+                    coreCrypto.configurePkiEnvironment(dependencies.pkiHooks(idToken = null, directGetUrls = emptySet()))
+                    block(coreCrypto)
+                }.flatMap { it }
+            }
         }
+}
 
-        return try {
-            refs.map { it.rotationCredentialId() }.right()
-        } finally {
-            refs.forEach(CryptoCredentialRef::close)
+private data class E2EIRepositoryDependencies(
+    val e2EIApi: E2EIApi,
+    val acmeApi: ACMEApi,
+    val pkiHttpClient: HttpClient,
+    val e2EIClientProvider: E2EIClientProvider,
+    val mlsClientProvider: MLSClientProvider,
+    val currentClientIdProvider: CurrentClientIdProvider,
+    val mlsConversationRepository: MLSConversationRepository,
+    val userConfigRepository: UserConfigRepository,
+    val selfUserId: UserId,
+    val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier
+) {
+    suspend fun discoveryUrl(): Either<E2EIFailure, String> = userConfigRepository.getE2EISettings().fold(
+        { E2EIFailure.MissingTeamSettings.left() },
+        { settings ->
+            when {
+                !settings.isRequired -> E2EIFailure.Disabled.left()
+                settings.discoverUrl.isNullOrBlank() -> E2EIFailure.MissingDiscoveryUrl.left()
+                else -> settings.discoverUrl.right()
+            }
         }
-    }
+    )
 
-    private suspend fun deleteAcquisitionSnapshot(): Either<E2EIFailure, Unit> =
-        userConfigRepository.deleteE2EIAcquisitionSnapshot().fold(
-            { E2EIFailure.GettingE2EIClient(it).left() },
-            { Unit.right() }
-        )
+    fun pkiHooks(idToken: String?, directGetUrls: Set<String>): KaliumPkiEnvironmentHooks =
+        KaliumPkiEnvironmentHooks(this, idToken, directGetUrls)
+}
 
-    private suspend fun loadRotationCheckpoint(): Either<E2EIFailure, E2EIRotationCheckpoint?> =
+private class E2EIRotationCheckpointStore(
+    private val userConfigRepository: UserConfigRepository
+) {
+    suspend fun load(): Either<E2EIFailure, E2EIRotationCheckpoint?> =
         userConfigRepository.getE2EIRotationCheckpoint().fold(
             { E2EIFailure.GettingE2EIClient(it).left() },
             { bytes ->
@@ -557,19 +307,17 @@ internal class E2EIRepositoryImpl(
                 } else {
                     try {
                         Json.decodeFromString<E2EIRotationCheckpoint>(bytes.decodeToString()).right()
-                    } catch (exception: Exception) {
+                    } catch (exception: SerializationException) {
                         E2EIFailure.Generic(exception).left()
                     }
                 }
             }
         )
 
-    private suspend fun persistRotationCheckpoint(
-        checkpoint: E2EIRotationCheckpoint
-    ): Either<E2EIFailure, Unit> {
+    suspend fun persist(checkpoint: E2EIRotationCheckpoint): Either<E2EIFailure, Unit> {
         val encodedCheckpoint = try {
             Json.encodeToString(checkpoint).encodeToByteArray()
-        } catch (exception: Exception) {
+        } catch (exception: SerializationException) {
             return E2EIFailure.Generic(exception).left()
         }
         return userConfigRepository.setE2EIRotationCheckpoint(encodedCheckpoint).fold(
@@ -578,11 +326,430 @@ internal class E2EIRepositoryImpl(
         )
     }
 
-    private suspend fun deleteRotationCheckpoint(): Either<E2EIFailure, Unit> =
+    suspend fun delete(): Either<E2EIFailure, Unit> =
         userConfigRepository.deleteE2EIRotationCheckpoint().fold(
             { E2EIFailure.RotationAndMigration(it).left() },
             { Unit.right() }
         )
+
+    suspend fun deleteAcquisitionSnapshot(): Either<E2EIFailure, Unit> =
+        userConfigRepository.deleteE2EIAcquisitionSnapshot().fold(
+            { E2EIFailure.GettingE2EIClient(it).left() },
+            { Unit.right() }
+        )
+}
+
+private class E2EICredentialAcquisitionWorkflow(
+    private val dependencies: E2EIRepositoryDependencies,
+    private val checkpointStore: E2EIRotationCheckpointStore,
+    private val pkiEnvironmentMutex: Mutex,
+    private val fetchTrustAnchors: suspend (CoreCryptoCentral, String) -> Either<E2EIFailure, Unit>,
+    private val fetchFederationCertificates: suspend (CoreCryptoCentral, String) -> Either<E2EIFailure, Unit>
+) {
+    suspend fun start(isNewClient: Boolean): Either<E2EIFailure, E2EIAuthenticationRequest> =
+        checkpointStore.load().flatMap { pendingRotation ->
+            if (pendingRotation != null) {
+                E2EIFailure.Generic(
+                    IllegalStateException("An X.509 credential rotation is already pending")
+                ).left()
+            } else {
+                dependencies.userConfigRepository.deleteE2EIAcquisitionSnapshot()
+                dependencies.discoveryUrl().flatMap { discoveryUrl ->
+                    dependencies.currentClientIdProvider()
+                        .mapLeft(E2EIFailure::GettingE2EIClient)
+                        .flatMap { clientId ->
+                            dependencies.mlsClientProvider.getCoreCrypto(clientId)
+                                .mapLeft(E2EIFailure::MissingMLSClient)
+                                .flatMap { coreCrypto ->
+                                    startConfiguredAcquisition(coreCrypto, discoveryUrl, clientId, isNewClient)
+                                }
+                        }
+                }
+            }
+        }
+
+    suspend fun resume(
+        idToken: String,
+        groupIdList: List<GroupID>,
+        isNewClient: Boolean
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> =
+        dependencies.currentClientIdProvider()
+            .mapLeft(E2EIFailure::GettingE2EIClient)
+            .flatMap { clientId ->
+                dependencies.mlsClientProvider.getMLSClient(clientId)
+                    .mapLeft(E2EIFailure::MissingMLSClient)
+                    .flatMap { mlsClient ->
+                        getOrCreateCheckpoint(mlsClient, groupIdList, isNewClient).flatMap { checkpoint ->
+                            recoverInstalledCheckpoint(mlsClient, checkpoint).flatMap { recoveredCheckpoint ->
+                                recoveredCheckpoint?.right()
+                                    ?: resumeAndInstallCredential(idToken, clientId, checkpoint)
+                            }
+                        }
+                    }
+            }
+
+    private suspend fun startConfiguredAcquisition(
+        coreCrypto: CoreCryptoCentral,
+        discoveryUrl: String,
+        clientId: ClientId,
+        isNewClient: Boolean
+    ): Either<E2EIFailure, E2EIAuthenticationRequest> {
+        val hooks = dependencies.pkiHooks(idToken = null, directGetUrls = setOf(discoveryUrl))
+        return pkiEnvironmentMutex.withLock {
+            wrapCoreCryptoInterop {
+                coreCrypto.configurePkiEnvironment(hooks)
+                startCoreCryptoAcquisition(coreCrypto, discoveryUrl, clientId, isNewClient)
+            }.fold(
+                { failure -> hooks.authenticationRequest?.right() ?: failure.left() },
+                { it }
+            )
+        }
+    }
+
+    private suspend fun startCoreCryptoAcquisition(
+        coreCrypto: CoreCryptoCentral,
+        discoveryUrl: String,
+        clientId: ClientId,
+        isNewClient: Boolean
+    ): Either<E2EIFailure, E2EIAuthenticationRequest> =
+        fetchTrustAnchors(coreCrypto, discoveryUrl).flatMap {
+            fetchFederationCertificates(coreCrypto, discoveryUrl).flatMap {
+                dependencies.e2EIClientProvider.getX509CredentialAcquisitionConfig(discoveryUrl, clientId)
+                    .flatMap { config ->
+                        existingCredentialRef(clientId, isNewClient).flatMap { existingCredentialRef ->
+                            coreCrypto.startX509CredentialAcquisition(config, existingCredentialRef).close()
+                            E2EIFailure.Generic(
+                                IllegalStateException(
+                                    "Core Crypto completed credential acquisition before authentication"
+                                )
+                            ).left()
+                        }
+                    }
+            }
+        }
+
+    private suspend fun existingCredentialRef(
+        clientId: ClientId,
+        isNewClient: Boolean
+    ): Either<E2EIFailure, CryptoCredentialRef?> = if (isNewClient) {
+        null.right()
+    } else {
+        dependencies.mlsClientProvider.getMLSClient(clientId)
+            .mapLeft(E2EIFailure::MissingMLSClient)
+            .map { it.getCredentialRef(CredentialType.X509) }
+    }
+
+    private suspend fun getOrCreateCheckpoint(
+        mlsClient: MLSClient,
+        groupIdList: List<GroupID>,
+        isNewClient: Boolean
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> = checkpointStore.load().flatMap { loadedCheckpoint ->
+        if (loadedCheckpoint == null) {
+            getX509CredentialIds(mlsClient).flatMap { existingCredentialIds ->
+                val checkpoint = E2EIRotationCheckpoint(
+                    preExistingCredentialIds = existingCredentialIds,
+                    previousCredentialId = if (isNewClient) null else existingCredentialIds.firstOrNull(),
+                    groupIds = groupIdList.map(GroupID::value).distinct(),
+                    isNewClient = isNewClient
+                )
+                checkpointStore.persist(checkpoint).map { checkpoint }
+            }
+        } else {
+            updateExistingCheckpoint(loadedCheckpoint, groupIdList, isNewClient)
+        }
+    }
+
+    private suspend fun updateExistingCheckpoint(
+        checkpoint: E2EIRotationCheckpoint,
+        groupIdList: List<GroupID>,
+        isNewClient: Boolean
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> {
+        if (checkpoint.isNewClient != isNewClient) {
+            return E2EIFailure.Generic(
+                IllegalStateException("The pending X.509 rotation belongs to another enrollment mode")
+            ).left()
+        }
+        val mergedGroupIds = (checkpoint.groupIds + groupIdList.map(GroupID::value)).distinct()
+        return if (mergedGroupIds == checkpoint.groupIds) {
+            checkpoint.right()
+        } else {
+            checkpoint.copy(groupIds = mergedGroupIds).let { updatedCheckpoint ->
+                checkpointStore.persist(updatedCheckpoint).map { updatedCheckpoint }
+            }
+        }
+    }
+
+    private suspend fun recoverInstalledCheckpoint(
+        mlsClient: MLSClient,
+        checkpoint: E2EIRotationCheckpoint
+    ): Either<E2EIFailure, E2EIRotationCheckpoint?> = when (checkpoint.phase) {
+        E2EIRotationPhase.CREDENTIAL_INSTALLED,
+        E2EIRotationPhase.KEY_PACKAGES_PREPARED,
+        E2EIRotationPhase.BACKEND_REPLACED -> checkpointStore.deleteAcquisitionSnapshot().map { checkpoint }
+        E2EIRotationPhase.INTENT,
+        E2EIRotationPhase.ACQUIRED -> recoverInstalledCredential(mlsClient, checkpoint)
+    }
+
+    private suspend fun recoverInstalledCredential(
+        mlsClient: MLSClient,
+        checkpoint: E2EIRotationCheckpoint
+    ): Either<E2EIFailure, E2EIRotationCheckpoint?> = getX509CredentialIds(mlsClient).flatMap { currentCredentialIds ->
+        val newlyInstalledCredentialIds = currentCredentialIds
+            .filterNot(checkpoint.preExistingCredentialIds.toSet()::contains)
+        when {
+            newlyInstalledCredentialIds.size > 1 -> E2EIFailure.Generic(
+                IllegalStateException("More than one new X.509 credential was installed during rotation recovery")
+            ).left()
+            newlyInstalledCredentialIds.isEmpty() -> null.right()
+            checkpoint.certificateChain == null -> E2EIFailure.Generic(
+                IllegalStateException(
+                    "The installed X.509 credential was recovered, but its certificate checkpoint is missing"
+                )
+            ).left()
+            else -> {
+                val installedCheckpoint = checkpoint.copy(
+                    newCredentialId = newlyInstalledCredentialIds.single(),
+                    phase = E2EIRotationPhase.CREDENTIAL_INSTALLED
+                )
+                checkpointStore.persist(installedCheckpoint).flatMap {
+                    checkpointStore.deleteAcquisitionSnapshot().map { installedCheckpoint }
+                }
+            }
+        }
+    }
+
+    private suspend fun resumeAndInstallCredential(
+        idToken: String,
+        clientId: ClientId,
+        checkpoint: E2EIRotationCheckpoint
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> =
+        dependencies.userConfigRepository.getE2EIAcquisitionSnapshot()
+            .mapLeft(E2EIFailure::GettingE2EIClient)
+            .flatMap { snapshot ->
+                if (snapshot == null) {
+                    E2EIFailure.Generic(
+                        IllegalStateException("No paused X.509 credential acquisition is available")
+                    ).left()
+                } else {
+                    resumeAcquisitionSnapshot(idToken, clientId, checkpoint, snapshot)
+                }
+            }
+
+    private suspend fun resumeAcquisitionSnapshot(
+        idToken: String,
+        clientId: ClientId,
+        checkpoint: E2EIRotationCheckpoint,
+        snapshot: ByteArray
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> =
+        dependencies.mlsClientProvider.getCoreCrypto(clientId)
+            .mapLeft(E2EIFailure::MissingMLSClient)
+            .flatMap { coreCrypto ->
+                dependencies.discoveryUrl().flatMap { discoveryUrl ->
+                    val hooks = dependencies.pkiHooks(idToken, setOf(discoveryUrl))
+                    pkiEnvironmentMutex.withLock {
+                        wrapCoreCryptoInterop {
+                            coreCrypto.configurePkiEnvironment(hooks)
+                            installCredential(coreCrypto, snapshot, checkpoint)
+                        }.flatMap { it }
+                    }
+                }
+            }
+
+    private suspend fun installCredential(
+        coreCrypto: CoreCryptoCentral,
+        snapshot: ByteArray,
+        checkpoint: E2EIRotationCheckpoint
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> {
+        val credential = coreCrypto.resumeX509CredentialAcquisition(snapshot)
+        return try {
+            val acquiredCheckpoint = checkpoint.copy(
+                certificateChain = credential.exportPem(),
+                phase = E2EIRotationPhase.ACQUIRED
+            )
+
+            // Persist the certificate before installation. If the process dies after the
+            // credential is installed, set-difference recovery can restore its reference.
+            checkpointStore.persist(acquiredCheckpoint).flatMap {
+                val newCredentialRef = coreCrypto.installCredential(credential)
+                val installedCheckpoint = try {
+                    acquiredCheckpoint.copy(
+                        newCredentialId = newCredentialRef.rotationCredentialId(),
+                        phase = E2EIRotationPhase.CREDENTIAL_INSTALLED
+                    )
+                } finally {
+                    newCredentialRef.close()
+                }
+                checkpointStore.persist(installedCheckpoint).flatMap {
+                    checkpointStore.deleteAcquisitionSnapshot().map {
+                        dependencies.cryptoStateChangeHookNotifier.onCryptoStateChanged(dependencies.selfUserId)
+                        installedCheckpoint
+                    }
+                }
+            }
+        } finally {
+            credential.close()
+        }
+    }
+
+    private suspend fun getX509CredentialIds(mlsClient: MLSClient): Either<E2EIFailure, List<String>> =
+        wrapCoreCryptoInterop { mlsClient.getCredentialRefs(CredentialType.X509) }.flatMap { refs ->
+            try {
+                refs.map { it.rotationCredentialId() }.right()
+            } finally {
+                refs.forEach(CryptoCredentialRef::close)
+            }
+        }
+}
+
+private class E2EICredentialRotationWorkflow(
+    private val dependencies: E2EIRepositoryDependencies,
+    private val checkpointStore: E2EIRotationCheckpointStore
+) {
+    suspend fun rotate(
+        transactionProvider: CryptoTransactionProvider,
+        checkpoint: E2EIRotationCheckpoint
+    ): Either<E2EIFailure, Unit> = dependencies.currentClientIdProvider()
+        .mapLeft(E2EIFailure::RotationAndMigration)
+        .flatMap { clientId ->
+            dependencies.mlsClientProvider.getMLSClient(clientId)
+                .mapLeft(E2EIFailure::MissingMLSClient)
+                .flatMap { mlsClient ->
+                    resolveCredentialRefs(mlsClient, checkpoint).flatMap { credentialRefs ->
+                        try {
+                            runRotationPhases(transactionProvider, clientId, checkpoint, credentialRefs)
+                        } finally {
+                            credentialRefs.all.forEach(CryptoCredentialRef::close)
+                        }
+                    }
+                }
+        }
+
+    private suspend fun resolveCredentialRefs(
+        mlsClient: MLSClient,
+        checkpoint: E2EIRotationCheckpoint
+    ): Either<E2EIFailure, RotationCredentialRefs> {
+        val newCredentialId = checkpoint.newCredentialId ?: return E2EIFailure.Generic(
+            IllegalStateException("The acquired X.509 credential has not been installed")
+        ).left()
+        return wrapCoreCryptoInterop { mlsClient.getCredentialRefs(CredentialType.X509) }.flatMap { refs ->
+            val newCredentialRef = refs.firstOrNull { it.rotationCredentialId() == newCredentialId }
+            if (newCredentialRef == null) {
+                refs.forEach(CryptoCredentialRef::close)
+                E2EIFailure.Generic(
+                    IllegalStateException("The installed X.509 credential is no longer available")
+                ).left()
+            } else {
+                RotationCredentialRefs(
+                    all = refs,
+                    new = newCredentialRef,
+                    previous = checkpoint.previousCredentialId?.let { previousId ->
+                        refs.firstOrNull { it.rotationCredentialId() == previousId }
+                    }
+                ).right()
+            }
+        }
+    }
+
+    private suspend fun runRotationPhases(
+        transactionProvider: CryptoTransactionProvider,
+        clientId: ClientId,
+        checkpoint: E2EIRotationCheckpoint,
+        credentialRefs: RotationCredentialRefs
+    ): Either<E2EIFailure, Unit> = if (checkpoint.isNewClient) {
+        runRotationTransaction<Unit>(transactionProvider, "E2EISelectNewClientCredential") { mlsContext ->
+            mlsContext.selectCredential(credentialRefs.new)
+        }.flatMap { checkpointStore.delete() }
+    } else {
+        migrateConversations(transactionProvider, checkpoint, credentialRefs.new).flatMap { migratedCheckpoint ->
+            prepareKeyPackages(transactionProvider, migratedCheckpoint, credentialRefs.new).flatMap { preparedCheckpoint ->
+                replaceKeyPackages(clientId, preparedCheckpoint).flatMap { replacedCheckpoint ->
+                    cleanupPreviousCredential(transactionProvider, replacedCheckpoint, credentialRefs)
+                }
+            }
+        }
+    }
+
+    private suspend fun migrateConversations(
+        transactionProvider: CryptoTransactionProvider,
+        checkpoint: E2EIRotationCheckpoint,
+        newCredentialRef: CryptoCredentialRef
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> = checkpoint.groupIds
+        .filterNot(checkpoint.migratedGroupIds::contains)
+        .foldToEitherWhileRight(checkpoint) { groupIdValue, currentCheckpoint ->
+            runRotationTransaction<Unit>(transactionProvider, "E2EIMigrateConversation") { mlsContext ->
+                dependencies.mlsConversationRepository.migrateConversationCredential(
+                    mlsContext,
+                    newCredentialRef,
+                    GroupID(groupIdValue)
+                )
+            }.flatMap {
+                currentCheckpoint.copy(
+                    migratedGroupIds = (currentCheckpoint.migratedGroupIds + groupIdValue).distinct()
+                ).let { updatedCheckpoint ->
+                    checkpointStore.persist(updatedCheckpoint).map { updatedCheckpoint }
+                }
+            }
+        }
+
+    private suspend fun prepareKeyPackages(
+        transactionProvider: CryptoTransactionProvider,
+        checkpoint: E2EIRotationCheckpoint,
+        newCredentialRef: CryptoCredentialRef
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> =
+        if (checkpoint.phase != E2EIRotationPhase.CREDENTIAL_INSTALLED) {
+            checkpoint.right()
+        } else {
+            runRotationTransaction(transactionProvider, "E2EIPrepareKeyPackages") { mlsContext ->
+                dependencies.mlsConversationRepository.prepareX509KeyPackages(mlsContext, newCredentialRef)
+            }.flatMap { preparedKeyPackages ->
+                checkpoint.copy(
+                    phase = E2EIRotationPhase.KEY_PACKAGES_PREPARED,
+                    keyPackages = preparedKeyPackages.keyPackages.map(Base64::encode),
+                    cipherSuiteTag = preparedKeyPackages.cipherSuite.tag
+                ).let { updatedCheckpoint ->
+                    checkpointStore.persist(updatedCheckpoint).map { updatedCheckpoint }
+                }
+            }
+        }
+
+    private suspend fun replaceKeyPackages(
+        clientId: ClientId,
+        checkpoint: E2EIRotationCheckpoint
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> =
+        if (checkpoint.phase != E2EIRotationPhase.KEY_PACKAGES_PREPARED) {
+            checkpoint.right()
+        } else {
+            checkpoint.cipherSuiteTag?.let { cipherSuiteTag ->
+                val preparedKeyPackages = PreparedX509KeyPackages(
+                    keyPackages = checkpoint.keyPackages.map(Base64::decode),
+                    cipherSuite = CipherSuite.fromTag(cipherSuiteTag)
+                )
+                dependencies.mlsConversationRepository.replaceX509KeyPackages(clientId, preparedKeyPackages)
+                    .flatMap {
+                        checkpoint.copy(phase = E2EIRotationPhase.BACKEND_REPLACED).let { updatedCheckpoint ->
+                            checkpointStore.persist(updatedCheckpoint).map { updatedCheckpoint }
+                        }
+                    }
+            } ?: E2EIFailure.Generic(
+                IllegalStateException("The key-package checkpoint has no cipher suite")
+            ).left()
+        }
+
+    private suspend fun cleanupPreviousCredential(
+        transactionProvider: CryptoTransactionProvider,
+        checkpoint: E2EIRotationCheckpoint,
+        credentialRefs: RotationCredentialRefs
+    ): Either<E2EIFailure, Unit> = if (checkpoint.phase == E2EIRotationPhase.BACKEND_REPLACED) {
+        runRotationTransaction<Unit>(transactionProvider, "E2EICleanupPreviousCredential") { mlsContext ->
+            dependencies.mlsConversationRepository.removePreviousX509Credential(
+                mlsContext,
+                credentialRefs.new,
+                credentialRefs.previous
+            )
+        }.flatMap { checkpointStore.delete() }
+    } else {
+        Unit.right()
+    }
 
     private suspend fun <T> runRotationTransaction(
         transactionProvider: CryptoTransactionProvider,
@@ -603,57 +770,29 @@ internal class E2EIRepositoryImpl(
             )
         }
     )
+}
 
-    private fun CryptoCredentialRef.rotationCredentialId(): String = Base64.encode(publicKeyHash())
+private data class RotationCredentialRefs(
+    val all: List<CryptoCredentialRef>,
+    val new: CryptoCredentialRef,
+    val previous: CryptoCredentialRef?
+)
 
-    override suspend fun discoveryUrl(): Either<E2EIFailure, String> = userConfigRepository.getE2EISettings().fold(
-        { E2EIFailure.MissingTeamSettings.left() },
-        { settings ->
-            when {
-                !settings.isRequired -> E2EIFailure.Disabled.left()
-                settings.discoverUrl.isNullOrBlank() -> E2EIFailure.MissingDiscoveryUrl.left()
-                else -> settings.discoverUrl.right()
-            }
-        }
-    )
+private fun CryptoCredentialRef.rotationCredentialId(): String = Base64.encode(publicKeyHash())
 
-    @Suppress("TooGenericExceptionCaught")
-    private suspend fun withConfiguredCoreCrypto(
-        block: suspend (CoreCryptoCentral) -> Either<E2EIFailure, Unit>
-    ): Either<E2EIFailure, Unit> {
-        val coreCrypto = mlsClientProvider.getCoreCrypto().fold(
-            { return E2EIFailure.MissingMLSClient(it).left() },
-            { it }
-        )
-        return pkiEnvironmentMutex.withLock {
-            try {
-                coreCrypto.configurePkiEnvironment(
-                    KaliumPkiEnvironmentHooks(
-                        httpClient = pkiHttpClient,
-                        acmeApi = acmeApi,
-                        e2EIApi = e2EIApi,
-                        currentClientIdProvider = currentClientIdProvider,
-                        userConfigRepository = userConfigRepository,
-                        idToken = null,
-                        directGetUrls = emptySet()
-                    )
-                )
-                block(coreCrypto)
-            } catch (exception: CancellationException) {
-                throw exception
-            } catch (exception: Exception) {
-                E2EIFailure.Generic(exception).left()
-            }
-        }
-    }
+@Suppress("TooGenericExceptionCaught")
+private suspend inline fun <T> wrapCoreCryptoInterop(
+    block: suspend () -> T
+): Either<E2EIFailure, T> = try {
+    block().right()
+} catch (exception: CancellationException) {
+    throw exception
+} catch (exception: Exception) {
+    E2EIFailure.Generic(exception).left()
 }
 
 private class KaliumPkiEnvironmentHooks(
-    private val httpClient: HttpClient,
-    private val acmeApi: ACMEApi,
-    private val e2EIApi: E2EIApi,
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    private val userConfigRepository: UserConfigRepository,
+    private val dependencies: E2EIRepositoryDependencies,
     private val idToken: String?,
     private val directGetUrls: Set<String>
 ) : PkiEnvironmentHooks {
@@ -670,13 +809,13 @@ private class KaliumPkiEnvironmentHooks(
         body: ByteArray
     ): PkiHttpResponse {
         if (method == PkiHttpMethod.GET && normalizePkiUrl(url) !in normalizedDirectGetUrls) {
-            val settings = userConfigRepository.getE2EISettings().fold(
+            val settings = dependencies.userConfigRepository.getE2EISettings().fold(
                 { throw PkiHookFailure("Getting E2EI settings for the CRL request failed: $it") },
                 { it }
             )
             val proxyUrl = settings.crlProxy?.takeIf { settings.shouldUseProxy && it.isNotBlank() }
             if (proxyUrl != null) {
-                return wrapApiRequest { acmeApi.getClientDomainCRL(url, proxyUrl) }.fold(
+                return wrapApiRequest { dependencies.acmeApi.getClientDomainCRL(url, proxyUrl) }.fold(
                     { throw PkiHookFailure("Getting the CRL through the configured proxy failed: $it") },
                     { crl ->
                         PkiHttpResponse(
@@ -689,7 +828,7 @@ private class KaliumPkiEnvironmentHooks(
             }
         }
 
-        val response = httpClient.request(url) {
+        val response = dependencies.pkiHttpClient.request(url) {
             this.method = method.toKtor()
             headers {
                 headers.forEach { header -> append(header.name, header.value) }
@@ -713,7 +852,7 @@ private class KaliumPkiEnvironmentHooks(
     ): String {
         idToken?.let { return it }
 
-        userConfigRepository.setE2EIAcquisitionSnapshot(acquisitionSnapshot).fold(
+        dependencies.userConfigRepository.setE2EIAcquisitionSnapshot(acquisitionSnapshot).fold(
             { throw PkiHookFailure("Persisting the X.509 acquisition snapshot failed: $it") },
             {}
         )
@@ -722,22 +861,22 @@ private class KaliumPkiEnvironmentHooks(
     }
 
     override suspend fun getBackendNonce(): String {
-        val clientId = currentClientIdProvider().fold(
+        val clientId = dependencies.currentClientIdProvider().fold(
             { throw PkiHookFailure("Getting the client id for the backend nonce failed: $it") },
             { it }
         )
-        return wrapApiRequest { e2EIApi.getWireNonce(clientId.value) }.fold(
+        return wrapApiRequest { dependencies.e2EIApi.getWireNonce(clientId.value) }.fold(
             { throw PkiHookFailure("Getting the backend nonce failed: $it") },
             { it }
         )
     }
 
     override suspend fun fetchBackendAccessToken(dpop: String): String {
-        val clientId = currentClientIdProvider().fold(
+        val clientId = dependencies.currentClientIdProvider().fold(
             { throw PkiHookFailure("Getting the client id for the backend access token failed: $it") },
             { it }
         )
-        return wrapApiRequest { e2EIApi.getAccessToken(clientId.value, dpop) }.fold(
+        return wrapApiRequest { dependencies.e2EIApi.getAccessToken(clientId.value, dpop) }.fold(
             { throw PkiHookFailure("Getting the backend access token failed: $it") },
             { it.token }
         )

@@ -229,6 +229,7 @@ internal interface MLSConversationRepository : MLSMemberAdder {
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
     suspend fun clearProposalTimer(groupID: GroupID)
     fun observeProposalTimers(): Flow<ProposalTimer>
+
     /**
      * Select [credentialRef] and migrate [groupID] when it still uses another credential.
      *

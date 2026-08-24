@@ -21,7 +21,7 @@ package com.wire.kalium.cryptography
 import com.wire.kalium.cryptography.utils.calcSHA256
 import kotlin.io.encoding.Base64
 
-internal data class PkiTrustAnchorReconciliationPlan(
+internal data class PkiTrustAnchors(
     val anchorsToAdd: List<CertificateChain>,
     val fingerprintsToRemove: List<ByteArray>
 )
@@ -36,7 +36,7 @@ internal data class PkiTrustAnchorReconciliationPlan(
 internal fun planPkiTrustAnchorReconciliation(
     currentAnchors: List<CertificateChain>,
     desiredPemBundle: String
-): PkiTrustAnchorReconciliationPlan {
+): PkiTrustAnchors {
     val desiredAnchors = splitPemCertificateBundle(desiredPemBundle)
     require(desiredAnchors.isNotEmpty()) { "The trust-anchor bundle does not contain a certificate" }
 
@@ -45,7 +45,7 @@ internal fun planPkiTrustAnchorReconciliation(
     val currentByFingerprint = currentAnchors.associateBy { TrustAnchorFingerprint.fromPem(it) }
     val desiredByFingerprint = desiredAnchors.associateBy { TrustAnchorFingerprint.fromPem(it) }
 
-    return PkiTrustAnchorReconciliationPlan(
+    return PkiTrustAnchors(
         anchorsToAdd = desiredByFingerprint
             .filterKeys { it !in currentByFingerprint }
             .values
@@ -169,13 +169,13 @@ private class DerReader(
         require(start in 0..limit && limit <= bytes.size) { "Invalid DER bounds" }
     }
 
-    fun peekTag(): Int? = if (position < limit) bytes[position].toInt() and 0xFF else null
+    fun peekTag(): Int? = if (position < limit) bytes[position].toInt() and UNSIGNED_BYTE_MASK else null
 
     fun read(expectedTag: Int): DerElement {
         val encodedStart = position
         val actualTag = readByte()
         require(actualTag == expectedTag) {
-            "Unexpected DER tag 0x${actualTag.toString(16)}; expected 0x${expectedTag.toString(16)}"
+            "Unexpected DER tag 0x${actualTag.toString(HEX_RADIX)}; expected 0x${expectedTag.toString(HEX_RADIX)}"
         }
 
         val contentLength = readLength()
@@ -197,11 +197,11 @@ private class DerReader(
         val byteCount = first and DER_LENGTH_MASK
         require(byteCount in 1..DER_MAX_LENGTH_BYTES) { "Invalid DER length encoding" }
         require(position + byteCount <= limit) { "Truncated DER length" }
-        require((bytes[position].toInt() and 0xFF) != 0) { "Non-minimal DER length encoding" }
+        require((bytes[position].toInt() and UNSIGNED_BYTE_MASK) != 0) { "Non-minimal DER length encoding" }
 
         var length = 0L
         repeat(byteCount) {
-            length = (length shl 8) or readByte().toLong()
+            length = (length shl BITS_PER_BYTE) or readByte().toLong()
         }
         require(length >= DER_LONG_FORM_MIN_LENGTH) { "Non-minimal DER length encoding" }
         return length
@@ -209,7 +209,7 @@ private class DerReader(
 
     private fun readByte(): Int {
         require(position < limit) { "Truncated DER element" }
-        return bytes[position++].toInt() and 0xFF
+        return bytes[position++].toInt() and UNSIGNED_BYTE_MASK
     }
 }
 
@@ -223,3 +223,6 @@ private const val DER_LONG_FORM_FLAG = 0x80
 private const val DER_LENGTH_MASK = 0x7F
 private const val DER_MAX_LENGTH_BYTES = 4
 private const val DER_LONG_FORM_MIN_LENGTH = 128L
+private const val UNSIGNED_BYTE_MASK = 0xFF
+private const val HEX_RADIX = 16
+private const val BITS_PER_BYTE = 8
