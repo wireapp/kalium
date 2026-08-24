@@ -68,7 +68,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlin.collections.map
 import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
@@ -145,13 +144,11 @@ internal class MeetingDataSource(
             wrapStorageRequest {
                 meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
                     .also { meetingsToPersist ->
-                        if (meetingsToPersist.isNotEmpty()) {
-                            meetingDAO.upsertMeetings(
-                                meetings = meetingsToPersist,
-                                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
-                                removeMeetingsAbsentFromUpsertList = true,
-                            )
-                        }
+                        meetingDAO.upsertMeetings(
+                            meetings = meetingsToPersist,
+                            generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
+                            removeMeetingsAbsentFromUpsertList = true,
+                        )
                     }
                     .map { meetingMapper.fromDaoToModel(it) }
             }
