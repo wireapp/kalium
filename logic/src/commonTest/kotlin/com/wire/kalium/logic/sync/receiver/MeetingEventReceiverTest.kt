@@ -24,7 +24,9 @@ import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.meetingCreateEvent
+import com.wire.kalium.logic.framework.TestEvent.meetingUpdateEvent
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import dev.mokkery.MockMode
@@ -72,15 +74,52 @@ class MeetingEventReceiverTest {
         }
     }
 
+    @Test
+    fun givenUpdateEvent_whenProcessingEvent_thenUpdateHandlerIsInvoked() = runTest {
+        val event = meetingUpdateEvent()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withMeetingUpdateHandlerReturning(event, Either.Right(Unit))
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingUpdateEventHandler.handle(event)
+        }
+    }
+
+    @Test
+    fun givenUpdateHandlerFails_whenProcessingEvent_thenFailureIsReturned() = runTest {
+        val event = meetingUpdateEvent()
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withMeetingUpdateHandlerReturning(event, Either.Left(failure))
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        assertSame(failure, assertIs<Either.Left<CoreFailure>>(result).value)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingUpdateEventHandler.handle(event)
+        }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val meetingCreateEventHandler = mock<MeetingCreateEventHandler>(mode = MockMode.autoUnit)
+        val meetingUpdateEventHandler = mock<MeetingUpdateEventHandler>(mode = MockMode.autoUnit)
 
         fun withMeetingCreateHandlerReturning(event: Event.Meeting.Create, result: Either<CoreFailure, Unit>) = apply {
             everySuspend { meetingCreateEventHandler.handle(event) } returns result
         }
 
+        fun withMeetingUpdateHandlerReturning(event: Event.Meeting.Update, result: Either<CoreFailure, Unit>) = apply {
+            everySuspend { meetingUpdateEventHandler.handle(event) } returns result
+        }
+
         fun arrange() = this to MeetingEventReceiverImpl(
             meetingCreateEventHandler = meetingCreateEventHandler,
+            meetingUpdateEventHandler = meetingUpdateEventHandler,
         )
     }
 }

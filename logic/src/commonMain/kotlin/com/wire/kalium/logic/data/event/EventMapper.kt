@@ -143,6 +143,7 @@ internal class EventMapper(
             is EventContentDTO.Conversation.MlsResetConversationDTO -> mlsConversationReset(id, eventContentDTO)
             is EventContentDTO.Conversation.NewMeetingConversationDTO -> newMeetingConversation(id, eventContentDTO)
             is EventContentDTO.Meeting.MeetingCreateDTO -> meetingCreate(id, eventContentDTO)
+            is EventContentDTO.Meeting.MeetingUpdateDTO -> meetingUpdate(id, eventContentDTO)
         }
 
     private fun conversationTyping(
@@ -678,6 +679,15 @@ internal class EventMapper(
         id: String,
         event: EventContentDTO.Meeting.MeetingCreateDTO,
     ) = Event.Meeting.Create(
+        id = id,
+        meetingId = event.qualifiedMeetingId.toModel(),
+        dateTime = event.time
+    )
+
+    private fun meetingUpdate(
+        id: String,
+        event: EventContentDTO.Meeting.MeetingUpdateDTO,
+    ) = Event.Meeting.Update(
         id = id,
         meetingId = event.qualifiedMeetingId.toModel(),
         dateTime = event.time

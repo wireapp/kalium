@@ -503,6 +503,13 @@ sealed class EventContentDTO {
             @SerialName("qualified_id") val qualifiedMeetingId: MeetingId,
             @SerialName("time") val time: Instant,
         ) : Meeting()
+
+        @Serializable
+        @SerialName("meeting.update")
+        data class MeetingUpdateDTO(
+            @SerialName("qualified_id") val qualifiedMeetingId: MeetingId,
+            @SerialName("time") val time: Instant,
+        ) : Meeting()
     }
 }
 
