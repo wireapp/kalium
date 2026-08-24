@@ -111,7 +111,6 @@ kotlin {
                 configurations.all {
                     exclude(group = "co.touchlab", module = "stately-strict-jvm")
                 }
-                implementation(libs.coreCryptoKmp)
             }
         }
         val commonTest by getting {
@@ -135,6 +134,9 @@ kotlin {
 
         val appleMain by getting {
             kotlin.exclude("com/wire/kalium/logic/feature/call/**")
+            dependencies {
+                implementation(libs.coreCryptoKmp)
+            }
         }
         val appleCallSourceDir = "src/appleMain/kotlin/com/wire/kalium/logic/feature/call"
         listOf(
@@ -152,6 +154,7 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
+                implementation(libs.coreCryptoJvm)
             }
         }
         val jvmTest by getting {
@@ -163,6 +166,10 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.work)
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
             }
         }
         val androidHostTest by getting {

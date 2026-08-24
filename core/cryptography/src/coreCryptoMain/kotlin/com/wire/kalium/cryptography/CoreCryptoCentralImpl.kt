@@ -206,7 +206,7 @@ class CoreCryptoCentralImpl(
                     )
                 } ?: X509CredentialAcquisition(requirePkiEnvironment(), nativeConfig)
             } finally {
-                nativeConfig.close()
+                nativeConfig.destroy()
             }
             acquisition.finalizeCredential()
         } finally {
@@ -318,7 +318,7 @@ private fun MLSTransporter.toCoreCryptoTransport(): MlsTransport = object : MlsT
                 )
             )
         } finally {
-            historySecret.close()
+            historySecret.destroy()
         }
     }
 
@@ -337,7 +337,7 @@ private fun MLSTransporter.toCoreCryptoTransport(): MlsTransport = object : MlsT
                 )
             }
         } finally {
-            commitBundle.close()
+            commitBundle.destroy()
         }
     }
 }

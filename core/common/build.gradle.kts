@@ -44,31 +44,28 @@ kotlin {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
 
-        val nonJsMain by creating {
-            dependsOn(getByName("commonMain"))
+        val appleMain by getting {
             dependencies {
                 implementation(libs.coreCryptoKmp)
             }
         }
-
         val jvmMain by getting {
-            dependsOn(nonJsMain)
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
+                implementation(libs.coreCryptoJvm)
             }
         }
 
         val androidMain by getting {
-            dependsOn(nonJsMain)
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.work)
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
             }
-        }
-
-        val appleMain by getting {
-            dependsOn(nonJsMain)
         }
     }
 }

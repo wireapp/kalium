@@ -207,6 +207,6 @@ fun ClientId.toCryptography(): CryptoQualifiedClientId {
             userId = CryptoQualifiedID(deserialized.userId.toString(), deserialized.domain)
         )
     } finally {
-        deserialized.close()
+        deserialized.destroy()
     }
 }

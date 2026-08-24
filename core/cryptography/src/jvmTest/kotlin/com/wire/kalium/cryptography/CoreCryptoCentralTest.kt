@@ -72,7 +72,7 @@ class CoreCryptoCentralTest {
                 assertEquals(clientId.userId.value, converted.userId.toString())
                 assertEquals(clientId.userId.domain, converted.domain)
             } finally {
-                converted.close()
+                converted.destroy()
             }
         } finally {
             nativeClientId.close()

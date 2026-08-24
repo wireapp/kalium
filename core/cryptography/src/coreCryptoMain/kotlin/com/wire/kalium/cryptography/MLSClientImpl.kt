@@ -253,7 +253,7 @@ class MLSClientImpl private constructor(
                         }
                     )
                 } finally {
-                    decryptedMessage.close()
+                    decryptedMessage.destroy()
                 }
             }
         } catch (throwable: CoreCryptoException.Mls) {
@@ -435,7 +435,7 @@ private class PendingCredentialSelection(
 private inline fun <T : Disposable, R> T.useNative(block: (T) -> R): R = try {
     block(this)
 } finally {
-    close()
+    destroy()
 }
 
 private inline fun <S, T : Disposable, R> List<S>.useNativeMapped(
@@ -447,20 +447,20 @@ private inline fun <S, T : Disposable, R> List<S>.useNativeMapped(
         forEach { nativeValues += transform(it) }
         block(nativeValues)
     } finally {
-        nativeValues.forEach { it.close() }
+        nativeValues.forEach { it.destroy() }
     }
 }
 
 private fun List<ClientId>.mapToCryptographyAndClose(): List<CryptoQualifiedClientId> = try {
     map { it.toCryptography() }
 } finally {
-    forEach { it.close() }
+    forEach { it.destroy() }
 }
 
 private fun List<com.wire.crypto.WireIdentity>.toCryptographyAndClose(): List<WireIdentity> = try {
     mapNotNull { it.toCryptography() }
 } finally {
-    forEach { it.close() }
+    forEach { it.destroy() }
 }
 
 private fun Map<Uuid, List<com.wire.crypto.WireIdentity>>.toCryptographyAndClose(): Map<String, List<WireIdentity>> = try {
@@ -470,7 +470,7 @@ private fun Map<Uuid, List<com.wire.crypto.WireIdentity>>.toCryptographyAndClose
 } finally {
     forEach { (userId, identities) ->
         userId.close()
-        identities.forEach { it.close() }
+        identities.forEach { it.destroy() }
     }
 }
 

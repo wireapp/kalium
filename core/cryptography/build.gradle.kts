@@ -40,7 +40,7 @@ val coreCryptoJvmNativeArtifacts by configurations.creating {
 }
 
 dependencies {
-    coreCryptoJvmNativeArtifacts(libs.coreCryptoJvmNatives)
+    coreCryptoJvmNativeArtifacts(libs.coreCryptoJvm)
 }
 
 val coreCryptoJvmNativeResources = layout.buildDirectory.dir("generated/coreCryptoJvmNativeResources")
@@ -109,16 +109,14 @@ kotlin {
         val nonJsMain by creating {
             dependsOn(commonMain)
             kotlin.srcDir("src/coreCryptoMain/kotlin")
-            dependencies {
-                implementation(libs.coreCryptoKmp)
-            }
         }
         val jvmMain by getting {
             dependsOn(nonJsMain)
             addCommonKotlinJvmSourceDir()
-            // core-crypto-kmp's JVM metadata does not attach Linux native resources.
-            // Embed only the native files from the official target artifact, excluding its
-            // duplicate binding classes from the JVM runtime classpath.
+            dependencies {
+                implementation(libs.coreCryptoJvm)
+            }
+            // Embed the native libraries carried by the JVM artifact as runtime resources.
             resources.srcDir(coreCryptoJvmNativeResources)
         }
 
@@ -128,10 +126,17 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.androidCrypto)
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
             }
         }
         val appleMain by getting {
             dependsOn(nonJsMain)
+            dependencies {
+                implementation(libs.coreCryptoKmp)
+            }
         }
         val jsMain by getting {
             kotlin.srcDir("src/coreCryptoMain/kotlin")
