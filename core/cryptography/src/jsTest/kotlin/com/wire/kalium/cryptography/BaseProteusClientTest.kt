@@ -18,22 +18,19 @@
 
 package com.wire.kalium.cryptography
 
-import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlin.random.Random
 
 actual open class BaseProteusClientTest actual constructor() {
 
-    private val testCoroutineScheduler = TestCoroutineScheduler()
-
     actual fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef {
-        // TODO currently expects an in memory proteus client
-        return ProteusStoreRef("ref")
+        return ProteusStoreRef("proteus-${userId.value}-${Random.nextLong()}")
     }
 
     actual suspend fun createProteusClient(
         proteusStore: ProteusStoreRef,
         databaseKey: ProteusDBSecret
     ): ProteusClient {
-        TODO()
+        return coreCryptoCentral(proteusStore.value, databaseKey.passphrase).proteusClient()
     }
 
 }

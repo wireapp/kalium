@@ -22,6 +22,8 @@ import kotlinx.coroutines.test.runTest
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class CoreCryptoCentralTest {
@@ -35,16 +37,60 @@ class CoreCryptoCentralTest {
 
         try {
             val central = coreCryptoCentral(keyStorePath, passphrase)
-            central.exportDatabaseCopy(exportPath)
+            try {
+                central.exportDatabaseCopy(exportPath)
 
-            val originalDbFile = File("$keyStorePath/keystore")
-            val exportedDbFile = File(exportPath)
+                val originalDbFile = File("$keyStorePath/keystore")
+                val exportedDbFile = File(exportPath)
 
-            assertTrue(originalDbFile.exists())
-            assertTrue(exportedDbFile.exists())
-            assertTrue(exportedDbFile.length() > 0)
+                assertTrue(originalDbFile.exists())
+                assertTrue(exportedDbFile.exists())
+                assertTrue(exportedDbFile.length() > 0)
+            } finally {
+                central.close()
+            }
         } finally {
             root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun givenShortHexClientId_whenConvertingToCoreCrypto_thenItIsZeroPadded() {
+        val clientId = CryptoQualifiedClientId(
+            value = "fb4b58152e20",
+            userId = CryptoQualifiedID(
+                value = "d8d84316-a892-4983-a2f7-1041fca26e7d",
+                domain = "wire.example"
+            )
+        )
+
+        val nativeClientId = clientId.toCoreCryptoClientId()
+        try {
+            val converted = nativeClientId.deserialize()
+            try {
+                assertEquals("0000fb4b58152e20", converted.deviceId.toHexString())
+                assertEquals(clientId.userId.value, converted.userId.toString())
+                assertEquals(clientId.userId.domain, converted.domain)
+            } finally {
+                converted.close()
+            }
+        } finally {
+            nativeClientId.close()
+        }
+    }
+
+    @Test
+    fun givenNonHexClientId_whenConvertingToCoreCrypto_thenItFails() {
+        val clientId = CryptoQualifiedClientId(
+            value = "not-a-device-id",
+            userId = CryptoQualifiedID(
+                value = "d8d84316-a892-4983-a2f7-1041fca26e7d",
+                domain = "wire.example"
+            )
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            clientId.toCoreCryptoClientId()
         }
     }
 }

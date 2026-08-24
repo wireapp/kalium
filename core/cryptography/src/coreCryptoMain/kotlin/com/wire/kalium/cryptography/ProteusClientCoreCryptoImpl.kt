@@ -18,7 +18,7 @@
 
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.CoreCryptoClient
+import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.ProteusAutoPrekeyBundle
@@ -34,14 +34,19 @@ import com.wire.crypto.ProteusException as ProteusExceptionNative
 
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(
-    private val coreCrypto: CoreCryptoClient,
+    private val coreCrypto: CoreCrypto,
+    private val onClose: () -> Unit
 ) : ProteusClient {
 
     private val mutex = Mutex()
     private val existingSessionsCache = mutableSetOf<CryptoSessionId>()
 
     override suspend fun close() {
-        coreCrypto.close()
+        try {
+            coreCrypto.close()
+        } finally {
+            onClose()
+        }
     }
 
     override suspend fun <R> transaction(
@@ -65,11 +70,11 @@ class ProteusClientCoreCryptoImpl private constructor(
         }
 
         override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): String {
-            return coreContext.proteusFingerprintPrekeybundle(Base64.decode(preKey.pkb))
+            return CoreCrypto.proteusFingerprintPrekeybundle(Base64.decode(preKey.pkb))
         }
 
         override suspend fun newLastResortPreKey(): PreKeyCrypto {
-            val id = coreContext.proteusLastResortPrekeyId()
+            val id = CoreCrypto.proteusLastResortPrekeyId()
             val pkb = coreContext.proteusLastResortPrekey()
             return ProteusAutoPrekeyBundle(id, pkb).toCryptography()
         }
@@ -163,7 +168,7 @@ class ProteusClientCoreCryptoImpl private constructor(
     override suspend fun newLastResortPreKey(): PreKeyCrypto {
         return wrapException {
             coreCrypto.transaction("newLastResortPreKey") { context ->
-                val id = context.proteusLastResortPrekeyId()
+                val id = CoreCrypto.proteusLastResortPrekeyId()
                 val pkb = context.proteusLastResortPrekey()
                 ProteusAutoPrekeyBundle(id, pkb).toCryptography()
             }
@@ -225,13 +230,17 @@ class ProteusClientCoreCryptoImpl private constructor(
             }
 
         @Suppress("TooGenericExceptionCaught", "ThrowsCount")
-        suspend operator fun invoke(coreCrypto: CoreCryptoClient, rootDir: String): ProteusClientCoreCryptoImpl {
+        suspend operator fun invoke(
+            coreCrypto: CoreCrypto,
+            rootDir: String,
+            onClose: () -> Unit = {}
+        ): ProteusClientCoreCryptoImpl {
             try {
                 deleteCryptoBoxIfNecessary(rootDir)
                 coreCrypto.transaction("proteusInit") {
                     it.proteusInit()
                 }
-                return ProteusClientCoreCryptoImpl(coreCrypto)
+                return ProteusClientCoreCryptoImpl(coreCrypto, onClose)
             } catch (e: ProteusExceptionNative) {
                 val mappedError = mapProteusException(e)
                 throw ProteusException(

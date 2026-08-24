@@ -2488,31 +2488,19 @@ sealed interface com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult
     }
 
     final class Initialized : com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult { // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized|null[0]
-        constructor <init>(kotlin/String, kotlinx.serialization.json/JsonObject, com.wire.kalium.logic.data.e2ei/Nonce, kotlin/String, com.wire.kalium.cryptography/NewAcmeAuthz, com.wire.kalium.cryptography/NewAcmeAuthz, kotlin/Boolean = ...) // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.<init>|<init>(kotlin.String;kotlinx.serialization.json.JsonObject;com.wire.kalium.logic.data.e2ei.Nonce;kotlin.String;com.wire.kalium.cryptography.NewAcmeAuthz;com.wire.kalium.cryptography.NewAcmeAuthz;kotlin.Boolean){}[0]
+        constructor <init>(kotlin/String, kotlinx.serialization.json/JsonObject, kotlin/Boolean = ...) // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.<init>|<init>(kotlin.String;kotlinx.serialization.json.JsonObject;kotlin.Boolean){}[0]
 
-        final val dPopAuthorizations // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.dPopAuthorizations|{}dPopAuthorizations[0]
-            final fun <get-dPopAuthorizations>(): com.wire.kalium.cryptography/NewAcmeAuthz // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.dPopAuthorizations.<get-dPopAuthorizations>|<get-dPopAuthorizations>(){}[0]
         final val isNewClientRegistration // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.isNewClientRegistration|{}isNewClientRegistration[0]
             final fun <get-isNewClientRegistration>(): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.isNewClientRegistration.<get-isNewClientRegistration>|<get-isNewClientRegistration>(){}[0]
-        final val lastNonce // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.lastNonce|{}lastNonce[0]
-            final fun <get-lastNonce>(): com.wire.kalium.logic.data.e2ei/Nonce // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.lastNonce.<get-lastNonce>|<get-lastNonce>(){}[0]
         final val oAuthClaims // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.oAuthClaims|{}oAuthClaims[0]
             final fun <get-oAuthClaims>(): kotlinx.serialization.json/JsonObject // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.oAuthClaims.<get-oAuthClaims>|<get-oAuthClaims>(){}[0]
-        final val oidcAuthorizations // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.oidcAuthorizations|{}oidcAuthorizations[0]
-            final fun <get-oidcAuthorizations>(): com.wire.kalium.cryptography/NewAcmeAuthz // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.oidcAuthorizations.<get-oidcAuthorizations>|<get-oidcAuthorizations>(){}[0]
-        final val orderLocation // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.orderLocation|{}orderLocation[0]
-            final fun <get-orderLocation>(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.orderLocation.<get-orderLocation>|<get-orderLocation>(){}[0]
         final val target // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.target|{}target[0]
             final fun <get-target>(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.target.<get-target>|<get-target>(){}[0]
 
         final fun component1(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component1|component1(){}[0]
         final fun component2(): kotlinx.serialization.json/JsonObject // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component2|component2(){}[0]
-        final fun component3(): com.wire.kalium.logic.data.e2ei/Nonce // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component3|component3(){}[0]
-        final fun component4(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component4|component4(){}[0]
-        final fun component5(): com.wire.kalium.cryptography/NewAcmeAuthz // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component5|component5(){}[0]
-        final fun component6(): com.wire.kalium.cryptography/NewAcmeAuthz // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component6|component6(){}[0]
-        final fun component7(): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component7|component7(){}[0]
-        final fun copy(kotlin/String = ..., kotlinx.serialization.json/JsonObject = ..., com.wire.kalium.logic.data.e2ei/Nonce = ..., kotlin/String = ..., com.wire.kalium.cryptography/NewAcmeAuthz = ..., com.wire.kalium.cryptography/NewAcmeAuthz = ..., kotlin/Boolean = ...): com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.copy|copy(kotlin.String;kotlinx.serialization.json.JsonObject;com.wire.kalium.logic.data.e2ei.Nonce;kotlin.String;com.wire.kalium.cryptography.NewAcmeAuthz;com.wire.kalium.cryptography.NewAcmeAuthz;kotlin.Boolean){}[0]
+        final fun component3(): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component3|component3(){}[0]
+        final fun copy(kotlin/String = ..., kotlinx.serialization.json/JsonObject = ..., kotlin/Boolean = ...): com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.copy|copy(kotlin.String;kotlinx.serialization.json.JsonObject;kotlin.Boolean){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.toString|toString(){}[0]
@@ -5690,17 +5678,6 @@ final value class com.wire.kalium.logic.data.asset/DBFolder { // com.wire.kalium
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.asset/DBFolder.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.asset/DBFolder.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.asset/DBFolder.toString|toString(){}[0]
-}
-
-final value class com.wire.kalium.logic.data.e2ei/Nonce { // com.wire.kalium.logic.data.e2ei/Nonce|null[0]
-    constructor <init>(kotlin/String) // com.wire.kalium.logic.data.e2ei/Nonce.<init>|<init>(kotlin.String){}[0]
-
-    final val value // com.wire.kalium.logic.data.e2ei/Nonce.value|{}value[0]
-        final fun <get-value>(): kotlin/String // com.wire.kalium.logic.data.e2ei/Nonce.value.<get-value>|<get-value>(){}[0]
-
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.e2ei/Nonce.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.e2ei/Nonce.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.data.e2ei/Nonce.toString|toString(){}[0]
 }
 
 final value class com.wire.kalium.logic.data.publicuser.model/UserSearchResult { // com.wire.kalium.logic.data.publicuser.model/UserSearchResult|null[0]

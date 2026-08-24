@@ -17,23 +17,6 @@
  */
 package com.wire.kalium.cryptography
 
-import com.ionspin.kotlin.crypto.LibsodiumInitializer
-
-public object LibsodiumInitializer {
-
-    public suspend fun initializeLibsodiumIfNeeded() {
-        if (!LibsodiumInitializer.isInitialized()) {
-            try {
-                LibsodiumInitializer.initialize()
-            } catch (ise: IllegalStateException) {
-                // Needed because of https://github.com/ionspin/kotlin-multiplatform-libsodium/issues/67
-                // Code 1 is fine. It means Libsodium was already initialised.
-                // This can happen when multiple threads are initializing libsodium,
-                // or when another library (like corecrypto), has initialised it.
-                if (ise.message != "Libsodium returned an unexpected return code 1") {
-                    throw ise
-                }
-            }
-        }
-    }
+public expect object LibsodiumInitializer {
+    public suspend fun initializeLibsodiumIfNeeded()
 }

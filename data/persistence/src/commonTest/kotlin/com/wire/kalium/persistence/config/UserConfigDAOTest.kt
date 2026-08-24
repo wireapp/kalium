@@ -140,4 +140,26 @@ class UserConfigDAOTest : BaseDatabaseTest() {
         userConfigDAO.setShouldFetchE2EITrustAnchors(true)
         assertTrue(userConfigDAO.getShouldFetchE2EITrustAnchorHasRun())
     }
+
+    @Test
+    fun givenE2EIAcquisitionSnapshot_whenStoredAndDeleted_thenItCanNoLongerBeRead() = runTest {
+        val snapshot = "opaque-snapshot"
+
+        userConfigDAO.setE2EIAcquisitionSnapshot(snapshot)
+        assertEquals(snapshot, userConfigDAO.getE2EIAcquisitionSnapshot())
+
+        userConfigDAO.deleteE2EIAcquisitionSnapshot()
+        assertNull(userConfigDAO.getE2EIAcquisitionSnapshot())
+    }
+
+    @Test
+    fun givenE2EIRotationCheckpoint_whenStoredAndDeleted_thenItCanNoLongerBeRead() = runTest {
+        val checkpoint = "opaque-rotation-checkpoint"
+
+        userConfigDAO.setE2EIRotationCheckpoint(checkpoint)
+        assertEquals(checkpoint, userConfigDAO.getE2EIRotationCheckpoint())
+
+        userConfigDAO.deleteE2EIRotationCheckpoint()
+        assertNull(userConfigDAO.getE2EIRotationCheckpoint())
+    }
 }

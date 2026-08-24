@@ -20,7 +20,9 @@ plugins {
 }
 
 kaliumLibrary {
-    multiplatform { }
+    multiplatform {
+        enableJs.set(true)
+    }
 }
 
 kotlin {
@@ -32,6 +34,18 @@ kotlin {
                 // Libsodium
                 api(libs.libsodiumBindingsMP)
             }
+        }
+        val nonJsMain by creating {
+            dependsOn(commonMain)
+        }
+        val jvmMain by getting {
+            dependsOn(nonJsMain)
+        }
+        val androidMain by getting {
+            dependsOn(nonJsMain)
+        }
+        val appleMain by getting {
+            dependsOn(nonJsMain)
         }
     }
 }

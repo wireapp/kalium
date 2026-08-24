@@ -29,7 +29,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@IgnoreJS
 @IgnoreIOS
 class MLSClientTest : BaseMLSClientTest() {
 
@@ -101,13 +100,13 @@ class MLSClientTest : BaseMLSClientTest() {
         }
         val welcome = bobArrangement.sendCommitBundleFlow.first()
 
-        val welcomeBundle = aliceClient.transaction { it.processWelcomeMessage(welcome.first.welcome!!) }
+        val groupId = aliceClient.transaction { it.processWelcomeMessage(welcome.welcome!!) }
 
         bobClient.transaction { it.updateKeyingMaterial(MLS_CONVERSATION_ID) }
 
         val keyMaterialCommit = bobArrangement.sendCommitBundleFlow.first()
 
-        val result = aliceClient.transaction { it.decryptMessage(welcomeBundle.groupId, keyMaterialCommit.first.commit) }
+        val result = aliceClient.transaction { it.decryptMessage(groupId, keyMaterialCommit.commit) }
 
         assertNull((result as MLSDecryptResult.Success).messages.first().message)
     }
@@ -133,10 +132,10 @@ class MLSClientTest : BaseMLSClientTest() {
             it.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
             it.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
         }
-        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
-        val welcomeBundle = aliceClient.transaction { it.processWelcomeMessage(welcome) }
+        val welcome = bobArrangement.sendCommitBundleFlow.first().welcome!!
+        val groupId = aliceClient.transaction { it.processWelcomeMessage(welcome) }
 
-        assertEquals(MLS_CONVERSATION_ID, welcomeBundle.groupId)
+        assertEquals(MLS_CONVERSATION_ID, groupId)
     }
 
     @Test
@@ -160,12 +159,12 @@ class MLSClientTest : BaseMLSClientTest() {
             it.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
             it.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
         }
-        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
-        val welcomeBundle = aliceClient.transaction { it.processWelcomeMessage(welcome) }
+        val welcome = bobArrangement.sendCommitBundleFlow.first().welcome!!
+        val groupId = aliceClient.transaction { it.processWelcomeMessage(welcome) }
 
-        val applicationMessage = aliceClient.transaction { it.encryptMessage(welcomeBundle.groupId, PLAIN_TEXT.encodeToByteArray()) }
+        val applicationMessage = aliceClient.transaction { it.encryptMessage(groupId, PLAIN_TEXT.encodeToByteArray()) }
         val bundle = bobClient.transaction {
-            (it.decryptMessage(welcomeBundle.groupId, applicationMessage) as MLSDecryptResult.Success).messages.first()
+            (it.decryptMessage(groupId, applicationMessage) as MLSDecryptResult.Success).messages.first()
         }
 
         assertNotNull(bundle.senderClientId)
@@ -194,10 +193,10 @@ class MLSClientTest : BaseMLSClientTest() {
             it.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
             it.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
         }
-        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
-        val welcomeBundle = aliceClient.transaction { it.processWelcomeMessage(welcome) }
+        val welcome = bobArrangement.sendCommitBundleFlow.first().welcome!!
+        val groupId = aliceClient.transaction { it.processWelcomeMessage(welcome) }
 
-        assertEquals(MLS_CONVERSATION_ID, welcomeBundle.groupId)
+        assertEquals(MLS_CONVERSATION_ID, groupId)
     }
 
     @Test
@@ -228,7 +227,7 @@ class MLSClientTest : BaseMLSClientTest() {
                 listOf(aliceClient.transaction { it.generateKeyPackages(1) }.first())
             )
         }
-        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+        val welcome = bobArrangement.sendCommitBundleFlow.first().welcome!!
         aliceClient.transaction { it.processWelcomeMessage(welcome) }
 
         bobClient.transaction {
@@ -237,7 +236,7 @@ class MLSClientTest : BaseMLSClientTest() {
                 listOf(carolClient.transaction { it.generateKeyPackages(1) }.first())
             )
         }
-        val commit = bobArrangement.sendCommitBundleFlow.first().first.commit
+        val commit = bobArrangement.sendCommitBundleFlow.first().commit
 
         val result = aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, commit) }
         assertNull((result as MLSDecryptResult.Success).messages.first().message)
@@ -274,14 +273,14 @@ class MLSClientTest : BaseMLSClientTest() {
             it.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
             it.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
         }
-        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
-        val welcomeBundle = aliceClient.transaction { it.processWelcomeMessage(welcome) }
+        val welcome = bobArrangement.sendCommitBundleFlow.first().welcome!!
+        val groupId = aliceClient.transaction { it.processWelcomeMessage(welcome) }
 
 
         val clientRemovalList = listOf(CAROL1.qualifiedClientId)
-        bobClient.transaction { it.removeMember(welcomeBundle.groupId, clientRemovalList) }
-        val commit = bobArrangement.sendCommitBundleFlow.first().first.commit
-        val result = aliceClient.transaction { it.decryptMessage(welcomeBundle.groupId, commit) }
+        bobClient.transaction { it.removeMember(groupId, clientRemovalList) }
+        val commit = bobArrangement.sendCommitBundleFlow.first().commit
+        val result = aliceClient.transaction { it.decryptMessage(groupId, commit) }
         assertNull((result as MLSDecryptResult.Success).messages.first().message)
     }
 
@@ -315,7 +314,7 @@ class MLSClientTest : BaseMLSClientTest() {
                 listOf(aliceClient.transaction { it.generateKeyPackages(1) }.first())
             )
         }
-        val welcomeAlice = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+        val welcomeAlice = bobArrangement.sendCommitBundleFlow.first().welcome!!
         aliceClient.transaction { it.processWelcomeMessage(welcomeAlice) }
 
         // Bob adds Carol but Alice does NOT process that commit => out of order for Alice later.
@@ -329,7 +328,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
         // Bob immediately removes Carol => definitely out of order for Alice.
         bobClient.transaction { it.removeMember(MLS_CONVERSATION_ID, listOf(CAROL1.qualifiedClientId)) }
-        val commitRemoveCarol = bobArrangement.sendCommitBundleFlow.first().first.commit
+        val commitRemoveCarol = bobArrangement.sendCommitBundleFlow.first().commit
 
         // Alice tries to decrypt the removeCarol commit, which references an epoch Alice hasn't seen yet.
         val result = aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol) }
@@ -365,7 +364,7 @@ class MLSClientTest : BaseMLSClientTest() {
                 listOf(aliceClient.transaction { it.generateKeyPackages(1) }.first())
             )
         }
-        val welcomeForAlice = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+        val welcomeForAlice = bobArrangement.sendCommitBundleFlow.first().welcome!!
         aliceClient.transaction { it.processWelcomeMessage(welcomeForAlice) }
 
         // Bob adds Carol, but Alice never sees this commit => out-of-order for Alice
@@ -376,11 +375,11 @@ class MLSClientTest : BaseMLSClientTest() {
                 listOf(carolClient.transaction { it.generateKeyPackages(1) }.first())
             )
         }
-        val commitAddCarol = bobArrangement.sendCommitBundleFlow.first().first.commit
+        val commitAddCarol = bobArrangement.sendCommitBundleFlow.first().commit
 
         // Immediately Bob removes Carol => definitely out-of-order for Alice
         bobClient.transaction { it.removeMember(MLS_CONVERSATION_ID, listOf(CAROL1.qualifiedClientId)) }
-        val commitRemoveCarol = bobArrangement.sendCommitBundleFlow.first().first.commit
+        val commitRemoveCarol = bobArrangement.sendCommitBundleFlow.first().commit
 
         // Alice tries to decrypt the removeCarol commit first => out-of-order => should buffer
         val removeResult = aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, commitRemoveCarol) }
@@ -437,7 +436,6 @@ class MLSClientTest : BaseMLSClientTest() {
     companion object {
         val externalSenderKey = ByteArray(32)
         val DEFAULT_CIPHER_SUITES = MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-        val ALLOWED_CIPHER_SUITES = listOf(MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
         const val MLS_CONVERSATION_ID = "JfflcPtUivbg+1U3Iyrzsh5D2ui/OGS5Rvf52ipH5KY="
         const val PLAIN_TEXT = "Hello World"
         val ALICE1 = SampleUser(
@@ -461,11 +459,8 @@ class MLSClientTest : BaseMLSClientTest() {
     class Arrangement private constructor(
         val user: SampleUser,
         val mlsClient: MLSClient,
-        val sendMessageFlow: MutableSharedFlow<Pair<ByteArray, MlsTransportResponse>>,
-        val sendCommitBundleFlow: MutableSharedFlow<Pair<CommitBundle, MlsTransportResponse>>,
-        val epochChangeFlow: MutableSharedFlow<Pair<MLSGroupId, ULong>>,
-        private val sendMessageResponses: MutableList<MlsTransportResponse>,
-        private val sendCommitResponses: MutableList<MlsTransportResponse>
+        val sendCommitBundleFlow: MutableSharedFlow<CommitBundle>,
+        val epochChangeFlow: MutableSharedFlow<Pair<MLSGroupId, ULong>>
     ) {
 
         companion object {
@@ -473,34 +468,18 @@ class MLSClientTest : BaseMLSClientTest() {
                 user: SampleUser,
                 createMLSClient: suspend (
                     clientId: CryptoQualifiedClientId,
-                    allowedCipherSuites: List<MLSCiphersuite>,
                     defaultCipherSuite: MLSCiphersuite,
                     mlsTransporter: MLSTransporter,
                     epochObserver: MLSEpochObserver,
                     coroutineScope: CoroutineScope
-                ) -> MLSClient,
-                initialSendMessageResponses: List<MlsTransportResponse> = listOf(MlsTransportResponse.Success),
-                initialSendCommitResponses: List<MlsTransportResponse> = listOf(MlsTransportResponse.Success)
+                ) -> MLSClient
             ): Arrangement {
-                val sendMessageFlow = MutableSharedFlow<Pair<ByteArray, MlsTransportResponse>>(replay = 1)
-                val sendCommitBundleFlow = MutableSharedFlow<Pair<CommitBundle, MlsTransportResponse>>(replay = 1)
+                val sendCommitBundleFlow = MutableSharedFlow<CommitBundle>(replay = 1)
                 val epochChangeFlow = MutableSharedFlow<Pair<MLSGroupId, ULong>>(replay = 1)
 
-                val sendMessageResponses = initialSendMessageResponses.toMutableList()
-                val sendCommitResponses = initialSendCommitResponses.toMutableList()
-
                 val mlsTransporter = object : MLSTransporter {
-                    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
-                        val response = sendCommitResponses.removeFirstOrNull() ?: MlsTransportResponse.Success
-                        sendMessageFlow.emit(mlsMessage to response)
-                        return response
-                    }
-
-                    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
-                        val response = sendCommitResponses.removeFirstOrNull() ?: MlsTransportResponse.Success
-
-                        sendCommitBundleFlow.emit(commitBundle to response)
-                        return response
+                    override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
+                        sendCommitBundleFlow.emit(commitBundle)
                     }
                 }
 
@@ -512,7 +491,6 @@ class MLSClientTest : BaseMLSClientTest() {
 
                 val mlsClient = createMLSClient(
                     user.qualifiedClientId,
-                    ALLOWED_CIPHER_SUITES,
                     DEFAULT_CIPHER_SUITES,
                     mlsTransporter,
                     epochObserver,
@@ -522,21 +500,10 @@ class MLSClientTest : BaseMLSClientTest() {
                 return Arrangement(
                     user,
                     mlsClient,
-                    sendMessageFlow,
                     sendCommitBundleFlow,
-                    epochChangeFlow,
-                    sendMessageResponses,
-                    sendCommitResponses,
+                    epochChangeFlow
                 )
             }
-        }
-
-        suspend fun addSendMessageResponse(response: MlsTransportResponse) {
-            sendMessageResponses.add(response)
-        }
-
-        suspend fun addSendCommitBundleResponse(response: MlsTransportResponse) {
-            sendCommitResponses.add(response)
         }
     }
 

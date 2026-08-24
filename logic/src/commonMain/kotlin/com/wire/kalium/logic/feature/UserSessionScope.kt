@@ -937,6 +937,7 @@ public class UserSessionScope internal constructor(
         get() = E2EIRepositoryImpl(
             authenticatedNetworkContainer.e2eiApi,
             globalScope.unboundNetworkContainer.acmeApi,
+            globalScope.unboundNetworkContainer.cellsClient,
             e2EIClientProvider,
             mlsClientProvider,
             clientIdProvider,
@@ -950,9 +951,7 @@ public class UserSessionScope internal constructor(
         EI2EIClientProviderImpl(
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            userRepository = userRepository,
-            selfUserId = userId,
-            cryptoStateChangeHookNotifier = currentCryptoStateChangeHookNotifier
+            userRepository = userRepository
         )
     }
 
@@ -2890,10 +2889,9 @@ public class UserSessionScope internal constructor(
 
     public val checkCrlRevocationList: CheckCrlRevocationListUseCase
         get() = CheckCrlRevocationListUseCase(
-            certificateRevocationListRepository,
-            checkRevocationList,
-            cryptoTransactionProvider,
-            userScopedLogger
+            e2eiRepository = e2eiRepository,
+            isE2EIEnabledUseCase = isE2EIEnabled,
+            kaliumLogger = userScopedLogger
         )
 
     private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase

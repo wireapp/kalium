@@ -282,10 +282,9 @@ public class UserScope internal constructor(
     internal val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase
         get() =
             SyncCertificateRevocationListUseCaseImpl(
-                certificateRevocationListRepository = certificateRevocationListRepository,
                 incrementalSyncRepository = incrementalSyncRepository,
-                revocationListChecker = checkRevocationList,
-                transactionProvider = transactionProvider,
+                e2eiRepository = e2EIRepository,
+                isE2EIEnabledUseCase = isE2EIEnabledUseCase,
                 kaliumLogger = userScopedLogger,
             )
 

@@ -17,34 +17,27 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
+import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
 
-/**
- * This use case will wait until the sync is done and then check the CRLs if needed.
- */
+/** Wait until incremental sync is live, then check installed X.509 credentials once. */
 internal interface SyncCertificateRevocationListUseCase {
     suspend operator fun invoke()
 }
 
 /**
  * Base implementation of [SyncCertificateRevocationListUseCase].
- * @param certificateRevocationListRepository The CRL repository.
  * @param incrementalSyncRepository The incremental sync repository.
- * @param revocationListChecker The check revocation list use case.
  */
 internal class SyncCertificateRevocationListUseCaseImpl internal constructor(
-    private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val revocationListChecker: RevocationListChecker,
-    private val transactionProvider: CryptoTransactionProvider,
+    private val e2eiRepository: E2EIRepository,
+    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     kaliumLogger: KaliumLogger
 ) : SyncCertificateRevocationListUseCase {
 
@@ -54,19 +47,12 @@ internal class SyncCertificateRevocationListUseCaseImpl internal constructor(
         logger.d("Starting to monitor")
         incrementalSyncRepository.incrementalSyncState
             .first { it is IncrementalSyncStatus.Live }
-            .let {
-                logger.i("Checking certificate revocation list (CRL)..")
-                certificateRevocationListRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
-                    if (crl.expiration < Clock.System.now().epochSeconds.toULong()) {
-                        transactionProvider.mlsTransaction("SyncCertificateRevocationList") { mlsContext ->
-                            revocationListChecker.check(mlsContext, crl.url).map { newExpirationTime ->
-                                newExpirationTime?.let {
-                                    certificateRevocationListRepository.addOrUpdateCRL(crl.url, it)
-                                }
-                            }
-                        }
-                    }
-                }
+
+        if (isE2EIEnabledUseCase()) {
+            logger.i("Checking installed X.509 credentials")
+            e2eiRepository.checkCredentials().onFailure { failure ->
+                logger.w("Checking installed X.509 credentials failed: $failure")
             }
+        }
     }
 }

@@ -5,7 +5,7 @@
 
 Kalium is Wire's Kotlin Multiplatform SDK for messaging, end-to-end encryption, conversation state, backup, calling integration, and Wire backend access.
 
-It is primarily built for Wire clients and currently targets Android, JVM, and Apple platforms. JavaScript support exists only where individual modules enable it.
+It is primarily built for Wire clients and currently targets Android, JVM, and Apple platforms. JavaScript support exists where individual modules enable it.
 
 ## Use Kalium
 
@@ -25,7 +25,7 @@ Use the version from GitHub releases or Maven Central metadata.
 | --- | --- | --- |
 | Android | Supported | Main production target. |
 | JVM | Supported | Used by tests, tools, and the CLI sample. |
-| iOS/macOS Apple Silicon | Supported | Requires unified CoreCrypto; see [iOS build guide](docs/IOS_BUILD.md). |
+| iOS/macOS Apple Silicon | Supported | Uses the official CoreCrypto KMP dependency; see [iOS build guide](docs/IOS_BUILD.md). |
 | JavaScript | Limited | Experimental and module-dependent. |
 
 ## Build From Source
@@ -63,11 +63,9 @@ The libraries are written to `native/libs`.
 Kalium uses a few Gradle properties that consumers and contributors may need to set explicitly:
 
 ```bash
-./gradlew <task> -PUSE_UNIFIED_CORE_CRYPTO=true
 ./gradlew <task> -Pkalium.providerCacheScope=LOCAL
 ```
 
-- `USE_UNIFIED_CORE_CRYPTO` selects the unified `core-crypto-kmp` dependency. Apple builds require it to be `true`.
 - `kalium.providerCacheScope` controls provider-level caches. Consumer builds should set it explicitly to `LOCAL` or `GLOBAL`; this repository uses `LOCAL` for standalone builds.
 
 See [contributor setup](docs/CONTRIBUTING.md#build-configuration) for the longer explanation.

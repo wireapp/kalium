@@ -19,22 +19,33 @@
 package com.wire.kalium.cryptography
 
 import kotlinx.coroutines.CoroutineScope
+import kotlin.random.Random
 
 actual open class BaseMLSClientTest actual constructor() {
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<MLSCiphersuite>,
         defaultCipherSuite: MLSCiphersuite,
         mlsTransporter: MLSTransporter,
         epochObserver: MLSEpochObserver,
         coroutineScope: CoroutineScope
     ): MLSClient {
-        TODO("Not yet implemented")
+        return createCoreCrypto(clientId).mlsClient(
+            clientId,
+            defaultCipherSuite,
+            mlsTransporter,
+            epochObserver,
+            coroutineScope
+        )
     }
 
     actual suspend fun createCoreCrypto(
         clientId: CryptoQualifiedClientId,
     ): CoreCryptoCentral {
-        TODO("Not yet implemented")
+        val databaseName = "mls-$clientId-${Random.nextLong()}"
+        return coreCryptoCentral(databaseName, ByteArray(DATABASE_KEY_SIZE))
+    }
+
+    private companion object {
+        const val DATABASE_KEY_SIZE = 32
     }
 }

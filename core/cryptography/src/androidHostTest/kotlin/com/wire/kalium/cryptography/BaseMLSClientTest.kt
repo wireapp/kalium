@@ -25,7 +25,6 @@ actual open class BaseMLSClientTest {
 
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<MLSCiphersuite>,
         defaultCipherSuite: MLSCiphersuite,
         mlsTransporter: MLSTransporter,
         epochObserver: MLSEpochObserver,
@@ -33,7 +32,6 @@ actual open class BaseMLSClientTest {
     ): MLSClient {
         return createCoreCrypto(clientId).mlsClient(
             clientId,
-            allowedCipherSuites,
             defaultCipherSuite,
             mlsTransporter,
             epochObserver,

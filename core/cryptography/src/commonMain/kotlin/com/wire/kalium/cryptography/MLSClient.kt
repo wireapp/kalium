@@ -51,7 +51,8 @@ open class GroupInfoBundle(
 data class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
-    val groupInfoBundle: GroupInfoBundle
+    val groupInfoBundle: GroupInfoBundle,
+    val encryptedMessage: ByteArray? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -64,6 +65,10 @@ data class CommitBundle(
             if (other.welcome == null) return false
             if (!welcome.contentEquals(other.welcome)) return false
         } else if (other.welcome != null) return false
+        if (encryptedMessage != null) {
+            if (other.encryptedMessage == null) return false
+            if (!encryptedMessage.contentEquals(other.encryptedMessage)) return false
+        } else if (other.encryptedMessage != null) return false
         return groupInfoBundle == other.groupInfoBundle
     }
 
@@ -71,27 +76,18 @@ data class CommitBundle(
         var result = commit.contentHashCode()
         result = 31 * result + (welcome?.contentHashCode() ?: 0)
         result = 31 * result + groupInfoBundle.hashCode()
+        result = 31 * result + (encryptedMessage?.contentHashCode() ?: 0)
         return result
     }
 }
-
-data class WelcomeBundle(
-    val groupId: MLSGroupId,
-    val crlNewDistributionPoints: List<String>?
-)
-
-data class RotateBundle(
-    var newKeyPackages: List<ByteArray>,
-    val crlNewDistributionPoints: List<String>?
-)
 
 data class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
-    val hasEpochChanged: Boolean,
     val identity: WireIdentity?,
-    val crlNewDistributionPoints: List<String>?
+    /** False when a removal commit made the local client inactive. Null for non-commit messages. */
+    val isActive: Boolean? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -105,18 +101,16 @@ data class DecryptedMessageBundle(
         } else if (other.message != null) return false
         if (commitDelay != other.commitDelay) return false
         if (senderClientId != other.senderClientId) return false
-        if (hasEpochChanged != other.hasEpochChanged) return false
         if (identity != other.identity) return false
-        return crlNewDistributionPoints == other.crlNewDistributionPoints
+        return isActive == other.isActive
     }
 
     override fun hashCode(): Int {
         var result = message?.contentHashCode() ?: 0
         result = 31 * result + (commitDelay?.hashCode() ?: 0)
         result = 31 * result + (senderClientId?.hashCode() ?: 0)
-        result = 31 * result + hasEpochChanged.hashCode()
         result = 31 * result + (identity?.hashCode() ?: 0)
-        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
+        result = 31 * result + (isActive?.hashCode() ?: 0)
         return result
     }
 }
@@ -141,11 +135,6 @@ enum class CredentialType {
     }
 }
 
-data class CrlRegistration(
-    var dirty: Boolean,
-    var expiration: ULong?
-)
-
 @Suppress("TooManyFunctions")
 interface MLSClient {
     /**
@@ -168,6 +157,12 @@ interface MLSClient {
      * @return ciphersuite used for the public key
      */
     suspend fun getPublicKey(): Pair<ByteArray, MLSCiphersuite>
+
+    /** Return the newest installed credential of the requested type. The caller owns the returned reference. */
+    suspend fun getCredentialRef(credentialType: CredentialType): CryptoCredentialRef?
+
+    /** Return all installed credentials of the requested type, newest first. The caller owns every returned reference. */
+    suspend fun getCredentialRefs(credentialType: CredentialType): List<CryptoCredentialRef>
 
     /**
      * Conversation E2EI verification status.

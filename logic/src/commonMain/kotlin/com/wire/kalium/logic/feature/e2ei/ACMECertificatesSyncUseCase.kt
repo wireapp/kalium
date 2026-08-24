@@ -38,8 +38,10 @@ internal class ACMECertificatesSyncUseCaseImpl(
 
     override suspend operator fun invoke() {
         if (isE2EIEnabledUseCase()) {
-            logger.i("Fetching federation certificates")
+            logger.i("Refreshing PKI certificates and checking installed credentials")
+            e2eiRepository.fetchAndSetTrustAnchors()
             e2eiRepository.fetchFederationCertificates()
+            e2eiRepository.checkCredentials()
         }
     }
 }

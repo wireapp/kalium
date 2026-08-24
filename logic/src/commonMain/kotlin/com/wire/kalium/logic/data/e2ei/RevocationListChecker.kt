@@ -30,30 +30,32 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 
 /**
- * Use case to check if the CRL is expired and if so, register CRL and update conversation statuses if there is a change.
+ * Compatibility facade for legacy CRL sync callers.
+ *
+ * Core Crypto v10 owns CRL discovery and retrieval through its PKI environment, so the URL is
+ * intentionally ignored and no legacy expiration value is returned.
  */
 internal interface RevocationListChecker {
     suspend fun check(mlsContext: MlsCoreCryptoContext, url: String): Either<CoreFailure, ULong?>
 }
 
 internal class RevocationListCheckerImpl(
-    private val certificateRevocationListRepository: CertificateRevocationListRepository,
+    @Suppress("UNUSED_PARAMETER") certificateRevocationListRepository: CertificateRevocationListRepository,
     private val featureSupport: FeatureSupport,
     private val userConfigRepository: UserConfigRepository,
 ) : RevocationListChecker {
     private val logger = kaliumLogger.withTextTag("CheckRevocationListUseCase")
-    override suspend fun check(mlsContext: MlsCoreCryptoContext, url: String): Either<CoreFailure, ULong?> {
+    override suspend fun check(
+        mlsContext: MlsCoreCryptoContext,
+        @Suppress("UNUSED_PARAMETER") url: String
+    ): Either<CoreFailure, ULong?> {
         val isE2EIEnabled = getIsE2EIEnabled()
 
         return if (isE2EIEnabled) {
-            logger.i("checking crl url: $url")
-            certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
-                    logger.i("registering crl..")
-                    wrapMLSRequest {
-                        mlsContext.registerCrl(url, it).run {
-                            this.expiration
-                        }
-                    }
+            logger.i("checking X509 credentials; Core Crypto manages CRL retrieval through the PKI environment")
+            wrapMLSRequest {
+                mlsContext.checkCredentials()
+                null
             }
         } else Either.Left(E2EIFailure.Disabled)
     }

@@ -644,20 +644,6 @@ public abstract interface class com/wire/kalium/logic/data/conversation/ResetMLS
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class com/wire/kalium/logic/data/e2ei/Nonce {
-	public static final synthetic fun box-impl (Ljava/lang/String;)Lcom/wire/kalium/logic/data/e2ei/Nonce;
-	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
-	public fun equals (Ljava/lang/Object;)Z
-	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
-	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
-	public final fun getValue ()Ljava/lang/String;
-	public fun hashCode ()I
-	public static fun hashCode-impl (Ljava/lang/String;)I
-	public fun toString ()Ljava/lang/String;
-	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
-	public final synthetic fun unbox-impl ()Ljava/lang/String;
-}
-
 public final class com/wire/kalium/logic/data/event/EventExtentionKt {
 	public static final fun toEventResponseToStore (Lcom/wire/kalium/network/api/authenticated/notification/EventResponse;)Lcom/wire/kalium/network/api/authenticated/notification/EventResponseToStore;
 }
@@ -4855,23 +4841,15 @@ public final class com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResu
 }
 
 public final class com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized : com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult {
-	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun component3-2K2h68k ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun component6 ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun component7 ()Z
-	public final fun copy-sYlRG1Y (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Z)Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
-	public static synthetic fun copy-sYlRG1Y$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;ZILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
+	public final fun component3 ()Z
+	public final fun copy (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Z)Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ZILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getDPopAuthorizations ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun getLastNonce-2K2h68k ()Ljava/lang/String;
 	public final fun getOAuthClaims ()Lkotlinx/serialization/json/JsonObject;
-	public final fun getOidcAuthorizations ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun getOrderLocation ()Ljava/lang/String;
 	public final fun getTarget ()Ljava/lang/String;
 	public fun hashCode ()I
 	public final fun isNewClientRegistration ()Z

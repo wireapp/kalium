@@ -39,9 +39,6 @@ mutationTesting {
     targetTests.set(listOf("com.wire.kalium.logic.sync.receiver.*"))
 }
 
-val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
-    ?: error("USE_UNIFIED_CORE_CRYPTO not set")
-
 kotlin {
     explicitApi()
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
@@ -114,9 +111,7 @@ kotlin {
                 configurations.all {
                     exclude(group = "co.touchlab", module = "stately-strict-jvm")
                 }
-                if (useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoKmp)
-                }
+                implementation(libs.coreCryptoKmp)
             }
         }
         val commonTest by getting {
@@ -157,9 +152,6 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
-                if (!useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoJvm)
-                }
             }
         }
         val jvmTest by getting {
@@ -171,12 +163,6 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.work)
-                if (!useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                        exclude("androidx.core")
-                        exclude("androidx.appcompat")
-                    }
-                }
             }
         }
         val androidHostTest by getting {

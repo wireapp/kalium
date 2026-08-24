@@ -27,6 +27,8 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CredentialType
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -63,14 +65,42 @@ internal class RegisterMLSClientUseCaseImpl(
 
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> {
         return userConfigRepository.getE2EISettings().flatMap { e2eiSettings ->
-            if (e2eiSettings.isRequired && !mlsClientProvider.isMLSClientInitialised()) {
-                return RegisterMLSClientResult.E2EICertificateRequired.right()
+            if (!e2eiSettings.isRequired) {
+                registerMLSClient(clientId)
+            } else if (!mlsClientProvider.isMLSClientInitialised()) {
+                RegisterMLSClientResult.E2EICertificateRequired.right()
             } else {
-                mlsClientProvider.getMLSClient(clientId)
+                mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
+                    wrapMLSRequest {
+                        mlsClient.getCredentialRef(CredentialType.X509)?.let { credentialRef ->
+                            try {
+                                mlsClient.transaction("selectX509CredentialForRegistration") {
+                                    it.selectCredential(credentialRef)
+                                }
+                                true
+                            } finally {
+                                credentialRef.close()
+                            }
+                        } ?: false
+                    }.flatMap { hasX509Credential ->
+                        if (hasX509Credential) {
+                            registerMLSClient(clientId, mlsClient)
+                        } else {
+                            RegisterMLSClientResult.E2EICertificateRequired.right()
+                        }
+                    }
+                }
             }
         }.onFailure {
-            mlsClientProvider.getMLSClient(clientId)
-        }.flatMap { mlsClient ->
+            kaliumLogger.e("Failed to register MLS client: $it")
+        }
+    }
+
+    private suspend fun registerMLSClient(
+        clientId: ClientId,
+        initialisedClient: MLSClient? = null
+    ): Either<CoreFailure, RegisterMLSClientResult> =
+        (initialisedClient?.right() ?: mlsClientProvider.getMLSClient(clientId)).flatMap { mlsClient ->
             wrapMLSRequest { mlsClient.getPublicKey() }
                 .flatMap { (publicKey, cipherSuite) ->
                     clientRepository.registerMLSClient(clientId, publicKey, cipherSuite.toModel())
@@ -81,8 +111,5 @@ internal class RegisterMLSClientUseCaseImpl(
                         .onSuccess { cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId) }
                         .map { RegisterMLSClientResult.Success }
                 }
-        }.onFailure {
-            kaliumLogger.e("Failed to register MLS client: $it")
         }
-    }
 }

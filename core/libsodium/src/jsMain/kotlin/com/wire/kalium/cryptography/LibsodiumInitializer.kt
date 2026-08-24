@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,14 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-@file:Suppress("unused")
-
 package com.wire.kalium.cryptography
 
-@JsModule("fake-indexeddb/auto")
-@JsNonModule
-private external val fakeIndexedDbAuto: dynamic
+import kotlinx.coroutines.await
 
-// Force module side effects so js tests expose indexedDB in the Node-based runner.
-private val indexedDbPolyfill = fakeIndexedDbAuto
+public actual object LibsodiumInitializer {
+    private var initialized: Boolean = false
+
+    public actual suspend fun initializeLibsodiumIfNeeded() {
+        if (!initialized) {
+            LibsodiumJs.ready.await()
+            initialized = true
+        }
+    }
+}

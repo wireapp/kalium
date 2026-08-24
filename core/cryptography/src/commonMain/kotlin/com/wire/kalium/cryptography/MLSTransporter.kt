@@ -19,30 +19,31 @@ package com.wire.kalium.cryptography
 
 interface MLSTransporter {
     /**
-     * Send a message to the delivery service.
+     * Prepare a history secret before Core Crypto adds it to an outgoing commit.
+     *
+     * History sharing is deliberately disabled until the application supplies an implementation
+     * which protects the secret for transport.
      */
-    suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse
+    suspend fun prepareForTransport(historySecret: MLSHistorySecret): ByteArray {
+        throw UnsupportedOperationException("MLS history sharing transport is not configured")
+    }
 
     /**
      * Send a commit bundle to the delivery service.
+     *
+     * Return normally when the delivery service accepts the bundle, or throw
+     * [MlsMessageRejectedException] when it rejects it.
      */
-    suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse
+    suspend fun sendCommitBundle(commitBundle: CommitBundle)
 }
 
-sealed class MlsTransportResponse {
+class MLSHistorySecret(
+    val clientId: CryptoQualifiedClientId,
+    val data: ByteArray
+)
 
-    /**
-     * The message was accepted by the distribution service
-     */
-    data object Success : MlsTransportResponse()
-
-    /**
-     * A client should have consumed all incoming messages before re-trying.
-     */
-    data object Retry : MlsTransportResponse()
-
-    /**
-     * The message was rejected by the delivery service and there's no recovery.
-     */
-    data class Abort(val reason: String) : MlsTransportResponse()
-}
+/** The delivery service rejected an outgoing MLS commit. */
+class MlsMessageRejectedException(
+    val reason: String,
+    cause: Throwable? = null
+) : Exception(reason, cause)

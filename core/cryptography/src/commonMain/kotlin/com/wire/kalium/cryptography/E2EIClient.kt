@@ -17,49 +17,32 @@
  */
 package com.wire.kalium.cryptography
 
-typealias JsonRawData = ByteArray
-typealias DpopToken = String
+/**
+ * A Core Crypto credential acquired independently of a client transaction.
+ *
+ * The underlying native type deliberately stays internal so higher layers cannot couple
+ * themselves to the Core Crypto API. A credential becomes persistent only after it is
+ * installed by Core Crypto.
+ */
+interface CryptoCredential {
+    /** Export the public credential as PEM; X509 credentials return their full certificate chain. */
+    fun exportPem(): String
 
-data class AcmeDirectory(
-    var newNonce: String,
-    var newAccount: String,
-    var newOrder: String
-)
+    /** Release the acquired native credential if it has not already been consumed. */
+    fun close()
+}
 
-data class NewAcmeOrder(
-    var delegate: JsonRawData,
-    var authorizations: List<String>
-)
+/**
+ * A stable reference to a credential stored by Core Crypto.
+ *
+ * References returned by [MLSClient.getCredentialRef] are owned by the caller and must be
+ * closed. References returned by [MlsCoreCryptoContext.addCredential] are borrowed from the
+ * client and remain valid until the client replaces its active credential or is closed.
+ */
+interface CryptoCredentialRef {
+    /** Stable identifier used to recover this installed credential after a process restart. */
+    fun publicKeyHash(): ByteArray
 
-data class AcmeChallenge(
-    var delegate: JsonRawData,
-    var url: String,
-    var target: String
-)
-
-data class NewAcmeAuthz(
-    var identifier: String,
-    var keyAuth: String?,
-    var challenge: AcmeChallenge
-)
-
-@Suppress("TooManyFunctions")
-interface E2EIClient {
-    suspend fun directoryResponse(directory: JsonRawData): AcmeDirectory
-    suspend fun getNewAccountRequest(previousNonce: String): JsonRawData
-    suspend fun setAccountResponse(account: JsonRawData)
-    suspend fun getNewOrderRequest(previousNonce: String): JsonRawData
-    suspend fun setOrderResponse(order: JsonRawData): NewAcmeOrder
-    suspend fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData
-    suspend fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz
-    suspend fun createDpopToken(backendNonce: String): DpopToken
-    suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData
-    suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData
-    suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData)
-    suspend fun setDPoPChallengeResponse(challenge: JsonRawData)
-    suspend fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData
-    suspend fun checkOrderResponse(order: JsonRawData): String
-    suspend fun finalizeRequest(previousNonce: String): JsonRawData
-    suspend fun finalizeResponse(finalize: JsonRawData): String
-    suspend fun certificateRequest(previousNonce: String): JsonRawData
+    /** Release the native reference. Safe to call more than once. */
+    fun close()
 }

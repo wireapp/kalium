@@ -67,6 +67,12 @@ interface UserConfigDAO {
     suspend fun setNextTimeForCallFeedback(timestamp: Long)
     suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
+    suspend fun setE2EIAcquisitionSnapshot(snapshot: String)
+    suspend fun getE2EIAcquisitionSnapshot(): String?
+    suspend fun deleteE2EIAcquisitionSnapshot()
+    suspend fun setE2EIRotationCheckpoint(checkpoint: String)
+    suspend fun getE2EIRotationCheckpoint(): String?
+    suspend fun deleteE2EIRotationCheckpoint()
     suspend fun setMlsConversationsResetEnabled(enabled: Boolean)
     suspend fun getMlsConversationsResetEnabled(): Boolean
     suspend fun setAsyncNotificationsEnabled(isAsyncNotificationsEnabled: Boolean)
@@ -249,6 +255,28 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
         metadataDAO.valueByKey(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)?.toBoolean() ?: true
 
+    override suspend fun setE2EIAcquisitionSnapshot(snapshot: String) {
+        metadataDAO.insertValue(value = snapshot, key = E2EI_ACQUISITION_SNAPSHOT)
+    }
+
+    override suspend fun getE2EIAcquisitionSnapshot(): String? =
+        metadataDAO.valueByKey(E2EI_ACQUISITION_SNAPSHOT)
+
+    override suspend fun deleteE2EIAcquisitionSnapshot() {
+        metadataDAO.deleteValue(E2EI_ACQUISITION_SNAPSHOT)
+    }
+
+    override suspend fun setE2EIRotationCheckpoint(checkpoint: String) {
+        metadataDAO.insertValue(value = checkpoint, key = E2EI_ROTATION_CHECKPOINT)
+    }
+
+    override suspend fun getE2EIRotationCheckpoint(): String? =
+        metadataDAO.valueByKey(E2EI_ROTATION_CHECKPOINT)
+
+    override suspend fun deleteE2EIRotationCheckpoint() {
+        metadataDAO.deleteValue(E2EI_ROTATION_CHECKPOINT)
+    }
+
     override suspend fun setMlsConversationsResetEnabled(enabled: Boolean) {
         metadataDAO.insertValue(enabled.toString(), MLS_CONVERSATIONS_RESET)
     }
@@ -344,6 +372,8 @@ internal class UserConfigDAOImpl internal constructor(
         private const val ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY = "analytics_tracking_identifier_previous"
         private const val ANALYTICS_TRACKING_IDENTIFIER_KEY = "analytics_tracking_identifier"
         const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
+        private const val E2EI_ACQUISITION_SNAPSHOT = "e2ei_acquisition_snapshot"
+        private const val E2EI_ROTATION_CHECKPOINT = "e2ei_rotation_checkpoint"
         const val MLS_CONVERSATIONS_RESET = "mls_conversations_reset"
         const val ASYNC_NOTIFICATIONS_ENABLED = "async_notifications_enabled"
         const val CELLS_ENABLED = "wire_cells"

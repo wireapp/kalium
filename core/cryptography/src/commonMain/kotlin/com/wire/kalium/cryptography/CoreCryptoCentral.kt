@@ -17,29 +17,13 @@
  */
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.CoreCrypto
-import com.wire.crypto.CoreCryptoLogLevel
-import com.wire.crypto.DatabaseKey
-import com.wire.crypto.invoke
-import com.wire.crypto.setLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlin.time.Duration
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 interface CoreCryptoCentral {
     suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<MLSCiphersuite>,
-        defaultCipherSuite: MLSCiphersuite,
-        mlsTransporter: MLSTransporter,
-        epochObserver: MLSEpochObserver,
-        coroutineScope: CoroutineScope
-    ): MLSClient
-
-    suspend fun mlsClient(
-        enrollment: E2EIClient,
-        certificateChain: CertificateChain,
-        newMLSKeyPackageCount: UInt,
         defaultCipherSuite: MLSCiphersuite,
         mlsTransporter: MLSTransporter,
         epochObserver: MLSEpochObserver,
@@ -49,38 +33,46 @@ interface CoreCryptoCentral {
     suspend fun proteusClient(): ProteusClient
 
     /**
-     * Enroll Wire E2EIdentity Client for E2EI before MLSClient Initialization
-     *
-     * @return wire end to end identity client
+     * Creates and installs a PKI environment backed by the same encrypted database as Core Crypto.
      */
-    @Suppress("LongParameterList")
-    suspend fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
-        displayName: String,
-        handle: String,
-        teamId: String?,
-        expiry: Duration,
-        defaultCipherSuite: MLSCiphersuite
-    ): E2EIClient
+    suspend fun configurePkiEnvironment(hooks: PkiEnvironmentHooks)
+
+    suspend fun addPkiTrustAnchor(pem: CertificateChain)
+
+    suspend fun getPkiTrustAnchors(): List<CertificateChain>
+
+    suspend fun removePkiTrustAnchor(fingerprint: ByteArray)
 
     /**
-     * Register ACME-CA certificates for E2EI
-     * @param pem is the certificate string in pem format
+     * Replaces the configured trust-anchor set with the complete PEM bundle.
+     * Missing roots are added before obsolete roots are removed.
      */
-    suspend fun registerTrustAnchors(pem: CertificateChain)
+    suspend fun reconcilePkiTrustAnchors(pemBundle: CertificateChain)
+
+    suspend fun addPkiIntermediateCertificate(pem: CertificateChain)
 
     /**
-     * Register Certificate Revocations List for an url for E2EI
-     * @param url that the CRL downloaded from
-     * @param crl fetched crl from the url
+     * Starts an X509 acquisition and runs it until it either obtains a credential or the
+     * authentication hook pauses/fails the operation. The hook receives a resumable snapshot
+     * before authentication starts. Ownership of [existingCredentialRef] is consumed.
      */
-    suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration
+    suspend fun startX509CredentialAcquisition(
+        config: X509CredentialAcquisitionConfig,
+        existingCredentialRef: CryptoCredentialRef? = null
+    ): CryptoCredential
 
     /**
-     * Register Intermediate CA for E2EI
-     * @param pem fetched certificate chain in pem format from the CA
+     * Resumes an X509 acquisition from a snapshot previously supplied to
+     * [PkiEnvironmentHooks.authenticate]. The caller owns the returned credential and must
+     * either pass it to [installCredential] or close it.
      */
-    suspend fun registerIntermediateCa(pem: CertificateChain)
+    suspend fun resumeX509CredentialAcquisition(snapshot: ByteArray): CryptoCredential
+
+    /** Persists [credential] and consumes its native resources. */
+    suspend fun installCredential(credential: CryptoCredential): CryptoCredentialRef
+
+    /** Check all installed X509 credentials for expiration and revocation. */
+    suspend fun checkCredentials()
 
     /**
      * Export a compacted copy of the CoreCrypto database to the specified destination path.
@@ -90,27 +82,64 @@ interface CoreCryptoCentral {
      * @throws Exception if the export operation fails
      */
     suspend fun exportDatabaseCopy(destinationPath: String)
+
+    /** Close Core Crypto, its PKI environment, and its database. */
+    suspend fun close()
 }
 
-suspend fun coreCryptoCentral(
+enum class PkiHttpMethod {
+    GET,
+    POST,
+    PUT,
+    DELETE,
+    PATCH,
+    HEAD
+}
+
+data class PkiHttpHeader(
+    val name: String,
+    val value: String
+)
+
+data class PkiHttpResponse(
+    val status: UShort,
+    val headers: List<PkiHttpHeader>,
+    val body: ByteArray
+)
+
+/** Core-Crypto-neutral callbacks used by the v10 PKI environment. */
+interface PkiEnvironmentHooks {
+    suspend fun httpRequest(
+        method: PkiHttpMethod,
+        url: String,
+        headers: List<PkiHttpHeader>,
+        body: ByteArray
+    ): PkiHttpResponse
+
+    suspend fun authenticate(
+        idp: String,
+        keyAuth: String,
+        acmeAud: String,
+        acquisitionSnapshot: ByteArray
+    ): String
+
+    suspend fun getBackendNonce(): String
+
+    suspend fun fetchBackendAccessToken(dpop: String): String
+}
+
+@Suppress("LongParameterList")
+data class X509CredentialAcquisitionConfig(
+    val acmeDirectoryUrl: String,
+    val cipherSuite: MLSCiphersuite,
+    val displayName: String,
+    val clientId: CryptoQualifiedClientId,
+    val handle: String,
+    val teamId: String?,
+    val validity: Duration
+)
+
+expect suspend fun coreCryptoCentral(
     rootDir: String,
     passphrase: ByteArray,
-): CoreCryptoCentral {
-    val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
-    createDirectory(rootDir)
-
-    val databaseKey = DatabaseKey(passphrase)
-
-    val coreCrypto = CoreCrypto(
-        keystore = path,
-        databaseKey = databaseKey
-    )
-
-    setLogger(CoreCryptoLoggerImpl, CoreCryptoLogLevel.WARN)
-
-    return CoreCryptoCentralImpl(
-        cc = coreCrypto,
-        rootDir = rootDir,
-        databaseKey = databaseKey
-    )
-}
+): CoreCryptoCentral

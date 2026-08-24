@@ -17,6 +17,7 @@
  */
 
 import com.wire.kalium.plugins.appleTargets
+import org.gradle.api.tasks.Sync
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -27,14 +28,41 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
+        enableJs.set(true)
         includeNativeInterop.set(true)
     }
 }
 
-val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
-    ?: error("USE_UNIFIED_CORE_CRYPTO not set")
+val coreCryptoJvmNativeArtifacts by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+}
+
+dependencies {
+    coreCryptoJvmNativeArtifacts(libs.coreCryptoJvmNatives)
+}
+
+val coreCryptoJvmNativeResources = layout.buildDirectory.dir("generated/coreCryptoJvmNativeResources")
+val extractCoreCryptoJvmNativeResources by tasks.registering(Sync::class) {
+    from({ coreCryptoJvmNativeArtifacts.map(::zipTree) }) {
+        include("darwin-aarch64/**")
+        include("linux-x86-64/**")
+    }
+    into(coreCryptoJvmNativeResources)
+}
 
 kotlin {
+    js {
+        browser {
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                }
+            }
+        }
+    }
+
     iosArm64 {
         binaries.all {
             linkerOpts("-framework", "Security")
@@ -66,9 +94,6 @@ kotlin {
                 // Okio
                 implementation(libs.okio.core)
 
-                if (useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoKmp)
-                }
             }
         }
         val commonTest by getting {
@@ -81,41 +106,45 @@ kotlin {
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
-        val jvmMain by getting {
-            addCommonKotlinJvmSourceDir()
-            dependencies {
-                if (!useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoJvm)
-                }
-            }
-        }
-
-        val jvmTest by getting
-        val androidMain by getting {
-            addCommonKotlinJvmSourceDir()
-            dependencies {
-                implementation(libs.androidCrypto)
-                if (!useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                        exclude("androidx.core")
-                        exclude("androidx.appcompat")
-                    }
-                }
-            }
-        }
-        val appleMain by getting {
+        val nonJsMain by creating {
+            dependsOn(commonMain)
+            kotlin.srcDir("src/coreCryptoMain/kotlin")
             dependencies {
                 implementation(libs.coreCryptoKmp)
             }
         }
+        val jvmMain by getting {
+            dependsOn(nonJsMain)
+            addCommonKotlinJvmSourceDir()
+            // core-crypto-kmp's JVM metadata does not attach Linux native resources.
+            // Embed only the native files from the official target artifact, excluding its
+            // duplicate binding classes from the JVM runtime classpath.
+            resources.srcDir(coreCryptoJvmNativeResources)
+        }
 
-        val jsMain by getting
-        val jsTest by getting {
+        val jvmTest by getting
+        val androidMain by getting {
+            dependsOn(nonJsMain)
+            addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(devNpm("fake-indexeddb", "6.2.5"))
+                implementation(libs.androidCrypto)
             }
         }
+        val appleMain by getting {
+            dependsOn(nonJsMain)
+        }
+        val jsMain by getting {
+            kotlin.srcDir("src/coreCryptoMain/kotlin")
+            dependencies {
+                implementation(npm("@wireapp/core-crypto", libs.versions.core.crypto.get()))
+            }
+        }
+        val jsTest by getting
     }
+}
+
+tasks.named("jvmProcessResources") {
+    dependsOn(extractCoreCryptoJvmNativeResources)
 }
 
 project.appleTargets().forEach {

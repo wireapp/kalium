@@ -33,11 +33,11 @@ import kotlin.test.Test
 class ACMECertificatesSyncUseCaseTest {
 
     @Test
-    fun givenWorkerExecuted_whenE2EIAndMLSAreEnabled_thenSyncIsCalled() = runTest {
+    fun givenDailyWorkerRuns_whenE2EIIsEnabled_thenRefreshesAllPkiState() = runTest {
         // given
         val (arrangement, useCase) = arrange {
             withE2EIEnabledAndMLSEnabled(true)
-            withFetchACMECertificates()
+            withPkiRefreshSuccessful()
         }
 
         // when
@@ -45,12 +45,18 @@ class ACMECertificatesSyncUseCaseTest {
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2eiRepository.fetchAndSetTrustAnchors()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2eiRepository.fetchFederationCertificates()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2eiRepository.checkCredentials()
         }
     }
 
     @Test
-    fun givenWorkerExecuted_whenE2EIAndMLSAreDisabled_thenSyncIsNotCalled() = runTest {
+    fun givenDailyWorkerRuns_whenE2EIIsDisabled_thenPkiStateIsNotTouched() = runTest {
         // given
         val (arrangement, useCase) = arrange {
             withE2EIEnabledAndMLSEnabled(false)
@@ -61,7 +67,13 @@ class ACMECertificatesSyncUseCaseTest {
 
         // then
         verifySuspend(VerifyMode.not) {
+            arrangement.e2eiRepository.fetchAndSetTrustAnchors()
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2eiRepository.fetchFederationCertificates()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2eiRepository.checkCredentials()
         }
     }
 
@@ -84,8 +96,10 @@ class ACMECertificatesSyncUseCaseTest {
             everySuspend { isE2EIEnabledUseCase.invoke() } returns result
         }
 
-        suspend fun withFetchACMECertificates() {
+        suspend fun withPkiRefreshSuccessful() {
+            everySuspend { e2eiRepository.fetchAndSetTrustAnchors() } returns Either.Right(Unit)
             everySuspend { e2eiRepository.fetchFederationCertificates() } returns Either.Right(Unit)
+            everySuspend { e2eiRepository.checkCredentials() } returns Either.Right(Unit)
         }
     }
 

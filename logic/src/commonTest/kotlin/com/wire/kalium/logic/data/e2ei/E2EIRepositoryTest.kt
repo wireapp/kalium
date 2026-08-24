@@ -18,1307 +18,553 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.common.error.E2EIFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.cryptography.AcmeChallenge
-import com.wire.kalium.cryptography.AcmeDirectory
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CoreCryptoCentral
-import com.wire.kalium.cryptography.E2EIClient
+import com.wire.kalium.cryptography.CredentialType
+import com.wire.kalium.cryptography.CryptoCredential
+import com.wire.kalium.cryptography.CryptoCredentialRef
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
+import com.wire.kalium.cryptography.MLSCiphersuite
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.NewAcmeAuthz
-import com.wire.kalium.cryptography.NewAcmeOrder
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.cryptography.PkiEnvironmentHooks
+import com.wire.kalium.cryptography.PkiHttpMethod
+import com.wire.kalium.cryptography.X509CredentialAcquisitionConfig
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.ACME_CHALLENGE
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.E2EI_TEAM_SETTINGS
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ACCESS_TOKEN
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ID_TOKEN
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_NONCE
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_URL
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.REFRESH_TOKEN
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.TEST_FAILURE
+import com.wire.kalium.logic.data.conversation.PreparedX509KeyPackages
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
-import com.wire.kalium.network.api.model.GenericAPIErrorResponse
-import com.wire.kalium.network.api.unbound.acme.ACMEAuthorizationResponse
-import com.wire.kalium.network.api.unbound.acme.ACMEResponse
-import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
-import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
-import com.wire.kalium.network.api.unbound.acme.DtoAuthorizationChallengeType
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respondOk
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.days
 
 class E2EIRepositoryTest {
+
     @Test
-    fun givenGettingE2EITeamSettingsFails_whenLoadAcmeDirectories_thenItFail() = runTest {
-        // Given
+    fun givenCoreCryptoRequestsAuthentication_whenStartingAcquisition_thenPersistsSnapshotAndReturnsChallenge() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
 
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Left(StorageFailure.DataNotFound))
-            .withAcmeDirectoriesApiFails()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withE2EIClientLoadDirectoriesSuccessful()
-            .arrange()
+        val result = repository.startCredentialAcquisition(isNewClient = false)
 
-        // When
-        val result = e2eiRepository.loadACMEDirectories()
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.userConfigRepository.getE2EISettings()
+        result.shouldSucceed { request ->
+            assertEquals(IDP_URL, request.target)
+            assertEquals(KEY_AUTH, request.keyAuth)
+            assertEquals(ACME_AUDIENCE, request.acmeAudience)
         }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.acmeApi.getACMEDirectories(any())
+        assertContentEquals(SNAPSHOT, arrangement.persistedSnapshot)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.coreCrypto.startX509CredentialAcquisition(eq(ACQUISITION_CONFIG), eq(arrangement.previousCredentialRef))
         }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.directoryResponse(any())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setE2EIAcquisitionSnapshot(eq(SNAPSHOT))
         }
     }
 
     @Test
-    fun givenACMEDirectoriesApiSucceed_whenLoadAcmeDirectories_thenItSucceed() = runTest {
-        // Given
-
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS))
-            .withAcmeDirectoriesApiSucceed()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withE2EIClientLoadDirectoriesSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.loadACMEDirectories()
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.userConfigRepository.getE2EISettings()
+    fun givenProxyEnabled_whenCoreNormalizesHostOnlyDiscoveryUrl_thenDiscoveryGetRemainsDirect() = runTest {
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { userConfigRepository.getE2EISettings() } returns PROXIED_E2EI_SETTINGS.copy(
+                discoverUrl = HOST_ONLY_DISCOVERY_URL
+            ).right()
         }
 
-        verifySuspend {
-            arrangement.acmeApi.getACMEDirectories(any())
-        }
+        repository.startCredentialAcquisition(isNewClient = false).shouldSucceed()
+        val response = requireNotNull(arrangement.pkiHooks).httpRequest(
+            PkiHttpMethod.GET,
+            "$HOST_ONLY_DISCOVERY_URL/",
+            emptyList(),
+            byteArrayOf()
+        )
 
-        verifySuspend {
-            arrangement.e2eiClient.directoryResponse(any<ByteArray>())
+        assertEquals(200.toUShort(), response.status)
+        verifySuspend(VerifyMode.not) {
+            arrangement.acmeApi.getClientDomainCRL(any(), any())
         }
     }
 
     @Test
-    fun givenACMEDirectoriesApiFails_whenLoadAcmeDirectories_thenItFail() = runTest {
-        // Given
-
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS))
-            .withAcmeDirectoriesApiFails()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withE2EIClientLoadDirectoriesSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.loadACMEDirectories()
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.userConfigRepository.getE2EISettings()
+    fun givenProxyEnabled_whenResumingAcquisition_thenExactDiscoveryGetRemainsDirect() = runTest {
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { userConfigRepository.getE2EISettings() } returns PROXIED_E2EI_SETTINGS.right()
         }
 
-        verifySuspend {
-            arrangement.acmeApi.getACMEDirectories(any())
-        }
+        repository.resumeCredentialAcquisition(ID_TOKEN, emptyList(), isNewClient = false).shouldSucceed()
+        val response = requireNotNull(arrangement.pkiHooks).httpRequest(
+            PkiHttpMethod.GET,
+            DISCOVERY_URL,
+            emptyList(),
+            byteArrayOf()
+        )
 
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.directoryResponse(any())
+        assertEquals(200.toUShort(), response.status)
+        verifySuspend(VerifyMode.not) {
+            arrangement.acmeApi.getClientDomainCRL(any(), any())
         }
     }
 
     @Test
-    fun givenSendAcmeRequestSucceed_whenCallingCreateNewAccount_thenItSucceed() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAcmeRequestApiSucceed()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewAccountSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.createNewAccount(RANDOM_NONCE, RANDOM_URL)
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewAccountRequest(any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.e2eiClient.setAccountResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAcmeRequestFails_whenCallingCreateNewAccount_thenItFail() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAcmeRequestApiFails()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewAccountSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.createNewAccount(RANDOM_NONCE, RANDOM_URL)
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewAccountRequest(any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.setAccountResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAcmeRequestSucceed_whenCallingCreateNewOrder_thenItSucceed() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAcmeRequestApiSucceed()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewOrderSuccessful()
-            .withSetOrderResponseSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.createNewOrder(RANDOM_NONCE, RANDOM_URL)
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewOrderRequest(any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.e2eiClient.setOrderResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAcmeRequestFails_whenCallingCreateNewOrder_thenItFail() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAcmeRequestApiFails()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewOrderSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.createNewOrder(RANDOM_NONCE, RANDOM_URL)
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewOrderRequest(any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.setOrderResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAuthorizationRequestSucceed_whenCallingCreateAuthz_thenItSucceed() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGetNewAuthzRequestSuccessful()
-            .withSendAuthorizationRequestSucceed(url = RANDOM_URL, DtoAuthorizationChallengeType.DPoP)
-            .withSendAcmeRequestApiSucceed()
-            .withSetAuthzResponseSuccessful()
-            .withSendAcmeRequestApiSucceed()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.createAuthorization(RANDOM_NONCE, RANDOM_URL)
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAuthorizationRequestFails_whenCallingCreateAuthz_thenItFail() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGetNewAuthzRequestSuccessful()
-            .withSendAuthorizationRequestFails()
-            .withSendAcmeRequestApiSucceed()
-            .withSetAuthzResponseSuccessful()
-            .withSendAcmeRequestApiSucceed()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.createAuthorization(RANDOM_NONCE, RANDOM_URL)
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAuthorizationRequestFails_whenCallingGetAuthorizations_thenItFail() = runTest {
-        val authorizationsUrls = listOf(RANDOM_URL, RANDOM_URL)
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAuthorizationRequestFails()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewAuthzRequestSuccessful()
-            .withSetAuthzResponseSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.getAuthorizations(RANDOM_NONCE, authorizationsUrls)
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAuthorizationRequestSucceed_whenCallingGetAuthorizations_thenItSucceed() = runTest {
-        val authorizationsUrls = listOf("$RANDOM_URL/oidc", "$RANDOM_URL/dpop")
-        val expected = Arrangement.AUTHORIZATIONS_RESULT
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAuthorizationRequestSucceed(url = authorizationsUrls[0], DtoAuthorizationChallengeType.DPoP)
-            .withSendAuthorizationRequestSucceed(url = authorizationsUrls[1], DtoAuthorizationChallengeType.OIDC)
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewAuthzRequestSuccessful()
-            .withSetAuthzResponseSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.getAuthorizations(RANDOM_NONCE, authorizationsUrls)
-
-        // Then
-        result.shouldSucceed()
-
-        assertIs<AuthorizationResult>(result.value)
-
-        assertEquals(expected, result.value as AuthorizationResult)
-
-        verifySuspend(mode = VerifyMode.exactly(authorizationsUrls.size)) {
-            arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.exactly(authorizationsUrls.size)) {
-            arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.exactly(authorizationsUrls.size)) {
-            arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenDpopChallengeRequestSucceed_whenCallingValidateDPoPChallenge_thenItSucceed() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGetCoreCryptoSuccessful()
-            .withSendChallengeRequestApiSucceed()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewDpopChallengeRequest()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.validateDPoPChallenge(RANDOM_ACCESS_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewDpopChallengeRequest(any<String>(), any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.e2eiClient.setDPoPChallengeResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenDpopChallengeRequestFails_whenCallingValidateDPoPChallenge_thenItFail() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendChallengeRequestApiFails()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewDpopChallengeRequest()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.validateDPoPChallenge(RANDOM_ACCESS_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewDpopChallengeRequest(any<String>(), any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenOIDCChallengeRequestSucceed_whenCallingValidateDPoPChallenge_thenItSucceed() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGetCoreCryptoSuccessful()
-            .withSendChallengeRequestApiSucceed()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewOidcChallengeRequest()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, REFRESH_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenOIDCChallengeRequestSucceedWithInvalidStatus_whenCallingValidateDPoPChallenge_thenItFail() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGetCoreCryptoSuccessful()
-            .withSendChallengeRequestApiSucceedWithInvalidStatus()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewOidcChallengeRequest()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, REFRESH_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenOIDCChallengeRequestFails_whenCallingValidateDPoPChallenge_thenItFail() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGetCoreCryptoSuccessful()
-            .withSendChallengeRequestApiFails()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withGetNewOidcChallengeRequest()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, REFRESH_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAcmeRequestSucceed_whenCallingCheckOrderRequest_thenItSucceed() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAcmeRequestApiSucceed()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withCheckOrderRequestSuccessful()
-            .withCheckOrderResponseSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.checkOrderRequest(RANDOM_URL, RANDOM_NONCE)
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.e2eiClient.checkOrderRequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.e2eiClient.checkOrderResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAcmeRequestFails_whenCallingCheckOrderRequest_thenItFail() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAcmeRequestApiFails()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withCheckOrderRequestSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.checkOrderRequest(RANDOM_URL, RANDOM_NONCE)
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClient.checkOrderRequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.checkOrderResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAcmeRequestSucceed_whenCallingFinalize_thenItSucceed() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAcmeRequestApiSucceed()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withFinalizeRequestSuccessful()
-            .withFinalizeResponseSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.finalize(RANDOM_URL, RANDOM_NONCE)
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.e2eiClient.finalizeRequest(any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }
-
-        verifySuspend {
-            arrangement.e2eiClient.finalizeResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAcmeRequestFails_whenCallingFinalize_thenItFail() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAcmeRequestApiFails()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withFinalizeRequestSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.finalize(RANDOM_URL, RANDOM_NONCE)
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClient.finalizeRequest(any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.e2eiClient.finalizeResponse(any<ByteArray>())
-        }
-    }
-
-    @Test
-    fun givenSendAcmeRequestSucceed_whenCallingCertificateRequest_thenItSucceed() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAcmeRequestApiSucceed()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withCertificateRequestSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.certificateRequest(RANDOM_URL, RANDOM_NONCE)
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.e2eiClient.certificateRequest(any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }
-    }
-
-    @Test
-    fun givenSendAcmeRequestFails_whenCallingCertificateRequest_thenItFail() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAcmeRequestApiFails()
-            .withGetE2EIClientSuccessful()
-            .withGetMLSClientSuccessful()
-            .withCertificateRequestSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.certificateRequest(RANDOM_URL, RANDOM_NONCE)
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClient.certificateRequest(any<String>())
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }
-    }
-
-    @Test
-    fun givenCertificate_whenCallingRotateKeysAndMigrateConversation_thenItSuccess() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withCurrentClientIdProviderSuccessful()
-            .withGetE2EIClientSuccessful()
-            .withRotateKeysAndMigrateConversationsReturns(Either.Right(Unit))
-            .arrange()
-
-        // When
-        val result = e2eiRepository.rotateKeysAndMigrateConversations(arrangement.mlsContext, "", listOf(Arrangement.GROUP_ID))
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.e2eiClientProvider.getE2EIClient(any(), any())
-        }
-
-        verifySuspend {
-            arrangement.currentClientIdProvider.invoke()
-        }
-
-        verifySuspend {
-            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
-        }
-    }
-
-    @Test
-    fun givenCertificate_whenCallingRotateKeysAndMigrateConversationFails_thenReturnFailure() = runTest {
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withCurrentClientIdProviderSuccessful()
-            .withGetE2EIClientSuccessful()
-            .withRotateKeysAndMigrateConversationsReturns(TEST_FAILURE)
-            .arrange()
-
-        // When
-        val result = e2eiRepository.rotateKeysAndMigrateConversations(arrangement.mlsContext, "", listOf(Arrangement.GROUP_ID))
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.e2eiClientProvider.getE2EIClient(any(), any())
-        }
-
-        verifySuspend {
-            arrangement.currentClientIdProvider.invoke()
-        }
-
-        verifySuspend {
-            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
-        }
-    }
-
-    @Test
-    fun givenGettingE2EITeamSettingsFails_whenFetchACMECertificates_thenItFail() = runTest {
-        // Given
-
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Left(StorageFailure.DataNotFound))
-            .withAcmeFederationApiFails()
-            .withGetMLSClientSuccessful()
-            .withRegisterIntermediateCABag()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.fetchFederationCertificates()
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.userConfigRepository.getE2EISettings()
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.acmeApi.getACMEFederationCertificateChain(any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.coreCryptoCentral.registerIntermediateCa(any())
-        }
-    }
-
-    @Test
-    fun givenACMEFederationApiSucceeds_whenFetchACMECertificates_thenAllCertificatesAreRegistered() = runTest {
-        val certificateList = listOf("a", "b", "potato")
-        // Given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS))
-            .withAcmeFederationApiSucceed(certificateList)
-            .withCurrentClientIdProviderSuccessful()
-            .withGetCoreCryptoSuccessful()
-            .withRegisterIntermediateCABag()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.fetchFederationCertificates()
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.userConfigRepository.getE2EISettings()
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.getACMEFederationCertificateChain(any())
-        }
-
-        certificateList.forEach { certificateValue ->
-            verifySuspend {
-                arrangement.coreCryptoCentral.registerIntermediateCa(eq(certificateValue))
-            }
-        }
-    }
-
-    @Test
-    fun givenGettingE2EITeamSettingsFails_whenFetchATrustAnchors_thenItFail() = runTest {
-        // Given
-
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSetShouldFetchE2EIGetTrustAnchors()
-            .withGetShouldFetchE2EITrustAnchors(true)
-            .withGettingE2EISettingsReturns(Either.Left(StorageFailure.DataNotFound))
-            .withFetchAcmeTrustAnchorsApiFails()
-            .withGetMLSClientSuccessful()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.fetchAndSetTrustAnchors()
-
-        // Then
-        result.shouldFail()
-
-        verifySuspend {
-            arrangement.userConfigRepository.getE2EISettings()
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.acmeApi.getACMEFederationCertificateChain(any())
-        }
-
-        verifySuspend(mode = VerifyMode.not) {
-            arrangement.coreCryptoCentral.registerIntermediateCa(any())
-        }
-    }
-
-    @Test
-    fun givenACMETrustAnchorsApiSucceed_whenFetchACMETrustAnchors_thenItSucceed() = runTest {
-        // Given
-
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSetShouldFetchE2EIGetTrustAnchors()
-            .withGetShouldFetchE2EITrustAnchors(true)
-            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(discoverUrl = RANDOM_URL)))
-            .withFetchAcmeTrustAnchorsApiSucceed()
-            .withCurrentClientIdProviderSuccessful()
-            .withCurrentClientIdProviderSuccessful()
-            .withGetCoreCryptoSuccessful()
-            .withRegisterTrustAnchors()
-            .arrange()
-
-        // When
-        val result = e2eiRepository.fetchAndSetTrustAnchors()
-
-        // Then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.userConfigRepository.getE2EISettings()
-        }
-
-        verifySuspend {
-            arrangement.acmeApi.getTrustAnchors(eq(RANDOM_URL))
-        }
-
-        verifySuspend {
-            arrangement.coreCryptoCentral.registerTrustAnchors(eq(Arrangement.RANDOM_BYTE_ARRAY.decodeToString()))
-        }
-
-        verifySuspend {
-            arrangement.userConfigRepository.setShouldFetchE2EITrustAnchors(eq(false))
-        }
-    }
-
-    @Test
-    fun givenGetTrustAnchorsHasAlreadyFetchedOnce_whenFetchingTrustAnchors_thenReturnE2EIFailureTrustAnchorsAlreadyFetched() = runTest {
-        // given
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withSetShouldFetchE2EIGetTrustAnchors()
-            .withGetShouldFetchE2EITrustAnchors(false)
-            .arrange()
-
-        // when
-        val result = e2eiRepository.fetchAndSetTrustAnchors()
-
-        // then
-        result.shouldSucceed()
-
-        verifySuspend {
-            arrangement.userConfigRepository.getShouldFetchE2EITrustAnchor()
-        }
-    }
-
-    @Test
-    fun givenE2EIIsDisabled_whenCallingDiscoveryUrl_thenItFailWithDisabled() = runTest {
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(false, null, Instant.DISTANT_FUTURE, false, null)))
-            .arrange()
-
-        e2eiRepository.discoveryUrl().shouldFail {
-            assertIs<E2EIFailure.Disabled>(it)
-        }
-
-        verifySuspend {
-            arrangement.userConfigRepository.getE2EISettings()
-        }
-    }
-
-    @Test
-    fun givenE2EIIsEnabledAndDiscoveryUrlIsNull_whenCallingDiscoveryUrl_thenItFailWithMissingDiscoveryUrl() = runTest {
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, null, Instant.DISTANT_FUTURE, false, null)))
-            .arrange()
-
-        e2eiRepository.discoveryUrl().shouldFail {
-            assertIs<E2EIFailure.MissingDiscoveryUrl>(it)
-        }
-
-        verifySuspend {
-            arrangement.userConfigRepository.getE2EISettings()
-        }
-    }
-
-    @Test
-    fun givenE2EIIsEnabledAndDiscoveryUrlIsNotNull_whenCallingDiscoveryUrl_thenItSucceed() = runTest {
-        val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, RANDOM_URL, Instant.DISTANT_FUTURE, false, null)))
-            .arrange()
-
-        e2eiRepository.discoveryUrl().shouldSucceed {
-            assertEquals(RANDOM_URL, it)
-        }
-
-        verifySuspend {
-            arrangement.userConfigRepository.getE2EISettings()
-        }
-    }
-
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-
-        suspend fun withGetE2EIClientSuccessful() = apply {
+    fun givenProxyEnabled_whenCredentialCheckFetchesCrl_thenUsesConfiguredProxy() = runTest {
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { userConfigRepository.getE2EISettings() } returns PROXIED_E2EI_SETTINGS.right()
             everySuspend {
-                e2eiClientProvider.getE2EIClient(any(), any())
-            }.returns(Either.Right(e2eiClient))
+                acmeApi.getClientDomainCRL(eq(CRL_URL), eq(CRL_PROXY_URL))
+            } returns success(PROXIED_CRL)
         }
 
-        suspend fun withGetCoreCryptoSuccessful() = apply {
-            everySuspend {
-                mlsClientProvider.getCoreCrypto(any())
-            }.returns(Either.Right(coreCryptoCentral))
+        repository.checkCredentials().shouldSucceed()
+        val response = requireNotNull(arrangement.pkiHooks).httpRequest(
+            PkiHttpMethod.GET,
+            CRL_URL,
+            emptyList(),
+            byteArrayOf()
+        )
+
+        assertEquals(200.toUShort(), response.status)
+        assertContentEquals(PROXIED_CRL, response.body)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.acmeApi.getClientDomainCRL(eq(CRL_URL), eq(CRL_PROXY_URL))
+        }
+    }
+
+    @Test
+    fun givenPersistedSnapshotAndIdToken_whenResumingAcquisition_thenInstallsCredentialAndDeletesOneShotSnapshot() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        val groups = listOf(GroupID("group-1"))
+
+        val result = repository.resumeCredentialAcquisition(ID_TOKEN, groups, isNewClient = false)
+
+        result.shouldSucceed { checkpoint ->
+            assertEquals(CERTIFICATE_CHAIN, checkpoint.certificateChain)
+            assertEquals(PREVIOUS_CREDENTIAL_ID, checkpoint.previousCredentialId)
+            assertEquals(NEW_CREDENTIAL_ID, checkpoint.newCredentialId)
+            assertEquals(listOf("group-1"), checkpoint.groupIds)
+            assertEquals(E2EIRotationPhase.CREDENTIAL_INSTALLED, checkpoint.phase)
+        }
+        assertEquals(ID_TOKEN, arrangement.returnedIdToken)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.coreCrypto.resumeX509CredentialAcquisition(eq(SNAPSHOT))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.coreCrypto.installCredential(eq(arrangement.credential))
+        }
+        assertTrue(
+            arrangement.checkpointEvents.indexOf("persist-CREDENTIAL_INSTALLED") <
+                    arrangement.checkpointEvents.indexOf("delete-snapshot")
+        )
+    }
+
+    @Test
+    fun givenAcquiredCheckpointCannotBePersisted_whenResuming_thenDoesNotInstallOrDeleteSnapshot() = runTest {
+        val (arrangement, repository) = Arrangement().arrange {
+            rotationCheckpointWriteFailurePhase = E2EIRotationPhase.ACQUIRED
         }
 
-        suspend fun withE2EIClientLoadDirectoriesSuccessful() = apply {
-            everySuspend {
-                e2eiClient.directoryResponse(any())
-            }.returns(ACME_DIRECTORIES)
+        val result = repository.resumeCredentialAcquisition(
+            ID_TOKEN,
+            listOf(GroupID("group-1")),
+            isNewClient = false
+        )
+
+        kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.coreCrypto.installCredential(any())
+            arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
+        }
+    }
+
+    @Test
+    fun givenPersistedRotationCheckpoint_whenFinalizationIsRetried_thenDoesNotResumeAcquisitionAgain() = runTest {
+        val checkpoint = installedCheckpoint()
+        val (arrangement, repository) = Arrangement().arrange {
+            persistedRotationCheckpoint = Json.encodeToString(E2EIRotationCheckpoint.serializer(), checkpoint).encodeToByteArray()
         }
 
-        suspend fun withGetNewAccountSuccessful() = apply {
-            everySuspend {
-                e2eiClient.getNewAccountRequest(any())
-            }.returns(RANDOM_BYTE_ARRAY)
+        repository.resumeCredentialAcquisition(ID_TOKEN, emptyList(), isNewClient = false).shouldSucceed {
+            assertEquals(checkpoint, it)
         }
 
-        suspend fun withGetNewOrderSuccessful() = apply {
-            everySuspend {
-                e2eiClient.getNewOrderRequest(any())
-            }.returns(RANDOM_BYTE_ARRAY)
+        verifySuspend(VerifyMode.not) {
+            arrangement.coreCrypto.resumeX509CredentialAcquisition(any())
+            arrangement.coreCrypto.installCredential(any())
+        }
+    }
+
+    @Test
+    fun givenCredentialWasInstalledBeforeCheckpointUpdate_whenRetried_thenRecoversByFullSetDifference() = runTest {
+        val olderCredentialRef = mock<CryptoCredentialRef>(mode = MockMode.autoUnit)
+        val olderCredentialId = kotlin.io.encoding.Base64.encode("older-credential".encodeToByteArray())
+        every { olderCredentialRef.publicKeyHash() } returns "older-credential".encodeToByteArray()
+        val acquiredCheckpoint = installedCheckpoint().copy(
+            preExistingCredentialIds = listOf(PREVIOUS_CREDENTIAL_ID, olderCredentialId),
+            newCredentialId = null,
+            phase = E2EIRotationPhase.ACQUIRED
+        )
+        val (arrangement, repository) = Arrangement().arrange {
+            persistedRotationCheckpoint = Json.encodeToString(
+                E2EIRotationCheckpoint.serializer(),
+                acquiredCheckpoint
+            ).encodeToByteArray()
+            everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns
+                    listOf(newCredentialRef, previousCredentialRef, olderCredentialRef)
         }
 
-        suspend fun withGetNewAuthzRequestSuccessful() = apply {
-            everySuspend {
-                e2eiClient.getNewAuthzRequest(any(), any())
-            }.returns(RANDOM_BYTE_ARRAY)
-        }
-
-        suspend fun withCheckOrderRequestSuccessful() = apply {
-            everySuspend {
-                e2eiClient.checkOrderRequest(any(), any())
-            }.returns(RANDOM_BYTE_ARRAY)
-        }
-
-        suspend fun withFinalizeRequestSuccessful() = apply {
-            everySuspend {
-                e2eiClient.finalizeRequest(any())
-            }.returns(RANDOM_BYTE_ARRAY)
-        }
-
-        suspend fun withCertificateRequestSuccessful() = apply {
-            everySuspend {
-                e2eiClient.certificateRequest(any())
-            }.returns(RANDOM_BYTE_ARRAY)
-        }
-
-        suspend fun withRotateKeysAndMigrateConversationsReturns(result: Either<E2EIFailure, Unit>) = apply {
-            everySuspend {
-                mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
-            }.returns(result)
-        }
-
-        suspend fun withCurrentClientIdProviderSuccessful() = apply {
-            everySuspend {
-                currentClientIdProvider.invoke()
-            }.returns(Either.Right(TestClient.CLIENT_ID))
-        }
-
-        suspend fun withFinalizeResponseSuccessful() = apply {
-            everySuspend {
-                e2eiClient.finalizeResponse(any())
-            }.returns("")
-        }
-
-        suspend fun withCheckOrderResponseSuccessful() = apply {
-            everySuspend {
-                e2eiClient.checkOrderResponse(any())
-            }.returns("")
-        }
-
-        suspend fun withGetNewDpopChallengeRequest() = apply {
-            everySuspend {
-                e2eiClient.getNewDpopChallengeRequest(any(), any())
-            }.returns(RANDOM_BYTE_ARRAY)
-        }
-
-        suspend fun withGetNewOidcChallengeRequest() = apply {
-            everySuspend {
-                e2eiClient.getNewOidcChallengeRequest(any(), any())
-            }.returns(RANDOM_BYTE_ARRAY)
-        }
-
-        suspend fun withSetOrderResponseSuccessful() = apply {
-            everySuspend {
-                e2eiClient.setOrderResponse(any())
-            }.returns(ACME_ORDER)
-        }
-
-        suspend fun withSetAuthzResponseSuccessful() = apply {
-            everySuspend {
-                e2eiClient.setAuthzResponse(any())
-            }.returns(OIDC_AUTHZ)
-        }
-
-        suspend fun withGetMLSClientSuccessful() = apply {
-            everySuspend {
-                mlsClientProvider.getMLSClient(any())
-            }.returns(Either.Right(mlsClient))
-        }
-
-        suspend fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
-            everySuspend {
-                userConfigRepository.getE2EISettings()
-            }.returns(result)
-        }
-
-        suspend fun withGetShouldFetchE2EITrustAnchors(result: Boolean) = apply {
-            everySuspend {
-                userConfigRepository.getShouldFetchE2EITrustAnchor()
-            }.returns(result)
-        }
-
-        suspend fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
-            everySuspend {
-                userConfigRepository.setShouldFetchE2EITrustAnchors(any())
-            }.returns(Unit)
-        }
-
-
-        suspend fun withAcmeDirectoriesApiSucceed() = apply {
-            everySuspend {
-                acmeApi.getACMEDirectories(any())
-            }.returns(NetworkResponse.Success(ACME_DIRECTORIES_RESPONSE, mapOf(), 200))
-        }
-
-        suspend fun withAcmeDirectoriesApiFails() = apply {
-            everySuspend {
-                acmeApi.getACMEDirectories(any())
-            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
-        }
-
-        suspend fun withSendAcmeRequestApiSucceed() = apply {
-            everySuspend {
-                acmeApi.sendACMERequest(any(), any())
-            }.returns(NetworkResponse.Success(ACME_REQUEST_RESPONSE, mapOf(), 200))
-        }
-
-        suspend fun withSendAcmeRequestApiFails() = apply {
-            everySuspend {
-                acmeApi.sendACMERequest(any(), any())
-            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
-        }
-
-        suspend fun withSendAuthorizationRequestSucceed(url: String, challengeType: DtoAuthorizationChallengeType) = apply {
-            everySuspend {
-                acmeApi.sendAuthorizationRequest(eq(url), any())
-            }.returns(
-                NetworkResponse.Success(
-                    ACME_AUTHORIZATION_RESPONSE.copy(challengeType = challengeType),
-                    headers = HEADERS,
-                    200
-                )
+        repository.resumeCredentialAcquisition(
+            ID_TOKEN,
+            listOf(GroupID("group-created-during-idp")),
+            isNewClient = false
+        ).shouldSucceed { recovered ->
+            assertEquals(NEW_CREDENTIAL_ID, recovered.newCredentialId)
+            assertEquals(
+                listOf("group-1", "group-created-during-idp"),
+                recovered.groupIds
             )
+            assertEquals(E2EIRotationPhase.CREDENTIAL_INSTALLED, recovered.phase)
         }
 
-        suspend fun withSendAuthorizationRequestFails() = apply {
+        verifySuspend(VerifyMode.not) {
+            arrangement.coreCrypto.resumeX509CredentialAcquisition(any())
+            arrangement.coreCrypto.installCredential(any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
+        }
+    }
+
+    @Test
+    fun givenPendingRotationCheckpoint_whenStartingAnotherAcquisition_thenFailsWithoutOverwritingState() = runTest {
+        val checkpoint = installedCheckpoint()
+        val (arrangement, repository) = Arrangement().arrange {
+            persistedRotationCheckpoint = Json.encodeToString(
+                E2EIRotationCheckpoint.serializer(),
+                checkpoint
+            ).encodeToByteArray()
+        }
+
+        val result = repository.startCredentialAcquisition(isNewClient = false)
+
+        kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
+            arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
+        }
+    }
+
+    @Test
+    fun givenOneGroupAlreadyCheckpointed_whenRotating_thenMigratesOnlyRemainingGroupAndCompletesPhases() = runTest {
+        val groupOne = GroupID("group-1")
+        val groupTwo = GroupID("group-2")
+        val prepared = PreparedX509KeyPackages(
+            keyPackages = listOf("key-package".encodeToByteArray()),
+            cipherSuite = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+        )
+        val checkpoint = installedCheckpoint().copy(
+            groupIds = listOf(groupOne.value, groupTwo.value),
+            migratedGroupIds = listOf(groupOne.value)
+        )
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns
+                    listOf(newCredentialRef, previousCredentialRef)
             everySuspend {
-                acmeApi.sendAuthorizationRequest(any(), any())
-            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
-        }
-
-        suspend fun withSendChallengeRequestApiSucceed() = apply {
+                mlsConversationRepository.migrateConversationCredential(any(), any(), any())
+            } returns Unit
             everySuspend {
-                acmeApi.sendChallengeRequest(any(), any())
-            }.returns(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE, mapOf(), 200))
-        }
-
-        suspend fun withSendChallengeRequestApiSucceedWithInvalidStatus() = apply {
+                mlsConversationRepository.prepareX509KeyPackages(any(), any())
+            } returns prepared
             everySuspend {
-                acmeApi.sendChallengeRequest(any(), any())
-            }.returns(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE.copy(status = "invalid"), mapOf(), 200))
-        }
-
-        suspend fun withSendChallengeRequestApiFails() = apply {
+                mlsConversationRepository.replaceX509KeyPackages(any(), any())
+            } returns Unit.right()
             everySuspend {
-                acmeApi.sendChallengeRequest(any(), any())
-            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+                mlsConversationRepository.removePreviousX509Credential(any(), any(), any())
+            } returns Unit
         }
 
-        suspend fun withAcmeFederationApiSucceed(certificateList: List<String>) = apply {
+        repository.rotateKeysAndMigrateConversations(arrangement.transactionProvider, checkpoint).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.migrateConversationCredential(
+                eq(arrangement.mlsContext),
+                eq(arrangement.newCredentialRef),
+                eq(groupTwo)
+            )
+            arrangement.mlsConversationRepository.prepareX509KeyPackages(
+                eq(arrangement.mlsContext),
+                eq(arrangement.newCredentialRef)
+            )
+            arrangement.mlsConversationRepository.replaceX509KeyPackages(
+                eq(TestClient.CLIENT_ID),
+                eq(prepared)
+            )
+            arrangement.mlsConversationRepository.removePreviousX509Credential(
+                eq(arrangement.mlsContext),
+                eq(arrangement.newCredentialRef),
+                eq(arrangement.previousCredentialRef)
+            )
+            arrangement.userConfigRepository.deleteE2EIRotationCheckpoint()
+        }
+    }
+
+    @Test
+    fun givenBackendReplacementFails_whenRetriedFromPreparedCheckpoint_thenKeepsCleanupPending() = runTest {
+        val backendFailure = E2EIFailure.Generic(IllegalStateException("backend failed"))
+        val keyPackage = "key-package".encodeToByteArray()
+        val checkpoint = installedCheckpoint().copy(
+            migratedGroupIds = listOf("group-1"),
+            phase = E2EIRotationPhase.KEY_PACKAGES_PREPARED,
+            keyPackages = listOf(kotlin.io.encoding.Base64.encode(keyPackage)),
+            cipherSuiteTag = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256.tag
+        )
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns
+                    listOf(newCredentialRef, previousCredentialRef)
             everySuspend {
-                acmeApi.getACMEFederationCertificateChain(any())
-            }.returns(NetworkResponse.Success(certificateList, mapOf(), 200))
+                mlsConversationRepository.replaceX509KeyPackages(any(), any())
+            } returns backendFailure.left()
         }
 
-        suspend fun withAcmeFederationApiFails() = apply {
-            everySuspend {
-                acmeApi.getACMEFederationCertificateChain(any())
-            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        val result = repository.rotateKeysAndMigrateConversations(arrangement.transactionProvider, checkpoint)
+
+        kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.migrateConversationCredential(any(), any(), any())
+            arrangement.mlsConversationRepository.prepareX509KeyPackages(any(), any())
+            arrangement.mlsConversationRepository.removePreviousX509Credential(any(), any(), any())
+            arrangement.userConfigRepository.deleteE2EIRotationCheckpoint()
+        }
+    }
+
+    @Test
+    fun givenE2EIIsDisabled_whenGettingDiscoveryUrl_thenReturnsDisabled() = runTest {
+        val (_, repository) = Arrangement().arrange {
+            everySuspend { userConfigRepository.getE2EISettings() } returns E2EI_SETTINGS.copy(isRequired = false).right()
         }
 
-        suspend fun withFetchAcmeTrustAnchorsApiFails() = apply {
-            everySuspend {
-                acmeApi.getTrustAnchors(any())
-            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        val result = repository.discoveryUrl()
+
+        result as com.wire.kalium.common.functional.Either.Left
+        kotlin.test.assertIs<E2EIFailure.Disabled>(result.value)
+    }
+
+    @Test
+    fun givenFetchFlagIsFalse_whenRefreshingTrustAnchors_thenStillReconcilesAuthoritativeBundle() = runTest {
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { userConfigRepository.getShouldFetchE2EITrustAnchor() } returns false
+            everySuspend { coreCrypto.getPkiTrustAnchors() } returns listOf("previous-trust-anchor")
         }
 
-        suspend fun withFetchAcmeTrustAnchorsApiSucceed() = apply {
-            everySuspend {
-                acmeApi.getTrustAnchors(any())
-            }.returns(NetworkResponse.Success(RANDOM_BYTE_ARRAY, mapOf(), 200))
-        }
+        repository.fetchAndSetTrustAnchors().shouldSucceed()
 
-        suspend fun withRegisterIntermediateCABag() = apply {
-            everySuspend {
-                coreCryptoCentral.registerIntermediateCa(any())
-            }.returns(Unit)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.acmeApi.getTrustAnchors(eq(DISCOVERY_URL))
         }
-
-        suspend fun withRegisterTrustAnchors() = apply {
-            everySuspend {
-                coreCryptoCentral.registerTrustAnchors(any())
-            }.returns(Unit)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.coreCrypto.reconcilePkiTrustAnchors(eq(TRUST_ANCHOR))
         }
+    }
 
-        val e2eiApi: E2EIApi = mock<E2EIApi>()
-        val acmeApi: ACMEApi = mock<ACMEApi>()
-        val e2eiClientProvider: E2EIClientProvider = mock<E2EIClientProvider>()
-        val e2eiClient = mock<E2EIClient>(mode = MockMode.autoUnit)
-        val coreCryptoCentral = mock<CoreCryptoCentral>()
-        val mlsClientProvider: MLSClientProvider = mock<MLSClientProvider>()
+    private class Arrangement {
+        val e2eiApi = mock<E2EIApi>()
+        val acmeApi = mock<ACMEApi>()
+        val e2eiClientProvider = mock<E2EIClientProvider>()
+        val mlsClientProvider = mock<MLSClientProvider>()
+        val currentClientIdProvider = mock<CurrentClientIdProvider>()
         val mlsConversationRepository = mock<MLSConversationRepository>()
+        val transactionProvider = mock<CryptoTransactionProvider>(mode = MockMode.autoUnit)
+        val mlsContext = mock<MlsCoreCryptoContext>(mode = MockMode.autoUnit)
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        val coreCrypto = mock<CoreCryptoCentral>(mode = MockMode.autoUnit)
         val mlsClient = mock<MLSClient>()
-        val currentClientIdProvider: CurrentClientIdProvider = mock<CurrentClientIdProvider>()
-        val userConfigRepository = mock<UserConfigRepository>()
+        val credential = mock<CryptoCredential>(mode = MockMode.autoUnit)
+        val previousCredentialRef = mock<CryptoCredentialRef>(mode = MockMode.autoUnit)
+        val newCredentialRef = mock<CryptoCredentialRef>(mode = MockMode.autoUnit)
 
-        fun arrange() =
-            this to E2EIRepositoryImpl(
-                e2eiApi,
-                acmeApi,
-                e2eiClientProvider,
-                mlsClientProvider,
-                currentClientIdProvider,
-                mlsConversationRepository,
-                userConfigRepository,
-                TestUser.SELF.id,
-                NoOpCryptoStateChangeHookNotifier
-            )
+        var pkiHooks: PkiEnvironmentHooks? = null
+        var persistedSnapshot: ByteArray? = null
+        var persistedRotationCheckpoint: ByteArray? = null
+        var returnedIdToken: String? = null
+        val checkpointEvents = mutableListOf<String>()
+        var rotationCheckpointWriteFailurePhase: E2EIRotationPhase? = null
 
-        companion object {
-            val TEST_FAILURE = Either.Left(E2EIFailure.Generic(Exception("an error")))
-            val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(GenericAPIErrorResponse(405, "", ""))
-            val RANDOM_BYTE_ARRAY = "random-value".encodeToByteArray()
-            val RANDOM_NONCE = Nonce("xxxxx")
-            val REFRESH_TOKEN = "YRjxLpsjRqL7zYuKstXogqioA_P3Z4fiEuga0NCVRcDSc8cy_9msxg"
-            val RANDOM_ACCESS_TOKEN = "xxxxx"
-            val RANDOM_ID_TOKEN = "xxxxx"
-            val RANDOM_URL = "https://random.rn"
-            val GROUP_ID = GroupID("groupId")
+        suspend fun arrange(configure: suspend Arrangement.() -> Unit = {}): Pair<Arrangement, E2EIRepository> {
+            everySuspend { userConfigRepository.deleteE2EIAcquisitionSnapshot() } calls {
+                checkpointEvents += "delete-snapshot"
+                Unit.right()
+            }
+            everySuspend { userConfigRepository.deleteE2EIRotationCheckpoint() } calls {
+                persistedRotationCheckpoint = null
+                Unit.right()
+            }
+            everySuspend { userConfigRepository.getE2EISettings() } returns E2EI_SETTINGS.right()
+            everySuspend { userConfigRepository.getShouldFetchE2EITrustAnchor() } returns true
+            everySuspend { userConfigRepository.setE2EIAcquisitionSnapshot(any()) } calls { invocation ->
+                persistedSnapshot = invocation.args[0] as ByteArray
+                Unit.right()
+            }
+            everySuspend { userConfigRepository.getE2EIAcquisitionSnapshot() } returns SNAPSHOT.right()
+            everySuspend { userConfigRepository.getE2EIRotationCheckpoint() } calls {
+                persistedRotationCheckpoint.right()
+            }
+            everySuspend { userConfigRepository.setE2EIRotationCheckpoint(any()) } calls { invocation ->
+                persistedRotationCheckpoint = invocation.args[0] as ByteArray
+                val checkpoint = Json.decodeFromString(
+                    E2EIRotationCheckpoint.serializer(),
+                    requireNotNull(persistedRotationCheckpoint).decodeToString()
+                )
+                checkpointEvents += "persist-${checkpoint.phase.name}"
+                if (checkpoint.phase == rotationCheckpointWriteFailurePhase) {
+                    StorageFailure.Generic(IllegalStateException("checkpoint write failed")).left()
+                } else {
+                    Unit.right()
+                }
+            }
+            everySuspend { currentClientIdProvider() } returns TestClient.CLIENT_ID.right()
+            everySuspend { mlsClientProvider.getCoreCrypto(any()) } returns coreCrypto.right()
+            everySuspend { mlsClientProvider.getMLSClient(any()) } returns mlsClient.right()
+            everySuspend { mlsClient.getCredentialRef(CredentialType.X509) } returns previousCredentialRef
+            everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns listOf(previousCredentialRef)
+            every { previousCredentialRef.publicKeyHash() } returns PREVIOUS_CREDENTIAL_HASH
+            every { newCredentialRef.publicKeyHash() } returns NEW_CREDENTIAL_HASH
+            everySuspend { e2eiClientProvider.getX509CredentialAcquisitionConfig(any(), any()) } returns ACQUISITION_CONFIG.right()
+            every { credential.exportPem() } returns CERTIFICATE_CHAIN
+            everySuspend { coreCrypto.installCredential(any()) } calls {
+                checkpointEvents += "install"
+                newCredentialRef
+            }
+            everySuspend { transactionProvider.mlsTransaction<Unit>(any(), any()) } calls { invocation ->
+                @Suppress("UNCHECKED_CAST")
+                val block = invocation.args[1] as suspend (MlsCoreCryptoContext) ->
+                        com.wire.kalium.common.functional.Either<CoreFailure, Unit>
+                block(mlsContext)
+            }
+            everySuspend {
+                transactionProvider.mlsTransaction<PreparedX509KeyPackages>(any(), any())
+            } calls { invocation ->
+                @Suppress("UNCHECKED_CAST")
+                val block = invocation.args[1] as suspend (MlsCoreCryptoContext) ->
+                        com.wire.kalium.common.functional.Either<CoreFailure, PreparedX509KeyPackages>
+                block(mlsContext)
+            }
 
-            val ACME_BASE_URL = "https://balderdash.hogwash.work:9000"
+            everySuspend { coreCrypto.configurePkiEnvironment(any()) } calls { invocation ->
+                pkiHooks = invocation.args[0] as PkiEnvironmentHooks
+            }
+            everySuspend { acmeApi.getTrustAnchors(any()) } returns success(TRUST_ANCHOR.encodeToByteArray())
+            everySuspend { acmeApi.getACMEFederationCertificateChain(any()) } returns success(listOf(INTERMEDIATE))
+            everySuspend { coreCrypto.startX509CredentialAcquisition(any(), any()) } calls {
+                requireNotNull(pkiHooks).authenticate(IDP_URL, KEY_AUTH, ACME_AUDIENCE, SNAPSHOT)
+                credential
+            }
+            everySuspend { coreCrypto.resumeX509CredentialAcquisition(any()) } calls {
+                returnedIdToken = requireNotNull(pkiHooks).authenticate(IDP_URL, KEY_AUTH, ACME_AUDIENCE, SNAPSHOT)
+                credential
+            }
+            configure()
 
-            val ACME_DIRECTORIES_RESPONSE = AcmeDirectoriesResponse(
-                newNonce = "$ACME_BASE_URL/acme/wire/new-nonce",
-                newAccount = "$ACME_BASE_URL/acme/wire/new-account",
-                newOrder = "$ACME_BASE_URL/acme/wire/new-order",
-                revokeCert = "$ACME_BASE_URL/acme/wire/revoke-cert",
-                keyChange = "$ACME_BASE_URL/acme/wire/key-change"
-            )
-
-            val ACME_DIRECTORIES = AcmeDirectory(
-                newNonce = "$ACME_BASE_URL/acme/wire/new-nonce",
-                newAccount = "$ACME_BASE_URL/acme/wire/new-account",
-                newOrder = "$ACME_BASE_URL/acme/wire/new-order"
-            )
-
-            val ACME_REQUEST_RESPONSE = ACMEResponse(
-                nonce = RANDOM_NONCE.value,
-                location = RANDOM_URL,
-                response = RANDOM_BYTE_ARRAY
-            )
-
-            val ACME_ORDER = NewAcmeOrder(
-                delegate = RANDOM_BYTE_ARRAY,
-                authorizations = emptyList()
-            )
-
-            val ACME_CHALLENGE = AcmeChallenge(
-                delegate = RANDOM_BYTE_ARRAY,
-                url = RANDOM_URL,
-                target = RANDOM_URL
-            )
-
-            val OIDC_AUTHZ = NewAcmeAuthz(
-                identifier = "identifier",
-                keyAuth = "keyauth",
-                challenge = ACME_CHALLENGE
-            )
-
-            val DPOP_AUTHZ = NewAcmeAuthz(
-                identifier = "identifier",
-                keyAuth = "keyauth",
-                challenge = ACME_CHALLENGE
-            )
-
-            val ACME_CHALLENGE_RESPONSE = ChallengeResponse(
-                type = "type",
-                url = "url",
-                status = "status",
-                token = "token",
-                target = "target",
-                nonce = "nonce"
-            )
-
-            val ACME_AUTHORIZATION_RESPONSE = ACMEAuthorizationResponse(
-                nonce = RANDOM_NONCE.value,
-                location = RANDOM_URL,
-                response = RANDOM_BYTE_ARRAY,
-                challengeType = DtoAuthorizationChallengeType.DPoP
-            )
-
-            val AUTHORIZATIONS_RESULT = AuthorizationResult(
-                oidcAuthorization = OIDC_AUTHZ,
-                dpopAuthorization = DPOP_AUTHZ,
-                nonce = RANDOM_NONCE
-            )
-            const val NONCE_HEADER_KEY = "Replay-Nonce"
-            const val LOCATION_HEADER_KEY = "location"
-            val HEADERS = mapOf(NONCE_HEADER_KEY to RANDOM_NONCE.value, LOCATION_HEADER_KEY to RANDOM_URL)
-
-            val E2EI_TEAM_SETTINGS = E2EISettings(
-                true, RANDOM_URL, DateTimeUtil.currentInstant(), false, null
+            return this to E2EIRepositoryImpl(
+                e2EIApi = e2eiApi,
+                acmeApi = acmeApi,
+                pkiHttpClient = HttpClient(MockEngine { respondOk() }),
+                e2EIClientProvider = e2eiClientProvider,
+                mlsClientProvider = mlsClientProvider,
+                currentClientIdProvider = currentClientIdProvider,
+                mlsConversationRepository = mlsConversationRepository,
+                userConfigRepository = userConfigRepository,
+                selfUserId = TestUser.SELF.id,
+                cryptoStateChangeHookNotifier = NoOpCryptoStateChangeHookNotifier
             )
         }
+    }
+
+    private companion object {
+        const val DISCOVERY_URL = "https://acme.example.test/directory"
+        const val HOST_ONLY_DISCOVERY_URL = "https://acme.example.test"
+        const val IDP_URL = "https://idp.example.test/authorize"
+        const val KEY_AUTH = "key-authorization"
+        const val ACME_AUDIENCE = "wire-acme"
+        const val ID_TOKEN = "signed-id-token"
+        const val CRL_URL = "https://client.example.test/client.crl"
+        const val CRL_PROXY_URL = "https://crl-proxy.example.test"
+        const val TRUST_ANCHOR = "trust-anchor-pem"
+        const val INTERMEDIATE = "intermediate-pem"
+        const val CERTIFICATE_CHAIN = "-----BEGIN CERTIFICATE-----\nleaf\n-----END CERTIFICATE-----"
+        val PREVIOUS_CREDENTIAL_HASH = "previous-credential".encodeToByteArray()
+        val NEW_CREDENTIAL_HASH = "new-credential".encodeToByteArray()
+        val PREVIOUS_CREDENTIAL_ID = kotlin.io.encoding.Base64.encode(PREVIOUS_CREDENTIAL_HASH)
+        val NEW_CREDENTIAL_ID = kotlin.io.encoding.Base64.encode(NEW_CREDENTIAL_HASH)
+        val SNAPSHOT = "encrypted-core-crypto-snapshot".encodeToByteArray()
+        val PROXIED_CRL = "proxied-crl".encodeToByteArray()
+        val E2EI_SETTINGS = E2EISettings(
+            isRequired = true,
+            discoverUrl = DISCOVERY_URL,
+            gracePeriodEnd = Instant.DISTANT_FUTURE,
+            shouldUseProxy = false,
+            crlProxy = null
+        )
+        val PROXIED_E2EI_SETTINGS = E2EI_SETTINGS.copy(
+            shouldUseProxy = true,
+            crlProxy = CRL_PROXY_URL
+        )
+        val ACQUISITION_CONFIG = X509CredentialAcquisitionConfig(
+            acmeDirectoryUrl = DISCOVERY_URL,
+            cipherSuite = MLSCiphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+            displayName = TestUser.SELF.name!!,
+            clientId = CryptoQualifiedClientId(TestClient.CLIENT_ID.value, TestUser.SELF.id.toCrypto()),
+            handle = TestUser.SELF.handle!!,
+            teamId = TestUser.SELF.teamId?.value,
+            validity = 90.days
+        )
+
+        fun installedCheckpoint() = E2EIRotationCheckpoint(
+            certificateChain = CERTIFICATE_CHAIN,
+            preExistingCredentialIds = listOf(PREVIOUS_CREDENTIAL_ID),
+            previousCredentialId = PREVIOUS_CREDENTIAL_ID,
+            newCredentialId = NEW_CREDENTIAL_ID,
+            groupIds = listOf("group-1"),
+            isNewClient = false,
+            phase = E2EIRotationPhase.CREDENTIAL_INSTALLED
+        )
+
+        private fun <T : Any> success(value: T): NetworkResponse<T> = NetworkResponse.Success(
+            value = value,
+            headers = emptyMap(),
+            httpCode = 200
+        )
     }
 }

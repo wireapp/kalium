@@ -38,8 +38,8 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoCredentialRef
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
-import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MLSDecryptResult
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
@@ -119,6 +119,21 @@ internal data class DecryptedMessageBundle(
     val commitDelay: Long?,
     val identity: WireIdentity?
 )
+
+internal data class PreparedX509KeyPackages(
+    val keyPackages: List<ByteArray>,
+    val cipherSuite: CipherSuite
+) {
+    override fun equals(other: Any?): Boolean =
+        other is PreparedX509KeyPackages &&
+                cipherSuite == other.cipherSuite &&
+                keyPackages.size == other.keyPackages.size &&
+                keyPackages.zip(other.keyPackages).all { (left, right) -> left.contentEquals(right) }
+
+    override fun hashCode(): Int = keyPackages.fold(cipherSuite.hashCode()) { result, keyPackage ->
+        31 * result + keyPackage.contentHashCode()
+    }
+}
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal interface MLSConversationRepository : MLSMemberAdder {
@@ -214,14 +229,36 @@ internal interface MLSConversationRepository : MLSMemberAdder {
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
     suspend fun clearProposalTimer(groupID: GroupID)
     fun observeProposalTimers(): Flow<ProposalTimer>
-    suspend fun rotateKeysAndMigrateConversations(
+    /**
+     * Select [credentialRef] and migrate [groupID] when it still uses another credential.
+     *
+     * This deliberately throws Core Crypto failures so the caller can let the surrounding
+     * transaction roll back instead of committing a normal Either.Left.
+     */
+    suspend fun migrateConversationCredential(
         mlsContext: MlsCoreCryptoContext,
+        credentialRef: CryptoCredentialRef,
+        groupID: GroupID
+    )
+
+    /** Generate a replacement set of key packages for an installed credential. */
+    suspend fun prepareX509KeyPackages(
+        mlsContext: MlsCoreCryptoContext,
+        credentialRef: CryptoCredentialRef
+    ): PreparedX509KeyPackages
+
+    /** Replace backend key packages. This must run outside a Core Crypto transaction. */
+    suspend fun replaceX509KeyPackages(
         clientId: ClientId,
-        e2eiClient: E2EIClient,
-        certificateChain: String,
-        groupIdList: List<GroupID>,
-        isNewClient: Boolean = false
+        preparedKeyPackages: PreparedX509KeyPackages
     ): Either<E2EIFailure, Unit>
+
+    /** Remove the previous credential only after its backend key packages were replaced. */
+    suspend fun removePreviousX509Credential(
+        mlsContext: MlsCoreCryptoContext,
+        newCredentialRef: CryptoCredentialRef,
+        previousCredentialRef: CryptoCredentialRef?
+    )
 
     suspend fun getClientIdentity(
         mlsContext: MlsCoreCryptoContext,
@@ -299,8 +336,8 @@ internal class MLSConversationDataSource(
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
-    private val revocationListChecker: RevocationListChecker,
-    private val certificateRevocationListRepository: CertificateRevocationListRepository,
+    @Suppress("UNUSED_PARAMETER") revocationListChecker: RevocationListChecker,
+    @Suppress("UNUSED_PARAMETER") certificateRevocationListRepository: CertificateRevocationListRepository,
     private val mutex: Mutex,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
@@ -354,12 +391,7 @@ internal class MLSConversationDataSource(
                 MLSDecryptResult.BufferedFutureMessage -> Left(MLSFailure.BufferedFutureMessage)
                 MLSDecryptResult.BufferedCommit -> Left(MLSFailure.BufferedCommit)
                 is MLSDecryptResult.Success -> wrapMLSRequest {
-                    result.messages.map {
-                        it.crlNewDistributionPoints?.let { newDistributionPoints ->
-                            checkRevocationList(mlsContext, newDistributionPoints)
-                        }
-                        it.toModel(groupID)
-                    }
+                    result.messages.map { it.toModel(groupID) }
                 }
             }
         }
@@ -397,10 +429,6 @@ internal class MLSConversationDataSource(
     ): Either<CoreFailure, Unit> = wrapMLSRequest {
         logger.d("Joining group ${groupID.toLogString()} by external commit")
         mlsContext.joinByExternalCommit(groupInfo)
-    }.onSuccess { welcomeBundle ->
-        welcomeBundle.crlNewDistributionPoints?.let {
-            checkRevocationList(mlsContext, it)
-        }
     }.flatMap {
         wrapMLSRequest {
             mlsContext.conversationEpoch(idMapper.toCryptoModel(groupID))
@@ -558,11 +586,6 @@ internal class MLSConversationDataSource(
                     } else {
                         logger.d("add members to MLS Group: executing for groupID ${groupID.toLogString()}")
                         mlsContext.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
-                    }
-                }.onSuccess { crlNewDistributionPoints ->
-                    crlNewDistributionPoints?.let { revocationList ->
-                        logger.d("add members to MLS Group: checking revocation list")
-                        checkRevocationList(mlsContext, revocationList)
                     }
                 }.map {
                     MLSAdditionResult(
@@ -735,46 +758,68 @@ internal class MLSConversationDataSource(
         }
     }
 
-    override suspend fun rotateKeysAndMigrateConversations(
+    override suspend fun migrateConversationCredential(
         mlsContext: MlsCoreCryptoContext,
+        credentialRef: CryptoCredentialRef,
+        groupID: GroupID
+    ) {
+        mlsContext.selectCredential(credentialRef)
+        val cryptoGroupID = groupID.toCrypto()
+        if (!mlsContext.conversationExists(cryptoGroupID)) return
+
+        val currentCredentialRef = mlsContext.getConversationCredentialRef(cryptoGroupID)
+        try {
+            if (!currentCredentialRef.publicKeyHash().contentEquals(credentialRef.publicKeyHash())) {
+                mlsContext.setConversationCredential(cryptoGroupID, credentialRef)
+            }
+        } finally {
+            currentCredentialRef.close()
+        }
+    }
+
+    override suspend fun prepareX509KeyPackages(
+        mlsContext: MlsCoreCryptoContext,
+        credentialRef: CryptoCredentialRef
+    ): PreparedX509KeyPackages {
+        mlsContext.selectCredential(credentialRef)
+        // A crash after generation but before checkpointing can leave an unreferenced batch.
+        // Removing it here makes preparation idempotent before the backend phase starts.
+        mlsContext.removeKeyPackages(credentialRef)
+        return PreparedX509KeyPackages(
+            keyPackages = mlsContext.generateKeyPackages(
+                keyPackageLimitsProvider.refillAmount(),
+                credentialRef
+            ),
+            cipherSuite = mlsContext.getDefaultCipherSuite().toModel()
+        )
+    }
+
+    override suspend fun replaceX509KeyPackages(
         clientId: ClientId,
-        e2eiClient: E2EIClient,
-        certificateChain: String,
-        groupIdList: List<GroupID>,
-        isNewClient: Boolean
-    ): Either<E2EIFailure, Unit> = wrapMLSRequest { mlsContext.saveX509Credential(e2eiClient, certificateChain) }
-        .flatMap { crlNewDistributionPoints ->
-            val existingGroupList =
-                groupIdList.filter { hasEstablishedMLSGroup(mlsContext, it).fold({ false }, { hasEstablished -> hasEstablished }) }
-            wrapMLSRequest { mlsContext.e2eiRotateGroups(existingGroupList.map { it.toCrypto() }) }
-                .flatMap {
-                    crlNewDistributionPoints?.let { checkRevocationList(mlsContext, it) }
-                    if (!isNewClient) {
-                        logger.w("enrollment for existing client: drop stale key packages and upload new ones")
-                        wrapMLSRequest {
-                            mlsContext.removeStaleKeyPackages()
-                        }.flatMap {
-                            wrapMLSRequest { mlsContext.generateKeyPackages(keyPackageLimitsProvider.refillAmount()) }
-                        }.flatMap { newKeyPackages ->
-                            keyPackageRepository.replaceKeyPackages(clientId, newKeyPackages, mlsContext.getDefaultCipherSuite().toModel())
-                        }.fold({ failure ->
-                            E2EIFailure.RotationAndMigration(failure).left()
-                        }, {
-                            Either.Right(Unit)
-                        })
-                    } else {
-                        Either.Right(Unit)
-                    }
-                }
-        }.fold({ failure ->
+        preparedKeyPackages: PreparedX509KeyPackages
+    ): Either<E2EIFailure, Unit> = keyPackageRepository.replaceKeyPackages(
+        clientId,
+        preparedKeyPackages.keyPackages,
+        preparedKeyPackages.cipherSuite
+    ).fold({ failure ->
             if (failure is E2EIFailure.RotationAndMigration) {
-                return failure.left()
+                failure.left()
             } else {
                 E2EIFailure.RotationAndMigration(failure).left()
             }
-        }, {
-            Either.Right(Unit)
-        })
+        }, { Either.Right(Unit) })
+
+    override suspend fun removePreviousX509Credential(
+        mlsContext: MlsCoreCryptoContext,
+        newCredentialRef: CryptoCredentialRef,
+        previousCredentialRef: CryptoCredentialRef?
+    ) {
+        mlsContext.selectCredential(newCredentialRef)
+        previousCredentialRef?.let { previousCredential ->
+            mlsContext.removeKeyPackages(previousCredential)
+            mlsContext.removeCredential(previousCredential)
+        }
+    }
 
     override suspend fun getClientIdentity(mlsContext: MlsCoreCryptoContext, clientId: ClientId) =
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }
@@ -929,16 +974,6 @@ internal class MLSConversationDataSource(
 
             CommitStrategy.Abort -> Left(failure)
         }
-
-    private suspend fun checkRevocationList(mlsContext: MlsCoreCryptoContext, crlNewDistributionPoints: List<String>) {
-        crlNewDistributionPoints.forEach { url ->
-            revocationListChecker.check(mlsContext, url).map { newExpiration ->
-                newExpiration?.let {
-                    certificateRevocationListRepository.addOrUpdateCRL(url, it)
-                }
-            }
-        }
-    }
 
     override suspend fun updateGroupIdAndState(
         conversationId: ConversationId,

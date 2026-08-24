@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
+import kotlin.io.encoding.Base64
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -152,6 +153,12 @@ internal interface UserConfigRepository {
     suspend fun getNextTimeForCallFeedback(): Either<StorageFailure, Long>
     suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     suspend fun getShouldFetchE2EITrustAnchor(): Boolean
+    suspend fun setE2EIAcquisitionSnapshot(snapshot: ByteArray): Either<StorageFailure, Unit>
+    suspend fun getE2EIAcquisitionSnapshot(): Either<StorageFailure, ByteArray?>
+    suspend fun deleteE2EIAcquisitionSnapshot(): Either<StorageFailure, Unit>
+    suspend fun setE2EIRotationCheckpoint(checkpoint: ByteArray): Either<StorageFailure, Unit>
+    suspend fun getE2EIRotationCheckpoint(): Either<StorageFailure, ByteArray?>
+    suspend fun deleteE2EIRotationCheckpoint(): Either<StorageFailure, Unit>
     suspend fun setMlsConversationsResetEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isMlsConversationsResetEnabled(): Boolean
     suspend fun setAsyncNotificationsEnabled(isAsyncNotificationsEnabled: Boolean): Either<StorageFailure, Unit>
@@ -283,6 +290,8 @@ internal class UserConfigDataSource internal constructor(
         wrapStorageRequest {
             userConfigStorage.setE2EISettings(null)
             userConfigStorage.updateE2EINotificationTime(0)
+            userConfigDAO.deleteE2EIAcquisitionSnapshot()
+            userConfigDAO.deleteE2EIRotationCheckpoint()
         }
     }
 
@@ -307,6 +316,24 @@ internal class UserConfigDataSource internal constructor(
             default = CipherSuite.fromTag(it.default)
         )
     }
+
+    override suspend fun setE2EIAcquisitionSnapshot(snapshot: ByteArray): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.setE2EIAcquisitionSnapshot(Base64.encode(snapshot)) }
+
+    override suspend fun getE2EIAcquisitionSnapshot(): Either<StorageFailure, ByteArray?> =
+        wrapStorageRequest { userConfigDAO.getE2EIAcquisitionSnapshot()?.let(Base64::decode) }
+
+    override suspend fun deleteE2EIAcquisitionSnapshot(): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.deleteE2EIAcquisitionSnapshot() }
+
+    override suspend fun setE2EIRotationCheckpoint(checkpoint: ByteArray): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.setE2EIRotationCheckpoint(Base64.encode(checkpoint)) }
+
+    override suspend fun getE2EIRotationCheckpoint(): Either<StorageFailure, ByteArray?> =
+        wrapStorageRequest { userConfigDAO.getE2EIRotationCheckpoint()?.let(Base64::decode) }
+
+    override suspend fun deleteE2EIRotationCheckpoint(): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.deleteE2EIRotationCheckpoint() }
 
     override suspend fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol> =
         wrapStorageRequest { userConfigStorage.defaultProtocol().toModel() }

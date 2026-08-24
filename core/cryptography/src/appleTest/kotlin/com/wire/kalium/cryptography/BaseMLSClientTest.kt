@@ -27,7 +27,6 @@ import platform.Foundation.URLByAppendingPathComponent
 actual open class BaseMLSClientTest actual constructor() {
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<MLSCiphersuite>,
         defaultCipherSuite: MLSCiphersuite,
         mlsTransporter: MLSTransporter,
         epochObserver: MLSEpochObserver,
@@ -35,7 +34,6 @@ actual open class BaseMLSClientTest actual constructor() {
     ): MLSClient {
         return createCoreCrypto(clientId).mlsClient(
             clientId,
-            allowedCipherSuites,
             defaultCipherSuite,
             mlsTransporter,
             epochObserver,

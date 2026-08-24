@@ -18,9 +18,7 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.common.error.E2EIFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.cryptography.CrlRegistration
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
@@ -29,13 +27,13 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import dev.mokkery.matcher.any
 import dev.mokkery.answering.returns
-import dev.mokkery.everySuspend
-import dev.mokkery.verifySuspend
+import dev.mokkery.answering.throws
 import dev.mokkery.every
+import dev.mokkery.everySuspend
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,43 +41,34 @@ import kotlin.test.assertEquals
 class RevocationListCheckerTest {
 
     @Test
-    fun givenE2EIRepositoryReturnsFailure_whenRunningUseCase_thenDoNotRegisterCrlAndReturnFailure() =
+    fun givenCoreCryptoCredentialCheckFails_whenRunningUseCase_thenReturnFailure() =
         runTest {
             val (arrangement, revocationListChecker) = Arrangement()
                 .withE2EIEnabledAndMLSEnabled(true)
-                .withE2EIRepositoryFailure()
+                .withCheckCredentialsFailure()
                 .arrange()
 
             val result = revocationListChecker.check(arrangement.mlsContext, DUMMY_URL)
 
             result.shouldFail()
-            verifySuspend {
-                arrangement.certificateRevocationListRepository.getClientDomainCRL(any())
-            }
-
-            verifySuspend(mode = VerifyMode.not) {
-                arrangement.mlsContext.registerCrl(any(), any())
-            }
         }
 
     @Test
-    fun givenCertificatesRegistrationReturnsFlagIsChanged_whenRunningUseCase_thenUpdateConversationStates() =
+    fun givenCoreCryptoCredentialCheckSucceeds_whenRunningUseCase_thenReturnNoLegacyExpiration() =
         runTest {
             val (arrangement, revocationListChecker) = Arrangement()
                 .withE2EIEnabledAndMLSEnabled(true)
-                .withE2EIRepositorySuccess()
-                .withRegisterCrl()
-                .withRegisterCrlFlagChanged()
+                .withCheckCredentialsSuccess()
                 .arrange()
 
             val result = revocationListChecker.check(arrangement.mlsContext, DUMMY_URL)
 
             result.shouldSucceed {
-                assertEquals(EXPIRATION, it)
+                assertEquals(null, it)
             }
 
             verifySuspend {
-                arrangement.mlsContext.registerCrl(any(), any())
+                arrangement.mlsContext.checkCredentials()
             }
         }
 
@@ -99,7 +88,7 @@ class RevocationListCheckerTest {
         }
 
         verifySuspend(mode = VerifyMode.not) {
-            arrangement.mlsContext.registerCrl(any(), any())
+            arrangement.mlsContext.checkCredentials()
         }
     }
 
@@ -114,28 +103,12 @@ class RevocationListCheckerTest {
             userConfigRepository = userConfigRepository
         )
 
-        suspend fun withE2EIRepositoryFailure() = apply {
-            everySuspend {
-                certificateRevocationListRepository.getClientDomainCRL(any())
-            }.returns(Either.Left(E2EIFailure.Generic(Exception())))
+        suspend fun withCheckCredentialsSuccess() = apply {
+            everySuspend { mlsContext.checkCredentials() } returns Unit
         }
 
-        suspend fun withE2EIRepositorySuccess() = apply {
-            everySuspend {
-                certificateRevocationListRepository.getClientDomainCRL(any())
-            }.returns(Either.Right("result".encodeToByteArray()))
-        }
-
-        suspend fun withRegisterCrl() = apply {
-            everySuspend {
-                mlsContext.registerCrl(any(), any())
-            }.returns(CrlRegistration(false, EXPIRATION))
-        }
-
-        suspend fun withRegisterCrlFlagChanged() = apply {
-            everySuspend {
-                mlsContext.registerCrl(any(), any())
-            }.returns(CrlRegistration(true, EXPIRATION))
+        suspend fun withCheckCredentialsFailure() = apply {
+            everySuspend { mlsContext.checkCredentials() } throws RuntimeException("check failed")
         }
 
         suspend fun withE2EIEnabledAndMLSEnabled(result: Boolean) = apply {
@@ -155,6 +128,5 @@ class RevocationListCheckerTest {
 
     companion object {
         private const val DUMMY_URL = "https://dummy.url"
-        private val EXPIRATION = 10.toULong()
     }
 }
