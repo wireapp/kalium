@@ -7,30 +7,91 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read # required to read version metadata from the repository
-
 jobs:
   get-version:
     name: Get Version
     runs-on: ubuntu-latest
     # Skip for fork PRs — head.repo.full_name differs from the base repo for forks
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    permissions:
+      contents: read # required to read version metadata from the repository
+      pull-requests: read # required to resolve stacked PR base branches
     outputs:
       version_name: ${{ steps.version.outputs.version_name }}
     steps:
       - name: Get version name from Wire-Android
         id: version
         env:
-          WIRE_ANDROID_REF: ${{ github.event.pull_request.base.ref }}
+          GITHUB_TOKEN: ${{ github.token }}
+          ORIGINAL_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
-          URL="https://raw.githubusercontent.com/wireapp/wire-android/${WIRE_ANDROID_REF}/build-logic/plugins/src/main/kotlin/AndroidCoordinates.kt"
-          VERSION=$(curl -fsSL "$URL" | grep 'const val versionName' | sed -E 's/.*"([^"]+)".*/\1/')
+
+          wire_android_coordinates_url() {
+            local ref="$1"
+
+            echo "https://raw.githubusercontent.com/wireapp/wire-android/${ref}/build-logic/plugins/src/main/kotlin/AndroidCoordinates.kt"
+          }
+
+          version_from_wire_android() {
+            local url
+            url="$(wire_android_coordinates_url "$1")"
+
+            curl -fsSL "$url" 2>/dev/null | grep 'const val versionName' | sed -E 's/.*"([^"]+)".*/\1/'
+          }
+
+          base_ref_for_open_pr() {
+            local head_ref="$1"
+
+            curl -fsSL \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              --get \
+              --data-urlencode "state=open" \
+              --data-urlencode "head=${GITHUB_REPOSITORY_OWNER}:${head_ref}" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls" \
+              | jq -r '.[0].base.ref // empty'
+          }
+
+          KALIUM_REF="$ORIGINAL_REF"
+          STACK_REFS=("$KALIUM_REF")
+
+          while true; do
+            NEXT_REF="$(base_ref_for_open_pr "$KALIUM_REF" || true)"
+            if [ -z "$NEXT_REF" ]; then
+              break
+            fi
+
+            if [ "$NEXT_REF" = "$KALIUM_REF" ]; then
+              echo "Detected self-referential stacked PR base '${KALIUM_REF}'." >&2
+              exit 1
+            fi
+
+            for ref in "${STACK_REFS[@]}"; do
+              if [ "$ref" = "$NEXT_REF" ]; then
+                echo "Detected cycle while resolving stacked PR bases:" >&2
+                printf '  - %s\n' "${STACK_REFS[@]}" >&2
+                echo "  - ${NEXT_REF}" >&2
+                exit 1
+              fi
+            done
+
+            echo "Resolved stacked Kalium PR base '${KALIUM_REF}' -> '${NEXT_REF}'."
+            KALIUM_REF="$NEXT_REF"
+            STACK_REFS+=("$KALIUM_REF")
+          done
+
+          WIRE_ANDROID_REF="$KALIUM_REF"
+          VERSION="$(version_from_wire_android "$WIRE_ANDROID_REF" || true)"
           if [ -z "$VERSION" ]; then
-            echo "Failed to read versionName from $URL" >&2
+            echo "Failed to read versionName from $(wire_android_coordinates_url "$WIRE_ANDROID_REF")" >&2
+            echo "Resolved Kalium base path:" >&2
+            printf '  - %s\n' "${STACK_REFS[@]}" >&2
             exit 1
           fi
+
+          echo "Resolved Wire-Android versionName '${VERSION}' from ref '${WIRE_ANDROID_REF}'."
           echo "version_name=$VERSION" >> "$GITHUB_OUTPUT"
 
   add-jira-description:

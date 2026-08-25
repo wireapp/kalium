@@ -50,6 +50,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
@@ -67,6 +68,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
+import kotlin.collections.map
 import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
@@ -74,6 +76,12 @@ internal interface MeetingRepository {
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
     ): Either<CoreFailure, List<Meeting>>
+
+    suspend fun fetchAndPersistMeeting(
+        meetingId: MeetingId,
+        generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
+        generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
+    ): Either<CoreFailure, Meeting>
 
     suspend fun syncMeetingOccurrences(
         removeOlderThan: Instant = occurrenceOutdatedThreshold(),
@@ -120,6 +128,7 @@ internal class MeetingDataSource(
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationRepository: ConversationRepository,
     private val pendingActionsRepository: PendingActionsRepository,
+    private val userRepository: UserRepository,
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -143,6 +152,29 @@ internal class MeetingDataSource(
                     }
                     .map { meetingMapper.fromDaoToModel(it) }
             }
+        }
+
+    override suspend fun fetchAndPersistMeeting(
+        meetingId: MeetingId,
+        generateOccurrencesFrom: Instant,
+        generateOccurrencesUntil: Instant
+    ): Either<CoreFailure, Meeting> =
+        wrapApiRequest {
+            meetingApi.fetchMeeting(meetingId.toApi())
+        }.flatMap { meetingDTO ->
+            meetingMapper.fromApiToDao(meetingDTO)?.let { meetingEntity ->
+                // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
+                // foreign key constraint violation and try to fetch the user details from the server if possible
+                userRepository.insertOrIgnoreIncompleteUsers(listOf(meetingEntity.creatorId.toModel()))
+                userRepository.fetchUsersIfUnknownByIds(setOf(meetingEntity.creatorId.toModel()))
+                wrapStorageRequest {
+                    meetingDAO.upsertMeetings(
+                        meetings = listOf(meetingEntity),
+                        generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+                    )
+                    meetingMapper.fromDaoToModel(meetingEntity)
+                }
+            } ?: Either.Left(MeetingNotSupportedFailure)
         }
 
     override suspend fun syncMeetingOccurrences(
@@ -377,6 +409,7 @@ internal class MeetingDataSource(
 
     data class EstablishMLSFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
     data class UpdateConversationNameFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
+    data object MeetingNotSupportedFailure : CoreFailure.FeatureFailure()
 }
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90

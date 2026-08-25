@@ -22,7 +22,10 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -107,9 +110,10 @@ internal class ApplicationMessageHandlerImpl(
     private val callingMessageHandler: CallingMessageHandler,
     private val resolveLinkPreviewImages: LinkPreviewImagesResolver,
     private val selfUserId: UserId,
+    baseLogger: KaliumLogger = kaliumLogger,
 ) : ApplicationMessageHandler {
 
-    private val logger by lazy { kaliumLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
+    private val logger by lazy { baseLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
 
     @Suppress("ComplexMethod", "LongMethod")
     override suspend fun handleContent(
@@ -228,8 +232,20 @@ internal class ApplicationMessageHandlerImpl(
 
             is MessageContent.MultipartEdited -> editMultipartHandler.handle(signaling, content)
 
-            is MessageContent.History -> TODO("HISTORY CLIENTS ARE NOT HANDLED YET")
+            is MessageContent.History -> logUnsupportedHistoryMessage(content)
         }
+    }
+
+    private fun logUnsupportedHistoryMessage(content: MessageContent.History) {
+        logger.logStructuredJson(
+            level = KaliumLogLevel.WARN,
+            leadingMessage = "Unsupported history message skipped",
+            jsonStringKeyValues = mapOf(
+                "outcome" to "skipped",
+                "reason" to "unsupported",
+                "messageType" to content.getType(),
+            )
+        )
     }
 
     private suspend fun handleClientAction(

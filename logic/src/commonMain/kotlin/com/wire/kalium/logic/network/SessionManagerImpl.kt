@@ -47,6 +47,7 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
@@ -105,8 +106,10 @@ internal class SessionManagerImpl internal constructor(
                         cookieLabel = refreshResult.cookieLabel
                     )
                 }.fold({
-                    if (it is NetworkFailure.ServerMiscommunication) {
-                        onServerMissCommunication(it)
+                    val sessionInvalidated = it is NetworkFailure.ServerMiscommunication &&
+                            handleSessionInvalidatingFailure(it)
+                    if (sessionInvalidated) {
+                        throw CancellationException("Session was invalidated during auth token refresh")
                     }
                     val message = "Failure during auth token refresh. " +
                             "A network request is failing because of this. " +
@@ -119,14 +122,23 @@ internal class SessionManagerImpl internal constructor(
         }
     }
 
-    private suspend fun onServerMissCommunication(serverMiscommunication: NetworkFailure.ServerMiscommunication) {
-        with(serverMiscommunication.kaliumException) {
-            if (this is KaliumException.InvalidRequestError) {
-                if (this.errorResponse.code == HttpStatusCode.Forbidden.value)
-                    onSessionExpired()
-                if (this.isUnknownClient())
-                    onClientRemoved()
+    private suspend fun handleSessionInvalidatingFailure(
+        serverMiscommunication: NetworkFailure.ServerMiscommunication
+    ): Boolean {
+        val exception = serverMiscommunication.kaliumException as? KaliumException.InvalidRequestError
+            ?: return false
+        return when {
+            exception.isUnknownClient() -> {
+                onClientRemoved()
+                true
             }
+
+            exception.errorResponse.code == HttpStatusCode.Forbidden.value -> {
+                onSessionExpired()
+                true
+            }
+
+            else -> false
         }
     }
 

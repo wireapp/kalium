@@ -42,6 +42,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CREDENTIALS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_HANDLE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MEETING_NOT_FOUND
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_LEGALHOLD_CONSENT
@@ -228,5 +229,8 @@ fun KaliumException.InvalidRequestError.isAccountPendingActivation(): Boolean = 
 
 fun KaliumException.ServerError.isEnterpriseServiceNotEnabled(): Boolean =
     errorResponse.code == HttpStatusCode.ServiceUnavailable.value && errorResponse.label == ENTERPRISE_SERVICE_NOT_ENABLED
+
+fun KaliumException.InvalidRequestError.isMeetingNotFound(): Boolean =
+    errorResponse.code == HttpStatusCode.NotFound.value && errorResponse.label == MEETING_NOT_FOUND
 
 private const val HTTP_STATUS_NGINZ_TOO_MANY_REQUESTS = 420

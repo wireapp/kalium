@@ -20,11 +20,14 @@ package com.wire.kalium.logic.feature.conversation.mls
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -41,6 +44,7 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
     private val syncStateObserver: SyncStateObserver,
     private val transactionProvider: CryptoTransactionProvider,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val conversationRepository: ConversationRepository,
 ) : RecoverPendingMLSGroupJoinsUseCase {
 
     override suspend fun invoke() {
@@ -76,6 +80,7 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
                 conversationId = conversationId,
                 allowJoinByExternalCommit = true
             )
+                .flatMap { conversationRepository.getConversationById(conversationId) }
                 .onFailure {
                     kaliumLogger.w("Failed to recover pending MLS group join for ${conversationId.toLogString()}: $it")
                     if (it is NetworkFailure.ServerMiscommunication &&
@@ -87,10 +92,21 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
                         successfulConversationIds.add(conversationId)
                     }
                 }
-                .onSuccess {
-                    successfulConversationIds.add(conversationId)
+                .onSuccess { conversation ->
+                    if (conversation.isMLSEstablished()) {
+                        successfulConversationIds.add(conversationId)
+                    } else {
+                        kaliumLogger.w(
+                            "Pending MLS group join for ${conversationId.toLogString()} completed without establishing the group"
+                        )
+                    }
                 }
         }
         return successfulConversationIds
+    }
+
+    private fun Conversation.isMLSEstablished(): Boolean {
+        val mlsProtocol = protocol as? Conversation.ProtocolInfo.MLSCapable
+        return mlsProtocol?.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
     }
 }

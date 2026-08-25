@@ -864,6 +864,26 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenClosedCall_whenUpdatingToActiveStatus_thenKeepCallClosed() = runTest {
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(
+                    data = mapOf(
+                        Arrangement.conversationId to createCallMetadata().copy(callStatus = CallStatus.CLOSED)
+                    )
+                )
+            )
+            .arrange()
+
+        callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.STILL_ONGOING)
+
+        assertEquals(CallStatus.CLOSED, callRepository.getCallMetadata(Arrangement.conversationId)?.callStatus)
+        verifySuspend(VerifyMode.not) {
+            arrangement.callDAO.updateLastCallStatusByConversationId(any(), any())
+        }
+    }
+
+    @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenUpdateTheStatus() = runTest {
         val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
 
