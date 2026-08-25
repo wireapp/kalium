@@ -145,12 +145,10 @@ internal class MeetingDataSource(
                     .also { meetingsToPersist ->
                         if (meetingsToPersist.isNotEmpty()) {
                             val creatorIds = meetingsToPersist.map { it.creatorId.toModel() }.toSet()
-                            if (creatorIds.isNotEmpty()) {
-                                // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
-                                // foreign key constraint violation and try to fetch the user details from the server if possible
-                                userRepository.insertOrIgnoreIncompleteUsers(creatorIds.toList())
-                                userRepository.fetchUsersIfUnknownByIds(creatorIds)
-                            }
+                            // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
+                            // foreign key constraint violation and try to fetch the user details from the server if possible
+                            userRepository.insertOrIgnoreIncompleteUsers(creatorIds.toList())
+                            userRepository.fetchUsersIfUnknownByIds(creatorIds)
 
                             meetingDAO.upsertMeetings(
                                 meetings = meetingsToPersist,
