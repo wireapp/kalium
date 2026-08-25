@@ -50,7 +50,10 @@ class SqliteSchemaDumper(
         DriverManager.getConnection("jdbc:sqlite:$dbPath").use { conn ->
             conn.createStatement().use { stmt ->
                 val rs = stmt.executeQuery(
-                    "SELECT name, sql FROM sqlite_master WHERE type = '${component.type}' AND sql IS NOT NULL"
+                    "SELECT name, sql FROM sqlite_master " +
+                        "WHERE type = '${component.type}' " +
+                        "AND sql IS NOT NULL " +
+                        "AND name NOT LIKE 'sqlite_%'"
                 )
                 while (rs.next()) {
                     val name = rs.getString("name") ?: continue

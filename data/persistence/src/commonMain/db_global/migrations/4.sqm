@@ -11,6 +11,11 @@ CREATE TEMPORARY TABLE AccountsMigration (
     isPersistentWebSocketEnabled INTEGER NOT NULL
 );
 
+-- Preserve the selected account when rebuilding its parent table while foreign keys are enabled.
+CREATE TEMPORARY TABLE CurrentAccountMigration AS
+SELECT id, user_id
+FROM CurrentAccount;
+
 -- Insert all Accounts into temporary Migration table
 INSERT INTO AccountsMigration
 SELECT
@@ -49,5 +54,12 @@ SELECT
     isPersistentWebSocketEnabled
 FROM AccountsMigration;
 
+-- ON DELETE CASCADE removes CurrentAccount while Accounts is dropped when foreign keys are enabled.
+-- Restore it after all parent rows have been copied back.
+INSERT OR REPLACE INTO CurrentAccount (id, user_id)
+SELECT id, user_id
+FROM CurrentAccountMigration;
+
 -- Probably redundant: drop the temporary table
 DROP TABLE IF EXISTS AccountsMigration;
+DROP TABLE IF EXISTS CurrentAccountMigration;
