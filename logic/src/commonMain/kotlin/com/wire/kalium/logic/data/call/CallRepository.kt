@@ -25,6 +25,7 @@ import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
@@ -258,10 +259,13 @@ internal class CallDataSource(
             )
         }
     ) {
-        val conversation = conversationRepository.getConversationById(conversationId).getOrNull() ?: run {
-            callingLogger.w("[CallRepository][createCall] -> Conversation not found: ${conversationId.toLogString()}")
-            return@withLock
-        }
+        val conversation = conversationRepository.getConversationById(conversationId).fold(
+            fnL = {
+                callingLogger.w("[CallRepository][createCall] -> Conversation not found: ${conversationId.toLogString()}")
+                return@withLock
+            },
+            fnR = { it }
+        )
 
         val caller = userRepository.getKnownUser(callerId).first()
         val team = caller?.teamId?.let { teamId -> teamRepository.getTeam(teamId).first() }
