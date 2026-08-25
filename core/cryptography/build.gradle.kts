@@ -28,7 +28,6 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
-        enableJs.set(true)
         enableJsTests.set(false)
         includeNativeInterop.set(true)
     }
@@ -130,7 +129,11 @@ kotlin {
             }
         }
         val jsMain by getting
-        val jsTest by getting
+        val jsTest by getting {
+            dependencies {
+                implementation(devNpm("fake-indexeddb", "6.2.5"))
+            }
+        }
     }
 }
 
