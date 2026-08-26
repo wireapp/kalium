@@ -46,6 +46,7 @@ interface MeetingDao {
         from: Instant,
     ): KaliumPager<MeetingOccurrenceDetailsEntity>
     suspend fun deleteMeeting(meetingId: QualifiedIDEntity)
+    suspend fun deleteMeetingsByConversationId(conversationId: QualifiedIDEntity)
     suspend fun getNextMeetingOccurrenceDetailsId(meetingId: QualifiedIDEntity, from: Instant): String?
     suspend fun getMeeting(meetingId: QualifiedIDEntity): MeetingEntity?
 }
@@ -135,6 +136,12 @@ internal class MeetingDaoImpl(
     override suspend fun deleteMeeting(meetingId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
             meetingsQueries.deleteMeeting(meetingId)
+        }
+    }
+
+    override suspend fun deleteMeetingsByConversationId(conversationId: QualifiedIDEntity) {
+        withContext(writeDispatcher.value) {
+            meetingsQueries.deleteMeetingsByConversationId(conversationId)
         }
     }
 

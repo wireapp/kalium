@@ -71,6 +71,9 @@ deleteMeeting:
 DELETE FROM Meeting
 WHERE meeting_id = ?;
 
+deleteMeetingsByConversationId:
+DELETE FROM Meeting WHERE conversation_id = ?;
+
 deleteMeetingOccurrences:
 DELETE FROM MeetingOccurrence
 WHERE meeting_id = ?;

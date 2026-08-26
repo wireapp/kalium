@@ -39,6 +39,7 @@ import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.persistence.dao.member.MemberDAO
@@ -375,6 +376,51 @@ internal class MemberLeaveEventHandlerTest {
         }
     }
 
+    @Test
+    fun givenSelfUserRemovedFromConversation_whenHandlingMemberLeave_thenDeleteMeetingsByConversationId() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Removed).copy(
+            removedList = listOf(selfUserId)
+        )
+
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+                withPersistingMessage(Either.Right(Unit))
+                withDeleteMembersByQualifiedID(
+                    result = event.removedList.size.toLong(),
+                )
+                withGetConversationProtocolInfo(Either.Right(Conversation.ProtocolInfo.Proteus))
+            }
+
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingRepository.deleteMeetingsByConversationId(event.conversationId)
+        }
+    }
+
+    @Test
+    fun givenOtherUsersRemovedFromConversation_whenHandlingMemberLeave_thenDoNotDeleteMeetingsByConversationId() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Removed).copy(
+            removedList = listOf(userId)
+        )
+
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+                withPersistingMessage(Either.Right(Unit))
+                withDeleteMembersByQualifiedID(
+                    result = event.removedList.size.toLong(),
+                )
+            }
+
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.meetingRepository.deleteMeetingsByConversationId(any())
+        }
+    }
+
     private class Arrangement {
         val memberDAO = mock<MemberDAO>(mode = MockMode.autoUnit)
         val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
@@ -386,6 +432,7 @@ internal class MemberLeaveEventHandlerTest {
         private val mlsContext = mock<MlsCoreCryptoContext>(mode = MockMode.autoUnit)
         val updateConversationClientsForCurrentCall = mock<UpdateConversationClientsForCurrentCallUseCase>(mode = MockMode.autoUnit)
         val legalHoldHandler = mock<LegalHoldHandler>(mode = MockMode.autoUnit)
+        val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
 
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
 
@@ -397,6 +444,7 @@ internal class MemberLeaveEventHandlerTest {
                 updateConversationClientsForCurrentCall.invoke(any())
             } returns (Unit)
             every { transactionContext.mls } returns (mlsContext)
+            withDeleteMeetingsByConversationId(Either.Right(Unit))
             block()
             memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
                 memberDAO = memberDAO,
@@ -407,7 +455,8 @@ internal class MemberLeaveEventHandlerTest {
                 legalHoldHandler = legalHoldHandler,
                 selfTeamIdProvider = selfTeamIdProvider,
                 selfUserId = selfUserId,
-                mlsConversationRepository = mlsConversationRepository
+                mlsConversationRepository = mlsConversationRepository,
+                meetingRepository = meetingRepository
             )
             this to memberLeaveEventHandler
         }
@@ -446,6 +495,10 @@ internal class MemberLeaveEventHandlerTest {
 
         suspend fun withSuccessfulLeaveGroup(groupId: GroupID) {
             everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) } returns (Either.Right(Unit))
+        }
+
+        suspend fun withDeleteMeetingsByConversationId(result: Either<StorageFailure, Unit>) {
+            everySuspend { meetingRepository.deleteMeetingsByConversationId(any()) } returns (result)
         }
     }
 

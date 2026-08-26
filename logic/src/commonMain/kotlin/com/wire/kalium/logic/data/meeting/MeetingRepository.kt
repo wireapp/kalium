@@ -98,6 +98,8 @@ internal interface MeetingRepository {
 
     suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit>
 
+    suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit>
+
     suspend fun createNewMeeting(
         meeting: UpsertMeeting,
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
@@ -209,6 +211,13 @@ internal class MeetingDataSource(
             }
         }
     }
+
+    override suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit> =
+        withContext(NonCancellable) {
+            wrapStorageRequest {
+                meetingDAO.deleteMeetingsByConversationId(conversationId.toDao())
+            }
+        }
 
     override suspend fun getNextMeetingOccurrence(
         meetingId: MeetingId,

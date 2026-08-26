@@ -562,6 +562,8 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHan
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
@@ -2021,6 +2023,7 @@ public class UserSessionScope internal constructor(
             legalHoldHandler = legalHoldHandler,
             selfTeamIdProvider = selfTeamId,
             mlsConversationRepository = mlsConversationRepository,
+            meetingRepository = meetingRepository,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
@@ -2304,10 +2307,16 @@ public class UserSessionScope internal constructor(
             meetingRepository = meetingRepository,
         )
 
+    private val meetingMemberAddEventHandler: MeetingMemberAddEventHandler
+        get() = MeetingMemberAddEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
     private val meetingEventReceiver: MeetingEventReceiver
         get() = MeetingEventReceiverImpl(
             meetingCreateEventHandler = meetingCreateEventHandler,
             meetingUpdateEventHandler = meetingUpdateEventHandler,
+            meetingMemberAddEventHandler = meetingMemberAddEventHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
