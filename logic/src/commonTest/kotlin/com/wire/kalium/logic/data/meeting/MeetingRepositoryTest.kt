@@ -147,7 +147,11 @@ class MeetingRepositoryTest {
         verifySuspend(VerifyMode.exhaustiveOrder) {
             arrangement.userRepository.insertOrIgnoreIncompleteUsers(userIds = listOf(creatorId))
             arrangement.userRepository.fetchUsersIfUnknownByIds(ids = setOf(creatorId))
-            arrangement.meetingDao.upsertMeetings(meetings = expectedMeetingEntities, generateOccurrencesWindow = any())
+            arrangement.meetingDao.upsertMeetings(
+                meetings = expectedMeetingEntities,
+                generateOccurrencesWindow = any(),
+                removeMeetingsAbsentFromUpsertList = true,
+            )
         }
     }
 
