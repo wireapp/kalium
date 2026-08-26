@@ -133,54 +133,38 @@ fun E2eiConversationState.toCryptography(): E2EIConversationState = when (this) 
 }
 
 fun DecryptedMessage.toBundle(): DecryptedMessageBundle = when (this) {
-    is DecryptedMessage.Text -> DecryptedMessageBundle(
+    is DecryptedMessage.Text -> DecryptedMessageBundle.Text(
         message = plaintext,
-        commitDelay = null,
         senderClientId = senderClientId.toCryptography(),
-        identity = identity.toCryptography(),
-        isActive = null
+        identity = identity.toCryptography()
     )
 
-    is DecryptedMessage.Commit -> DecryptedMessageBundle(
-        message = null,
-        commitDelay = null,
-        senderClientId = null,
-        identity = identity.toCryptography(),
-        isActive = isActive
+    is DecryptedMessage.Commit -> DecryptedMessageBundle.Commit(
+        isActive = isActive,
+        identity = identity.toCryptography()
     )
 
-    is DecryptedMessage.Proposal -> DecryptedMessageBundle(
-        message = null,
+    is DecryptedMessage.Proposal -> DecryptedMessageBundle.Proposal(
         commitDelay = delay?.toLong(),
-        senderClientId = null,
-        identity = identity.toCryptography(),
-        isActive = null
+        identity = identity.toCryptography()
     )
 }
 
 fun BufferedDecryptedMessage.toBundle(): DecryptedMessageBundle = when (this) {
-    is BufferedDecryptedMessage.Text -> DecryptedMessageBundle(
+    is BufferedDecryptedMessage.Text -> DecryptedMessageBundle.Text(
         message = plaintext,
-        commitDelay = null,
         senderClientId = senderClientId.toCryptography(),
-        identity = identity.toCryptography(),
-        isActive = null
+        identity = identity.toCryptography()
     )
 
-    is BufferedDecryptedMessage.Commit -> DecryptedMessageBundle(
-        message = null,
-        commitDelay = null,
-        senderClientId = null,
-        identity = identity.toCryptography(),
-        isActive = isActive
+    is BufferedDecryptedMessage.Commit -> DecryptedMessageBundle.Commit(
+        isActive = isActive,
+        identity = identity.toCryptography()
     )
 
-    is BufferedDecryptedMessage.Proposal -> DecryptedMessageBundle(
-        message = null,
+    is BufferedDecryptedMessage.Proposal -> DecryptedMessageBundle.Proposal(
         commitDelay = delay?.toLong(),
-        senderClientId = null,
-        identity = identity.toCryptography(),
-        isActive = null
+        identity = identity.toCryptography()
     )
 }
 

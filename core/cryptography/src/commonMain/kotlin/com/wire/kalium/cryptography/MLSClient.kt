@@ -81,38 +81,43 @@ data class CommitBundle(
     }
 }
 
-data class DecryptedMessageBundle(
-    val message: ByteArray?,
-    val commitDelay: Long?,
-    val senderClientId: CryptoQualifiedClientId?,
-    val identity: WireIdentity?,
-    /** False when a removal commit made the local client inactive. Null for non-commit messages. */
-    val isActive: Boolean? = null
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
+sealed interface DecryptedMessageBundle {
+    val identity: WireIdentity?
 
-        other as DecryptedMessageBundle
+    data class Text(
+        val message: ByteArray,
+        val senderClientId: CryptoQualifiedClientId,
+        override val identity: WireIdentity?
+    ) : DecryptedMessageBundle {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
 
-        if (message != null) {
-            if (other.message == null) return false
+            other as Text
+
             if (!message.contentEquals(other.message)) return false
-        } else if (other.message != null) return false
-        if (commitDelay != other.commitDelay) return false
-        if (senderClientId != other.senderClientId) return false
-        if (identity != other.identity) return false
-        return isActive == other.isActive
+            if (senderClientId != other.senderClientId) return false
+            return identity == other.identity
+        }
+
+        override fun hashCode(): Int {
+            var result = message.contentHashCode()
+            result = 31 * result + senderClientId.hashCode()
+            result = 31 * result + (identity?.hashCode() ?: 0)
+            return result
+        }
     }
 
-    override fun hashCode(): Int {
-        var result = message?.contentHashCode() ?: 0
-        result = 31 * result + (commitDelay?.hashCode() ?: 0)
-        result = 31 * result + (senderClientId?.hashCode() ?: 0)
-        result = 31 * result + (identity?.hashCode() ?: 0)
-        result = 31 * result + (isActive?.hashCode() ?: 0)
-        return result
-    }
+    data class Commit(
+        /** False when a removal commit made the local client inactive. */
+        val isActive: Boolean,
+        override val identity: WireIdentity?
+    ) : DecryptedMessageBundle
+
+    data class Proposal(
+        val commitDelay: Long?,
+        override val identity: WireIdentity?
+    ) : DecryptedMessageBundle
 }
 
 sealed interface MLSDecryptResult {

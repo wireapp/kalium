@@ -1774,12 +1774,9 @@ class MLSConversationRepositoryTest {
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(Uuid.random().toString(), "domain.com"), "clientId", "groupId")
-            val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
-                message = null,
-                commitDelay = null,
-                senderClientId = null,
-                identity = null,
-                isActive = true
+            val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle.Commit(
+                isActive = true,
+                identity = null
             )
             val MEMBER_LEAVE_EVENT = EventContentDTO.Conversation.MemberLeaveDTO(
                 TestConversation.NETWORK_ID,

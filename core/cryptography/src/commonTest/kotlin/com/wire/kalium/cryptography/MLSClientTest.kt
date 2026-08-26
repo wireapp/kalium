@@ -25,8 +25,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @IgnoreIOS
@@ -108,7 +107,7 @@ class MLSClientTest : BaseMLSClientTest() {
 
         val result = aliceClient.transaction { it.decryptMessage(groupId, keyMaterialCommit.commit) }
 
-        assertNull((result as MLSDecryptResult.Success).messages.first().message)
+        assertIs<DecryptedMessageBundle.Commit>((result as MLSDecryptResult.Success).messages.first())
     }
 
     @Test
@@ -163,12 +162,11 @@ class MLSClientTest : BaseMLSClientTest() {
         val groupId = aliceClient.transaction { it.processWelcomeMessage(welcome) }
 
         val applicationMessage = aliceClient.transaction { it.encryptMessage(groupId, PLAIN_TEXT.encodeToByteArray()) }
-        val bundle = bobClient.transaction {
+        val bundle = assertIs<DecryptedMessageBundle.Text>(bobClient.transaction {
             (it.decryptMessage(groupId, applicationMessage) as MLSDecryptResult.Success).messages.first()
-        }
+        })
 
-        assertNotNull(bundle.senderClientId)
-        assertEquals(PLAIN_TEXT, bundle.message?.decodeToString())
+        assertEquals(PLAIN_TEXT, bundle.message.decodeToString())
 
     }
 
@@ -239,7 +237,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val commit = bobArrangement.sendCommitBundleFlow.first().commit
 
         val result = aliceClient.transaction { it.decryptMessage(MLS_CONVERSATION_ID, commit) }
-        assertNull((result as MLSDecryptResult.Success).messages.first().message)
+        assertIs<DecryptedMessageBundle.Commit>((result as MLSDecryptResult.Success).messages.first())
     }
 
     @Test
@@ -281,7 +279,7 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.transaction { it.removeMember(groupId, clientRemovalList) }
         val commit = bobArrangement.sendCommitBundleFlow.first().commit
         val result = aliceClient.transaction { it.decryptMessage(groupId, commit) }
-        assertNull((result as MLSDecryptResult.Success).messages.first().message)
+        assertIs<DecryptedMessageBundle.Commit>((result as MLSDecryptResult.Success).messages.first())
     }
 
     @Test

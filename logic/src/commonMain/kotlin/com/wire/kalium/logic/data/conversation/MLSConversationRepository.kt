@@ -111,12 +111,28 @@ internal data class ApplicationMessage(
     }
 }
 
-internal data class DecryptedMessageBundle(
-    val groupID: GroupID,
-    val applicationMessage: ApplicationMessage?,
-    val commitDelay: Long?,
+internal sealed interface DecryptedMessageBundle {
+    val groupID: GroupID
     val identity: WireIdentity?
-)
+
+    data class Text(
+        override val groupID: GroupID,
+        val applicationMessage: ApplicationMessage,
+        override val identity: WireIdentity?
+    ) : DecryptedMessageBundle
+
+    data class Commit(
+        override val groupID: GroupID,
+        val isActive: Boolean,
+        override val identity: WireIdentity?
+    ) : DecryptedMessageBundle
+
+    data class Proposal(
+        override val groupID: GroupID,
+        val commitDelay: Long?,
+        override val identity: WireIdentity?
+    ) : DecryptedMessageBundle
+}
 
 internal data class PreparedX509KeyPackages(
     val keyPackages: List<ByteArray>,
