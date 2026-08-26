@@ -18,14 +18,12 @@
 package com.wire.kalium.logic.sync.receiver.meeting
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.meeting.MeetingRepository
-import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 
 internal interface MeetingDeleteEventHandler {
@@ -39,18 +37,6 @@ internal class MeetingDeleteEventHandlerImpl(
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         return meetingRepository.deleteMeetingLocally(event.meetingId)
             .onSuccess { eventLogger.logSuccess() }
-            .flatMapLeft { failure ->
-                when {
-                    failure is NetworkFailure.FeatureNotSupported -> {
-                        eventLogger.logComplete(
-                            status = EventLoggingStatus.SKIPPED,
-                            extraInfo = arrayOf("info" to "Meetings feature not supported by current API version")
-                        )
-                        Either.Right(Unit)
-                    }
-
-                    else -> Either.Left(failure)
-                }
-            }
+            .onFailure { eventLogger.logFailure(it) }
     }
 }

@@ -97,7 +97,7 @@ internal interface MeetingRepository {
 
     suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit>
 
-    suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<CoreFailure, Unit>
+    suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit>
 
     suspend fun createNewMeeting(
         meeting: UpsertMeeting,
@@ -208,7 +208,7 @@ internal class MeetingDataSource(
         }
     }
 
-    override suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<CoreFailure, Unit> = wrapStorageRequest {
+    override suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit> = wrapStorageRequest {
         meetingDAO.deleteMeeting(meetingId.toDao())
     }
 
