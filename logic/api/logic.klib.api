@@ -622,6 +622,7 @@ abstract interface com.wire.kalium.logic.feature.conversation.channel/UpdateChan
 
 abstract interface com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase { // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase|null[0]
     abstract suspend fun invoke(kotlin/String, kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID>, com.wire.kalium.logic.data.conversation/CreateConversationParam): com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase.invoke|invoke(kotlin.String;kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>;com.wire.kalium.logic.data.conversation.CreateConversationParam){}[0]
+    abstract suspend fun retryPendingMLSGroupCreation(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase.retryPendingMLSGroupCreation|retryPendingMLSGroupCreation(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation.delete/DeleteConversationLocallyUseCase { // com.wire.kalium.logic.feature.conversation.delete/DeleteConversationLocallyUseCase|null[0]
@@ -1407,10 +1408,25 @@ abstract interface com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase { 
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.meeting/UpsertMeeting): com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.meeting.UpsertMeeting){}[0]
 
     sealed interface Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result|null[0]
-        final object Failure : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure|null[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.toString|toString(){}[0]
+        sealed interface Failure : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure|null[0]
+            final class UpdateConversationNameFailure : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure|null[0]
+                constructor <init>(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+                final val conversationId // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.conversationId|{}conversationId[0]
+                    final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+
+                final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.component1|component1(){}[0]
+                final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.copy|copy(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.UpdateConversationNameFailure.toString|toString(){}[0]
+            }
+
+            final object Other : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other|null[0]
+                final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.equals|equals(kotlin.Any?){}[0]
+                final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.hashCode|hashCode(){}[0]
+                final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Failure.Other.toString|toString(){}[0]
+            }
         }
 
         final object Success : com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result.Success|null[0]
@@ -2303,6 +2319,15 @@ sealed interface com.wire.kalium.logic.feature.conversation.createconversation/C
 
         final val domains // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.domains|{}domains[0]
             final fun <get-domains>(): kotlin.collections/List<kotlin/String> // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.domains.<get-domains>|<get-domains>(){}[0]
+    }
+
+    final class PendingMLSGroupCreation : com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult { // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation|null[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.common.error.CoreFailure){}[0]
+
+        final val cause // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation.cause|{}cause[0]
+            final fun <get-cause>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation.cause.<get-cause>|<get-cause>(){}[0]
+        final val conversationId // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation.conversationId|{}conversationId[0]
+            final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.PendingMLSGroupCreation.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
     }
 
     final class Success : com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult { // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.Success|null[0]

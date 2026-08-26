@@ -34,6 +34,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -79,6 +80,7 @@ internal class ResetMLSConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val fetchConversationUseCase: FetchConversationUseCase,
+    private val endCallOnMLSReset: EndCallOnMLSResetUseCase,
     private val kaliumConfigs: KaliumConfigs,
 ) : ResetMLSConversationUseCase {
 
@@ -186,7 +188,7 @@ internal class ResetMLSConversationUseCaseImpl(
         localGroupId: GroupID,
         epoch: ULong,
     ): Either<CoreFailure, Unit> =
-        performReset(mlsContext, localGroupId, epoch)
+        performReset(conversationId, mlsContext, localGroupId, epoch)
             .flatMapLeft { failure ->
                 if (!failure.isMlsStaleMessageConflict()) return@flatMapLeft failure.left()
 
@@ -225,7 +227,7 @@ internal class ResetMLSConversationUseCaseImpl(
                     ).left()
                 }
 
-                performReset(mlsContext, localGroupId, remoteInfo.epoch)
+                performReset(conversationId, mlsContext, localGroupId, remoteInfo.epoch)
                     .flatMapLeft { retryFailure ->
                         if (!retryFailure.isMlsStaleMessageConflict()) return@flatMapLeft retryFailure.left()
                         retryResetWithRemoteInfo(
@@ -238,12 +240,14 @@ internal class ResetMLSConversationUseCaseImpl(
             }
 
     private suspend fun performReset(
+        conversationId: ConversationId,
         mlsContext: MlsCoreCryptoContext,
         localGroupId: GroupID,
         epoch: ULong
     ): Either<CoreFailure, Unit> =
         conversationRepository.resetMlsConversation(localGroupId, epoch)
             .onSuccess {
+                endCallOnMLSReset(conversationId)
                 // the result of the leave can be ignored
                 mlsConversationRepository.leaveGroup(mlsContext, localGroupId)
             }

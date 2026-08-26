@@ -49,6 +49,7 @@ import com.wire.kalium.logic.data.featureConfig.MeetingsConfigModel
 import com.wire.kalium.logic.data.featureConfig.PreventAdminlessGroupsConfigModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.Connection
@@ -114,6 +115,7 @@ internal sealed class Event(open val id: String) {
         const val memberIdKey = "memberId"
         const val timestampIsoKey = "timestampIso"
         const val selfDeletionDurationKey = "selfDeletionDuration"
+        const val meetingIdKey = "meetingId"
     }
 
     internal open fun toLogString(): String {
@@ -872,6 +874,24 @@ internal sealed class Event(open val id: String) {
                 typeKey to "Federation.ConnectionRemoved",
                 idKey to id,
                 "domains" to domains
+            )
+        }
+    }
+
+    internal sealed class Meeting(
+        id: String
+    ) : Event(id) {
+
+        internal data class Create(
+            override val id: String,
+            val meetingId: MeetingId,
+            val dateTime: Instant,
+        ) : Meeting(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Meeting.Create",
+                idKey to id,
+                meetingIdKey to meetingId.toLogString(),
+                timestampIsoKey to dateTime
             )
         }
     }

@@ -1,7 +1,5 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
-PRAGMA foreign_keys = 0;
-
 DROP VIEW IF EXISTS MessagePreview;
 DROP VIEW IF EXISTS MessageQuoteDetails;
 DROP VIEW IF EXISTS MessageDetailsView;
@@ -210,5 +208,3 @@ LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id 
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN SelfUser;
-
-PRAGMA foreign_keys = 1;

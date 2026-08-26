@@ -28,6 +28,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 @Suppress("TooManyFunctions")
 interface MeetingApi : BaseApi {
     suspend fun fetchMeetings(): NetworkResponse<List<MeetingDTO>>
+    suspend fun fetchMeeting(meetingId: MeetingId): NetworkResponse<MeetingDTO>
     suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit>
     suspend fun createNewMeeting(request: UpsertMeetingRequest): NetworkResponse<UpsertMeetingResponse>
     suspend fun updateMeeting(meetingId: MeetingId, request: UpsertMeetingRequest): NetworkResponse<UpsertMeetingResponse>

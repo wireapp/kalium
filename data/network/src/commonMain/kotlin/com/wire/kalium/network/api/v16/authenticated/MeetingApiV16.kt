@@ -45,6 +45,10 @@ internal open class MeetingApiV16 internal constructor(
         httpClient.delete("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}")
     }
 
+    override suspend fun fetchMeeting(meetingId: MeetingId): NetworkResponse<MeetingDTO> = wrapRequest {
+        httpClient.get("$PATH_MEETINGS/${meetingId.domain}/${meetingId.value}")
+    }
+
     override suspend fun createNewMeeting(request: UpsertMeetingRequest): NetworkResponse<UpsertMeetingResponse> = wrapRequest {
         httpClient.post(PATH_MEETINGS) {
             setBody(request)

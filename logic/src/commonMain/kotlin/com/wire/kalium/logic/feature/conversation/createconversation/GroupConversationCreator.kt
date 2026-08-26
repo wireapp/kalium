@@ -18,16 +18,25 @@
 
 package com.wire.kalium.logic.feature.conversation.createconversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
+import com.wire.kalium.logic.data.conversation.CreateGroupConversationResult
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.sync.SyncManager
@@ -54,11 +63,14 @@ internal interface GroupConversationCreator {
         userIdList: List<UserId>,
         options: CreateConversationParam
     ): ConversationCreationResult
+
+    suspend fun retryPendingMLSGroupCreation(conversationId: ConversationId): ConversationCreationResult
 }
 
 /**
  * Implementation of [GroupConversationCreator].
  */
+@Suppress("LongParameterList")
 internal class GroupConversationCreatorImpl(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
@@ -66,49 +78,109 @@ internal class GroupConversationCreatorImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
+    private val transactionProvider: CryptoTransactionProvider,
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val pendingActionsRepository: PendingActionsRepository,
 ) : GroupConversationCreator {
 
     override suspend fun invoke(
         name: String,
         userIdList: List<UserId>,
         options: CreateConversationParam
-    ): ConversationCreationResult =
-        syncManager.waitUntilLiveOrFailure().flatMap {
+    ): ConversationCreationResult {
+        val clientId = syncManager.waitUntilLiveOrFailure().flatMap {
             currentClientIdProvider()
-        }.flatMap { clientId ->
-            conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId))
-        }.onSuccess {
+        }.fold(
+            { return it.toCreationFailure() },
+            { it }
+        )
+
+        return when (
+            val result = conversationGroupRepository.createGroupConversationWithPendingResult(
+                name,
+                userIdList,
+                options.copy(creatorClientId = clientId)
+            )
+        ) {
+            is CreateGroupConversationResult.Failure -> result.cause.toCreationFailure()
+            is CreateGroupConversationResult.PendingMLSGroupCreation ->
+                ConversationCreationResult.PendingMLSGroupCreation(result.conversationId, result.cause)
+            is CreateGroupConversationResult.Success -> finishSuccessfulCreation(result.conversation)
+        }
+    }
+
+    override suspend fun retryPendingMLSGroupCreation(conversationId: ConversationId): ConversationCreationResult =
+        syncManager.waitUntilLiveOrFailure().flatMap {
+            conversationRepository.getConversationById(conversationId)
+        }.flatMap { conversation ->
+            val groupState = (conversation.protocol as? Conversation.ProtocolInfo.MLSCapable)?.groupState
+            if (groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
+                Either.Right(conversation)
+            } else {
+                transactionProvider.transaction("retryPendingMLSGroupCreation") { transactionContext ->
+                    joinExistingMLSConversation(transactionContext, conversationId)
+                }.flatMap {
+                    conversationRepository.getConversationById(conversationId)
+                }.flatMap { recoveredConversation ->
+                    if (recoveredConversation.isMLSEstablished()) {
+                        Either.Right(recoveredConversation)
+                    } else {
+                        Either.Left(MLSFailure.Other("MLS group is still pending after creation retry"))
+                    }
+                }
+            }
+        }.fold(
+            { failure -> failure.toCreationFailure() },
+            { conversation ->
+                val result = finishSuccessfulCreation(conversation)
+                if (result is ConversationCreationResult.Success) {
+                    pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(conversationId))
+                }
+                result
+            }
+        )
+
+    private fun Conversation.isMLSEstablished(): Boolean {
+        val mlsProtocol = protocol as? Conversation.ProtocolInfo.MLSCapable
+        return mlsProtocol?.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+    }
+
+    private suspend fun finishSuccessfulCreation(conversation: Conversation): ConversationCreationResult =
+        Either.Right(conversation).onSuccess {
             refreshUsersWithoutMetadata()
         }.flatMap { conversation ->
             // TODO(qol): this can be done in one query, e.g. pass current time when inserting
             conversationRepository.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentInstant())
                 .map { conversation }
-        }.fold({
-            when (it) {
+        }.fold({ failure ->
+            failure.toCreationFailure()
+        }, { createdConversation ->
+            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(createdConversation)
+            ConversationCreationResult.Success(createdConversation)
+        })
+
+    private fun CoreFailure.toCreationFailure(): ConversationCreationResult =
+        when (this) {
                 is NetworkFailure.NoNetworkConnection -> {
                     ConversationCreationResult.SyncFailure
                 }
 
                 is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
-                    ConversationCreationResult.BackendConflictFailure(it.domains)
+                    ConversationCreationResult.BackendConflictFailure(domains)
                 }
 
                 is NetworkFailure.ServerMiscommunication -> {
-                    val exception = it.kaliumException
+                    val exception = kaliumException
                     if (exception is KaliumException.InvalidRequestError && exception.isOperationDenied()
                     ) {
                         ConversationCreationResult.Forbidden
                     } else {
-                        ConversationCreationResult.UnknownFailure(it)
+                        ConversationCreationResult.UnknownFailure(this)
                     }
                 }
 
                 else -> {
-                    ConversationCreationResult.UnknownFailure(it)
+                    ConversationCreationResult.UnknownFailure(this)
                 }
-            }
-        }, {
-            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(it)
-            ConversationCreationResult.Success(it)
-        })
+        }
 }
