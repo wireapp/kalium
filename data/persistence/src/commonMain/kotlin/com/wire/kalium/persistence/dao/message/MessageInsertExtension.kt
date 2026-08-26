@@ -419,6 +419,14 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
+            is MessageEntityContent.CellEditorAccessMessage -> {
+                /* no-op */
+            }
+
+            is MessageEntityContent.CellViewerAccessMessage -> {
+                /* no-op */
+            }
+
             is MessageEntityContent.ConversationAppsAccessChanged -> messagesQueries.insertSystemConversationAppsEnabledChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
@@ -489,6 +497,8 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.NewConversationWithCellMessage,
                 is MessageEntityContent.ConversationAppsAccessChanged,
                 is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage,
+                is MessageEntityContent.CellEditorAccessMessage,
+                is MessageEntityContent.CellViewerAccessMessage,
                     -> {
                     /* no-op */
                 }
@@ -593,6 +603,9 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.NewConversationWithCellMessage -> MessageEntity.ContentType.CONVERSATION_WITH_CELL
         is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage ->
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED
+
+        is MessageEntityContent.CellEditorAccessMessage -> MessageEntity.ContentType.CELL_EDITOR_ACCESS
+        is MessageEntityContent.CellViewerAccessMessage -> MessageEntity.ContentType.CELL_VIEWER_ACCESS
 
         is MessageEntityContent.ConversationAppsAccessChanged -> MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED
     }

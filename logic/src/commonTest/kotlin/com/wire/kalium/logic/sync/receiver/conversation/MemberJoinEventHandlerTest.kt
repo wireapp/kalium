@@ -350,6 +350,8 @@ class MemberJoinEventHandlerTest {
             withSetConversationDeletedLocallySucceeding()
             withHandleConversationMembersChanged(Unit.right())
             withPersistUnverifiedWarningMessageSuccess()
+            withPersistCellAccessMessageSuccess()
+            withIsCellEnabledReturning(false.right())
 
             this to MemberJoinEventHandlerImpl(
                 conversationRepository = conversationRepository,

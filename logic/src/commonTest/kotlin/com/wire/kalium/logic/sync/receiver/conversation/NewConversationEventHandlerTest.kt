@@ -338,6 +338,15 @@ class NewConversationEventHandlerTest {
                     any<ConversationEntity.Type>()
                 )
             } returns Unit.right()
+
+            everySuspend {
+                newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
+                    any<ConversationId>(),
+                    any<String?>(),
+                    any<Boolean>(),
+                    any<Instant>()
+                )
+            } returns Unit.right()
         }
 
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
