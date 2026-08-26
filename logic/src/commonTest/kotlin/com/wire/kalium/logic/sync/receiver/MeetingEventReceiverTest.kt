@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.data.event.Event
@@ -92,7 +93,7 @@ class MeetingEventReceiverTest {
     @Test
     fun givenDeleteHandlerFails_whenProcessingEvent_thenFailureIsReturned() = runTest {
         val event = meetingDeleteEvent()
-        val failure = NetworkFailure.NoNetworkConnection(null)
+        val failure = StorageFailure.Generic(Exception(""))
         val (arrangement, eventReceiver) = Arrangement()
             .withMeetingDeleteHandlerReturning(event, Either.Left(failure))
             .arrange()
@@ -114,7 +115,7 @@ class MeetingEventReceiverTest {
             everySuspend { meetingCreateEventHandler.handle(event) } returns result
         }
 
-        fun withMeetingDeleteHandlerReturning(event: Event.Meeting.Delete, result: Either<CoreFailure, Unit>) = apply {
+        fun withMeetingDeleteHandlerReturning(event: Event.Meeting.Delete, result: Either<StorageFailure, Unit>) = apply {
             everySuspend { meetingDeleteEventHandler.handle(event) } returns result
         }
 

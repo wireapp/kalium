@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.sync.receiver.meeting
 
-import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -27,13 +27,13 @@ import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.util.createEventProcessingLogger
 
 internal interface MeetingDeleteEventHandler {
-    suspend fun handle(event: Event.Meeting.Delete): Either<CoreFailure, Unit>
+    suspend fun handle(event: Event.Meeting.Delete): Either<StorageFailure, Unit>
 }
 
 internal class MeetingDeleteEventHandlerImpl(
     private val meetingRepository: MeetingRepository,
 ) : MeetingDeleteEventHandler {
-    override suspend fun handle(event: Event.Meeting.Delete): Either<CoreFailure, Unit> {
+    override suspend fun handle(event: Event.Meeting.Delete): Either<StorageFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         return meetingRepository.deleteMeetingLocally(event.meetingId)
             .onSuccess { eventLogger.logSuccess() }

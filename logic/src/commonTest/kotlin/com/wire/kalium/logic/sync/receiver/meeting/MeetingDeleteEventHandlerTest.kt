@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.sync.receiver.meeting
 
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
@@ -63,7 +62,7 @@ class MeetingDeleteEventHandlerTest {
 
         val result = handler.handle(event)
 
-        assertSame(failure, assertIs<Either.Left<CoreFailure>>(result).value)
+        assertSame(failure, assertIs<Either.Left<StorageFailure>>(result).value)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.deleteMeetingLocally(event.meetingId)
         }
