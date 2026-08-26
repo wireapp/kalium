@@ -117,6 +117,40 @@ class MeetingRepositoryTest {
     }
 
     @Test
+    fun whenFetchAndPersistMeetings_thenCreatorsArePreparedOnceBeforePersistingMeetings() = runTest {
+        val creatorId = UserId("user1", "domain")
+        val meetings = listOf(
+            meetingDTO(
+                meetingId = NetworkMeetingId("meeting1", "domain"),
+                conversationId = ApiConversationId("conversation1", "domain"),
+                creatorId = creatorId.toApi(),
+                title = "Meeting 1"
+            ),
+            meetingDTO(
+                meetingId = NetworkMeetingId("meeting2", "domain"),
+                conversationId = ApiConversationId("conversation2", "domain"),
+                creatorId = creatorId.toApi(),
+                title = "Meeting 2"
+            )
+        )
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingsSuccess(meetings)
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
+            .withFetchUsersIfUnknownSuccess(setOf(creatorId))
+            .arrange()
+        val expectedMeetingEntities = meetings.map { requireNotNull(arrangement.meetingMapper.fromApiToDao(it)) }
+
+        val result = repository.fetchAndPersistMeetings()
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exhaustiveOrder) {
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(userIds = listOf(creatorId))
+            arrangement.userRepository.fetchUsersIfUnknownByIds(ids = setOf(creatorId))
+            arrangement.meetingDao.upsertMeetings(meetings = expectedMeetingEntities, generateOccurrencesWindow = any())
+        }
+    }
+
+    @Test
     fun whenFetchAndPersistMeeting_thenMeetingIsFetchedAndPersistedWithNowDateTime() = runTest {
         val meetingId = MeetingId("meeting1", "domain")
         val creatorId = UserId("user1", "domain")
