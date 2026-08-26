@@ -144,11 +144,19 @@ internal class MeetingDataSource(
             wrapStorageRequest {
                 meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
                     .also { meetingsToPersist ->
-                        meetingDAO.upsertMeetings(
-                            meetings = meetingsToPersist,
-                            generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
-                            removeMeetingsAbsentFromUpsertList = true,
-                        )
+                        if (meetingsToPersist.isNotEmpty()) {
+                            val creatorIds = meetingsToPersist.map { it.creatorId.toModel() }.toSet()
+                            // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
+                            // foreign key constraint violation and try to fetch the user details from the server if possible
+                            userRepository.insertOrIgnoreIncompleteUsers(creatorIds.toList())
+                            userRepository.fetchUsersIfUnknownByIds(creatorIds)
+
+                            meetingDAO.upsertMeetings(
+                                meetings = meetingsToPersist,
+                                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
+                                removeMeetingsAbsentFromUpsertList = true,
+                            )
+                        }
                     }
                     .map { meetingMapper.fromDaoToModel(it) }
             }
