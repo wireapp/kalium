@@ -5358,13 +5358,13 @@ public abstract interface class com/wire/kalium/logic/feature/meeting/EnsureMeet
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase {
+public abstract interface class com/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
-public final class com/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase$DefaultImpls {
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+public final class com/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase$DefaultImpls {
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase {
@@ -5380,7 +5380,7 @@ public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getCreateNewMeeting ()Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase;
 	public final fun getDeleteMeeting ()Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase;
 	public final fun getEnsureMeetingIsMLSEstablished ()Lcom/wire/kalium/logic/feature/meeting/EnsureMeetingIsMLSEstablishedUseCase;
-	public final fun getGetNextMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase;
+	public final fun getGetNextUnfinishedMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
 	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
 	public final fun getUpdateMeeting ()Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase;

@@ -206,12 +206,12 @@ WHERE Member.conversation IN :conversationIds
     AND User.preview_asset_id IS NOT NULL
 ORDER BY Member.conversation ASC, Member.user ASC;
 
-selectNextMeetingOccurrenceDetailsId:
+selectNextUnfinishedMeetingOccurrenceDetailsId:
 SELECT MeetingOccurrence.occurrence_id
 FROM MeetingOccurrence
 JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
 WHERE MeetingOccurrence.meeting_id = :meetingId
-    AND MeetingOccurrence.occurrence_start > :fromDate
+    AND MeetingOccurrence.occurrence_end > :fromDate
 ORDER BY MeetingOccurrence.occurrence_start ASC,
     MeetingOccurrence.occurrence_end ASC,
     Meeting.title ASC

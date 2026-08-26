@@ -113,7 +113,7 @@ internal interface MeetingRepository {
         transactionContext: CryptoTransactionContext,
     ): Either<CoreFailure, MLSAdditionResult>
 
-    suspend fun getNextMeetingOccurrence(
+    suspend fun getNextUnfinishedMeetingOccurrence(
         meetingId: MeetingId,
         from: Instant = currentInstant()
     ): Either<StorageFailure, MeetingOccurrence>
@@ -216,11 +216,11 @@ internal class MeetingDataSource(
         }
     }
 
-    override suspend fun getNextMeetingOccurrence(
+    override suspend fun getNextUnfinishedMeetingOccurrence(
         meetingId: MeetingId,
         from: Instant
     ): Either<StorageFailure, MeetingOccurrence> = wrapStorageRequest {
-        meetingDAO.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from)?.let { occurrenceId ->
+        meetingDAO.getNextUnfinishedMeetingOccurrenceDetailsId(meetingId.toDao(), from)?.let { occurrenceId ->
             meetingDAO.getMeetingOccurrenceDetailsFlow(occurrenceId).firstOrNull()?.let(meetingMapper::fromDaoToModel)
         }
     }
