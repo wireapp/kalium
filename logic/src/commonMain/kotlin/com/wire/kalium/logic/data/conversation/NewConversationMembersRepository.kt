@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -37,6 +38,7 @@ internal interface NewConversationMembersRepository {
     suspend fun persistMembersAdditionToTheConversation(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,
+        additionalMembers: List<UserId> = emptyList(),
     ): Either<CoreFailure, Unit>
 }
 
@@ -50,9 +52,14 @@ internal class NewConversationMembersRepositoryImpl(
     override suspend fun persistMembersAdditionToTheConversation(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,
+        additionalMembers: List<UserId>,
     ) = wrapStorageRequest {
+        val responseMembers = memberMapper.fromApiModelToDaoModel(conversationResponse.members)
+        val pendingMembers = additionalMembers.map {
+            memberMapper.toDaoModel(Conversation.Member(it, Conversation.Member.Role.Member))
+        }
         memberDAO.insertMembersWithQualifiedId(
-            memberMapper.fromApiModelToDaoModel(conversationResponse.members),
+            (responseMembers + pendingMembers).distinctBy { it.user },
             idMapper.fromApiToDao(conversationResponse.id)
         )
     }.flatMap {

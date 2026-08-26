@@ -168,6 +168,24 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
     }
 }
 
+/**
+ * Which providers serve asset crypto, for the security providers debug screen.
+ *
+ * Lives here, next to the call sites, so it shares their algorithm constants: change a constant and this
+ * follows automatically instead of quietly reporting the old one.
+ */
+internal fun assetCryptoServices(): List<CryptoServiceInfo> = listOfNotNull(
+    cryptoServiceInfo("Asset encryption IV", "SecureRandom()") {
+        SecureRandom().run { algorithm to provider }
+    },
+    cryptoServiceInfo("Asset AES-256 key", "KeyGenerator.getInstance(\"$KEY_ALGORITHM\")") {
+        KeyGenerator.getInstance(KEY_ALGORITHM).run { algorithm to provider }
+    },
+    cryptoServiceInfo("Asset cipher", "Cipher.getInstance(\"$KEY_ALGORITHM_CONFIGURATION\")") {
+        Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION).run { algorithm to provider }
+    },
+)
+
 private const val KEY_ALGORITHM = "AES"
 private const val KEY_ALGORITHM_CONFIGURATION = "AES/CBC/PKCS5PADDING"
 private const val IV_SIZE = 16

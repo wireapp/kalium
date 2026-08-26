@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -29,8 +30,10 @@ internal interface MLSResetConversationEventHandler {
 
 internal class MLSResetConversationEventHandlerImpl(
     private val mlsConversationRepository: MLSConversationRepository,
+    private val endCallOnMLSReset: EndCallOnMLSResetUseCase,
 ) : MLSResetConversationEventHandler {
     override suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset) {
+        endCallOnMLSReset(event.conversationId)
 
         transaction.mls?.let { mlsContext ->
             mlsConversationRepository.leaveGroup(mlsContext, event.groupID)

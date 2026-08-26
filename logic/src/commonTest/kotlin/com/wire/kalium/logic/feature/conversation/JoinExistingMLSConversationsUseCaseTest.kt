@@ -124,6 +124,28 @@ class JoinExistingMLSConversationsUseCaseTest {
     }
 
     @Test
+    fun givenPendingCreationConversation_whenInvokingUseCase_thenRequestToJoinConversationIsCalled() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful(emptyList())
+            .withPendingCreationConversations(listOf(Arrangement.MLS_PENDING_CREATION_CONVERSATION))
+            .withJoinExistingMLSConversationSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(
+                any(),
+                eq(Arrangement.MLS_PENDING_CREATION_CONVERSATION.id),
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
     fun givenPendingConversationWithoutSelfMembership_whenInvokingUseCase_thenConversationIsSkipped() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
@@ -334,12 +356,21 @@ class JoinExistingMLSConversationsUseCaseTest {
                 conversationRepository.getConversationsByGroupState(eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN))
             } returns Either.Right(conversations)
             withPendingAfterResetConversations(emptyList())
+            withPendingCreationConversations(emptyList())
         }
 
         suspend fun withPendingAfterResetConversations(conversations: List<Conversation>) = apply {
             everySuspend {
                 conversationRepository.getConversationsByGroupState(
                     eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET)
+                )
+            } returns Either.Right(conversations)
+        }
+
+        suspend fun withPendingCreationConversations(conversations: List<Conversation>) = apply {
+            everySuspend {
+                conversationRepository.getConversationsByGroupState(
+                    eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION)
                 )
             } returns Either.Right(conversations)
         }
@@ -448,6 +479,16 @@ class JoinExistingMLSConversationsUseCaseTest {
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id-after-reset", "domain"))
+
+            val MLS_PENDING_CREATION_CONVERSATION = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GroupID("group-pending-creation"),
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id-pending-creation", "domain"))
         }
     }
 }

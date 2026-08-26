@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.util
 
+import com.wire.kalium.cryptography.utils.CryptoServiceInfo
+import com.wire.kalium.cryptography.utils.cryptoServiceInfo
+
 internal actual class SecureRandom actual constructor() {
 
     private val random get() = java.security.SecureRandom.getInstanceStrong()
@@ -25,5 +28,11 @@ internal actual class SecureRandom actual constructor() {
     actual fun nextBytes(length: Int): ByteArray = ByteArray(length).apply {
         random.nextBytes(this)
     }
+
     actual fun nextInt(bound: Int): Int = random.nextInt(bound)
+
+    actual fun serviceInfo(): CryptoServiceInfo? =
+        cryptoServiceInfo("Database secret / random password", "SecureRandom.getInstanceStrong()") {
+            random.run { algorithm to provider }
+        }
 }

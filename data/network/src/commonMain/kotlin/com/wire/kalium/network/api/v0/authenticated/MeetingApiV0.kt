@@ -31,6 +31,9 @@ internal open class MeetingApiV0 internal constructor() : MeetingApi {
     override suspend fun fetchMeetings(): NetworkResponse<List<MeetingDTO>> =
         getApiNotSupportedError("fetchMeetings", MIN_API_VERSION_MEETINGS)
 
+    override suspend fun fetchMeeting(meetingId: MeetingId): NetworkResponse<MeetingDTO> =
+        getApiNotSupportedError("fetchMeeting", MIN_API_VERSION_MEETINGS)
+
     override suspend fun deleteMeeting(meetingId: MeetingId): NetworkResponse<Unit> =
         getApiNotSupportedError("deleteMeeting", MIN_API_VERSION_MEETINGS)
 

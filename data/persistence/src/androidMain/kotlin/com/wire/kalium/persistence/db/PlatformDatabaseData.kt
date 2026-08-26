@@ -49,6 +49,7 @@ fun databaseDriver(
 ): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
     val enableWAL = driverConfiguration.isWALEnabled
+    val enforceForeignKeys = driverConfiguration.areForeignKeyConstraintsEnforced
     return if (passphrase != null) {
         System.loadLibrary("sqlcipher")
         AndroidSqliteDriver(
@@ -56,13 +57,19 @@ fun databaseDriver(
             context = context,
             name = dbName,
             factory = SupportOpenHelperFactory(passphrase, enableWAL),
+            callback = SqliteCallback(
+                schema = schema,
+                // SQLCipher's open-helper factory owns WAL configuration.
+                enableWAL = false,
+                enforceForeignKeys = enforceForeignKeys,
+            ),
         )
     } else {
         AndroidSqliteDriver(
             schema = schema,
             context = context,
             name = dbName,
-            callback = SqliteCallback(schema, enableWAL),
+            callback = SqliteCallback(schema, enableWAL, enforceForeignKeys),
         )
     }
 }
