@@ -70,6 +70,7 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 
@@ -284,6 +285,75 @@ class E2EIRepositoryTest {
         verifySuspend(VerifyMode.not) {
             arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
             arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
+        }
+    }
+
+    @Test
+    fun givenAbandonedPreInstallCheckpoint_whenStartingAnotherAcquisition_thenClearsItAndStartsAgain() = runTest {
+        val checkpoint = installedCheckpoint().copy(
+            certificateChain = null,
+            newCredentialId = null,
+            phase = E2EIRotationPhase.INTENT
+        )
+        val (arrangement, repository) = Arrangement().arrange {
+            persistedRotationCheckpoint = Json.encodeToString(
+                E2EIRotationCheckpoint.serializer(),
+                checkpoint
+            ).encodeToByteArray()
+        }
+
+        repository.startCredentialAcquisition(isNewClient = false).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.deleteE2EIRotationCheckpoint()
+            arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
+            arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
+        }
+        assertNull(arrangement.persistedRotationCheckpoint)
+    }
+
+    @Test
+    fun givenCredentialInstalledWithPreInstallCheckpoint_whenStartingAgain_thenRecoversAndPreservesCheckpoint() = runTest {
+        val checkpoint = installedCheckpoint().copy(
+            newCredentialId = null,
+            phase = E2EIRotationPhase.ACQUIRED
+        )
+        val (arrangement, repository) = Arrangement().arrange {
+            persistedRotationCheckpoint = Json.encodeToString(
+                E2EIRotationCheckpoint.serializer(),
+                checkpoint
+            ).encodeToByteArray()
+            everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns
+                    listOf(newCredentialRef, previousCredentialRef)
+        }
+
+        val result = repository.startCredentialAcquisition(isNewClient = false)
+
+        kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(result)
+        val recoveredCheckpoint = Json.decodeFromString(
+            E2EIRotationCheckpoint.serializer(),
+            requireNotNull(arrangement.persistedRotationCheckpoint).decodeToString()
+        )
+        assertEquals(E2EIRotationPhase.CREDENTIAL_INSTALLED, recoveredCheckpoint.phase)
+        assertEquals(NEW_CREDENTIAL_ID, recoveredCheckpoint.newCredentialId)
+        verifySuspend(VerifyMode.not) {
+            arrangement.userConfigRepository.deleteE2EIRotationCheckpoint()
+            arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
+        }
+    }
+
+    @Test
+    fun givenSnapshotCleanupFails_whenStartingAcquisition_thenDoesNotStartCoreCrypto() = runTest {
+        val cleanupFailure = StorageFailure.Generic(IllegalStateException("snapshot cleanup failed"))
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { userConfigRepository.deleteE2EIAcquisitionSnapshot() } returns cleanupFailure.left()
+        }
+
+        val result = repository.startCredentialAcquisition(isNewClient = false)
+
+        kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
         }
     }
 

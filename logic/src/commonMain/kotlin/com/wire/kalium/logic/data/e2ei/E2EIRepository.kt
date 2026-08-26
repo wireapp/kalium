@@ -342,22 +342,49 @@ private class E2EICredentialAcquisitionWorkflow(
 ) {
     suspend fun start(isNewClient: Boolean): Either<E2EIFailure, E2EIAuthenticationRequest> =
         checkpointStore.load().flatMap { pendingRotation ->
-            if (pendingRotation != null) {
-                E2EIFailure.Generic(
+            val preparationResult = if (pendingRotation == null) {
+                Unit.right()
+            } else {
+                val pendingRotationFailure: Either<E2EIFailure, Unit> = E2EIFailure.Generic(
                     IllegalStateException("An X.509 credential rotation is already pending")
                 ).left()
-            } else {
-                dependencies.userConfigRepository.deleteE2EIAcquisitionSnapshot()
-                dependencies.discoveryUrl().flatMap { discoveryUrl ->
-                    dependencies.currentClientIdProvider()
+                when (pendingRotation.phase) {
+                    E2EIRotationPhase.INTENT,
+                    E2EIRotationPhase.ACQUIRED -> dependencies.currentClientIdProvider()
                         .mapLeft(E2EIFailure::GettingE2EIClient)
                         .flatMap { clientId ->
-                            dependencies.mlsClientProvider.getCoreCrypto(clientId)
+                            dependencies.mlsClientProvider.getMLSClient(clientId)
                                 .mapLeft(E2EIFailure::MissingMLSClient)
-                                .flatMap { coreCrypto ->
-                                    startConfiguredAcquisition(coreCrypto, discoveryUrl, clientId, isNewClient)
+                                .flatMap { mlsClient ->
+                                    recoverInstalledCredential(mlsClient, pendingRotation).flatMap { recoveredCheckpoint ->
+                                        // Only abandon the checkpoint after proving that installation never happened.
+                                        if (recoveredCheckpoint == null) {
+                                            checkpointStore.delete()
+                                        } else {
+                                            pendingRotationFailure
+                                        }
+                                    }
                                 }
                         }
+                    E2EIRotationPhase.CREDENTIAL_INSTALLED,
+                    E2EIRotationPhase.KEY_PACKAGES_PREPARED,
+                    E2EIRotationPhase.BACKEND_REPLACED -> pendingRotationFailure
+                }
+            }
+
+            preparationResult.flatMap {
+                checkpointStore.deleteAcquisitionSnapshot().flatMap {
+                    dependencies.discoveryUrl().flatMap { discoveryUrl ->
+                        dependencies.currentClientIdProvider()
+                            .mapLeft(E2EIFailure::GettingE2EIClient)
+                            .flatMap { clientId ->
+                                dependencies.mlsClientProvider.getCoreCrypto(clientId)
+                                    .mapLeft(E2EIFailure::MissingMLSClient)
+                                    .flatMap { coreCrypto ->
+                                        startConfiguredAcquisition(coreCrypto, discoveryUrl, clientId, isNewClient)
+                                    }
+                            }
+                    }
                 }
             }
         }
