@@ -562,6 +562,8 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHan
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -2298,9 +2300,15 @@ public class UserSessionScope internal constructor(
             meetingRepository = meetingRepository,
         )
 
+    private val meetingDeleteEventHandler: MeetingDeleteEventHandler
+        get() = MeetingDeleteEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
     private val meetingEventReceiver: MeetingEventReceiver
         get() = MeetingEventReceiverImpl(
-            meetingCreateEventHandler = meetingCreateEventHandler
+            meetingCreateEventHandler = meetingCreateEventHandler,
+            meetingDeleteEventHandler = meetingDeleteEventHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
