@@ -865,6 +865,44 @@ abstract interface com.wire.kalium.logic.feature.conversation/CheckConversationL
     }
 }
 
+abstract interface com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase { // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result { // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Failure // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final class Ready : com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result { // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Ready|null[0]
+            constructor <init>(com.wire.kalium.logic.data.conversation/Conversation) // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Ready.<init>|<init>(com.wire.kalium.logic.data.conversation.Conversation){}[0]
+
+            final val conversation // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Ready.conversation|{}conversation[0]
+                final fun <get-conversation>(): com.wire.kalium.logic.data.conversation/Conversation // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Ready.conversation.<get-conversation>|<get-conversation>(){}[0]
+
+            final fun component1(): com.wire.kalium.logic.data.conversation/Conversation // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Ready.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.logic.data.conversation/Conversation = ...): com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Ready // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Ready.copy|copy(com.wire.kalium.logic.data.conversation.Conversation){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Ready.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Ready.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.Ready.toString|toString(){}[0]
+        }
+
+        final object NotReady : com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result { // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.NotReady|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.NotReady.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.NotReady.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase.Result.NotReady.toString|toString(){}[0]
+        }
+    }
+}
+
 abstract interface com.wire.kalium.logic.feature.conversation/ClearConversationContentUseCase { // com.wire.kalium.logic.feature.conversation/ClearConversationContentUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Boolean = ...): com.wire.kalium.logic.feature.conversation/ClearConversationContentUseCase.Result // com.wire.kalium.logic.feature.conversation/ClearConversationContentUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Boolean){}[0]
 
@@ -3965,6 +4003,8 @@ final class com.wire.kalium.logic.feature.conversation/ConversationScope { // co
         final fun <get-checkConversationLeaveConditions>(): com.wire.kalium.logic.feature.conversation/CheckConversationLeaveConditionsUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.checkConversationLeaveConditions.<get-checkConversationLeaveConditions>|<get-checkConversationLeaveConditions>(){}[0]
     final val checkIConversationInviteCode // com.wire.kalium.logic.feature.conversation/ConversationScope.checkIConversationInviteCode|{}checkIConversationInviteCode[0]
         final fun <get-checkIConversationInviteCode>(): com.wire.kalium.logic.feature.conversation/CheckConversationInviteCodeUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.checkIConversationInviteCode.<get-checkIConversationInviteCode>|<get-checkIConversationInviteCode>(){}[0]
+    final val checkOneToOneConversationIsReadyUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.checkOneToOneConversationIsReadyUseCase|{}checkOneToOneConversationIsReadyUseCase[0]
+        final fun <get-checkOneToOneConversationIsReadyUseCase>(): com.wire.kalium.logic.feature.conversation/CheckOneToOneConversationIsReadyUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.checkOneToOneConversationIsReadyUseCase.<get-checkOneToOneConversationIsReadyUseCase>|<get-checkOneToOneConversationIsReadyUseCase>(){}[0]
     final val clearConversationContent // com.wire.kalium.logic.feature.conversation/ConversationScope.clearConversationContent|{}clearConversationContent[0]
         final fun <get-clearConversationContent>(): com.wire.kalium.logic.feature.conversation/ClearConversationContentUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.clearConversationContent.<get-clearConversationContent>|<get-clearConversationContent>(){}[0]
     final val clearUsersTypingEvents // com.wire.kalium.logic.feature.conversation/ConversationScope.clearUsersTypingEvents|{}clearUsersTypingEvents[0]
