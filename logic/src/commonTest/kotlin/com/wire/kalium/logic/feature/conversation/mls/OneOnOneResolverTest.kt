@@ -58,6 +58,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class OneOnOneResolverTest {
@@ -264,6 +265,31 @@ class OneOnOneResolverTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.oneOnOneMigrator.migrateExistingProteus(mokkeryEq(OTHER_USER))
+        }
+    }
+
+    @Test
+    fun givenOtherNeedsToUpdateAndMLSFallbackIsEnabled_whenResolving_thenPropagateMissingKeyPackagesFromMLS() = runTest {
+        val failure = CoreFailure.MissingKeyPackages(setOf(OTHER_USER.id))
+        val (arrangement, resolver) = arrange {
+            withGetProtocolForUser(CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate.left())
+            withMigrateToMLSReturns(failure.left())
+        }
+
+        resolver.resolveOneOnOneConversationWithUser(
+            transactionContext = arrangement.transactionContext,
+            user = OTHER_USER,
+            invalidateCurrentKnownProtocols = false,
+            fallbackToMLS = true,
+        ).shouldFail {
+            assertEquals(failure, it)
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), mokkeryEq(OTHER_USER), mokkeryEq(true))
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.oneOnOneMigrator.migrateExistingProteus(mokkeryAny())
         }
     }
 

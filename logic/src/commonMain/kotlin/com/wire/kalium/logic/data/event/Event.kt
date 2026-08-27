@@ -895,6 +895,19 @@ internal sealed class Event(open val id: String) {
             )
         }
 
+        internal data class Delete(
+            override val id: String,
+            val meetingId: MeetingId,
+            val dateTime: Instant,
+        ) : Meeting(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Meeting.Delete",
+                idKey to id,
+                meetingIdKey to meetingId.toLogString(),
+                timestampIsoKey to dateTime
+            )
+        }
+
         internal data class Update(
             override val id: String,
             val meetingId: MeetingId,

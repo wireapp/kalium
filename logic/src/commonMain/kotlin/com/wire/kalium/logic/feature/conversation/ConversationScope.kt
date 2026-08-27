@@ -253,7 +253,15 @@ public class ConversationScope internal constructor(
             conversationRepository,
             userRepository,
             oneOnOneResolver,
-            transactionProvider
+            transactionProvider,
+            checkOneToOneConversationIsReadyUseCase,
+        )
+
+    public val checkOneToOneConversationIsReadyUseCase: CheckOneToOneConversationIsReadyUseCase
+        get() = CheckOneToOneConversationIsReadyUseCaseImpl(
+            conversationRepository,
+            mlsConversationRepository,
+            transactionProvider,
         )
 
     public val isOneToOneConversationCreatedUseCase: IsOneToOneConversationCreatedUseCase

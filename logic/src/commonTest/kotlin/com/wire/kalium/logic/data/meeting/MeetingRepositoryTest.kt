@@ -111,7 +111,46 @@ class MeetingRepositoryTest {
             arrangement.meetingApi.fetchMeetings()
             arrangement.meetingDao.upsertMeetings(
                 meetings = listOf(expectedMeetingEntity),
-                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
+                removeMeetingsAbsentFromUpsertList = true,
+            )
+        }
+    }
+
+    @Test
+    fun whenFetchAndPersistMeetings_thenCreatorsArePreparedOnceBeforePersistingMeetings() = runTest {
+        val creatorId = UserId("user1", "domain")
+        val meetings = listOf(
+            meetingDTO(
+                meetingId = NetworkMeetingId("meeting1", "domain"),
+                conversationId = ApiConversationId("conversation1", "domain"),
+                creatorId = creatorId.toApi(),
+                title = "Meeting 1"
+            ),
+            meetingDTO(
+                meetingId = NetworkMeetingId("meeting2", "domain"),
+                conversationId = ApiConversationId("conversation2", "domain"),
+                creatorId = creatorId.toApi(),
+                title = "Meeting 2"
+            )
+        )
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingsSuccess(meetings)
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
+            .withFetchUsersIfUnknownSuccess(setOf(creatorId))
+            .arrange()
+        val expectedMeetingEntities = meetings.map { requireNotNull(arrangement.meetingMapper.fromApiToDao(it)) }
+
+        val result = repository.fetchAndPersistMeetings()
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exhaustiveOrder) {
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(userIds = listOf(creatorId))
+            arrangement.userRepository.fetchUsersIfUnknownByIds(ids = setOf(creatorId))
+            arrangement.meetingDao.upsertMeetings(
+                meetings = expectedMeetingEntities,
+                generateOccurrencesWindow = any(),
+                removeMeetingsAbsentFromUpsertList = true,
             )
         }
     }
@@ -278,6 +317,41 @@ class MeetingRepositoryTest {
         }
         verifySuspend(VerifyMode.not) {
             arrangement.meetingDao.deleteMeeting(meetingId.toDao())
+        }
+    }
+
+    @Test
+    fun whenDeleteMeetingLocally_thenMeetingIsDeletedLocallyWithoutApiCall() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val (arrangement, repository) = Arrangement().arrange()
+
+        val result = repository.deleteMeetingLocally(meetingId)
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.deleteMeeting(meetingId.toDao())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.meetingApi.deleteMeeting(meetingId.toApi())
+        }
+    }
+
+    @Test
+    fun givenDaoDeleteFails_whenDeleteMeetingLocally_thenStorageFailureIsReturned() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val deleteException = RuntimeException("Meeting delete failed")
+        val (arrangement, repository) = Arrangement()
+            .withDeleteMeetingLocallyFailure(meetingId, deleteException)
+            .arrange()
+
+        val result = repository.deleteMeetingLocally(meetingId)
+
+        assertSame(deleteException, assertIs<Either.Left<StorageFailure.Generic>>(result).value.rootCause)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.deleteMeeting(meetingId.toDao())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.meetingApi.deleteMeeting(meetingId.toApi())
         }
     }
 
@@ -1060,6 +1134,10 @@ class MeetingRepositoryTest {
 
         internal fun withDeleteMeetingFailure(meetingId: MeetingId) = apply {
             everySuspend { meetingApi.deleteMeeting(meetingId.toApi()) } returns NetworkResponse.Error(TestNetworkException.generic)
+        }
+
+        internal fun withDeleteMeetingLocallyFailure(meetingId: MeetingId, error: RuntimeException) = apply {
+            everySuspend { meetingDao.deleteMeeting(meetingId.toDao()) } throws error
         }
 
         internal fun withNextMeetingOccurrenceId(meetingId: MeetingId, from: Instant, result: String?) = apply {
