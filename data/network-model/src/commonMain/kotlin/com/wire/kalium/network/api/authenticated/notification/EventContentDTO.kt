@@ -214,6 +214,40 @@ sealed class EventContentDTO {
         ) : Conversation()
 
         @Serializable
+        @SerialName("conversation.system.delete")
+        data class SystemDeletedConversationDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId? = null,
+            val time: String
+        ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.adminless-reminder")
+        data class AdminlessDeleteReminderDTO(
+            @SerialName("conversation") val conversation: String,
+            @SerialName("data") val data: AdminlessDeleteReminderData,
+            @SerialName("from") val from: String,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("team") val teamId: TeamId,
+            @SerialName("time") val time: Instant,
+            @SerialName("via") val via: String,
+        ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.system.adminless-reminder")
+        data class SystemAdminlessDeleteReminderDTO(
+            @SerialName("conversation") val conversation: String,
+            @SerialName("data") val data: AdminlessDeleteReminderData,
+            @SerialName("from") val from: String,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId? = null,
+            @SerialName("team") val teamId: TeamId,
+            @SerialName("time") val time: Instant,
+            @SerialName("via") val via: String,
+        ) : Conversation()
+
+        @Serializable
         @SerialName("conversation.rename")
         data class ConversationRenameDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
@@ -247,6 +281,16 @@ sealed class EventContentDTO {
         data class MemberUpdateDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("time") val time: String,
+            @SerialName("from") val from: String,
+            @SerialName("data") val roleChange: ConversationRoleChange
+        ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.system.member-update")
+        data class SystemMemberUpdateDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId? = null,
             @SerialName("time") val time: String,
             @SerialName("from") val from: String,
             @SerialName("data") val roleChange: ConversationRoleChange
@@ -505,6 +549,11 @@ sealed class EventContentDTO {
         ) : Meeting()
     }
 }
+
+@Serializable
+data class AdminlessDeleteReminderData(
+    @SerialName("deletion_scheduled_for") val deletionScheduledFor: Instant,
+)
 
 @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
 object FieldKeyValueDeserializer : KSerializer<EventContentDTO.FieldKeyValue> {

@@ -79,4 +79,5 @@ class LastMessageListTest: BaseDatabaseTest() {
             assertIs<MessagePreviewEntityContent.Composite>(it.first().content)
         }
     }
+
 }

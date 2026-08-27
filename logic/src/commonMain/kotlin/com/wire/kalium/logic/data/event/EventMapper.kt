@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.toModel
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -43,6 +44,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.incremental.EventSource
+import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
@@ -113,6 +115,7 @@ internal class EventMapper(
             is EventContentDTO.Conversation.MemberJoinDTO -> conversationMemberJoin(id, eventContentDTO)
             is EventContentDTO.Conversation.MemberLeaveDTO -> conversationMemberLeave(id, eventContentDTO)
             is EventContentDTO.Conversation.MemberUpdateDTO -> memberUpdate(id, eventContentDTO)
+            is EventContentDTO.Conversation.SystemMemberUpdateDTO -> memberUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
             is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
             is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
@@ -127,6 +130,9 @@ internal class EventMapper(
             is EventContentDTO.Unknown -> unknown(id, eventContentDTO)
             is EventContentDTO.Conversation.AccessUpdate -> conversationAccessUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO)
+            is EventContentDTO.Conversation.SystemDeletedConversationDTO -> conversationDeleted(id, eventContentDTO)
+            is EventContentDTO.Conversation.AdminlessDeleteReminderDTO -> adminlessDeleteReminder(id, eventContentDTO)
+            is EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO -> adminlessDeleteReminder(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO)
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO)
@@ -466,46 +472,71 @@ internal class EventMapper(
     private fun memberUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberUpdateDTO,
+    ): Event.Conversation.MemberChanged = memberUpdate(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        timestampIso = eventContentDTO.time,
+        roleChange = eventContentDTO.roleChange,
+        time = eventContentDTO.time,
+    )
+
+    private fun memberUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.SystemMemberUpdateDTO,
+    ): Event.Conversation.MemberChanged = memberUpdate(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        timestampIso = eventContentDTO.time,
+        roleChange = eventContentDTO.roleChange,
+        time = eventContentDTO.time,
+    )
+
+    private fun memberUpdate(
+        id: String,
+        conversationId: ConversationId,
+        timestampIso: String,
+        roleChange: ConversationRoleChange,
+        time: String,
     ): Event.Conversation.MemberChanged {
         return when {
-            eventContentDTO.roleChange.role?.isNotEmpty() == true -> {
+            roleChange.role?.isNotEmpty() == true -> {
                 Event.Conversation.MemberChanged.MemberChangedRole(
                     id = id,
-                    conversationId = eventContentDTO.qualifiedConversation.toModel(),
-                    dateTime = Instant.parse(eventContentDTO.time),
+                    conversationId = conversationId,
+                    dateTime = Instant.parse(timestampIso),
                     member = Conversation.Member(
-                        id = eventContentDTO.roleChange.qualifiedUserId.toModel(),
-                        role = roleMapper.fromApi(eventContentDTO.roleChange.role.orEmpty())
+                        id = roleChange.qualifiedUserId.toModel(),
+                        role = roleMapper.fromApi(roleChange.role.orEmpty())
                     ),
                 )
             }
 
-            eventContentDTO.roleChange.mutedStatus != null -> {
+            roleChange.mutedStatus != null -> {
                 Event.Conversation.MemberChanged.MemberMutedStatusChanged(
                     id = id,
-                    conversationId = eventContentDTO.qualifiedConversation.toModel(),
-                    mutedConversationChangedTime = eventContentDTO.roleChange.mutedRef
+                    conversationId = conversationId,
+                    mutedConversationChangedTime = roleChange.mutedRef
                         ?.let(Instant::parse)
-                        ?: Instant.parse(eventContentDTO.time),
-                    mutedConversationStatus = mapConversationMutedStatus(eventContentDTO.roleChange.mutedStatus)
+                        ?: Instant.parse(time),
+                    mutedConversationStatus = mapConversationMutedStatus(roleChange.mutedStatus)
                 )
             }
 
-            eventContentDTO.roleChange.isArchiving != null -> {
+            roleChange.isArchiving != null -> {
                 Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
                     id = id,
-                    conversationId = eventContentDTO.qualifiedConversation.toModel(),
-                    archivedConversationChangedTime = eventContentDTO.roleChange.archivedRef
+                    conversationId = conversationId,
+                    archivedConversationChangedTime = roleChange.archivedRef
                         ?.let(Instant::parse)
-                        ?: Instant.parse(eventContentDTO.time),
-                    isArchiving = eventContentDTO.roleChange.isArchiving ?: false
+                        ?: Instant.parse(time),
+                    isArchiving = roleChange.isArchiving ?: false
                 )
             }
 
             else -> {
                 Event.Conversation.MemberChanged.IgnoredMemberChanged(
                     id,
-                    eventContentDTO.qualifiedConversation.toModel(),
+                    conversationId,
                 )
             }
         }
@@ -619,11 +650,69 @@ internal class EventMapper(
     private fun conversationDeleted(
         id: String,
         deletedConversationDTO: EventContentDTO.Conversation.DeletedConversationDTO,
-    ) = Event.Conversation.DeletedConversation(
+    ) = conversationDeleted(
         id = id,
         conversationId = deletedConversationDTO.qualifiedConversation.toModel(),
         senderUserId = deletedConversationDTO.qualifiedFrom.toModel(),
-        dateTime = Instant.parse(deletedConversationDTO.time)
+        dateTime = Instant.parse(deletedConversationDTO.time),
+    )
+
+    private fun conversationDeleted(
+        id: String,
+        deletedConversationDTO: EventContentDTO.Conversation.SystemDeletedConversationDTO,
+    ) = conversationDeleted(
+        id = id,
+        conversationId = deletedConversationDTO.qualifiedConversation.toModel(),
+        senderUserId = deletedConversationDTO.qualifiedFrom?.toModel(),
+        dateTime = Instant.parse(deletedConversationDTO.time),
+    )
+
+    private fun conversationDeleted(
+        id: String,
+        conversationId: ConversationId,
+        senderUserId: UserId?,
+        dateTime: Instant,
+    ) = Event.Conversation.DeletedConversation(
+        id = id,
+        conversationId = conversationId,
+        senderUserId = senderUserId,
+        dateTime = dateTime,
+    )
+
+    private fun adminlessDeleteReminder(
+        id: String,
+        event: EventContentDTO.Conversation.AdminlessDeleteReminderDTO,
+    ) = adminlessDeleteReminder(
+        id = id,
+        conversationId = event.qualifiedConversation.toModel(),
+        senderUserId = event.qualifiedFrom.toModel(),
+        dateTime = event.time,
+        deletionScheduledFor = event.data.deletionScheduledFor,
+    )
+
+    private fun adminlessDeleteReminder(
+        id: String,
+        event: EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO,
+    ) = adminlessDeleteReminder(
+        id = id,
+        conversationId = event.qualifiedConversation.toModel(),
+        senderUserId = event.qualifiedFrom?.toModel(),
+        dateTime = event.time,
+        deletionScheduledFor = event.data.deletionScheduledFor,
+    )
+
+    private fun adminlessDeleteReminder(
+        id: String,
+        conversationId: ConversationId,
+        senderUserId: UserId?,
+        dateTime: Instant,
+        deletionScheduledFor: Instant,
+    ) = Event.Conversation.AdminlessDeleteReminder(
+        id = id,
+        conversationId = conversationId,
+        senderUserId = senderUserId,
+        dateTime = dateTime,
+        deletionScheduledFor = deletionScheduledFor,
     )
 
     internal fun conversationRenamed(
