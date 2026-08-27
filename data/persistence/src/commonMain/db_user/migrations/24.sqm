@@ -35,7 +35,6 @@ import kotlinx.datetime.Instant;
 -- The Views based on the fore-mentioned columns need to be recreated as a consequence.
 --
 -- Migration approach:
--- 0) Turn Off FK Constraints
 -- 1) Drop all affected views
 -- 2) For each affected table:
 --    * Create new temporary table which represents our target table schema
@@ -44,11 +43,7 @@ import kotlinx.datetime.Instant;
 --    * Drop the original table
 --    * Rename the temporary table to match the original name
 -- 3) Recreate all affected views
--- 4) Re-enable FK Constraints
 --
-
--- 0)
-PRAGMA foreign_keys = 0;
 
 -- 1)
 DROP VIEW IF EXISTS MessageDetailsView;
@@ -130,6 +125,24 @@ SELECT
     mls_cipher_suite,
     receipt_mode
 FROM Conversation;
+
+-- Foreign-key enforcement can already be enabled by the driver before the migration
+-- transaction. Dropping Conversation then cascades through Message and its content tables,
+-- regardless of defer_foreign_keys, so preserve every affected child before the rebuild.
+CREATE TEMPORARY TABLE MemberMigration AS SELECT * FROM Member;
+CREATE TEMPORARY TABLE MessageMigration AS SELECT * FROM Message;
+CREATE TEMPORARY TABLE MessageAssetContentMigration AS SELECT * FROM MessageAssetContent;
+CREATE TEMPORARY TABLE MessageConversationChangedContentMigration AS SELECT * FROM MessageConversationChangedContent;
+CREATE TEMPORARY TABLE MessageFailedToDecryptContentMigration AS SELECT * FROM MessageFailedToDecryptContent;
+CREATE TEMPORARY TABLE MessageMemberChangeContentMigration AS SELECT * FROM MessageMemberChangeContent;
+CREATE TEMPORARY TABLE MessageMentionMigration AS SELECT * FROM MessageMention;
+CREATE TEMPORARY TABLE MessageMissedCallContentMigration AS SELECT * FROM MessageMissedCallContent;
+CREATE TEMPORARY TABLE MessageRestrictedAssetContentMigration AS SELECT * FROM MessageRestrictedAssetContent;
+CREATE TEMPORARY TABLE MessageTextContentMigration AS SELECT * FROM MessageTextContent;
+CREATE TEMPORARY TABLE MessageUnknownContentMigration AS SELECT * FROM MessageUnknownContent;
+CREATE TEMPORARY TABLE ReactionMigration AS SELECT * FROM Reaction;
+CREATE TEMPORARY TABLE ReceiptMigration AS SELECT * FROM Receipt;
+
 DROP TABLE Conversation;
 ALTER TABLE Conversation_temp RENAME TO Conversation;
 
@@ -213,9 +226,133 @@ SELECT
     strftime('%s', strftime('%Y-%m-%dT%H:%M:%fZ', last_edit_timestamp)) * 1000,
     visibility,
     expects_read_confirmation
-FROM Message;
+    FROM MessageMigration;
 DROP TABLE Message;
 ALTER TABLE Message_temp RENAME TO Message;
+
+INSERT INTO Member (user, conversation, role)
+SELECT user, conversation, role
+FROM MemberMigration;
+
+INSERT INTO MessageAssetContent (
+    message_id,
+    conversation_id,
+    asset_size,
+    asset_name,
+    asset_mime_type,
+    asset_upload_status,
+    asset_download_status,
+    asset_otr_key,
+    asset_sha256,
+    asset_id,
+    asset_token,
+    asset_domain,
+    asset_encryption_algorithm,
+    asset_width,
+    asset_height,
+    asset_duration_ms,
+    asset_normalized_loudness
+)
+SELECT
+    message_id,
+    conversation_id,
+    asset_size,
+    asset_name,
+    asset_mime_type,
+    asset_upload_status,
+    asset_download_status,
+    asset_otr_key,
+    asset_sha256,
+    asset_id,
+    asset_token,
+    asset_domain,
+    asset_encryption_algorithm,
+    asset_width,
+    asset_height,
+    asset_duration_ms,
+    asset_normalized_loudness
+FROM MessageAssetContentMigration;
+
+INSERT INTO MessageConversationChangedContent (message_id, conversation_id, conversation_name)
+SELECT message_id, conversation_id, conversation_name
+FROM MessageConversationChangedContentMigration;
+
+INSERT INTO MessageFailedToDecryptContent (
+    message_id,
+    conversation_id,
+    unknown_encoded_data,
+    is_decryption_resolved
+)
+SELECT message_id, conversation_id, unknown_encoded_data, is_decryption_resolved
+FROM MessageFailedToDecryptContentMigration;
+
+INSERT INTO MessageMemberChangeContent (
+    message_id,
+    conversation_id,
+    member_change_list,
+    member_change_type
+)
+SELECT message_id, conversation_id, member_change_list, member_change_type
+FROM MessageMemberChangeContentMigration;
+
+INSERT INTO MessageMention (message_id, conversation_id, start, length, user_id)
+SELECT message_id, conversation_id, start, length, user_id
+FROM MessageMentionMigration;
+
+INSERT INTO MessageMissedCallContent (message_id, conversation_id, caller_id)
+SELECT message_id, conversation_id, caller_id
+FROM MessageMissedCallContentMigration;
+
+INSERT INTO MessageRestrictedAssetContent (
+    message_id,
+    conversation_id,
+    asset_mime_type,
+    asset_size,
+    asset_name
+)
+SELECT message_id, conversation_id, asset_mime_type, asset_size, asset_name
+FROM MessageRestrictedAssetContentMigration;
+
+INSERT INTO MessageTextContent (
+    message_id,
+    conversation_id,
+    text_body,
+    quoted_message_id,
+    is_quote_verified
+)
+SELECT message_id, conversation_id, text_body, quoted_message_id, is_quote_verified
+FROM MessageTextContentMigration;
+
+INSERT INTO MessageUnknownContent (
+    message_id,
+    conversation_id,
+    unknown_type_name,
+    unknown_encoded_data
+)
+SELECT message_id, conversation_id, unknown_type_name, unknown_encoded_data
+FROM MessageUnknownContentMigration;
+
+INSERT INTO Reaction (message_id, conversation_id, sender_id, emoji, date)
+SELECT message_id, conversation_id, sender_id, emoji, date
+FROM ReactionMigration;
+
+INSERT INTO Receipt (message_id, conversation_id, user_id, type, date)
+SELECT message_id, conversation_id, user_id, type, date
+FROM ReceiptMigration;
+
+DROP TABLE MemberMigration;
+DROP TABLE MessageMigration;
+DROP TABLE MessageAssetContentMigration;
+DROP TABLE MessageConversationChangedContentMigration;
+DROP TABLE MessageFailedToDecryptContentMigration;
+DROP TABLE MessageMemberChangeContentMigration;
+DROP TABLE MessageMentionMigration;
+DROP TABLE MessageMissedCallContentMigration;
+DROP TABLE MessageRestrictedAssetContentMigration;
+DROP TABLE MessageTextContentMigration;
+DROP TABLE MessageUnknownContentMigration;
+DROP TABLE ReactionMigration;
+DROP TABLE ReceiptMigration;
 
 -- 3)
 -- ####### MessagePreview
@@ -472,6 +609,3 @@ LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id 
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN SelfUser;
-
--- 4)
-PRAGMA foreign_keys = 1;

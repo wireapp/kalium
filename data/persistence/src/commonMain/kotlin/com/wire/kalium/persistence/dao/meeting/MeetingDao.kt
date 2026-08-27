@@ -36,7 +36,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
 interface MeetingDao {
-    suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesWindow: GenerationLimit.Window)
+    suspend fun upsertMeetings(
+        meetings: List<MeetingEntity>,
+        generateOccurrencesWindow: GenerationLimit.Window,
+        removeMeetingsAbsentFromUpsertList: Boolean = false,
+    )
     suspend fun removeOutdatedMeetings(olderThan: Instant)
     suspend fun insertMissingOccurrences(generateOccurrencesWindow: GenerationLimit.Window)
     fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?>
@@ -55,8 +59,19 @@ internal class MeetingDaoImpl(
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : MeetingDao {
-    override suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesWindow: GenerationLimit.Window) {
-        if (meetings.isEmpty()) return
+    override suspend fun upsertMeetings(
+        meetings: List<MeetingEntity>,
+        generateOccurrencesWindow: GenerationLimit.Window,
+        removeMeetingsAbsentFromUpsertList: Boolean,
+    ) {
+        if (meetings.isEmpty()) {
+            if (removeMeetingsAbsentFromUpsertList) {
+                withContext(writeDispatcher.value) {
+                    meetingsQueries.deleteAllMeetings()
+                }
+            }
+            return
+        }
 
         withContext(writeDispatcher.value) {
             meetingsQueries.transaction {
@@ -83,6 +98,10 @@ internal class MeetingDaoImpl(
                         it.meetingId to (it.meetingId in meetingIdsRequiringOccurrenceRefresh)
                     },
                 )
+
+                if (removeMeetingsAbsentFromUpsertList) {
+                    meetingsQueries.deleteMeetingsNotIn(meetingIds = meetings.map { it.meetingId })
+                }
             }
         }
     }

@@ -23,12 +23,14 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 
 internal interface MeetingEventReceiver : EventReceiver<Event.Meeting>
 
 internal class MeetingEventReceiverImpl(
     private val meetingCreateEventHandler: MeetingCreateEventHandler,
+    private val meetingDeleteEventHandler: MeetingDeleteEventHandler,
     private val meetingUpdateEventHandler: MeetingUpdateEventHandler,
 ) : MeetingEventReceiver {
 
@@ -38,6 +40,7 @@ internal class MeetingEventReceiverImpl(
         deliveryInfo: EventDeliveryInfo
     ): Either<CoreFailure, Unit> = when (event) {
         is Event.Meeting.Create -> meetingCreateEventHandler.handle(event)
+        is Event.Meeting.Delete -> meetingDeleteEventHandler.handle(event)
         is Event.Meeting.Update -> meetingUpdateEventHandler.handle(event)
     }
 
