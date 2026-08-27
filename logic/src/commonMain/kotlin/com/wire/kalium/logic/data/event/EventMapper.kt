@@ -146,6 +146,7 @@ internal class EventMapper(
             is EventContentDTO.Conversation.DeletedMeetingConversationDTO -> deletedMeetingConversation(id, eventContentDTO)
             is EventContentDTO.Meeting.MeetingDeleteDTO -> meetingDelete(id, eventContentDTO)
             is EventContentDTO.Meeting.MeetingUpdateDTO -> meetingUpdate(id, eventContentDTO)
+            is EventContentDTO.Meeting.MeetingMemberAddDTO -> meetingMemberAdd(id, eventContentDTO)
         }
 
     private fun conversationTyping(
@@ -709,6 +710,15 @@ internal class EventMapper(
         id: String,
         event: EventContentDTO.Meeting.MeetingUpdateDTO,
     ) = Event.Meeting.Update(
+        id = id,
+        meetingId = event.qualifiedMeetingId.toModel(),
+        dateTime = event.time
+    )
+
+    private fun meetingMemberAdd(
+        id: String,
+        event: EventContentDTO.Meeting.MeetingMemberAddDTO,
+    ) = Event.Meeting.MemberAdd(
         id = id,
         meetingId = event.qualifiedMeetingId.toModel(),
         dateTime = event.time
