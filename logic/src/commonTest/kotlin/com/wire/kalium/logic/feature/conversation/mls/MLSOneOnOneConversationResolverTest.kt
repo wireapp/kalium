@@ -18,11 +18,13 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -91,6 +93,47 @@ class MLSOneOnOneConversationResolverTest {
 
         result.shouldSucceed {
             assertEquals(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.id, it)
+        }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.fetchMLSOneToOneConversation(mokkeryAny(), mokkeryAny())
+        }
+    }
+
+    @Test
+    fun givenDatabaseEstablishedMLSConversationIsMissingFromCoreCrypto_thenShouldFetchAndEstablishIt() = runTest {
+        val (arrangement, getOrEstablishMlsOneToOneUseCase) = arrange {
+            withConversationsForUserIdReturning(Either.Right(ALL_CONVERSATIONS))
+            withHasEstablishedMLSGroup(Either.Right(false))
+            withFetchMLSOneToOneConversation(Either.Right(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED))
+            withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
+        }
+
+        val result = getOrEstablishMlsOneToOneUseCase(arrangement.transactionContext, userId)
+
+        result.shouldSucceed {
+            assertEquals(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.id, it)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryEq(true))
+        }
+    }
+
+    @Test
+    fun givenCoreCryptoCheckFailsForDatabaseEstablishedConversation_thenShouldPropagateFailure() = runTest {
+        val failure = MLSFailure.Disabled
+        val (arrangement, getOrEstablishMlsOneToOneUseCase) = arrange {
+            withConversationsForUserIdReturning(Either.Right(ALL_CONVERSATIONS))
+            withHasEstablishedMLSGroup(Either.Left(failure))
+        }
+
+        val result = getOrEstablishMlsOneToOneUseCase(arrangement.transactionContext, userId)
+
+        result.shouldFail {
+            assertEquals(failure, it)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.fetchMLSOneToOneConversation(mokkeryAny(), mokkeryAny())
         }
     }
 
@@ -167,6 +210,7 @@ class MLSOneOnOneConversationResolverTest {
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val joinExistingMLSConversationUseCase = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
         val fetchMLSOneToOneConversation = mock<FetchMLSOneToOneConversationUseCase>(mode = MockMode.autoUnit)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
 
         suspend fun withFetchMLSOneToOneConversation(result: Either<CoreFailure, Conversation>) = apply {
             everySuspend {
@@ -186,12 +230,22 @@ class MLSOneOnOneConversationResolverTest {
             } returns result
         }
 
+        suspend fun withHasEstablishedMLSGroup(result: Either<MLSFailure, Boolean>) = apply {
+            everySuspend {
+                mlsConversationRepository.hasEstablishedMLSGroup(mokkeryAny(), mokkeryAny())
+            } returns result
+        }
+
         fun arrange() = run {
-            runBlocking { block() }
+            runBlocking {
+                withHasEstablishedMLSGroup(Either.Right(true))
+                block()
+            }
             this to MLSOneOnOneConversationResolverImpl(
                 conversationRepository = conversationRepository,
                 joinExistingMLSConversationUseCase = joinExistingMLSConversationUseCase,
-                fetchMLSOneToOneConversation = fetchMLSOneToOneConversation
+                fetchMLSOneToOneConversation = fetchMLSOneToOneConversation,
+                mlsConversationRepository = mlsConversationRepository,
             )
         }
     }
