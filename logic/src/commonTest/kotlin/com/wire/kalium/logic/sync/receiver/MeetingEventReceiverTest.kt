@@ -19,12 +19,15 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.meetingCreateEvent
+import com.wire.kalium.logic.framework.TestEvent.meetingDeleteEvent
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import dev.mokkery.MockMode
@@ -72,15 +75,53 @@ class MeetingEventReceiverTest {
         }
     }
 
+    @Test
+    fun givenDeleteEvent_whenProcessingEvent_thenDeleteHandlerIsInvoked() = runTest {
+        val event = meetingDeleteEvent()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withMeetingDeleteHandlerReturning(event, Either.Right(Unit))
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        assertTrue(result.isRight())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDeleteEventHandler.handle(event)
+        }
+    }
+
+    @Test
+    fun givenDeleteHandlerFails_whenProcessingEvent_thenFailureIsReturned() = runTest {
+        val event = meetingDeleteEvent()
+        val failure = StorageFailure.Generic(Exception(""))
+        val (arrangement, eventReceiver) = Arrangement()
+            .withMeetingDeleteHandlerReturning(event, Either.Left(failure))
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        assertSame(failure, assertIs<Either.Left<CoreFailure>>(result).value)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDeleteEventHandler.handle(event)
+        }
+    }
+
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val meetingCreateEventHandler = mock<MeetingCreateEventHandler>(mode = MockMode.autoUnit)
+        val meetingDeleteEventHandler = mock<MeetingDeleteEventHandler>(mode = MockMode.autoUnit)
 
         fun withMeetingCreateHandlerReturning(event: Event.Meeting.Create, result: Either<CoreFailure, Unit>) = apply {
             everySuspend { meetingCreateEventHandler.handle(event) } returns result
         }
 
+        fun withMeetingDeleteHandlerReturning(event: Event.Meeting.Delete, result: Either<StorageFailure, Unit>) = apply {
+            everySuspend { meetingDeleteEventHandler.handle(event) } returns result
+        }
+
         fun arrange() = this to MeetingEventReceiverImpl(
             meetingCreateEventHandler = meetingCreateEventHandler,
+            meetingDeleteEventHandler = meetingDeleteEventHandler,
         )
     }
 }
