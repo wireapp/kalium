@@ -200,6 +200,118 @@ class NewConversationEventHandlerTest {
     }
 
     @Test
+    fun givenNewGroupConversationEventWithCellsReady_whenHandlingIt_thenPersistTheCellAccessStatusSystemMessage() = runTest {
+        // given
+        val conversationTeamId = "conversationTeamId"
+        val event = testNewConversationEvent(
+            conversation = TestConversation.CONVERSATION_RESPONSE.copy(
+                teamId = conversationTeamId,
+                cellsState = "ready"
+            ),
+        )
+        val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(true))
+            .withFetchUsersIfUnknownIds(members)
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
+            .withConversationStartedSystemMessage()
+            .withConversationResolvedMembersSystemMessage()
+            .withConversationUnverifiedWarningSystemMessage()
+            .withReadReceiptsSystemMessage()
+            .withQualifiedId(QualifiedID("creatorId", "creatorDomain"))
+            .withConversationAppsAccessIfEnabled()
+            .withConversationCellAccessStatus()
+            .arrange()
+
+        // when
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        // then
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
+                eq(event.conversationId),
+                eq(conversationTeamId),
+                eq(true),
+                eq(event.dateTime)
+            )
+        }
+    }
+
+    @Test
+    fun givenNewGroupConversationEventWithCellsDisabled_whenHandlingIt_thenCellAccessStatusIsCalledAsDisabled() = runTest {
+        // given
+        val event = testNewConversationEvent(
+            conversation = TestConversation.CONVERSATION_RESPONSE.copy(cellsState = null),
+        )
+        val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(true))
+            .withFetchUsersIfUnknownIds(members)
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
+            .withConversationStartedSystemMessage()
+            .withConversationResolvedMembersSystemMessage()
+            .withConversationUnverifiedWarningSystemMessage()
+            .withReadReceiptsSystemMessage()
+            .withQualifiedId(QualifiedID("creatorId", "creatorDomain"))
+            .withConversationAppsAccessIfEnabled()
+            .withConversationCellAccessStatus()
+            .arrange()
+
+        // when
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        // then
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
+                eq(event.conversationId),
+                eq(event.conversation.teamId),
+                eq(false),
+                eq(event.dateTime)
+            )
+        }
+    }
+
+    @Test
+    fun givenConversationAlreadyPresent_whenHandlingIt_thenShouldSkipPersistingTheCellAccessStatusSystemMessage() = runTest {
+        // given
+        val event = testNewConversationEvent(
+            conversation = TestConversation.CONVERSATION_RESPONSE.copy(cellsState = "ready"),
+        )
+        val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(false))
+            .withFetchUsersIfUnknownIds(members)
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
+            .withConversationStartedSystemMessage()
+            .withConversationResolvedMembersSystemMessage()
+            .withConversationUnverifiedWarningSystemMessage()
+            .withReadReceiptsSystemMessage()
+            .withQualifiedId(QualifiedID("creatorId", "creatorDomain"))
+            .withConversationAppsAccessIfEnabled()
+            .withConversationCellAccessStatus()
+            .arrange()
+
+        // when
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
+                any<ConversationId>(),
+                any<String?>(),
+                any<Boolean>(),
+                any<Instant>()
+            )
+        }
+    }
+
+    @Test
     fun givenNewGroupConversationEvent_whenHandlingItAndAlreadyPresent_thenShouldSkipPersistingTheSystemMessagesForNewConversation() =
         runTest {
             // given
@@ -426,6 +538,17 @@ class NewConversationEventHandlerTest {
                     any<Boolean>(),
                     any<UserId>(),
                     any<ConversationEntity.Type>()
+                )
+            } returns Unit.right()
+        }
+
+        suspend fun withConversationCellAccessStatus() = apply {
+            everySuspend {
+                newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
+                    any<ConversationId>(),
+                    any<String?>(),
+                    any<Boolean>(),
+                    any<Instant>()
                 )
             } returns Unit.right()
         }
