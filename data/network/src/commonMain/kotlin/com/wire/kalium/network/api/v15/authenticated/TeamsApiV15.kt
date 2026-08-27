@@ -19,8 +19,18 @@
 package com.wire.kalium.network.api.v15.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.model.TeamId
+import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.v14.authenticated.TeamsApiV14
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapRequest
+import io.ktor.client.request.get
 
 internal open class TeamsApiV15 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient
-) : TeamsApiV14(authenticatedNetworkClient)
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+) : TeamsApiV14(authenticatedNetworkClient) {
+
+    override suspend fun getTeamApps(teamId: TeamId): NetworkResponse<List<UserProfileDTO>> = wrapRequest {
+        authenticatedNetworkClient.httpClient.get("teams/$teamId/apps")
+    }
+}

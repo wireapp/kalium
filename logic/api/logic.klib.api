@@ -224,6 +224,31 @@ abstract interface com.wire.kalium.logic.feature.app/SearchAppsByNameUseCase { /
     abstract fun invoke(kotlin/String): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.logic.data.service/ServiceDetails>> // com.wire.kalium.logic.feature.app/SearchAppsByNameUseCase.invoke|invoke(kotlin.String){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.app/SyncAppsUseCase { // com.wire.kalium.logic.feature.app/SyncAppsUseCase|null[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result // com.wire.kalium.logic.feature.app/SyncAppsUseCase.invoke|invoke(){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result { // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val error // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.error|{}error[0]
+                final fun <get-error>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.error.<get-error>|<get-error>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result { // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 abstract interface com.wire.kalium.logic.feature.appVersioning/ObserveIfAppUpdateRequiredUseCase { // com.wire.kalium.logic.feature.appVersioning/ObserveIfAppUpdateRequiredUseCase|null[0]
     abstract suspend fun invoke(kotlin/Int): kotlinx.coroutines.flow/Flow<kotlin/Boolean> // com.wire.kalium.logic.feature.appVersioning/ObserveIfAppUpdateRequiredUseCase.invoke|invoke(kotlin.Int){}[0]
 }
@@ -3199,6 +3224,8 @@ final class com.wire.kalium.logic.feature.app/AppScope { // com.wire.kalium.logi
         final fun <get-observeIsAppMember>(): com.wire.kalium.logic.feature.app/ObserveIsAppMemberUseCase // com.wire.kalium.logic.feature.app/AppScope.observeIsAppMember.<get-observeIsAppMember>|<get-observeIsAppMember>(){}[0]
     final val searchAppsByName // com.wire.kalium.logic.feature.app/AppScope.searchAppsByName|{}searchAppsByName[0]
         final fun <get-searchAppsByName>(): com.wire.kalium.logic.feature.app/SearchAppsByNameUseCase // com.wire.kalium.logic.feature.app/AppScope.searchAppsByName.<get-searchAppsByName>|<get-searchAppsByName>(){}[0]
+    final val syncApps // com.wire.kalium.logic.feature.app/AppScope.syncApps|{}syncApps[0]
+        final fun <get-syncApps>(): com.wire.kalium.logic.feature.app/SyncAppsUseCase // com.wire.kalium.logic.feature.app/AppScope.syncApps.<get-syncApps>|<get-syncApps>(){}[0]
 }
 
 final class com.wire.kalium.logic.feature.asset.upload/AssetUploadParams { // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams|null[0]

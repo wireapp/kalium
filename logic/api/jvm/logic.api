@@ -1028,6 +1028,7 @@ public final class com/wire/kalium/logic/feature/app/AppScope {
 	public final fun getObserveAllApps ()Lcom/wire/kalium/logic/feature/app/ObserveAllAppsUseCase;
 	public final fun getObserveIsAppMember ()Lcom/wire/kalium/logic/feature/app/ObserveIsAppMemberUseCase;
 	public final fun getSearchAppsByName ()Lcom/wire/kalium/logic/feature/app/SearchAppsByNameUseCase;
+	public final fun getSyncApps ()Lcom/wire/kalium/logic/feature/app/SyncAppsUseCase;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/app/GetAppByIdUseCase {
@@ -1069,6 +1070,31 @@ public abstract interface class com/wire/kalium/logic/feature/app/ObserveIsAppMe
 
 public abstract interface class com/wire/kalium/logic/feature/app/SearchAppsByNameUseCase {
 	public abstract fun invoke (Ljava/lang/String;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/app/SyncAppsUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/app/SyncAppsUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/app/SyncAppsUseCase$Result$Failure : com/wire/kalium/logic/feature/app/SyncAppsUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/app/SyncAppsUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/app/SyncAppsUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/app/SyncAppsUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/app/SyncAppsUseCase$Result$Success : com/wire/kalium/logic/feature/app/SyncAppsUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/app/SyncAppsUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/appVersioning/ObserveIfAppUpdateRequiredUseCase {

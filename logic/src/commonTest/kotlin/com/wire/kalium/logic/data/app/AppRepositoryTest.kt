@@ -22,9 +22,24 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.teams.TeamCollaboratorDTO
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.authenticated.userDetails.QualifiedUserIdListRequest
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.model.AppDTO
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
+import com.wire.kalium.network.api.model.QualifiedID as NetworkQualifiedID
+import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.model.UserTypeDTO
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.AppDAO
 import com.wire.kalium.persistence.dao.AppEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -34,7 +49,9 @@ import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -236,11 +253,106 @@ class AppRepositoryTest {
         }
     }
 
+    @Test
+    fun givenTeamAndCollaboratorApps_whenSyncing_thenAppsAreMergedFilteredAndPersisted() = runTest {
+        val teamApp = Arrangement.appProfile("team-app", UserTypeDTO.APP)
+        val collaboratorApp = Arrangement.appProfile("collaborator-app", UserTypeDTO.APP)
+        val regularCollaborator = Arrangement.appProfile("regular-user", UserTypeDTO.REGULAR)
+        val failedId = NetworkQualifiedID("failed-user", Arrangement.DOMAIN)
+        val (arrangement, appRepository) = Arrangement()
+            .withTeamApps(listOf(teamApp))
+            .withCollaborators(listOf("team-app", "collaborator-app", "regular-user", "failed-user"))
+            .withUsers(ListUsersDTO(listOf(failedId), listOf(collaboratorApp, regularCollaborator)))
+            .withUpsertAppsSuccess()
+            .arrange()
+
+        appRepository.syncApps(TeamId(Arrangement.TEAM_ID), includeTeamApps = true).shouldSucceed()
+
+        verifySuspend {
+            arrangement.userDetailsApi.getMultipleUsers(matches { request ->
+                (request as QualifiedUserIdListRequest).qualifiedIds.map { it.value }.toSet() ==
+                        setOf("collaborator-app", "regular-user", "failed-user")
+            })
+            arrangement.appDAO.upsertApps(matches { apps ->
+                apps.map { it.id.value }.toSet() == setOf("team-app", "collaborator-app")
+            })
+        }
+    }
+
+    @Test
+    fun givenCollaboratorOnlySync_whenSyncing_thenTeamAppsEndpointIsNotCalled() = runTest {
+        val collaboratorApp = Arrangement.appProfile("collaborator-app", UserTypeDTO.APP)
+        val (arrangement, appRepository) = Arrangement()
+            .withCollaborators(listOf("collaborator-app"))
+            .withUsers(ListUsersDTO(emptyList(), listOf(collaboratorApp)))
+            .withUpsertAppsSuccess()
+            .arrange()
+
+        appRepository.syncApps(TeamId(Arrangement.TEAM_ID), includeTeamApps = false).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.teamsApi.getTeamApps(any()) }
+        verifySuspend { arrangement.appDAO.upsertApps(matches { it.single().id.value == "collaborator-app" }) }
+    }
+
+    @Test
+    fun givenMoreThanFiveHundredCollaborators_whenSyncing_thenUsersAreFetchedInBatches() = runTest {
+        val collaboratorIds = (1..501).map { "collaborator-$it" }
+        val (arrangement, appRepository) = Arrangement()
+            .withCollaborators(collaboratorIds)
+            .withUsers(ListUsersDTO(emptyList(), emptyList()))
+            .withUpsertAppsSuccess()
+            .arrange()
+
+        appRepository.syncApps(TeamId(Arrangement.TEAM_ID), includeTeamApps = false).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.userDetailsApi.getMultipleUsers(any()) }
+    }
+
+    @Test
+    fun givenInsufficientCollaboratorPermissions_whenSyncing_thenTeamAppsAreStillPersisted() = runTest {
+        val teamApp = Arrangement.appProfile("team-app", UserTypeDTO.APP)
+        val (arrangement, appRepository) = Arrangement()
+            .withTeamApps(listOf(teamApp))
+            .withCollaboratorFailure(
+                KaliumException.InvalidRequestError(
+                    GenericAPIErrorResponse(403, "Forbidden", "insufficient-permissions")
+                )
+            )
+            .withUpsertAppsSuccess()
+            .arrange()
+
+        appRepository.syncApps(TeamId(Arrangement.TEAM_ID), includeTeamApps = true).shouldSucceed()
+
+        verifySuspend { arrangement.appDAO.upsertApps(matches { it.single().id.value == "team-app" }) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.userDetailsApi.getMultipleUsers(any()) }
+    }
+
+    @Test
+    fun givenOtherCollaboratorFailure_whenSyncing_thenExistingCacheIsNotChanged() = runTest {
+        val teamApp = Arrangement.appProfile("team-app", UserTypeDTO.APP)
+        val (arrangement, appRepository) = Arrangement()
+            .withTeamApps(listOf(teamApp))
+            .withCollaboratorFailure(KaliumException.GenericError(IllegalStateException("network failure")))
+            .arrange()
+
+        appRepository.syncApps(TeamId(Arrangement.TEAM_ID), includeTeamApps = true).shouldFail()
+
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.appDAO.upsertApps(any()) }
+    }
+
     private class Arrangement {
         val appDAO = mock<AppDAO>()
         val teamDAO = mock<TeamDAO>()
+        val teamsApi = mock<TeamsApi>()
+        val userDetailsApi = mock<UserDetailsApi>()
 
-        private val appRepository = AppDataSource(appDAO, teamDAO)
+        private val appRepository = AppDataSource(
+            appDAO = appDAO,
+            teamDAO = teamDAO,
+            teamsApi = teamsApi,
+            userDetailsApi = userDetailsApi,
+            selfUserId = UserId("self-user", "wire.com")
+        )
 
         init {
             everySuspend { teamDAO.getTeamById(any()) } returns flowOf(null)
@@ -303,6 +415,30 @@ class AppRepositoryTest {
             } throws error
         }
 
+        fun withTeamApps(apps: List<UserProfileDTO>) = apply {
+            everySuspend { teamsApi.getTeamApps(TEAM_ID) } returns NetworkResponse.Success(apps, emptyMap(), 200)
+        }
+
+        fun withCollaborators(ids: List<String>) = apply {
+            everySuspend { teamsApi.getTeamCollaborators(TEAM_ID) } returns NetworkResponse.Success(
+                ids.map(::TeamCollaboratorDTO),
+                emptyMap(),
+                200
+            )
+        }
+
+        fun withCollaboratorFailure(error: KaliumException) = apply {
+            everySuspend { teamsApi.getTeamCollaborators(TEAM_ID) } returns NetworkResponse.Error(error)
+        }
+
+        fun withUsers(users: ListUsersDTO) = apply {
+            everySuspend { userDetailsApi.getMultipleUsers(any()) } returns NetworkResponse.Success(users, emptyMap(), 200)
+        }
+
+        fun withUpsertAppsSuccess() = apply {
+            everySuspend { appDAO.upsertApps(any()) } returns Unit
+        }
+
         fun arrange() = this to appRepository
 
         companion object {
@@ -320,6 +456,7 @@ class AppRepositoryTest {
             const val APP_NAME = "App Name"
             const val APP_DESCRIPTION = "App Description"
             const val APP_CATEGORY = "DEVELOPER"
+            const val DOMAIN = "wire.com"
 
             val CONVERSATION_ID = QualifiedID(
                 value = Uuid.random().toString(),
@@ -344,6 +481,14 @@ class AppRepositoryTest {
                 teamId = TEAM_ID,
                 previewAssetId = null,
                 completeAssetId = null
+            )
+
+            fun appProfile(id: String, type: UserTypeDTO): UserProfileDTO = TestUser.USER_PROFILE_DTO.copy(
+                id = NetworkQualifiedID(id, DOMAIN),
+                nonQualifiedId = id,
+                name = id,
+                type = type,
+                app = if (type == UserTypeDTO.APP) AppDTO(APP_DESCRIPTION, APP_CATEGORY) else null
             )
         }
     }
