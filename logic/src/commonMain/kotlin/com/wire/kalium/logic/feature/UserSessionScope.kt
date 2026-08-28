@@ -2010,7 +2010,8 @@ public class UserSessionScope internal constructor(
             legalHoldHandler = legalHoldHandler,
             newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
             selfUserId = userId,
-            fetchConversationUseCase
+            fetchConversation = fetchConversationUseCase,
+            kaliumConfigs = kaliumConfigs
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
