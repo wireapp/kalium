@@ -564,6 +564,10 @@ import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -2023,6 +2027,7 @@ public class UserSessionScope internal constructor(
             legalHoldHandler = legalHoldHandler,
             selfTeamIdProvider = selfTeamId,
             mlsConversationRepository = mlsConversationRepository,
+            meetingRepository = meetingRepository,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
@@ -2306,10 +2311,22 @@ public class UserSessionScope internal constructor(
             meetingRepository = meetingRepository,
         )
 
+    private val meetingUpdateEventHandler: MeetingUpdateEventHandler
+        get() = MeetingUpdateEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
+    private val meetingMemberAddEventHandler: MeetingMemberAddEventHandler
+        get() = MeetingMemberAddEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
     private val meetingEventReceiver: MeetingEventReceiver
         get() = MeetingEventReceiverImpl(
             meetingCreateEventHandler = meetingCreateEventHandler,
             meetingDeleteEventHandler = meetingDeleteEventHandler,
+            meetingUpdateEventHandler = meetingUpdateEventHandler,
+            meetingMemberAddEventHandler = meetingMemberAddEventHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
