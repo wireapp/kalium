@@ -28,6 +28,7 @@ import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 
 internal sealed class MLSMessageFailureResolution {
     internal data object Ignore : MLSMessageFailureResolution()
+    internal data object Buffered : MLSMessageFailureResolution()
     internal data object InformUser : MLSMessageFailureResolution()
     internal data object OutOfSync : MLSMessageFailureResolution()
     internal data object ResetConversation : MLSMessageFailureResolution()
@@ -54,10 +55,13 @@ internal object MLSMessageFailureHandler {
             is NetworkFailure.MlsMessageRejectedFailure -> handleRejected(failure)
             is MLSFailure.MessageRejected -> handleRejected(failure.cause)
 
+            // Received message was targeting a future epoch and has been buffered.
+            is MLSFailure.BufferedFutureMessage,
+                // Commit arrived out of order and has been buffered.
+            MLSFailure.BufferedCommit -> MLSMessageFailureResolution.Buffered
+
             // Received already sent or received message, can safely be ignored.
             is MLSFailure.DuplicateMessage,
-                // Received message was targeting a future epoch and been buffered, can safely be ignored.
-            is MLSFailure.BufferedFutureMessage,
                 // Received self commit, any unmerged group has know been when merged by CoreCrypto.
             is MLSFailure.SelfCommitIgnored,
                 // Message arrive in an unmerged group, it has been buffered and will be consumed later.
@@ -69,7 +73,6 @@ internal object MLSMessageFailureHandler {
             is MLSFailure.Disabled,
             MLSFailure.CommitForMissingProposal,
             MLSFailure.ConversationNotFound,
-            MLSFailure.BufferedCommit,
             MLSFailure.OrphanWelcome,
             is CoreFailure.DevelopmentAPINotAllowedOnProduction,
             is BackupFailure -> MLSMessageFailureResolution.Ignore
