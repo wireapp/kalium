@@ -151,6 +151,8 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.History -> false
             is MessageContent.NewConversationWithCellMessage -> false
             is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
+            is MessageContent.CellEditorAccessMessage -> false
+            is MessageContent.CellViewerAccessMessage -> false
             is MessageContent.ConversationAppsEnabledChanged -> false
         }
 
@@ -215,6 +217,8 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.History,
             is MessageContent.NewConversationWithCellMessage,
             is MessageContent.ConversationAppsEnabledChanged,
-            is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
+            is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage,
+            is MessageContent.CellEditorAccessMessage,
+            is MessageContent.CellViewerAccessMessage -> false
         }
 }

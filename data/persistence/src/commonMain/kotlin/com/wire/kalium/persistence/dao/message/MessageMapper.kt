@@ -259,6 +259,8 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CELL_EDITOR_ACCESS -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CELL_VIEWER_ACCESS -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> MessagePreviewEntityContent.Unknown
         }
     }
@@ -934,6 +936,9 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessageEntityContent.NewConversationWithCellMessage
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED ->
                 MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage
+
+            MessageEntity.ContentType.CELL_EDITOR_ACCESS -> MessageEntityContent.CellEditorAccessMessage
+            MessageEntity.ContentType.CELL_VIEWER_ACCESS -> MessageEntityContent.CellViewerAccessMessage
         }
 
         val sender = UserDetailsEntity(
