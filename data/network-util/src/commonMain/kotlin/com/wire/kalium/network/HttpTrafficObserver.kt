@@ -18,15 +18,18 @@
 
 package com.wire.kalium.network
 
+import com.wire.kalium.util.InternalKaliumApi
+
 /**
  * Optional, opt-in hook to observe real outgoing HTTP requests and their responses at the
  * transport level, including bodies and unredacted headers/paths.
  *
- * This is distinct from [KaliumHttpLogger]/[KaliumKtorCustomLogging], which obfuscate paths and
+ * This is distinct from `KaliumHttpLogger`/`KaliumKtorCustomLogging`, which obfuscate paths and
  * headers and never read bodies, by design, since those are meant to be safe to enable in
  * production logs. [HttpTrafficObserver] is for consumers (e.g. a developer debugging tool) that
  * need full visibility and can be trusted with unredacted traffic.
  */
+@InternalKaliumApi
 interface HttpTrafficObserver {
     fun onRequest(method: String, url: String, headers: Map<String, List<String>>, body: ByteArray?)
     fun onResponse(method: String, url: String, statusCode: Int, headers: Map<String, List<String>>, body: ByteArray?)

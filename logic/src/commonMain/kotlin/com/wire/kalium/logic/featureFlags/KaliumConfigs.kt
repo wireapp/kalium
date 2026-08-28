@@ -16,12 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:OptIn(InternalKaliumApi::class)
+
 package com.wire.kalium.logic.featureFlags
 
 import com.wire.kalium.logic.util.KaliumMockWebsocket
 import com.wire.kalium.network.HttpTrafficObserver
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.utils.TestRequestHandler
+import com.wire.kalium.util.InternalKaliumApi
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
