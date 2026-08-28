@@ -24,14 +24,14 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.util.createEventProcessingLogger
 
-internal interface MeetingCreateEventHandler {
-    suspend fun handle(event: Event.Meeting.Create): Either<CoreFailure, Unit>
+internal interface MeetingUpdateEventHandler {
+    suspend fun handle(event: Event.Meeting.Update): Either<CoreFailure, Unit>
 }
 
-internal class MeetingCreateEventHandlerImpl(
+internal class MeetingUpdateEventHandlerImpl(
     private val meetingRepository: MeetingRepository,
-) : MeetingCreateEventHandler {
-    override suspend fun handle(event: Event.Meeting.Create): Either<CoreFailure, Unit> {
+) : MeetingUpdateEventHandler {
+    override suspend fun handle(event: Event.Meeting.Update): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         return meetingRepository.handleMeetingFetchAndUpsert(meetingId = event.meetingId, eventLogger = eventLogger)
     }

@@ -78,6 +78,9 @@ deleteMeetingsNotIn:
 DELETE FROM Meeting
 WHERE meeting_id NOT IN :meetingIds;
 
+deleteMeetingsByConversationId:
+DELETE FROM Meeting WHERE conversation_id = ?;
+
 deleteMeetingOccurrences:
 DELETE FROM MeetingOccurrence
 WHERE meeting_id = ?;
