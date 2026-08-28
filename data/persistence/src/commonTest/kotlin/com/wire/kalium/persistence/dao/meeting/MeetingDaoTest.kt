@@ -429,6 +429,43 @@ class MeetingDaoTest : BaseDatabaseTest() {
         assertEquals(true, occurrencesFor(otherMeeting).isNotEmpty())
     }
 
+    @Test
+    fun givenStoredMeetings_whenUpsertingWithRemoveAbsentEnabled_thenMeetingsAbsentFromUpsertListAreDeleted() = runTest(dispatcher) {
+        val now = Clock.System.now()
+        val meetingToKeep = newMeeting(
+            meetingId = QualifiedIDEntity("meeting-to-keep", "wire.com"),
+            conversationId = QualifiedIDEntity("conversation-to-keep", "wire.com"),
+            startTime = now + 1.days
+        )
+        val meetingToRemove = newMeeting(
+            meetingId = QualifiedIDEntity("meeting-to-remove", "wire.com"),
+            conversationId = QualifiedIDEntity("conversation-to-remove", "wire.com"),
+            startTime = now + 2.days
+        )
+        insertMeetingDependencies(meetingToKeep)
+        insertMeetingDependencies(meetingToRemove)
+        meetingDao.upsertMeetings(
+            listOf(meetingToKeep, meetingToRemove),
+            GenerationLimit.Window(now, now + GENERATION_DAYS.days)
+        )
+        assertEquals(true, occurrencesFor(meetingToKeep).isNotEmpty())
+        assertEquals(true, occurrencesFor(meetingToRemove).isNotEmpty())
+
+        val updatedMeetingToKeep = meetingToKeep.copy(title = "Updated meeting")
+        meetingDao.upsertMeetings(
+            meetings = listOf(updatedMeetingToKeep),
+            generateOccurrencesWindow = GenerationLimit.Window(now, now + GENERATION_DAYS.days),
+            removeMeetingsAbsentFromUpsertList = true
+        )
+
+        val storedMeetingToKeep = meetingDao.getMeeting(meetingToKeep.meetingId)
+        assertEquals(meetingToKeep.meetingId, storedMeetingToKeep?.meetingId)
+        assertEquals("Updated meeting", storedMeetingToKeep?.title)
+        assertEquals(true, occurrencesFor(updatedMeetingToKeep).isNotEmpty())
+        assertEquals(false, isMeetingStored(meetingToRemove))
+        assertEquals(true, occurrencesFor(meetingToRemove).isEmpty())
+    }
+
     private suspend fun insertMeetingDependencies(meeting: MeetingEntity) {
         databaseBuilder.userDAO.upsertUser(newUserEntity(meeting.creatorId))
         databaseBuilder.conversationDAO.insertConversation(newConversationEntity(meeting.conversationId))

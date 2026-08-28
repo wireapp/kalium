@@ -3522,6 +3522,42 @@ public final class com/wire/kalium/logic/feature/conversation/CheckConversationL
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Failure : com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$NotReady : com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$NotReady;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Ready : com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/logic/data/conversation/Conversation;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/conversation/Conversation;
+	public final fun copy (Lcom/wire/kalium/logic/data/conversation/Conversation;)Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Ready;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Ready;Lcom/wire/kalium/logic/data/conversation/Conversation;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Ready;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversation ()Lcom/wire/kalium/logic/data/conversation/Conversation;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/conversation/ClearConversationContentUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/ClearConversationContentUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
@@ -3564,6 +3600,7 @@ public final class com/wire/kalium/logic/feature/conversation/ConversationScope 
 	public final fun getChangeAccessForAppsInConversation ()Lcom/wire/kalium/logic/feature/conversation/apps/ChangeAccessForAppsInConversationUseCase;
 	public final fun getCheckConversationLeaveConditions ()Lcom/wire/kalium/logic/feature/conversation/CheckConversationLeaveConditionsUseCase;
 	public final fun getCheckIConversationInviteCode ()Lcom/wire/kalium/logic/feature/conversation/CheckConversationInviteCodeUseCase;
+	public final fun getCheckOneToOneConversationIsReadyUseCase ()Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase;
 	public final fun getClearConversationContent ()Lcom/wire/kalium/logic/feature/conversation/ClearConversationContentUseCase;
 	public final fun getClearUsersTypingEvents ()Lcom/wire/kalium/logic/feature/conversation/ClearUsersTypingEventsUseCase;
 	public final fun getCreateChannel ()Lcom/wire/kalium/logic/feature/conversation/createconversation/CreateChannelUseCase;
