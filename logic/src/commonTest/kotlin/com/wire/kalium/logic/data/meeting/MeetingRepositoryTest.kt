@@ -357,38 +357,38 @@ class MeetingRepositoryTest {
 
     @Suppress("UnusedFlow")
     @Test
-    fun givenDaoReturnsOccurrence_whenGetNextMeetingOccurrence_thenReturnsMappedOccurrence() = runTest {
+    fun givenDaoReturnsOccurrence_whenGetNextUnfinishedMeetingOccurrence_thenReturnsMappedOccurrence() = runTest {
         val meetingId = MEETING_OCCURRENCE_DETAILS.meeting.meetingId.toModel()
         val from = Instant.parse("2026-06-01T10:00:00Z")
         val occurrenceId = MEETING_OCCURRENCE_DETAILS.occurrence.occurrenceId
         val (arrangement, repository) = Arrangement()
-            .withNextMeetingOccurrenceId(meetingId, from, occurrenceId)
+            .withNextUnfinishedMeetingOccurrenceId(meetingId, from, occurrenceId)
             .withMeetingOccurrenceDetailsFlow(occurrenceId, flowOf(MEETING_OCCURRENCE_DETAILS))
             .arrange()
 
-        val result = repository.getNextMeetingOccurrence(meetingId, from)
+        val result = repository.getNextUnfinishedMeetingOccurrence(meetingId, from)
 
         assertIs<Either.Right<MeetingOccurrence>>(result).also {
             assertEquals(arrangement.meetingMapper.fromDaoToModel(MEETING_OCCURRENCE_DETAILS), result.value)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingDao.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from)
+            arrangement.meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(meetingId.toDao(), from)
             arrangement.meetingDao.getMeetingOccurrenceDetailsFlow(occurrenceId)
         }
     }
 
     @Test
-    fun givenDaoReturnsNoOccurrenceId_whenGetNextMeetingOccurrence_thenReturnDataNotFound() = runTest {
+    fun givenDaoReturnsNoOccurrenceId_whenGetNextUnfinishedMeetingOccurrence_thenReturnDataNotFound() = runTest {
         val meetingId = MeetingId("meeting1", "domain")
         val from = Instant.parse("2026-06-01T10:00:00Z")
         val (arrangement, repository) = Arrangement()
-            .withNextMeetingOccurrenceId(meetingId, from, null)
+            .withNextUnfinishedMeetingOccurrenceId(meetingId, from, null)
             .arrange()
 
-        val result = repository.getNextMeetingOccurrence(meetingId, from)
+        val result = repository.getNextUnfinishedMeetingOccurrence(meetingId, from)
 
         assertIs<Either.Left<StorageFailure.DataNotFound>>(result)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingDao.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(meetingId.toDao(), from) }
     }
 
     @Test
@@ -1140,8 +1140,8 @@ class MeetingRepositoryTest {
             everySuspend { meetingDao.deleteMeeting(meetingId.toDao()) } throws error
         }
 
-        internal fun withNextMeetingOccurrenceId(meetingId: MeetingId, from: Instant, result: String?) = apply {
-            everySuspend { meetingDao.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from) } returns result
+        internal fun withNextUnfinishedMeetingOccurrenceId(meetingId: MeetingId, from: Instant, result: String?) = apply {
+            everySuspend { meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(meetingId.toDao(), from) } returns result
         }
 
         internal fun withMeetingOccurrenceDetailsFlow(occurrenceId: String, result: Flow<MeetingOccurrenceDetailsEntity?>) = apply {
