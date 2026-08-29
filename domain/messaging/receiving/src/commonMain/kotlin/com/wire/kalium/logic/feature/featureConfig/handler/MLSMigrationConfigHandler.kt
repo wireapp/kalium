@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.sync.receiver.FeatureConfigSupportedProtocolsUpdater
+import com.wire.kalium.logic.sync.receiver.FeatureConfigTransactionProvider
 import com.wire.kalium.util.InternalKaliumApi
 
 @InternalKaliumApi

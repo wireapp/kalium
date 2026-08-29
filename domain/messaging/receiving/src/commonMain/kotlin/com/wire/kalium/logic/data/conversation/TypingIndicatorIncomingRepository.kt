@@ -19,27 +19,35 @@ package com.wire.kalium.logic.data.conversation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.util.safeComputeAndMutateSetValue
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 
-internal interface TypingIndicatorIncomingRepository {
-    suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
-    suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId)
-    suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>>
-    suspend fun clearExpiredTypingIndicators()
+/** Current typing-indicator preference required by incoming typing events. */
+@InternalKaliumApi
+public fun interface TypingIndicatorStatusProvider {
+    public suspend fun getTypingIndicatorStatus(): Boolean
 }
 
-internal class TypingIndicatorIncomingRepositoryImpl(
-    private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<UserId>>,
-    private val userPropertyRepository: UserPropertyRepository
+@InternalKaliumApi
+public interface TypingIndicatorIncomingRepository {
+    public suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
+    public suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId)
+    public suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>>
+    public suspend fun clearExpiredTypingIndicators()
+}
+
+/** Shared incoming-typing cache used by the app and future bounded receivers. */
+@InternalKaliumApi
+public class TypingIndicatorIncomingRepositoryImpl public constructor(
+    private val userPropertyRepository: TypingIndicatorStatusProvider,
 ) : TypingIndicatorIncomingRepository {
 
+    private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<UserId>> = ConcurrentMutableMap()
     private val userTypingDataSourceFlow: MutableSharedFlow<Unit> =
         MutableSharedFlow(extraBufferCapacity = BUFFER_SIZE, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
@@ -60,11 +68,10 @@ internal class TypingIndicatorIncomingRepositoryImpl(
         }
     }
 
-    override suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>> {
-        return userTypingDataSourceFlow
+    override suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>> =
+        userTypingDataSourceFlow
             .map { userTypingCache[conversationId] ?: emptySet() }
             .onStart { emit(userTypingCache[conversationId] ?: emptySet()) }
-    }
 
     override suspend fun clearExpiredTypingIndicators() {
         userTypingCache.block { entry ->
@@ -74,7 +81,17 @@ internal class TypingIndicatorIncomingRepositoryImpl(
         }
     }
 
-    companion object {
-        const val BUFFER_SIZE = 32 // drop after this threshold
+    public companion object {
+        public const val BUFFER_SIZE: Int = 32
     }
+}
+
+private fun <K, V> ConcurrentMutableMap<K, MutableSet<V>>.safeComputeAndMutateSetValue(
+    key: K,
+    value: () -> V,
+): MutableSet<V> = block {
+    val values = if (containsKey(key)) get(key)!! else mutableSetOf()
+    values.add(value())
+    set(key, values)
+    values
 }

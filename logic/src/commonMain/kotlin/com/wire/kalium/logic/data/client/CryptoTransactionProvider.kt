@@ -29,7 +29,7 @@ import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.util.InternalCryptoAccess
-import com.wire.kalium.logic.feature.featureConfig.handler.FeatureConfigTransactionProvider
+import com.wire.kalium.logic.sync.receiver.FeatureConfigTransactionProvider
 
 /**
  * Provides transactional access to cryptographic operations using either

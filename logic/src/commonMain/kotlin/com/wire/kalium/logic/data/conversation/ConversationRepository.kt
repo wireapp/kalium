@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -80,6 +79,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 import com.wire.kalium.logic.sync.receiver.FederationConversationRepository
 import com.wire.kalium.logic.sync.receiver.FederationConversationRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionRepository
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventRepository
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepository
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepositoryImpl
 
 internal data class ConversationMemberCounts(
     val conversationSize: Int,
@@ -89,7 +93,7 @@ internal data class ConversationMemberCounts(
 )
 
 @Suppress("TooManyFunctions")
-internal interface ConversationRepository : FederationConversationRepository {
+internal interface ConversationRepository : FederationConversationRepository, ChannelAddPermissionRepository {
     val extensions: ConversationRepositoryExtensions
 
     // region Get/Observe by id
@@ -255,7 +259,7 @@ internal interface ConversationRepository : FederationConversationRepository {
 
     suspend fun setConversationDeletedLocally(conversationId: ConversationId, deletedLocally: Boolean): Either<CoreFailure, Unit>
 
-    suspend fun updateChannelAddPermissionLocally(
+    override suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermission
     ): Either<CoreFailure, Unit>
@@ -408,6 +412,9 @@ internal class ConversationDataSource internal constructor(
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val federationConversationRepository: FederationConversationRepository =
         FederationConversationRepositoryImpl(memberDAO),
+    private val conversationEventRepository: ConversationEventRepository = ConversationEventRepositoryImpl(conversationDAO),
+    private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository =
+        ConversationLifecycleEventRepositoryImpl(conversationDAO, memberDAO),
 ) : ConversationRepository {
 
     override suspend fun deleteFederatedMembers(
@@ -624,10 +631,8 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getConversationMemberRole(
         conversationId: ConversationId,
         userId: UserId
-    ): Either<StorageFailure, Conversation.Member.Role?> = wrapStorageNullableRequest {
-        memberDAO.getMemberRole(userId.toDao(), conversationId.toDao())
-            ?.let(conversationRoleMapper::fromDAO)
-    }
+    ): Either<StorageFailure, Conversation.Member.Role?> =
+        conversationLifecycleEventRepository.getConversationMemberRole(conversationId, userId)
 
     override suspend fun isConversationMemberAdmin(
         conversationId: ConversationId,
@@ -655,17 +660,10 @@ internal class ConversationDataSource internal constructor(
     override suspend fun persistMembers(
         members: List<Conversation.Member>,
         conversationID: ConversationId
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        memberDAO.insertMembersWithQualifiedId(
-            members.map(memberMapper::toDaoModel),
-            conversationID.toDao()
-        )
-    }
+    ): Either<CoreFailure, Unit> = conversationLifecycleEventRepository.persistMembers(members, conversationID)
 
     override suspend fun updateMemberFromEvent(member: Conversation.Member, conversationID: ConversationId): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            memberDAO.updateMemberRole(member.id.toDao(), conversationID.toDao(), conversationRoleMapper.toDAO(member.role))
-        }
+        conversationLifecycleEventRepository.updateMemberFromEvent(member, conversationID)
 
     override suspend fun getConversationsByGroupState(
         groupState: GroupState
@@ -705,8 +703,7 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateConversationModifiedDate(
         qualifiedID: QualifiedID,
         date: Instant
-    ): Either<StorageFailure, Unit> =
-        wrapStorageRequest { conversationDAO.updateConversationModifiedDate(qualifiedID.toDao(), date) }
+    ): Either<StorageFailure, Unit> = conversationLifecycleEventRepository.updateConversationModifiedDate(qualifiedID, date)
 
     override suspend fun updateConversationModifiedDateToMaxOfSources(
         targetId: ConversationId,
@@ -810,13 +807,8 @@ internal class ConversationDataSource internal constructor(
         conversationId: ConversationId,
         mutedStatus: MutedConversationStatus,
         mutedStatusTimestamp: Instant
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        conversationDAO.updateConversationMutedStatus(
-            conversationId = conversationId.toDao(),
-            mutedStatus = conversationStatusMapper.toMutedStatusDaoModel(mutedStatus),
-            mutedStatusTimestamp = mutedStatusTimestamp
-        )
-    }
+    ): Either<StorageFailure, Unit> =
+        conversationLifecycleEventRepository.updateMutedStatusLocally(conversationId, mutedStatus, mutedStatusTimestamp)
 
     override suspend fun updateMutedStatusRemotely(
         conversationId: ConversationId,
@@ -833,13 +825,8 @@ internal class ConversationDataSource internal constructor(
         conversationId: ConversationId,
         isArchived: Boolean,
         archivedStatusTimestamp: Instant
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        conversationDAO.updateConversationArchivedStatus(
-            conversationId = conversationId.toDao(),
-            isArchived = isArchived,
-            archivedStatusTimestamp = archivedStatusTimestamp
-        )
-    }
+    ): Either<StorageFailure, Unit> =
+        conversationLifecycleEventRepository.updateArchivedStatusLocally(conversationId, isArchived, archivedStatusTimestamp)
 
     override suspend fun updateArchivedStatusRemotely(
         conversationId: ConversationId,
@@ -875,13 +862,13 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun deleteConversationLocally(conversationId: ConversationId) = wrapStorageRequest {
-        conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
-    }
+    override suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Boolean> =
+        conversationLifecycleEventRepository.deleteConversationLocally(conversationId)
 
-    override suspend fun setConversationDeletedLocally(conversationId: ConversationId, deletedLocally: Boolean) = wrapStorageRequest {
-        conversationDAO.setConversationDeletedLocally(conversationId.toDao(), deletedLocally)
-    }
+    override suspend fun setConversationDeletedLocally(
+        conversationId: ConversationId,
+        deletedLocally: Boolean,
+    ): Either<CoreFailure, Unit> = conversationLifecycleEventRepository.setConversationDeletedLocally(conversationId, deletedLocally)
 
     override suspend fun clearContent(conversationId: ConversationId): Either<StorageFailure, Unit> =
         wrapStorageRequest {
@@ -940,12 +927,10 @@ internal class ConversationDataSource internal constructor(
             }
 
             is UpdateConversationReceiptModeResponse.ReceiptModeUpdated -> {
-                wrapStorageRequest {
-                    conversationDAO.updateConversationReceiptMode(
-                        conversationID = response.event.qualifiedConversation.toDao(),
-                        receiptMode = receiptModeMapper.fromApiToDaoModel(response.event.data.receiptMode)
-                    )
-                }
+                conversationEventRepository.updateReceiptMode(
+                    conversationId = response.event.qualifiedConversation.toModel(),
+                    receiptMode = receiptModeMapper.fromApiToModel(response.event.data.receiptMode),
+                )
             }
         }
     }
@@ -995,12 +980,8 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermission
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        conversationDAO.updateChannelAddPermission(
-            conversationId.toDao(),
-            channelAddPermission.toDaoChannelPermission()
-        )
-    }
+    ): Either<CoreFailure, Unit> =
+        conversationEventRepository.updateChannelAddPermissionLocally(conversationId, channelAddPermission)
 
     override suspend fun updateChannelAddPermissionRemotely(
         conversationId: ConversationId,

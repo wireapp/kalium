@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -107,6 +106,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventRepositoryImpl
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -397,7 +397,10 @@ public class ConversationScope internal constructor(
     public val generateGuestRoomLink: GenerateGuestRoomLinkUseCase
         get() = GenerateGuestRoomLinkUseCaseImpl(
             conversationGroupRepository,
-            CodeUpdateHandlerImpl(userStorage.database.conversationDAO, serverConfigLinks)
+            CodeUpdateHandlerImpl(
+                ConversationEventRepositoryImpl(userStorage.database.conversationDAO),
+                serverConfigLinks.accounts,
+            )
         )
 
     public val revokeGuestRoomLink: RevokeGuestRoomLinkUseCase
@@ -438,10 +441,7 @@ public class ConversationScope internal constructor(
         TypingIndicatorSenderHandlerImpl(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
 
     internal val typingIndicatorIncomingRepository =
-        TypingIndicatorIncomingRepositoryImpl(
-            ConcurrentMutableMap(),
-            userPropertyRepository
-        )
+        TypingIndicatorIncomingRepositoryImpl(userPropertyRepository)
 
     internal val typingIndicatorOutgoingRepository =
         TypingIndicatorOutgoingRepositoryImpl(

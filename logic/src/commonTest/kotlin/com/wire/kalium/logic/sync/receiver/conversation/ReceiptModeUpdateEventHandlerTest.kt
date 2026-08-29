@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -111,8 +110,7 @@ class ReceiptModeUpdateEventHandlerTest {
         val persistMessage = mock<PersistMessageUseCase>()
 
         private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler = ReceiptModeUpdateEventHandlerImpl(
-            conversationDAO = conversationDAO,
-            receiptModeMapper = MapperProvider.receiptModeMapper(),
+            conversationEventRepository = ConversationEventRepositoryImpl(conversationDAO),
             persistMessage = persistMessage
         )
 

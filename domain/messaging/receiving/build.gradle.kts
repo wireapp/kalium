@@ -50,6 +50,7 @@ kotlin {
                 api(projects.domain.messaging.hooks)
                 api(libs.coroutines.core)
                 api(libs.ktxDateTime)
+                implementation(libs.concurrentCollections)
             }
         }
         val commonTest by getting {

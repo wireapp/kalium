@@ -18,21 +18,24 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface TypingIndicatorHandler {
-    suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit>
+@InternalKaliumApi
+public fun interface TypingIndicatorHandler {
+    public suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit>
 }
 
-internal class TypingIndicatorHandlerImpl(
+@InternalKaliumApi
+public class TypingIndicatorHandlerImpl public constructor(
     private val selfUserId: UserId,
-    private val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository
+    private val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository,
 ) : TypingIndicatorHandler {
     override suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
@@ -44,12 +47,12 @@ internal class TypingIndicatorHandlerImpl(
         when (event.typingIndicatorMode) {
             Conversation.TypingIndicatorMode.STARTED -> typingIndicatorIncomingRepository.addTypingUserInConversation(
                 event.conversationId,
-                event.senderUserId
+                event.senderUserId,
             )
 
             Conversation.TypingIndicatorMode.STOPPED -> typingIndicatorIncomingRepository.removeTypingUserInConversation(
                 event.conversationId,
-                event.senderUserId
+                event.senderUserId,
             )
         }.also {
             eventLogger.logSuccess("isForSelfUser" to false)

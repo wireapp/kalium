@@ -22,7 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.feature.featureConfig.handler.FeatureConfigSupportedProtocolsUpdater
+import com.wire.kalium.logic.sync.receiver.FeatureConfigSupportedProtocolsUpdater
 
 /**
  * Update self supported protocols, and if the supported protocols

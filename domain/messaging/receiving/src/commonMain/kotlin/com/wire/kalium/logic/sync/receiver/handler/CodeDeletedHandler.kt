@@ -18,20 +18,20 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.error.wrapStorageRequest
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventRepository
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface CodeDeletedHandler {
-    suspend fun handle(event: Event.Conversation.CodeDeleted): Either<StorageFailure, Unit>
+@InternalKaliumApi
+public fun interface CodeDeletedHandler {
+    public suspend fun handle(event: Event.Conversation.CodeDeleted): Either<StorageFailure, Unit>
 }
 
-internal class CodeDeletedHandlerImpl internal constructor(
-    private val conversationDAO: ConversationDAO
+@InternalKaliumApi
+public class CodeDeletedHandlerImpl public constructor(
+    private val conversationEventRepository: ConversationEventRepository,
 ) : CodeDeletedHandler {
-    override suspend fun handle(event: Event.Conversation.CodeDeleted) = wrapStorageRequest {
-        conversationDAO.deleteGuestRoomLink(event.conversationId.toDao())
-    }
+    override suspend fun handle(event: Event.Conversation.CodeDeleted): Either<StorageFailure, Unit> =
+        conversationEventRepository.deleteGuestRoomLink(event.conversationId)
 }

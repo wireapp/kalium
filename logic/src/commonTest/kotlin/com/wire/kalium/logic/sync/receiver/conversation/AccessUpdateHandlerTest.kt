@@ -19,7 +19,6 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.data.conversation.Conversation.Access
 import com.wire.kalium.logic.data.conversation.Conversation.AccessRole
-import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestConversation
@@ -262,7 +261,7 @@ class AccessUpdateHandlerTest {
     private class Arrangement {
 
         val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
-        val conversationMapper = mock<ConversationMapper>()
+        val conversationMapper = mock<ConversationEventAccessMapper>()
         val systemMessageInserter = mock<SystemMessageInserter>(mode = MockMode.autoUnit)
 
         init {
@@ -278,22 +277,20 @@ class AccessUpdateHandlerTest {
             } returns Unit
         }
 
-        private val accessUpdateEventHandler: AccessUpdateEventHandler = AccessUpdateEventHandler(
-            selfUserId = TestUser.USER_ID,
-            conversationDAO = conversationDAO,
-            conversationMapper = conversationMapper,
-            systemMessageInserter = systemMessageInserter
+        private val accessUpdateEventHandler: AccessUpdateEventHandler = AccessUpdateEventHandlerImpl(
+            conversationEventRepository = ConversationEventRepositoryImpl(conversationDAO, conversationMapper),
+            systemMessageInserter = systemMessageInserter,
         )
 
         fun withMappingModelToDAOAccess(param: Set<Access>, result: List<ConversationEntity.Access>) = apply {
             every {
-                conversationMapper.fromModelToDAOAccess(param)
+                conversationMapper.toAccessEntity(param)
             } returns result
         }
 
         fun withMappingModelToDAOAccessRole(param: Set<AccessRole>, result: List<ConversationEntity.AccessRole>) = apply {
             every {
-                conversationMapper.fromModelToDAOAccessRole(param)
+                conversationMapper.toAccessRoleEntity(param)
             } returns result
         }
 

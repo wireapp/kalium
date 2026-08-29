@@ -23,58 +23,62 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.LocalId
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.uuid.Uuid
 
-internal interface SystemMessageInserter {
-    suspend fun insertProtocolChangedSystemMessage(
+@InternalKaliumApi
+public interface SystemMessageInserter {
+    public suspend fun insertProtocolChangedSystemMessage(
         conversationId: ConversationId,
         senderUserId: UserId,
-        protocol: Conversation.Protocol
+        protocol: Conversation.Protocol,
     )
 
-    suspend fun insertProtocolChangedDuringACallSystemMessage(
+    public suspend fun insertProtocolChangedDuringACallSystemMessage(
         conversationId: ConversationId,
-        senderUserId: UserId
+        senderUserId: UserId,
     )
 
-    suspend fun insertHistoryLostProtocolChangedSystemMessage(
-        conversationId: ConversationId
+    public suspend fun insertHistoryLostProtocolChangedSystemMessage(
+        conversationId: ConversationId,
     )
 
-    suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit>
+    public suspend fun insertLostCommitSystemMessage(
+        conversationId: ConversationId,
+        instant: Instant,
+    ): Either<CoreFailure, Unit>
 
-    suspend fun insertConversationStartedUnverifiedWarning(conversationId: ConversationId)
+    public suspend fun insertConversationStartedUnverifiedWarning(conversationId: ConversationId)
 
-    suspend fun insertConversationAppsAccessChanged(
+    public suspend fun insertConversationAppsAccessChanged(
         eventId: String = LocalId.generate(),
         conversationId: ConversationId,
         senderUserId: UserId,
-        isAppsAccessEnabled: Boolean
+        isAppsAccessEnabled: Boolean,
     )
 }
 
-internal class SystemMessageInserterImpl(
+@InternalKaliumApi
+public class SystemMessageInserterImpl public constructor(
     private val selfUserId: UserId,
-    private val persistMessage: PersistMessageUseCase
+    private val persistMessage: PersistMessageUseCase,
 ) : SystemMessageInserter {
     override suspend fun insertProtocolChangedSystemMessage(
         conversationId: ConversationId,
         senderUserId: UserId,
-        protocol: Conversation.Protocol
+        protocol: Conversation.Protocol,
     ) {
         val message = Message.System(
             Uuid.random().toString(),
-            MessageContent.ConversationProtocolChanged(
-                protocol = protocol
-            ),
+            MessageContent.ConversationProtocolChanged(protocol = protocol),
             conversationId,
             Clock.System.now(),
             senderUserId,
             Message.Status.Sent,
             Message.Visibility.VISIBLE,
-            null
+            null,
         )
 
         persistMessage(message)
@@ -82,7 +86,7 @@ internal class SystemMessageInserterImpl(
 
     override suspend fun insertProtocolChangedDuringACallSystemMessage(
         conversationId: ConversationId,
-        senderUserId: UserId
+        senderUserId: UserId,
     ) {
         val message = Message.System(
             Uuid.random().toString(),
@@ -92,7 +96,7 @@ internal class SystemMessageInserterImpl(
             senderUserId,
             Message.Status.Sent,
             Message.Visibility.VISIBLE,
-            null
+            null,
         )
 
         persistMessage(message)
@@ -107,13 +111,16 @@ internal class SystemMessageInserterImpl(
             selfUserId,
             Message.Status.Sent,
             Message.Visibility.VISIBLE,
-            null
+            null,
         )
 
         persistMessage(message)
     }
 
-    override suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit> {
+    override suspend fun insertLostCommitSystemMessage(
+        conversationId: ConversationId,
+        instant: Instant,
+    ): Either<CoreFailure, Unit> {
         val mlsEpochWarningMessage = Message.System(
             id = Uuid.random().toString(),
             content = MessageContent.MLSWrongEpochWarning,
@@ -123,7 +130,7 @@ internal class SystemMessageInserterImpl(
             status = Message.Status.Read(0),
             visibility = Message.Visibility.VISIBLE,
             senderUserName = null,
-            expirationData = null
+            expirationData = null,
         )
         return persistMessage(mlsEpochWarningMessage)
     }
@@ -138,8 +145,8 @@ internal class SystemMessageInserterImpl(
                 senderUserId = selfUserId,
                 status = Message.Status.Sent,
                 visibility = Message.Visibility.VISIBLE,
-                expirationData = null
-            )
+                expirationData = null,
+            ),
         )
     }
 
@@ -147,7 +154,7 @@ internal class SystemMessageInserterImpl(
         eventId: String,
         conversationId: ConversationId,
         senderUserId: UserId,
-        isAppsAccessEnabled: Boolean
+        isAppsAccessEnabled: Boolean,
     ) {
         persistMessage(
             Message.System(
@@ -158,8 +165,8 @@ internal class SystemMessageInserterImpl(
                 senderUserId = senderUserId,
                 status = Message.Status.Sent,
                 visibility = Message.Visibility.VISIBLE,
-                expirationData = null
-            )
+                expirationData = null,
+            ),
         )
     }
 }

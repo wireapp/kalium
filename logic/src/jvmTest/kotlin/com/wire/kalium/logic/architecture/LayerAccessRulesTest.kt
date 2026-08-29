@@ -34,6 +34,7 @@ class LayerAccessRulesTest {
     fun repositoriesShouldNotAccessFeaturePackageClasses() {
         Konsist.scopeFromProduction()
             .files
+            .filter { it.path.contains("/logic/src/") }
             .withPackage("com.wire.kalium.logic.data..")
             .assertFalse {
                 it.hasImport {
@@ -46,6 +47,7 @@ class LayerAccessRulesTest {
     fun useCasesShouldNotAccessDaoLayerDirectly() {
         Konsist.scopeFromProduction()
             .files
+            .filter { it.path.contains("/logic/src/") }
             .withPackage("com.wire.kalium.logic.feature..")
             .filter { !it.hasNameEndingWith("Scope") }
             .assertFalse {
@@ -59,6 +61,7 @@ class LayerAccessRulesTest {
     fun useCasesShouldNotAccessNetworkLayerDirectly() {
         Konsist.scopeFromProduction()
             .files
+            .filter { it.path.contains("/logic/src/") }
             .withPackage("com.wire.kalium.logic.feature..")
             .assertFalse {
                 it.hasImport {

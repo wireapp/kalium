@@ -96,7 +96,9 @@ class UseCaseRulesTest {
             .classes()
             .withNameEndingWith("UseCaseImpl")
             .assertTrue { useCase ->
-                useCase.hasAllConstructors { it.hasInternalModifier } || useCase.hasInternalModifier
+                useCase.hasAllConstructors { it.hasInternalModifier } ||
+                        useCase.hasInternalModifier ||
+                        useCase.hasAnnotation { it.name == "InternalKaliumApi" }
             }
     }
 

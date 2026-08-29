@@ -17,21 +17,23 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
+import com.wire.kalium.util.InternalKaliumApi
 import io.ktor.http.URLBuilder
 
-private fun generateGuestLink(
+@InternalKaliumApi
+public fun generateGuestLink(
     key: String,
     code: String,
-    accountUrl: String
-): String = URLBuilder(accountUrl).apply {
+    uri: String?,
+    accountUrl: String,
+): String = uri ?: URLBuilder(accountUrl).apply {
     parameters.apply {
         append("key", key)
         append("code", code)
     }.build()
 }.buildString()
 
-internal fun Event.Conversation.CodeUpdated.link(accountUrl: String): String = uri ?: generateGuestLink(key, code, accountUrl)
-
-internal fun ConversationInviteLinkResponse.link(accountUrl: String): String = uri ?: generateGuestLink(key, code, accountUrl)
+@InternalKaliumApi
+public fun ConversationInviteLinkResponse.link(accountUrl: String): String =
+    generateGuestLink(key, code, uri, accountUrl)

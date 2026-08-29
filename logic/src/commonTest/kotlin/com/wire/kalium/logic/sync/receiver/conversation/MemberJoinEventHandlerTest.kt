@@ -47,6 +47,10 @@ import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArran
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
@@ -84,7 +88,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.persistMembers(eq(newMembers), eq(event.conversationId))
+            arrangement.conversationLifecycleEventRepository.persistMembers(eq(newMembers), eq(event.conversationId))
         }
     }
 
@@ -102,7 +106,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.persistMembers(eq(newMembers), eq(event.conversationId))
+            arrangement.conversationLifecycleEventRepository.persistMembers(eq(newMembers), eq(event.conversationId))
         }
     }
 
@@ -323,7 +327,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.setConversationDeletedLocally(eq(event.conversationId), eq(false))
+            arrangement.conversationLifecycleEventRepository.setConversationDeletedLocally(eq(event.conversationId), eq(false))
         }
     }
 
@@ -340,7 +344,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.conversationRepository.setConversationDeletedLocally(any(), any())
+            arrangement.conversationLifecycleEventRepository.setConversationDeletedLocally(any(), any())
         }
     }
 
@@ -442,6 +446,7 @@ class MemberJoinEventHandlerTest {
         NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
 
         private var kaliumConfigs = KaliumConfigs()
+        val conversationLifecycleEventRepository = mock<ConversationLifecycleEventRepository>(MockMode.autoUnit)
 
         suspend fun arrange() = run {
             withIsCellEnabledReturning(false.right())
@@ -454,9 +459,14 @@ class MemberJoinEventHandlerTest {
             withHandleConversationMembersChanged(Unit.right())
             withPersistUnverifiedWarningMessageSuccess()
             withPersistCellAccessMessageSuccess()
+            everySuspend { conversationLifecycleEventRepository.persistMembers(any(), any()) } returns Unit.right()
+            everySuspend {
+                conversationLifecycleEventRepository.setConversationDeletedLocally(any(), any())
+            } returns Unit.right()
 
             this to MemberJoinEventHandlerImpl(
                 conversationRepository = conversationRepository,
+                conversationLifecycleEventRepository = conversationLifecycleEventRepository,
                 userRepository = userRepository,
                 persistMessage = persistMessageUseCase,
                 legalHoldHandler = legalHoldHandler,

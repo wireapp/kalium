@@ -26,7 +26,6 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
@@ -48,7 +47,7 @@ internal interface NewConversationEventHandler {
 }
 
 internal class NewConversationEventHandlerImpl(
-    private val conversationRepository: ConversationRepository,
+    private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
     private val userRepository: UserRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
@@ -63,7 +62,7 @@ internal class NewConversationEventHandlerImpl(
             .flatMap { isNewUnhandledConversation ->
                 resolveConversationIfOneOnOne(transactionContext, selfUserTeamId, event)
                     .flatMap {
-                        conversationRepository.updateConversationModifiedDate(
+                        conversationLifecycleEventRepository.updateConversationModifiedDate(
                             event.conversationId,
                             DateTimeUtil.currentInstant()
                         )

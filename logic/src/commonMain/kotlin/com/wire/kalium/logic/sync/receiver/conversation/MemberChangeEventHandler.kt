@@ -26,7 +26,6 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member.Role.Admin
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.Message
@@ -42,7 +41,7 @@ internal interface MemberChangeEventHandler {
 }
 
 internal class MemberChangeEventHandlerImpl(
-    private val conversationRepository: ConversationRepository,
+    private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
     private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
@@ -53,7 +52,7 @@ internal class MemberChangeEventHandlerImpl(
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         when (event) {
             is Event.Conversation.MemberChanged.MemberMutedStatusChanged -> {
-                conversationRepository.updateMutedStatusLocally(
+                conversationLifecycleEventRepository.updateMutedStatusLocally(
                     event.conversationId,
                     event.mutedConversationStatus,
                     event.mutedConversationChangedTime
@@ -62,7 +61,7 @@ internal class MemberChangeEventHandlerImpl(
             }
 
             is Event.Conversation.MemberChanged.MemberArchivedStatusChanged -> {
-                conversationRepository.updateArchivedStatusLocally(
+                conversationLifecycleEventRepository.updateArchivedStatusLocally(
                     event.conversationId,
                     event.isArchiving,
                     event.archivedConversationChangedTime
@@ -89,7 +88,7 @@ internal class MemberChangeEventHandlerImpl(
     ) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         val currentRole = event.member?.id?.let {
-            conversationRepository.getConversationMemberRole(event.conversationId, it).getOrNull()
+            conversationLifecycleEventRepository.getConversationMemberRole(event.conversationId, it).getOrNull()
         }
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
         fetchConversationIfUnknown(transactionContext, event.conversationId)
@@ -106,7 +105,7 @@ internal class MemberChangeEventHandlerImpl(
                     logger.w("Failure fetching conversation details on MemberChange Event: ${logMap.toJsonElement()}")
                 }
                 // Even if unable to fetch conversation details, at least attempt updating the member
-                conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
+                conversationLifecycleEventRepository.updateMemberFromEvent(event.member!!, event.conversationId)
             }
             .onFailure { eventLogger.logFailure(it) }
             .onSuccess {

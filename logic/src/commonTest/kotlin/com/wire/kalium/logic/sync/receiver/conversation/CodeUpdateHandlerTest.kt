@@ -103,7 +103,10 @@ class CodeUpdateHandlerTest {
 
         val serverConfigLinks = newServerConfig(1).links
 
-        private val handler: CodeUpdatedHandler = CodeUpdateHandlerImpl(conversionDAO, serverConfigLinks)
+        private val handler: CodeUpdatedHandler = CodeUpdateHandlerImpl(
+            ConversationEventRepositoryImpl(conversionDAO),
+            serverConfigLinks.accounts,
+        )
 
         fun withUpdatedGuestRoomLink() = apply {}
 

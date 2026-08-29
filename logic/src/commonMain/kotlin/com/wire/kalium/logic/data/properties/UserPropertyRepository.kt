@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.FolderWithConversations
+import com.wire.kalium.logic.data.conversation.TypingIndicatorStatusProvider
 import com.wire.kalium.logic.data.conversation.folders.toFolder
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
@@ -44,8 +45,8 @@ internal interface ReadReceiptsPropertyRepository {
     suspend fun deleteReadReceiptsProperty(): Either<CoreFailure, Unit>
 }
 
-internal interface TypingIndicatorPropertyRepository {
-    suspend fun getTypingIndicatorStatus(): Boolean
+internal interface TypingIndicatorPropertyRepository : TypingIndicatorStatusProvider {
+    override suspend fun getTypingIndicatorStatus(): Boolean
     fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>>
     suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit>
     suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit>

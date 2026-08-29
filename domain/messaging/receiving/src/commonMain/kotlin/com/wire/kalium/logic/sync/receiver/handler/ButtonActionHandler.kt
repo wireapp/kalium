@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.logger.kaliumLogger
@@ -24,9 +25,11 @@ import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface ButtonActionHandler {
-    suspend fun handle(
+@InternalKaliumApi
+public interface ButtonActionHandler {
+    public suspend fun handle(
         conversationId: ConversationId,
         senderId: UserId,
         messageId: MessageId,
@@ -34,7 +37,8 @@ internal interface ButtonActionHandler {
     )
 }
 
-internal class ButtonActionHandlerImpl internal constructor(
+@InternalKaliumApi
+public class ButtonActionHandlerImpl public constructor(
     private val selfUserId: UserId,
     private val compositeMessageRepository: CompositeMessageRepository,
     logger: KaliumLogger = kaliumLogger,
@@ -46,7 +50,7 @@ internal class ButtonActionHandlerImpl internal constructor(
         conversationId: ConversationId,
         senderId: UserId,
         messageId: MessageId,
-        buttonId: MessageButtonId
+        buttonId: MessageButtonId,
     ) {
         if (senderId != selfUserId) {
             logger.d("Ignoring button action from ${senderId.toLogString()}, as it is not from self user.")
@@ -55,8 +59,7 @@ internal class ButtonActionHandlerImpl internal constructor(
         compositeMessageRepository.markSelected(
             messageId = messageId,
             conversationId = conversationId,
-            buttonId = buttonId
+            buttonId = buttonId,
         )
     }
-
 }

@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
 import com.wire.kalium.logic.data.conversation.toConversationType
@@ -124,7 +123,10 @@ class NewConversationEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateConversationModifiedDate(eq(event.conversationId), matches { it.wasInTheLastSecond })
+            arrangement.conversationLifecycleEventRepository.updateConversationModifiedDate(
+                eq(event.conversationId),
+                matches { it.wasInTheLastSecond },
+            )
         }
     }
 
@@ -432,7 +434,7 @@ class NewConversationEventHandlerTest {
         }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
-        val conversationRepository = mock<ConversationRepository>()
+        val conversationLifecycleEventRepository = mock<ConversationLifecycleEventRepository>()
         val userRepository = mock<UserRepository>()
         val selfTeamIdProvider = mock<SelfTeamIdProvider>()
         val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>()
@@ -462,7 +464,7 @@ class NewConversationEventHandlerTest {
         }
 
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
-            conversationRepository,
+            conversationLifecycleEventRepository,
             userRepository,
             selfTeamIdProvider,
             newGroupConversationSystemMessagesCreator,
@@ -472,7 +474,7 @@ class NewConversationEventHandlerTest {
 
         suspend fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
             everySuspend {
-                conversationRepository.updateConversationModifiedDate(any(), any())
+                conversationLifecycleEventRepository.updateConversationModifiedDate(any(), any())
             } returns result
         }
 

@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -52,7 +51,7 @@ class DataTransferEventHandlerTest {
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
+            arrangement.trackingIdentifierStorage.setCurrentTrackingIdentifier(any())
         }
     }
 
@@ -71,7 +70,7 @@ class DataTransferEventHandlerTest {
 
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
+            arrangement.trackingIdentifierStorage.setCurrentTrackingIdentifier(any())
         }
     }
 
@@ -90,7 +89,7 @@ class DataTransferEventHandlerTest {
 
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
+            arrangement.trackingIdentifierStorage.setCurrentTrackingIdentifier(any())
         }
     }
 
@@ -115,11 +114,37 @@ class DataTransferEventHandlerTest {
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setPreviousTrackingIdentifier(currentIdentifier)
+            arrangement.trackingIdentifierStorage.setPreviousTrackingIdentifier(currentIdentifier)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setCurrentTrackingIdentifier(newIdentifier)
+            arrangement.trackingIdentifierStorage.setCurrentTrackingIdentifier(newIdentifier)
+        }
+    }
+
+    @Test
+    fun givenCurrentIdentifier_whenReceivingNewTrackingIdentifier_thenPreviousIsWrittenBeforeCurrent() = runTest {
+        // given
+        val currentIdentifier = "abcd-1234"
+        val newIdentifier = "efgh-5678"
+        val (arrangement, handler) = Arrangement().arrange {
+            withGetTrackingIdentifier(currentIdentifier)
+        }
+
+        // when
+        handler.handle(
+            message = MESSAGE,
+            messageContent = MESSAGE_CONTENT.copy(
+                trackingIdentifier = MESSAGE_CONTENT.trackingIdentifier?.copy(
+                    identifier = newIdentifier
+                )
+            )
+        )
+
+        // then
+        verifySuspend(VerifyMode.order) {
+            arrangement.trackingIdentifierStorage.setPreviousTrackingIdentifier(currentIdentifier)
+            arrangement.trackingIdentifierStorage.setCurrentTrackingIdentifier(newIdentifier)
         }
     }
 
@@ -138,11 +163,11 @@ class DataTransferEventHandlerTest {
 
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.userConfigRepository.setPreviousTrackingIdentifier(any())
+            arrangement.trackingIdentifierStorage.setPreviousTrackingIdentifier(any())
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
+            arrangement.trackingIdentifierStorage.setCurrentTrackingIdentifier(any())
         }
     }
 
@@ -170,19 +195,19 @@ class DataTransferEventHandlerTest {
     }
 
     private class Arrangement {
-        val userConfigRepository: UserConfigRepository = mock(mode = MockMode.autoUnit)
+        val trackingIdentifierStorage: TrackingIdentifierStorage = mock(mode = MockMode.autoUnit)
 
         private val handler: DataTransferEventHandler = DataTransferEventHandlerImpl(
             selfUserId = SELF_USER_ID,
-            userConfigRepository = userConfigRepository
+            trackingIdentifierStorage = trackingIdentifierStorage
         )
 
         suspend fun withSetTrackingIdentifier() = apply {
-            everySuspend { userConfigRepository.setCurrentTrackingIdentifier(any()) } returns Unit
+            everySuspend { trackingIdentifierStorage.setCurrentTrackingIdentifier(any()) } returns Unit
         }
 
         suspend fun withGetTrackingIdentifier(result: String?) = apply {
-            everySuspend { userConfigRepository.getCurrentTrackingIdentifier() } returns result
+            everySuspend { trackingIdentifierStorage.getCurrentTrackingIdentifier() } returns result
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DataTransferEventHandler> {

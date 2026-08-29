@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
@@ -83,7 +84,10 @@ class RenamedConversationEventHandlerTest {
         val conversationDao = mock<ConversationDAO>(mode = MockMode.autoUnit)
 
         private val renamedConversationEventHandler: RenamedConversationEventHandler = RenamedConversationEventHandlerImpl(
-            conversationDao,
+            ConversationLifecycleEventRepositoryImpl(
+                conversationDao,
+                mock<MemberDAO>(mode = MockMode.autoUnit),
+            ),
             persistMessage
         )
 

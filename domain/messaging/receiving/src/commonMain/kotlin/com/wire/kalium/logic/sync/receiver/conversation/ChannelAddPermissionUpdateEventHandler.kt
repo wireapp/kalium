@@ -23,30 +23,26 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.util.InternalKaliumApi
 
-/**
- * Handles the [Event.Conversation.ConversationChannelAddPermission] event.
- */
-internal interface ChannelAddPermissionUpdateEventHandler {
-    suspend fun handle(event: Event.Conversation.ConversationChannelAddPermission): Either<CoreFailure, Unit>
+/** Handles the [Event.Conversation.ConversationChannelAddPermission] event. */
+@InternalKaliumApi
+public fun interface ChannelAddPermissionUpdateEventHandler {
+    public suspend fun handle(event: Event.Conversation.ConversationChannelAddPermission): Either<CoreFailure, Unit>
 }
 
-internal class ChannelAddPermissionUpdateEventHandlerImpl(
-    private val conversationRepository: ConversationRepository
+@InternalKaliumApi
+public class ChannelAddPermissionUpdateEventHandlerImpl public constructor(
+    private val conversationRepository: ChannelAddPermissionRepository,
 ) : ChannelAddPermissionUpdateEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handle(event: Event.Conversation.ConversationChannelAddPermission): Either<CoreFailure, Unit> {
         val eventLogger = logger.createEventProcessingLogger(event)
         return conversationRepository.updateChannelAddPermissionLocally(event.conversationId, event.channelAddPermission)
-            .onSuccess {
-                eventLogger.logSuccess()
-            }
-            .onFailure {
-                eventLogger.logFailure(it)
-            }
+            .onSuccess { eventLogger.logSuccess() }
+            .onFailure { eventLogger.logFailure(it) }
     }
 }

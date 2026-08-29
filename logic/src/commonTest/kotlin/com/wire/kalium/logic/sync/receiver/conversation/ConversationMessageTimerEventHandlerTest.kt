@@ -92,8 +92,8 @@ class ConversationMessageTimerEventHandlerTest {
         val persistMessageUseCase = mock<PersistMessageUseCase>()
 
         private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler = ConversationMessageTimerEventHandlerImpl(
-            conversationDAO,
-            persistMessageUseCase
+            ConversationEventRepositoryImpl(conversationDAO),
+            persistMessageUseCase,
         )
 
         suspend fun withConversationUpdateMessageTimer() = apply {

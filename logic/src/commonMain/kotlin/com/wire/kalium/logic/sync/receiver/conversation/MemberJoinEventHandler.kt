@@ -52,6 +52,7 @@ internal interface MemberJoinEventHandler {
 @Suppress("LongParameterList")
 internal class MemberJoinEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
+    private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,
     private val legalHoldHandler: LegalHoldHandler,
@@ -90,11 +91,11 @@ internal class MemberJoinEventHandlerImpl(
                 userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
 
                 if (event.members.any { it.id == selfUserId }) {
-                    conversationRepository.setConversationDeletedLocally(event.conversationId, false)
+                    conversationLifecycleEventRepository.setConversationDeletedLocally(event.conversationId, false)
                         .onFailure { logger.w("Failed to clear deleted_locally flag for ${event.conversationId}: $it") }
                 }
 
-                conversationRepository.persistMembers(event.members, event.conversationId)
+                conversationLifecycleEventRepository.persistMembers(event.members, event.conversationId)
             }.onSuccess {
                 conversationRepository.getConversationById(event.conversationId).onSuccess { conversation ->
                     when (conversation.type) {

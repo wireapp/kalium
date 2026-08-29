@@ -447,7 +447,10 @@ internal class MemberLeaveEventHandlerTest {
             withDeleteMeetingsByConversationId(Either.Right(Unit))
             block()
             memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
-                memberDAO = memberDAO,
+                conversationLifecycleEventRepository = ConversationLifecycleEventRepositoryImpl(
+                    mock(mode = MockMode.autoUnit),
+                    memberDAO,
+                ),
                 userRepository = userRepository,
                 conversationRepository = conversationRepository,
                 persistMessage = persistMessageUseCase,

@@ -17,23 +17,25 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface DataTransferEventHandler {
-    suspend fun handle(
+@InternalKaliumApi
+public interface DataTransferEventHandler {
+    public suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.DataTransfer
     )
 }
 
-internal class DataTransferEventHandlerImpl(
+@InternalKaliumApi
+public class DataTransferEventHandlerImpl public constructor(
     private val selfUserId: UserId,
-    private val userConfigRepository: UserConfigRepository,
+    private val trackingIdentifierStorage: TrackingIdentifierStorage,
     logger: KaliumLogger = kaliumLogger,
 ) : DataTransferEventHandler {
 
@@ -47,18 +49,18 @@ internal class DataTransferEventHandlerImpl(
         // If it happens, it's unnecessary, and we can squish some performance by skipping it completely
         if (message.senderUserId != selfUserId || messageContent.trackingIdentifier == null) return
 
-        val currentTrackingIdentifier = userConfigRepository.getCurrentTrackingIdentifier()
+        val currentTrackingIdentifier = trackingIdentifierStorage.getCurrentTrackingIdentifier()
         val isCurrentDifferentThanReceived = currentTrackingIdentifier != messageContent
             .trackingIdentifier!!
             .identifier
 
         if (isCurrentDifferentThanReceived) {
             currentTrackingIdentifier?.let {
-                userConfigRepository.setPreviousTrackingIdentifier(identifier = currentTrackingIdentifier)
+                trackingIdentifierStorage.setPreviousTrackingIdentifier(identifier = currentTrackingIdentifier)
                 logger.d("$TAG Moved Current Tracking Identifier to Previous")
             }
 
-            userConfigRepository.setCurrentTrackingIdentifier(
+            trackingIdentifierStorage.setCurrentTrackingIdentifier(
                 newIdentifier = requireNotNull(
                     messageContent
                         .trackingIdentifier

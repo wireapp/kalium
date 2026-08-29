@@ -29,8 +29,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
-import com.wire.kalium.logic.feature.featureConfig.handler.MeetingsSlowSyncRepository
-import com.wire.kalium.logic.feature.featureConfig.handler.MeetingsSlowSyncRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.MeetingsSlowSyncRepository
+import com.wire.kalium.logic.sync.receiver.MeetingsSlowSyncRepositoryImpl
 
 internal interface SlowSyncRepository : MeetingsSlowSyncRepository {
     val slowSyncStatus: StateFlow<SlowSyncStatus>

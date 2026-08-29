@@ -61,7 +61,7 @@ class CodeDeletedHandlerTest {
     private class Arrangement {
         val conversionDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
 
-        private val handler: CodeDeletedHandler = CodeDeletedHandlerImpl(conversionDAO)
+        private val handler: CodeDeletedHandler = CodeDeletedHandlerImpl(ConversationEventRepositoryImpl(conversionDAO))
 
         fun withDeleteGustLink() = apply {}
 

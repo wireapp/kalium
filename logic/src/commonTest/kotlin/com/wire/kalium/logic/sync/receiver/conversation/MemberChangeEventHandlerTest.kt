@@ -23,7 +23,6 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation.Member
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.message.MessageContent
@@ -79,7 +78,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateMutedStatusLocally(
+            arrangement.conversationLifecycleEventRepository.updateMutedStatusLocally(
                 eq(event.conversationId),
                 any(),
                 eq(event.mutedConversationChangedTime)
@@ -101,7 +100,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateArchivedStatusLocally(
+            arrangement.conversationLifecycleEventRepository.updateArchivedStatusLocally(
                 eq(event.conversationId),
                 matches { it == isNewEventArchiving },
                 eq(event.archivedConversationChangedTime)
@@ -125,7 +124,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
+            arrangement.conversationLifecycleEventRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
         }
     }
 
@@ -144,7 +143,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
+            arrangement.conversationLifecycleEventRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
         }
     }
 
@@ -161,7 +160,7 @@ class MemberChangeEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
+            arrangement.conversationLifecycleEventRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
         }
 
         verifySuspend(VerifyMode.not) {
@@ -258,13 +257,13 @@ class MemberChangeEventHandlerTest {
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
-        val conversationRepository = mock<ConversationRepository>()
+        val conversationLifecycleEventRepository = mock<ConversationLifecycleEventRepository>()
         private val userRepository = mock<UserRepository>()
         val fetchConversationIfUnknown = mock<FetchConversationIfUnknownUseCase>()
         val persistMessage = mock<PersistMessageUseCase>()
 
         private val memberChangeEventHandler: MemberChangeEventHandler = MemberChangeEventHandlerImpl(
-            conversationRepository = conversationRepository,
+            conversationLifecycleEventRepository = conversationLifecycleEventRepository,
             fetchConversationIfUnknown = fetchConversationIfUnknown,
             persistMessage = persistMessage,
             selfUserId = TestUser.USER_ID,
@@ -284,25 +283,25 @@ class MemberChangeEventHandlerTest {
 
         suspend fun withUpdateMemberSucceeding() = apply {
             everySuspend {
-                conversationRepository.updateMemberFromEvent(any(), any())
+                conversationLifecycleEventRepository.updateMemberFromEvent(any(), any())
             } returns Either.Right(Unit)
         }
 
         suspend fun withConversationMemberRole(role: Member.Role?) = apply {
             everySuspend {
-                conversationRepository.getConversationMemberRole(any(), any())
+                conversationLifecycleEventRepository.getConversationMemberRole(any(), any())
             } returns Either.Right(role)
         }
 
         suspend fun withUpdateMutedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
             everySuspend {
-                conversationRepository.updateMutedStatusLocally(any(), any(), any())
+                conversationLifecycleEventRepository.updateMutedStatusLocally(any(), any(), any())
             } returns result
         }
 
         suspend fun withUpdateArchivedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
             everySuspend {
-                conversationRepository.updateArchivedStatusLocally(any(), any(), any())
+                conversationLifecycleEventRepository.updateArchivedStatusLocally(any(), any(), any())
             } returns result
         }
 

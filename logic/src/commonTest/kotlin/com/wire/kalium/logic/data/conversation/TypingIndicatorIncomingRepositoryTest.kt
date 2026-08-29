@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
@@ -120,7 +119,6 @@ class TypingIndicatorIncomingRepositoryTest {
         }
 
         fun arrange() = this to TypingIndicatorIncomingRepositoryImpl(
-            userTypingCache = ConcurrentMutableMap(),
             userPropertyRepository = userPropertyRepository
         )
     }

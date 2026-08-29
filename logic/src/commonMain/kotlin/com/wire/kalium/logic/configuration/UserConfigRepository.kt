@@ -42,6 +42,8 @@ import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.receiver.UserPropertiesConfigRepository
 import com.wire.kalium.logic.sync.receiver.UserPropertiesConfigRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.handler.TrackingIdentifierStorage
+import com.wire.kalium.logic.sync.receiver.handler.TrackingIdentifierStorageImpl
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.UserConfigDAO
@@ -189,6 +191,7 @@ internal class UserConfigDataSource internal constructor(
             (kaliumConfigs.fileRestrictionState.value as? BuildFileRestrictionState.AllowSome)?.allowedType
         },
     ),
+    private val trackingIdentifierStorage: TrackingIdentifierStorage = TrackingIdentifierStorageImpl(userConfigDAO),
 ) : UserConfigRepository {
 
     override suspend fun setFileSharingStatus(
@@ -502,21 +505,17 @@ internal class UserConfigDataSource internal constructor(
         userConfigDAO.observeShouldNotifyForRevokedCertificate().wrapStorageRequest()
 
     override suspend fun setCurrentTrackingIdentifier(newIdentifier: String) {
-        wrapStorageRequest {
-            userConfigDAO.setTrackingIdentifier(identifier = newIdentifier)
-        }
+        trackingIdentifierStorage.setCurrentTrackingIdentifier(newIdentifier)
     }
 
     override suspend fun getCurrentTrackingIdentifier(): String? =
-        userConfigDAO.getTrackingIdentifier()
+        trackingIdentifierStorage.getCurrentTrackingIdentifier()
 
     override fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>> =
         userConfigDAO.observeTrackingIdentifier().wrapStorageRequest()
 
     override suspend fun setPreviousTrackingIdentifier(identifier: String) {
-        wrapStorageRequest {
-            userConfigDAO.setPreviousTrackingIdentifier(identifier = identifier)
-        }
+        trackingIdentifierStorage.setPreviousTrackingIdentifier(identifier)
     }
 
     override suspend fun getPreviousTrackingIdentifier(): String? =

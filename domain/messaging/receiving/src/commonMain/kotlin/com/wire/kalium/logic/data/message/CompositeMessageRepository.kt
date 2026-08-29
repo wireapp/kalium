@@ -15,51 +15,55 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface CompositeMessageRepository {
-    suspend fun markSelected(
+@InternalKaliumApi
+public interface CompositeMessageRepository {
+    public suspend fun markSelected(
         messageId: MessageId,
         conversationId: ConversationId,
-        buttonId: String
+        buttonId: String,
     ): Either<StorageFailure, Unit>
 
-    suspend fun resetSelection(
+    public suspend fun resetSelection(
         messageId: MessageId,
-        conversationId: ConversationId
+        conversationId: ConversationId,
     ): Either<StorageFailure, Unit>
 }
 
-internal class CompositeMessageDataSource internal constructor(
-    private val compositeMessageDAO: CompositeMessageDAO
+@InternalKaliumApi
+public class CompositeMessageDataSource public constructor(
+    private val compositeMessageDAO: CompositeMessageDAO,
 ) : CompositeMessageRepository {
     override suspend fun markSelected(
         messageId: MessageId,
         conversationId: ConversationId,
-        buttonId: String
+        buttonId: String,
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         compositeMessageDAO.markAsSelected(
             messageId = messageId,
             conversationId = conversationId.toDao(),
-            buttonId = buttonId
+            buttonId = buttonId,
         )
     }
 
     override suspend fun resetSelection(
         messageId: MessageId,
-        conversationId: ConversationId
+        conversationId: ConversationId,
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         compositeMessageDAO.resetSelection(
             messageId = messageId,
-            conversationId = conversationId.toDao()
+            conversationId = conversationId.toDao(),
         )
     }
 }

@@ -39,6 +39,7 @@ kotlin {
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
                 implementation(libs.ktxSerialization)
+                implementation(libs.ktor.core)
                 implementation(libs.ktor.serialization)
                 implementation(libs.okio.core)
             }

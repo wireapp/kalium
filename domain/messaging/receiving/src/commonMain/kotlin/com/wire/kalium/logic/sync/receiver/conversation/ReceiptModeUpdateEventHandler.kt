@@ -18,56 +18,50 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.common.error.wrapStorageRequest
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.util.InternalKaliumApi
+import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
-internal interface ConversationMessageTimerEventHandler {
-    suspend fun handle(event: Event.Conversation.ConversationMessageTimer): Either<CoreFailure, Unit>
+@InternalKaliumApi
+public fun interface ReceiptModeUpdateEventHandler {
+    public suspend fun handle(event: Event.Conversation.ConversationReceiptMode)
 }
 
-internal class ConversationMessageTimerEventHandlerImpl(
-    private val conversationDAO: ConversationDAO,
+@InternalKaliumApi
+public class ReceiptModeUpdateEventHandlerImpl public constructor(
+    private val conversationEventRepository: ConversationEventRepository,
     private val persistMessage: PersistMessageUseCase,
-) : ConversationMessageTimerEventHandler {
+) : ReceiptModeUpdateEventHandler {
 
-    override suspend fun handle(event: Event.Conversation.ConversationMessageTimer): Either<CoreFailure, Unit> {
+    override suspend fun handle(event: Event.Conversation.ConversationReceiptMode) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        return updateMessageTimer(event)
+        conversationEventRepository.updateReceiptMode(event.conversationId, event.receiptMode)
             .onSuccess {
                 val message = Message.System(
-                    event.id,
-                    MessageContent.ConversationMessageTimerChanged(
-                        messageTimer = event.messageTimer
+                    Uuid.random().toString(),
+                    MessageContent.ConversationReceiptModeChanged(
+                        receiptMode = event.receiptMode == Conversation.ReceiptMode.ENABLED,
                     ),
                     event.conversationId,
-                    event.dateTime,
+                    Clock.System.now(),
                     event.senderUserId,
                     Message.Status.Sent,
                     Message.Visibility.VISIBLE,
-                    expirationData = null
+                    expirationData = null,
                 )
 
                 persistMessage(message)
                 eventLogger.logSuccess()
             }
-            .onFailure(eventLogger::logFailure)
-    }
-
-    private suspend fun updateMessageTimer(event: Event.Conversation.ConversationMessageTimer) = wrapStorageRequest {
-        conversationDAO.updateMessageTimer(
-            event.conversationId.toDao(),
-            event.messageTimer
-        )
+            .onFailure { eventLogger.logFailure(it) }
     }
 }

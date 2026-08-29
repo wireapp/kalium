@@ -327,7 +327,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHand
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.MeetingsSlowSyncRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.MeetingsSlowSyncRepositoryImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -506,8 +506,13 @@ import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessSchedule
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorkerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventRepository
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepository
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
@@ -554,6 +559,8 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.TrackingIdentifierStorage
+import com.wire.kalium.logic.sync.receiver.handler.TrackingIdentifierStorageImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
@@ -851,11 +858,16 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    private val trackingIdentifierStorage: TrackingIdentifierStorage by lazy {
+        TrackingIdentifierStorageImpl(userStorage.database.userConfigDAO)
+    }
+
     internal val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(
-            userStorage.database.userPrefsDAO,
-            userStorage.database.userConfigDAO,
-            kaliumConfigs
+            userConfigStorage = userStorage.database.userPrefsDAO,
+            userConfigDAO = userStorage.database.userConfigDAO,
+            kaliumConfigs = kaliumConfigs,
+            trackingIdentifierStorage = trackingIdentifierStorage,
         )
 
     private val featureConfigPersistenceRepository: LocalFeatureConfigRepository
@@ -982,6 +994,7 @@ public class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,
+            conversationLifecycleEventRepository = conversationLifecycleEventRepository,
         )
 
     private val conversationMetaDataRepository: ConversationMetaDataRepository
@@ -1888,9 +1901,9 @@ public class UserSessionScope internal constructor(
 
     private val dataTransferEventHandler: DataTransferEventHandler
         get() = DataTransferEventHandlerImpl(
-            userId,
-            userConfigRepository,
-            userScopedLogger
+            selfUserId = userId,
+            trackingIdentifierStorage = trackingIdentifierStorage,
+            logger = userScopedLogger,
         )
 
     private val inCallReactionsRepository: InCallReactionsRepository by lazy {
@@ -2006,7 +2019,7 @@ public class UserSessionScope internal constructor(
 
     private val newConversationHandler: NewConversationEventHandler
         get() = NewConversationEventHandlerImpl(
-            conversationRepository,
+            conversationLifecycleEventRepository,
             userRepository,
             selfTeamId,
             newGroupConversationSystemMessagesCreator,
@@ -2025,6 +2038,7 @@ public class UserSessionScope internal constructor(
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
             conversationRepository = conversationRepository,
+            conversationLifecycleEventRepository = conversationLifecycleEventRepository,
             userRepository = userRepository,
             persistMessage = persistMessage,
             legalHoldHandler = legalHoldHandler,
@@ -2035,7 +2049,7 @@ public class UserSessionScope internal constructor(
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
-            memberDAO = userStorage.database.memberDAO,
+            conversationLifecycleEventRepository = conversationLifecycleEventRepository,
             userRepository = userRepository,
             conversationRepository = conversationRepository,
             persistMessage = persistMessage,
@@ -2048,7 +2062,7 @@ public class UserSessionScope internal constructor(
         )
     private val memberChangeHandler: MemberChangeEventHandler
         get() = MemberChangeEventHandlerImpl(
-            conversationRepository = conversationRepository,
+            conversationLifecycleEventRepository = conversationLifecycleEventRepository,
             fetchConversationIfUnknown = fetchConversationIfUnknownUseCase,
             persistMessage = persistMessage,
             selfUserId = userId,
@@ -2064,31 +2078,41 @@ public class UserSessionScope internal constructor(
 
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
-            userStorage.database.conversationDAO,
+            conversationLifecycleEventRepository,
             persistMessage
         )
 
+    private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository by lazy {
+        ConversationLifecycleEventRepositoryImpl(
+            userStorage.database.conversationDAO,
+            userStorage.database.memberDAO,
+        )
+    }
+
+    private val conversationEventRepository: ConversationEventRepository
+        get() = ConversationEventRepositoryImpl(userStorage.database.conversationDAO)
+
     private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler
         get() = ReceiptModeUpdateEventHandlerImpl(
-            conversationDAO = userStorage.database.conversationDAO,
+            conversationEventRepository = conversationEventRepository,
             persistMessage = persistMessage
         )
 
     private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler
         get() = ConversationMessageTimerEventHandlerImpl(
-            conversationDAO = userStorage.database.conversationDAO,
+            conversationEventRepository = conversationEventRepository,
             persistMessage = persistMessage
         )
 
     private val conversationCodeUpdateHandler: CodeUpdatedHandler
         get() = CodeUpdateHandlerImpl(
-            conversationDAO = userStorage.database.conversationDAO,
-            sessionManager.getServerConfig().links
+            conversationEventRepository = conversationEventRepository,
+            accountsBaseUrl = sessionManager.getServerConfig().links.accounts,
         )
 
     private val conversationCodeDeletedHandler: CodeDeletedHandler
         get() = CodeDeletedHandlerImpl(
-            conversationDAO = userStorage.database.conversationDAO
+            conversationEventRepository = conversationEventRepository,
         )
 
     private val typingIndicatorHandler: TypingIndicatorHandler
@@ -2103,14 +2127,13 @@ public class UserSessionScope internal constructor(
 
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler
         get() = ChannelAddPermissionUpdateEventHandlerImpl(
-            conversationRepository = conversationRepository
+            conversationRepository = conversationEventRepository,
         )
 
     private val conversationAccessUpdateEventHandler: AccessUpdateEventHandler
-        get() = AccessUpdateEventHandler(
-            conversationDAO = userStorage.database.conversationDAO,
-            selfUserId = userId,
-            systemMessageInserter = systemMessageInserter
+        get() = AccessUpdateEventHandlerImpl(
+            conversationEventRepository = conversationEventRepository,
+            systemMessageInserter = systemMessageInserter,
         )
 
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler

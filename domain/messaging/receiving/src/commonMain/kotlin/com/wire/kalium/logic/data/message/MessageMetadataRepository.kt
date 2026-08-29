@@ -15,32 +15,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface MessageMetadataRepository {
-    suspend fun originalSenderId(
+@InternalKaliumApi
+public fun interface MessageMetadataRepository {
+    public suspend fun originalSenderId(
         conversationId: ConversationId,
-        messageId: MessageId
+        messageId: MessageId,
     ): Either<StorageFailure, UserId>
 }
 
-internal class MessageMetadataSource internal constructor(
-    private val messageMetaDataDAO: MessageMetadataDAO
+@InternalKaliumApi
+public class MessageMetadataSource public constructor(
+    private val messageMetaDataDAO: MessageMetadataDAO,
 ) : MessageMetadataRepository {
-    override suspend fun originalSenderId(conversationId: ConversationId, messageId: MessageId): Either<StorageFailure, UserId> =
-        wrapStorageRequest {
-            messageMetaDataDAO.originalSenderId(conversationId.toDao(), messageId)
-        }.map(UserIDEntity::toModel)
+    override suspend fun originalSenderId(
+        conversationId: ConversationId,
+        messageId: MessageId,
+    ): Either<StorageFailure, UserId> = wrapStorageRequest {
+        messageMetaDataDAO.originalSenderId(conversationId.toDao(), messageId)
+    }.map(UserIDEntity::toModel)
 }
