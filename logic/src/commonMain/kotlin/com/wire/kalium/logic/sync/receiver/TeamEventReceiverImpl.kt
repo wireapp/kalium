@@ -31,8 +31,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.CryptoTransactionContext
 
-internal interface TeamEventReceiver : EventReceiver<Event.Team>
-
+/** Logic-owned implementation of the shared team receiver contract. */
 internal class TeamEventReceiverImpl(
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,

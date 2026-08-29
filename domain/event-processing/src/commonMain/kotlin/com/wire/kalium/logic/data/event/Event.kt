@@ -58,13 +58,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.serialization.toJsonElement
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonNull
 
 /**
  * A wrapper that joins [Event] with its [EventDeliveryInfo].
  */
-internal data class EventEnvelope(
+@InternalKaliumApi
+public data class EventEnvelope(
     val event: Event,
     val deliveryInfo: EventDeliveryInfo
 ) {
@@ -72,9 +74,9 @@ internal data class EventEnvelope(
         return super.toString()
     }
 
-    internal fun toLogString(): String = toLogMap().toJsonElement().toString()
+    public fun toLogString(): String = toLogMap().toJsonElement().toString()
 
-    internal fun toLogMap(): Map<String, Any?> = mapOf(
+    public fun toLogMap(): Map<String, Any?> = mapOf(
         "event" to event.toLogMap(),
         "deliveryInfo" to deliveryInfo.toLogMap()
     )
@@ -86,11 +88,12 @@ internal data class EventEnvelope(
  * @property source Indicates whether the event was received in real-time via WebSocket [EventSource.LIVE]
  * or fetched in batch as a pending event [EventSource.PENDING].
  */
-internal data class EventDeliveryInfo(
+@InternalKaliumApi
+public data class EventDeliveryInfo(
     val source: EventSource,
 ) {
 
-    internal fun toLogMap(): Map<String, Any?> = mapOf(
+    public fun toLogMap(): Map<String, Any?> = mapOf(
         "source" to source,
     )
 }
@@ -101,7 +104,8 @@ internal data class EventDeliveryInfo(
  * @property id The ID of the event. As of Jan 2024, the ID used by the backend is
  * _not_ guaranteed to be unique, so comparing the full object might be necessary.
  */
-internal sealed class Event(open val id: String) {
+@InternalKaliumApi
+public sealed class Event(open val id: String) {
 
     private companion object {
         const val typeKey = "type"
@@ -118,17 +122,17 @@ internal sealed class Event(open val id: String) {
         const val meetingIdKey = "meetingId"
     }
 
-    internal open fun toLogString(): String {
+    public open fun toLogString(): String {
         return "${toLogMap().toJsonElement()}"
     }
 
-    internal abstract fun toLogMap(): Map<String, Any?>
+    public abstract fun toLogMap(): Map<String, Any?>
 
-    internal sealed class Conversation(
+    public sealed class Conversation(
         id: String,
-        internal open val conversationId: ConversationId
+        public open val conversationId: ConversationId
     ) : Event(id) {
-        internal data class AccessUpdate(
+        public data class AccessUpdate(
             override val id: String,
             override val conversationId: ConversationId,
             val access: Set<Access>,
@@ -144,7 +148,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class NewMessage(
+        public data class NewMessage(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
@@ -164,7 +168,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class NewMLSMessage(
+        public data class NewMLSMessage(
             override val id: String,
             override val conversationId: ConversationId,
             val subconversationId: SubconversationId?,
@@ -182,7 +186,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class NewConversation(
+        public data class NewConversation(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
@@ -198,7 +202,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class MemberJoin(
+        public data class MemberJoin(
             override val id: String,
             override val conversationId: ConversationId,
             val addedBy: UserId,
@@ -216,7 +220,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class MemberLeave(
+        public data class MemberLeave(
             override val id: String,
             override val conversationId: ConversationId,
             val removedBy: UserId,
@@ -234,15 +238,15 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal sealed class MemberChanged(
+        public sealed class MemberChanged(
             override val id: String,
             override val conversationId: ConversationId,
         ) : Conversation(id, conversationId) {
-            internal class MemberChangedRole(
+            public class MemberChangedRole(
                 override val id: String,
                 override val conversationId: ConversationId,
                 val dateTime: Instant,
-                internal val member: Member?,
+                public val member: Member?,
             ) : MemberChanged(id, conversationId) {
 
                 override fun toLogMap(): Map<String, Any?> = mapOf(
@@ -254,7 +258,7 @@ internal sealed class Event(open val id: String) {
                 )
             }
 
-            internal data class MemberMutedStatusChanged(
+            public data class MemberMutedStatusChanged(
                 override val id: String,
                 override val conversationId: ConversationId,
                 val mutedConversationStatus: MutedConversationStatus,
@@ -270,7 +274,7 @@ internal sealed class Event(open val id: String) {
                 )
             }
 
-            internal data class MemberArchivedStatusChanged(
+            public data class MemberArchivedStatusChanged(
                 override val id: String,
                 override val conversationId: ConversationId,
                 val archivedConversationChangedTime: Instant,
@@ -286,7 +290,7 @@ internal sealed class Event(open val id: String) {
                 )
             }
 
-            internal data class IgnoredMemberChanged(
+            public data class IgnoredMemberChanged(
                 override val id: String,
                 override val conversationId: ConversationId,
             ) : MemberChanged(id, conversationId) {
@@ -299,7 +303,7 @@ internal sealed class Event(open val id: String) {
             }
         }
 
-        internal data class MLSWelcome(
+        public data class MLSWelcome(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
@@ -313,7 +317,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class DeletedConversation(
+        public data class DeletedConversation(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
@@ -329,7 +333,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class RenamedConversation(
+        public data class RenamedConversation(
             override val id: String,
             override val conversationId: ConversationId,
             val conversationName: String,
@@ -346,7 +350,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class ConversationReceiptMode(
+        public data class ConversationReceiptMode(
             override val id: String,
             override val conversationId: ConversationId,
             val receiptMode: ReceiptMode,
@@ -362,7 +366,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class ConversationMessageTimer(
+        public data class ConversationMessageTimer(
             override val id: String,
             override val conversationId: ConversationId,
             val messageTimer: Long?,
@@ -380,7 +384,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class CodeUpdated(
+        public data class CodeUpdated(
             override val id: String,
             override val conversationId: ConversationId,
             val key: String,
@@ -394,7 +398,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class CodeDeleted(
+        public data class CodeDeleted(
             override val id: String,
             override val conversationId: ConversationId,
         ) : Conversation(id, conversationId) {
@@ -404,7 +408,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class TypingIndicator(
+        public data class TypingIndicator(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
@@ -419,7 +423,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class ConversationProtocol(
+        public data class ConversationProtocol(
             override val id: String,
             override val conversationId: ConversationId,
             val protocol: Protocol,
@@ -434,7 +438,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class ConversationChannelAddPermission(
+        public data class ConversationChannelAddPermission(
             override val id: String,
             override val conversationId: ConversationId,
             val channelAddPermission: ChannelAddPermission,
@@ -449,7 +453,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class MLSReset(
+        public data class MLSReset(
             override val id: String,
             override val conversationId: ConversationId,
             val from: UserId,
@@ -464,12 +468,12 @@ internal sealed class Event(open val id: String) {
         }
     }
 
-    internal sealed class Team(
+    public sealed class Team(
         id: String,
-        internal open val teamId: String,
+        public open val teamId: String,
     ) : Event(id) {
 
-        internal data class MemberLeave(
+        public data class MemberLeave(
             override val id: String,
             override val teamId: String,
             val memberId: String,
@@ -485,10 +489,10 @@ internal sealed class Event(open val id: String) {
         }
     }
 
-    internal sealed class FeatureConfig(
+    public sealed class FeatureConfig(
         id: String,
     ) : Event(id) {
-        internal data class FileSharingUpdated(
+        public data class FileSharingUpdated(
             override val id: String,
             val model: ConfigsStatusModel
         ) : FeatureConfig(id) {
@@ -499,7 +503,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class MLSUpdated(
+        public data class MLSUpdated(
             override val id: String,
             val model: MLSModel
         ) : FeatureConfig(id) {
@@ -510,7 +514,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class MLSMigrationUpdated(
+        public data class MLSMigrationUpdated(
             override val id: String,
             val model: MLSMigrationModel
         ) : FeatureConfig(id) {
@@ -523,7 +527,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class ClassifiedDomainsUpdated(
+        public data class ClassifiedDomainsUpdated(
             override val id: String,
             val model: ClassifiedDomainsModel,
         ) : FeatureConfig(id) {
@@ -535,7 +539,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class ConferenceCallingUpdated(
+        public data class ConferenceCallingUpdated(
             override val id: String,
             val model: ConferenceCallingModel,
         ) : FeatureConfig(id) {
@@ -546,7 +550,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class GuestRoomLinkUpdated(
+        public data class GuestRoomLinkUpdated(
             override val id: String,
             val model: ConfigsStatusModel,
         ) : FeatureConfig(id) {
@@ -557,7 +561,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class SelfDeletingMessagesConfig(
+        public data class SelfDeletingMessagesConfig(
             override val id: String,
             val model: SelfDeletingMessagesModel,
         ) : FeatureConfig(id) {
@@ -569,7 +573,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class MLSE2EIUpdated(
+        public data class MLSE2EIUpdated(
             override val id: String,
             val model: E2EIModel
         ) : FeatureConfig(id) {
@@ -581,7 +585,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class AppLockUpdated(
+        public data class AppLockUpdated(
             override val id: String,
             val model: AppLockModel
         ) : FeatureConfig(id) {
@@ -593,7 +597,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class AllowedGlobalOperationsUpdated(
+        public data class AllowedGlobalOperationsUpdated(
             override val id: String,
             val model: AllowedGlobalOperationsModel,
         ) : FeatureConfig(id) {
@@ -605,7 +609,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class CellsConfigUpdated(
+        public data class CellsConfigUpdated(
             override val id: String,
             val model: CellsModel,
         ) : FeatureConfig(id) {
@@ -616,7 +620,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class CellsInternalConfigUpdated(
+        public data class CellsInternalConfigUpdated(
             override val id: String,
             val model: CellsInternalModel,
         ) : FeatureConfig(id) {
@@ -627,7 +631,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class EnableUserProfileQRCodeConfigUpdated(
+        public data class EnableUserProfileQRCodeConfigUpdated(
             override val id: String,
             val model: EnableUserProfileQRCodeConfigModel,
         ) : FeatureConfig(id) {
@@ -638,7 +642,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class AssetAuditLogConfigUpdated(
+        public data class AssetAuditLogConfigUpdated(
             override val id: String,
             val model: AssetAuditLogConfigModel,
         ) : FeatureConfig(id) {
@@ -649,7 +653,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class PreventAdminlessGroupsConfigUpdated(
+        public data class PreventAdminlessGroupsConfigUpdated(
             override val id: String,
             val model: PreventAdminlessGroupsConfigModel,
         ) : FeatureConfig(id) {
@@ -660,7 +664,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class UnknownFeatureUpdated(
+        public data class UnknownFeatureUpdated(
             override val id: String,
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
@@ -669,7 +673,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class MeetingsConfigUpdated(
+        public data class MeetingsConfigUpdated(
             override val id: String,
             val model: MeetingsConfigModel,
         ) : FeatureConfig(id) {
@@ -681,11 +685,11 @@ internal sealed class Event(open val id: String) {
         }
     }
 
-    internal sealed class User(
+    public sealed class User(
         id: String,
     ) : Event(id) {
 
-        internal data class Update(
+        public data class Update(
             override val id: String,
             val userId: UserId,
             val accentId: Int?,
@@ -704,7 +708,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class NewConnection(
+        public data class NewConnection(
             override val id: String,
             val connection: Connection
         ) : User(id) {
@@ -715,7 +719,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class ClientRemove(
+        public data class ClientRemove(
             override val id: String,
             val clientId: ClientId
         ) : User(id) {
@@ -726,7 +730,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class UserDelete(
+        public data class UserDelete(
             override val id: String,
             val userId: UserId,
         ) : User(id) {
@@ -737,7 +741,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class NewClient(
+        public data class NewClient(
             override val id: String,
             val client: Client,
         ) : User(id) {
@@ -754,7 +758,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class LegalHoldRequest(
+        public data class LegalHoldRequest(
             override val id: String,
             val clientId: ClientId,
             val lastPreKey: LastPreKey,
@@ -768,7 +772,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class LegalHoldEnabled(
+        public data class LegalHoldEnabled(
             override val id: String,
             val userId: UserId
         ) : User(id) {
@@ -779,7 +783,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class LegalHoldDisabled(
+        public data class LegalHoldDisabled(
             override val id: String,
             val userId: UserId
         ) : User(id) {
@@ -790,7 +794,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class SessionRefreshSuggested(
+        public data class SessionRefreshSuggested(
             override val id: String,
         ) : User(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
@@ -800,11 +804,11 @@ internal sealed class Event(open val id: String) {
         }
     }
 
-    internal sealed class UserProperty(
+    public sealed class UserProperty(
         id: String,
     ) : Event(id) {
 
-        internal data class ReadReceiptModeSet(
+        public data class ReadReceiptModeSet(
             override val id: String,
             val value: Boolean,
         ) : UserProperty(id) {
@@ -815,7 +819,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class TypingIndicatorModeSet(
+        public data class TypingIndicatorModeSet(
             override val id: String,
             val value: Boolean,
         ) : UserProperty(id) {
@@ -826,7 +830,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class FoldersUpdate(
+        public data class FoldersUpdate(
             override val id: String,
             val folders: List<FolderWithConversations>,
         ) : UserProperty(id) {
@@ -838,7 +842,7 @@ internal sealed class Event(open val id: String) {
         }
     }
 
-    internal data class Unknown(
+    public data class Unknown(
         override val id: String,
         val unknownType: String?,
         val cause: String? = null
@@ -851,11 +855,11 @@ internal sealed class Event(open val id: String) {
         )
     }
 
-    internal sealed class Federation(
+    public sealed class Federation(
         id: String,
     ) : Event(id) {
 
-        internal data class Delete(
+        public data class Delete(
             override val id: String,
             val domain: String,
         ) : Federation(id) {
@@ -866,7 +870,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class ConnectionRemoved(
+        public data class ConnectionRemoved(
             override val id: String,
             val domains: List<String>,
         ) : Federation(id) {
@@ -878,11 +882,11 @@ internal sealed class Event(open val id: String) {
         }
     }
 
-    internal sealed class Meeting(
+    public sealed class Meeting(
         id: String
     ) : Event(id) {
 
-        internal data class Create(
+        public data class Create(
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
@@ -895,7 +899,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class Delete(
+        public data class Delete(
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
@@ -908,7 +912,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class Update(
+        public data class Update(
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
@@ -921,7 +925,7 @@ internal sealed class Event(open val id: String) {
             )
         }
 
-        internal data class MemberAdd(
+        public data class MemberAdd(
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,

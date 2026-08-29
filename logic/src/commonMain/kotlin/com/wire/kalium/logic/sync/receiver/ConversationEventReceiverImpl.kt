@@ -41,12 +41,9 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 
-internal interface ConversationEventReceiver : EventReceiver<Event.Conversation> {
-    suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> = Either.Right(Unit)
-}
-
 // Suppressed as it's an old issue
 // TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
+/** Logic-owned implementation of the shared conversation receiver contract. */
 @Suppress("LongParameterList", "TooManyFunctions", "ComplexMethod")
 internal class ConversationEventReceiverImpl(
     private val newMessageHandler: NewMessageEventHandler,

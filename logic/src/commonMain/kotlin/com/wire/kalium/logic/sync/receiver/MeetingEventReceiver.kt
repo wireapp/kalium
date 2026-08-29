@@ -27,8 +27,6 @@ import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 
-internal interface MeetingEventReceiver : EventReceiver<Event.Meeting>
-
 internal class MeetingEventReceiverImpl(
     private val meetingCreateEventHandler: MeetingCreateEventHandler,
     private val meetingDeleteEventHandler: MeetingDeleteEventHandler,
