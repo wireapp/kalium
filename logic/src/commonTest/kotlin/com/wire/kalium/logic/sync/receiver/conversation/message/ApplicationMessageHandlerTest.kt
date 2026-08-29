@@ -83,6 +83,38 @@ import kotlin.time.Duration.Companion.seconds
 class ApplicationMessageHandlerTest {
 
     @Test
+    fun givenDeleteForMeMessage_whenHandling_thenExistingDeleteForMeLeafIsInvoked() = runTest {
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val deleteForMe = MessageContent.DeleteForMe(
+            messageId = "deleted-message-id",
+            conversationId = messageEvent.conversationId,
+        )
+        val protoContent = ProtoContent.Readable(
+            messageUid = "signaling-message-id",
+            messageContent = deleteForMe,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val (arrangement, messageHandler) = Arrangement().arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.deleteForMeHandler.handle(
+                matches { it.conversationId == messageEvent.conversationId },
+                matches { it == deleteForMe },
+            )
+        }
+    }
+
+    @Test
     fun givenValidNewImageMessageEvent_whenHandling_shouldCallTheAssetMessageHandler() = runTest {
         val messageId = "messageId"
         val validImageContent = MessageContent.Asset(

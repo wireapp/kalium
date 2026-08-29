@@ -91,6 +91,20 @@ import okio.Path.Companion.toPath
 class MessageRepositoryTest {
 
     @Test
+    fun givenFocusedDeletionResult_whenDeleting_thenRepositoryDelegatesItUnchanged() = runTest {
+        val expected = Either.Left(StorageFailure.DataNotFound)
+        val (arrangement, repository) = Arrangement().arrange()
+        everySuspend {
+            arrangement.messageDeletionPersistence.deleteMessage(eq(TEST_MESSAGE_ID), eq(TEST_CONVERSATION_ID))
+        }.returns(expected)
+
+        assertEquals(expected, repository.deleteMessage(TEST_MESSAGE_ID, TEST_CONVERSATION_ID))
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageDeletionPersistence.deleteMessage(eq(TEST_MESSAGE_ID), eq(TEST_CONVERSATION_ID))
+        }
+    }
+
+    @Test
     fun givenAConversationId_whenGettingMessagesOfConversation_thenShouldUseIdMapperToMapTheConversationId() = runTest {
         // Given
         val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
@@ -714,6 +728,7 @@ class MessageRepositoryTest {
     }
 
     private class Arrangement {
+        val messageDeletionPersistence = mock<MessageDeletionPersistence>()
         val messageApi = mock<MessageApi>(mode = MockMode.autoUnit)
         val mlsMessageApi = mock<MLSMessageApi>(mode = MockMode.autoUnit)
         val messageDAO = mock<MessageDAO>(mode = MockMode.autoUnit)
@@ -883,7 +898,8 @@ class MessageRepositoryTest {
             messageMapper = messageMapper,
             selfUserId = SELF_USER_ID,
             sendMessageFailureMapper = sendMessageFailureMapper,
-            sendMessagePartialFailureMapper = sendMessagePartialFailureMapper
+            sendMessagePartialFailureMapper = sendMessagePartialFailureMapper,
+            messageDeletionPersistence = messageDeletionPersistence,
         )
 
         suspend fun withInsertFailedRecipients() = apply {

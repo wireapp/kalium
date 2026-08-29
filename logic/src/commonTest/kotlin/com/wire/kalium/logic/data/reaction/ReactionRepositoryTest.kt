@@ -29,7 +29,6 @@ import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -50,7 +49,10 @@ class ReactionRepositoryTest {
     private val userDao = userDatabase.builder.userDAO
     private val messageDao = userDatabase.builder.messageDAO
 
-    private val reactionRepository = ReactionRepositoryImpl(SELF_USER_ID, reactionsDao)
+    private val reactionRepository = ReactionRepositoryImpl(
+        selfUserId = SELF_USER_ID,
+        reactionsDAO = reactionsDao,
+    )
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @BeforeTest
@@ -92,7 +94,7 @@ class ReactionRepositoryTest {
                 conversationId = TEST_CONVERSATION_ID
             ).test {
                 val result = awaitItem()
-                assertTrue(result.size == 2)
+                assertEquals(2, result.size)
             }
     }
 
@@ -118,7 +120,7 @@ class ReactionRepositoryTest {
                     TEST_CONVERSATION_ID.domain
                 )
             )
-        private val TEST_MESSAGE_ID = TestMessage.TEST_MESSAGE_ID
+        private const val TEST_MESSAGE_ID = TestMessage.TEST_MESSAGE_ID
         private val TEST_MESSAGE_ENTITY = TestMessage.ENTITY.copy(
             id = TEST_MESSAGE_ID,
             senderUserId = TEST_SELF_USER_ENTITY.id,

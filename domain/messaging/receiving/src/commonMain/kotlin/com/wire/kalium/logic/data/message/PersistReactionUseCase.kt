@@ -21,23 +21,27 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.reaction.ReactionRepository
+import com.wire.kalium.logic.data.message.reaction.IncomingReactionPersistence
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReactionEventData
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 
-internal interface PersistReactionUseCase {
-    suspend operator fun invoke(
+/** Persists the complete reaction state carried by an incoming application message. */
+@InternalKaliumApi
+public interface PersistReactionUseCase {
+    public suspend operator fun invoke(
         reaction: MessageContent.Reaction,
         conversationId: ConversationId,
         senderUserId: UserId,
-        date: Instant
+        date: Instant,
     ): Either<CoreFailure, Unit>
 }
 
-internal class PersistReactionUseCaseImpl(
-    private val reactionRepository: ReactionRepository,
+@InternalKaliumApi
+public class PersistReactionUseCaseImpl public constructor(
+    private val incomingReactionPersistence: IncomingReactionPersistence,
     private val selfUserId: UserId,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
 ) : PersistReactionUseCase {
@@ -45,7 +49,7 @@ internal class PersistReactionUseCaseImpl(
         reaction: MessageContent.Reaction,
         conversationId: ConversationId,
         senderUserId: UserId,
-        date: Instant
+        date: Instant,
     ): Either<CoreFailure, Unit> {
         val emojiSet = reaction.emojiSet.map {
             // If we receive the heavy black heart unicode, we convert it to the emoji version.
@@ -57,16 +61,16 @@ internal class PersistReactionUseCaseImpl(
                 it
             }
         }.toSet()
-        return reactionRepository.updateReaction(
+        return incomingReactionPersistence.updateReaction(
             reaction.messageId,
             conversationId,
             senderUserId,
             date,
-            emojiSet
+            emojiSet,
         ).also {
             persistenceEventHookNotifier.onReactionPersisted(
                 ReactionEventData(conversationId, reaction.messageId, date),
-                selfUserId
+                selfUserId,
             )
         }
     }

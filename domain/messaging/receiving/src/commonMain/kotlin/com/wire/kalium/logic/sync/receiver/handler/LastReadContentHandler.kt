@@ -18,36 +18,39 @@
 
 package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.IncomingLastReadPersistence
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Instant
 
-internal interface LastReadContentHandler {
-    suspend fun handle(
+@InternalKaliumApi
+public interface LastReadContentHandler {
+    public suspend fun handle(
         message: Message.Signaling,
-        messageContent: MessageContent.LastRead
+        messageContent: MessageContent.LastRead,
     )
 
-    suspend fun flushPendingLastReads()
+    public suspend fun flushPendingLastReads()
 }
 
 // This class handles the messages that arrive when some client has read the conversation.
-internal class LastReadContentHandlerImpl internal constructor(
-    private val conversationRepository: ConversationRepository,
+@InternalKaliumApi
+public class LastReadContentHandlerImpl public constructor(
+    private val incomingLastReadPersistence: IncomingLastReadPersistence,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
-    private val notificationEventsManager: NotificationEventsManager
+    private val notificationEventsManager: NotificationEventsManager,
 ) : LastReadContentHandler {
 
     private val logger = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
@@ -56,7 +59,7 @@ internal class LastReadContentHandlerImpl internal constructor(
 
     override suspend fun handle(
         message: Message.Signaling,
-        messageContent: MessageContent.LastRead
+        messageContent: MessageContent.LastRead,
     ) {
         val isMessageComingFromOtherClient = message.senderUserId == selfUserId
         val isMessageDestinedForSelfConversation: Boolean = isMessageSentInSelfConversation(message)
@@ -84,7 +87,7 @@ internal class LastReadContentHandlerImpl internal constructor(
         if (pending.isEmpty()) return
         logger.d("$TAG Flushing LastRead updates")
 
-        conversationRepository
+        incomingLastReadPersistence
             .updateReadDatesAndGetHasUnreadEvents(pending)
             .onSuccess { hasUnreadByConversation ->
                 hasUnreadByConversation.forEach { (conversationId, hasUnreadEvents) ->

@@ -59,12 +59,4 @@ open class ReactionRepositoryStub : ReactionRepository {
     ): Flow<List<MessageReaction>> {
         return flowOf(listOf())
     }
-
-    override suspend fun updateReaction(
-        originalMessageId: String,
-        conversationId: ConversationId,
-        senderUserId: UserId,
-        instant: Instant,
-        userReactions: UserReactions
-    ): Either<StorageFailure, Unit> = Either.Right(Unit)
 }

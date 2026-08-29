@@ -106,12 +106,6 @@ internal interface ConversationRepository : FederationConversationRepository, Ch
 
     // endregion
 
-    @DelicateKaliumApi("This function does not get values from cache")
-    suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId>
-
-    @DelicateKaliumApi("This function does not get values from cache")
-    suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId>
-
     @ConversationPersistenceApi
     suspend fun fetchConversations(lastPagingState: String?): Either<CoreFailure, ConversationBatch>
 
@@ -378,10 +372,6 @@ internal interface ConversationRepository : FederationConversationRepository, Ch
     suspend fun fetchConversationListDetails(conversationIdList: List<QualifiedID>): Either<CoreFailure, ConversationResponseDTO>
     suspend fun resetMlsConversation(groupId: GroupID, epoch: ULong): Either<NetworkFailure, Unit>
     suspend fun updateReadDateAndGetHasUnreadEvents(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Boolean>
-    suspend fun updateReadDatesAndGetHasUnreadEvents(
-        conversationDates: Map<QualifiedID, Instant>
-    ): Either<StorageFailure, Map<QualifiedID, Boolean>>
-
     suspend fun getMLSConversationsByDomain(domain: String): Either<CoreFailure, List<Conversation>>
 }
 
@@ -517,16 +507,6 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
-
-    @DelicateKaliumApi("This function does not get values from cache")
-    override suspend fun getProteusSelfConversationId(): Either<StorageFailure, ConversationId> =
-        wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.PROTEUS) }
-            .map { it.toModel() }
-
-    @DelicateKaliumApi("This function does not get values from cache")
-    override suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId> =
-        wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS) }
-            .map { it.toModel() }
 
     override fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {
         observeConversationList()
@@ -940,15 +920,6 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun updateReadDateAndGetHasUnreadEvents(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Boolean> =
         wrapStorageRequest { conversationDAO.updateReadDateAndGetHasUnreadEvents(qualifiedID.toDao(), date) }
-
-    override suspend fun updateReadDatesAndGetHasUnreadEvents(
-        conversationDates: Map<QualifiedID, Instant>
-    ): Either<StorageFailure, Map<QualifiedID, Boolean>> =
-        wrapStorageRequest {
-            conversationDAO.updateReadDatesAndGetHasUnreadEvents(conversationDates.mapKeys { it.key.toDao() })
-        }.map { hasUnreadByConversation ->
-            hasUnreadByConversation.mapKeys { it.key.toModel() }
-        }
 
     override suspend fun updateUserSelfDeletionTimer(
         conversationId: ConversationId,

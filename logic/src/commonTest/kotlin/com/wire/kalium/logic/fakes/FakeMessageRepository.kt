@@ -258,12 +258,6 @@ internal open class FakeMessageRepository : MessageRepository {
         messageId: String
     ): Either<CoreFailure, String>  = "".right()
 
-    override suspend fun updateMessagesStatusIfNotRead(
-        messageStatus: MessageEntity.Status,
-        conversationId: ConversationId,
-        messageIds: List<String>
-    ): Either<CoreFailure, Unit> = Unit.right()
-
     override suspend fun updateCompositeMessage(
         conversationId: ConversationId,
         messageContent: MessageContent.CompositeEdited,

@@ -18,20 +18,23 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface IsMessageSentInSelfConversationUseCase {
-    suspend operator fun invoke(message: Message): Boolean
+/** Verifies that a message was sent through one of the self user's conversations. */
+@InternalKaliumApi
+public interface IsMessageSentInSelfConversationUseCase {
+    public suspend operator fun invoke(message: Message): Boolean
 }
 
-internal class IsMessageSentInSelfConversationUseCaseImpl internal constructor(
-    private val selfConversationIdProvider: SelfConversationIdProvider
+@InternalKaliumApi
+public class IsMessageSentInSelfConversationUseCaseImpl public constructor(
+    private val selfConversationIdProvider: SelfConversationIdProvider,
 ) : IsMessageSentInSelfConversationUseCase {
 
     override suspend fun invoke(message: Message): Boolean {
         val selfConversationIds = selfConversationIdProvider().getOrElse(emptyList())
         return selfConversationIds.contains(message.conversationId)
     }
-
 }

@@ -20,65 +20,57 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
+import com.wire.kalium.logic.data.message.receipt.IncomingReceiptPersistence
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
-import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
+import com.wire.kalium.logic.data.message.receipt.toMessageStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReadReceiptEventData
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface ReceiptMessageHandler {
-    suspend fun handle(
+@InternalKaliumApi
+public interface ReceiptMessageHandler {
+    public suspend fun handle(
         message: Message.Signaling,
-        messageContent: MessageContent.Receipt
+        messageContent: MessageContent.Receipt,
     )
 }
 
-internal class ReceiptMessageHandlerImpl(
+@InternalKaliumApi
+public class ReceiptMessageHandlerImpl public constructor(
     private val selfUserId: UserId,
-    private val receiptRepository: ReceiptRepository,
-    private val messageRepository: MessageRepository,
+    private val incomingReceiptPersistence: IncomingReceiptPersistence,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
-    private val receiptsMapper: ReceiptsMapper = MapperProvider.receiptsMapper()
 ) : ReceiptMessageHandler {
 
     override suspend fun handle(
         message: Message.Signaling,
-        messageContent: MessageContent.Receipt
+        messageContent: MessageContent.Receipt,
     ) {
         // Receipts from self user shouldn't happen,
         // If it happens, it's unnecessary,
         // and we can squish some performance by skipping it completely
         if (message.senderUserId == selfUserId) return
 
-        updateMessagesStatus(messageContent, message)
+        incomingReceiptPersistence.updateReferencedMessageStatusesIfNotRead(
+            messageStatus = messageContent.type.toMessageStatus(),
+            messageIds = messageContent.messageIds,
+            conversationId = message.conversationId,
+        )
 
-        receiptRepository.persistReceipts(
+        incomingReceiptPersistence.insertReceipts(
             userId = message.senderUserId,
             conversationId = message.conversationId,
             date = message.date,
             type = messageContent.type,
-            messageIds = messageContent.messageIds
+            messageIds = messageContent.messageIds,
         )
 
         if (messageContent.type == ReceiptType.READ) {
             persistenceEventHookNotifier.onReadReceiptPersisted(
                 ReadReceiptEventData(message.conversationId, messageContent.messageIds, message.date),
-                selfUserId
+                selfUserId,
             )
         }
-    }
-
-    private suspend fun updateMessagesStatus(
-        messageContent: MessageContent.Receipt,
-        message: Message.Signaling
-    ) {
-        messageRepository.updateMessagesStatusIfNotRead(
-            messageStatus = receiptsMapper.fromTypeToMessageStatus(messageContent.type),
-            messageIds = messageContent.messageIds,
-            conversationId = message.conversationId,
-        )
     }
 }

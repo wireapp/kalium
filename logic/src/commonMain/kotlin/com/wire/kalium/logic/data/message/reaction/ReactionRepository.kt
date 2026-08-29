@@ -52,14 +52,6 @@ internal interface ReactionRepository {
         conversationId: ConversationId
     ): Either<StorageFailure, UserReactions>
 
-    suspend fun updateReaction(
-        originalMessageId: String,
-        conversationId: ConversationId,
-        senderUserId: UserId,
-        instant: Instant,
-        userReactions: UserReactions
-    ): Either<StorageFailure, Unit>
-
     fun observeMessageReactions(
         conversationId: ConversationId,
         messageId: String
@@ -108,22 +100,6 @@ internal class ReactionRepositoryImpl(
         conversationId: ConversationId
     ): Either<StorageFailure, UserReactions> = wrapStorageRequest {
         reactionsDAO.getReaction(originalMessageId, conversationId.toDao(), selfUserId.toDao())
-    }
-
-    override suspend fun updateReaction(
-        originalMessageId: String,
-        conversationId: ConversationId,
-        senderUserId: UserId,
-        instant: Instant,
-        userReactions: UserReactions
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        reactionsDAO.updateReactions(
-            originalMessageId,
-            conversationId.toDao(),
-            senderUserId.toDao(),
-            instant,
-            userReactions
-        )
     }
 
     override fun observeMessageReactions(

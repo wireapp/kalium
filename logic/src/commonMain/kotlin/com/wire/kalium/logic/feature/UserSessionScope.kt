@@ -70,6 +70,8 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProviderImpl
+import com.wire.kalium.logic.data.client.MLSClientRegistrationStatusProvider
+import com.wire.kalium.logic.data.client.MLSClientRegistrationStatusProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.MLSTransportProvider
@@ -158,7 +160,10 @@ import com.wire.kalium.logic.data.message.CompositeMessageDataSource
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
+import com.wire.kalium.logic.data.message.IncomingLastReadPersistenceImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
+import com.wire.kalium.logic.data.message.MessageDeletionPersistence
+import com.wire.kalium.logic.data.message.MessageDeletionPersistenceImpl
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -174,7 +179,9 @@ import com.wire.kalium.logic.data.message.draft.MessageDraftDataSource
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinatorImpl
+import com.wire.kalium.logic.data.message.reaction.IncomingReactionPersistenceImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
+import com.wire.kalium.logic.data.message.receipt.IncomingReceiptPersistenceImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mls.ConversationProtocolGetterImpl
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
@@ -564,6 +571,7 @@ import com.wire.kalium.logic.sync.receiver.handler.TrackingIdentifierStorageImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
@@ -749,20 +757,23 @@ public class UserSessionScope internal constructor(
         get() = IsClientAsyncNotificationsCapableProviderImpl(clientRegistrationStorage, this)
 
     internal val clientIdProvider = CurrentClientIdProvider { clientId() }
+    private val mlsClientRegistrationStatusProvider: MLSClientRegistrationStatusProvider by lazy {
+        MLSClientRegistrationStatusProviderImpl(clientRegistrationStorage)
+    }
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
         MLSSelfConversationIdProviderImpl(
-            conversationRepository
+            userStorage.database.conversationDAO
         )
     }
     private val proteusSelfConversationIdProvider: ProteusSelfConversationIdProvider by lazy {
         ProteusSelfConversationIdProviderImpl(
-            conversationRepository
+            userStorage.database.conversationDAO
         )
     }
     private val selfConversationIdProvider: SelfConversationIdProvider by
     lazy {
         SelfConversationIdProviderImpl(
-            clientRepository,
+            mlsClientRegistrationStatusProvider,
             mlsSelfConversationIdProvider,
             proteusSelfConversationIdProvider
         )
@@ -1032,6 +1043,19 @@ public class UserSessionScope internal constructor(
             lazy { newGroupConversationSystemMessagesCreator }
         )
 
+    private val incomingReceiptPersistence = IncomingReceiptPersistenceImpl(
+        messageDAO = userStorage.database.messageDAO,
+        receiptDAO = userStorage.database.receiptDAO,
+    )
+
+    private val incomingReactionPersistence = IncomingReactionPersistenceImpl(
+        reactionDAO = userStorage.database.reactionDAO,
+    )
+
+    private val messageDeletionPersistence: MessageDeletionPersistence by lazy {
+        MessageDeletionPersistenceImpl(userStorage.database.messageDAO)
+    }
+
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
             messageApi = authenticatedNetworkContainer.messageApi,
@@ -1039,6 +1063,7 @@ public class UserSessionScope internal constructor(
             messageDAO = userStorage.database.messageDAO,
             selfUserId = userId,
             nomadMessagePagingCoordinator = nomadMessagePagingCoordinator,
+            messageDeletionPersistence = messageDeletionPersistence,
         )
 
     private val nomadMessagePagingCoordinator: NomadMessagePagingCoordinator?
@@ -1287,6 +1312,7 @@ public class UserSessionScope internal constructor(
             userStorage.database.newClientDAO,
             userId,
             authenticatedNetworkContainer.clientApi,
+            mlsClientRegistrationStatusProvider = mlsClientRegistrationStatusProvider,
         )
 
     private val messageSendingScheduler: MessageSendingScheduler
@@ -1848,13 +1874,19 @@ public class UserSessionScope internal constructor(
     private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>
         get() = lazy {
             UpdateConversationClientsForCurrentCallUseCaseImpl(callRepository, conversationClientsInCallUpdater)
-        }
+    }
 
-    private val reactionRepository = ReactionRepositoryImpl(userId, userStorage.database.reactionDAO)
-    private val receiptRepository = ReceiptRepositoryImpl(userStorage.database.receiptDAO)
+    private val reactionRepository = ReactionRepositoryImpl(
+        selfUserId = userId,
+        reactionsDAO = userStorage.database.reactionDAO,
+    )
+    private val receiptRepository = ReceiptRepositoryImpl(
+        receiptDAO = userStorage.database.receiptDAO,
+        incomingReceiptPersistence = incomingReceiptPersistence,
+    )
     private val persistReaction: PersistReactionUseCase
         get() = PersistReactionUseCaseImpl(
-            reactionRepository = reactionRepository,
+            incomingReactionPersistence = incomingReactionPersistence,
             selfUserId = userId,
             persistenceEventHookNotifier = currentPersistenceEventHookNotifier,
         )
@@ -1880,13 +1912,19 @@ public class UserSessionScope internal constructor(
     private val receiptMessageHandler
         get() = ReceiptMessageHandlerImpl(
             selfUserId = this.userId,
-            receiptRepository = receiptRepository,
-            messageRepository = messageRepository,
+            incomingReceiptPersistence = incomingReceiptPersistence,
             persistenceEventHookNotifier = currentPersistenceEventHookNotifier,
         )
-
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
         get() = IsMessageSentInSelfConversationUseCaseImpl(selfConversationIdProvider)
+    private val lastReadContentHandler: LastReadContentHandler by lazy {
+        LastReadContentHandlerImpl(
+            incomingLastReadPersistence = IncomingLastReadPersistenceImpl(userStorage.database.conversationDAO),
+            selfUserId = userId,
+            isMessageSentInSelfConversation = isMessageSentInSelfConversation,
+            notificationEventsManager = NotificationEventsManagerImpl,
+        )
+    }
 
     private val assetMessageHandler: AssetMessageHandler
         get() = AssetMessageHandlerImpl(
@@ -1938,12 +1976,7 @@ public class UserSessionScope internal constructor(
             persistReaction,
             MessageTextEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
             MessageMultipartEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
-            LastReadContentHandlerImpl(
-                conversationRepository,
-                userId,
-                isMessageSentInSelfConversation,
-                NotificationEventsManagerImpl
-            ),
+            lastReadContentHandler,
             ClearConversationContentHandlerImpl(
                 conversationRepository,
                 userId,
@@ -1952,7 +1985,12 @@ public class UserSessionScope internal constructor(
                 deleteConversationUseCase,
                 currentPersistenceEventHookNotifier,
             ),
-            DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation, currentPersistenceEventHookNotifier, userId),
+            DeleteForMeHandlerImpl(
+                messageDeletionPersistence,
+                isMessageSentInSelfConversation,
+                currentPersistenceEventHookNotifier,
+                userId,
+            ),
             DeleteMessageHandlerImpl(
                 messageRepository,
                 assetRepository,

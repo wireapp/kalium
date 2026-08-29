@@ -87,6 +87,7 @@ kotlin {
                 implementation(projects.domain.nomaddevice)
                 implementation(projects.domain.userstorage)
                 implementation(projects.domain.usernetwork)
+                implementation(projects.domain.messaging.shared)
                 implementation(projects.domain.messaging.sending)
                 implementation(projects.domain.messaging.hooks)
                 api(projects.domain.messaging.receiving)

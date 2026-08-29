@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.client
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
@@ -76,6 +77,19 @@ import kotlinx.datetime.Instant
 
 @ExperimentalCoroutinesApi
 class ClientRepositoryTest {
+
+    @Test
+    fun givenFocusedRegistrationStatusResult_whenReadingStatus_thenRepositoryDelegatesItUnchanged() = runTest {
+        val expected = Either.Left(StorageFailure.DataNotFound)
+        val (arrangement, clientRepository) = Arrangement()
+            .withMLSClientRegistrationStatus(expected)
+            .arrange()
+
+        assertEquals(expected, clientRepository.hasRegisteredMLSClient())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsClientRegistrationStatusProvider()
+        }
+    }
 
     @Test
     fun givenSuccess_whenRegisteringMLSClient_thenSetHasRegisteredMLSClient() = runTest {
@@ -515,14 +529,26 @@ class ClientRepositoryTest {
         val clientApi = mock<ClientApi>(mode = MockMode.autoUnit)
         val clientRemoteRepository = mock<ClientRemoteRepository>(mode = MockMode.autoUnit)
         val clientRegistrationStorage = mock<ClientRegistrationStorage>(mode = MockMode.autoUnit)
+        val mlsClientRegistrationStatusProvider = mock<MLSClientRegistrationStatusProvider>()
         val clientDAO = mock<ClientDAO>(mode = MockMode.autoUnit)
         val newClientDAO = mock<NewClientDAO>(mode = MockMode.autoUnit)
 
         val clientMapper = MapperProvider.clientMapper()
 
         var clientRepository: ClientRepository = ClientDataSource(
-            clientRemoteRepository, clientRegistrationStorage, clientDAO, newClientDAO, selfUserId, clientApi, clientMapper
+            clientRemoteRepository,
+            clientRegistrationStorage,
+            clientDAO,
+            newClientDAO,
+            selfUserId,
+            clientApi,
+            clientMapper,
+            mlsClientRegistrationStatusProvider,
         )
+
+        suspend fun withMLSClientRegistrationStatus(result: Either<StorageFailure, Boolean>) = apply {
+            everySuspend { mlsClientRegistrationStatusProvider() }.returns(result)
+        }
 
         suspend fun withObserveRegisteredClientId(values: Flow<String?>) = apply {
             everySuspend {

@@ -46,7 +46,11 @@ class ReceiptRepositoryTest {
     private val userDao = userDatabase.builder.userDAO
     private val messageDao = userDatabase.builder.messageDAO
 
-    private val receiptRepository = ReceiptRepositoryImpl(receiptDAO)
+    private val incomingReceiptPersistence = IncomingReceiptPersistenceImpl(messageDao, receiptDAO)
+    private val receiptRepository = ReceiptRepositoryImpl(
+        receiptDAO = receiptDAO,
+        incomingReceiptPersistence = incomingReceiptPersistence,
+    )
 
 
     @OptIn(ExperimentalCoroutinesApi::class)

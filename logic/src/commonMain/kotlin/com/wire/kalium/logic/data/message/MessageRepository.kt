@@ -39,7 +39,6 @@ import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
@@ -312,12 +311,6 @@ internal interface MessageRepository : EventMessageRepository {
 
     suspend fun getSenderNameByMessageId(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
     suspend fun getNextAudioMessageInConversation(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
-    suspend fun updateMessagesStatusIfNotRead(
-        messageStatus: MessageEntity.Status,
-        conversationId: ConversationId,
-        messageIds: List<String>
-    ): Either<CoreFailure, Unit>
-
     suspend fun updateCompositeMessage(
         conversationId: ConversationId,
         messageContent: MessageContent.CompositeEdited,
@@ -346,10 +339,10 @@ internal class MessageDataSource internal constructor(
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
-    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
     private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl(),
     private val eventMessageRepository: EventMessageRepository = EventMessageRepositoryImpl(messageDAO, selfUserId, messageMapper),
+    private val messageDeletionPersistence: MessageDeletionPersistence = MessageDeletionPersistenceImpl(messageDAO),
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(
@@ -422,9 +415,7 @@ internal class MessageDataSource internal constructor(
     }
 
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            messageDAO.deleteMessage(messageUuid, conversationId.toDao())
-        }
+        messageDeletionPersistence.deleteMessage(messageUuid, conversationId)
 
     override suspend fun markMessageAsDeleted(
         messageUuid: String,
@@ -888,14 +879,6 @@ internal class MessageDataSource internal constructor(
         messageId: String
     ): Either<CoreFailure, String> =
         wrapStorageRequest { messageDAO.getNextAudioMessageInConversation(messageId, conversationId.toDao()) }
-
-    override suspend fun updateMessagesStatusIfNotRead(
-        messageStatus: MessageEntity.Status,
-        conversationId: ConversationId,
-        messageIds: List<String>
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.updateMessagesStatusIfNotRead(messageStatus, conversationId.toDao(), messageIds)
-    }
 
     override suspend fun updateCompositeMessage(
         conversationId: ConversationId,

@@ -19,12 +19,15 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import app.cash.turbine.test
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.receipt.IncomingReceiptPersistence
+import com.wire.kalium.logic.data.message.receipt.IncomingReceiptPersistenceImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -43,17 +46,8 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import dev.mokkery.answering.returns
-import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.mock
-import dev.mokkery.verify.VerifyMode
-import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -69,12 +63,40 @@ class ReceiptMessageHandlerTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val userDatabase = TestUserDatabase(SELF_USER_ID_ENTITY, testDispatcher)
-    private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
+    private val daoIncomingReceiptPersistence = IncomingReceiptPersistenceImpl(
+        userDatabase.builder.messageDAO,
+        userDatabase.builder.receiptDAO,
+    )
+    private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(
+        receiptDAO = userDatabase.builder.receiptDAO,
+        incomingReceiptPersistence = daoIncomingReceiptPersistence,
+    )
+    private val statusUpdateCalls = mutableListOf<StatusUpdateCall>()
+    private val incomingReceiptPersistence = object : IncomingReceiptPersistence {
+        override suspend fun updateReferencedMessageStatusesIfNotRead(
+            messageStatus: MessageEntity.Status,
+            conversationId: ConversationId,
+            messageIds: List<String>,
+        ): Either<CoreFailure, Unit> {
+            statusUpdateCalls += StatusUpdateCall(messageStatus, conversationId, messageIds.toList())
+            return daoIncomingReceiptPersistence.updateReferencedMessageStatusesIfNotRead(
+                messageStatus = messageStatus,
+                conversationId = conversationId,
+                messageIds = messageIds,
+            )
+        }
 
-    private val messageRepository: MessageRepository = mock()
+        override suspend fun insertReceipts(
+            userId: UserId,
+            conversationId: ConversationId,
+            date: Instant,
+            type: ReceiptType,
+            messageIds: List<String>,
+        ) = receiptRepository.persistReceipts(userId, conversationId, date, type, messageIds)
+    }
 
     private val receiptMessageHandler = ReceiptMessageHandlerImpl(
-        SELF_USER_ID, receiptRepository, messageRepository, NoOpPersistenceEventHookNotifier
+        SELF_USER_ID, incomingReceiptPersistence, NoOpPersistenceEventHookNotifier
     )
 
     private suspend fun insertTestData() {
@@ -87,6 +109,7 @@ class ReceiptMessageHandlerTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @BeforeTest
     fun setup() {
+        statusUpdateCalls.clear()
         Dispatchers.setMain(testDispatcher)
     }
 
@@ -105,9 +128,6 @@ class ReceiptMessageHandlerTest {
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -127,9 +147,6 @@ class ReceiptMessageHandlerTest {
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -154,9 +171,6 @@ class ReceiptMessageHandlerTest {
         val senderUserId = SELF_USER_ID
         val type = ReceiptType.READ
 
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -177,9 +191,6 @@ class ReceiptMessageHandlerTest {
         // Delivery != Read
         val type = ReceiptType.DELIVERED
 
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -197,17 +208,14 @@ class ReceiptMessageHandlerTest {
         val type = ReceiptType.DELIVERED
         val messageUuids = listOf("1", "2", "3")
 
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
-
         // when
         handleNewReceipt(type, date, senderUserId, messageUuids)
 
         // then
-        verifySuspend(VerifyMode.exactly(1)) {
-            messageRepository.updateMessagesStatusIfNotRead(eq(MessageEntity.Status.DELIVERED), any(), eq(messageUuids))
-        }
+        assertEquals(
+            listOf(StatusUpdateCall(MessageEntity.Status.DELIVERED, CONVERSATION_ID, messageUuids)),
+            statusUpdateCalls,
+        )
     }
 
     @Test
@@ -215,14 +223,10 @@ class ReceiptMessageHandlerTest {
         // given
         val hookNotifier = RecordingPersistenceEventHookNotifier()
         val handler = ReceiptMessageHandlerImpl(
-            SELF_USER_ID, receiptRepository, messageRepository, hookNotifier
+            SELF_USER_ID, incomingReceiptPersistence, hookNotifier
         )
         insertTestData()
         val date = DateTimeUtil.currentInstant()
-
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
 
         val readContent = MessageContent.Receipt(type = ReceiptType.READ, messageIds = listOf(MESSAGE_ID))
         handler.handle(
@@ -253,13 +257,9 @@ class ReceiptMessageHandlerTest {
         // given
         val hookNotifier = RecordingPersistenceEventHookNotifier()
         val handler = ReceiptMessageHandlerImpl(
-            SELF_USER_ID, receiptRepository, messageRepository, hookNotifier
+            SELF_USER_ID, incomingReceiptPersistence, hookNotifier
         )
         val date = DateTimeUtil.currentInstant()
-
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
 
         val deliveredContent = MessageContent.Receipt(type = ReceiptType.DELIVERED, messageIds = listOf(MESSAGE_ID))
         handler.handle(
@@ -319,6 +319,12 @@ class ReceiptMessageHandlerTest {
             selfUserId: UserId
         ) = Unit
     }
+
+    private data class StatusUpdateCall(
+        val status: MessageEntity.Status,
+        val conversationId: ConversationId,
+        val messageIds: List<String>,
+    )
 
     private companion object {
         val CONVERSATION_ID = TestConversation.CONVERSATION.id

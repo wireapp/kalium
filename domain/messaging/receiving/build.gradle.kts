@@ -47,6 +47,7 @@ kotlin {
                 api(projects.data.persistence)
                 api(projects.domain.cells)
                 api(projects.domain.eventProcessing)
+                api(projects.domain.messaging.shared)
                 api(projects.domain.messaging.hooks)
                 api(libs.coroutines.core)
                 api(libs.ktxDateTime)

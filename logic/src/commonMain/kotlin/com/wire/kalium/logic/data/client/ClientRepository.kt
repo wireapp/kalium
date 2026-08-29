@@ -128,7 +128,9 @@ internal class ClientDataSource(
     private val newClientDAO: NewClientDAO,
     private val selfUserID: UserId,
     private val clientApi: ClientApi,
-    private val clientMapper: ClientMapper = MapperProvider.clientMapper()
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
+    private val mlsClientRegistrationStatusProvider: MLSClientRegistrationStatusProvider =
+        MLSClientRegistrationStatusProviderImpl(clientRegistrationStorage),
 ) : ClientRepository {
     override suspend fun setHasRegisteredMLSClient(): Either<CoreFailure, Unit> =
         wrapStorageRequest {
@@ -255,9 +257,7 @@ internal class ClientDataSource(
             }
 
     override suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean> =
-        wrapStorageRequest {
-            clientRegistrationStorage.hasRegisteredMLSClient()
-        }
+        mlsClientRegistrationStatusProvider()
 
     override suspend fun storeUserClientIdList(
         userId: UserId,
