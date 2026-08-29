@@ -29,6 +29,7 @@ public interface ConversationEventReceiver : EventReceiver<Event.Conversation> {
 }
 
 @InternalKaliumApi
+@Deprecated("These events are not received/sent to clients anymore", ReplaceWith("SyncFeatureConfigsUseCase"))
 public interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
 @InternalKaliumApi

@@ -134,6 +134,38 @@ once in their original evaluation order. MLS-null handling, fetch/process/CRL/es
 order, first-flow observation, orphan recovery, outcome logging, returned failures, exceptions, and
 cancellation remain unchanged.
 
+New-conversation and deleted-conversation event handling are likewise owned by
+`:domain:messaging:receiving` under their existing packages. They share a focused user boundary;
+new-conversation consumes only the five required system-message operations plus captured self-team,
+persistence, one-to-one resolution, and existing type-mapper actions, while deletion consumes a
+focused lookup plus the direct notification manager/hook and one captured deletion action. The
+broad logic repositories and message creator extend the focused contracts without adapters or
+duplicate state. New-conversation crosses persistence through a focused two-argument event-semantic
+callback; main-app composition keeps `ConversationSyncReason` logic-owned and invokes the captured
+persistence use case with `ConversationSyncReason.Event`. Composition captures the same dependency
+objects once and in original argument order. Persistence/resolution/update/fetch/message order,
+independently ignored message failures, lookup/delete/user-flow/notification behavior, the normally
+unconditional deletion hook after returned failures, logging, exceptions, and cancellation remain
+unchanged.
+
+Member-join and member-leave event handling are likewise owned by
+`:domain:messaging:receiving` under their existing packages and ordinary interface contracts. They
+reuse the receiving-owned lifecycle and message persistence boundaries, focused system-message,
+protocol, and MLS contracts, plus minimal member-event conversation/user contracts implemented
+directly by the broad logic repositories. Main-app-only conversation fetch, legal-hold refresh,
+call-client update, and self-team lookup cross captured callbacks. Composition retains the original
+constructor evaluation order, fetch default semantics, and delayed forcing of the existing
+call-update `Lazy`; join/leave ordering, result ownership, ignored results, transaction-context
+behavior, messages, logging, exceptions, and cancellation are unchanged.
+
+`ConversationEventReceiverImpl` and its focused tests are also owned by
+`:domain:messaging:receiving`, while the `ConversationEventReceiver` contract remains owned by
+`:domain:event-processing`. The implementation retains its package, FQCN, normal class shape,
+constructor dependencies, branch order, result ownership, forwarding identity, flush behavior,
+exception behavior, and cancellation behavior. Main-app composition constructs the same FQCN with
+the same dependencies. `UserEventReceiverImpl` remains logic-owned and outside the conversation
+receiver ownership boundary.
+
 This boundary is not an NSE runtime implementation. The broad legal-hold, stale-epoch, reset/rejoin,
 confirmation-delivery, self-deletion, and pending-side-effect implementations remain app-owned and
 need explicit NSE ownership/adapters or a durable action/outbox design. Subconversation group
@@ -141,10 +173,8 @@ mapping remains process-local and requires durable `(conversationId, subconversa
 state before a second process can use it. Pending-proposal work still needs explicit ownership, a
 durable outbox, and a main-app executor; the extension must not construct the current scheduler
 implementation or a no-op substitute. Cross-process CoreCrypto locking, NSE facade wiring, and the
-broad protobuf encoder/mapper plus `AssetMapper` graph remain separate work. Conversation lifecycle
-handlers for new conversation, deletion, member join, and member leave remain in `:logic`;
-`ConversationEventReceiverImpl` is also still logic-owned and cannot yet move below that boundary.
-`UserEventReceiverImpl` is outside this conversation-receiver extraction goal.
+broad protobuf encoder/mapper plus `AssetMapper` graph remain separate work. Durable/asynchronous
+deletion, main-app side-effect execution, shared-storage bootstrap, and rollout remain future work.
 
 ### Rejected alternatives
 

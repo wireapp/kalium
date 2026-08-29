@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrNull
@@ -26,39 +27,47 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.conversation.ConversationSyncReason
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
-import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.cellEnabled
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface NewConversationEventHandler {
-    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation)
+@InternalKaliumApi
+public interface NewConversationEventHandler {
+    public suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation)
 }
 
-internal class NewConversationEventHandlerImpl(
+@InternalKaliumApi
+@Suppress("LongParameterList")
+public class NewConversationEventHandlerImpl public constructor(
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
-    private val userRepository: UserRepository,
-    private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
-    private val oneOnOneResolver: OneOnOneResolver,
-    private val persistConversation: PersistConversationUseCase,
+    private val userRepository: ConversationEventUserRepository,
+    private val selfTeamId: suspend () -> Either<CoreFailure, TeamId?>,
+    private val newGroupConversationSystemMessagesCreator: NewConversationSystemMessagesCreator,
+    private val resolveOneOnOneWithUserId: suspend (
+        CryptoTransactionContext,
+        UserId,
+        Boolean,
+    ) -> Either<CoreFailure, ConversationId>,
+    private val persistConversationFromEvent: suspend (
+        CryptoTransactionContext,
+        ConversationResponse,
+    ) -> Either<CoreFailure, Boolean>,
+    private val mapConversationType: (ConversationResponse, TeamId?) -> ConversationEntity.Type,
 ) : NewConversationEventHandler {
 
     override suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        val selfUserTeamId = selfTeamIdProvider().getOrNull()
-        persistConversation(transactionContext, event.conversation, reason = ConversationSyncReason.Event)
+        val selfUserTeamId = selfTeamId().getOrNull()
+        persistConversationFromEvent(transactionContext, event.conversation)
             .flatMap { isNewUnhandledConversation ->
                 resolveConversationIfOneOnOne(transactionContext, selfUserTeamId, event)
                     .flatMap {
@@ -88,13 +97,13 @@ internal class NewConversationEventHandlerImpl(
         selfUserTeamId: TeamId?,
         event: Event.Conversation.NewConversation
     ) =
-        if (event.conversation.toConversationType(selfUserTeamId) == ConversationEntity.Type.ONE_ON_ONE) {
+        if (mapConversationType(event.conversation, selfUserTeamId) == ConversationEntity.Type.ONE_ON_ONE) {
             val otherUserId =
                 event.conversation.members.otherMembers.first().id.toModel()
-            oneOnOneResolver.resolveOneOnOneConversationWithUserId(
-                userId = otherUserId,
-                invalidateCurrentKnownProtocols = true,
-                transactionContext = transactionContext
+            resolveOneOnOneWithUserId(
+                transactionContext,
+                otherUserId,
+                true,
             ).map { Unit }
         } else Either.Right(Unit)
 
@@ -134,7 +143,7 @@ internal class NewConversationEventHandlerImpl(
                 conversationId = event.conversationId,
                 hasAppsAccessEnabled = event.conversation.hasAppsAccessEnabled(),
                 creatorId = event.senderUserId,
-                type = event.conversation.toConversationType(selfUserTeamId)
+                type = mapConversationType(event.conversation, selfUserTeamId)
             )
             newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
                 conversationId = event.conversationId,

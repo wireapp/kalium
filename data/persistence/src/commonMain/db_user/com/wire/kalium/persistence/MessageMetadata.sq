@@ -1,3 +1,9 @@
 
 originalSenderId:
 SELECT sender_user_id FROM Message WHERE conversation_id = :conversationId AND id = :messageId;
+
+originalSenderIdForCompositeEdit:
+SELECT Message.sender_user_id
+FROM Message
+JOIN UserDetails ON Message.sender_user_id = UserDetails.qualified_id
+WHERE Message.conversation_id = :conversationId AND Message.id = :messageId;

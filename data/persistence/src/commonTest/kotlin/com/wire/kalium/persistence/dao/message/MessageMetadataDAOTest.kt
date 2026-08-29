@@ -17,10 +17,13 @@
  */
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.sqldelight.async.coroutines.await
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -38,6 +41,7 @@ class MessageMetadataDAOTest : BaseDatabaseTest() {
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
     private lateinit var messageMetaDataDAO: MessageMetadataDAO
+    private lateinit var userDatabase: UserDatabaseBuilder
 
     private val conversationEntity1 = newConversationEntity("Test1")
     private val userEntity1 = newUserEntity("userEntity1")
@@ -46,11 +50,11 @@ class MessageMetadataDAOTest : BaseDatabaseTest() {
     @BeforeTest
     fun setUp() {
         deleteDatabase(selfUserId)
-        val db = createDatabase(selfUserId, encryptedDBSecret, true)
-        messageDAO = db.messageDAO
-        conversationDAO = db.conversationDAO
-        userDAO = db.userDAO
-        messageMetaDataDAO = db.messageMetaDataDAO
+        userDatabase = createDatabase(selfUserId, encryptedDBSecret, true)
+        messageDAO = userDatabase.messageDAO
+        conversationDAO = userDatabase.conversationDAO
+        userDAO = userDatabase.userDAO
+        messageMetaDataDAO = userDatabase.messageMetaDataDAO
     }
 
 
@@ -78,13 +82,56 @@ class MessageMetadataDAOTest : BaseDatabaseTest() {
         messageMetaDataDAO.originalSenderId(originalMessage.conversationId, originalMessage.id).also {
             assertEquals(originalUser.id, it)
         }
+        messageMetaDataDAO.originalSenderIdForCompositeEdit(originalMessage.conversationId, originalMessage.id).also {
+            assertEquals(originalUser.id, it)
+        }
     }
 
     @Test
-    fun givenNoMessagee_whenGettingOriginalSender_thenReturnNull() = runTest {
+    fun givenMessageWithoutUserDetails_whenGettingSenderForCompositeEdit_thenReturnNull() = runTest {
+        val messageId = "orphaned-sender-message"
+        val originalUser = userEntity1
+        val originalMessage = newRegularMessageEntity(
+            id = messageId,
+            conversationId = conversationEntity1.id,
+            senderUserId = originalUser.id,
+            senderClientId = "initialClientId",
+            content = MessageEntityContent.Text("Howdy"),
+            date = Instant.DISTANT_FUTURE - 5.days,
+            visibility = MessageEntity.Visibility.VISIBLE,
+        )
+
+        conversationDAO.insertConversation(conversationEntity1)
+        userDAO.upsertUser(originalUser)
+        messageDAO.insertOrIgnoreMessage(originalMessage)
+
+        userDatabase.database.usersQueries.transaction {
+            userDatabase.sqlDriver.execute(null, "PRAGMA defer_foreign_keys = ON", 0).await()
+            userDatabase.database.usersQueries.deleteUser(originalUser.id)
+
+            assertEquals(
+                originalUser.id,
+                userDatabase.database.messageMetadataQueries
+                    .originalSenderId(originalMessage.conversationId, originalMessage.id)
+                    .awaitAsOneOrNull(),
+            )
+            assertNull(
+                userDatabase.database.messageMetadataQueries
+                    .originalSenderIdForCompositeEdit(originalMessage.conversationId, originalMessage.id)
+                    .awaitAsOneOrNull(),
+            )
+            rollback()
+        }
+    }
+
+    @Test
+    fun givenNoMessage_whenGettingOriginalSender_thenReturnNull() = runTest {
         val messageId = "testMessageId"
 
         messageMetaDataDAO.originalSenderId(conversationEntity1.id, messageId).also {
+            assertNull(it)
+        }
+        messageMetaDataDAO.originalSenderIdForCompositeEdit(conversationEntity1.id, messageId).also {
             assertNull(it)
         }
     }

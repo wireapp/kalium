@@ -86,6 +86,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEve
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMembersProvider
 import com.wire.kalium.logic.sync.receiver.conversation.DaoConversationMembersProvider
+import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventRepository
+import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventRepository
 
 internal data class ConversationMemberCounts(
     val conversationSize: Int,
@@ -95,14 +97,18 @@ internal data class ConversationMemberCounts(
 )
 
 @Suppress("TooManyFunctions")
-internal interface ConversationRepository : FederationConversationRepository, ChannelAddPermissionRepository, MLSWelcomeEventRepository {
+internal interface ConversationRepository :
+    FederationConversationRepository,
+    ChannelAddPermissionRepository,
+    MLSWelcomeEventRepository,
+    DeletedConversationEventRepository,
+    MemberJoinEventRepository {
     val extensions: ConversationRepositoryExtensions
 
     // region Get/Observe by id
 
     suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
-    suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationLastReadDate(conversationId: ConversationId): Either<StorageFailure, Instant>
     suspend fun getNonDeletedConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
 
@@ -367,7 +373,7 @@ internal interface ConversationRepository : FederationConversationRepository, Ch
         otherUserId: UserId
     ): Flow<Either<StorageFailure, ConversationDetails.OneOne>>
 
-    suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean>
+    override suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean>
     suspend fun persistIncompleteConversations(conversationsFailed: List<NetworkQualifiedId>): Either<CoreFailure, Unit>
     suspend fun getConversationDetails(conversationID: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationIdsWithoutMetadata(): Either<CoreFailure, List<QualifiedID>>

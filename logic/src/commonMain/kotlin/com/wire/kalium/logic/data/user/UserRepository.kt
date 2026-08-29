@@ -66,6 +66,9 @@ import com.wire.kalium.logic.sync.receiver.TeamEventUserRepository
 import com.wire.kalium.logic.sync.receiver.TeamEventUserRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.FederationUserRepository
 import com.wire.kalium.logic.sync.receiver.FederationUserRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventUserRepository
+import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventUserRepository
+import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventUserRepository
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
@@ -95,7 +98,13 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
-internal interface UserRepository : SelfUserObservationProvider, TeamEventUserRepository, FederationUserRepository {
+internal interface UserRepository :
+    SelfUserObservationProvider,
+    TeamEventUserRepository,
+    FederationUserRepository,
+    ConversationEventUserRepository,
+    MemberJoinEventUserRepository,
+    MemberLeaveEventUserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit>
 
@@ -104,7 +113,6 @@ internal interface UserRepository : SelfUserObservationProvider, TeamEventUserRe
      */
     suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Boolean>
-    suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Either<StorageFailure, SelfUser>
@@ -112,7 +120,6 @@ internal interface UserRepository : SelfUserObservationProvider, TeamEventUserRe
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): Either<StorageFailure, OtherUserMinimized>
     suspend fun getUsersWithOneOnOneConversation(): List<OtherUser>
-    suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>>
 
@@ -126,7 +133,7 @@ internal interface UserRepository : SelfUserObservationProvider, TeamEventUserRe
         userId: UserId
     ): Either<CoreFailure, List<ConversationId>>
 
-    suspend fun markAsDeleted(userId: List<UserId>): Either<StorageFailure, Unit>
+    override suspend fun markAsDeleted(userId: List<UserId>): Either<StorageFailure, Unit>
 
     /**
      * Marks federated user as defederated in order to hold conversation history
@@ -157,9 +164,15 @@ internal interface UserRepository : SelfUserObservationProvider, TeamEventUserRe
 
     suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
 
-    suspend fun updateActiveOneOnOneConversationIfNotSet(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
+    override suspend fun updateActiveOneOnOneConversationIfNotSet(
+        userId: UserId,
+        conversationId: ConversationId,
+    ): Either<CoreFailure, Unit>
 
-    suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId): Either<StorageFailure, Boolean>
+    override suspend fun isAtLeastOneUserATeamMember(
+        userId: List<UserId>,
+        teamId: TeamId,
+    ): Either<StorageFailure, Boolean>
 
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>): Either<StorageFailure, Unit>
 

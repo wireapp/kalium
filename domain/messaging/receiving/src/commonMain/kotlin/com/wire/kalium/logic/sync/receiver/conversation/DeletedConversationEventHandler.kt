@@ -18,34 +18,41 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.firstOrNull
 
-internal interface DeletedConversationEventHandler {
-    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.DeletedConversation)
+@InternalKaliumApi
+public interface DeletedConversationEventHandler {
+    public suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.DeletedConversation)
 }
 
-internal class DeletedConversationEventHandlerImpl(
-    private val userRepository: UserRepository,
-    private val conversationRepository: ConversationRepository,
+@InternalKaliumApi
+@Suppress("LongParameterList")
+public class DeletedConversationEventHandlerImpl public constructor(
+    private val userRepository: ConversationEventUserRepository,
+    private val conversationRepository: DeletedConversationEventRepository,
     private val notificationEventsManager: NotificationEventsManager,
-    private val deleteConversation: DeleteConversationUseCase,
+    private val deleteConversation: suspend (
+        CryptoTransactionContext,
+        ConversationId,
+    ) -> Either<CoreFailure, Unit>,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val selfUserId: UserId,
 ) : DeletedConversationEventHandler {

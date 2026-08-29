@@ -22,10 +22,10 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.message.CompositeEditMessageMetadataRepository
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.util.InternalKaliumApi
 
 @InternalKaliumApi
@@ -38,7 +38,7 @@ public interface MessageCompositeEditHandler {
 
 @InternalKaliumApi
 public class MessageCompositeEditHandlerImpl public constructor(
-    private val messageMetadataRepository: MessageMetadataRepository,
+    private val messageMetadataRepository: CompositeEditMessageMetadataRepository,
     private val compositeMessageRepository: CompositeMessageRepository,
 ) : MessageCompositeEditHandler {
 
@@ -46,7 +46,7 @@ public class MessageCompositeEditHandlerImpl public constructor(
         message: Message.Signaling,
         messageContent: MessageContent.CompositeEdited,
     ): Either<CoreFailure, Unit> =
-        messageMetadataRepository.originalSenderId(message.conversationId, messageContent.editMessageId)
+        messageMetadataRepository.originalSenderIdForCompositeEdit(message.conversationId, messageContent.editMessageId)
             .flatMap { originalSenderId ->
                 if (originalSenderId != message.senderUserId) {
                     val obfuscatedId = message.senderUserId.toLogString()

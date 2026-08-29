@@ -92,6 +92,7 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ConversationMetaDataDataSource
 import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.conversation.EpochChangesObserverImpl
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
@@ -117,6 +118,7 @@ import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
+import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.conversation.ObservableMLSConversationRepository
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCaseImpl
@@ -156,6 +158,7 @@ import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.data.message.CompositeEditMessageMetadataRepository
 import com.wire.kalium.logic.data.message.CompositeMessageDataSource
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
@@ -1135,6 +1138,9 @@ public class UserSessionScope internal constructor(
     private val messageMetadataRepository: MessageMetadataRepository
         get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
 
+    private val compositeEditMessageMetadataRepository: CompositeEditMessageMetadataRepository
+        get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
+
     private val compositeMessageRepository: CompositeMessageRepository by lazy {
         CompositeMessageDataSource(
             compositeMessageDAO = userStorage.database.compositeMessageDAO,
@@ -2089,7 +2095,7 @@ public class UserSessionScope internal constructor(
                 dataTransferEventHandler,
                 inCallEmojiMessageHandler,
                 buttonActionHandler,
-                MessageCompositeEditHandlerImpl(messageMetadataRepository, compositeMessageRepository),
+                MessageCompositeEditHandlerImpl(compositeEditMessageMetadataRepository, compositeMessageRepository),
                 callingMessageHandler,
                 linkPreviewsResolver,
                 userId
@@ -2147,48 +2153,114 @@ public class UserSessionScope internal constructor(
         )
 
     private val newConversationHandler: NewConversationEventHandler
-        get() = NewConversationEventHandlerImpl(
-            conversationLifecycleEventRepository,
-            userRepository,
-            selfTeamId,
-            newGroupConversationSystemMessagesCreator,
-            oneOnOneResolver,
-            persistConversationUseCase
-        )
+        get() {
+            val capturedConversationLifecycleEventRepository = conversationLifecycleEventRepository
+            val capturedUserRepository = userRepository
+            val capturedSelfTeamId = selfTeamId
+            val capturedNewGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator
+            val capturedOneOnOneResolver = oneOnOneResolver
+            val capturedPersistConversationUseCase = persistConversationUseCase
+            return NewConversationEventHandlerImpl(
+                conversationLifecycleEventRepository = capturedConversationLifecycleEventRepository,
+                userRepository = capturedUserRepository,
+                selfTeamId = { capturedSelfTeamId() },
+                newGroupConversationSystemMessagesCreator = capturedNewGroupConversationSystemMessagesCreator,
+                resolveOneOnOneWithUserId = { transactionContext, userId, invalidateCurrentKnownProtocols ->
+                    capturedOneOnOneResolver.resolveOneOnOneConversationWithUserId(
+                        transactionContext = transactionContext,
+                        userId = userId,
+                        invalidateCurrentKnownProtocols = invalidateCurrentKnownProtocols,
+                    )
+                },
+                persistConversationFromEvent = { transactionContext, conversation ->
+                    capturedPersistConversationUseCase(
+                        transactionContext,
+                        conversation,
+                        reason = ConversationSyncReason.Event,
+                    )
+                },
+                mapConversationType = { conversation, selfTeamId ->
+                    conversation.toConversationType(selfTeamId)
+                },
+            )
+        }
     private val deletedConversationHandler: DeletedConversationEventHandler
-        get() = DeletedConversationEventHandlerImpl(
-            userRepository,
-            conversationRepository,
-            NotificationEventsManagerImpl,
-            deleteConversationUseCase,
-            currentPersistenceEventHookNotifier,
-            userId,
-        )
+        get() {
+            val capturedUserRepository = userRepository
+            val capturedConversationRepository = conversationRepository
+            val capturedNotificationEventsManager = NotificationEventsManagerImpl
+            val capturedDeleteConversationUseCase = deleteConversationUseCase
+            val capturedPersistenceEventHookNotifier = currentPersistenceEventHookNotifier
+            val capturedUserId = userId
+            return DeletedConversationEventHandlerImpl(
+                userRepository = capturedUserRepository,
+                conversationRepository = capturedConversationRepository,
+                notificationEventsManager = capturedNotificationEventsManager,
+                deleteConversation = { transactionContext, conversationId ->
+                    capturedDeleteConversationUseCase(transactionContext, conversationId)
+                },
+                persistenceEventHookNotifier = capturedPersistenceEventHookNotifier,
+                selfUserId = capturedUserId,
+            )
+        }
     private val memberJoinHandler: MemberJoinEventHandler
-        get() = MemberJoinEventHandlerImpl(
-            conversationRepository = conversationRepository,
-            conversationLifecycleEventRepository = conversationLifecycleEventRepository,
-            userRepository = userRepository,
-            persistMessage = persistMessage,
-            legalHoldHandler = legalHoldHandler,
-            newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
-            selfUserId = userId,
-            fetchConversation = fetchConversationUseCase,
-            kaliumConfigs = kaliumConfigs
-        )
+        get() {
+            val capturedConversationRepository = conversationRepository
+            val capturedConversationLifecycleEventRepository = conversationLifecycleEventRepository
+            val capturedUserRepository = userRepository
+            val capturedPersistMessage = persistMessage
+            val capturedLegalHoldHandler = legalHoldHandler
+            val capturedNewGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator
+            val capturedSelfUserId = userId
+            val capturedFetchConversationUseCase = fetchConversationUseCase
+            val capturedDrivePermissionsEnabled = kaliumConfigs.drivePermissionsEnabled
+            return MemberJoinEventHandlerImpl(
+                conversationRepository = capturedConversationRepository,
+                conversationLifecycleEventRepository = capturedConversationLifecycleEventRepository,
+                userRepository = capturedUserRepository,
+                persistMessage = capturedPersistMessage,
+                handleConversationMembersChanged = { conversationId ->
+                    capturedLegalHoldHandler.handleConversationMembersChanged(conversationId)
+                },
+                newGroupConversationSystemMessagesCreator = capturedNewGroupConversationSystemMessagesCreator,
+                selfUserId = capturedSelfUserId,
+                fetchConversation = { transactionContext, conversationId ->
+                    capturedFetchConversationUseCase(transactionContext, conversationId)
+                },
+                drivePermissionsEnabled = capturedDrivePermissionsEnabled,
+            )
+        }
     private val memberLeaveHandler: MemberLeaveEventHandler
-        get() = MemberLeaveEventHandlerImpl(
-            conversationLifecycleEventRepository = conversationLifecycleEventRepository,
-            userRepository = userRepository,
-            conversationRepository = conversationRepository,
-            persistMessage = persistMessage,
-            updateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall,
-            legalHoldHandler = legalHoldHandler,
-            selfTeamIdProvider = selfTeamId,
-            mlsConversationRepository = mlsConversationRepository,
-            meetingRepository = meetingRepository,
-            selfUserId = userId
-        )
+        get() {
+            val capturedConversationLifecycleEventRepository = conversationLifecycleEventRepository
+            val capturedUserRepository = userRepository
+            val capturedConversationRepository = conversationRepository
+            val capturedPersistMessage = persistMessage
+            val capturedUpdateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall
+            val capturedLegalHoldHandler = legalHoldHandler
+            val capturedSelfTeamIdProvider = selfTeamId
+            val capturedMlsConversationRepository = mlsConversationRepository
+            val capturedMeetingRepository = meetingRepository
+            val capturedSelfUserId = userId
+            return MemberLeaveEventHandlerImpl(
+                conversationLifecycleEventRepository = capturedConversationLifecycleEventRepository,
+                userRepository = capturedUserRepository,
+                conversationRepository = capturedConversationRepository,
+                persistMessage = capturedPersistMessage,
+                updateConversationClientsForCurrentCall = { conversationId ->
+                    capturedUpdateConversationClientsForCurrentCall.value(conversationId)
+                },
+                handleConversationMembersChanged = { conversationId ->
+                    capturedLegalHoldHandler.handleConversationMembersChanged(conversationId)
+                },
+                selfTeamId = { capturedSelfTeamIdProvider() },
+                mlsConversationRepository = capturedMlsConversationRepository,
+                deleteMeetingsByConversationId = { conversationId ->
+                    capturedMeetingRepository.deleteMeetingsByConversationId(conversationId)
+                },
+                selfUserId = capturedSelfUserId,
+            )
+        }
     private val memberChangeHandler: MemberChangeEventHandler
         get() {
             val capturedFetchConversationIfUnknownUseCase = fetchConversationIfUnknownUseCase

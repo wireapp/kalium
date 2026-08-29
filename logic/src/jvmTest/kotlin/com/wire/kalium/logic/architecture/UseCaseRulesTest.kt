@@ -96,9 +96,13 @@ class UseCaseRulesTest {
             .classes()
             .withNameEndingWith("UseCaseImpl")
             .assertTrue { useCase ->
+                val isCrossModuleInternalApi =
+                    !useCase.containingFile.path.contains("/logic/src/") &&
+                            useCase.hasAnnotation { it.name == "InternalKaliumApi" }
+
                 useCase.hasAllConstructors { it.hasInternalModifier } ||
                         useCase.hasInternalModifier ||
-                        useCase.hasAnnotation { it.name == "InternalKaliumApi" }
+                        isCrossModuleInternalApi
             }
     }
 

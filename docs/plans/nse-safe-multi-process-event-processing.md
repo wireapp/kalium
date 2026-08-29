@@ -385,8 +385,8 @@ The member-change and MLS-reset handlers are now below `:logic` as one behavior-
 
 This slice adds no NSE facade, runtime composition, lock, retry, queue, outbox, or CoreCrypto
 transaction change. At completion of this slice, `MLSWelcomeEventHandler` and the larger
-new-conversation, delete, member-join, and member-leave handlers remained in `:logic`; the welcome
-handler has since moved in the focused slice below.
+new-conversation, delete, member-join, and member-leave handlers remained in `:logic`; they have
+since moved in the focused slices below.
 
 #### Milestone 2 receiver extraction status: protocol-update conversation slice
 
@@ -414,8 +414,8 @@ Protocol-update event handling is now below `:logic` as a behavior-preserving ow
 This slice adds no NSE runtime wiring, CoreCrypto lock, retry, queue, durable action/outbox, rollout
 switch, or receiver move. At completion of this slice, `MLSWelcomeEventHandler`,
 `NewConversationEventHandler`, `DeletedConversationEventHandler`, `MemberJoinEventHandler`, and
-`MemberLeaveEventHandler` remained in `:logic`; the welcome handler has since moved in the focused
-slice below. `ConversationEventReceiverImpl` remains logic-owned.
+`MemberLeaveEventHandler` remained in `:logic`; they have since moved in the focused slices below.
+`ConversationEventReceiverImpl` remains logic-owned.
 
 #### Milestone 2 receiver extraction status: MLS-welcome conversation slice
 
@@ -447,6 +447,110 @@ switch, receiver move, or other lifecycle handler. `NewConversationEventHandler`
 `DeletedConversationEventHandler`, `MemberJoinEventHandler`, and `MemberLeaveEventHandler` are the
 remaining concrete conversation lifecycle handlers in `:logic`; `ConversationEventReceiverImpl`
 also remains logic-owned. `UserEventReceiverImpl` is explicitly outside this extraction goal.
+
+#### Milestone 2 receiver extraction status: grouped new/delete conversation slice
+
+New-conversation and deleted-conversation event handling are now below `:logic` as one
+behavior-preserving ownership refactor:
+
+- `NewConversationEventHandler`, `DeletedConversationEventHandler`, their implementations, and all
+  13 pre-existing named tests retain their packages and FQCNs and are owned by
+  `:domain:messaging:receiving`. Only the public visibility and `@InternalKaliumApi` annotations
+  required for cross-module composition were added.
+- Both handlers share the focused receiving-owned `ConversationEventUserRepository`, exposing only
+  unknown-user fetch and single-user observation. New-conversation uses the five-operation
+  `NewConversationSystemMessagesCreator`; deletion uses `DeletedConversationEventRepository` for
+  one conversation lookup. The broad logic-owned repositories and system-message creator extend
+  these contracts and reuse their existing implementations without adapters or duplicate state.
+- `ConversationSyncReason` and its public artifact ownership remain unchanged in `:logic`.
+  New-conversation crosses a focused two-argument event-persistence callback; main-app composition
+  invokes the captured persistence use case with `reason = ConversationSyncReason.Event`, preserving
+  exact event semantics without exposing the reason type below `:logic`.
+- New-conversation persistence, one-to-one resolution, and conversation-type mapping cross as the
+  three focused callbacks. `UserSessionScope` captures lifecycle repository, user repository,
+  self-team provider, system-message creator, resolver, and persistence use case exactly once in
+  their original written evaluation order. The mapper remains composed from the existing internal
+  `ConversationResponse.toConversationType` extension.
+- Deleted-conversation deletion crosses as one focused callback. Composition captures user
+  repository, lookup repository, notification manager, deletion use case, hook notifier, and self
+  user ID exactly once in their original written evaluation order; constructing the deletion use
+  case remains after the separate lookup-repository capture.
+- Self-team lookup, persistence, mapping/resolution, modified-date update, unknown-user fetch, and
+  the five independently ignored system-message results retain their exact order and failure,
+  exception, and cancellation behavior. Conversation lookup, deletion, `Flow.firstOrNull`, meeting
+  notification suppression, success/skip/failure logging, and the normally unconditional final
+  deletion hook likewise remain unchanged.
+- The moved suites use local fixtures and focused recorders and add exact identity, argument, order,
+  mapper-count, millisecond-time-bound, returned-failure, first/empty/null flow, ignored-message,
+  ordinary-exception, and cancellation characterization.
+
+This slice adds no NSE runtime wiring, CoreCrypto lock, retry, queue, durable action/outbox, async
+redesign, rollout switch, or receiver move. `MemberJoinEventHandler` and
+`MemberLeaveEventHandler` are the only remaining concrete conversation handlers in `:logic`;
+`ConversationEventReceiverImpl` remains logic-owned. Durable/asynchronous deletion and main-app
+side-effect execution remain future work. `UserEventReceiverImpl` is explicitly outside this goal.
+
+#### Milestone 2 receiver extraction status: grouped member-join/member-leave conversation slice
+
+Member-join and member-leave event handling are now below `:logic` as one behavior-preserving
+ownership refactor:
+
+- `MemberJoinEventHandler`, `MemberLeaveEventHandler`, their implementations, and all 25
+  pre-existing named tests retain their packages and FQCNs and are owned by
+  `:domain:messaging:receiving`. The handler contracts remain ordinary interfaces; only required
+  cross-module public visibility and `@InternalKaliumApi` annotations were added.
+- Both handlers reuse the receiving-owned lifecycle and message persistence contracts, the existing
+  focused system-message contract, `ConversationProtocolGetter`, and `MLSResetEventRepository`.
+  Focused join/leave conversation-user contracts add only the remaining lookup, active one-to-one,
+  mark-deleted, and team-membership operations. The broad logic repositories extend them directly;
+  no adapter, duplicate state, or broad repository implementation moved.
+- Fetch-conversation, legal-hold refresh, lazy call-client update, and self-team lookup cross focused
+  callbacks. `ConversationSyncReason` remains logic-owned, and the captured fetch use case keeps its
+  two-argument invocation and default `ConversationSyncReason.Other`. The existing public call-update
+  use-case type also remains logic-owned.
+- `UserSessionScope` captures each original constructor argument exactly once in original written
+  order. The existing call-update `Lazy` is captured once and forced only after successful deletion.
+  MLS cleanup uses the same event transaction and nullable MLS context in unified and legacy crypto
+  modes.
+- Join keeps fetch-first behavior, member-persistence result ownership, exact type branches,
+  one-to-one activation, warning/member-added message construction, UUID fallback, ignored results,
+  logging, exceptions, and cancellation. Leave keeps mark/delete/call/MLS/fetch/count/message/legal
+  order, ignored results, zero-count behavior, self-only MLS cleanup, team classification, legal-hold
+  result ownership, exact messages, logging, exceptions, and cancellation.
+- The moved tests use focused local fixtures and preserve all original names and intent while adding
+  exact order, identity, arguments, result-ownership, branch, exception, and cancellation
+  characterization.
+
+This slice adds no NSE runtime wiring, CoreCrypto process lock, retry, queue/outbox, rollout flag,
+async side-effect redesign, or receiver routing. `ConversationEventReceiverImpl` is now the
+remaining conversation extraction target. `UserEventReceiverImpl` remains explicitly outside this
+goal.
+
+#### Milestone 2 receiver extraction status: conversation receiver slice
+
+Conversation receiver orchestration is now below `:logic` as a behavior-preserving ownership
+refactor:
+
+- `ConversationEventReceiverImpl` and its focused tests retain their package and FQCN and are owned
+  by `:domain:messaging:receiving`. The `ConversationEventReceiver` contract remains in
+  `:domain:event-processing`.
+- The implementation remains a normal class with the exact constructor parameter list, order, and
+  types. Only the public class/constructor visibility and `@InternalKaliumApi` annotation needed by
+  cross-module main-app composition were added. `UserSessionScope` keeps constructing the same FQCN
+  from the same dependency expressions, so composition and constructor evaluation are unchanged.
+- The exact branch order, handler arguments, ignored-versus-propagated `Either` ownership,
+  `Right(Unit)` results, exception/cancellation propagation, and one-call pending-side-effect flush
+  behavior are unchanged. The moved suite preserves all 19 original test names and uses focused
+  local fixtures while adding complete route, result-ownership, reference-identity, flush, and
+  thrown-failure characterization.
+- No handler interface or implementation, event contract, module dependency, `UserEventReceiverImpl`,
+  or runtime wiring changed in this slice. This completes the conversation-handler ownership
+  extraction goal; `UserEventReceiverImpl` remains logic-owned and explicitly outside it.
+
+Ownership extraction is not NSE runtime readiness. Shared-storage bootstrap, existing-state-only
+session construction, the NSE facade, durable side effects/outbox execution, durable
+subconversation and pending-proposal coordination, cross-process CoreCrypto locking, rollout, and
+retry/async redesign remain separate milestones.
 
 ### Milestone 3 - Apple shared storage, keychain, and existing-state-only mode
 

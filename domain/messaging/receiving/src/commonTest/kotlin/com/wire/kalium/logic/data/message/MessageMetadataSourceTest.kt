@@ -57,6 +57,21 @@ class MessageMetadataSourceTest {
     }
 
     @Test
+    fun givenStoredSender_whenLookingUpForCompositeEdit_thenJoinedLookupIsUsed() = runTest {
+        val (arrangement, repository) = arrangement()
+        everySuspend {
+            arrangement.messageMetadataDAO.originalSenderIdForCompositeEdit(eq(conversationIdEntity), eq(messageId))
+        } returns senderIdEntity
+
+        val result = repository.originalSenderIdForCompositeEdit(conversationId, messageId)
+
+        assertEquals(Either.Right(senderId), result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageMetadataDAO.originalSenderIdForCompositeEdit(eq(conversationIdEntity), eq(messageId))
+        }
+    }
+
+    @Test
     fun givenMissingMessage_whenLookingUp_thenDataNotFoundIsReturned() = runTest {
         val (arrangement, repository) = arrangement()
         everySuspend {
@@ -64,6 +79,19 @@ class MessageMetadataSourceTest {
         } returns null
 
         assertEquals(Either.Left(StorageFailure.DataNotFound), repository.originalSenderId(conversationId, messageId))
+    }
+
+    @Test
+    fun givenMissingJoinedSender_whenLookingUpForCompositeEdit_thenDataNotFoundIsReturned() = runTest {
+        val (arrangement, repository) = arrangement()
+        everySuspend {
+            arrangement.messageMetadataDAO.originalSenderIdForCompositeEdit(eq(conversationIdEntity), eq(messageId))
+        } returns null
+
+        assertEquals(
+            Either.Left(StorageFailure.DataNotFound),
+            repository.originalSenderIdForCompositeEdit(conversationId, messageId),
+        )
     }
 
     @Test
@@ -95,7 +123,7 @@ class MessageMetadataSourceTest {
         assertSame(expected, actual)
     }
 
-    private fun arrangement(): Pair<Arrangement, MessageMetadataRepository> {
+    private fun arrangement(): Pair<Arrangement, MessageMetadataSource> {
         val arrangement = Arrangement()
         return arrangement to MessageMetadataSource(arrangement.messageMetadataDAO)
     }

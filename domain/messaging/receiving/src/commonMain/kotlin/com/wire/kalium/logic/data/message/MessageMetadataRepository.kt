@@ -40,13 +40,28 @@ public fun interface MessageMetadataRepository {
 }
 
 @InternalKaliumApi
+public fun interface CompositeEditMessageMetadataRepository {
+    public suspend fun originalSenderIdForCompositeEdit(
+        conversationId: ConversationId,
+        messageId: MessageId,
+    ): Either<StorageFailure, UserId>
+}
+
+@InternalKaliumApi
 public class MessageMetadataSource public constructor(
     private val messageMetaDataDAO: MessageMetadataDAO,
-) : MessageMetadataRepository {
+) : MessageMetadataRepository, CompositeEditMessageMetadataRepository {
     override suspend fun originalSenderId(
         conversationId: ConversationId,
         messageId: MessageId,
     ): Either<StorageFailure, UserId> = wrapStorageRequest {
         messageMetaDataDAO.originalSenderId(conversationId.toDao(), messageId)
+    }.map(UserIDEntity::toModel)
+
+    override suspend fun originalSenderIdForCompositeEdit(
+        conversationId: ConversationId,
+        messageId: MessageId,
+    ): Either<StorageFailure, UserId> = wrapStorageRequest {
+        messageMetaDataDAO.originalSenderIdForCompositeEdit(conversationId.toDao(), messageId)
     }.map(UserIDEntity::toModel)
 }

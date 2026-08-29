@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.sync.receiver.conversation.NewConversationSystemMessagesCreator
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -43,16 +44,9 @@ import kotlin.uuid.Uuid
  * This class is responsible to generate system messages for new group conversations.
  * This can be orchestrated by different components that creates a new group conversation, ie: Events, UseCases, Repositories.
  */
-internal interface NewGroupConversationSystemMessagesCreator {
+internal interface NewGroupConversationSystemMessagesCreator : NewConversationSystemMessagesCreator {
     suspend fun conversationStarted(conversation: ConversationEntity): Either<CoreFailure, Unit>
-    suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse, instant: Instant): Either<CoreFailure, Unit>
     suspend fun conversationReadReceiptStatus(conversation: Conversation): Either<CoreFailure, Unit>
-    suspend fun conversationReadReceiptStatus(conversation: ConversationResponse, instant: Instant): Either<CoreFailure, Unit>
-    suspend fun conversationResolvedMembersAdded(
-        conversationId: ConversationIDEntity,
-        validUsers: List<UserId>,
-        instant: Instant = Clock.System.now()
-    ): Either<CoreFailure, Unit>
 
     suspend fun conversationFailedToAddMembers(
         conversationId: ConversationId,
@@ -60,30 +54,7 @@ internal interface NewGroupConversationSystemMessagesCreator {
         type: MessageContent.MemberChange.FailedToAdd.Type,
     ): Either<CoreFailure, Unit>
 
-    suspend fun conversationStartedUnverifiedWarning(
-        conversationId: ConversationId,
-        instant: Instant = Clock.System.now()
-    ): Either<CoreFailure, Unit>
-
     suspend fun conversationCellStatus(conversation: ConversationEntity): Either<CoreFailure, Unit>
-
-    /**
-     * Creates the system message telling the self user which access they have to the Shared Drive of the conversation.
-     */
-    suspend fun conversationCellAccessStatus(
-        conversationId: ConversationId,
-        conversationTeamId: String?,
-        isCellEnabled: Boolean,
-        instant: Instant = Clock.System.now(),
-    ): Either<CoreFailure, Unit>
-
-    suspend fun conversationAppsAccessIfEnabled(
-        eventId: String = LocalId.generate(),
-        conversationId: ConversationId,
-        hasAppsAccessEnabled: Boolean,
-        creatorId: UserId,
-        type: ConversationEntity.Type
-    ): Either<CoreFailure, Unit>
 
     suspend fun conversationAppsAccessIfEnabled(
         eventId: String = LocalId.generate(),

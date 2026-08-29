@@ -27,6 +27,7 @@ import kotlinx.coroutines.withContext
 
 interface MessageMetadataDAO {
     suspend fun originalSenderId(conversationId: ConversationIDEntity, messageId: String): UserIDEntity?
+    suspend fun originalSenderIdForCompositeEdit(conversationId: ConversationIDEntity, messageId: String): UserIDEntity?
 }
 
 internal class MessageMetadataDAOImpl internal constructor(
@@ -37,4 +38,11 @@ internal class MessageMetadataDAOImpl internal constructor(
         withContext(readDispatcher.value) {
             metaDataQueries.originalSenderId(conversationId, messageId).awaitAsOneOrNull()
         }
+
+    override suspend fun originalSenderIdForCompositeEdit(
+        conversationId: ConversationIDEntity,
+        messageId: String,
+    ): UserIDEntity? = withContext(readDispatcher.value) {
+        metaDataQueries.originalSenderIdForCompositeEdit(conversationId, messageId).awaitAsOneOrNull()
+    }
 }

@@ -24,10 +24,10 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
+import com.wire.kalium.logic.data.message.CompositeEditMessageMetadataRepository
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.coroutines.test.runTest
@@ -129,10 +129,10 @@ class MessageCompositeEditHandlerTest {
 
     private class RecordingMetadataRepository(
         private val result: Either<StorageFailure, UserId>,
-    ) : MessageMetadataRepository {
+    ) : CompositeEditMessageMetadataRepository {
         val calls = mutableListOf<LookupCall>()
 
-        override suspend fun originalSenderId(
+        override suspend fun originalSenderIdForCompositeEdit(
             conversationId: ConversationId,
             messageId: MessageId,
         ): Either<StorageFailure, UserId> {

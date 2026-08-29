@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
@@ -28,48 +29,47 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSResetEventRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.mls.ConversationProtocolGetter
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
-import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.receiver.EventMessagePersistence
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface MemberLeaveEventHandler {
-    suspend fun handle(
+@InternalKaliumApi
+public interface MemberLeaveEventHandler {
+    public suspend fun handle(
         transactionContext: CryptoTransactionContext,
-        event: Event.Conversation.MemberLeave
+        event: Event.Conversation.MemberLeave,
     ): Either<CoreFailure, Unit>
 }
 
+@InternalKaliumApi
 @Suppress("LongParameterList")
-internal class MemberLeaveEventHandlerImpl(
+public class MemberLeaveEventHandlerImpl public constructor(
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
-    private val userRepository: UserRepository,
-    private val conversationRepository: ConversationRepository,
-    private val persistMessage: PersistMessageUseCase,
-    private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>,
-    private val legalHoldHandler: LegalHoldHandler,
-    private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val mlsConversationRepository: MLSConversationRepository,
-    private val meetingRepository: MeetingRepository,
+    private val userRepository: MemberLeaveEventUserRepository,
+    private val conversationRepository: ConversationProtocolGetter,
+    private val persistMessage: EventMessagePersistence,
+    private val updateConversationClientsForCurrentCall: suspend (ConversationId) -> Unit,
+    private val handleConversationMembersChanged: suspend (ConversationId) -> Either<CoreFailure, Unit>,
+    private val selfTeamId: suspend () -> Either<CoreFailure, TeamId?>,
+    private val mlsConversationRepository: MLSResetEventRepository,
+    private val deleteMeetingsByConversationId: suspend (ConversationId) -> Either<CoreFailure, Unit>,
     private val selfUserId: UserId,
 ) : MemberLeaveEventHandler {
 
     override suspend fun handle(
         transactionContext: CryptoTransactionContext,
-        event: Event.Conversation.MemberLeave
+        event: Event.Conversation.MemberLeave,
     ): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         if (event.reason == MemberLeaveReason.UserDeleted) {
@@ -77,7 +77,7 @@ internal class MemberLeaveEventHandlerImpl(
         }
         return deleteMembers(event.removedList, event.conversationId)
             .onSuccess {
-                updateConversationClientsForCurrentCall.value(event.conversationId)
+                updateConversationClientsForCurrentCall(event.conversationId)
             }
             .onSuccess {
                 wipeMLSConversationIfNeeded(transactionContext, event)
@@ -107,7 +107,7 @@ internal class MemberLeaveEventHandlerImpl(
                         Either.Right(Unit)
                     }
                 }
-                legalHoldHandler.handleConversationMembersChanged(event.conversationId)
+                handleConversationMembersChanged(event.conversationId)
             }
             .flatMap {
                 deleteMeetingsIfNeeded(event)
@@ -129,7 +129,7 @@ internal class MemberLeaveEventHandlerImpl(
     }
 
     private suspend fun handleUserDeleted(event: Event.Conversation.MemberLeave): MessageContent.System {
-        val teamId = selfTeamIdProvider().getOrNull()
+        val teamId = selfTeamId().getOrNull()
 
         return when {
             teamId == null -> MessageContent.MemberChange.Removed(members = event.removedList)
@@ -165,7 +165,13 @@ internal class MemberLeaveEventHandlerImpl(
 
     private suspend fun deleteMeetingsIfNeeded(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> =
         when (selfUserId in event.removedList) {
-            true -> meetingRepository.deleteMeetingsByConversationId(event.conversationId)
+            true -> deleteMeetingsByConversationId(event.conversationId)
             false -> Either.Right(Unit)
         }
 }
+
+private suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
+    block: suspend (mlsContext: MlsCoreCryptoContext) -> Either<CoreFailure, T>,
+): Either<CoreFailure, T> = mls?.let {
+    block(it)
+} ?: Either.Left(MLSFailure.Disabled)

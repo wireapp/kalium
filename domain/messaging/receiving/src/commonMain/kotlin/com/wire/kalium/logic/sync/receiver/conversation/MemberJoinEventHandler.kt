@@ -27,45 +27,43 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.receiver.EventMessagePersistence
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlin.uuid.Uuid
 
-internal interface MemberJoinEventHandler {
-    suspend fun handle(
+@InternalKaliumApi
+public interface MemberJoinEventHandler {
+    public suspend fun handle(
         transactionContext: CryptoTransactionContext,
-        event: Event.Conversation.MemberJoin
+        event: Event.Conversation.MemberJoin,
     ): Either<CoreFailure, Unit>
 }
 
+@InternalKaliumApi
 @Suppress("LongParameterList")
-internal class MemberJoinEventHandlerImpl(
-    private val conversationRepository: ConversationRepository,
+public class MemberJoinEventHandlerImpl public constructor(
+    private val conversationRepository: MemberJoinEventRepository,
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
-    private val userRepository: UserRepository,
-    private val persistMessage: PersistMessageUseCase,
-    private val legalHoldHandler: LegalHoldHandler,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    private val userRepository: MemberJoinEventUserRepository,
+    private val persistMessage: EventMessagePersistence,
+    private val handleConversationMembersChanged: suspend (ConversationId) -> Either<CoreFailure, Unit>,
+    private val newGroupConversationSystemMessagesCreator: NewConversationSystemMessagesCreator,
     private val selfUserId: UserId,
-    private val fetchConversation: FetchConversationUseCase,
-    private val kaliumConfigs: KaliumConfigs
+    private val fetchConversation: suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>,
+    private val drivePermissionsEnabled: Boolean,
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handle(
         transactionContext: CryptoTransactionContext,
-        event: Event.Conversation.MemberJoin
+        event: Event.Conversation.MemberJoin,
     ): Either<CoreFailure, Unit> {
         val eventLogger = logger.createEventProcessingLogger(event)
         // the group info need to be fetched for the following cases:
@@ -107,7 +105,7 @@ internal class MemberJoinEventHandlerImpl(
                         }
 
                         is Conversation.Type.Group -> {
-                            if (kaliumConfigs.drivePermissionsEnabled) {
+                            if (drivePermissionsEnabled) {
                                 addCellAccessSystemMessageIfNeeded(event, conversation)
                             }
                             addMemberAddedSystemMessage(event)
@@ -121,7 +119,7 @@ internal class MemberJoinEventHandlerImpl(
                     }
                 }
 
-                legalHoldHandler.handleConversationMembersChanged(event.conversationId)
+                handleConversationMembersChanged(event.conversationId)
                 eventLogger.logSuccess()
             }.onFailure {
                 eventLogger.logFailure(it)
