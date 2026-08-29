@@ -114,7 +114,6 @@ internal interface UserRepository : SelfUserObservationProvider, TeamEventUserRe
     suspend fun getUsersWithOneOnOneConversation(): List<OtherUser>
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
-    suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
     fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>>
 
     /**
@@ -193,7 +192,6 @@ internal class UserDataSource internal constructor(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
-    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val appMapper: AppMapper = MapperProvider.appMapper()
@@ -500,10 +498,6 @@ internal class UserDataSource internal constructor(
                 userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUserId, selfTeamId)
             }
         }
-
-    override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {
-        userDAO.updateUserAvailabilityStatus(userId.toDao(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
-    }
 
     override suspend fun updateSupportedProtocols(protocols: Set<SupportedProtocol>): Either<CoreFailure, Unit> {
         return wrapApiRequest { selfApi.updateSupportedProtocols(protocols.map { it.toApi() }) }

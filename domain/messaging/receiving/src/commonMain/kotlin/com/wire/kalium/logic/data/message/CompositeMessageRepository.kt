@@ -24,8 +24,12 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.InternalKaliumApi
+import kotlinx.datetime.Instant
 
 @InternalKaliumApi
 public interface CompositeMessageRepository {
@@ -39,11 +43,19 @@ public interface CompositeMessageRepository {
         messageId: MessageId,
         conversationId: ConversationId,
     ): Either<StorageFailure, Unit>
+
+    public suspend fun updateCompositeMessage(
+        conversationId: ConversationId,
+        messageContent: MessageContent.CompositeEdited,
+        newMessageId: MessageId,
+        editInstant: Instant,
+    ): Either<StorageFailure, Unit>
 }
 
 @InternalKaliumApi
 public class CompositeMessageDataSource public constructor(
     private val compositeMessageDAO: CompositeMessageDAO,
+    private val messageDAO: MessageDAO,
 ) : CompositeMessageRepository {
     override suspend fun markSelected(
         messageId: MessageId,
@@ -64,6 +76,28 @@ public class CompositeMessageDataSource public constructor(
         compositeMessageDAO.resetSelection(
             messageId = messageId,
             conversationId = conversationId.toDao(),
+        )
+    }
+
+    override suspend fun updateCompositeMessage(
+        conversationId: ConversationId,
+        messageContent: MessageContent.CompositeEdited,
+        newMessageId: MessageId,
+        editInstant: Instant,
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateCompositeMessageContent(
+            conversationId = conversationId.toDao(),
+            currentMessageId = messageContent.editMessageId,
+            editInstant = editInstant,
+            newCompositeContent = MessageEntityContent.Composite(
+                text = messageContent.newTextContent?.value?.let {
+                    MessageEntityContent.Text(messageBody = it)
+                },
+                buttonList = messageContent.newButtonList.map {
+                    ButtonEntity(it.text, it.id, it.isSelected)
+                },
+            ),
+            newMessageId = newMessageId,
         )
     }
 }

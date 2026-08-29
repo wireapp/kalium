@@ -40,7 +40,6 @@ import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
@@ -62,7 +61,6 @@ import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageRes
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
-import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -311,13 +309,6 @@ internal interface MessageRepository : EventMessageRepository {
 
     suspend fun getSenderNameByMessageId(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
     suspend fun getNextAudioMessageInConversation(conversationId: ConversationId, messageId: String): Either<CoreFailure, String>
-    suspend fun updateCompositeMessage(
-        conversationId: ConversationId,
-        messageContent: MessageContent.CompositeEdited,
-        newMessageId: String,
-        editInstant: Instant
-    ): Either<StorageFailure, Unit>
-
     fun observeAssetStatuses(): Flow<Either<StorageFailure, List<AssetTransferStatus>>>
 
     suspend fun updateAudioMessageNormalizedLoudness(
@@ -343,6 +334,12 @@ internal class MessageDataSource internal constructor(
     private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl(),
     private val eventMessageRepository: EventMessageRepository = EventMessageRepositoryImpl(messageDAO, selfUserId, messageMapper),
     private val messageDeletionPersistence: MessageDeletionPersistence = MessageDeletionPersistenceImpl(messageDAO),
+    private val messageEditPersistence: MessageEditPersistence = MessageEditPersistenceImpl(
+        messageDAO,
+        selfUserId,
+        linkPreviewMapper,
+        messageMentionMapper,
+    ),
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(
@@ -619,21 +616,12 @@ internal class MessageDataSource internal constructor(
         messageContent: MessageContent.TextEdited,
         newMessageId: String,
         editInstant: Instant
-    ): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            messageDAO.updateTextMessageContent(
-                editInstant = editInstant,
-                conversationId = conversationId.toDao(),
-                currentMessageId = messageContent.editMessageId,
-                newTextContent = MessageEntityContent.Text(
-                    messageContent.newContent,
-                    messageContent.newLinkPreviews.map { linkPreviewMapper.fromModelToDao(it) },
-                    messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
-                ),
-                newMessageId = newMessageId
-            )
-        }
-    }
+    ): Either<CoreFailure, Unit> = messageEditPersistence.applyTextEdit(
+        conversationId = conversationId,
+        messageContent = messageContent,
+        newMessageId = newMessageId,
+        editInstant = editInstant,
+    )
 
     override suspend fun updateTextMessage(
         conversationId: ConversationId,
@@ -666,20 +654,12 @@ internal class MessageDataSource internal constructor(
         messageContent: MessageContent.MultipartEdited,
         newMessageId: String,
         editInstant: Instant
-    ): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            messageDAO.updateTextMessageContent(
-                editInstant = editInstant,
-                conversationId = conversationId.toDao(),
-                currentMessageId = messageContent.editMessageId,
-                newTextContent = MessageEntityContent.Text(
-                    messageBody = messageContent.newTextContent ?: "",
-                    mentions = messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
-                ),
-                newMessageId = newMessageId
-            )
-        }
-    }
+    ): Either<CoreFailure, Unit> = messageEditPersistence.applyMultipartEdit(
+        conversationId = conversationId,
+        messageContent = messageContent,
+        newMessageId = newMessageId,
+        editInstant = editInstant,
+    )
 
     override suspend fun updateLinkPreviewImageLocalPath(
         conversationId: ConversationId,
@@ -879,28 +859,6 @@ internal class MessageDataSource internal constructor(
         messageId: String
     ): Either<CoreFailure, String> =
         wrapStorageRequest { messageDAO.getNextAudioMessageInConversation(messageId, conversationId.toDao()) }
-
-    override suspend fun updateCompositeMessage(
-        conversationId: ConversationId,
-        messageContent: MessageContent.CompositeEdited,
-        newMessageId: MessageId,
-        editInstant: Instant
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        messageDAO.updateCompositeMessageContent(
-            conversationId = conversationId.toDao(),
-            currentMessageId = messageContent.editMessageId,
-            editInstant = editInstant,
-            newCompositeContent = MessageEntityContent.Composite(
-                messageContent.newTextContent?.value?.let {
-                    MessageEntityContent.Text(
-                        messageBody = it
-                    )
-                },
-                messageContent.newButtonList.map { ButtonEntity(it.text, it.id, it.isSelected) }
-            ),
-            newMessageId = newMessageId
-        )
-    }
 
     override suspend fun updateAudioMessageNormalizedLoudness(
         conversationId: ConversationId,

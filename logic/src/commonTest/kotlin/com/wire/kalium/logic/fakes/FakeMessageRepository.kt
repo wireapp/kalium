@@ -258,13 +258,6 @@ internal open class FakeMessageRepository : MessageRepository {
         messageId: String
     ): Either<CoreFailure, String>  = "".right()
 
-    override suspend fun updateCompositeMessage(
-        conversationId: ConversationId,
-        messageContent: MessageContent.CompositeEdited,
-        newMessageId: String,
-        editInstant: Instant
-    ): Either<StorageFailure, Unit> = Unit.right()
-
     override fun observeAssetStatuses(): Flow<Either<StorageFailure, List<AssetTransferStatus>>> =
         flowOf(emptyList<AssetTransferStatus>().right())
 

@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.notification.LocalNotification
@@ -32,7 +31,6 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
-import kotlinx.datetime.Instant
 
 internal interface MessageRepositoryArrangement {
 
@@ -65,22 +63,6 @@ internal interface MessageRepositoryArrangement {
         targetConversation: (ConversationId) -> Boolean = { true }
     )
 
-    suspend fun withEditCompositeMessage(
-        result: Either<StorageFailure, Unit>,
-        conversationId: (ConversationId) -> Boolean = { true },
-        content: (MessageContent.CompositeEdited) -> Boolean = { true },
-        messageId: (String) -> Boolean = { true },
-        date: (Instant) -> Boolean = { true }
-    ) {
-        everySuspend {
-            messageRepository.updateCompositeMessage(
-                matches { conversationId(it) },
-                matches { content(it) },
-                matches { messageId(it) },
-                matches { date(it) }
-            )
-        }.returns(result)
-    }
 }
 
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
@@ -146,20 +128,4 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
         }.returns(result)
     }
 
-    override suspend fun withEditCompositeMessage(
-        result: Either<StorageFailure, Unit>,
-        conversationId: (ConversationId) -> Boolean,
-        content: (MessageContent.CompositeEdited) -> Boolean,
-        messageId: (String) -> Boolean,
-        date: (Instant) -> Boolean
-    ) {
-        everySuspend {
-            messageRepository.updateCompositeMessage(
-                matches { conversationId(it) },
-                matches { content(it) },
-                matches { messageId(it) },
-                matches { date(it) }
-            )
-        }.returns(result)
-    }
 }

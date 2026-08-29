@@ -27,7 +27,6 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.message.AssetContent
@@ -40,19 +39,21 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.AvailabilityMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
 import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.ClientActionMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.InCallEmojiMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
@@ -81,6 +82,85 @@ import kotlin.time.Duration.Companion.seconds
 
 @Suppress("TooManyFunctions")
 class ApplicationMessageHandlerTest {
+
+    @Test
+    fun givenAvailabilityMessage_whenHandling_thenAvailabilityLeafReceivesSignalingEnvelopeExactlyOnce() = runTest {
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val availabilityContent = MessageContent.Availability(UserAvailabilityStatus.BUSY)
+        val protoContent = ProtoContent.Readable(
+            messageUid = "availability-signaling-id",
+            messageContent = availabilityContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val expectedSignaling = Message.Signaling(
+            id = protoContent.messageUid,
+            content = availabilityContent,
+            conversationId = messageEvent.conversationId,
+            date = messageEvent.messageInstant,
+            senderUserId = messageEvent.senderUserId,
+            senderClientId = messageEvent.senderClientId,
+            status = Message.Status.Sent,
+            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            expirationData = null,
+        )
+        val (arrangement, messageHandler) = Arrangement().arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.availabilityMessageHandler.handle(
+                matches<Message.Signaling> { it == expectedSignaling },
+                matches { it == availabilityContent },
+            )
+        }
+    }
+
+    @Test
+    fun givenClientActionMessage_whenHandling_thenClientActionLeafReceivesExactSignalingEnvelopeOnce() = runTest {
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val protoContent = ProtoContent.Readable(
+            messageUid = "client-action-signaling-id",
+            messageContent = MessageContent.ClientAction,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+            expiresAfterMillis = 30_000L,
+        )
+        val expectedSignaling = Message.Signaling(
+            id = protoContent.messageUid,
+            content = MessageContent.ClientAction,
+            conversationId = messageEvent.conversationId,
+            date = messageEvent.messageInstant,
+            senderUserId = messageEvent.senderUserId,
+            senderClientId = messageEvent.senderClientId,
+            status = Message.Status.Sent,
+            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            expirationData = Message.ExpirationData(30.seconds),
+        )
+        val (arrangement, messageHandler) = Arrangement().arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientActionMessageHandler.handle(
+                matches<Message.Signaling> { it == expectedSignaling },
+            )
+        }
+    }
 
     @Test
     fun givenDeleteForMeMessage_whenHandling_thenExistingDeleteForMeLeafIsInvoked() = runTest {
@@ -230,36 +310,92 @@ class ApplicationMessageHandlerTest {
     }
 
     @Test
-    fun givenMessageMultipartEdited_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
-        val messageId = "messageId"
-        val validMultipartEditedContent = MessageContent.MultipartEdited(
-            editMessageId = messageId,
-            newTextContent = "Edited text",
+    fun givenMessageTextEdited_whenHandling_thenExactHandlerArgumentsAreForwarded() = runTest {
+        val textEditedContent = MessageContent.TextEdited(
+            editMessageId = "original-message-id",
+            newContent = "Edited text",
         )
         val protoContent = ProtoContent.Readable(
-            messageId,
-            validMultipartEditedContent,
-            false,
-            Conversation.LegalHoldStatus.DISABLED
+            messageUid = "text-edit-signaling-id",
+            messageContent = textEditedContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val expectedSignaling = Message.Signaling(
+            id = protoContent.messageUid,
+            content = textEditedContent,
+            conversationId = messageEvent.conversationId,
+            date = messageEvent.messageInstant,
+            senderUserId = messageEvent.senderUserId,
+            senderClientId = messageEvent.senderClientId,
+            status = Message.Status.Sent,
+            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            expirationData = null,
         )
         val (arrangement, messageHandler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .withMessageMultipartEditHandler()
+            .withMessageTextEditHandler()
             .arrange()
 
-        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
             messageEvent.messageInstant,
             messageEvent.senderUserId,
             messageEvent.senderClientId,
-            protoContent
+            protoContent,
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageMultipartEditHandler.handle(any(), any())
+            arrangement.messageTextEditHandler.handle(
+                matches<Message.Signaling> { it == expectedSignaling },
+                matches { it == textEditedContent },
+            )
+        }
+    }
+
+    @Test
+    fun givenMessageMultipartEdited_whenHandling_thenExactHandlerArgumentsAreForwarded() = runTest {
+        val multipartEditedContent = MessageContent.MultipartEdited(
+            editMessageId = "original-message-id",
+            newTextContent = "Edited text",
+        )
+        val protoContent = ProtoContent.Readable(
+            messageUid = "multipart-edit-signaling-id",
+            messageContent = multipartEditedContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val expectedSignaling = Message.Signaling(
+            id = protoContent.messageUid,
+            content = multipartEditedContent,
+            conversationId = messageEvent.conversationId,
+            date = messageEvent.messageInstant,
+            senderUserId = messageEvent.senderUserId,
+            senderClientId = messageEvent.senderClientId,
+            status = Message.Status.Sent,
+            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            expirationData = null,
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withMessageMultipartEditHandler()
+            .arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageMultipartEditHandler.handle(
+                matches<Message.Signaling> { it == expectedSignaling },
+                matches { it == multipartEditedContent },
+            )
         }
     }
 
@@ -337,26 +473,31 @@ class ApplicationMessageHandlerTest {
     }
 
     @Test
-    fun givenInCallReactionReceived_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
-        // given
-        val messageId = "messageId"
+    fun givenInCallEmojiMessage_whenHandling_thenInCallEmojiLeafReceivesExactEnvelopeAndContentOnce() = runTest {
         val inCallReactionContent = MessageContent.InCallEmoji(
-            emojis = mapOf("1" to 1)
+            emojis = linkedMapOf("1" to 1, "2" to 2),
         )
         val protoContent = ProtoContent.Readable(
-            messageId,
-            inCallReactionContent,
-            false,
-            Conversation.LegalHoldStatus.DISABLED
+            messageUid = "in-call-emoji-signaling-id",
+            messageContent = inCallReactionContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
         )
-
-        val (arrangement, messageHandler) = Arrangement()
-            .arrange()
-
         val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
         val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        val expectedSignaling = Message.Signaling(
+            id = protoContent.messageUid,
+            content = inCallReactionContent,
+            conversationId = messageEvent.conversationId,
+            date = messageEvent.messageInstant,
+            senderUserId = messageEvent.senderUserId,
+            senderClientId = messageEvent.senderClientId,
+            status = Message.Status.Sent,
+            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            expirationData = null,
+        )
+        val (arrangement, messageHandler) = Arrangement().arrange()
 
-        // when
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
@@ -366,9 +507,11 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.inCallReactionsRepository.addInCallReaction(messageEvent.conversationId, messageEvent.senderUserId, setOf("1"))
+            arrangement.inCallEmojiMessageHandler.handle(
+                matches<Message.Signaling> { it == expectedSignaling },
+                matches { it === inCallReactionContent },
+            )
         }
     }
 
@@ -450,20 +593,6 @@ class ApplicationMessageHandlerTest {
 
         verify(VerifyMode.exactly(1)) {
             arrangement.linkPreviewImagesResolver.invoke(messageEvent.conversationId, messageId)
-        }
-    }
-
-    @Test
-    fun givenAvailabilityMessage_whenHandling_thenUserAvailabilityIsUpdated() = runTest {
-        val content = MessageContent.Availability(UserAvailabilityStatus.AWAY)
-        val (arrangement, handler) = Arrangement()
-            .withUserAvailabilityUpdate()
-            .arrange()
-
-        val event = dispatch(arrangement, handler, content)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateOtherUserAvailabilityStatus(event.senderUserId, content.status)
         }
     }
 
@@ -867,7 +996,8 @@ class ApplicationMessageHandlerTest {
 
         val persistMessage = mock<PersistMessageUseCase>(MockMode.autoUnit)
         val messageRepository = mock<MessageRepository>(MockMode.autoUnit)
-        val userRepository = mock<UserRepository>(MockMode.autoUnit)
+        val availabilityMessageHandler = mock<AvailabilityMessageHandler>(MockMode.autoUnit)
+        val clientActionMessageHandler = mock<ClientActionMessageHandler>(MockMode.autoUnit)
         val userConfigRepository = mock<UserConfigRepository>(MockMode.autoUnit)
         val persistReactionsUseCase = mock<PersistReactionUseCase>(MockMode.autoUnit)
         val messageTextEditHandler = mock<MessageTextEditHandler>(MockMode.autoUnit)
@@ -879,7 +1009,7 @@ class ApplicationMessageHandlerTest {
         val receiptMessageHandler = mock<ReceiptMessageHandler>(MockMode.autoUnit)
         val assetMessageHandler = mock<AssetMessageHandler>(MockMode.autoUnit)
         val buttonActionConfirmationHandler = mock<ButtonActionConfirmationHandler>(MockMode.autoUnit)
-        val inCallReactionsRepository = mock<InCallReactionsRepository>(MockMode.autoUnit)
+        val inCallEmojiMessageHandler = mock<InCallEmojiMessageHandler>(MockMode.autoUnit)
         val dataTransferEventHandler = mock<DataTransferEventHandler>(MockMode.autoUnit)
         val buttonActionHandler = mock<ButtonActionHandler>(MockMode.autoUnit)
         val messageCompositeEditHandler = mock<MessageCompositeEditHandler>(MockMode.autoUnit)
@@ -887,7 +1017,8 @@ class ApplicationMessageHandlerTest {
         val linkPreviewImagesResolver = mock<LinkPreviewImagesResolver>(MockMode.autoUnit)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
-            userRepository,
+            availabilityMessageHandler,
+            clientActionMessageHandler,
             messageRepository,
             assetMessageHandler,
             persistMessage,
@@ -902,7 +1033,7 @@ class ApplicationMessageHandlerTest {
             receiptMessageHandler,
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
-            inCallReactionsRepository,
+            inCallEmojiMessageHandler,
             buttonActionHandler,
             messageCompositeEditHandler,
             callingMessageHandler,
@@ -951,12 +1082,6 @@ class ApplicationMessageHandlerTest {
             }.returns(result)
         }
 
-        fun withUserAvailabilityUpdate() = apply {
-            everySuspend {
-                userRepository.updateOtherUserAvailabilityStatus(any(), any())
-            }.returns(Unit)
-        }
-
         fun withPersistReaction() = apply {
             everySuspend {
                 persistReactionsUseCase.invoke(any(), any(), any(), any())
@@ -972,6 +1097,12 @@ class ApplicationMessageHandlerTest {
         fun withMessageCompositeEditHandler() = apply {
             everySuspend {
                 messageCompositeEditHandler.handle(any(), any())
+            }.returns(Either.Right(Unit))
+        }
+
+        fun withMessageTextEditHandler() = apply {
+            everySuspend {
+                messageTextEditHandler.handle(any(), any())
             }.returns(Either.Right(Unit))
         }
 

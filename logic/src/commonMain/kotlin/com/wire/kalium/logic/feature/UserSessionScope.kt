@@ -164,6 +164,8 @@ import com.wire.kalium.logic.data.message.IncomingLastReadPersistenceImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageDeletionPersistence
 import com.wire.kalium.logic.data.message.MessageDeletionPersistenceImpl
+import com.wire.kalium.logic.data.message.MessageEditPersistence
+import com.wire.kalium.logic.data.message.MessageEditPersistenceImpl
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -218,6 +220,7 @@ import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.AccountRepositoryImpl
+import com.wire.kalium.logic.data.user.IncomingAvailabilityPersistenceImpl
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -552,6 +555,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUn
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.AvailabilityMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.AvailabilityMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
@@ -560,6 +565,7 @@ import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.ClientActionMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
@@ -571,6 +577,8 @@ import com.wire.kalium.logic.sync.receiver.handler.TrackingIdentifierStorageImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.InCallEmojiMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.InCallEmojiMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
@@ -1052,8 +1060,19 @@ public class UserSessionScope internal constructor(
         reactionDAO = userStorage.database.reactionDAO,
     )
 
+    private val incomingAvailabilityPersistence = IncomingAvailabilityPersistenceImpl(
+        userDAO = userStorage.database.userDAO,
+    )
+
+    private val availabilityMessageHandler: AvailabilityMessageHandler =
+        AvailabilityMessageHandlerImpl(incomingAvailabilityPersistence)
+
     private val messageDeletionPersistence: MessageDeletionPersistence by lazy {
         MessageDeletionPersistenceImpl(userStorage.database.messageDAO)
+    }
+
+    private val messageEditPersistence: MessageEditPersistence by lazy {
+        MessageEditPersistenceImpl(userStorage.database.messageDAO, userId)
     }
 
     private val messageRepository: MessageRepository
@@ -1064,6 +1083,7 @@ public class UserSessionScope internal constructor(
             selfUserId = userId,
             nomadMessagePagingCoordinator = nomadMessagePagingCoordinator,
             messageDeletionPersistence = messageDeletionPersistence,
+            messageEditPersistence = messageEditPersistence,
         )
 
     private val nomadMessagePagingCoordinator: NomadMessagePagingCoordinator?
@@ -1081,8 +1101,12 @@ public class UserSessionScope internal constructor(
     private val messageMetadataRepository: MessageMetadataRepository
         get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
 
-    private val compositeMessageRepository: CompositeMessageRepository
-        get() = CompositeMessageDataSource(compositeMessageDAO = userStorage.database.compositeMessageDAO)
+    private val compositeMessageRepository: CompositeMessageRepository by lazy {
+        CompositeMessageDataSource(
+            compositeMessageDAO = userStorage.database.compositeMessageDAO,
+            messageDAO = userStorage.database.messageDAO,
+        )
+    }
 
     private val messageDraftRepository: MessageDraftRepository
         get() = MessageDraftDataSource(
@@ -1948,6 +1972,10 @@ public class UserSessionScope internal constructor(
         InCallReactionsDataSource()
     }
 
+    private val inCallEmojiMessageHandler: InCallEmojiMessageHandler by lazy {
+        InCallEmojiMessageHandlerImpl(inCallReactionsRepository)
+    }
+
     private val callModerationActionsRepository: CallModerationActionsRepository by lazy {
         CallModerationActionsDataSource()
     }
@@ -1968,47 +1996,51 @@ public class UserSessionScope internal constructor(
     }
 
     private val applicationMessageHandler: ApplicationMessageHandler
-        get() = ApplicationMessageHandlerImpl(
-            userRepository,
-            messageRepository,
-            assetMessageHandler,
-            persistMessage,
-            persistReaction,
-            MessageTextEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
-            MessageMultipartEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
-            lastReadContentHandler,
-            ClearConversationContentHandlerImpl(
-                conversationRepository,
-                userId,
-                isMessageSentInSelfConversation,
-                conversations.clearConversationAssetsLocally,
-                deleteConversationUseCase,
-                currentPersistenceEventHookNotifier,
-            ),
-            DeleteForMeHandlerImpl(
-                messageDeletionPersistence,
-                isMessageSentInSelfConversation,
-                currentPersistenceEventHookNotifier,
-                userId,
-            ),
-            DeleteMessageHandlerImpl(
+        get() {
+            val sharedPersistMessage = persistMessage
+            return ApplicationMessageHandlerImpl(
+                availabilityMessageHandler,
+                ClientActionMessageHandlerImpl(sharedPersistMessage),
                 messageRepository,
-                assetRepository,
-                NotificationEventsManagerImpl,
-                userId,
-                currentPersistenceEventHookNotifier
-            ),
-            messageEncoder,
-            receiptMessageHandler,
-            buttonActionConfirmationHandler,
-            dataTransferEventHandler,
-            inCallReactionsRepository,
-            buttonActionHandler,
-            MessageCompositeEditHandlerImpl(messageRepository),
-            callingMessageHandler,
-            linkPreviewsResolver,
-            userId
-        )
+                assetMessageHandler,
+                sharedPersistMessage,
+                persistReaction,
+                MessageTextEditHandlerImpl(messageEditPersistence, NotificationEventsManagerImpl),
+                MessageMultipartEditHandlerImpl(messageEditPersistence, NotificationEventsManagerImpl),
+                lastReadContentHandler,
+                ClearConversationContentHandlerImpl(
+                    conversationRepository,
+                    userId,
+                    isMessageSentInSelfConversation,
+                    conversations.clearConversationAssetsLocally,
+                    deleteConversationUseCase,
+                    currentPersistenceEventHookNotifier,
+                ),
+                DeleteForMeHandlerImpl(
+                    messageDeletionPersistence,
+                    isMessageSentInSelfConversation,
+                    currentPersistenceEventHookNotifier,
+                    userId,
+                ),
+                DeleteMessageHandlerImpl(
+                    messageRepository,
+                    assetRepository,
+                    NotificationEventsManagerImpl,
+                    userId,
+                    currentPersistenceEventHookNotifier
+                ),
+                messageEncoder,
+                receiptMessageHandler,
+                buttonActionConfirmationHandler,
+                dataTransferEventHandler,
+                inCallEmojiMessageHandler,
+                buttonActionHandler,
+                MessageCompositeEditHandlerImpl(messageMetadataRepository, compositeMessageRepository),
+                callingMessageHandler,
+                linkPreviewsResolver,
+                userId
+            )
+        }
 
     private val linkPreviewsResolver: LinkPreviewImagesResolver by lazy {
         LinkPreviewImagesResolverImpl(

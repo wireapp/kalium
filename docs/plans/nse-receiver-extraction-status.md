@@ -3,6 +3,124 @@
 This note records the compile-time closure inspected while implementing the receiver-extraction milestone described by
 `nse-safe-multi-process-event-processing.md`. It supplements that plan without changing its design or the NSE runtime scope.
 
+## Current text/multipart-edit application-message slice plan
+
+Inspection of `MessageTextEditHandlerImpl`, `MessageMultipartEditHandlerImpl`, `MessageRepository`/`MessageDataSource`,
+`MessageDAO`, `NotificationEventsManager`, `UserSessionScope`, the message/link-preview/mention/attachment mappings, and
+their tests gives this combined extraction plan:
+
+1. Add one focused `MessageEditPersistence` contract in `:domain:messaging:receiving`, backed by `MessageDAO`, exposing
+   only minimal sender/arbitration state, text and multipart edit writes, and the resulting-message `SENT` update. Map
+   only stored text value/mentions and multipart value/mentions/attachments plus the regular-message edit timestamp; do
+   not move broad `MessageRepository`, `getMessageById`, or the full app `MessageMapper`.
+2. Preserve exact persistence behavior: qualified IDs, `wrapStorageRequest`, mention self-state, stored multipart
+   attachment ordering/filtering, text link-preview mapping, multipart null-text fallback to an empty string, and no
+   multipart attachment writes. Map the status operation to `MessageEntity.Status.SENT` exactly.
+3. Move `MessageTextEditHandler`/`Impl` and `MessageMultipartEditHandler`/`Impl` together to
+   `:domain:messaging:receiving`, retaining their packages and separate recognizable control flow, with cross-module
+   contracts and construction exposed through `@InternalKaliumApi`.
+4. Preserve sender verification and arbitration exactly: lookup first; unchanged lookup failures; the existing warning
+   and `DataNotFound` on mismatch; arbitration only for an already-edited regular message of the matching content type;
+   strict local-timestamp `>` comparison; and equality on the incoming path.
+5. Preserve local-newer payload copies exactly. Text replaces only new content and mentions, retaining incoming link
+   previews; multipart replaces text, mentions, and attachments. Both retain the incoming signaling ID, use the local
+   edit timestamp, skip notifications/status, and return the edit result unchanged.
+6. Preserve incoming/non-arbitrated ordering and short-circuiting: notify before edit; update status only after a
+   successful incoming edit of an already-edited matching message; perform no status update for other stored states;
+   propagate returned failures, exceptions, and cancellation exactly.
+7. Compose one session-scoped DAO-backed persistence instance and supply it to both extracted handlers and to
+   `MessageDataSource`, whose still-used outgoing text/multipart edit methods delegate to the same implementation. Keep
+   `ApplicationMessageHandler` and `NewMessageEventHandler` in `:logic` and delegate only their existing two branches.
+8. Move and strengthen both handler suites in the owning module; add focused persistence mapping/failure/cancellation
+   coverage and exact app-facade routing coverage; validate receiving/logic JVM tests, root detekt, iOS Simulator ARM64
+   compilation, and diff hygiene; then stop before quote handling, ignored/no-op extraction, deletion, asset/calling,
+   facade/orchestration, NSE runtime, or process locking.
+
+## Current in-call-emoji application-message slice plan
+
+Inspection of the inline `InCallEmoji` branch, `InCallReactionsRepository`/`InCallReactionsDataSource`, `CallsScope`,
+`ObserveInCallReactionsUseCase`, `ApplicationMessageHandler`, `UserSessionScope`, and their tests gives this concrete
+extraction plan:
+
+1. Move `InCallReactionsRepository` and `InCallReactionsDataSource` to `:domain:messaging:receiving` without changing
+   their package, and expose their cross-module contract and construction through `@InternalKaliumApi`.
+2. Preserve the single `MutableSharedFlow` exactly: no replay, 32 slots of extra buffer capacity, `DROP_OLDEST` overflow,
+   one emission per handled message, and filtering by the observer's conversation ID.
+3. Add `InCallEmojiMessageHandler` and its implementation below `:logic`. Forward the signaling envelope's conversation
+   ID and sender user ID plus the existing `content.emojis.keys` set directly, retaining suspension, exception, and
+   cancellation behavior.
+4. Delegate only the `InCallEmoji` branch from `ApplicationMessageHandlerImpl`; keep both application-message facades in
+   `:logic` and leave every other signaling branch unchanged.
+5. Compose one lazy session-scoped data-source instance in `UserSessionScope`, use it for the focused incoming handler,
+   and continue passing that same instance to `CallsScope` observers so producer and consumer never split across streams.
+6. Keep the flow process-local and ephemeral. Do not add NSE runtime wiring, durability, process locking, retries, rollout
+   switches, or error conversion in this slice.
+7. Move repository tests to the owning module, add focused forwarding/propagation and logic routing/shared-stream tests,
+   validate JVM/iOS compilation and detekt, then stop before `Ignored`, delete/edit/calling/asset/clear-content leaves,
+   facade extraction, or broader orchestration.
+
+## Current client-action application-message slice plan
+
+Inspection of the inline client-action branch, `Message.System`, `MessageContent.ClientAction`/`CryptoSessionReset`,
+`PersistMessageUseCase`, `ApplicationMessageHandler`, `UserSessionScope`, and their tests gives this concrete extraction
+plan:
+
+1. Add `ClientActionMessageHandler` and `ClientActionMessageHandlerImpl` to `:domain:messaging:receiving` in the existing
+   application-message handler package, with cross-module construction exposed through `@InternalKaliumApi`.
+2. Preserve the exact two log messages and their order around construction of one crypto-session-reset `Message.System`,
+   forwarding the signaling envelope's ID, conversation ID, date, sender user ID, status, and sender user name while
+   keeping expiration data null.
+3. Depend only on the existing `PersistMessageUseCase`; invoke it once, ignore either returned `Right` or `Left`, and let
+   ordinary exceptions and cancellation escape unchanged without filtering, retries, hooks, or notifications.
+4. Delegate only the ClientAction branch and compose the leaf in `UserSessionScope` with the same persistence instance
+   retained by `ApplicationMessageHandlerImpl` for regular messages. Keep both application-message facades in `:logic`.
+5. Add focused mapping/result/propagation tests plus exact-envelope routing coverage, validate JVM/iOS compilation and
+   detekt, then stop before Ignored, InCallEmoji, delete/edit leaves, facade extraction, or NSE runtime work.
+
+## Current availability application-message slice plan
+
+Inspection of the inline availability branch, `UserRepository.updateOtherUserAvailabilityStatus`,
+`AvailabilityStatusMapper`, `UserDAO.updateUserAvailabilityStatus`, `ApplicationMessageHandler`, `UserSessionScope`, and
+their tests gives this concrete extraction plan:
+
+1. Move `AvailabilityStatusMapper` unchanged to `:data:data-mappers`, keep its package stable, expose cross-module use
+   through `@InternalKaliumApi`, and retain exact model/DAO/protobuf mappings, including null and unrecognized values to
+   `NONE`.
+2. Add a focused `IncomingAvailabilityPersistence` in `:domain:messaging:receiving`, backed directly by
+   `UserDAO.updateUserAvailabilityStatus`, with the same sender-ID and availability-status mapping.
+3. Preserve the direct failure contract: do not wrap, catch, log, retry, or convert the DAO result; ordinary exceptions
+   and cancellation continue escaping unchanged.
+4. Add `AvailabilityMessageHandlerImpl` below `:logic`; keep the exact pre-persistence log message, signaling-envelope
+   sender, content status, single persistence call, and absence of filters or side effects.
+5. Delegate only the Availability branch, remove `UserRepository` from `ApplicationMessageHandlerImpl`, remove the
+   now-unused repository facade, and compose one focused adapter and handler in `UserSessionScope` without NSE-specific
+   wiring.
+6. Move and expand mapper coverage, add focused adapter/handler forwarding and propagation tests, retain routing coverage
+   in `:logic`, validate JVM/iOS compilation and detekt, then stop before every other application-message leaf or NSE
+   orchestration.
+
+## Current composite-edit application-message slice plan
+
+Inspection of `MessageCompositeEditHandlerImpl`, `MessageRepository.getMessageById` and `updateCompositeMessage`,
+`MessageMetadataRepository`, `CompositeMessageRepository`, their DAO implementations, `ApplicationMessageHandler`,
+`UserSessionScope`, and tests gives this concrete extraction plan:
+
+1. Reuse `MessageMetadataRepository.originalSenderId` for sender verification. Its DAO reads the same stored
+   `Message.sender_user_id` selected through the broad message-details lookup, returns null for a missing row, and retains
+   `wrapStorageRequest` failure/cancellation behavior without moving broad message-entity mapping below `:logic`.
+2. Extend `CompositeMessageRepository` with the existing incoming composite-content update, backed by the same
+   `MessageDAO.updateCompositeMessageContent` call and exact text/button mapping. Compose one shared focused repository
+   instance for incoming edits, incoming button handlers, and outgoing composite-message consumers.
+3. Move `MessageCompositeEditHandler` and its implementation to `:domain:messaging:receiving` without changing their
+   package, expose cross-module construction through `@InternalKaliumApi`, and depend only on the two focused repositories.
+4. Preserve exact behavior: use envelope conversation/message metadata, return lookup failures unchanged, treat missing
+   or mismatched senders as `DataNotFound`, skip rejected updates, forward the complete edit payload and signaling
+   ID/date, preserve ordered button/text mapping, and return the update result unchanged.
+5. Remove only the now-unused composite-update facade from `MessageRepository`; retain `getMessageById` and keep
+   `ApplicationMessageHandler`/`NewMessageEventHandler` in `:logic`. Move and expand focused handler/DAO-adapter tests,
+   retain routing coverage in `:logic`, validate JVM/iOS compilation and detekt, then stop before other edit/delete leaves,
+   notification side effects, or NSE orchestration.
+
 ## Current delete-for-me application-message slice plan
 
 Inspection of `DeleteForMeHandlerImpl`, `IsMessageSentInSelfConversationUseCaseImpl`, `SelfConversationIdProviderImpl`,
@@ -229,6 +347,55 @@ The following concrete receivers now live in `:domain:messaging:receiving`, and 
     while the underlying DAO method remains available to its focused adapter, benchmarks, and persistence tests;
   - `UserSessionScope` owns one shared handler instance for application-message handling and pending-side-effect flushes,
     while `ApplicationMessageHandler` and `NewMessageEventHandler` remain in `:logic`.
+- The composite-edit application-message leaf
+  - `MessageCompositeEditHandlerImpl`, retaining signaling-envelope conversation/message ID/date forwarding, exact
+    original-sender enforcement, the existing mismatch warning and `DataNotFound` result, lookup/update failure
+    propagation, and no update after a rejected lookup;
+  - the existing `MessageMetadataSource` performs the sender lookup, while the extended `CompositeMessageDataSource`
+    maps optional text and ordered buttons to the same `MessageDAO.updateCompositeMessageContent` call with
+    `wrapStorageRequest` and cancellation behavior unchanged;
+  - `UserSessionScope` shares one focused composite repository across this handler, incoming button handlers, and
+    outgoing composite-message consumers; the now-unused broad composite-update facade was removed from
+    `MessageRepository`, while broad message lookup/mapping remains in `:logic` for its other callers.
+- The availability application-message leaf
+  - `AvailabilityMessageHandlerImpl`, retaining the exact pre-persistence log message and forwarding the signaling
+    envelope sender plus content status exactly once without filtering or additional side effects;
+  - the focused DAO-backed `IncomingAvailabilityPersistenceImpl`, retaining direct exception and cancellation
+    propagation plus the same qualified-ID and status mappings for `UserDAO.updateUserAvailabilityStatus`;
+  - `AvailabilityStatusMapper` now lives in `:data:data-mappers` with model/DAO/protobuf mappings unchanged, including
+    null and unrecognized values to `NONE`; the now-unused availability facade was removed from `UserRepository`, and
+    `ApplicationMessageHandlerImpl` no longer depends on that broad repository.
+- The client-action application-message leaf
+  - `ClientActionMessageHandlerImpl`, retaining both exact logs in their original order and mapping one signaling envelope
+    to the same crypto-session-reset `Message.System` with null expiration data;
+  - the handler uses the same `PersistMessageUseCase` instance retained by `ApplicationMessageHandlerImpl` for regular
+    messages, invokes it once, ignores either returned `Right` or `Left`, and lets exceptions and cancellation escape;
+  - `ApplicationMessageHandlerImpl` delegates only its ClientAction branch and remains in `:logic` with
+    `NewMessageEventHandler`.
+- The in-call-emoji application-message leaf
+  - `InCallEmojiMessageHandlerImpl`, retaining signaling-envelope conversation/sender IDs and forwarding the existing
+    emoji-key set exactly once, with direct suspension, exception, and cancellation behavior unchanged;
+  - `InCallReactionsRepository` and `InCallReactionsDataSource` retain their existing package and exact process-local
+    `MutableSharedFlow` replay, extra-buffer, overflow, emission, and conversation-filtering behavior;
+  - `UserSessionScope` owns one shared repository instance used by both the incoming handler and `CallsScope` observers;
+    the stream intentionally remains ephemeral and is not an NSE cross-process transport or durable persistence layer;
+  - `ApplicationMessageHandlerImpl` delegates only its `InCallEmoji` branch and remains in `:logic` with
+    `NewMessageEventHandler`.
+- The paired text/multipart-edit application-message slice
+  - `MessageTextEditHandlerImpl` and `MessageMultipartEditHandlerImpl`, retaining lookup-first behavior, exact sender
+    enforcement/warning, matching-content and edited-state arbitration, strict local `>` timestamp comparison, and
+    equality on the incoming path;
+  - local-newer text edits retain incoming link previews while copying stored text/mentions, and local-newer multipart
+    edits copy stored value/mentions/attachments; both use the incoming signaling ID and local edit timestamp without
+    notification or status mutation;
+  - incoming and non-arbitrated paths retain notification-before-edit ordering, while only a successful incoming edit of
+    an already-edited matching message proceeds to mark the resulting message `SENT`;
+  - the focused DAO-backed `MessageEditPersistenceImpl` maps only sender plus the minimal arbitration fields, preserves
+    qualified IDs, mention/link-preview mapping, multipart null-text fallback, stored attachment mapping, wrapped
+    failures/cancellation, and the current absence of multipart attachment writes;
+  - `UserSessionScope` supplies one persistence instance to both handlers and `MessageDataSource`, whose still-used broad
+    outgoing text/multipart edit methods delegate to that same implementation; broad message lookup and unrelated
+    repository APIs remain in `:logic`.
 
 Supporting ID, folder, feature-config, self-deletion, and supported-protocol mappers were moved to `:data:data-mappers`.
 The outgoing message-entity mapper and the link-preview, mention, attachment, encryption, and conversation-protocol
@@ -286,9 +453,10 @@ The complete `NewMessageEventHandler` branch additionally closes over:
 
 - Proteus and MLS unpacking/failure handling (`ProteusMessageUnpacker`, `ProteusMessageFailureHandler`,
   `MLSMessageUnpacker`, `MLSMessageFailureHandler`, `MessageUnpackResult`);
-- application-message routing (`ApplicationMessageHandler`) and its asset, call, reaction, delete, edit, multipart,
-  last-read, and clear-content handlers. Its button, data-transfer, and receipt leaves are reusable below `:logic`, but
-  the facade stays in `:logic` until the remaining branches move;
+- application-message routing (`ApplicationMessageHandler`) and its asset, call, delete, and clear-content handlers. Its
+  button, data-transfer, receipt, reaction, delete-for-me, last-read, composite-edit, availability, client-action,
+  in-call-emoji, text-edit, and multipart-edit leaves are reusable below `:logic`, but the facade stays in `:logic` until
+  the remaining branches move;
 - MLS recovery/key-package work (`RefillKeyPackagesUseCase`, `PendingProposalScheduler`, `StaleEpochVerifier`,
   `ResetMLSConversationUseCase`, `JoinExistingMLSConversationUseCase`);
 - certificate and legal-hold checks (`CertificateRevocationListRepository`, `RevocationListChecker`,
@@ -301,13 +469,16 @@ lower-level implementations first, then move handlers from the leaves toward `Ne
 receiver class, defining NSE-only adapters, or copying the repositories would leave an incomplete graph and is therefore
 intentionally not done here.
 
-Delete-for-me and its complete local verification/mutation closure are now extracted. Edit/delete handlers beyond
-delete-for-me require message lookup and mapping plus notification/asset side effects, while
-last-read and clear-content retain self-conversation, notification, pending-flush, asset, and conversation-deletion
-dependencies. The lifecycle handlers remain blocked on the remote-fetch, MLS, legal-hold, call, notification, user, and
-system-message closures above. The recommended next coherent application-message leaf is `DeleteMessageHandler`, but only
-together with focused lower-level message lookup/deletion and the complete asset, notification, and persistence-hook
-closure it currently requires.
+Availability, ClientAction, InCallEmoji, TextEdited, and MultipartEdited, including their complete direct persistence or
+process-local stream closures, are now extracted. Delete handlers still require message lookup/deletion plus
+notification/asset side effects, while clear-content retains self-conversation, notification, asset, and
+conversation-deletion dependencies. The lifecycle handlers remain blocked on the remote-fetch, MLS, legal-hold, call,
+notification, user, and system-message closures above. The recommended next meaningful application-message slice is the
+complete `DeleteMessageHandler` closure: introduce focused lower-level message lookup/deletion and carry its asset,
+notification, self-user, and persistence-hook behavior together so ordering and failure semantics remain testable. A
+standalone `Ignored` move is intentionally not recommended as a milestone merely because its log-only implementation is
+small. The extracted in-call reaction stream remains process-local and ephemeral, so any future NSE cross-process or
+durability design stays outside this leaf.
 `ConversationEventReceiverImpl` remains blocked until those lifecycle handlers plus `NewMessageEventHandler`, both
 unpackers/failure handlers, MLS recovery, certificate/legal-hold checks, and pending-side-effect flushing are all reusable
 below `:logic`.

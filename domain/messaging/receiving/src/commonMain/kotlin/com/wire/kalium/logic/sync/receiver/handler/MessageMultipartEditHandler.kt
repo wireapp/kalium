@@ -20,31 +20,34 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEditPersistence
+import com.wire.kalium.logic.data.message.MessageEditState
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface MessageMultipartEditHandler {
-    suspend fun handle(
+@InternalKaliumApi
+public interface MessageMultipartEditHandler {
+    public suspend fun handle(
         message: Message.Signaling,
-        messageContent: MessageContent.MultipartEdited
+        messageContent: MessageContent.MultipartEdited,
     ): Either<CoreFailure, Unit>
 }
 
-internal class MessageMultipartEditHandlerImpl internal constructor(
-    private val messageRepository: MessageRepository,
+@InternalKaliumApi
+public class MessageMultipartEditHandlerImpl public constructor(
+    private val messageEditPersistence: MessageEditPersistence,
     private val notificationEventsManager: NotificationEventsManager,
 ) : MessageMultipartEditHandler {
 
     override suspend fun handle(
         message: Message.Signaling,
-        messageContent: MessageContent.MultipartEdited
-    ) = messageRepository.getMessageById(message.conversationId, messageContent.editMessageId).flatMap { currentMessage ->
+        messageContent: MessageContent.MultipartEdited,
+    ) = messageEditPersistence.loadMessageEditState(message.conversationId, messageContent.editMessageId).flatMap { currentMessage ->
 
         if (currentMessage.senderUserId != message.senderUserId) {
             val obfuscatedId = message.senderUserId.toLogString()
@@ -55,46 +58,44 @@ internal class MessageMultipartEditHandlerImpl internal constructor(
             return@flatMap Either.Left(StorageFailure.DataNotFound)
         }
 
-        val editStatus = (currentMessage as? Message.Regular)?.editStatus
         val content = currentMessage.content
-        if (currentMessage is Message.Regular && content is MessageContent.Multipart && editStatus is Message.EditStatus.Edited) {
+        if (content is MessageEditState.Content.Multipart && content.lastEditInstant != null) {
             // if the locally stored message is also already edited, we check which one is newer
-            if (editStatus.lastEditInstant > message.date) {
+            if (content.lastEditInstant > message.date) {
                 // our local pending or failed edit is newer than one we got from the backend so we update locally only message id and date
-                messageRepository.updateMultipartMessage(
+                messageEditPersistence.applyMultipartEdit(
                     conversationId = message.conversationId,
                     messageContent = messageContent.copy(
                         newTextContent = content.value,
                         newMentions = content.mentions,
-                        newAttachments = content.attachments
+                        newAttachments = content.attachments,
                     ),
                     newMessageId = message.id,
-                    editInstant = editStatus.lastEditInstant
+                    editInstant = content.lastEditInstant,
                 )
             } else {
                 notificationEventsManager.scheduleEditMessageNotification(message, messageContent)
                 // incoming edit from the backend is newer than the one we have locally so we update the whole message and change the status
-                messageRepository.updateMultipartMessage(
+                messageEditPersistence.applyMultipartEdit(
                     conversationId = message.conversationId,
                     messageContent = messageContent,
                     newMessageId = message.id,
-                    editInstant = message.date
+                    editInstant = message.date,
                 ).flatMap {
-                    messageRepository.updateMessageStatus(
-                        messageStatus = MessageEntity.Status.SENT,
+                    messageEditPersistence.markMessageAsSent(
                         conversationId = message.conversationId,
-                        messageUuid = message.id
+                        messageId = message.id,
                     )
                 }
             }
         } else {
             notificationEventsManager.scheduleEditMessageNotification(message, messageContent)
 
-            messageRepository.updateMultipartMessage(
+            messageEditPersistence.applyMultipartEdit(
                 conversationId = message.conversationId,
                 messageContent = messageContent,
                 newMessageId = message.id,
-                editInstant = message.date
+                editInstant = message.date,
             )
         }
     }

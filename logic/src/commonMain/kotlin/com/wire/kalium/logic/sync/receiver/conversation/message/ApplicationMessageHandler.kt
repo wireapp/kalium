@@ -27,7 +27,6 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
-import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -41,15 +40,17 @@ import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.message.hasValidData
 import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.AvailabilityMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
 import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.ClientActionMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.InCallEmojiMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
@@ -89,7 +90,8 @@ internal interface ApplicationMessageHandler {
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ApplicationMessageHandlerImpl(
-    private val userRepository: UserRepository,
+    private val availabilityMessageHandler: AvailabilityMessageHandler,
+    private val clientActionMessageHandler: ClientActionMessageHandler,
     private val messageRepository: MessageRepository,
     private val assetMessageHandler: AssetMessageHandler,
     private val persistMessage: PersistMessageUseCase,
@@ -104,7 +106,7 @@ internal class ApplicationMessageHandlerImpl(
     private val receiptMessageHandler: ReceiptMessageHandler,
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler,
     private val dataTransferEventHandler: DataTransferEventHandler,
-    private val inCallReactionsRepository: InCallReactionsRepository,
+    private val inCallEmojiMessageHandler: InCallEmojiMessageHandler,
     private val buttonActionHandler: ButtonActionHandler,
     private val messageCompositeEditHandler: MessageCompositeEditHandler,
     private val callingMessageHandler: CallingMessageHandler,
@@ -189,11 +191,10 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.Availability -> {
-                logger.i(message = "Availability status update received: ${content.status}")
-                userRepository.updateOtherUserAvailabilityStatus(signaling.senderUserId, content.status)
+                availabilityMessageHandler.handle(signaling, content)
             }
 
-            is MessageContent.ClientAction -> handleClientAction(signaling)
+            is MessageContent.ClientAction -> clientActionMessageHandler.handle(signaling)
 
             is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
             is MessageContent.DeleteMessage -> deleteMessageHandler(content, signaling.conversationId, signaling.senderUserId)
@@ -222,11 +223,7 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.DataTransfer -> dataTransferEventHandler.handle(signaling, content)
-            is MessageContent.InCallEmoji -> inCallReactionsRepository.addInCallReaction(
-                conversationId = signaling.conversationId,
-                senderUserId = signaling.senderUserId,
-                emojis = content.emojis.keys,
-            )
+            is MessageContent.InCallEmoji -> inCallEmojiMessageHandler.handle(signaling, content)
 
             is MessageContent.CompositeEdited -> messageCompositeEditHandler.handle(signaling, content)
 
@@ -246,26 +243,6 @@ internal class ApplicationMessageHandlerImpl(
                 "messageType" to content.getType(),
             )
         )
-    }
-
-    private suspend fun handleClientAction(
-        signaling: Message.Signaling,
-    ) {
-        logger.i(message = "ClientAction status update received: ")
-
-        val message = Message.System(
-            id = signaling.id,
-            content = MessageContent.CryptoSessionReset,
-            conversationId = signaling.conversationId,
-            date = signaling.date,
-            senderUserId = signaling.senderUserId,
-            status = signaling.status,
-            senderUserName = signaling.senderUserName,
-            expirationData = null
-        )
-
-        logger.i(message = "Persisting crypto session reset system message..")
-        persistMessage(message)
     }
 
     private suspend fun processMessage(message: Message.Regular) {
