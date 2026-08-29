@@ -20,6 +20,7 @@ import org.gradle.api.artifacts.ProjectDependency
 
 plugins {
     id(libs.plugins.kalium.library.get().pluginId)
+    id(libs.plugins.kalium.mutation.testing.get().pluginId)
     alias(libs.plugins.ksp)
     alias(libs.plugins.mokkery)
 }
@@ -28,6 +29,11 @@ kaliumLibrary {
     multiplatform {
         enableJs.set(false)
     }
+}
+
+mutationTesting {
+    targetClasses.set(listOf("com.wire.kalium.logic.sync.receiver.*"))
+    targetTests.set(listOf("com.wire.kalium.logic.sync.receiver.*"))
 }
 
 kotlin {

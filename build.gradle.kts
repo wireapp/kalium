@@ -188,6 +188,7 @@ tasks.register("runMutationTests") {
     group = "verification"
     description = "Runs mutation tests for KMP code on the JVM target."
     dependsOn(":core:util:mutationTest")
+    dependsOn(":domain:messaging:receiving:mutationTest")
     dependsOn(":logic:mutationTest")
 }
 
