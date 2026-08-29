@@ -18,12 +18,16 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -64,6 +68,36 @@ class UserPropertiesEventReceiverTest {
         }
     }
 
+    @Test
+    fun givenTypingIndicatorUpdateSucceeds_whenHandling_thenSuccessIsReturned() = runTest {
+        val event = Event.UserProperty.TypingIndicatorModeSet(id = "event-id", value = true)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateTypingIndicator(Either.Right(Unit))
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        result.shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setTypingIndicatorStatus(event.value)
+        }
+    }
+
+    @Test
+    fun givenTypingIndicatorUpdateFails_whenHandling_thenFailureIsReturned() = runTest {
+        val event = Event.UserProperty.TypingIndicatorModeSet(id = "event-id", value = false)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateTypingIndicator(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        result.shouldFail()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setTypingIndicatorStatus(event.value)
+        }
+    }
+
     private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
         val userConfigRepository = mock<UserConfigRepository>()
@@ -84,6 +118,12 @@ class UserPropertiesEventReceiverTest {
             everySuspend {
                 conversationFolderRepository.updateConversationFolders(any())
              } returns Either.Right(Unit)
+        }
+
+        suspend fun withUpdateTypingIndicator(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
+                userConfigRepository.setTypingIndicatorStatus(any())
+            } returns result
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {

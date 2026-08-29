@@ -522,6 +522,34 @@ class LegalHoldHandlerTest {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenSelfLegalHoldWasEnabledAndIsNowDisabled_whenHandlingLiveMessage_thenClearRequestAndNotify() = runTest {
+        val (arrangement, handler) = Arrangement()
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.ENABLED)
+            .withUpdateLegalHoldStatusSuccess(isChanged = true)
+            .withGetConversationMembersSuccess(listOf(TestUser.SELF.id))
+            .withMembersHavingLegalHoldClientSuccess(listOf(TestUser.SELF.id))
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .withDeleteLegalHoldSuccess()
+            .withSyncStates(flowOf(SyncState.Live))
+            .arrange()
+        advanceUntilIdle()
+
+        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.DISABLED), true)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setLegalHoldChangeNotified(eq(false))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.deleteLegalHoldRequest()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(TestUser.SELF.id), any())
+        }
+    }
+
     @Test
     fun givenHandleMessageSendFailureFails_whenHandlingMessageSendFailure_thenPropagateThisFailure() = runTest {
         // given

@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -37,6 +38,7 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
@@ -47,6 +49,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
@@ -57,6 +60,17 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class NewMessageEventHandlerTest {
+
+    @Test
+    fun givenPendingSideEffects_whenFlushing_thenDelegateToApplicationMessageHandler() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement().arrange()
+
+        newMessageEventHandler.flushPendingSideEffects()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.applicationMessageHandler.flushPendingSideEffects()
+        }
+    }
 
     @Test
     fun givenProteusEvent_whenHandling_shouldAskProteusUnpackerToDecrypt() = runTest {
@@ -514,6 +528,21 @@ class NewMessageEventHandlerTest {
         }
 
     @Test
+    fun givenMLSEventFailsWithInvalidLeafNodeIndex_whenHandling_thenResetConversation() = runTest {
+        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex))
+            .withResetConversationReturning(ResetMLSConversationResult.Success)
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.resetMlsConversation(eq(newMessageEvent.conversationId), eq(arrangement.transactionContext))
+        }
+    }
+
+    @Test
     fun givenSubconversationId_whenHandlingInformUserFailure_thenShouldNotSendSystemMessage() = runTest {
         val event = TestEvent.newMLSMessageEvent(
             dateTime = DateTimeUtil.currentInstant(),
@@ -536,6 +565,27 @@ class NewMessageEventHandlerTest {
                 senderUserId = any(),
                 senderClientId = any(),
                 content = any()
+            )
+        }
+    }
+
+    @Test
+    fun givenParentConversation_whenHandlingInformUserFailure_thenShouldPersistDecryptionError() = runTest {
+        val event = TestEvent.newMLSMessageEvent(dateTime = DateTimeUtil.currentInstant())
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(CoreFailure.Unknown(null)))
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.applicationMessageHandler.handleDecryptionError(
+                eventId = eq(event.id),
+                conversationId = eq(event.conversationId),
+                messageInstant = eq(event.messageInstant),
+                senderUserId = eq(event.senderUserId),
+                senderClientId = any(),
+                content = matches { it.senderUserId == event.senderUserId && !it.isDecryptionResolved }
             )
         }
     }
@@ -598,6 +648,12 @@ class NewMessageEventHandlerTest {
         suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
                 staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
+            }.returns(result)
+        }
+
+        suspend fun withResetConversationReturning(result: ResetMLSConversationResult) = apply {
+            everySuspend {
+                resetMlsConversation(any(), any())
             }.returns(result)
         }
 
