@@ -18,22 +18,21 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.framework.TestEvent.meetingCreateEvent
-import com.wire.kalium.logic.framework.TestEvent.meetingDeleteEvent
-import com.wire.kalium.logic.framework.TestEvent.meetingMemberAddEvent
-import com.wire.kalium.logic.framework.TestEvent.meetingUpdateEvent
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.sync.receiver.meeting.meetingCreateEvent
+import com.wire.kalium.logic.sync.receiver.meeting.meetingDeleteEvent
+import com.wire.kalium.logic.sync.receiver.meeting.meetingMemberAddEvent
+import com.wire.kalium.logic.sync.receiver.meeting.meetingUpdateEvent
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -55,7 +54,7 @@ class MeetingEventReceiverTest {
             .withMeetingCreateHandlerReturning(event, Either.Right(Unit))
             .arrange()
 
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, DELIVERY_INFO)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
@@ -66,12 +65,12 @@ class MeetingEventReceiverTest {
     @Test
     fun givenCreateHandlerFails_whenProcessingEvent_thenFailureIsReturned() = runTest {
         val event = meetingCreateEvent()
-        val failure = NetworkFailure.NoNetworkConnection(null)
+        val failure = CoreFailure.MissingClientRegistration
         val (arrangement, eventReceiver) = Arrangement()
             .withMeetingCreateHandlerReturning(event, Either.Left(failure))
             .arrange()
 
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, DELIVERY_INFO)
 
         assertSame(failure, assertIs<Either.Left<CoreFailure>>(result).value)
         verifySuspend(VerifyMode.exactly(1)) {
@@ -86,7 +85,7 @@ class MeetingEventReceiverTest {
             .withMeetingDeleteHandlerReturning(event, Either.Right(Unit))
             .arrange()
 
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, DELIVERY_INFO)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
@@ -102,7 +101,7 @@ class MeetingEventReceiverTest {
             .withMeetingDeleteHandlerReturning(event, Either.Left(failure))
             .arrange()
 
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, DELIVERY_INFO)
 
         assertSame(failure, assertIs<Either.Left<CoreFailure>>(result).value)
         verifySuspend(VerifyMode.exactly(1)) {
@@ -118,7 +117,7 @@ class MeetingEventReceiverTest {
             .withMeetingUpdateHandlerReturning(event, Either.Right(Unit))
             .arrange()
 
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, DELIVERY_INFO)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
@@ -129,12 +128,12 @@ class MeetingEventReceiverTest {
     @Test
     fun givenUpdateHandlerFails_whenProcessingEvent_thenFailureIsReturned() = runTest {
         val event = meetingUpdateEvent()
-        val failure = NetworkFailure.NoNetworkConnection(null)
+        val failure = CoreFailure.MissingClientRegistration
         val (arrangement, eventReceiver) = Arrangement()
             .withMeetingUpdateHandlerReturning(event, Either.Left(failure))
             .arrange()
 
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, DELIVERY_INFO)
 
         assertSame(failure, assertIs<Either.Left<CoreFailure>>(result).value)
         verifySuspend(VerifyMode.exactly(1)) {
@@ -149,7 +148,7 @@ class MeetingEventReceiverTest {
             .withMeetingMemberAddHandlerReturning(event, Either.Right(Unit))
             .arrange()
 
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, DELIVERY_INFO)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
@@ -160,12 +159,12 @@ class MeetingEventReceiverTest {
     @Test
     fun givenMemberAddHandlerFails_whenProcessingEvent_thenFailureIsReturned() = runTest {
         val event = meetingMemberAddEvent()
-        val failure = NetworkFailure.NoNetworkConnection(null)
+        val failure = CoreFailure.MissingClientRegistration
         val (arrangement, eventReceiver) = Arrangement()
             .withMeetingMemberAddHandlerReturning(event, Either.Left(failure))
             .arrange()
 
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, DELIVERY_INFO)
 
         assertSame(failure, assertIs<Either.Left<CoreFailure>>(result).value)
         verifySuspend(VerifyMode.exactly(1)) {
@@ -173,7 +172,8 @@ class MeetingEventReceiverTest {
         }
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+    private class Arrangement {
+        val transactionContext = mock<CryptoTransactionContext>()
         val meetingCreateEventHandler = mock<MeetingCreateEventHandler>(mode = MockMode.autoUnit)
         val meetingDeleteEventHandler = mock<MeetingDeleteEventHandler>(mode = MockMode.autoUnit)
         val meetingUpdateEventHandler = mock<MeetingUpdateEventHandler>(mode = MockMode.autoUnit)
@@ -201,5 +201,9 @@ class MeetingEventReceiverTest {
             meetingUpdateEventHandler = meetingUpdateEventHandler,
             meetingMemberAddEventHandler = meetingMemberAddEventHandler,
         )
+    }
+
+    private companion object {
+        val DELIVERY_INFO = EventDeliveryInfo(EventSource.LIVE)
     }
 }

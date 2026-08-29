@@ -21,8 +21,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.meeting.MeetingRepository
-import com.wire.kalium.logic.framework.TestEvent.meetingDeleteEvent
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -69,7 +67,7 @@ class MeetingDeleteEventHandlerTest {
     }
 
     private class Arrangement {
-        val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
+        val meetingRepository = mock<MeetingEventRepository>(mode = MockMode.autoUnit)
 
         fun withDeleteMeetingLocallyReturning(event: Event.Meeting.Delete, result: Either<StorageFailure, Unit>) = apply {
             everySuspend { meetingRepository.deleteMeetingLocally(event.meetingId) } returns result

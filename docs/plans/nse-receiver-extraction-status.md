@@ -980,6 +980,33 @@ the public constructors required for cross-module composition without becoming e
    retries, queues/outboxes, or asynchronous redesign. `UserEventReceiverImpl` remains logic-owned and explicitly outside
    this goal.
 
+## Completed MeetingEventReceiver extraction slice
+
+1. `MeetingEventReceiverImpl`, its Create/Delete/Update/MemberAdd handlers, their shared fetch-and-upsert helper, and all
+   five pre-existing test suites now have one owner in `:domain:messaging:receiving` under their existing packages and
+   FQCNs. The `MeetingEventReceiver` contract remains owned by `:domain:event-processing`; only the public visibility
+   required for cross-module composition was added.
+2. The handlers now depend on the focused receiving-owned `MeetingEventRepository`. It exposes only event-triggered
+   fetch-and-persist plus local deletion, and returns the neutral `MeetingEventFetchResult` classification for success,
+   unsupported API, unsupported meeting model, and server-side absence. No broad meeting repository or transport
+   exception type crosses into receiving.
+3. The existing logic-owned `MeetingRepository` extends that focused contract and maps the same outcomes at the module
+   boundary. `NetworkFailure.FeatureNotSupported`, `MeetingDataSource.MeetingNotSupportedFailure`, and the exact
+   `404 meeting-not-found` response are still treated as successful skipped events; every other failure is propagated by
+   identity. Successful fetches still persist the meeting before the handler logs event success.
+4. `UserSessionScope` continues to pass the same `meetingRepository` instance to all four handlers and constructs the
+   same receiver with the same handler order. Delete still performs only local deletion. Event transaction and delivery
+   information remain accepted by the receiver contract and routing still forwards each meeting event to exactly one
+   matching handler.
+5. The moved handler suites cover every neutral skip result, failure propagation, local deletion, and all four receiver
+   routes. Logic-side repository tests characterize the transport/model-to-event-result adapter so the behavior that
+   formerly lived in the handlers remains protected at its new owner.
+6. This is an ownership and dependency-boundary refactor only. It adds no NSE composition, network client, shared-storage
+   bootstrap, lock, retry, queue/outbox, rollout switch, or asynchronous behavior. Meeting API/persistence construction
+   remains a main-app concern until an NSE facade supplies an implementation of the focused contract.
+
+After this slice, `UserEventReceiverImpl` is the only concrete event receiver still owned by `:logic`.
+
 ## Remaining User receiver closure
 
 `UserEventReceiverImpl` is not yet safe to move as a coherent concrete graph. Its compile-time closure contains these
@@ -1047,8 +1074,9 @@ future NSE cross-process or durability design stays outside this leaf.
 
 `ConversationEventReceiverImpl` and its focused suite are now receiving-owned, while the
 `ConversationEventReceiver` contract remains event-processing-owned. This completes the conversation-handler ownership
-extraction goal. `UserEventReceiverImpl` remains logic-owned and explicitly outside that goal. Separately, NSE runtime
-composition still lacks explicit ownership/adapters or durability for legal hold, stale-epoch recovery, reset/rejoin,
+extraction goal. `MeetingEventReceiverImpl` and its four handlers are also receiving-owned behind the focused
+`MeetingEventRepository`; `UserEventReceiverImpl` is now the only concrete receiver still logic-owned. Separately, NSE
+runtime composition still lacks explicit ownership/adapters or durability for legal hold, stale-epoch recovery, reset/rejoin,
 confirmation delivery, self deletion, and pending side effects. Shared-storage bootstrap, durable subconversation
 mapping, pending-proposal ownership/outbox/execution, the Kalium account event lock, validation of the assumed CoreCrypto
 process serialization, and rollout work also remain separate work. No separate Kalium CoreCrypto database-lock

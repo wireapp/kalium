@@ -45,6 +45,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingEventFetchResult
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
@@ -55,6 +56,9 @@ import com.wire.kalium.network.api.authenticated.meeting.MeetingRecurrenceDTO
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.toMeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
+import com.wire.kalium.network.exceptions.APINotSupported
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -269,6 +273,78 @@ class MeetingRepositoryTest {
             arrangement.meetingApi.fetchMeeting(meetingId.toApi())
             arrangement.meetingDao.upsertMeetings(any(), any())
         }
+    }
+
+    @Test
+    fun givenMeetingIsPersisted_whenFetchingForEvent_thenReturnsSuccessResult() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val creatorId = UserId("user1", "domain")
+        val meetingDTO = meetingDTO(meetingId = meetingId.toApi(), creatorId = creatorId.toApi())
+        val (_, repository) = Arrangement()
+            .withFetchMeetingSuccess(meetingId, meetingDTO)
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
+            .withFetchUsersIfUnknownSuccess(setOf(creatorId))
+            .arrange()
+
+        val result = repository.fetchAndPersistMeetingForEvent(meetingId)
+
+        assertEquals(Either.Right(MeetingEventFetchResult.SUCCESS), result)
+    }
+
+    @Test
+    fun givenMeetingApiIsUnsupported_whenFetchingForEvent_thenReturnsFeatureNotSupportedResult() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val (_, repository) = Arrangement()
+            .withFetchMeetingFailure(meetingId, APINotSupported("Meetings API is not supported"))
+            .arrange()
+
+        val result = repository.fetchAndPersistMeetingForEvent(meetingId)
+
+        assertEquals(Either.Right(MeetingEventFetchResult.FEATURE_NOT_SUPPORTED), result)
+    }
+
+    @Test
+    fun givenMeetingModelIsUnsupported_whenFetchingForEvent_thenReturnsMeetingNotSupportedResult() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val meetingDTO = meetingDTO(
+            meetingId = meetingId.toApi(),
+            recurrence = MeetingRecurrenceDTO(frequency = MeetingFrequencyDTO.WEEKLY, interval = 7L, until = null)
+        )
+        val (_, repository) = Arrangement()
+            .withFetchMeetingSuccess(meetingId, meetingDTO)
+            .arrange()
+
+        val result = repository.fetchAndPersistMeetingForEvent(meetingId)
+
+        assertEquals(Either.Right(MeetingEventFetchResult.MEETING_NOT_SUPPORTED), result)
+    }
+
+    @Test
+    fun givenMeetingIsNotFound_whenFetchingForEvent_thenReturnsNotFoundResult() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val notFound = KaliumException.InvalidRequestError(
+            GenericAPIErrorResponse(code = 404, message = "Meeting not found", label = "meeting-not-found")
+        )
+        val (_, repository) = Arrangement()
+            .withFetchMeetingFailure(meetingId, notFound)
+            .arrange()
+
+        val result = repository.fetchAndPersistMeetingForEvent(meetingId)
+
+        assertEquals(Either.Right(MeetingEventFetchResult.NOT_FOUND), result)
+    }
+
+    @Test
+    fun givenOtherFailure_whenFetchingForEvent_thenPropagatesFailure() = runTest {
+        val meetingId = MeetingId("meeting1", "domain")
+        val failure = TestNetworkException.generic
+        val (_, repository) = Arrangement()
+            .withFetchMeetingFailure(meetingId, failure)
+            .arrange()
+
+        val result = repository.fetchAndPersistMeetingForEvent(meetingId)
+
+        assertSame(failure, assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result).value.kaliumException)
     }
 
     @Test
@@ -1152,8 +1228,8 @@ class MeetingRepositoryTest {
             everySuspend { meetingApi.fetchMeeting(id.toApi()) } returns NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value)
         }
 
-        internal fun withFetchMeetingFailure(id: MeetingId) = apply {
-            everySuspend { meetingApi.fetchMeeting(id.toApi()) } returns NetworkResponse.Error(TestNetworkException.generic)
+        internal fun withFetchMeetingFailure(id: MeetingId, failure: KaliumException = TestNetworkException.generic) = apply {
+            everySuspend { meetingApi.fetchMeeting(id.toApi()) } returns NetworkResponse.Error(failure)
         }
 
         internal fun withDeleteMeetingSuccess(meetingId: MeetingId) = apply {

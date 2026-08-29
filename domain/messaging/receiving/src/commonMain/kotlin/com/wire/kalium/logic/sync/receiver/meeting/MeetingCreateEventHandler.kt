@@ -17,26 +17,21 @@
  */
 package com.wire.kalium.logic.sync.receiver.meeting
 
-import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.util.createEventProcessingLogger
 
-internal interface MeetingDeleteEventHandler {
-    suspend fun handle(event: Event.Meeting.Delete): Either<StorageFailure, Unit>
+public interface MeetingCreateEventHandler {
+    public suspend fun handle(event: Event.Meeting.Create): Either<CoreFailure, Unit>
 }
 
-internal class MeetingDeleteEventHandlerImpl(
-    private val meetingRepository: MeetingRepository,
-) : MeetingDeleteEventHandler {
-    override suspend fun handle(event: Event.Meeting.Delete): Either<StorageFailure, Unit> {
+public class MeetingCreateEventHandlerImpl public constructor(
+    private val meetingRepository: MeetingEventRepository,
+) : MeetingCreateEventHandler {
+    override suspend fun handle(event: Event.Meeting.Create): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        return meetingRepository.deleteMeetingLocally(event.meetingId)
-            .onSuccess { eventLogger.logSuccess() }
-            .onFailure { eventLogger.logFailure(it) }
+        return meetingRepository.handleMeetingFetchAndUpsert(meetingId = event.meetingId, eventLogger = eventLogger)
     }
 }

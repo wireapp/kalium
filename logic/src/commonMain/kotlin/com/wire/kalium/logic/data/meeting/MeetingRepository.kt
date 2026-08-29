@@ -29,6 +29,7 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapLeft
@@ -51,12 +52,16 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingEventFetchResult
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingEventRepository
 import com.wire.kalium.logic.util.wrapInMLSContext
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse
 import com.wire.kalium.network.api.authenticated.meeting.toMeetingDTO
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
+import com.wire.kalium.network.exceptions.KaliumException.InvalidRequestError
+import com.wire.kalium.network.exceptions.isMeetingNotFound
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import com.wire.kalium.util.DateTimeUtil.asStartOfDay
@@ -70,7 +75,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
 
-internal interface MeetingRepository {
+internal interface MeetingRepository : MeetingEventRepository {
     suspend fun fetchAndPersistMeetings(
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
@@ -81,6 +86,18 @@ internal interface MeetingRepository {
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
     ): Either<CoreFailure, Meeting>
+
+    override suspend fun fetchAndPersistMeetingForEvent(meetingId: MeetingId): Either<CoreFailure, MeetingEventFetchResult> =
+        fetchAndPersistMeeting(meetingId)
+            .map { MeetingEventFetchResult.SUCCESS }
+            .flatMapLeft { failure ->
+                when {
+                    failure is NetworkFailure.FeatureNotSupported -> Either.Right(MeetingEventFetchResult.FEATURE_NOT_SUPPORTED)
+                    failure is MeetingDataSource.MeetingNotSupportedFailure -> Either.Right(MeetingEventFetchResult.MEETING_NOT_SUPPORTED)
+                    failure.isMeetingNotFound() -> Either.Right(MeetingEventFetchResult.NOT_FOUND)
+                    else -> Either.Left(failure)
+                }
+            }
 
     suspend fun syncMeetingOccurrences(
         removeOlderThan: Instant = occurrenceOutdatedThreshold(),
@@ -99,7 +116,7 @@ internal interface MeetingRepository {
 
     suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit>
 
-    suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit>
+    override suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit>
 
     suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit>
 
@@ -439,5 +456,8 @@ internal class MeetingDataSource(
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
 private const val OUTDATED_MEETING_RETENTION_DAYS = 30
+private fun CoreFailure.isMeetingNotFound(): Boolean =
+    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? InvalidRequestError)?.isMeetingNotFound() == true
+
 private fun occurrenceGenerationUntil() = currentInstant().asStartOfDay().plus((OCCURRENCE_GENERATION_WINDOW_DAYS + 1).days)
 private fun occurrenceOutdatedThreshold() = currentInstant().asStartOfDay().minus(OUTDATED_MEETING_RETENTION_DAYS.days)

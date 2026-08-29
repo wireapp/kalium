@@ -18,14 +18,9 @@
 package com.wire.kalium.logic.sync.receiver.meeting
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.meeting.MeetingDataSource
-import com.wire.kalium.logic.data.meeting.MeetingRepository
-import com.wire.kalium.logic.framework.TestEvent.meetingCreateEvent
-import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -38,60 +33,59 @@ import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-class MeetingCreateEventHandlerTest {
+class MeetingUpdateEventHandlerTest {
 
     @Test
-    fun givenFeatureNotSupportedFailure_whenHandlingCreateEvent_thenReturnSuccess() = runTest {
-        val event = meetingCreateEvent()
+    fun givenFeatureNotSupportedResult_whenHandlingUpdateEvent_thenReturnSuccess() = runTest {
+        val event = meetingUpdateEvent()
         val (arrangement, handler) = Arrangement()
-            .withFetchAndPersistMeetingReturning(event, NetworkFailure.FeatureNotSupported)
+            .withFetchAndPersistMeetingReturning(event, Either.Right(MeetingEventFetchResult.FEATURE_NOT_SUPPORTED))
             .arrange()
 
         val result = handler.handle(event)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.fetchAndPersistMeeting(event.meetingId)
+            arrangement.meetingRepository.fetchAndPersistMeetingForEvent(event.meetingId)
         }
     }
 
     @Test
-    fun givenMeetingNotSupportedFailure_whenHandlingCreateEvent_thenReturnSuccess() = runTest {
-        val event = meetingCreateEvent()
+    fun givenMeetingNotSupportedResult_whenHandlingUpdateEvent_thenReturnSuccess() = runTest {
+        val event = meetingUpdateEvent()
         val (arrangement, handler) = Arrangement()
-            .withFetchAndPersistMeetingReturning(event, MeetingDataSource.MeetingNotSupportedFailure)
+            .withFetchAndPersistMeetingReturning(event, Either.Right(MeetingEventFetchResult.MEETING_NOT_SUPPORTED))
             .arrange()
 
         val result = handler.handle(event)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.fetchAndPersistMeeting(event.meetingId)
+            arrangement.meetingRepository.fetchAndPersistMeetingForEvent(event.meetingId)
         }
     }
 
     @Test
-    fun givenMeetingNotFoundFailure_whenHandlingCreateEvent_thenReturnSuccess() = runTest {
-        val event = meetingCreateEvent()
-        val failure = serverMiscommunicationFailure(code = 404, label = "meeting-not-found")
+    fun givenMeetingNotFoundResult_whenHandlingUpdateEvent_thenReturnSuccess() = runTest {
+        val event = meetingUpdateEvent()
         val (arrangement, handler) = Arrangement()
-            .withFetchAndPersistMeetingReturning(event, failure)
+            .withFetchAndPersistMeetingReturning(event, Either.Right(MeetingEventFetchResult.NOT_FOUND))
             .arrange()
 
         val result = handler.handle(event)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.fetchAndPersistMeeting(event.meetingId)
+            arrangement.meetingRepository.fetchAndPersistMeetingForEvent(event.meetingId)
         }
     }
 
     @Test
-    fun givenOtherFailure_whenHandlingCreateEvent_thenReturnFailure() = runTest {
-        val event = meetingCreateEvent()
-        val failure = NetworkFailure.NoNetworkConnection(null)
+    fun givenOtherFailure_whenHandlingUpdateEvent_thenReturnFailure() = runTest {
+        val event = meetingUpdateEvent()
+        val failure = CoreFailure.MissingClientRegistration
         val (_, handler) = Arrangement()
-            .withFetchAndPersistMeetingReturning(event, failure)
+            .withFetchAndPersistMeetingReturning(event, Either.Left(failure))
             .arrange()
 
         val result = handler.handle(event)
@@ -100,12 +94,15 @@ class MeetingCreateEventHandlerTest {
     }
 
     private class Arrangement {
-        val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
+        val meetingRepository = mock<MeetingEventRepository>(mode = MockMode.autoUnit)
 
-        fun withFetchAndPersistMeetingReturning(event: Event.Meeting.Create, failure: CoreFailure) = apply {
-            everySuspend { meetingRepository.fetchAndPersistMeeting(event.meetingId) } returns Either.Left(failure)
+        fun withFetchAndPersistMeetingReturning(
+            event: Event.Meeting.Update,
+            result: Either<CoreFailure, MeetingEventFetchResult>
+        ) = apply {
+            everySuspend { meetingRepository.fetchAndPersistMeetingForEvent(event.meetingId) } returns result
         }
 
-        fun arrange() = this to MeetingCreateEventHandlerImpl(meetingRepository)
+        fun arrange() = this to MeetingUpdateEventHandlerImpl(meetingRepository)
     }
 }
