@@ -90,7 +90,7 @@ kotlin {
                 implementation(projects.domain.messaging.shared)
                 implementation(projects.domain.messaging.sending)
                 implementation(projects.domain.messaging.hooks)
-                api(projects.domain.messaging.receiving)
+                implementation(projects.domain.messaging.receiving)
                 implementation(projects.domain.eventProcessing)
 
                 // coroutines

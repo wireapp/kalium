@@ -46,7 +46,6 @@ kotlin {
                 implementation(projects.data.dataMappers)
                 implementation(projects.data.network)
                 api(projects.data.persistence)
-                api(projects.domain.cells)
                 api(projects.domain.eventProcessing)
                 api(projects.domain.messaging.shared)
                 api(projects.domain.messaging.hooks)

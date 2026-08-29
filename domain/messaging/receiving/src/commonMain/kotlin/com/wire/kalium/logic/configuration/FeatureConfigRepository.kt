@@ -18,12 +18,11 @@
 
 package com.wire.kalium.logic.configuration
 
-import com.wire.kalium.cells.domain.model.WireCellsConfig
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.featureConfig.CellsInternalConfigModel
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.toEntity
 import com.wire.kalium.logic.data.featureConfig.toModel
@@ -34,7 +33,6 @@ import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.toDao
 import com.wire.kalium.logic.data.user.toModel
-import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.config.WireCellsConfigEntity
@@ -50,10 +48,18 @@ public fun interface FileSharingStatusProvider {
     public suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
 }
 
+/** Cells configuration persistence required by feature-config handlers. */
+@InternalKaliumApi
+public interface CellsConfigPersistence {
+    public suspend fun setCellsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+
+    public suspend fun persistInternalCellsConfig(config: CellsInternalConfigModel?): Either<StorageFailure, Unit>
+}
+
 /** Local configuration operations required by feature-config event handlers. */
 @InternalKaliumApi
 @Suppress("TooManyFunctions")
-public interface FeatureConfigRepository : FileSharingStatusProvider {
+public interface FeatureConfigRepository : FileSharingStatusProvider, CellsConfigPersistence {
     public suspend fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     public override suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
     public suspend fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>): Either<StorageFailure, Unit>
@@ -81,8 +87,6 @@ public interface FeatureConfigRepository : FileSharingStatusProvider {
     public suspend fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig>
     public suspend fun setMigrationConfiguration(configuration: MLSMigrationModel): Either<StorageFailure, Unit>
     public suspend fun setMlsConversationsResetEnabled(enabled: Boolean): Either<StorageFailure, Unit>
-    public suspend fun setCellsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
-    public suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit>
     public suspend fun setProfileQRCodeEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     public suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     public suspend fun setPreventAdminlessGroupsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
@@ -103,23 +107,10 @@ public class FeatureConfigRepositoryImpl public constructor(
 
     override suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> {
         val serverSideConfig = wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }
-        return deriveFileSharingStatus(serverSideConfig, allowedFileTypesProvider())
-    }
-
-    private fun deriveFileSharingStatus(
-        serverSideConfig: Either<StorageFailure, IsFileSharingEnabledEntity>,
-        allowedFileTypes: List<String>?,
-    ): Either<StorageFailure, FileSharingStatus> = when {
-        serverSideConfig.isLeft() -> serverSideConfig
-        serverSideConfig.value.status.not() -> Either.Right(
-            FileSharingStatus(FileSharingStatus.Value.Disabled, serverSideConfig.value.isStatusChanged)
-        )
-        allowedFileTypes != null -> Either.Right(
-            FileSharingStatus(FileSharingStatus.Value.EnabledSome(allowedFileTypes), false)
-        )
-        else -> Either.Right(
-            FileSharingStatus(FileSharingStatus.Value.EnabledAll, serverSideConfig.value.isStatusChanged)
-        )
+        val allowedFileTypes = allowedFileTypesProvider()
+        return serverSideConfig.map {
+            deriveFileSharingStatus(it.status, it.isStatusChanged, allowedFileTypes)
+        }
     }
 
     override suspend fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>): Either<StorageFailure, Unit> =
@@ -203,9 +194,13 @@ public class FeatureConfigRepositoryImpl public constructor(
     override suspend fun setCellsEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigDAO.setCellsEnabled(enabled) }
 
-    override suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit> = wrapStorageRequest {
+    override suspend fun persistInternalCellsConfig(
+        config: CellsInternalConfigModel?
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
         config?.let {
-            userConfigDAO.setWireCellsConfig(WireCellsConfigEntity(it.backendUrl, it.collabora.name, it.teamQuotaBytes))
+            userConfigDAO.setWireCellsConfig(
+                WireCellsConfigEntity(it.backendUrl, it.collaboraEdition.name, it.perUserQuotaBytes)
+            )
         } ?: userConfigDAO.removeWireCellsConfig()
     }
 

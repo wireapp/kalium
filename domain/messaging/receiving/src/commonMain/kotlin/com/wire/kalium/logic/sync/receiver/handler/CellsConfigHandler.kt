@@ -19,8 +19,7 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.configuration.FeatureConfigRepository
-import com.wire.kalium.cells.domain.model.WireCellsConfig
+import com.wire.kalium.logic.configuration.CellsConfigPersistence
 import com.wire.kalium.logic.data.featureConfig.CellsInternalModel
 import com.wire.kalium.logic.data.featureConfig.CellsModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -28,7 +27,7 @@ import com.wire.kalium.util.InternalKaliumApi
 
 @InternalKaliumApi
 public class CellsConfigHandler(
-    private val userConfigRepository: FeatureConfigRepository
+    private val userConfigRepository: CellsConfigPersistence
 ) {
     public suspend fun handle(model: CellsModel?): Either<CoreFailure, Unit> =
         when {
@@ -37,13 +36,5 @@ public class CellsConfigHandler(
         }
 
     public suspend fun handle(model: CellsInternalModel?): Either<CoreFailure, Unit> =
-        userConfigRepository.setWireCellsConfig(
-            config = model?.let {
-                WireCellsConfig(
-                    backendUrl = it.config.backendUrl,
-                    collabora = it.config.collaboraEdition,
-                    teamQuotaBytes = it.config.perUserQuotaBytes,
-                )
-            }
-        )
+        userConfigRepository.persistInternalCellsConfig(model?.config)
 }

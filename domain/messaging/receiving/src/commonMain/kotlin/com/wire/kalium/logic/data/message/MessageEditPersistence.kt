@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapperImpl
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
+import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -96,7 +97,7 @@ public interface MessageEditPersistence {
 @InternalKaliumApi
 public class MessageEditPersistenceImpl public constructor(
     private val messageDAO: MessageDAO,
-    selfUserId: UserId,
+    private val selfUserId: UserId,
     private val linkPreviewMapper: LinkPreviewMapper = LinkPreviewMapperImpl(),
     private val messageMentionMapper: MessageMentionMapper = MessageMentionMapperImpl(IdMapper(), selfUserId),
 ) : MessageEditPersistence {
@@ -163,17 +164,17 @@ public class MessageEditPersistenceImpl public constructor(
 
     private fun MessageEntity.toEditContent(): MessageEditState.Content =
         if (this is MessageEntity.Regular) {
-            val lastEditInstant = (editStatus as? MessageEntity.EditStatus.Edited)?.lastDate
+            val lastEditInstant = (editStatus.toModel() as? Message.EditStatus.Edited)?.lastEditInstant
             when (val currentContent = content) {
                 is MessageEntityContent.Text -> MessageEditState.Content.Text(
                     value = currentContent.messageBody,
-                    mentions = currentContent.mentions.map(messageMentionMapper::fromDaoToModel),
+                    mentions = currentContent.mentions.map { it.toModel(selfUserId) },
                     lastEditInstant = lastEditInstant,
                 )
 
                 is MessageEntityContent.Multipart -> MessageEditState.Content.Multipart(
                     value = currentContent.messageBody,
-                    mentions = currentContent.mentions.map(messageMentionMapper::fromDaoToModel),
+                    mentions = currentContent.mentions.map { it.toModel(selfUserId) },
                     attachments = currentContent.attachments
                         .sortedBy { it.assetIndex }
                         .mapNotNull { it.toModel() },

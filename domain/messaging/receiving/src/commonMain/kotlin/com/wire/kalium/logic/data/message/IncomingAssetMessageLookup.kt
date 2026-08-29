@@ -186,11 +186,6 @@ public class IncomingAssetMessageMapper {
         MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FailedRemotely
     }
 
-    private fun MessageEntity.EditStatus.toModel(): Message.EditStatus = when (this) {
-        MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-        is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(lastDate)
-    }
-
     private fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
         MessageEntity.Visibility.VISIBLE -> Message.Visibility.VISIBLE
         MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED

@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.configuration
 
+import com.wire.kalium.util.InternalKaliumApi
+
 public data class FileSharingStatus(
     val state: Value,
     val isStatusChanged: Boolean?
@@ -27,4 +29,26 @@ public data class FileSharingStatus(
         public data object EnabledAll : Value
         public data class EnabledSome(val allowedType: List<String>) : Value
     }
+}
+
+@InternalKaliumApi
+public fun deriveFileSharingStatus(
+    isEnabled: Boolean,
+    isStatusChanged: Boolean?,
+    allowedFileTypes: List<String>?,
+): FileSharingStatus = when {
+    !isEnabled -> FileSharingStatus(
+        state = FileSharingStatus.Value.Disabled,
+        isStatusChanged = isStatusChanged,
+    )
+
+    allowedFileTypes != null -> FileSharingStatus(
+        state = FileSharingStatus.Value.EnabledSome(allowedFileTypes),
+        isStatusChanged = false,
+    )
+
+    else -> FileSharingStatus(
+        state = FileSharingStatus.Value.EnabledAll,
+        isStatusChanged = isStatusChanged,
+    )
 }

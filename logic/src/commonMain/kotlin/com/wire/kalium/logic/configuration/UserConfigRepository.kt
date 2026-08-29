@@ -23,10 +23,10 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapFlowStorageRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.featureConfig.CellsInternalConfigModel
 import com.wire.kalium.logic.data.featureConfig.CollaboraEdition.Companion.fromString
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.toModel
@@ -44,7 +44,6 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesConfigRepository
 import com.wire.kalium.logic.sync.receiver.UserPropertiesConfigRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.handler.TrackingIdentifierStorage
 import com.wire.kalium.logic.sync.receiver.handler.TrackingIdentifierStorageImpl
-import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.UserConfigDAO
 import com.wire.kalium.util.DateTimeUtil
@@ -168,7 +167,7 @@ internal interface UserConfigRepository : UserPropertiesConfigRepository, Featur
     suspend fun isAssetAuditLogEnabled(): Boolean
     override suspend fun setPreventAdminlessGroupsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isPreventAdminlessGroupsEnabled(): Boolean
-    override suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit>
+    suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit>
     suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?>
     suspend fun isMLSFaultyKeysRepairExecuted(): Boolean
     suspend fun setMLSFaultyKeysRepairExecuted(repaired: Boolean): Either<StorageFailure, Unit>
@@ -209,39 +208,15 @@ internal class UserConfigDataSource internal constructor(
     override fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>> =
         userConfigStorage.isFileSharingEnabledFlow()
             .wrapStorageRequest()
-            .map {
-                deriveFileSharingStatus(it, kaliumConfigs.fileRestrictionState.value)
+            .map { serverSideConfig ->
+                val allowedFileTypes = when (val buildConfig = kaliumConfigs.fileRestrictionState.value) {
+                    is BuildFileRestrictionState.AllowSome -> buildConfig.allowedType
+                    BuildFileRestrictionState.NoRestriction -> null
+                }
+                serverSideConfig.map {
+                    deriveFileSharingStatus(it.status, it.isStatusChanged, allowedFileTypes)
+                }
             }
-
-    private fun deriveFileSharingStatus(
-        serverSideConfig: Either<StorageFailure, IsFileSharingEnabledEntity>,
-        buildConfig: BuildFileRestrictionState
-    ): Either<StorageFailure, FileSharingStatus> = when {
-        serverSideConfig.isLeft() -> serverSideConfig
-
-        serverSideConfig.value.status.not() -> Either.Right(
-            FileSharingStatus(
-                isStatusChanged = serverSideConfig.value.isStatusChanged,
-                state = FileSharingStatus.Value.Disabled
-            )
-        )
-
-        buildConfig is BuildFileRestrictionState.AllowSome -> Either.Right(
-            FileSharingStatus(
-                isStatusChanged = false,
-                state = FileSharingStatus.Value.EnabledSome(buildConfig.allowedType)
-            )
-        )
-
-        buildConfig is BuildFileRestrictionState.NoRestriction -> Either.Right(
-            FileSharingStatus(
-                isStatusChanged = serverSideConfig.value.isStatusChanged,
-                state = FileSharingStatus.Value.EnabledAll
-            )
-        )
-
-        else -> error("Unknown file restriction state: buildConfig: $buildConfig , serverConfig: $serverSideConfig")
-    }
 
     override suspend fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>) =
         featureConfigRepository.setClassifiedDomainsStatus(enabled, domains)
@@ -547,6 +522,9 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun setCellsEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         featureConfigRepository.setCellsEnabled(enabled)
 
+    override suspend fun persistInternalCellsConfig(config: CellsInternalConfigModel?): Either<StorageFailure, Unit> =
+        featureConfigRepository.persistInternalCellsConfig(config)
+
     override suspend fun isCellsEnabled(): Boolean = userConfigDAO.isCellsEnabled()
 
     override suspend fun observeIsCellsEnabled(): Flow<Boolean> = userConfigDAO.observeIsCellsEnabled()
@@ -576,7 +554,15 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun isPreventAdminlessGroupsEnabled(): Boolean = userConfigDAO.isPreventAdminlessGroupsEnabled()
 
     override suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit> =
-        featureConfigRepository.setWireCellsConfig(config)
+        featureConfigRepository.persistInternalCellsConfig(
+            config?.let {
+                CellsInternalConfigModel(
+                    backendUrl = it.backendUrl,
+                    collaboraEdition = it.collabora,
+                    perUserQuotaBytes = it.teamQuotaBytes,
+                )
+            }
+        )
 
     override suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?> = wrapStorageRequest {
         userConfigDAO.getWireCellsConfig()?.let { config ->

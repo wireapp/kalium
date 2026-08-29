@@ -552,6 +552,14 @@ session construction, the NSE facade, durable side effects/outbox execution, dur
 subconversation and pending-proposal coordination, cross-process CoreCrypto locking, rollout, and
 retry/async redesign remain separate milestones.
 
+#### Deferred feature-configuration boundary follow-up
+
+After the shared-storage milestone, move `FeatureConfigRepository`, its persistence implementation,
+and the shared feature-configuration handlers into a neutral `:domain:feature-config` module. Slow
+sync and any retained compatibility receiver must consume the same implementations from that
+module. This is a later ownership cleanup, not part of Milestone 3, and must not expand the NSE event
+slice or pull `UserEventReceiverImpl` into the extraction.
+
 ### Milestone 3 - Apple shared storage, keychain, and existing-state-only mode
 
 Repository: Kalium.

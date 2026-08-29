@@ -112,10 +112,7 @@ internal class MessageMapperImpl(
             senderUserId = message.senderUserId.toModel(),
             senderClientId = ClientId(message.senderClientId),
             status = message.status.toModel(message.readCount),
-            editStatus = when (val editStatus = message.editStatus) {
-                MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-                is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate)
-            },
+            editStatus = message.editStatus.toModel(),
             expirationData = message.expireAfterMs?.let {
                 Message.ExpirationData(
                     expireAfter = it.toDuration(DurationUnit.MILLISECONDS),

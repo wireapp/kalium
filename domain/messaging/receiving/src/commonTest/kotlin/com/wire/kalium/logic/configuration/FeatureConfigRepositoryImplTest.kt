@@ -20,13 +20,19 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.featureConfig.CellsInternalConfigModel
+import com.wire.kalium.logic.data.featureConfig.CollaboraEdition
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
+import com.wire.kalium.persistence.config.WireCellsConfigEntity
 import com.wire.kalium.persistence.dao.UserConfigDAO
+import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -108,6 +114,61 @@ class FeatureConfigRepositoryImplTest {
         assertEquals(1, evaluationCount)
     }
 
+    @Test
+    fun givenInternalCellsConfig_whenPersisted_thenExactEntityIsStored() = runTest {
+        val userConfigDAO = mock<UserConfigDAO>(MockMode.autoUnit)
+        val repository = repository(userConfigDAO = userConfigDAO) { null }
+        val config = CellsInternalConfigModel(
+            backendUrl = "https://cells.example.com",
+            collaboraEdition = CollaboraEdition.CODE,
+            perUserQuotaBytes = 42L,
+        )
+
+        val result = repository.persistInternalCellsConfig(config)
+
+        assertEquals(Either.Right(Unit), result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            userConfigDAO.setWireCellsConfig(
+                WireCellsConfigEntity(
+                    backendUrl = "https://cells.example.com",
+                    collabora = "CODE",
+                    teamQuotaBytes = 42L,
+                )
+            )
+        }
+        verifySuspend(VerifyMode.not) { userConfigDAO.removeWireCellsConfig() }
+    }
+
+    @Test
+    fun givenNullInternalCellsConfig_whenPersisted_thenStoredConfigIsRemoved() = runTest {
+        val userConfigDAO = mock<UserConfigDAO>(MockMode.autoUnit)
+        val repository = repository(userConfigDAO = userConfigDAO) { null }
+
+        val result = repository.persistInternalCellsConfig(null)
+
+        assertEquals(Either.Right(Unit), result)
+        verifySuspend(VerifyMode.exactly(1)) { userConfigDAO.removeWireCellsConfig() }
+    }
+
+    @Test
+    fun givenCellsStorageFailure_whenPersisted_thenFailureIsReturned() = runTest {
+        val expectedException = IllegalStateException("cells storage failure")
+        val config = CellsInternalConfigModel(
+            backendUrl = null,
+            collaboraEdition = CollaboraEdition.NO,
+            perUserQuotaBytes = null,
+        )
+        val expectedEntity = WireCellsConfigEntity(null, "NO", null)
+        val userConfigDAO = mock<UserConfigDAO> {
+            everySuspend { setWireCellsConfig(expectedEntity) } throws expectedException
+        }
+        val repository = repository(userConfigDAO = userConfigDAO) { null }
+
+        val result = repository.persistInternalCellsConfig(config)
+
+        assertEquals(Either.Left(StorageFailure.Generic(expectedException)), result)
+    }
+
     private fun repositoryReturning(
         status: Boolean,
         isStatusChanged: Boolean?,
@@ -116,15 +177,16 @@ class FeatureConfigRepositoryImplTest {
         val userConfigStorage = mock<UserConfigStorage> {
             everySuspend { isFileSharingEnabled() } returns IsFileSharingEnabledEntity(status, isStatusChanged)
         }
-        return repository(userConfigStorage, allowedFileTypesProvider)
+        return repository(userConfigStorage, allowedFileTypesProvider = allowedFileTypesProvider)
     }
 
     private fun repository(
         userConfigStorage: UserConfigStorage = mock(),
+        userConfigDAO: UserConfigDAO = mock(),
         allowedFileTypesProvider: () -> List<String>?,
     ): FeatureConfigRepositoryImpl = FeatureConfigRepositoryImpl(
         userConfigStorage = userConfigStorage,
-        userConfigDAO = mock<UserConfigDAO>(),
+        userConfigDAO = userConfigDAO,
         allowedFileTypesProvider = allowedFileTypesProvider,
     )
 }
