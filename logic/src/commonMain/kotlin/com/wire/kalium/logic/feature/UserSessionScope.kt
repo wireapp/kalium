@@ -155,6 +155,7 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
+import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
@@ -603,8 +604,7 @@ import com.wire.kalium.logic.sync.receiver.handler.RemoteMuteActionRecorder
 import com.wire.kalium.logic.sync.receiver.handler.RemoteMuteCall
 import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
-import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
@@ -618,6 +618,13 @@ import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.user.ClientRemoveEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.user.NewClientEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.user.NewConnectionEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.user.SessionRefreshSuggestedEventHandler
+import com.wire.kalium.logic.sync.receiver.user.SessionRefreshSuggestedEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.user.UserDeleteEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.user.UserUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -1758,8 +1765,10 @@ public class UserSessionScope internal constructor(
 
     private val sessionRefreshSuggestedEventHandler: SessionRefreshSuggestedEventHandler
         get() = SessionRefreshSuggestedEventHandlerImpl(
-            authenticatedNetworkContainer,
-            sessionManager
+            SessionRefreshRepositoryImpl(
+                authenticatedNetworkContainer,
+                sessionManager,
+            )
         )
 
     @Suppress("MagicNumber")
@@ -2474,19 +2483,54 @@ public class UserSessionScope internal constructor(
         )
 
     private val userEventReceiver: UserEventReceiver
-        get() = UserEventReceiverImpl(
-            clientRepository,
-            connectionRepository,
-            userRepository,
-            logout,
-            oneOnOneResolver,
-            userId,
-            clientIdProvider,
-            lazy { newGroupConversationSystemMessagesCreator },
-            legalHoldRequestHandler,
-            legalHoldHandler,
-            sessionRefreshSuggestedEventHandler
-        )
+        get() {
+            val capturedClientRepository = clientRepository
+            val capturedConnectionRepository = connectionRepository
+            val capturedUserRepository = userRepository
+            val capturedLogout = logout
+            val capturedOneOnOneResolver = oneOnOneResolver
+            val capturedSystemMessagesCreator = lazy { newGroupConversationSystemMessagesCreator }
+            val capturedLegalHoldHandler = legalHoldHandler
+
+            return UserEventReceiverImpl(
+                newConnectionEventHandler = NewConnectionEventHandlerImpl(
+                    userRepository = capturedUserRepository,
+                    connectionRepository = capturedConnectionRepository,
+                    scheduleOneOnOneResolution = { transactionContext, otherUserId, delay ->
+                        capturedOneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
+                            transactionContext,
+                            otherUserId,
+                            delay,
+                        )
+                    },
+                    persistUnverifiedWarning = { conversationId ->
+                        capturedSystemMessagesCreator.value.conversationStartedUnverifiedWarning(conversationId)
+                    },
+                    handleLegalHoldChange = capturedLegalHoldHandler::handleNewConnection,
+                ),
+                clientRemoveEventHandler = ClientRemoveEventHandlerImpl(
+                    currentClientIdProvider = clientIdProvider::invoke,
+                    logoutCurrentClient = {
+                        capturedLogout(LogoutReason.REMOVED_CLIENT, waitUntilCompletes = true)
+                    },
+                ),
+                userDeleteEventHandler = UserDeleteEventHandlerImpl(
+                    selfUserId = userId,
+                    userRepository = capturedUserRepository,
+                    logoutDeletedAccount = {
+                        capturedLogout(LogoutReason.DELETED_ACCOUNT, waitUntilCompletes = true)
+                    },
+                ),
+                userUpdateEventHandler = UserUpdateEventHandlerImpl(capturedUserRepository),
+                newClientEventHandler = NewClientEventHandlerImpl(
+                    clientRepository = capturedClientRepository,
+                    currentClientIdProvider = clientIdProvider::invoke,
+                ),
+                legalHoldRequestHandler = legalHoldRequestHandler,
+                legalHoldHandler = capturedLegalHoldHandler,
+                sessionRefreshSuggestedEventHandler = sessionRefreshSuggestedEventHandler,
+            )
+        }
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
         get() = UserPropertiesEventReceiverImpl(

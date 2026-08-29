@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.sync.receiver.user.NewClientEventRepository
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -51,7 +52,7 @@ import kotlinx.coroutines.flow.map
 import kotlin.io.encoding.Base64
 
 @Suppress("TooManyFunctions")
-internal interface ClientRepository {
+internal interface ClientRepository : NewClientEventRepository {
     suspend fun setHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun registerClient(param: RegisterClientParameters): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(
@@ -115,7 +116,7 @@ internal interface ClientRepository {
         verified: Boolean
     ): Either<StorageFailure, Unit>
 
-    suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient): Either<CoreFailure, Unit>
+    override suspend fun saveNewClientEvent(event: Event.User.NewClient): Either<CoreFailure, Unit>
     suspend fun clearNewClients()
     fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>>
 }
@@ -346,9 +347,9 @@ internal class ClientDataSource(
     }
 
     override suspend fun saveNewClientEvent(
-        newClientEvent: Event.User.NewClient
+        event: Event.User.NewClient
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        newClientDAO.insertNewClient(clientMapper.toInsertClientParam(selfUserID, newClientEvent))
+        newClientDAO.insertNewClient(clientMapper.toInsertClientParam(selfUserID, event))
     }
 
     override suspend fun clearNewClients() {

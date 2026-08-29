@@ -69,6 +69,10 @@ import com.wire.kalium.logic.sync.receiver.FederationUserRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventUserRepository
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventUserRepository
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventUserRepository
+import com.wire.kalium.logic.sync.receiver.user.ConnectionUserFetchResult
+import com.wire.kalium.logic.sync.receiver.user.NewConnectionEventUserRepository
+import com.wire.kalium.logic.sync.receiver.user.UserDeleteEventRepository
+import com.wire.kalium.logic.sync.receiver.user.UserUpdateEventRepository
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
@@ -82,6 +86,7 @@ import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isNotFound
 import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.network.api.model.isLegacyBot
 import com.wire.kalium.network.api.model.isTeamMember
@@ -104,7 +109,10 @@ internal interface UserRepository :
     FederationUserRepository,
     ConversationEventUserRepository,
     MemberJoinEventUserRepository,
-    MemberLeaveEventUserRepository {
+    MemberLeaveEventUserRepository,
+    UserUpdateEventRepository,
+    UserDeleteEventRepository,
+    NewConnectionEventUserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit>
 
@@ -128,7 +136,7 @@ internal interface UserRepository :
      * and [Pair.second] is the list of all the other Recipients.
      */
     suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>
-    suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
+    override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
     override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(
         userId: UserId
     ): Either<CoreFailure, List<ConversationId>>
@@ -144,6 +152,20 @@ internal interface UserRepository :
     // TODO: move to migration repo
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
+
+    override suspend fun fetchUserForConnectionEvent(userId: UserId): Either<CoreFailure, ConnectionUserFetchResult> =
+        fetchUserInfo(userId)
+            .map { ConnectionUserFetchResult.SUCCESS }
+            .flatMapLeft { failure ->
+                if (failure.isUserNotFoundFailure()) {
+                    Either.Right(ConnectionUserFetchResult.NOT_FOUND)
+                } else {
+                    Either.Left(failure)
+                }
+            }
+
+    override suspend fun markUserDeletedForEvent(userId: UserId): Either<CoreFailure, Unit> =
+        markUserAsDeletedAndRemoveFromGroupConversations(userId).map { Unit }
 
     /**
      * Updates users without metadata from the server.
@@ -742,6 +764,10 @@ private fun CoreFailure.asMalformedQualifiedIdsDomainError(): KaliumException.In
         null
     }
 }
+
+private fun CoreFailure.isUserNotFoundFailure(): Boolean =
+    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError)
+        ?.isNotFound() == true
 
 private val QUALIFIED_IDS_DOMAIN_VALIDATION_ERROR_REGEX =
     Regex("^Error in \\$\\['qualified_ids']\\[\\d+]\\.domain:.*$", setOf(RegexOption.IGNORE_CASE))

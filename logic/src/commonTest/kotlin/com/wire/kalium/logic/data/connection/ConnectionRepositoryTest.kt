@@ -334,6 +334,17 @@ class ConnectionRepositoryTest {
     }
 
     @Test
+    fun givenConnectionExists_whenGettingStatusForEvent_thenConnectionStatusIsReturned() = runTest {
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        val connection = arrangement.stubConnectionEntity
+        arrangement.withGetConnection(connection)
+
+        val result = connectionRepository.getConnectionStatusForEvent(connection.qualifiedConversationId.toModel())
+
+        result.shouldSucceed { assertEquals(ConnectionState.ACCEPTED, it) }
+    }
+
+    @Test
     fun givenAConnectionRequestIgnore_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBeUpdated() = runTest {
         // given
         val userId = NetworkUserId("user_id", "domain_id")

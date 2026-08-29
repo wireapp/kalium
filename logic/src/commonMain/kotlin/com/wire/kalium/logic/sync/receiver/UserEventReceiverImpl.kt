@@ -19,53 +19,27 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.functional.right
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.logout.LogoutReason
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
-import com.wire.kalium.logic.util.EventLoggingStatus
-import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNotFound
-import kotlin.time.Duration.Companion.ZERO
-import kotlin.time.Duration.Companion.seconds
+import com.wire.kalium.logic.sync.receiver.user.ClientRemoveEventHandler
+import com.wire.kalium.logic.sync.receiver.user.NewClientEventHandler
+import com.wire.kalium.logic.sync.receiver.user.NewConnectionEventHandler
+import com.wire.kalium.logic.sync.receiver.user.SessionRefreshSuggestedEventHandler
+import com.wire.kalium.logic.sync.receiver.user.UserDeleteEventHandler
+import com.wire.kalium.logic.sync.receiver.user.UserUpdateEventHandler
 
-/** Logic-owned implementation of the shared user receiver contract. */
+/** Logic-owned router for the shared user receiver contract. */
 @Suppress("LongParameterList")
 internal class UserEventReceiverImpl internal constructor(
-    private val clientRepository: ClientRepository,
-    private val connectionRepository: ConnectionRepository,
-    private val userRepository: UserRepository,
-    private val logout: LogoutUseCase,
-    private val oneOnOneResolver: OneOnOneResolver,
-    private val selfUserId: UserId,
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
+    private val newConnectionEventHandler: NewConnectionEventHandler,
+    private val clientRemoveEventHandler: ClientRemoveEventHandler,
+    private val userDeleteEventHandler: UserDeleteEventHandler,
+    private val userUpdateEventHandler: UserUpdateEventHandler,
+    private val newClientEventHandler: NewClientEventHandler,
     private val legalHoldRequestHandler: LegalHoldRequestHandler,
     private val legalHoldHandler: LegalHoldHandler,
     private val sessionRefreshSuggestedEventHandler: SessionRefreshSuggestedEventHandler,
@@ -75,152 +49,15 @@ internal class UserEventReceiverImpl internal constructor(
         transactionContext: CryptoTransactionContext,
         event: Event.User,
         deliveryInfo: EventDeliveryInfo
-    ): Either<CoreFailure, Unit> {
-        return when (event) {
-            is Event.User.NewConnection -> handleNewConnection(transactionContext, event, deliveryInfo)
-            is Event.User.ClientRemove -> handleClientRemove(event)
-            is Event.User.UserDelete -> handleUserDelete(event)
-            is Event.User.Update -> handleUserUpdate(event)
-            is Event.User.NewClient -> handleNewClient(event)
-            is Event.User.LegalHoldRequest -> legalHoldRequestHandler.handle(event)
-            is Event.User.LegalHoldEnabled -> legalHoldHandler.handleEnable(event)
-            is Event.User.LegalHoldDisabled -> legalHoldHandler.handleDisable(event)
-            is Event.User.SessionRefreshSuggested -> handleSessionRefreshSuggested(event, deliveryInfo)
-        }
-    }
-
-    private suspend fun handleUserUpdate(event: Event.User.Update): Either<CoreFailure, Unit> {
-        val logger = kaliumLogger.createEventProcessingLogger(event)
-        return userRepository.updateUserFromEvent(event)
-            .onSuccess { logger.logSuccess() }
-            .onFailure {
-                logger.logComplete(
-                    if (it is StorageFailure.DataNotFound) EventLoggingStatus.SKIPPED else EventLoggingStatus.FAILURE,
-                    arrayOf("errorInfo" to it)
-                )
-            }
-            .flatMapLeft {
-                if (it is StorageFailure.DataNotFound) {
-                    // not found in the local db, so this user is not in our team, not our contact nor a member of any of our groups,
-                    // so we can safely ignore this event failure
-                    Either.Right(Unit)
-                } else {
-                    Either.Left(it)
-                }
-            }
-    }
-
-    private suspend fun handleNewConnection(
-        transactionContext: CryptoTransactionContext,
-        event: Event.User.NewConnection,
-        deliveryInfo: EventDeliveryInfo
-    ): Either<CoreFailure, Unit> {
-        val logger = kaliumLogger.createEventProcessingLogger(event)
-        return userRepository.fetchUserInfo(event.connection.qualifiedToId)
-            .flatMapLeft { failure ->
-                if (failure.isUserNotFoundFailure()) {
-                    kaliumLogger.w("Ignoring missing user details while processing a connection event")
-                    Either.Right(Unit)
-                } else {
-                    Either.Left(failure)
-                }
-            }
-            .flatMap {
-                val previousStatus = connectionRepository.getConnection(event.connection.qualifiedConversationId)
-                    .map { it.connection.status }.getOrNull()
-                connectionRepository.insertConnectionFromEvent(transactionContext, event)
-                    .flatMap {
-                        if (event.connection.status == ConnectionState.ACCEPTED) {
-                            oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
-                                transactionContext,
-                                event.connection.qualifiedToId,
-                                delay = if (deliveryInfo.source == EventSource.LIVE) 3.seconds else ZERO
-                            )
-                            if (previousStatus != ConnectionState.MISSING_LEGALHOLD_CONSENT) {
-                                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                                    event.connection.qualifiedConversationId
-                                )
-                            } else Either.Right(Unit)
-                        } else {
-                            Either.Right(Unit)
-                        }
-                    }
-                    .flatMap { legalHoldHandler.handleNewConnection(event) }
-            }
-            .onSuccess { logger.logSuccess() }
-            .onFailure { logger.logFailure(it) }
-    }
-
-    private suspend fun handleClientRemove(event: Event.User.ClientRemove): Either<CoreFailure, Unit> {
-        val logger = kaliumLogger.createEventProcessingLogger(event)
-        return currentClientIdProvider().map { currentClientId ->
-            if (currentClientId == event.clientId) {
-                logger.logSuccess("info" to "CURRENT_CLIENT")
-                logout(LogoutReason.REMOVED_CLIENT, waitUntilCompletes = true)
-            } else {
-                logger.logSuccess("info" to "OTHER_CLIENT")
-            }
-        }
-    }
-
-    private suspend fun handleNewClient(event: Event.User.NewClient): Either<CoreFailure, Unit> {
-        val logger = kaliumLogger.createEventProcessingLogger(event)
-
-        if (shouldSkipCurrentClientId(event)) {
-            logger.logSuccess()
-            return Unit.right()
-        }
-
-        return clientRepository.saveNewClientEvent(event)
-            .onSuccess { logger.logSuccess() }
-            .onFailure { logger.logFailure(it) }
-    }
-
-    /**
-     * For some reasons we receive the current client id as a NewClient event.
-     * Then skip it, because is not needed to be processed.
-     */
-    private suspend fun shouldSkipCurrentClientId(event: Event.User.NewClient): Boolean {
-        return currentClientIdProvider().fold(
-            fnL = { false },
-            fnR = { currentClientId ->
-                currentClientId == event.client.id
-            }
-        )
-    }
-
-    private suspend fun handleUserDelete(event: Event.User.UserDelete): Either<CoreFailure, Unit> {
-        val logger = kaliumLogger.createEventProcessingLogger(event)
-        return if (selfUserId == event.userId) {
-            logout(LogoutReason.DELETED_ACCOUNT, waitUntilCompletes = true)
-            Either.Right(Unit)
-        } else {
-            userRepository.markUserAsDeletedAndRemoveFromGroupConversations(event.userId)
-                .map { Unit }
-                .onSuccess { logger.logSuccess() }
-                .onFailure { logger.logFailure(it) }
-        }
-    }
-
-    private suspend fun handleSessionRefreshSuggested(
-        event: Event.User.SessionRefreshSuggested,
-        deliveryInfo: EventDeliveryInfo
-    ): Either<CoreFailure, Unit> {
-        val logger = kaliumLogger.createEventProcessingLogger(event)
-        return sessionRefreshSuggestedEventHandler.handle(event)
-            .onSuccess { logger.logSuccess() }
-            .onFailure {
-                logger.logComplete(
-                    if (deliveryInfo.source == EventSource.PENDING) EventLoggingStatus.SKIPPED else EventLoggingStatus.FAILURE,
-                    arrayOf("errorInfo" to it)
-                )
-            }
-            .flatMapLeft {
-                if (deliveryInfo.source == EventSource.PENDING) Either.Right(Unit) else Either.Left(it)
-            }
+    ): Either<CoreFailure, Unit> = when (event) {
+        is Event.User.NewConnection -> newConnectionEventHandler.handle(transactionContext, event, deliveryInfo)
+        is Event.User.ClientRemove -> clientRemoveEventHandler.handle(event)
+        is Event.User.UserDelete -> userDeleteEventHandler.handle(event)
+        is Event.User.Update -> userUpdateEventHandler.handle(event)
+        is Event.User.NewClient -> newClientEventHandler.handle(event)
+        is Event.User.LegalHoldRequest -> legalHoldRequestHandler.handle(event)
+        is Event.User.LegalHoldEnabled -> legalHoldHandler.handleEnable(event)
+        is Event.User.LegalHoldDisabled -> legalHoldHandler.handleDisable(event)
+        is Event.User.SessionRefreshSuggested -> sessionRefreshSuggestedEventHandler.handle(event, deliveryInfo)
     }
 }
-
-private fun CoreFailure.isUserNotFoundFailure(): Boolean =
-    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError)
-        ?.isNotFound() == true

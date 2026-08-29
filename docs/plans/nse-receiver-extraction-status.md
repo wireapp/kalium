@@ -1007,30 +1007,66 @@ the public constructors required for cross-module composition without becoming e
 
 After this slice, `UserEventReceiverImpl` is the only concrete event receiver still owned by `:logic`.
 
+## Completed User receiver handler extraction slices 1-4
+
+The first four planned User receiver slices are now complete without moving the legal-hold handlers or the final router:
+
+1. `UserUpdateEventHandlerImpl` now lives in `:domain:messaging:receiving` behind `UserUpdateEventRepository`. It retains
+   the exact successful update logging, local `DataNotFound` skip classification, other-failure propagation, and event
+   arguments. The broad logic-owned `UserRepository` implements the focused contract with its existing method.
+2. `NewClientEventHandlerImpl`, `ClientRemoveEventHandlerImpl`, and `UserDeleteEventHandlerImpl` are receiving-owned.
+   `NewClientEventRepository` exposes only event persistence; current-client lookup and the two distinct logout actions
+   cross captured callbacks. Current-client lookup failure still causes NewClient persistence but propagates from
+   ClientRemove, same-client NewClient events are still skipped, self deletion still performs a completed-account logout,
+   and other-user deletion still returns the repository result after mapping its unused conversation list to `Unit`.
+3. `SessionRefreshSuggestedEventHandlerImpl` is receiving-owned and now owns the original live-failure versus
+   pending-event-skip classification and logging. The focused `SessionRefreshRepository` is implemented by the
+   logic-owned `SessionRefreshRepositoryImpl`, which retains refresh-token lookup, access-token refresh, cache clearing,
+   missing-token failure, and `FailureToRefreshTokenException` mapping. Network container and session-manager types no
+   longer cross into receiving.
+4. `NewConnectionEventHandlerImpl` is receiving-owned behind `NewConnectionEventUserRepository` and
+   `NewConnectionEventRepository`. The broad `UserRepository` classifies a successful fetch, HTTP not-found, and ordinary
+   failure at the logic boundary; the broad `ConnectionRepository` exposes only previous connection status plus event
+   insertion. One-to-one scheduling, lazy unverified-warning persistence, and legal-hold follow-up cross captured
+   callbacks backed by the same objects formerly stored directly in `UserEventReceiverImpl`.
+5. NewConnection preserves fetch-first behavior, the not-found continuation and warning, previous-status lookup with all
+   lookup failures treated as absent, insertion ownership, accepted-only scheduling, live three-second versus pending
+   zero delay, missing-consent warning suppression, warning-result short circuiting, legal-hold ordering/result ownership,
+   success/failure logging, and exact transaction/event/delivery forwarding.
+6. `UserSessionScope` captures one instance each of the existing client, connection, user, logout, one-to-one resolver,
+   lazy system-message creator, and legal-hold dependencies before constructing the new handlers. The token-refresh
+   adapter receives the same authenticated network container and session manager. No app-owned action is duplicated or
+   moved below `:logic`.
+7. The 23 pre-existing User receiver behavior tests now live with their six receiving-owned handlers; the logic receiver
+   suite is routing-only and additionally covers all three legal-hold routes. The existing token-refresh suite remains in
+   logic beside its adapter, and focused repository tests cover user-fetch classification and connection-status mapping.
+8. These slices add no NSE runtime composition, shared-storage bootstrap, account lock, retry, queue/outbox, rollout
+   switch, async redesign, or legal-hold ownership change. They prepare the router for its final move but do not claim an
+   NSE-safe legal-hold implementation.
+
 ## Remaining User receiver closure
 
-`UserEventReceiverImpl` is not yet safe to move as a coherent concrete graph. Its compile-time closure contains these
-unextracted concrete paths:
+`UserEventReceiverImpl` is now a thin logic-owned router. Client, user, connection, logout, one-to-one resolution,
+system-message insertion, and session refresh cross the focused handlers, ports, callbacks, and adapter documented above.
+They no longer form part of the router's concrete compile-time closure.
 
-- client, user, and connection event mutations in `ClientRepository`, `UserRepository`, and `ConnectionRepository`;
-- account lifecycle through `LogoutUseCase` and `LogoutReason`;
-- one-to-one resolution through `OneOnOneResolver`;
-- system-message insertion through `NewGroupConversationSystemMessagesCreator`;
-- token/session recovery through `SessionRefreshSuggestedEventHandler`, `AuthenticatedNetworkContainer`, and
-  `SessionManager`;
-- legal-hold processing through `LegalHoldRequestHandler` and `LegalHoldHandler`.
+The remaining direct logic-owned paths are `LegalHoldRequestHandler` and `LegalHoldHandler`, covering LegalHoldRequest,
+LegalHoldEnabled, and LegalHoldDisabled. These must receive focused receiving-owned boundaries before the final router can
+move without exposing the app graph below `:logic`.
 
 The legal-hold branch also closes over `FetchSelfClientsFromRemoteUseCase`, `FetchUsersClientsFromRemoteUseCase`,
 `MembersHavingLegalHoldClientUseCase`, `ObserveLegalHoldStateForUserUseCase`, `ObserveSyncStateUseCase`, `TriggerBuffer`,
 `UserConfigRepository`, `ConversationRepository`, and the message-persistence/system-message path shared with Conversation.
-Those repositories currently combine reusable local persistence with network fetches, sync observation, and lifecycle
-behavior. They need focused local slices before their concrete handlers can move without duplication.
+Those repositories combine reusable local persistence with network fetches, sync observation, and lifecycle behavior.
+They need focused legal-hold ports and explicit NSE side-effect ownership before their concrete handlers can move without
+duplication.
 
-The MLS feature-config handlers share this remaining closure: `UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl`
+The MLS feature-config handlers share parts of this app-owned graph but no longer block User receiver handler ownership:
+`UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl`
 depends on `UpdateSelfUserSupportedProtocolsUseCase` and `OneOnOneResolver`, while the slow-sync fallback path depends on
 `CryptoTransactionProviderImpl` and its client providers. Event processing supplies an existing transaction context, but
-the shared handlers keep the slow-sync path unchanged; these concrete dependencies therefore remain part of the User and
-Conversation extraction rather than being duplicated in the receiving module.
+the shared handlers keep the slow-sync path unchanged; these concrete dependencies remain separate app-composition and
+NSE-runtime concerns rather than being duplicated in the receiving module.
 
 ## Completed Conversation and message ownership closure
 
@@ -1075,7 +1111,8 @@ future NSE cross-process or durability design stays outside this leaf.
 `ConversationEventReceiverImpl` and its focused suite are now receiving-owned, while the
 `ConversationEventReceiver` contract remains event-processing-owned. This completes the conversation-handler ownership
 extraction goal. `MeetingEventReceiverImpl` and its four handlers are also receiving-owned behind the focused
-`MeetingEventRepository`; `UserEventReceiverImpl` is now the only concrete receiver still logic-owned. Separately, NSE
+`MeetingEventRepository`; `UserEventReceiverImpl` is now a thin router whose only unextracted routes are legal hold, and
+it remains the only concrete receiver still logic-owned. Separately, NSE
 runtime composition still lacks explicit ownership/adapters or durability for legal hold, stale-epoch recovery, reset/rejoin,
 confirmation delivery, self deletion, and pending side effects. Shared-storage bootstrap, durable subconversation
 mapping, pending-proposal ownership/outbox/execution, the Kalium account event lock, validation of the assumed CoreCrypto

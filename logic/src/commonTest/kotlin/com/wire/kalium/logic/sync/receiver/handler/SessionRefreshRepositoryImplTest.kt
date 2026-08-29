@@ -30,8 +30,8 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.sync.receiver.user.SessionRefreshRepository
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.model.SessionDTO
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
@@ -41,15 +41,15 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-class SessionRefreshSuggestedEventHandlerTest {
+class SessionRefreshRepositoryImplTest {
 
     @Test
     fun givenRefreshToken_whenHandling_thenSessionIsRefreshedAndCacheCleared() = runTest {
-        val (arrangement, handler) = Arrangement()
+        val (arrangement, repository) = Arrangement()
             .withDefaults()
             .arrange()
 
-        val result = handler.handle(TestEvent.sessionRefreshSuggested())
+        val result = repository.refreshSession()
 
         assertIs<Either.Right<Unit>>(result)
         verifySuspend(VerifyMode.exactly(1)) {
@@ -62,24 +62,24 @@ class SessionRefreshSuggestedEventHandlerTest {
 
     @Test
     fun givenMissingRefreshToken_whenHandling_thenFailureIsReturned() = runTest {
-        val (_, handler) = Arrangement()
+        val (_, repository) = Arrangement()
             .withDefaults()
             .withSession(null)
             .arrange()
 
-        val result = handler.handle(TestEvent.sessionRefreshSuggested())
+        val result = repository.refreshSession()
 
         assertIs<Either.Left<CoreFailure.Unknown>>(result)
     }
 
     @Test
     fun givenRefreshFailure_whenHandling_thenFailureIsReturned() = runTest {
-        val (_, handler) = Arrangement()
+        val (_, repository) = Arrangement()
             .withDefaults()
             .withUpdateTokenException(FailureToRefreshTokenException("refresh failed"))
             .arrange()
 
-        val result = handler.handle(TestEvent.sessionRefreshSuggested())
+        val result = repository.refreshSession()
 
         assertIs<Either.Left<CoreFailure.Unknown>>(result)
     }
@@ -89,8 +89,8 @@ class SessionRefreshSuggestedEventHandlerTest {
         val sessionManager: SessionManager = mock()
         val authenticatedNetworkContainer: AuthenticatedNetworkContainer = mock()
 
-        suspend fun arrange(): Pair<Arrangement, SessionRefreshSuggestedEventHandler> =
-            this to SessionRefreshSuggestedEventHandlerImpl(
+        suspend fun arrange(): Pair<Arrangement, SessionRefreshRepository> =
+            this to SessionRefreshRepositoryImpl(
                 authenticatedNetworkContainer,
                 sessionManager
             )

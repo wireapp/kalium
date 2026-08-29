@@ -74,8 +74,10 @@ import kotlinx.coroutines.flow.map
 import com.wire.kalium.logic.sync.receiver.FederationConnection
 import com.wire.kalium.logic.sync.receiver.FederationConnectionRepository
 import com.wire.kalium.logic.sync.receiver.FederationConnectionRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.user.NewConnectionEventRepository
 
-internal interface ConnectionRepository : FederationConnectionRepository {
+@Suppress("TooManyFunctions")
+internal interface ConnectionRepository : FederationConnectionRepository, NewConnectionEventRepository {
     suspend fun fetchSelfUserConnections(transactionContext: CryptoTransactionContext): Either<CoreFailure, Unit>
     suspend fun sendUserConnection(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Unit>
     suspend fun updateConnectionStatus(
@@ -85,7 +87,7 @@ internal interface ConnectionRepository : FederationConnectionRepository {
     ): Either<CoreFailure, Connection>
 
     fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
-    suspend fun insertConnectionFromEvent(
+    override suspend fun insertConnectionFromEvent(
         transactionContext: CryptoTransactionContext,
         event: Event.User.NewConnection
     ): Either<CoreFailure, Unit>
@@ -97,6 +99,8 @@ internal interface ConnectionRepository : FederationConnectionRepository {
     suspend fun setAllConnectionsAsNotified()
     suspend fun deleteConnection(connection: Connection): Either<StorageFailure, Unit>
     suspend fun getConnection(conversationId: ConversationId): Either<StorageFailure, ConversationDetails.Connection>
+    override suspend fun getConnectionStatusForEvent(conversationId: ConversationId): Either<StorageFailure, ConnectionState> =
+        getConnection(conversationId).map { it.connection.status }
     suspend fun ignoreConnectionRequest(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Unit>
 }
 

@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.user
 
 import app.cash.turbine.test
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
@@ -37,6 +38,7 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.receiver.user.ConnectionUserFetchResult
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
 import com.wire.kalium.logic.test_util.TestNetworkException.generic
@@ -86,6 +88,7 @@ import io.ktor.http.HttpStatusCode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -718,6 +721,43 @@ class UserRepositoryTest {
     }
 
     @Test
+    fun givenUserDetailsAreFetched_whenFetchingForConnectionEvent_thenReturnsSuccessResult() = runTest {
+        val (_, userRepository) = Arrangement()
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(team = TestTeam.TEAM_ID.value))
+            .withSuccessfulGetUsersInfo(TestUser.USER_PROFILE_DTO.copy(teamId = TestTeam.TEAM_ID.value))
+            .withSuccessfulFetchTeamMembersByIds(listOf(TestTeam.memberDTO(TestUser.USER_PROFILE_DTO.id.value)))
+            .arrange()
+
+        val result = userRepository.fetchUserForConnectionEvent(TestUser.USER_ID)
+
+        assertEquals(Either.Right(ConnectionUserFetchResult.SUCCESS), result)
+    }
+
+    @Test
+    fun givenUserIsNotFound_whenFetchingForConnectionEvent_thenReturnsNotFoundResult() = runTest {
+        val (_, userRepository) = Arrangement()
+            .withFailingGetUserInfo(TestNetworkException.notFound)
+            .arrange()
+
+        val result = userRepository.fetchUserForConnectionEvent(TestUser.USER_ID)
+
+        assertEquals(Either.Right(ConnectionUserFetchResult.NOT_FOUND), result)
+    }
+
+    @Test
+    fun givenOtherFailure_whenFetchingForConnectionEvent_thenPropagatesFailure() = runTest {
+        val failure = TestNetworkException.generic
+        val (_, userRepository) = Arrangement()
+            .withFailingGetUserInfo(failure)
+            .arrange()
+
+        val result = userRepository.fetchUserForConnectionEvent(TestUser.USER_ID)
+
+        val resultFailure = assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result).value
+        assertSame(failure, resultFailure.kaliumException)
+    }
+
+    @Test
     fun givenApiRequestSucceeds_whenFetchingUsersLegalHoldConsent_thenShouldReturnProperValues() = runTest {
         // given
         val userIdWithConsent = TestUser.OTHER_USER_ID.copy(value = "idWithConsent")
@@ -889,10 +929,10 @@ class UserRepositoryTest {
             }.returns(NetworkResponse.Success(result, mapOf(), 200))
         }
 
-        suspend fun withFailingGetUserInfo() = apply {
+        suspend fun withFailingGetUserInfo(failure: KaliumException = TestNetworkException.generic) = apply {
             everySuspend {
                 userDetailsApi.getUserInfo(any())
-            }.returns(NetworkResponse.Error(TestNetworkException.generic))
+            }.returns(NetworkResponse.Error(failure))
         }
 
         suspend fun withSuccessfulFetchTeamMembersByIds(result: List<TeamMemberDTO>) = apply {

@@ -18,552 +18,173 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.logout.LogoutReason
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.framework.TestConnection
-import com.wire.kalium.logic.framework.TestConversationDetails
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.sync.receiver.user.ClientRemoveEventHandler
+import com.wire.kalium.logic.sync.receiver.user.NewClientEventHandler
+import com.wire.kalium.logic.sync.receiver.user.NewConnectionEventHandler
+import com.wire.kalium.logic.sync.receiver.user.SessionRefreshSuggestedEventHandler
+import com.wire.kalium.logic.sync.receiver.user.UserDeleteEventHandler
+import com.wire.kalium.logic.sync.receiver.user.UserUpdateEventHandler
+import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertIs
-import kotlin.time.Duration.Companion.ZERO
-import kotlin.time.Duration.Companion.seconds
+import kotlin.test.assertEquals
 
 class UserEventReceiverTest {
-
     @Test
-    fun givenRemoveClientEvent_whenTheClientIdIsEqualCurrentClient_SoftLogoutInvoked() = runTest {
-        val event = TestEvent.clientRemove(EVENT_ID, CLIENT_ID1)
-        val (arrangement, eventReceiver) = arrange {
-            withCurrentClientIdIs(CLIENT_ID1)
-            withLogoutUseCaseSucceed()
-        }
+    fun givenNewConnectionEvent_whenReceived_thenRoutesToNewConnectionHandler() = runTest {
+        val event = TestEvent.newConnection()
+        val arrangement = Arrangement()
+        everySuspend {
+            arrangement.newConnectionEventHandler.handle(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        } returns Either.Right(Unit)
 
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = arrangement.receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
+        assertEquals(Either.Right(Unit), result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.logoutUseCase.invoke(eq(LogoutReason.REMOVED_CLIENT), eq(true))
+            arrangement.newConnectionEventHandler.handle(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
         }
     }
 
     @Test
-    fun givenRemoveClientEvent_whenTheClientIdIsNotEqualCurrentClient_SoftLogoutNotInvoked() = runTest {
-        val event = TestEvent.clientRemove(EVENT_ID, CLIENT_ID1)
-        val (arrangement, eventReceiver) = arrange {
-            withCurrentClientIdIs(CLIENT_ID2)
-            withLogoutUseCaseSucceed()
-        }
+    fun givenClientRemoveEvent_whenReceived_thenRoutesToClientRemoveHandler() = runTest {
+        val event = TestEvent.clientRemove(clientId = ClientId("client"))
+        val arrangement = Arrangement()
+        everySuspend { arrangement.clientRemoveEventHandler.handle(event) } returns Either.Right(Unit)
 
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = arrangement.receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        verifySuspend(VerifyMode.not) {
-            arrangement.logoutUseCase.invoke(any(), any())
-        }
+        assertEquals(Either.Right(Unit), result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.clientRemoveEventHandler.handle(event) }
     }
 
     @Test
-    fun givenDeleteAccountEvent_SoftLogoutInvoked() = runTest {
-        val event = TestEvent.userDelete(userId = SELF_USER_ID)
-        val (arrangement, eventReceiver) = arrange {
-            withLogoutUseCaseSucceed()
-        }
+    fun givenUserDeleteEvent_whenReceived_thenRoutesToUserDeleteHandler() = runTest {
+        val event = TestEvent.userDelete(userId = TestUser.OTHER_USER_ID)
+        val arrangement = Arrangement()
+        everySuspend { arrangement.userDeleteEventHandler.handle(event) } returns Either.Right(Unit)
 
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = arrangement.receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.logoutUseCase.invoke(eq(LogoutReason.DELETED_ACCOUNT), eq(true))
-        }
+        assertEquals(Either.Right(Unit), result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userDeleteEventHandler.handle(event) }
     }
 
     @Test
-    fun givenUserDeleteEvent_RepoAndPersisMessageAreInvoked() = runTest {
-        val event = TestEvent.userDelete(userId = OTHER_USER_ID)
-        val (arrangement, eventReceiver) = arrange {
-            withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
-                result = emptyList()
-            )
-        }
+    fun givenUserUpdateEvent_whenReceived_thenRoutesToUserUpdateHandler() = runTest {
+        val event = TestEvent.updateUser(userId = TestUser.OTHER_USER_ID)
+        val arrangement = Arrangement()
+        everySuspend { arrangement.userUpdateEventHandler.handle(event) } returns Either.Right(Unit)
 
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = arrangement.receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.userRepository.markUserAsDeletedAndRemoveFromGroupConversations(any()) }
+        assertEquals(Either.Right(Unit), result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userUpdateEventHandler.handle(event) }
     }
 
     @Test
-    fun givenUserUpdateEvent_RepoIsInvoked() = runTest {
-        val event = TestEvent.updateUser(userId = SELF_USER_ID)
-        val (arrangement, eventReceiver) = arrange {
-            withUpdateUserSuccess()
-        }
+    fun givenNewClientEvent_whenReceived_thenRoutesToNewClientHandler() = runTest {
+        val event = TestEvent.newClient()
+        val arrangement = Arrangement()
+        everySuspend { arrangement.newClientEventHandler.handle(event) } returns Either.Right(Unit)
 
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        val result = arrangement.receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        assertIs<Either.Right<Unit>>(result)
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userRepository.updateUserFromEvent(any())
-        }
+        assertEquals(Either.Right(Unit), result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.newClientEventHandler.handle(event) }
     }
 
     @Test
-    fun givenUserUpdateEvent_whenUserIsNotFoundInLocalDB_thenShouldIgnoreThisEventFailure() = runTest {
-        val event = TestEvent.updateUser(userId = OTHER_USER_ID)
-        val (arrangement, eventReceiver) = arrange {
-            withUpdateUserFailure(StorageFailure.DataNotFound)
-        }
-
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        assertIs<Either.Right<Unit>>(result)
-    }
-
-    @Test
-    fun givenUserUpdateEvent_whenFailsWitOtherError_thenShouldFail() = runTest {
-        val event = TestEvent.updateUser(userId = OTHER_USER_ID)
-        val (arrangement, eventReceiver) = arrange {
-            withUpdateUserFailure(StorageFailure.Generic(Throwable("error")))
-        }
-
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        assertIs<Either.Left<StorageFailure.Generic>>(result)
-    }
-
-    @Test
-    fun givenNewClientEvent_NewClientManagerInvoked() = runTest {
-        val event = TestEvent.newClient(clientId = CLIENT_ID1)
-        val (arrangement, eventReceiver) = arrange { withCurrentClientIdIs(CLIENT_ID2) }
-
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.clientRepository.saveNewClientEvent(any())
-        }
-    }
-
-    @Test
-    fun givenNewClientEventIsSameAsCurrent_ThenSkipSavingEvent() = runTest {
-        val event = TestEvent.newClient(clientId = CLIENT_ID1)
-        val (arrangement, eventReceiver) = arrange { withCurrentClientIdIs(CLIENT_ID1) }
-
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        verifySuspend(VerifyMode.not) {
-            arrangement.clientRepository.saveNewClientEvent(any())
-        }
-    }
-
-    @Test
-    fun givenSessionRefreshSuggestedEvent_thenCurrentSessionIsRefreshed() = runTest {
-        val event = TestEvent.sessionRefreshSuggested(EVENT_ID)
-        val (arrangement, eventReceiver) = arrange {
-            withSessionRefreshSuggestedHandlerResult(Either.Right(Unit))
-        }
-
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        assertIs<Either.Right<Unit>>(result)
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRefreshSuggestedEventHandler.handle(eq(event))
-        }
-    }
-
-    @Test
-    fun givenSessionRefreshSuggestedEvent_whenRefreshFails_thenFailureIsPropagated() = runTest {
-        val event = TestEvent.sessionRefreshSuggested(EVENT_ID)
-        val failure = StorageFailure.Generic(Throwable("refresh failed"))
-        val (arrangement, eventReceiver) = arrange {
-            withSessionRefreshSuggestedHandlerResult(Either.Left(failure))
-        }
-
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        assertIs<Either.Left<StorageFailure.Generic>>(result)
-    }
-
-    @Test
-    fun givenPendingSessionRefreshSuggestedEvent_whenRefreshFails_thenEventIsSkipped() = runTest {
-        val event = TestEvent.sessionRefreshSuggested(EVENT_ID)
-        val failure = StorageFailure.Generic(Throwable("refresh failed"))
-        val (arrangement, eventReceiver) = arrange {
-            withSessionRefreshSuggestedHandlerResult(Either.Left(failure))
-        }
-
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
-
-        assertIs<Either.Right<Unit>>(result)
-    }
-
-    @Test
-    fun givenNewConnectionEvent_thenConnectionIsPersisted() = runTest {
-        val event = TestEvent.newConnection(status = ConnectionState.PENDING)
-        val (arrangement, eventReceiver) = arrange {
-            withFetchUserInfoReturning(Either.Right(Unit))
-            withInsertConnectionFromEventSucceeding()
-            withPersistUnverifiedWarningMessageSuccess()
-        }
-
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.insertConnectionFromEvent(any(), any())
-        }
-    }
-
-    @Test
-    fun givenStaleNewConnectionEvent_whenUserDetailsReturnNotFound_thenConnectionIsPersisted() = runTest {
-        val event = TestEvent.newConnection(status = ConnectionState.PENDING)
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.notFound)
-        val (arrangement, eventReceiver) = arrange {
-            withFetchUserInfoReturning(Either.Left(failure))
-            withInsertConnectionFromEventSucceeding()
-        }
-
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
-
-        assertIs<Either.Right<Unit>>(result)
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.connectionRepository.insertConnectionFromEvent(any(), eq(event))
-        }
-    }
-
-    @Test
-    fun givenNewConnectionEvent_whenFetchingUserDetailsFails_thenFailureIsPropagated() = runTest {
-        val event = TestEvent.newConnection(status = ConnectionState.PENDING)
-        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
-        val (arrangement, eventReceiver) = arrange {
-            withFetchUserInfoReturning(Either.Left(failure))
-        }
-
-        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
-
-        assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result)
-        verifySuspend(VerifyMode.not) {
-            arrangement.connectionRepository.insertConnectionFromEvent(any(), any())
-        }
-    }
-
-    @Test
-    fun givenNewConnectionEventWithStatusPending_thenActiveOneOnOneConversationIsNotResolved() = runTest {
-        val event = TestEvent.newConnection(status = ConnectionState.PENDING).copy()
-        val (arrangement, eventReceiver) = arrange {
-            withFetchUserInfoReturning(Either.Right(Unit))
-            withInsertConnectionFromEventSucceeding()
-            withPersistUnverifiedWarningMessageSuccess()
-        }
-
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-
-        verifySuspend(VerifyMode.not) {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
-        }
-    }
-
-    @Test
-    fun givenNonLiveNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduled() = runTest {
-        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
-        val (arrangement, eventReceiver) = arrange {
-            withFetchUserInfoReturning(Either.Right(Unit))
-            withInsertConnectionFromEventSucceeding()
-            withScheduleResolveOneOnOneConversationWithUserId()
-            withPersistUnverifiedWarningMessageSuccess()
-        }
-
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), eq(event.connection.qualifiedToId), eq(ZERO))
-        }
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun givenLiveNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduledWithDelay() =
-        runTest(TestKaliumDispatcher.default) {
-            val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
-            val (arrangement, eventReceiver) = arrange {
-                withFetchUserInfoReturning(Either.Right(Unit))
-                withInsertConnectionFromEventSucceeding()
-                withScheduleResolveOneOnOneConversationWithUserId()
-                withPersistUnverifiedWarningMessageSuccess()
-            }
-
-            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-            advanceUntilIdle()
-
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
-                    any(),
-                    eq(event.connection.qualifiedToId),
-                    eq(3.seconds)
-                )
-            }
-        }
-
-    @Test
-    fun givenNewConnectionEventWithStatusAccepted_whenHandlingEvent_thenCreateUnverifiedWarningMessage() =
-        runTest(TestKaliumDispatcher.default) {
-            // given
-            val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
-            val (arrangement, eventReceiver) = arrange {
-                withFetchUserInfoReturning(Either.Right(Unit))
-                withInsertConnectionFromEventSucceeding()
-                withScheduleResolveOneOnOneConversationWithUserId()
-                withPersistUnverifiedWarningMessageSuccess()
-            }
-            // when
-            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-            // then
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                    eq(event.connection.qualifiedConversationId),
-                    any()
-                )
-            }
-        }
-
-    @Test
-    fun givenNewConnectionEventWithStatusCancelled_whenHandlingEvent_thenDoNotCreateUnverifiedWarningMessage() =
-        runTest(TestKaliumDispatcher.default) {
-            // given
-            val event = TestEvent.newConnection(status = ConnectionState.CANCELLED)
-            val (arrangement, eventReceiver) = arrange {
-                withFetchUserInfoReturning(Either.Right(Unit))
-                withInsertConnectionFromEventSucceeding()
-                withScheduleResolveOneOnOneConversationWithUserId()
-                withPersistUnverifiedWarningMessageSuccess()
-            }
-            // when
-            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-            // then
-            verifySuspend(VerifyMode.not) {
-                arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                    eq(event.connection.qualifiedConversationId),
-                    any()
-                )
-            }
-        }
-
-    @Test
-    fun givenNewConnectionEvent_whenHandlingEvent_thenHandlePotentialLegalHoldChange() =
-        runTest(TestKaliumDispatcher.default) {
-            // given
-            val event = TestEvent.newConnection(status = ConnectionState.CANCELLED)
-            val (arrangement, eventReceiver) = arrange {
-                withFetchUserInfoReturning(Either.Right(Unit))
-                withInsertConnectionFromEventSucceeding()
-                withScheduleResolveOneOnOneConversationWithUserId()
-                withPersistUnverifiedWarningMessageSuccess()
-            }
-            // when
-            eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-            // then
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.legalHoldHandler.handleNewConnection(eq(event))
-            }
-        }
-
-    @Test
-    fun givenNewConnectionEventWithStatusAcceptedAndPreviousStatusWasMissingConsent_thenDoNotCreateUnverifiedWarningMessage() = runTest {
-        // given
-        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy()
-        val (arrangement, eventReceiver) = arrange {
-            withFetchUserInfoReturning(Either.Right(Unit))
-            withInsertConnectionFromEventSucceeding()
-            withScheduleResolveOneOnOneConversationWithUserId()
-            withPersistUnverifiedWarningMessageSuccess()
-            withGetConnectionResult(
-                Either.Right(
-                    TestConversationDetails.CONNECTION.copy(
-                        conversationId = event.connection.qualifiedConversationId,
-                        connection = TestConnection.CONNECTION.copy(status = ConnectionState.MISSING_LEGALHOLD_CONSENT)
-                    )
-                )
-            )
-        }
-        // when
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-        // then
-        verifySuspend(VerifyMode.not) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
-        }
-    }
-
-    @Test
-    fun givenNewConnectionEventWithStatusAcceptedAndPreviousStatusWasNotMissingConsent_thenCreateUnverifiedWarningMessage() = runTest {
-        // given
-        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy()
-        val (arrangement, eventReceiver) = arrange {
-            withFetchUserInfoReturning(Either.Right(Unit))
-            withInsertConnectionFromEventSucceeding()
-            withScheduleResolveOneOnOneConversationWithUserId()
-            withPersistUnverifiedWarningMessageSuccess()
-            withGetConnectionResult(Either.Left(StorageFailure.DataNotFound))
-        }
-        // when
-        eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
-        // then
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                eq(event.connection.qualifiedConversationId),
-                any()
-            )
-        }
-    }
-
-    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
-        val userRepository = mock<UserRepository>()
-        val oneOnOneResolver = mock<OneOnOneResolver>()
-        val connectionRepository = mock<ConnectionRepository>()
-        val logoutUseCase = mock<LogoutUseCase>()
-        private val currentClientIdProvider = mock<CurrentClientIdProvider>()
-        val clientRepository = mock<ClientRepository>()
-        val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>()
-        val legalHoldRequestHandler = mock<LegalHoldRequestHandler>()
-        val legalHoldHandler = mock<LegalHoldHandler>()
-        val sessionRefreshSuggestedEventHandler = mock<SessionRefreshSuggestedEventHandler>()
-
-        private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
-            clientRepository,
-            connectionRepository,
-            userRepository,
-            logoutUseCase,
-            oneOnOneResolver,
-            SELF_USER_ID,
-            currentClientIdProvider,
-            lazy { newGroupConversationSystemMessagesCreator },
-            legalHoldRequestHandler,
-            legalHoldHandler,
-            sessionRefreshSuggestedEventHandler
+    fun givenLegalHoldRequestEvent_whenReceived_thenRoutesToLegalHoldRequestHandler() = runTest {
+        val event = Event.User.LegalHoldRequest(
+            id = "event-id",
+            clientId = ClientId("client"),
+            lastPreKey = LastPreKey(1, "key"),
+            userId = TestUser.SELF.id,
         )
+        val arrangement = Arrangement()
+        everySuspend { arrangement.legalHoldRequestHandler.handle(event) } returns Either.Right(Unit)
 
-        suspend fun withInsertConnectionFromEventSucceeding() = apply {
-            everySuspend {
-                connectionRepository.insertConnectionFromEvent(any(), any())
-            } returns Either.Right(Unit)
-        }
+        val result = arrangement.receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
-            everySuspend {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
-            } returns Either.Right(Unit)
-        }
+        assertEquals(Either.Right(Unit), result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.legalHoldRequestHandler.handle(event) }
+    }
 
-        suspend fun withSaveNewClientSucceeding() = apply {
-            everySuspend {
-                clientRepository.saveNewClientEvent(any())
-            } returns Either.Right(Unit)
-        }
+    @Test
+    fun givenLegalHoldEnabledEvent_whenReceived_thenRoutesToLegalHoldEnableHandler() = runTest {
+        val event = Event.User.LegalHoldEnabled("event-id", TestUser.OTHER_USER_ID)
+        val arrangement = Arrangement()
+        everySuspend { arrangement.legalHoldHandler.handleEnable(event) } returns Either.Right(Unit)
 
-        suspend fun withCurrentClientIdIs(clientId: ClientId) = apply {
-            everySuspend {
-                currentClientIdProvider.invoke()
-            } returns Either.Right(clientId)
-        }
+        val result = arrangement.receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        suspend fun withLogoutUseCaseSucceed() = apply {
-            everySuspend {
-                logoutUseCase.invoke(any(), any())
-            } returns Unit
-        }
+        assertEquals(Either.Right(Unit), result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.legalHoldHandler.handleEnable(event) }
+    }
 
-        suspend fun withHandleLegalHoldNewConnectionSucceeding() = apply {
-            everySuspend {
-                legalHoldHandler.handleNewConnection(any())
-            } returns Either.Right(Unit)
-        }
+    @Test
+    fun givenLegalHoldDisabledEvent_whenReceived_thenRoutesToLegalHoldDisableHandler() = runTest {
+        val event = Event.User.LegalHoldDisabled("event-id", TestUser.OTHER_USER_ID)
+        val arrangement = Arrangement()
+        everySuspend { arrangement.legalHoldHandler.handleDisable(event) } returns Either.Right(Unit)
 
-        suspend fun withSessionRefreshSuggestedHandlerResult(result: Either<CoreFailure, Unit>) = apply {
-            everySuspend {
-                sessionRefreshSuggestedEventHandler.handle(any())
-            } returns result
-        }
+        val result = arrangement.receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        suspend fun withGetConnectionResult(result: Either<StorageFailure, ConversationDetails.Connection>) = apply {
-            everySuspend {
-                connectionRepository.getConnection(any())
-            } returns result
-        }
+        assertEquals(Either.Right(Unit), result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.legalHoldHandler.handleDisable(event) }
+    }
 
-        suspend fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(result: List<com.wire.kalium.logic.data.id.ConversationId>) = apply {
-            everySuspend {
-                userRepository.markUserAsDeletedAndRemoveFromGroupConversations(any())
-            } returns Either.Right(result)
-        }
+    @Test
+    fun givenSessionRefreshEvent_whenReceived_thenRoutesEventAndDeliveryInfoToHandler() = runTest {
+        val event = TestEvent.sessionRefreshSuggested()
+        val arrangement = Arrangement()
+        everySuspend {
+            arrangement.sessionRefreshSuggestedEventHandler.handle(event, TestEvent.nonLiveDeliveryInfo)
+        } returns Either.Right(Unit)
 
-        suspend fun withUpdateUserSuccess() = apply {
-            everySuspend {
-                userRepository.updateUserFromEvent(any())
-            } returns Either.Right(Unit)
-        }
+        val result = arrangement.receiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
 
-        suspend fun withUpdateUserFailure(coreFailure: CoreFailure) = apply {
-            everySuspend {
-                userRepository.updateUserFromEvent(any())
-            } returns Either.Left(coreFailure)
-        }
-
-        suspend fun withFetchUserInfoReturning(result: Either<CoreFailure, Unit>) = apply {
-            everySuspend {
-                userRepository.fetchUserInfo(any())
-            } returns result
-        }
-
-        suspend fun withScheduleResolveOneOnOneConversationWithUserId() = apply {
-            everySuspend {
-                oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any(), any())
-            } returns Job()
-        }
-
-        suspend fun arrange() = run {
-            withSaveNewClientSucceeding()
-            withHandleLegalHoldNewConnectionSucceeding()
-            withSessionRefreshSuggestedHandlerResult(Either.Right(Unit))
-            withGetConnectionResult(Either.Left(StorageFailure.DataNotFound))
-            block()
-            this@Arrangement to userEventReceiver
+        assertEquals(Either.Right(Unit), result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.sessionRefreshSuggestedEventHandler.handle(event, TestEvent.nonLiveDeliveryInfo)
         }
     }
 
-    companion object {
-        private suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+    private class Arrangement {
+        val transactionContext = mock<CryptoTransactionContext>()
+        val newConnectionEventHandler = mock<NewConnectionEventHandler>(mode = MockMode.autoUnit)
+        val clientRemoveEventHandler = mock<ClientRemoveEventHandler>(mode = MockMode.autoUnit)
+        val userDeleteEventHandler = mock<UserDeleteEventHandler>(mode = MockMode.autoUnit)
+        val userUpdateEventHandler = mock<UserUpdateEventHandler>(mode = MockMode.autoUnit)
+        val newClientEventHandler = mock<NewClientEventHandler>(mode = MockMode.autoUnit)
+        val legalHoldRequestHandler = mock<LegalHoldRequestHandler>(mode = MockMode.autoUnit)
+        val legalHoldHandler = mock<LegalHoldHandler>(mode = MockMode.autoUnit)
+        val sessionRefreshSuggestedEventHandler = mock<SessionRefreshSuggestedEventHandler>(mode = MockMode.autoUnit)
 
-        const val EVENT_ID = "1234"
-        val SELF_USER_ID = UserId("alice", "wonderland")
-        val OTHER_USER_ID = UserId("john", "public")
-        val CLIENT_ID1 = ClientId("clientId1")
-        val CLIENT_ID2 = ClientId("clientId2")
-
+        val receiver = UserEventReceiverImpl(
+            newConnectionEventHandler = newConnectionEventHandler,
+            clientRemoveEventHandler = clientRemoveEventHandler,
+            userDeleteEventHandler = userDeleteEventHandler,
+            userUpdateEventHandler = userUpdateEventHandler,
+            newClientEventHandler = newClientEventHandler,
+            legalHoldRequestHandler = legalHoldRequestHandler,
+            legalHoldHandler = legalHoldHandler,
+            sessionRefreshSuggestedEventHandler = sessionRefreshSuggestedEventHandler,
+        )
     }
 }
