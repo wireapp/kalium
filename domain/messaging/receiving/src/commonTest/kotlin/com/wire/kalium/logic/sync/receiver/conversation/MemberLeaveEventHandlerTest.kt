@@ -34,7 +34,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.ConversationProtocolGetter
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.sync.receiver.EventMessagePersistence
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -323,7 +323,7 @@ internal class MemberLeaveEventHandlerTest {
         val conversationLifecycleEventRepository = mock<ConversationLifecycleEventRepository>()
         val userRepository = mock<MemberLeaveEventUserRepository>(MockMode.autoUnit)
         val conversationRepository = mock<ConversationProtocolGetter>()
-        val persistMessageUseCase = mock<EventMessagePersistence>()
+        val persistMessageUseCase = mock<PersistMessageUseCase>()
         val mlsConversationRepository = mock<MLSResetEventRepository>(MockMode.autoUnit)
 
         val callOrder = mutableListOf<String>()

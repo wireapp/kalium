@@ -32,7 +32,7 @@ class UserDeleteEventHandlerTest {
     @Test
     fun givenDeleteAccountEvent_SoftLogoutInvoked() = runTest {
         var logoutCount = 0
-        val repository = mock<UserDeleteEventRepository>(mode = MockMode.autoUnit)
+        val repository = mock<UserEventRepository>(mode = MockMode.autoUnit)
         val handler = UserDeleteEventHandlerImpl(SELF_USER_ID, repository) { logoutCount++ }
 
         handler.handle(userDeleteEvent())
@@ -44,7 +44,7 @@ class UserDeleteEventHandlerTest {
     @Test
     fun givenUserDeleteEvent_RepoAndPersisMessageAreInvoked() = runTest {
         val event = userDeleteEvent(OTHER_USER_ID)
-        val repository = mock<UserDeleteEventRepository>(mode = MockMode.autoUnit) {
+        val repository = mock<UserEventRepository>(mode = MockMode.autoUnit) {
             everySuspend { markUserDeletedForEvent(OTHER_USER_ID) } returns Either.Right(Unit)
         }
         val handler = UserDeleteEventHandlerImpl(SELF_USER_ID, repository) {}

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onSuccess
@@ -31,8 +32,8 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 
 /** Shared implementation of the team receiver contract. */
 public class TeamEventReceiverImpl public constructor(
-    private val userRepository: TeamEventUserRepository,
-    private val persistMessage: EventMessagePersistence,
+    private val userRepository: EventUserPersistence,
+    private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
 ) : TeamEventReceiver {
 

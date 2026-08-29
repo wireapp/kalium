@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 
@@ -30,17 +31,25 @@ public interface ShouldRemoteMuteChecker {
         senderUserId: UserId,
         selfUserId: UserId,
         selfClientId: String,
-        targets: MessageContent.Calling.Targets?
+        targets: MessageContent.Calling.Targets?,
+        conversationMembers: List<Conversation.Member>
     ): Boolean
 }
 
 public class ShouldRemoteMuteCheckerImpl : ShouldRemoteMuteChecker {
     override fun check(
-        isSenderAdmin: Boolean,
+        senderUserId: UserId,
         selfUserId: UserId,
         selfClientId: String,
-        targets: MessageContent.Calling.Targets?
-    ): Boolean = isSenderAdmin && isCurrentClientTargeted(selfUserId, selfClientId, targets)
+        targets: MessageContent.Calling.Targets?,
+        conversationMembers: List<Conversation.Member>
+    ): Boolean = isSenderAnAdmin(senderUserId, conversationMembers) && isCurrentClientTargeted(selfUserId, selfClientId, targets)
+
+    // Only admins can remotely mute other participants, so we need to check if the sender is an admin or not.
+    private fun isSenderAnAdmin(senderUserId: UserId, conversationMembers: List<Conversation.Member>): Boolean =
+        conversationMembers.any { member ->
+            member.id == senderUserId && member.role == Conversation.Member.Role.Admin
+        }
 
     // Because of the nature of MLS (where all the MLS group members always receive a message),
     // we need to check if the current client is a target of the remote mute or not.

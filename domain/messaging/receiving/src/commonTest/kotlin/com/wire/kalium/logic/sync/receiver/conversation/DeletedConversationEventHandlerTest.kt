@@ -280,11 +280,16 @@ class DeletedConversationEventHandlerTest {
         val notificationManager = RecordingNotificationEventsManager(callOrder) { operation -> throwIfConfigured(operation) }
         val hook = RecordingHook(callOrder) { operation -> throwIfConfigured(operation) }
 
-        private val repository = DeletedConversationEventRepository { conversationId ->
-            callOrder += "lookup"
-            lookupCalls += conversationId
-            throwIfConfigured("lookup")
-            lookupResult
+        private val repository = object : ConversationEventLookupRepository {
+            override suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation> {
+                callOrder += "lookup"
+                lookupCalls += conversationId
+                throwIfConfigured("lookup")
+                return lookupResult
+            }
+
+            override suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean> =
+                error("Not used by the deleted-conversation handler")
         }
 
         val handler = DeletedConversationEventHandlerImpl(

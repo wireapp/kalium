@@ -33,7 +33,7 @@ public fun interface UserUpdateEventHandler {
 }
 
 public class UserUpdateEventHandlerImpl public constructor(
-    private val userRepository: UserUpdateEventRepository,
+    private val userRepository: UserEventRepository,
 ) : UserUpdateEventHandler {
     override suspend fun handle(event: Event.User.Update): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)

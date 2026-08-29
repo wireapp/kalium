@@ -38,7 +38,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.mls.ConversationProtocolGetter
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.sync.receiver.EventMessagePersistence
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.logic.util.wrapInMLSContext
 
@@ -54,7 +54,7 @@ public class MemberLeaveEventHandlerImpl public constructor(
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
     private val userRepository: MemberLeaveEventUserRepository,
     private val conversationRepository: ConversationProtocolGetter,
-    private val persistMessage: EventMessagePersistence,
+    private val persistMessage: PersistMessageUseCase,
     private val updateConversationClientsForCurrentCall: suspend (ConversationId) -> Unit,
     private val handleConversationMembersChanged: suspend (ConversationId) -> Either<CoreFailure, Unit>,
     private val selfTeamId: suspend () -> Either<CoreFailure, TeamId?>,

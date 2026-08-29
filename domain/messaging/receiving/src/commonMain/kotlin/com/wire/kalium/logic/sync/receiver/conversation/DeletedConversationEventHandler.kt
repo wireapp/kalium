@@ -44,7 +44,7 @@ public interface DeletedConversationEventHandler {
 @Suppress("LongParameterList")
 public class DeletedConversationEventHandlerImpl public constructor(
     private val userRepository: ConversationEventUserRepository,
-    private val conversationRepository: DeletedConversationEventRepository,
+    private val conversationRepository: ConversationEventLookupRepository,
     private val notificationEventsManager: NotificationEventsManager,
     private val deleteConversation: suspend (
         CryptoTransactionContext,

@@ -25,29 +25,29 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.UserDAO
 
-/** Message persistence operation shared by receiver implementations. */
-public fun interface EventMessagePersistence {
-    public suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
-}
-
-/** User mutation required by team membership events. */
-public fun interface TeamEventUserRepository {
+/** Local user persistence required while applying team and federation events. */
+public interface EventUserPersistence {
     public suspend fun markUserAsDeletedAndRemoveFromGroupConversations(
         userId: UserId
     ): Either<CoreFailure, List<ConversationId>>
+
+    public suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
 }
 
-/** Local team-event persistence shared by the app and future bounded receivers. */
-public class TeamEventUserRepositoryImpl public constructor(
+/** DAO-backed user persistence shared by continuous and bounded event processing. */
+public class EventUserPersistenceImpl public constructor(
     private val userDAO: UserDAO
-) : TeamEventUserRepository {
+) : EventUserPersistence {
     override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(
         userId: UserId
     ): Either<CoreFailure, List<ConversationId>> = wrapStorageRequest {
         userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao())
     }.map { conversationIds -> conversationIds.map { it.toModel() } }
+
+    override suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
+        userDAO.markUserAsDefederated(userId.toDao())
+    }
 }

@@ -32,7 +32,6 @@ import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.logic.sync.receiver.EventMessagePersistence
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.common.error.wrapStorageRequest
@@ -81,7 +80,9 @@ public class EventMessageRepositoryImpl public constructor(
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
  * It automatically updates ConversationModifiedDate and ConversationNotificationDate if needed
  */
-public interface PersistMessageUseCase : EventMessagePersistence
+public fun interface PersistMessageUseCase {
+    public suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
+}
 
 public class PersistMessageUseCaseImpl public constructor(
     private val messageRepository: EventMessageRepository,

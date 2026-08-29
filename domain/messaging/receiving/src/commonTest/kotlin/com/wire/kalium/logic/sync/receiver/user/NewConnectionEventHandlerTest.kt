@@ -176,7 +176,7 @@ class NewConnectionEventHandlerTest {
 
     private class Arrangement {
         val transactionContext = mock<CryptoTransactionContext>()
-        val userRepository = mock<NewConnectionEventUserRepository>(mode = MockMode.autoUnit)
+        val userRepository = mock<UserEventRepository>(mode = MockMode.autoUnit)
         val connectionRepository = mock<NewConnectionEventRepository>(mode = MockMode.autoUnit)
         val scheduledResolutions = mutableListOf<ScheduledResolution>()
         val warningConversationIds = mutableListOf<ConversationId>()

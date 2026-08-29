@@ -117,15 +117,3 @@ public class FederationConversationRepositoryImpl public constructor(
         )
     }.map { }
 }
-
-public fun interface FederationUserRepository {
-    public suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
-}
-
-public class FederationUserRepositoryImpl public constructor(
-    private val userDAO: UserDAO,
-) : FederationUserRepository {
-    override suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
-        userDAO.markUserAsDefederated(userId.toDao())
-    }
-}

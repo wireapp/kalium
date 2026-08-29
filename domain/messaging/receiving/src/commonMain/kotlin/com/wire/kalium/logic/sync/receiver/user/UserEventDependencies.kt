@@ -26,20 +26,15 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 
-public interface UserUpdateEventRepository {
+/** User operations that may require remote data while applying incoming user events. */
+public interface UserEventRepository {
     public suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
+    public suspend fun markUserDeletedForEvent(userId: UserId): Either<CoreFailure, Unit>
+    public suspend fun fetchUserForConnectionEvent(userId: UserId): Either<CoreFailure, ConnectionUserFetchResult>
 }
 
 public interface NewClientEventRepository {
     public suspend fun saveNewClientEvent(event: Event.User.NewClient): Either<CoreFailure, Unit>
-}
-
-public interface UserDeleteEventRepository {
-    public suspend fun markUserDeletedForEvent(userId: UserId): Either<CoreFailure, Unit>
-}
-
-public interface NewConnectionEventUserRepository {
-    public suspend fun fetchUserForConnectionEvent(userId: UserId): Either<CoreFailure, ConnectionUserFetchResult>
 }
 
 public enum class ConnectionUserFetchResult {

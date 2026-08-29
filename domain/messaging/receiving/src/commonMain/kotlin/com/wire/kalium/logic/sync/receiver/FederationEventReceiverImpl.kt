@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
@@ -44,8 +45,8 @@ import kotlinx.datetime.Clock
 public class FederationEventReceiverImpl public constructor(
     private val conversationRepository: FederationConversationRepository,
     private val connectionRepository: FederationConnectionRepository,
-    private val userRepository: FederationUserRepository,
-    private val persistMessage: EventMessagePersistence,
+    private val userRepository: EventUserPersistence,
+    private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : FederationEventReceiver {

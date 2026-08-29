@@ -32,7 +32,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.sync.receiver.EventMessagePersistence
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlin.uuid.Uuid
@@ -46,10 +46,10 @@ public interface MemberJoinEventHandler {
 
 @Suppress("LongParameterList")
 public class MemberJoinEventHandlerImpl public constructor(
-    private val conversationRepository: MemberJoinEventRepository,
+    private val conversationRepository: ConversationEventLookupRepository,
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
     private val userRepository: MemberJoinEventUserRepository,
-    private val persistMessage: EventMessagePersistence,
+    private val persistMessage: PersistMessageUseCase,
     private val handleConversationMembersChanged: suspend (ConversationId) -> Either<CoreFailure, Unit>,
     private val newGroupConversationSystemMessagesCreator: NewConversationSystemMessagesCreator,
     private val selfUserId: UserId,

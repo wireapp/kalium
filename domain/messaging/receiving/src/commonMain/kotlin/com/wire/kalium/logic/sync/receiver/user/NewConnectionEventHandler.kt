@@ -46,7 +46,7 @@ public fun interface NewConnectionEventHandler {
 
 @Suppress("LongParameterList")
 public class NewConnectionEventHandlerImpl public constructor(
-    private val userRepository: NewConnectionEventUserRepository,
+    private val userRepository: UserEventRepository,
     private val connectionRepository: NewConnectionEventRepository,
     private val scheduleOneOnOneResolution: suspend (CryptoTransactionContext, UserId, Duration) -> Unit,
     private val persistUnverifiedWarning: suspend (ConversationId) -> Either<CoreFailure, Unit>,

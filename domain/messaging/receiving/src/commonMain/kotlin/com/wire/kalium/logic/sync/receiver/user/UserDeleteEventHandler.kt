@@ -32,7 +32,7 @@ public fun interface UserDeleteEventHandler {
 
 public class UserDeleteEventHandlerImpl public constructor(
     private val selfUserId: UserId,
-    private val userRepository: UserDeleteEventRepository,
+    private val userRepository: UserEventRepository,
     private val logoutDeletedAccount: suspend () -> Unit,
 ) : UserDeleteEventHandler {
     override suspend fun handle(event: Event.User.UserDelete): Either<CoreFailure, Unit> {

@@ -86,8 +86,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEve
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMembersProvider
 import com.wire.kalium.logic.sync.receiver.conversation.DaoConversationMembersProvider
-import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventRepository
-import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventRepository
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventLookupRepository
 
 internal data class ConversationMemberCounts(
     val conversationSize: Int,
@@ -101,8 +100,7 @@ internal interface ConversationRepository :
     FederationConversationRepository,
     ChannelAddPermissionRepository,
     MLSWelcomeEventRepository,
-    DeletedConversationEventRepository,
-    MemberJoinEventRepository {
+    ConversationEventLookupRepository {
     val extensions: ConversationRepositoryExtensions
 
     // region Get/Observe by id

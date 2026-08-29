@@ -505,12 +505,11 @@ import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FederationConnectionRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.FederationConversationRepositoryImpl
-import com.wire.kalium.logic.sync.receiver.FederationUserRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.EventUserPersistenceImpl
 import com.wire.kalium.logic.sync.receiver.MeetingEventReceiver
 import com.wire.kalium.logic.sync.receiver.MeetingEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
-import com.wire.kalium.logic.sync.receiver.TeamEventUserRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
@@ -2545,14 +2544,14 @@ public class UserSessionScope internal constructor(
                 userStorage.database.connectionDAO,
                 userStorage.database.userDAO,
             ),
-            FederationUserRepositoryImpl(userStorage.database.userDAO),
+            EventUserPersistenceImpl(userStorage.database.userDAO),
             persistMessage,
             userId
         )
 
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(
-            TeamEventUserRepositoryImpl(userStorage.database.userDAO),
+            EventUserPersistenceImpl(userStorage.database.userDAO),
             persistMessage,
             userId,
         )

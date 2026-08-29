@@ -34,7 +34,7 @@ class UserUpdateEventHandlerTest {
     @Test
     fun givenUserUpdateEvent_RepoIsInvoked() = runTest {
         val event = userUpdateEvent()
-        val repository = mock<UserUpdateEventRepository>(mode = MockMode.autoUnit) {
+        val repository = mock<UserEventRepository>(mode = MockMode.autoUnit) {
             everySuspend { updateUserFromEvent(event) } returns Either.Right(Unit)
         }
         val handler = UserUpdateEventHandlerImpl(repository)
@@ -48,7 +48,7 @@ class UserUpdateEventHandlerTest {
     @Test
     fun givenUserUpdateEvent_whenUserIsNotFoundInLocalDB_thenShouldIgnoreThisEventFailure() = runTest {
         val event = userUpdateEvent(OTHER_USER_ID)
-        val repository = mock<UserUpdateEventRepository> {
+        val repository = mock<UserEventRepository> {
             everySuspend { updateUserFromEvent(event) } returns Either.Left(StorageFailure.DataNotFound)
         }
 
@@ -61,7 +61,7 @@ class UserUpdateEventHandlerTest {
     fun givenUserUpdateEvent_whenFailsWitOtherError_thenShouldFail() = runTest {
         val event = userUpdateEvent(OTHER_USER_ID)
         val failure: CoreFailure = StorageFailure.Generic(Throwable("error"))
-        val repository = mock<UserUpdateEventRepository> {
+        val repository = mock<UserEventRepository> {
             everySuspend { updateUserFromEvent(event) } returns Either.Left(failure)
         }
 

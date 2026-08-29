@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.sync.receiver.EventMessagePersistence
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -389,10 +389,10 @@ class MemberJoinEventHandlerTest {
         private val drivePermissionsEnabled: Boolean = false,
     ) {
         val transactionContext = mock<CryptoTransactionContext>()
-        val conversationRepository = mock<MemberJoinEventRepository>()
+        val conversationRepository = mock<ConversationEventLookupRepository>()
         val conversationLifecycleEventRepository = mock<ConversationLifecycleEventRepository>()
         val userRepository = mock<MemberJoinEventUserRepository>(MockMode.autoUnit)
-        val persistMessageUseCase = mock<EventMessagePersistence>()
+        val persistMessageUseCase = mock<PersistMessageUseCase>()
         val newGroupConversationSystemMessagesCreator = mock<NewConversationSystemMessagesCreator>(MockMode.autoUnit)
 
         val callOrder = mutableListOf<String>()

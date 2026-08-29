@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import kotlin.test.Test
@@ -30,10 +31,11 @@ class ShouldRemoteMuteCheckerTest {
             .arrange()
 
         val shouldRemoteMute = checker.check(
-            isSenderAdmin = false,
+            senderUserId = SENDER_USER_ID,
             selfUserId = SELF_USER_ID,
             selfClientId = SELF_CLIENT_ID,
-            targets = null
+            targets = null,
+            conversationMembers = NON_ADMIN_MEMBERS
         )
 
         assertEquals(false, shouldRemoteMute)
@@ -45,10 +47,11 @@ class ShouldRemoteMuteCheckerTest {
             .arrange()
 
         val shouldRemoteMute = checker.check(
-            isSenderAdmin = true,
+            senderUserId = SENDER_USER_ID,
             selfUserId = SELF_USER_ID,
             selfClientId = SELF_CLIENT_ID,
-            targets = null
+            targets = null,
+            conversationMembers = ADMIN_MEMBERS
         )
 
         assertEquals(false, shouldRemoteMute)
@@ -60,10 +63,11 @@ class ShouldRemoteMuteCheckerTest {
             .arrange()
 
         val shouldRemoteMute = checker.check(
-            isSenderAdmin = true,
+            senderUserId = SENDER_USER_ID,
             selfUserId = SELF_USER_ID,
             selfClientId = SELF_CLIENT_ID,
-            targets = targetsWithoutCurrentUser
+            targets = targetsWithoutCurrentUser,
+            conversationMembers = ADMIN_MEMBERS
         )
 
         assertEquals(false, shouldRemoteMute)
@@ -75,10 +79,11 @@ class ShouldRemoteMuteCheckerTest {
             .arrange()
 
         val shouldRemoteMute = checker.check(
-            isSenderAdmin = true,
+            senderUserId = SENDER_USER_ID,
             selfUserId = SELF_USER_ID,
             selfClientId = SELF_CLIENT_ID,
-            targets = targetsWithCurrentUserButDifferentClient
+            targets = targetsWithCurrentUserButDifferentClient,
+            conversationMembers = ADMIN_MEMBERS
         )
 
         assertEquals(false, shouldRemoteMute)
@@ -90,10 +95,11 @@ class ShouldRemoteMuteCheckerTest {
             .arrange()
 
         val shouldRemoteMute = checker.check(
-            isSenderAdmin = true,
+            senderUserId = SENDER_USER_ID,
             selfUserId = SELF_USER_ID,
             selfClientId = SELF_CLIENT_ID,
-            targets = targetsWithCurrentUserAndCurrentClient
+            targets = targetsWithCurrentUserAndCurrentClient,
+            conversationMembers = ADMIN_MEMBERS
         )
 
         assertEquals(true, shouldRemoteMute)
@@ -106,9 +112,12 @@ class ShouldRemoteMuteCheckerTest {
 
     companion object {
         private val SELF_USER_ID = UserId("selfUserId", "domain")
+        private val SENDER_USER_ID = UserId("senderUserId", "domain")
         private val OTHER_USER_ID = UserId("otherUserId", "domain")
         private const val SELF_CLIENT_ID = "selfClientId"
         private const val OTHER_CLIENT_ID = "otherClientId"
+        private val ADMIN_MEMBERS = listOf(Conversation.Member(SENDER_USER_ID, Conversation.Member.Role.Admin))
+        private val NON_ADMIN_MEMBERS = listOf(Conversation.Member(SENDER_USER_ID, Conversation.Member.Role.Member))
         val targetsWithCurrentUserAndCurrentClient = MessageContent.Calling.Targets(
             domainToUserIdToClients = mapOf(
                 "anta-env" to mapOf(

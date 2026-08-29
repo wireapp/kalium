@@ -59,8 +59,8 @@ public interface MemberLeaveEventUserRepository : ConversationEventUserRepositor
     ): Either<StorageFailure, Boolean>
 }
 
-/** Conversation access required while applying an incoming member-join event. */
-public interface MemberJoinEventRepository {
+/** Conversation lookups required while applying incoming conversation events. */
+public interface ConversationEventLookupRepository {
     public suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
 
     public suspend fun isCellEnabled(conversationId: ConversationId): Either<StorageFailure, Boolean>
@@ -104,9 +104,4 @@ public interface NewConversationSystemMessagesCreator {
         isCellEnabled: Boolean,
         instant: Instant = Clock.System.now(),
     ): Either<CoreFailure, Unit>
-}
-
-/** Conversation lookup required before applying a received deletion event. */
-public fun interface DeletedConversationEventRepository {
-    public suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
 }
