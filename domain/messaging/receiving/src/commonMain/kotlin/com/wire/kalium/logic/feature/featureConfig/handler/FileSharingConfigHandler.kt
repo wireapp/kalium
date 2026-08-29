@@ -23,9 +23,7 @@ import com.wire.kalium.logic.configuration.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public class FileSharingConfigHandler(
     private val userConfigRepository: FeatureConfigRepository,
 ) {

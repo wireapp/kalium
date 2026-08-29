@@ -25,9 +25,7 @@ import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface ButtonActionHandler {
     public suspend fun handle(
         conversationId: ConversationId,
@@ -37,7 +35,6 @@ public interface ButtonActionHandler {
     )
 }
 
-@InternalKaliumApi
 public class ButtonActionHandlerImpl public constructor(
     private val selfUserId: UserId,
     private val compositeMessageRepository: CompositeMessageRepository,

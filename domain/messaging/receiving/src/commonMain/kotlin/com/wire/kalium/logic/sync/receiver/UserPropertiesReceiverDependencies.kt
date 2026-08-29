@@ -26,17 +26,14 @@ import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.conversation.folders.toDao
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
-import com.wire.kalium.util.InternalKaliumApi
 
 /** Persistence operations required while receiving user-property events. */
-@InternalKaliumApi
 public interface UserPropertiesConfigRepository {
     public suspend fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
     public suspend fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit>
 }
 
 /** Local persistence implementation shared by the app and future bounded receivers. */
-@InternalKaliumApi
 public class UserPropertiesConfigRepositoryImpl public constructor(
     private val userConfigStorage: UserConfigStorage
 ) : UserPropertiesConfigRepository {
@@ -48,7 +45,6 @@ public class UserPropertiesConfigRepositoryImpl public constructor(
 }
 
 /** Conversation-folder operation required while receiving user-property events. */
-@InternalKaliumApi
 public fun interface UserPropertiesFolderRepository {
     public suspend fun updateConversationFolders(
         folderWithConversations: List<FolderWithConversations>
@@ -56,7 +52,6 @@ public fun interface UserPropertiesFolderRepository {
 }
 
 /** Local folder persistence implementation shared by the app and future bounded receivers. */
-@InternalKaliumApi
 public class UserPropertiesFolderRepositoryImpl public constructor(
     private val conversationFolderDAO: ConversationFolderDAO
 ) : UserPropertiesFolderRepository {

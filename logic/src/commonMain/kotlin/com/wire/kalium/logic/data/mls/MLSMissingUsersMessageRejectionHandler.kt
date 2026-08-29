@@ -25,7 +25,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.util.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID

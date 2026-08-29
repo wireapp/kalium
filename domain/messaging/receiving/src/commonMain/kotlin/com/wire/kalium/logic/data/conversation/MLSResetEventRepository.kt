@@ -20,15 +20,17 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.mls.ConversationProtocolGetter
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.util.InternalKaliumApi
+import kotlinx.coroutines.flow.Flow
 
 /** MLS operations used only while applying an incoming conversation reset event. */
-@InternalKaliumApi
 public interface MLSResetEventRepository {
     public suspend fun leaveGroup(
         mlsContext: MlsCoreCryptoContext,
@@ -46,4 +48,12 @@ public interface MLSResetEventRepository {
         newEpoch: Long,
         groupState: ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_JOIN,
     ): Either<CoreFailure, Unit>
+}
+
+public interface MLSWelcomeEventRepository : ConversationProtocolGetter {
+    public suspend fun updateConversationGroupState(groupID: GroupID, groupState: GroupState): Either<StorageFailure, Unit>
+
+    public suspend fun observeConversationDetailsById(
+        conversationID: ConversationId
+    ): Flow<Either<StorageFailure, ConversationDetails>>
 }

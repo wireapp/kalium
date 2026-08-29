@@ -34,7 +34,6 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -52,6 +51,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.util.wrapInMLSContext
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingResponse

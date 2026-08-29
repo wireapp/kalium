@@ -21,15 +21,12 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.reaction.IncomingReactionPersistence
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReactionEventData
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 
 /** Persists the complete reaction state carried by an incoming application message. */
-@InternalKaliumApi
 public interface PersistReactionUseCase {
     public suspend operator fun invoke(
         reaction: MessageContent.Reaction,
@@ -39,7 +36,6 @@ public interface PersistReactionUseCase {
     ): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public class PersistReactionUseCaseImpl public constructor(
     private val incomingReactionPersistence: IncomingReactionPersistence,
     private val selfUserId: UserId,

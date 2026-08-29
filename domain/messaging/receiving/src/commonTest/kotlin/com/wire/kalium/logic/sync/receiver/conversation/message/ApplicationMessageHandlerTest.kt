@@ -76,20 +76,23 @@ import kotlin.test.assertFalse
 import kotlin.time.Duration.Companion.seconds
 
 private val SELF_USER_ID = UserId("41d2b365-f4a9-4ba1-bddf-5afb8aca6786", "domain")
+private val OTHER_USER_ID = UserId("other-user", "domain")
 private val TEST_CONVERSATION_ID = ConversationId("valueConvo", "domainConvo")
 private val TEST_SENDER_CLIENT_ID = ClientId("test")
 private val TEST_MESSAGE_INSTANT = Instant.UNIX_FIRST_DATE
 
 private data class NewMessageFixture(
+    val id: String,
     val conversationId: ConversationId,
     val senderUserId: UserId,
     val senderClientId: ClientId,
     val messageInstant: Instant,
 )
 
-private fun newMessageEvent() = NewMessageFixture(
+private fun newMessageEvent(senderUserId: UserId = SELF_USER_ID) = NewMessageFixture(
+    id = "eventId",
     conversationId = TEST_CONVERSATION_ID,
-    senderUserId = SELF_USER_ID,
+    senderUserId = senderUserId,
     senderClientId = TEST_SENDER_CLIENT_ID,
     messageInstant = TEST_MESSAGE_INSTANT,
 )
@@ -821,26 +824,6 @@ class ApplicationMessageHandlerTest {
     }
 
     @Test
-    fun givenClientActionMessage_whenHandling_thenCryptoSessionResetMessageIsPersisted() = runTest {
-        val (arrangement, handler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .arrange()
-
-        val event = dispatch(arrangement, handler, MessageContent.ClientAction)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(
-                matches {
-                    it is Message.System &&
-                            it.content == MessageContent.CryptoSessionReset &&
-                            it.conversationId == event.conversationId &&
-                            it.senderUserId == event.senderUserId
-                }
-            )
-        }
-    }
-
-    @Test
     fun givenReactionMessage_whenHandling_thenReactionUseCaseIsInvoked() = runTest {
         val content = MessageContent.Reaction(messageId = "reacted-message", emojiSet = setOf("👍"))
         val (arrangement, handler) = Arrangement()
@@ -868,7 +851,7 @@ class ApplicationMessageHandlerTest {
 
     @Test
     fun givenDeleteForMeSignal_whenHandling_thenDeleteForMeHandlerIsInvoked() = runTest {
-        val content = MessageContent.DeleteForMe("deleted-message", TestEvent.newMessageEvent("content").conversationId)
+        val content = MessageContent.DeleteForMe("deleted-message", newMessageEvent().conversationId)
         val (arrangement, handler) = Arrangement().arrange()
 
         dispatch(arrangement, handler, content)
@@ -894,7 +877,7 @@ class ApplicationMessageHandlerTest {
 
     @Test
     fun givenLastReadSignal_whenHandling_thenLastReadHandlerIsInvoked() = runTest {
-        val event = TestEvent.newMessageEvent("content")
+        val event = newMessageEvent()
         val content = MessageContent.LastRead("last-read-message", event.conversationId, event.messageInstant)
         val (arrangement, handler) = Arrangement().arrange()
 
@@ -907,7 +890,7 @@ class ApplicationMessageHandlerTest {
 
     @Test
     fun givenClearedSignal_whenHandling_thenClearConversationHandlerIsInvoked() = runTest {
-        val event = TestEvent.newMessageEvent("content")
+        val event = newMessageEvent()
         val content = MessageContent.Cleared(event.conversationId, event.messageInstant, needToRemoveLocally = true)
         val (arrangement, handler) = Arrangement().arrange()
 
@@ -957,7 +940,7 @@ class ApplicationMessageHandlerTest {
             arrangement = arrangement,
             handler = handler,
             content = content,
-            senderUserId = TestUser.SELF.id,
+            senderUserId = SELF_USER_ID,
             expiresAfterMillis = 2.seconds.inWholeMilliseconds,
         )
 
@@ -978,7 +961,7 @@ class ApplicationMessageHandlerTest {
             MessageContent.Location(latitude = 1F, longitude = 2F),
             MessageContent.FailedDecryption(
                 isDecryptionResolved = false,
-                senderUserId = TestUser.USER_ID,
+                senderUserId = OTHER_USER_ID,
             ),
             MessageContent.Multipart(value = "multipart"),
         )
@@ -1017,10 +1000,10 @@ class ApplicationMessageHandlerTest {
 
     @Test
     fun givenDecryptionErrorFromSelf_whenHandling_thenVisibleSelfMessageIsPersisted() = runTest {
-        val event = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val event = newMessageEvent()
         val content = MessageContent.FailedDecryption(
             isDecryptionResolved = false,
-            senderUserId = TestUser.SELF.id,
+            senderUserId = SELF_USER_ID,
         )
         val (arrangement, handler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
@@ -1030,7 +1013,7 @@ class ApplicationMessageHandlerTest {
             eventId = event.id,
             conversationId = event.conversationId,
             messageInstant = event.messageInstant,
-            senderUserId = TestUser.SELF.id,
+            senderUserId = SELF_USER_ID,
             senderClientId = event.senderClientId,
             content = content,
         )
@@ -1107,9 +1090,9 @@ class ApplicationMessageHandlerTest {
         arrangement: Arrangement,
         handler: ApplicationMessageHandler,
         content: MessageContent.FromProto,
-        senderUserId: UserId = TestUser.USER_ID,
+        senderUserId: UserId = OTHER_USER_ID,
         expiresAfterMillis: Long? = null,
-    ) = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray())).also { event ->
+    ) = newMessageEvent(senderUserId).also { event ->
         handler.handleContent(
             arrangement.transactionContext,
             event.conversationId,
@@ -1216,12 +1199,6 @@ class ApplicationMessageHandlerTest {
             }.returns(Either.Right(Unit))
         }
 
-        fun withMessageTextEditHandler() = apply {
-            everySuspend {
-                messageTextEditHandler.handle(any(), any())
-            }.returns(Either.Right(Unit))
-        }
-
         fun withMessageMultipartEditHandler() = apply {
             everySuspend {
                 messageMultipartEditHandler.handle(any(), any())
@@ -1249,7 +1226,7 @@ class ApplicationMessageHandlerTest {
 
         val HISTORY_CLIENT = HistoryClient(
             id = "history-client-id",
-            creationTime = kotlinx.datetime.Instant.DISTANT_PAST,
+            creationTime = Instant.DISTANT_PAST,
             secret = HistoryClient.Secret(HISTORY_CLIENT_SECRET_MARKER.encodeToByteArray()),
         )
 

@@ -24,14 +24,12 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.User
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 /**
  * This singleton allow us to queue checking for new regular notifications AND queue ephemeral notifications from different user flows.
  */
-@InternalKaliumApi
 public object NotificationEventsManagerImpl : NotificationEventsManager, DeleteMessageNotificationScheduler {
 
     private val mapper by lazy { LocalNotificationMessageMapperImpl() }
@@ -84,12 +82,10 @@ public object NotificationEventsManagerImpl : NotificationEventsManager, DeleteM
     override suspend fun observeRegularNotificationsChecking(): Flow<Unit> = regularNotificationChecking
 }
 
-@InternalKaliumApi
 public fun interface DeleteMessageNotificationScheduler {
     public suspend fun scheduleDeleteMessageNotification(conversationId: ConversationId, messageId: String)
 }
 
-@InternalKaliumApi
 public interface NotificationEventsManager {
     /**
      * Ideally we should have logic that allows to mark messages as notified,
@@ -140,7 +136,6 @@ public interface NotificationEventsManager {
  * Class to pass some data to this manager and later being able to map it to the correct types.
  * We can expand this class later when we have more cases for ephemeral notifications.
  */
-@InternalKaliumApi
 public data class EphemeralConversationNotification(
     val conversationEvent: Event.Conversation,
     val conversation: Conversation,

@@ -36,7 +36,7 @@ import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.util.wrapInMLSContext
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.mls.MLSPublicKeys

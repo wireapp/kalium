@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.model.MLSErrorResponse
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isConversationNotFound
 import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -50,6 +51,11 @@ sealed interface CoreFailure {
         get() = this is NetworkFailure.ServerMiscommunication
                 && this.kaliumException is KaliumException.InvalidRequestError
                 && this.kaliumException.isMissingLegalHoldConsent()
+
+    val isConversationNotFoundError: Boolean
+        get() = this is NetworkFailure.ServerMiscommunication
+                && this.kaliumException is KaliumException.InvalidRequestError
+                && this.kaliumException.isConversationNotFound()
 
     /**
      * The attempted operation requires that this client is registered.

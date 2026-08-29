@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.configuration
 
-import com.wire.kalium.util.InternalKaliumApi
-
 public data class FileSharingStatus(
     val state: Value,
     val isStatusChanged: Boolean?
@@ -31,7 +29,6 @@ public data class FileSharingStatus(
     }
 }
 
-@InternalKaliumApi
 public fun deriveFileSharingStatus(
     isEnabled: Boolean,
     isStatusChanged: Boolean?,

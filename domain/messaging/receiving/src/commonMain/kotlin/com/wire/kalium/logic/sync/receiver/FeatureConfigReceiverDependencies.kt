@@ -22,9 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public fun interface FeatureConfigSupportedProtocolsUpdater {
     public suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,
@@ -32,7 +30,6 @@ public fun interface FeatureConfigSupportedProtocolsUpdater {
     ): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public interface FeatureConfigTransactionProvider {
     public suspend fun <R> transaction(
         name: String? = null,
@@ -40,12 +37,10 @@ public interface FeatureConfigTransactionProvider {
     ): Either<CoreFailure, R>
 }
 
-@InternalKaliumApi
 public fun interface MeetingsSlowSyncRepository {
     public suspend fun clearLastSlowSyncCompletionInstant()
 }
 
-@InternalKaliumApi
 public class MeetingsSlowSyncRepositoryImpl public constructor(
     private val metadataDAO: MetadataDAO,
 ) : MeetingsSlowSyncRepository {

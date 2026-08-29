@@ -18,12 +18,9 @@
 
 package com.wire.kalium.logic.sync.incremental
 
-import com.wire.kalium.util.InternalKaliumApi
-
 /**
  * Informs where an event came from.
  */
-@InternalKaliumApi
 public enum class EventSource {
     /**
      * Event happened while this client was offline.

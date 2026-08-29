@@ -20,16 +20,13 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.util.InternalKaliumApi
 
 /** Local persistence operation caused by an incoming availability message. */
-@InternalKaliumApi
 public fun interface IncomingAvailabilityPersistence {
     public suspend fun updateAvailabilityStatus(senderUserId: UserId, status: UserAvailabilityStatus)
 }
 
 /** DAO-backed incoming-availability persistence shared by continuous and bounded event processing. */
-@InternalKaliumApi
 public class IncomingAvailabilityPersistenceImpl public constructor(
     private val userDAO: UserDAO,
     private val availabilityStatusMapper: AvailabilityStatusMapper = AvailabilityStatusMapperImpl(),

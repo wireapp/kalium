@@ -31,17 +31,32 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.ShouldRemoteMuteChecker
 import com.wire.kalium.logic.feature.call.ShouldRemoteMuteCheckerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMembersProvider
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 
-@InternalKaliumApi
 public interface CallingMessageHandler {
     public suspend fun handle(message: Message.Signaling, content: MessageContent.Calling)
 }
 
+public fun interface IncomingCallingMessageConsumer {
+    public suspend fun onCallingMessageReceived(
+        message: Message.Signaling,
+        content: MessageContent.Calling,
+    )
+}
+
+public fun interface RemoteMuteCall {
+    public suspend operator fun invoke(conversationId: ConversationId)
+}
+
+public fun interface RemoteMuteActionRecorder {
+    public suspend fun record(
+        conversationId: ConversationId,
+        action: CallModerationAction,
+    )
+}
+
 @Suppress("LongParameterList")
-@InternalKaliumApi
 public class CallingMessageHandlerImpl public constructor(
     private val selfUserId: UserId,
     private val currentClientIdProvider: suspend () -> Either<CoreFailure, ClientId>,

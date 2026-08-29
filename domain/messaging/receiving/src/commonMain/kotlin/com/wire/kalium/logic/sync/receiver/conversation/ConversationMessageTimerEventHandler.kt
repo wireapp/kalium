@@ -28,14 +28,11 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public fun interface ConversationMessageTimerEventHandler {
     public suspend fun handle(event: Event.Conversation.ConversationMessageTimer): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public class ConversationMessageTimerEventHandlerImpl public constructor(
     private val conversationEventRepository: ConversationEventRepository,
     private val persistMessage: PersistMessageUseCase,

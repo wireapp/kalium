@@ -17,14 +17,12 @@
  */
 package com.wire.kalium.logic.data.event
 
-import com.wire.kalium.util.InternalKaliumApi
 import kotlin.time.Duration
 
 /**
  * Hierarchy to represent possible ways of recording the
  * performance of event processing.
  */
-@InternalKaliumApi
 public sealed interface EventProcessingPerformanceData {
 
     /**

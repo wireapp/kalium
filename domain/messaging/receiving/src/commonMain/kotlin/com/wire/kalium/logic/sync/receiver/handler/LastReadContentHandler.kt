@@ -29,12 +29,10 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Instant
 
-@InternalKaliumApi
 public interface LastReadContentHandler {
     public suspend fun handle(
         message: Message.Signaling,
@@ -45,7 +43,6 @@ public interface LastReadContentHandler {
 }
 
 // This class handles the messages that arrive when some client has read the conversation.
-@InternalKaliumApi
 public class LastReadContentHandlerImpl public constructor(
     private val incomingLastReadPersistence: IncomingLastReadPersistence,
     private val selfUserId: UserId,

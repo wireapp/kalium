@@ -186,9 +186,9 @@ import com.wire.kalium.logic.data.message.draft.MessageDraftDataSource
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinatorImpl
-import com.wire.kalium.logic.data.message.reaction.IncomingReactionPersistenceImpl
+import com.wire.kalium.logic.data.message.IncomingReactionPersistenceImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
-import com.wire.kalium.logic.data.message.receipt.IncomingReceiptPersistenceImpl
+import com.wire.kalium.logic.data.message.IncomingReceiptPersistenceImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mls.ConversationProtocolGetterImpl
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
@@ -2377,7 +2377,7 @@ public class UserSessionScope internal constructor(
             val capturedEndCallOnMLSReset = endCallOnMLSReset
             return MLSResetConversationEventHandlerImpl(
                 mlsResetEventRepository = capturedMLSConversationRepository,
-                endCallOnMLSReset = { conversationId -> capturedEndCallOnMLSReset(conversationId) },
+                endCallOnMLSReset = capturedEndCallOnMLSReset::invoke,
             )
         }
 

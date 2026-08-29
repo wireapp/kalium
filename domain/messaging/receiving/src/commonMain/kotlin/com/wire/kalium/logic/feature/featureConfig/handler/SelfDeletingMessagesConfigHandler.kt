@@ -25,12 +25,10 @@ import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.util.InternalKaliumApi
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-@InternalKaliumApi
 public class SelfDeletingMessagesConfigHandler(
     private val userConfigRepository: FeatureConfigRepository,
     private val isSelfDeletingMessagesSupported: Boolean

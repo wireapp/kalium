@@ -26,9 +26,7 @@ import com.wire.kalium.logic.data.message.CompositeEditMessageMetadataRepository
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface MessageCompositeEditHandler {
     public suspend fun handle(
         message: Message.Signaling,
@@ -36,7 +34,6 @@ public interface MessageCompositeEditHandler {
     ): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public class MessageCompositeEditHandlerImpl public constructor(
     private val messageMetadataRepository: CompositeEditMessageMetadataRepository,
     private val compositeMessageRepository: CompositeMessageRepository,

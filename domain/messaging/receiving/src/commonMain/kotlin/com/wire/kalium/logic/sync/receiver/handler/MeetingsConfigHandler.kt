@@ -24,9 +24,7 @@ import com.wire.kalium.logic.configuration.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MeetingsConfigModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.sync.receiver.MeetingsSlowSyncRepository
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public class MeetingsConfigHandler(
     private val userConfigRepository: FeatureConfigRepository,
     private val slowSyncRepository: MeetingsSlowSyncRepository,

@@ -30,14 +30,11 @@ import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface AssetMessageHandler {
     public suspend fun handle(message: Message.Regular)
 }
 
-@InternalKaliumApi
 public class AssetMessageHandlerImpl public constructor(
     private val incomingAssetMessageLookup: IncomingAssetMessageLookup,
     private val persistMessage: PersistMessageUseCase,

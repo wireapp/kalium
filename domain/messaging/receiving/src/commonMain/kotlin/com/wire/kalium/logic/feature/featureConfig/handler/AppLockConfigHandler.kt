@@ -24,9 +24,7 @@ import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.nullableFold
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public class AppLockConfigHandler public constructor(
     private val userConfigRepository: FeatureConfigRepository
 ) {

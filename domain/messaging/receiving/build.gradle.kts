@@ -44,7 +44,7 @@ kotlin {
                 implementation(projects.core.logger)
                 api(projects.core.util)
                 implementation(projects.data.dataMappers)
-                implementation(projects.data.network)
+                api(projects.data.networkModel)
                 api(projects.data.persistence)
                 api(projects.domain.eventProcessing)
                 api(projects.domain.messaging.shared)
@@ -59,6 +59,7 @@ kotlin {
             dependencies {
                 implementation(projects.data.persistenceTest)
                 implementation(projects.data.protobuf)
+                implementation(projects.data.network)
                 implementation(projects.test.dataMocks)
                 implementation(libs.coroutines.test)
                 implementation(libs.okio.core)

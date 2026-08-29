@@ -25,11 +25,9 @@ import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.InternalKaliumApi
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-@InternalKaliumApi
 public class E2EIConfigHandler(private val userConfigRepository: FeatureConfigRepository) {
 
     public suspend fun handle(e2eiConfig: E2EIModel): Either<CoreFailure, Unit> {

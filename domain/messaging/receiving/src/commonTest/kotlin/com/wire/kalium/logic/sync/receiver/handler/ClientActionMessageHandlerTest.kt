@@ -33,10 +33,24 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.time.Duration.Companion.seconds
 
 class ClientActionMessageHandlerTest {
+
+    @Test
+    fun givenClientActionMessage_whenHandling_thenCryptoSessionResetMessageIsPersisted() = runTest {
+        val persistence = RecordingPersistMessageUseCase()
+        val handler = ClientActionMessageHandlerImpl(persistence)
+
+        handler.handle(signalingMessage)
+
+        val persistedMessage = assertIs<Message.System>(persistence.calls.single())
+        assertEquals(MessageContent.CryptoSessionReset, persistedMessage.content)
+        assertEquals(signalingMessage.conversationId, persistedMessage.conversationId)
+        assertEquals(signalingMessage.senderUserId, persistedMessage.senderUserId)
+    }
 
     @Test
     fun givenClientAction_whenHandling_thenExactCryptoSessionResetSystemMessageIsPersistedOnce() = runTest {

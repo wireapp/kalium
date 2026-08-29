@@ -26,8 +26,7 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
-import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
+import com.wire.kalium.logic.data.message.toAssetContent
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.authenticated.asset.AssetResponse
@@ -104,54 +103,8 @@ internal class AssetMapperImpl(
         )
     }
 
-    override fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent {
-        with(assetContentEntity) {
-            return AssetContent(
-                mimeType = assetMimeType,
-                sizeInBytes = assetSizeInBytes,
-                name = assetName,
-                metadata = getAssetContentMetadata(assetMimeType, assetContentEntity),
-                remoteData = AssetContent.RemoteData(
-                    otrKey = assetOtrKey,
-                    sha256 = assetSha256Key,
-                    assetId = assetId,
-                    assetToken = assetToken,
-                    assetDomain = assetDomain,
-                    encryptionAlgorithm = when {
-                        assetEncryptionAlgorithm?.contains("CBC") == true -> AES_CBC
-                        assetEncryptionAlgorithm?.contains("GCM") == true -> AES_GCM
-                        else -> AES_CBC
-                    }
-                )
-            )
-        }
-    }
-
-    private fun getAssetContentMetadata(
-        assetMimeType: String,
-        assetContentEntity: MessageEntityContent.Asset
-    ): AssetContent.AssetMetadata? =
-        with(assetContentEntity) {
-            when {
-                assetMimeType.contains("image/") -> Image(
-                    width = assetWidth ?: 0,
-                    height = assetHeight ?: 0
-                )
-
-                assetMimeType.contains("video/") -> Video(
-                    width = assetWidth,
-                    height = assetHeight,
-                    durationMs = assetDurationMs
-                )
-
-                assetMimeType.contains("audio/") -> Audio(
-                    durationMs = assetDurationMs,
-                    normalizedLoudness = assetNormalizedLoudness
-                )
-
-                else -> null
-            }
-        }
+    override fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent =
+        assetContentEntity.toAssetContent()
 
     @Suppress("ComplexMethod")
     override fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent {

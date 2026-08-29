@@ -38,18 +38,15 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.config.WireCellsConfigEntity
 import com.wire.kalium.persistence.dao.UserConfigDAO
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 
 /** File-sharing configuration required while receiving asset messages. */
-@InternalKaliumApi
 public fun interface FileSharingStatusProvider {
     public suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
 }
 
 /** Cells configuration persistence required by feature-config handlers. */
-@InternalKaliumApi
 public interface CellsConfigPersistence {
     public suspend fun setCellsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
 
@@ -57,7 +54,6 @@ public interface CellsConfigPersistence {
 }
 
 /** Local configuration operations required by feature-config event handlers. */
-@InternalKaliumApi
 @Suppress("TooManyFunctions")
 public interface FeatureConfigRepository : FileSharingStatusProvider, CellsConfigPersistence {
     public suspend fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
@@ -95,7 +91,6 @@ public interface FeatureConfigRepository : FileSharingStatusProvider, CellsConfi
 }
 
 /** Local feature-config persistence shared by the app and future bounded receivers. */
-@InternalKaliumApi
 @Suppress("TooManyFunctions")
 public class FeatureConfigRepositoryImpl public constructor(
     private val userConfigStorage: UserConfigStorage,

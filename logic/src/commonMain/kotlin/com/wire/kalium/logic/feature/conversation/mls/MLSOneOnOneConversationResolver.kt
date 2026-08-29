@@ -30,8 +30,8 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
+import com.wire.kalium.logic.util.wrapInMLSContext
 
 /**
  * Attempts to find an existing MLS-capable one-on-one conversation,

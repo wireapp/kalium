@@ -27,16 +27,13 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Clock
 import kotlin.uuid.Uuid
 
-@InternalKaliumApi
 public fun interface ReceiptModeUpdateEventHandler {
     public suspend fun handle(event: Event.Conversation.ConversationReceiptMode)
 }
 
-@InternalKaliumApi
 public class ReceiptModeUpdateEventHandlerImpl public constructor(
     private val conversationEventRepository: ConversationEventRepository,
     private val persistMessage: PersistMessageUseCase,

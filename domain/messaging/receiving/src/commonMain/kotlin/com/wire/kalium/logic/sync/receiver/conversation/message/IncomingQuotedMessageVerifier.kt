@@ -31,11 +31,9 @@ import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.string.toHexString
 import kotlinx.datetime.Instant
 
-@InternalKaliumApi
 public fun interface IncomingQuotedMessageVerifier {
     public suspend operator fun invoke(
         conversationId: ConversationId,
@@ -43,7 +41,6 @@ public fun interface IncomingQuotedMessageVerifier {
     ): MessageContent.QuoteReference
 }
 
-@InternalKaliumApi
 public class IncomingQuotedMessageVerifierImpl public constructor(
     private val messageDAO: MessageDAO,
     private val messageContentEncoder: MessageContentEncoder,

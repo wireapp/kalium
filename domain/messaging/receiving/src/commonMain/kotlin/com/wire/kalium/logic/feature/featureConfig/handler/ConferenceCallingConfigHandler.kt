@@ -23,9 +23,7 @@ import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public class ConferenceCallingConfigHandler(
     private val userConfigRepository: FeatureConfigRepository
 ) {

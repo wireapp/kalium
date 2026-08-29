@@ -58,14 +58,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.serialization.toJsonElement
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonNull
 
 /**
  * A wrapper that joins [Event] with its [EventDeliveryInfo].
  */
-@InternalKaliumApi
 public data class EventEnvelope(
     val event: Event,
     val deliveryInfo: EventDeliveryInfo
@@ -88,7 +86,6 @@ public data class EventEnvelope(
  * @property source Indicates whether the event was received in real-time via WebSocket [EventSource.LIVE]
  * or fetched in batch as a pending event [EventSource.PENDING].
  */
-@InternalKaliumApi
 public data class EventDeliveryInfo(
     val source: EventSource,
 ) {
@@ -104,7 +101,6 @@ public data class EventDeliveryInfo(
  * @property id The ID of the event. As of Jan 2024, the ID used by the backend is
  * _not_ guaranteed to be unique, so comparing the full object might be necessary.
  */
-@InternalKaliumApi
 public sealed class Event(open val id: String) {
 
     private companion object {
@@ -882,11 +878,11 @@ public sealed class Event(open val id: String) {
         }
     }
 
-    internal sealed class Meeting(
+    public sealed class Meeting(
         id: String
     ) : Event(id) {
 
-        internal data class Create(
+        public data class Create(
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
@@ -899,7 +895,7 @@ public sealed class Event(open val id: String) {
             )
         }
 
-        internal data class Delete(
+        public data class Delete(
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
@@ -912,7 +908,7 @@ public sealed class Event(open val id: String) {
             )
         }
 
-        internal data class Update(
+        public data class Update(
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
@@ -925,7 +921,7 @@ public sealed class Event(open val id: String) {
             )
         }
 
-        internal data class MemberAdd(
+        public data class MemberAdd(
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,

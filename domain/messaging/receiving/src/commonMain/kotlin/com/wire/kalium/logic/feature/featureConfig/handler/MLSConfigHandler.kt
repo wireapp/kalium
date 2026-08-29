@@ -28,9 +28,7 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.sync.receiver.FeatureConfigSupportedProtocolsUpdater
 import com.wire.kalium.logic.sync.receiver.FeatureConfigTransactionProvider
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public class MLSConfigHandler(
     private val userConfigRepository: FeatureConfigRepository,
     private val updateSupportedProtocolsAndResolveOneOnOnes: FeatureConfigSupportedProtocolsUpdater,

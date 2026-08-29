@@ -27,9 +27,7 @@ import com.wire.kalium.logic.data.message.MessageDeletionPersistence
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface DeleteForMeHandler {
     public suspend fun handle(
         message: Message.Signaling,
@@ -37,7 +35,6 @@ public interface DeleteForMeHandler {
     )
 }
 
-@InternalKaliumApi
 public class DeleteForMeHandlerImpl public constructor(
     private val messageDeletionPersistence: MessageDeletionPersistence,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,

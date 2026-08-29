@@ -20,26 +20,27 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.util.InternalKaliumApi
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 
-@InternalKaliumApi
+public fun interface EventReceiver<T : Event> {
+    suspend fun onEvent(transactionContext: CryptoTransactionContext, event: T, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit>
+}
+
 public interface ConversationEventReceiver : EventReceiver<Event.Conversation> {
     public suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> = Either.Right(Unit)
 }
 
-@InternalKaliumApi
 @Deprecated("These events are not received/sent to clients anymore", ReplaceWith("SyncFeatureConfigsUseCase"))
 public interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
-@InternalKaliumApi
 public interface FederationEventReceiver : EventReceiver<Event.Federation>
 
-@InternalKaliumApi
+public interface MeetingEventReceiver : EventReceiver<Event.Meeting>
+
 public interface TeamEventReceiver : EventReceiver<Event.Team>
 
-@InternalKaliumApi
 public interface UserEventReceiver : EventReceiver<Event.User>
 
-@InternalKaliumApi
 public interface UserPropertiesEventReceiver : EventReceiver<Event.UserProperty>

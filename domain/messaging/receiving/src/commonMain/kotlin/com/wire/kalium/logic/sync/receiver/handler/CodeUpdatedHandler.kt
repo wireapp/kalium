@@ -22,14 +22,11 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.generateGuestLink
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventRepository
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public fun interface CodeUpdatedHandler {
     public suspend fun handle(event: Event.Conversation.CodeUpdated): Either<StorageFailure, Unit>
 }
 
-@InternalKaliumApi
 public class CodeUpdateHandlerImpl public constructor(
     private val conversationEventRepository: ConversationEventRepository,
     private val accountsBaseUrl: String,

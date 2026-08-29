@@ -39,10 +39,8 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentDecoder
-import com.wire.kalium.util.InternalKaliumApi
 import kotlin.io.encoding.Base64
 
-@InternalKaliumApi
 public interface ProteusMessageUnpacker {
 
     public suspend fun <T : Any> unpackProteusMessage(
@@ -53,7 +51,6 @@ public interface ProteusMessageUnpacker {
 
 }
 
-@InternalKaliumApi
 public class ProteusMessageUnpackerImpl public constructor(
     private val protoContentDecoder: ProtoContentDecoder,
     private val idMapper: IdMapper = IdMapper(),

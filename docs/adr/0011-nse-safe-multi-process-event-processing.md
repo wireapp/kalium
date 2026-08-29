@@ -107,13 +107,12 @@ The small member-change and MLS-reset conversation-state handlers are also owned
 persistence, and self user ID directly; fetch-if-unknown crosses as only
 `suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>`. Main-app
 composition captures one exact existing fetch use-case instance per handler construction and keeps
-its default `ConversationSyncReason.Other` call. MLS reset consumes `MLSResetEventRepository` plus
-a focused call-termination callback; the broad logic-owned `MLSConversationRepository` extends the
-repository contract, and composition supplies the same observable repository wrapper and captured
-`EndCallOnMLSResetUseCase` used before. Successful leave operations retain the crypto-state hook and
-existing delegate behavior. Role-read/fetch/update/persist and call-termination/leave/check/
-conditional-epoch/update ordering, ignored returned failures, exact promotion and group state data,
-logs, exception propagation, and cancellation propagation remain unchanged.
+its default `ConversationSyncReason.Other` call. MLS reset consumes only `MLSResetEventRepository`;
+the broad logic-owned `MLSConversationRepository` extends that contract, and composition supplies
+the same observable repository wrapper used before so successful leave operations retain the
+crypto-state hook and existing delegate behavior. Role-read/fetch/update/persist and
+leave/check/conditional-epoch/update ordering, ignored returned failures, exact promotion and group
+state data, logs, exception propagation, and cancellation propagation remain unchanged.
 
 Protocol-update event handling is likewise owned by `:domain:messaging:receiving` under its existing
 package. It retains `SystemMessageInserter` directly and accepts only focused protocol-update and
@@ -172,9 +171,11 @@ need explicit NSE ownership/adapters or a durable action/outbox design. Subconve
 mapping remains process-local and requires durable `(conversationId, subconversationId) -> groupId`
 state before a second process can use it. Pending-proposal work still needs explicit ownership, a
 durable outbox, and a main-app executor; the extension must not construct the current scheduler
-implementation or a no-op substitute. Cross-process CoreCrypto locking, NSE facade wiring, and the
-broad protobuf encoder/mapper plus `AssetMapper` graph remain separate work. Durable/asynchronous
-deletion, main-app side-effect execution, shared-storage bootstrap, and rollout remain future work.
+implementation or a no-op substitute. The Kalium account event lock, validation of the assumed
+CoreCrypto process serialization, NSE facade wiring, and the broad protobuf encoder/mapper plus
+`AssetMapper` graph remain separate work; no separate Kalium CoreCrypto database-lock implementation
+is planned. Durable/asynchronous deletion, main-app side-effect execution, shared-storage bootstrap,
+and rollout remain future work.
 
 ### Rejected alternatives
 

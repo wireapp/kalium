@@ -36,10 +36,8 @@ import com.wire.kalium.logic.sync.receiver.EventMessagePersistence
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.common.error.wrapStorageRequest
-import com.wire.kalium.util.InternalKaliumApi
 
 /** Message repository operations required by incoming-message persistence. */
-@InternalKaliumApi
 public interface EventMessageRepository {
     public suspend fun persistMessage(
         message: Message.Standalone,
@@ -52,7 +50,6 @@ public interface EventMessageRepository {
 }
 
 /** DAO-backed incoming-message persistence shared by continuous and bounded event processing. */
-@InternalKaliumApi
 public class EventMessageRepositoryImpl public constructor(
     private val messageDAO: MessageDAO,
     selfUserId: UserId,
@@ -84,10 +81,8 @@ public class EventMessageRepositoryImpl public constructor(
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
  * It automatically updates ConversationModifiedDate and ConversationNotificationDate if needed
  */
-@InternalKaliumApi
 public interface PersistMessageUseCase : EventMessagePersistence
 
-@InternalKaliumApi
 public class PersistMessageUseCaseImpl public constructor(
     private val messageRepository: EventMessageRepository,
     private val selfUserId: UserId,

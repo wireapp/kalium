@@ -28,10 +28,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.util.InternalKaliumApi
 
 /** Shared implementation of the team receiver contract. */
-@InternalKaliumApi
 public class TeamEventReceiverImpl public constructor(
     private val userRepository: TeamEventUserRepository,
     private val persistMessage: EventMessagePersistence,

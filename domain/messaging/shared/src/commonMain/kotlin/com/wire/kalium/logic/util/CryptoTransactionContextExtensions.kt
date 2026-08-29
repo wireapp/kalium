@@ -15,22 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.util
 
-package com.wire.kalium.logic.sync.receiver.handler
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 
-import com.wire.kalium.logic.data.call.CallModerationAction
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.util.InternalKaliumApi
-
-@InternalKaliumApi
-public fun interface RemoteMuteCall {
-    public suspend operator fun invoke(conversationId: ConversationId)
-}
-
-@InternalKaliumApi
-public fun interface RemoteMuteActionRecorder {
-    public suspend fun record(
-        conversationId: ConversationId,
-        action: CallModerationAction,
-    )
+public suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
+    block: suspend (mlsContext: MlsCoreCryptoContext) -> Either<CoreFailure, T>
+): Either<CoreFailure, T> {
+    return mls?.let {
+        block(it)
+    } ?: Either.Left(MLSFailure.Disabled)
 }

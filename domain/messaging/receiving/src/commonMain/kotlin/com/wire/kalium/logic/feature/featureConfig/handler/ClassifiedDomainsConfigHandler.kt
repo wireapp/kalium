@@ -22,9 +22,7 @@ import com.wire.kalium.logic.configuration.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public class ClassifiedDomainsConfigHandler public constructor(
     private val userConfigRepository: FeatureConfigRepository
 ) {

@@ -29,9 +29,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepository
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface ClearConversationContentHandler {
     public suspend fun handle(
         transactionContext: CryptoTransactionContext,
@@ -40,12 +38,10 @@ public interface ClearConversationContentHandler {
     )
 }
 
-@InternalKaliumApi
 public fun interface ClearConversationAssetsLocally {
     public suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public fun interface WholeConversationDeletion {
     public suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,
@@ -53,7 +49,6 @@ public fun interface WholeConversationDeletion {
     ): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public class ClearConversationContentHandlerImpl public constructor(
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
     private val selfUserId: UserId,

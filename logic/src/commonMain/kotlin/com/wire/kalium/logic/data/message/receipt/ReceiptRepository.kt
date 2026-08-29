@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message.receipt
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.IncomingReceiptPersistence
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO

@@ -22,9 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public class AllowedGlobalOperationsHandler(
     private val userConfigRepository: FeatureConfigRepository
 ) {

@@ -28,17 +28,14 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.util.InternalKaliumApi
 
 /** Access-model mapping required by incoming conversation events. */
-@InternalKaliumApi
 public interface ConversationEventAccessMapper {
     public fun toAccessEntity(access: Set<Conversation.Access>): List<ConversationEntity.Access>
     public fun toAccessRoleEntity(accessRoles: Set<Conversation.AccessRole>): List<ConversationEntity.AccessRole>
 }
 
 /** Default access-model mapping shared by continuous and bounded event processing. */
-@InternalKaliumApi
 public object ConversationEventAccessMapperImpl : ConversationEventAccessMapper {
     override fun toAccessEntity(access: Set<Conversation.Access>): List<ConversationEntity.Access> = access.map {
         when (it) {
@@ -62,7 +59,6 @@ public object ConversationEventAccessMapperImpl : ConversationEventAccessMapper 
 }
 
 /** Local channel-permission operation required by incoming conversation events. */
-@InternalKaliumApi
 public fun interface ChannelAddPermissionRepository {
     public suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,
@@ -71,7 +67,6 @@ public fun interface ChannelAddPermissionRepository {
 }
 
 /** Local persistence operations required by the simple incoming-conversation handlers. */
-@InternalKaliumApi
 public interface ConversationEventRepository : ChannelAddPermissionRepository {
     public suspend fun updateReceiptMode(
         conversationId: ConversationId,
@@ -102,7 +97,6 @@ public interface ConversationEventRepository : ChannelAddPermissionRepository {
 }
 
 /** DAO-backed conversation-event persistence shared by continuous and bounded event processing. */
-@InternalKaliumApi
 public class ConversationEventRepositoryImpl public constructor(
     private val conversationDAO: ConversationDAO,
     private val accessMapper: ConversationEventAccessMapper = ConversationEventAccessMapperImpl,

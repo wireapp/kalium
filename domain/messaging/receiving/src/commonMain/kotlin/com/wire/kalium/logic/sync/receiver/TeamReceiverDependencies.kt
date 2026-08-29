@@ -28,16 +28,13 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.util.InternalKaliumApi
 
 /** Message persistence operation shared by receiver implementations. */
-@InternalKaliumApi
 public fun interface EventMessagePersistence {
     public suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit>
 }
 
 /** User mutation required by team membership events. */
-@InternalKaliumApi
 public fun interface TeamEventUserRepository {
     public suspend fun markUserAsDeletedAndRemoveFromGroupConversations(
         userId: UserId
@@ -45,7 +42,6 @@ public fun interface TeamEventUserRepository {
 }
 
 /** Local team-event persistence shared by the app and future bounded receivers. */
-@InternalKaliumApi
 public class TeamEventUserRepositoryImpl public constructor(
     private val userDAO: UserDAO
 ) : TeamEventUserRepository {

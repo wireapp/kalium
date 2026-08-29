@@ -43,10 +43,8 @@ import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.InternalKaliumApi
 
 /** Shared implementation of the feature-config receiver contract. */
-@InternalKaliumApi
 @Deprecated("These events are not received/sent to clients anymore", ReplaceWith("SyncFeatureConfigsUseCase"))
 @Suppress("LongParameterList")
 public class FeatureConfigEventReceiverImpl public constructor(

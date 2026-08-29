@@ -51,12 +51,10 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-@InternalKaliumApi
 public interface ApplicationMessageHandler {
 
     @Suppress("LongParameterList")
@@ -83,7 +81,6 @@ public interface ApplicationMessageHandler {
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
-@InternalKaliumApi
 public class ApplicationMessageHandlerImpl public constructor(
     private val availabilityMessageHandler: AvailabilityMessageHandler,
     private val clientActionMessageHandler: ClientActionMessageHandler,
@@ -238,7 +235,6 @@ public class ApplicationMessageHandlerImpl public constructor(
             )
         )
     }
-
     private suspend fun processMessage(message: Message.Regular) {
         logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
         when (val content = message.content) {

@@ -35,7 +35,7 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.util.wrapInMLSContext
 import com.wire.kalium.logic.data.user.UserId
 
 internal sealed class RecoverMLSConversationsResult {

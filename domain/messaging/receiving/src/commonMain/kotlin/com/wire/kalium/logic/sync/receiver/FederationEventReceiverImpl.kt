@@ -33,7 +33,6 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
@@ -41,7 +40,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 
 /** Shared implementation of the federation receiver contract. */
-@InternalKaliumApi
 @Suppress("LongParameterList")
 public class FederationEventReceiverImpl public constructor(
     private val conversationRepository: FederationConversationRepository,

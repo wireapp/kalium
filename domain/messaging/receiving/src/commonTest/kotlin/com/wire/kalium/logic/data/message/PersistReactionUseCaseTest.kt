@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.reaction.IncomingReactionPersistence
+import com.wire.kalium.logic.data.message.IncomingReactionPersistence
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReactionEventData

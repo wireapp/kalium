@@ -37,7 +37,6 @@ import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -55,7 +54,6 @@ import kotlinx.coroutines.withContext
  * @see EventEnvelope
  * @see EventDeliveryInfo
  */
-@InternalKaliumApi
 public interface EventProcessor {
 
     /**
@@ -91,7 +89,6 @@ public interface EventProcessor {
 }
 
 @Suppress("LongParameterList")
-@InternalKaliumApi
 public class EventProcessorImpl(
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: UserEventReceiver,

@@ -23,14 +23,11 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public fun interface ClientActionMessageHandler {
     public suspend fun handle(message: Message.Signaling)
 }
 
-@InternalKaliumApi
 public class ClientActionMessageHandlerImpl public constructor(
     private val persistMessage: PersistMessageUseCase,
 ) : ClientActionMessageHandler {

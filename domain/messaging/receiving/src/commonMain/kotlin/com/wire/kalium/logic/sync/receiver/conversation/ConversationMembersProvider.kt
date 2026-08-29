@@ -24,16 +24,13 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-@InternalKaliumApi
 public fun interface ConversationMembersProvider {
     public suspend fun observeConversationMembers(conversationId: ConversationId): Flow<List<Conversation.Member>>
 }
 
-@InternalKaliumApi
 public class DaoConversationMembersProvider public constructor(
     private val memberDAO: MemberDAO,
 ) : ConversationMembersProvider {

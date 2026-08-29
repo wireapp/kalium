@@ -28,9 +28,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEditPersistence
 import com.wire.kalium.logic.data.message.MessageEditState
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface MessageTextEditHandler {
     public suspend fun handle(
         message: Message.Signaling,
@@ -38,7 +36,6 @@ public interface MessageTextEditHandler {
     ): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public class MessageTextEditHandlerImpl public constructor(
     private val messageEditPersistence: MessageEditPersistence,
     private val notificationEventsManager: NotificationEventsManager,

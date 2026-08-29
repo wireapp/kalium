@@ -19,9 +19,7 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public class KaliumSyncException public constructor(
     message: String,
     public val coreFailureCause: CoreFailure

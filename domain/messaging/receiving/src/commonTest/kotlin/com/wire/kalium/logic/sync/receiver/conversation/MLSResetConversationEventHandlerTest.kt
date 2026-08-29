@@ -307,7 +307,6 @@ class MLSResetConversationEventHandlerTest {
 
     private suspend fun assertEscapingFailure(stage: FailureStage, expected: Throwable) {
         val (arrangement, handler) = arrange {
-            withEndCallThrowing(expected.takeIf { stage == FailureStage.END_CALL })
             withLeaveGroupSucceeding(expected.takeIf { stage == FailureStage.LEAVE })
             withHasEstablishedMLSGroupReturning(true, expected.takeIf { stage == FailureStage.HAS_ESTABLISHED })
             withNewGroupEpoch(13L, expected.takeIf { stage == FailureStage.EPOCH })
@@ -322,7 +321,7 @@ class MLSResetConversationEventHandlerTest {
         }
 
         assertSame(expected, actual)
-        assertEquals(FailureStage.entries.take(stage.ordinal + 1).map { it.callName }, arrangement.callOrder)
+        assertEquals(listOf("endCall") + FailureStage.entries.take(stage.ordinal + 1).map { it.callName }, arrangement.callOrder)
     }
 
     private class Arrangement(private val block: Arrangement.() -> Unit) {
@@ -331,11 +330,9 @@ class MLSResetConversationEventHandlerTest {
         val mlsResetEventRepository = mock<MLSResetEventRepository>()
         val callOrder = mutableListOf<String>()
         val endedCallConversationIds = mutableListOf<ConversationId>()
-        private var endCallThrowable: Throwable? = null
 
-        private val endCallOnMLSReset: suspend (ConversationId) -> Unit = { conversationId ->
+        val endCallOnMLSReset: suspend (ConversationId) -> Unit = { conversationId ->
             callOrder += "endCall"
-            endCallThrowable?.let { throw it }
             endedCallConversationIds += conversationId
         }
 
@@ -345,10 +342,6 @@ class MLSResetConversationEventHandlerTest {
 
         fun withLeaveGroupSucceeding(throwable: Throwable? = null) =
             withLeaveGroupReturning(Either.Right(Unit), throwable)
-
-        fun withEndCallThrowing(throwable: Throwable?) = apply {
-            endCallThrowable = throwable
-        }
 
         fun withLeaveGroupFailing(failure: CoreFailure) =
             withLeaveGroupReturning(Either.Left(failure))
@@ -425,7 +418,6 @@ class MLSResetConversationEventHandlerTest {
     }
 
     private enum class FailureStage(val callName: String) {
-        END_CALL("endCall"),
         LEAVE("leave"),
         HAS_ESTABLISHED("hasEstablished"),
         EPOCH("epoch"),

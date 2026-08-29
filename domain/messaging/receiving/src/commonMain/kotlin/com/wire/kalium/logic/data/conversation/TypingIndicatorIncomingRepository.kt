@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.conversation
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,12 +27,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 
 /** Current typing-indicator preference required by incoming typing events. */
-@InternalKaliumApi
 public fun interface TypingIndicatorStatusProvider {
     public suspend fun getTypingIndicatorStatus(): Boolean
 }
 
-@InternalKaliumApi
 public interface TypingIndicatorIncomingRepository {
     public suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
     public suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId)
@@ -42,7 +39,6 @@ public interface TypingIndicatorIncomingRepository {
 }
 
 /** Shared incoming-typing cache used by the app and future bounded receivers. */
-@InternalKaliumApi
 public class TypingIndicatorIncomingRepositoryImpl public constructor(
     private val userPropertyRepository: TypingIndicatorStatusProvider,
 ) : TypingIndicatorIncomingRepository {

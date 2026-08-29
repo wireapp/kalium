@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 
 /**
@@ -30,7 +29,6 @@ import kotlinx.datetime.Instant
  * on committing pending proposals, and we want to avoid the scenario of everyone
  * committing pending proposals at same time.
  */
-@InternalKaliumApi
 public interface PendingProposalScheduler {
 
     /**

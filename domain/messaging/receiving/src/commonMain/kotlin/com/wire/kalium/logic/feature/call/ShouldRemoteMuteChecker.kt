@@ -19,14 +19,12 @@ package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.util.InternalKaliumApi
 
 /**
  * Checks if the current user should be muted remotely.
  * More details in the use case:
  * https://wearezeta.atlassian.net/wiki/spaces/ENGINEERIN/pages/969605169/Use+case+conversation+admin+mutes+a+remote+participant
  */
-@InternalKaliumApi
 public interface ShouldRemoteMuteChecker {
     public fun check(
         senderUserId: UserId,
@@ -36,7 +34,6 @@ public interface ShouldRemoteMuteChecker {
     ): Boolean
 }
 
-@InternalKaliumApi
 public class ShouldRemoteMuteCheckerImpl : ShouldRemoteMuteChecker {
     override fun check(
         isSenderAdmin: Boolean,

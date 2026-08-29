@@ -30,13 +30,11 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 /** User access required while applying incoming conversation events. */
-@InternalKaliumApi
 public interface ConversationEventUserRepository {
     public suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
 
@@ -44,7 +42,6 @@ public interface ConversationEventUserRepository {
 }
 
 /** User operations required while applying incoming member-join events. */
-@InternalKaliumApi
 public interface MemberJoinEventUserRepository : ConversationEventUserRepository {
     public suspend fun updateActiveOneOnOneConversationIfNotSet(
         userId: UserId,
@@ -53,7 +50,6 @@ public interface MemberJoinEventUserRepository : ConversationEventUserRepository
 }
 
 /** User operations required while applying incoming member-leave events. */
-@InternalKaliumApi
 public interface MemberLeaveEventUserRepository : ConversationEventUserRepository {
     public suspend fun markAsDeleted(userId: List<UserId>): Either<StorageFailure, Unit>
 
@@ -64,7 +60,6 @@ public interface MemberLeaveEventUserRepository : ConversationEventUserRepositor
 }
 
 /** Conversation access required while applying an incoming member-join event. */
-@InternalKaliumApi
 public interface MemberJoinEventRepository {
     public suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
 
@@ -72,7 +67,6 @@ public interface MemberJoinEventRepository {
 }
 
 /** System-message operations required after receiving a new conversation. */
-@InternalKaliumApi
 public interface NewConversationSystemMessagesCreator {
     public suspend fun conversationStartedUnverifiedWarning(
         conversationId: ConversationId,
@@ -113,7 +107,6 @@ public interface NewConversationSystemMessagesCreator {
 }
 
 /** Conversation lookup required before applying a received deletion event. */
-@InternalKaliumApi
 public fun interface DeletedConversationEventRepository {
     public suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
 }

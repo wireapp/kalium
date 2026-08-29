@@ -29,9 +29,6 @@ kaliumLibrary {
 }
 
 kotlin {
-    sourceSets.configureEach {
-        languageSettings.optIn("com.wire.kalium.util.InternalKaliumApi")
-    }
 
     sourceSets {
         val commonMain by getting {

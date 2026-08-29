@@ -25,14 +25,11 @@ import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public fun interface TypingIndicatorHandler {
     public suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit>
 }
 
-@InternalKaliumApi
 public class TypingIndicatorHandlerImpl public constructor(
     private val selfUserId: UserId,
     private val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository,

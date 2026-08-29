@@ -3,6 +3,12 @@
 This note records the compile-time closure inspected while implementing the receiver-extraction milestone described by
 `nse-safe-multi-process-event-processing.md`. It supplements that plan without changing its design or the NSE runtime scope.
 
+Per-slice entries retain the state and wording relevant when each slice landed. A later boundary cleanup stopped exposing
+`:domain:messaging:receiving` transitively from `:logic` and removed `@InternalKaliumApi` from declarations owned by the
+internal-only receiving and event-processing modules. Their required public Kotlin visibility is module-composition
+surface, not exported `KaliumLogic` product API. Annotation references in historical slice plans describe that earlier
+intermediate state; annotations on shared or data-mapper APIs remain where the source still declares them.
+
 ## Historical audit note
 
 The extraction history contains one broken intermediate commit: `e7e597b5d6d7` declared
@@ -48,9 +54,8 @@ rewiring it, or changing runtime composition:
 The follow-up move is now complete as a pure ownership refactor:
 
 1. `KaliumSyncException` now has one owner in `:domain:event-processing` under its existing package and FQCN. The
-   cross-module `@InternalKaliumApi` public surface is limited to the class, constructor, and `coreFailureCause` property
-   that were internal while the type and its callers shared `:logic`; message, cause storage, and runtime exception
-   behavior are unchanged.
+   cross-module public surface is limited to the class, constructor, and `coreFailureCause` property that were internal
+   while the type and its callers shared `:logic`; message, cause storage, and runtime exception behavior are unchanged.
 2. The `PendingProposalScheduler` contract now has one owner in `:domain:messaging:receiving` under its existing package
    and FQCN. `PendingProposalSchedulerImpl`, its eager initialization, limited-parallelism dispatcher, coroutine scope,
    incremental-sync observer, timer flow, delays, CoreCrypto transaction, repository calls, cleanup classification,
@@ -76,7 +81,8 @@ The follow-up move is now complete as a pure ownership refactor:
    state hook still runs only after successful decrypt.
 7. This slice adds no NSE runtime wiring, retry, queue, locking, rollout switch, no-op scheduler, or async redesign. NSE
    composition still requires durable `(conversationId, subconversationId) -> groupId` state, scheduler ownership plus a
-   durable outbox and main-app executor, and the separate CoreCrypto cross-process lock. The full protobuf encoder/mapper
+   durable outbox and main-app executor, the Kalium account event lock, and validation of the assumed CoreCrypto process
+   serialization. No separate Kalium CoreCrypto database-lock implementation is planned. The full protobuf encoder/mapper
    and broad `AssetMapper` graph remain in `:logic` behind `ProtoContentDecoder`.
 
 ## Completed quoted-message and link-preview boundary slice
@@ -103,8 +109,8 @@ The follow-up move is now complete as a pure ownership refactor:
 ## Completed ApplicationMessageHandler extraction slice
 
 1. `ApplicationMessageHandler`, `ApplicationMessageHandlerImpl`, and the complete common test suite now live in
-   `:domain:messaging:receiving` with their existing package and FQCNs. Only the `@InternalKaliumApi` public interface,
-   implementation, constructor, and interface-method visibility required by existing `:logic` callers was added.
+   `:domain:messaging:receiving` with their existing package and FQCNs. Only the public interface, implementation,
+   constructor, and interface-method visibility required by existing `:logic` callers was added.
 2. The complete regular/signaling envelope construction, routing branches, exact leaf arguments and order, quote
    verification, persistence/link-preview sequencing, asset exception boundary, unsupported history behavior,
    decryption-error persistence, and pending last-read flushing are unchanged.
@@ -133,9 +139,9 @@ behavior-preserving extraction:
    `MapperProvider` composition, encoding behavior, and mapper tests remain in `:logic`.
 2. `MessageUnpackResult`, `ProteusMessageFailureResolution`, `ProteusMessageFailureHandler`, `ProteusMessageUnpacker`,
    and `ProteusMessageUnpackerImpl` now live in `:domain:messaging:receiving` with their existing package/FQCNs. The
-   visibility and `@InternalKaliumApi` annotations added to their cross-module surface are limited to what the
-   then logic-owned `MLSMessageUnpacker`, `LegalHoldHandler`, and `NewMessageEventHandler` required. The MLS unpacker and
-   new-message handler have since moved to the same receiving module; legal hold remains app-owned behind a callback.
+   visibility added to their cross-module surface is limited to what the then logic-owned `MLSMessageUnpacker`,
+   `LegalHoldHandler`, and `NewMessageEventHandler` required. The MLS unpacker and new-message handler have since moved to
+   the same receiving module; legal hold remains app-owned behind a callback.
 3. `ProteusMessageUnpackerImpl` receives the shared `ProtoContentDecoder` and the existing lower-level `IdMapper()` API.
    `UserSessionScope` supplies the existing logic-owned `ProtoContentMapper` instance as that decoder, so there is one
    broad mapper graph and no `MapperProvider` dependency in receiving. No NSE runtime wiring or lifecycle redesign was
@@ -156,8 +162,8 @@ behavior-preserving extraction:
 ## Completed NewMessageEventHandler extraction slice
 
 1. `NewMessageEventHandler`, `NewMessageEventHandlerImpl`, and all 20 pre-existing tests now have one owner in
-   `:domain:messaging:receiving` under their existing package and FQCNs. Only the public visibility and
-   `@InternalKaliumApi` annotations required for cross-module composition were added.
+   `:domain:messaging:receiving` under their existing package and FQCNs. Only the public visibility required for
+   cross-module composition was added.
 2. The handler retains direct object dependencies on `ProteusMessageUnpacker`, `MLSMessageUnpacker`,
    `ApplicationMessageHandler`, and `selfUserId`. The broad app implementations cross the boundary only as focused
    callbacks:
@@ -186,8 +192,8 @@ behavior-preserving extraction:
 7. This does not make NSE runtime composition ready. Legal hold, stale-epoch recovery, reset/rejoin,
    confirmation/self-deletion execution, and pending-side-effect durability still need explicit NSE ownership/adapters
    or a durable action/outbox design. Durable subconversation mapping, pending-proposal ownership/outbox/execution, and
-   cross-process CoreCrypto locking remain separate work. Conversation lifecycle handlers still block the complete
-   `ConversationEventReceiverImpl` move.
+   validation of the assumed CoreCrypto process serialization remain separate work. At this slice, conversation lifecycle
+   handlers still blocked the complete `ConversationEventReceiverImpl` move; that ownership move has since completed.
 
 ## Completed AssetMessageHandler extraction slice
 
@@ -196,8 +202,8 @@ Inspection of `AssetMessageHandlerImpl`, `UserConfigRepository`, `FeatureConfigR
 produced this completed behavior-preserving extraction:
 
 1. `AssetMessageHandler` and `AssetMessageHandlerImpl` now live in `:domain:messaging:receiving` with their existing
-   package and cross-module API exposed through `@InternalKaliumApi`. `ApplicationMessageHandler` routing and the incoming
-   asset call path remain unchanged.
+   package and only the cross-module visibility needed for composition. `ApplicationMessageHandler` routing and the
+   incoming asset call path remain unchanged.
 2. The handler now depends on the focused `FileSharingStatusProvider` contract in `:domain:messaging:receiving`.
    The existing DAO-backed `FeatureConfigRepositoryImpl` extends that contract, and `UserSessionScope` shares one instance
    with `UserConfigDataSource`, feature-config handlers, and `AssetMessageHandler`. Both broad app queries and incoming
@@ -238,7 +244,7 @@ Inspection of `CallingMessageHandlerImpl`, `CallManager`, the remote-mute policy
 tests produced this completed behavior-preserving extraction slice:
 
 1. `CallingMessageHandler` and `CallingMessageHandlerImpl` now live in `:domain:messaging:receiving` with their existing
-   package and cross-module API exposed through `@InternalKaliumApi`. Non-`REMOTEMUTE` messages cross the one-method
+   package and only the cross-module visibility needed for composition. Non-`REMOTEMUTE` messages cross the one-method
    `IncomingCallingMessageConsumer` port, forwarding the exact same signaling message and calling content once.
 2. `UserSessionScope` supplies a lambda whose body remains the existing
    `callManager.value.onCallingMessageReceived(message, content)` call. This new normal-message forwarding adapter
@@ -247,8 +253,7 @@ tests produced this completed behavior-preserving extraction slice:
    `CallManager` through the existing `calls.muteCall` to `MuteCallUseCaseImpl` path exactly as before.
 3. The pure `ShouldRemoteMuteChecker`, `ShouldRemoteMuteCheckerImpl`, and their tests now live in
    `:domain:messaging:receiving`, retaining their package and exact admin, target-domain, user/client, null, and
-   case-sensitive matching behavior. Only the `@InternalKaliumApi` and public visibility required for cross-module use
-   were added.
+   case-sensitive matching behavior. Only the public visibility required for cross-module use was added.
 4. The remote-mute closure is now decoupled from its broad `:logic` contracts. Current client lookup is the precise
    `suspend () -> Either<CoreFailure, ClientId>` function dependency and `UserSessionScope` supplies it exactly as
    `currentClientIdProvider = clientIdProvider::invoke`. Conversation members cross the focused
@@ -360,7 +365,7 @@ Deferred design checkpoint for the durable-outbox milestone:
 - Classify persistence hooks individually and defer only non-authoritative work. This later change is intentional new
   behavior with its own crash, retry, ordering, and cross-process tests; it is not part of the extraction slice.
 
-## Current text/multipart-edit application-message slice plan
+## Historical text/multipart-edit application-message slice plan
 
 Inspection of `MessageTextEditHandlerImpl`, `MessageMultipartEditHandlerImpl`, `MessageRepository`/`MessageDataSource`,
 `MessageDAO`, `NotificationEventsManager`, `UserSessionScope`, the message/link-preview/mention/attachment mappings, and
@@ -394,7 +399,7 @@ their tests gives this combined extraction plan:
    compilation, and diff hygiene; then stop before quote handling, ignored/no-op extraction, deletion, asset/calling,
    facade/orchestration, NSE runtime, or process locking.
 
-## Current in-call-emoji application-message slice plan
+## Historical in-call-emoji application-message slice plan
 
 Inspection of the inline `InCallEmoji` branch, `InCallReactionsRepository`/`InCallReactionsDataSource`, `CallsScope`,
 `ObserveInCallReactionsUseCase`, `ApplicationMessageHandler`, `UserSessionScope`, and their tests gives this concrete
@@ -417,7 +422,7 @@ extraction plan:
    validate JVM/iOS compilation and detekt, then stop before `Ignored`, delete/edit/calling/asset/clear-content leaves,
    facade extraction, or broader orchestration.
 
-## Current client-action application-message slice plan
+## Historical client-action application-message slice plan
 
 Inspection of the inline client-action branch, `Message.System`, `MessageContent.ClientAction`/`CryptoSessionReset`,
 `PersistMessageUseCase`, `ApplicationMessageHandler`, `UserSessionScope`, and their tests gives this concrete extraction
@@ -436,7 +441,7 @@ plan:
 5. Add focused mapping/result/propagation tests plus exact-envelope routing coverage, validate JVM/iOS compilation and
    detekt, then stop before Ignored, InCallEmoji, delete/edit leaves, facade extraction, or NSE runtime work.
 
-## Current availability application-message slice plan
+## Historical availability application-message slice plan
 
 Inspection of the inline availability branch, `UserRepository.updateOtherUserAvailabilityStatus`,
 `AvailabilityStatusMapper`, `UserDAO.updateUserAvailabilityStatus`, `ApplicationMessageHandler`, `UserSessionScope`, and
@@ -458,7 +463,7 @@ their tests gives this concrete extraction plan:
    in `:logic`, validate JVM/iOS compilation and detekt, then stop before every other application-message leaf or NSE
    orchestration.
 
-## Current composite-edit application-message slice plan
+## Historical composite-edit application-message slice plan
 
 Inspection of `MessageCompositeEditHandlerImpl`, `MessageRepository.getMessageById` and `updateCompositeMessage`,
 `MessageMetadataRepository`, `CompositeMessageRepository`, their DAO implementations, `ApplicationMessageHandler`,
@@ -481,7 +486,7 @@ Inspection of `MessageCompositeEditHandlerImpl`, `MessageRepository.getMessageBy
    validate JVM/iOS compilation and detekt, then stop before other edit/delete leaves, notification side effects, or NSE
    orchestration.
 
-## Current delete-for-me application-message slice plan
+## Historical delete-for-me application-message slice plan
 
 Inspection of `DeleteForMeHandlerImpl`, `IsMessageSentInSelfConversationUseCaseImpl`, `SelfConversationIdProviderImpl`,
 `ClientRepository.hasRegisteredMLSClient`, the cached MLS/Proteus self-conversation providers,
@@ -523,7 +528,7 @@ tests gives this concrete extraction plan:
    `:logic`, validate shared/receiving/logic JVM tests, detekt, and iOS Simulator ARM64 compilation, then stop before
    delete-for-everyone, edit, last-read, clear-content, asset/notification side effects, unpacking, or NSE orchestration.
 
-## Current last-read application-message slice plan
+## Historical last-read application-message slice plan
 
 Inspection of `LastReadContentHandlerImpl`, `ConversationRepository.updateReadDatesAndGetHasUnreadEvents`,
 `ConversationDAO`, `ApplicationMessageHandler`, `UserSessionScope`, and their tests gives this concrete extraction plan:
@@ -550,7 +555,7 @@ Inspection of `LastReadContentHandlerImpl`, `ConversationRepository.updateReadDa
 7. Keep application-message routing and flush delegation unchanged, validate receiving/logic JVM tests, detekt, and iOS
    Simulator ARM64 compilation, then stop before message-composite-edit or any later extraction or NSE orchestration.
 
-## Current reaction application-message slice plan
+## Historical reaction application-message slice plan
 
 Inspection of `PersistReactionUseCaseImpl`, `ReactionRepository.updateReaction`, `ReactionDAO.updateReactions`,
 `ApplicationMessageHandler`, `UserSessionScope`, and their tests gives this concrete extraction plan:
@@ -569,7 +574,7 @@ Inspection of `PersistReactionUseCaseImpl`, `ReactionRepository.updateReaction`,
    broad-repository integration coverage in `:logic`. Stop before delete-for-me, edit/delete, last-read, clear-content,
    call, unpacking, or NSE orchestration work.
 
-## Current receipt application-message slice plan
+## Historical receipt application-message slice plan
 
 Inspection of `ReceiptMessageHandler`, `MessageRepository.updateMessagesStatusIfNotRead`,
 `ReceiptRepository.persistReceipts`, `MessageDAO`, `ReceiptDAO`, the receipt models/mappers and their tests, and
@@ -597,7 +602,7 @@ Inspection of `ReceiptMessageHandler`, `MessageRepository.updateMessagesStatusIf
    facade/orchestration work. After this slice, reassess the remaining application-message leaves by their concrete
    local-persistence closures.
 
-## Current data-transfer receiver slice plan
+## Historical data-transfer receiver slice plan
 
 Inspection of `DataTransferEventHandler`, `UserConfigRepository`, and `UserConfigDAO` gives this concrete extraction plan:
 
@@ -611,8 +616,8 @@ Inspection of `DataTransferEventHandler`, `UserConfigRepository`, and `UserConfi
 3. Move `DataTransferEventHandler` and `DataTransferEventHandlerImpl` unchanged in behavior to
    `:domain:messaging:receiving`, with cross-module construction exposed only through `@InternalKaliumApi`. Compose the
    concrete DAO-backed storage and extracted handler from the existing `UserSessionScope`. This historical plan kept
-   `NewMessageEventHandler` and `ConversationEventReceiverImpl` in `:logic`; the handler has since moved while the
-   receiver remains blocked on lifecycle handlers.
+   `NewMessageEventHandler` and `ConversationEventReceiverImpl` in `:logic`; both have since moved in later extraction
+   slices.
 4. Preserve the early return for another sender or a null identifier; read-before-compare behavior; no-op for an unchanged
    identifier; previous-before-current write order; continuation after a caught setter failure; and the two existing
    success log points. Move the existing handler characterization tests with the implementation and add focused adapter
@@ -671,13 +676,12 @@ The following concrete receivers now live in `:domain:messaging:receiving`, and 
     `suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>` callback, while `UserSessionScope`
     captures one exact `FetchConversationIfUnknownUseCase` instance per handler construction and preserves its default
     `ConversationSyncReason.Other` invocation;
-  - `MLSResetConversationEventHandlerImpl`, retaining unconditional call termination before the null-MLS short circuit,
-    exact leave/check/conditional-epoch/update ordering, ignored leave/update results, failed-check fallback, exact
-    epoch/state mapping, and uncaught exception/cancellation behavior;
+  - `MLSResetConversationEventHandlerImpl`, retaining null-MLS no-op behavior and exact leave/check/conditional-epoch/
+    update ordering, ignored leave/update results, failed-check fallback, exact epoch/state mapping, and uncaught
+    exception/cancellation behavior;
   - `MLSResetEventRepository` exposes only those three reset operations; the existing broad `MLSConversationRepository`
-    extends it. Call termination crosses as only a focused `suspend (ConversationId) -> Unit` callback, and
-    `UserSessionScope` passes the exact observable repository wrapper and captured `EndCallOnMLSResetUseCase` used by the
-    handler so the success-only leave hook and all delegate behavior remain unchanged.
+    extends it, and `UserSessionScope` passes the exact observable repository wrapper constructed for the handler so the
+    success-only leave hook and all delegate behavior remain unchanged.
 - The protocol-update conversation slice
   - `ProtocolUpdateEventHandlerImpl`, its private no-conversation classifier, and its complete tests retain update-first,
     message-before-call-query ordering, deleted-conversation classification, logging, and `Either` behavior;
@@ -824,14 +828,14 @@ implementations, while internal facades left without production callers are remo
 duplicate repository implementation.
 
 The extraction-induced Konsist failures are also resolved. App layer rules now inspect only `:logic`, feature-config
-receiver dependencies live outside the app `feature` package, and explicitly `@InternalKaliumApi` use-case implementations
-may retain public constructors for cross-module composition.
+receiver dependencies live outside the app `feature` package, and internal-only lower-module implementations may retain
+the public constructors required for cross-module composition without becoming exported `KaliumLogic` product API.
 
 ## Completed ProtocolUpdateEventHandler extraction slice
 
-1. `ProtocolUpdateEventHandler`, `ProtocolUpdateEventHandlerImpl`, the private no-conversation failure classifier, and
-   every pre-existing test now have one owner in `:domain:messaging:receiving` under their existing packages and FQCNs.
-   Only cross-module public visibility and `@InternalKaliumApi` annotations were added.
+1. `ProtocolUpdateEventHandler`, `ProtocolUpdateEventHandlerImpl`, and every pre-existing test now have one owner in
+   `:domain:messaging:receiving` under their existing packages and FQCNs. No-conversation classification now reuses
+   `CoreFailure.isConversationNotFoundError`; only cross-module public visibility was added.
 2. `SystemMessageInserter` remains a direct receiving-owned dependency. The logic-owned
    `UpdateConversationProtocolUseCase` and `CallRepository` remain unexposed and cross the boundary only as
    `suspend (CryptoTransactionContext, ConversationId, Conversation.Protocol, Boolean) -> Either<CoreFailure, Boolean>`
@@ -840,24 +844,24 @@ may retain public constructors for cross-module composition.
    stable call-repository object, and one system-message-inserter instance for each handler construction. The callbacks
    do not re-resolve those getter-backed objects per event. Protocol updates still pass `localOnly = true`; call state
    still uses `establishedCallsFlow().first().isNotEmpty()` rather than a cached/current value.
-4. The handler still updates first. Only a `ServerMiscommunication` wrapping an `InvalidRequestError` classified by
-   `isConversationNotFound` becomes `Right(false)` with the existing informational log; all other returned failures are
-   propagated. `Right(false)` skips both messages and the call query. `Right(true)` inserts the protocol message, queries
-   established calls before testing `protocol == MIXED`, conditionally inserts the during-call message, logs success,
-   and maps to `Unit` exactly as before.
+4. The handler still updates first. Only a `ServerMiscommunication` wrapping an `InvalidRequestError` for a missing
+   conversation, classified by `CoreFailure.isConversationNotFoundError`, becomes `Right(false)` with the existing
+   informational log; all other returned failures are propagated. `Right(false)` skips both messages and the call query.
+   `Right(true)` inserts the protocol message, queries established calls before testing `protocol == MIXED`, conditionally
+   inserts the during-call message, logs success, and maps to `Unit` exactly as before.
 5. The moved suite keeps every original test name and assertion intent, replaces logic-only fixtures with local event and
    network failures plus focused callback recorders, and adds exact order/argument, skip, non-`MIXED` query,
    first-flow-emission, classification, ordinary-exception, and cancellation characterization at every callback/message
    stage.
-6. No update use-case/repository implementation, receiver, NSE runtime wiring, CoreCrypto lock, retry, queue, durable
-   action/outbox, rollout switch, or unrelated lifecycle handler moved in this slice. `ConversationEventReceiverImpl`
-   remains logic-owned.
+6. No update use-case/repository implementation, receiver, NSE runtime wiring, CoreCrypto process-safety change, retry,
+   queue, durable action/outbox, rollout switch, or unrelated lifecycle handler moved in this slice.
+   `ConversationEventReceiverImpl` was logic-owned at this slice and has since moved.
 
 ## Completed MLSWelcomeEventHandler extraction slice
 
 1. `MLSWelcomeEventHandler`, `MLSWelcomeEventHandlerImpl`, their private helpers and structured outcome constants, and
    every pre-existing test now have one owner in `:domain:messaging:receiving` under their existing package and FQCNs.
-   Only cross-module public visibility and `@InternalKaliumApi` annotations were added.
+   Only cross-module public visibility was added.
 2. The focused receiving-owned `MLSWelcomeEventRepository` extends `ConversationProtocolGetter` and adds only
    `updateConversationGroupState(GroupID, GroupState): Either<StorageFailure, Unit>` and
    `observeConversationDetailsById(ConversationId): Flow<Either<StorageFailure, ConversationDetails>>`.
@@ -872,19 +876,21 @@ may retain public constructors for cross-module composition.
    observation, and optional one-to-one resolution in the same order; and preserves every returned-failure short circuit.
    Conversation-not-found, already-existing, orphan/local-established, external-commit recovery/failure, all other
    failure classifications, exact logs and outcome strings, refill behavior, exceptions, and cancellation are unchanged.
-   The original private `wrapInMLSContext` semantics are reproduced locally without exposing or moving the logic helper.
+   The original `wrapInMLSContext` semantics are now supplied by the shared helper in
+   `:domain:messaging:shared`.
 5. The moved suite preserves all 14 original test names and assertion intent, uses local model/network/transaction
    fixtures plus a focused repository and callback recorders, and adds null-MLS, exact order/arguments, `Flow.first`,
    multiple-CRL, short-circuit, ignored-refill-failure, already-existing/orphan variants, join-failure, wrapped-exception,
    ordinary-exception, and cancellation characterization.
-6. No receiver, NSE runtime wiring, CoreCrypto lock, retry, queue, durable action/outbox, rollout switch, other lifecycle
-   handler, or `UserEventReceiverImpl` work moved in this slice. `ConversationEventReceiverImpl` remains logic-owned.
+6. No receiver, NSE runtime wiring, CoreCrypto process-safety change, retry, queue, durable action/outbox, rollout switch,
+   other lifecycle handler, or `UserEventReceiverImpl` work moved in this slice. `ConversationEventReceiverImpl` was
+   logic-owned at this slice and has since moved.
 
 ## Completed grouped NewConversationEventHandler and DeletedConversationEventHandler extraction slice
 
 1. `NewConversationEventHandler`, `DeletedConversationEventHandler`, their implementations, and all 13 pre-existing
    named tests now have one owner in `:domain:messaging:receiving` under their existing packages and FQCNs. Only the
-   public visibility and `@InternalKaliumApi` annotations required for cross-module composition were added.
+   public visibility required for cross-module composition was added.
 2. The focused receiving-owned `ConversationEventUserRepository` contains exactly unknown-user fetch and single-user
    observation. `NewConversationSystemMessagesCreator` contains exactly the five operations called by new-conversation
    handling with their original types/defaults. `DeletedConversationEventRepository` contains only conversation lookup.
@@ -912,15 +918,15 @@ may retain public constructors for cross-module composition.
    meeting behavior, final-hook behavior, ordinary exceptions, and cancellation at every stage.
 7. No receiver routing, NSE runtime wiring, lock, retry, queue/outbox, async redesign, rollout switch, member join/leave,
    or `UserEventReceiverImpl` work moved in this slice. `MemberJoinEventHandler` and `MemberLeaveEventHandler` are the only
-   remaining concrete conversation handlers in `:logic`; `ConversationEventReceiverImpl` remains logic-owned. Durable or
-   asynchronous deletion and main-app side-effect execution remain documented future work.
+   remaining concrete conversation handlers in `:logic` at this slice; they and `ConversationEventReceiverImpl` have since
+   moved. Durable or asynchronous deletion and main-app side-effect execution remain documented future work.
 
 ## Completed grouped MemberJoinEventHandler and MemberLeaveEventHandler extraction slice
 
 1. `MemberJoinEventHandler`, `MemberLeaveEventHandler`, their implementations, all 14 pre-existing join tests, and all
    11 pre-existing leave tests now have one owner in `:domain:messaging:receiving` under their existing packages and
-   FQCNs. The handler contracts remain ordinary interfaces; only the public visibility and `@InternalKaliumApi`
-   annotations required for cross-module composition were added.
+   FQCNs. The handler contracts remain ordinary interfaces; only the public visibility required for cross-module
+   composition was added.
 2. Both handlers reuse `ConversationLifecycleEventRepository`, `EventMessagePersistence`,
    `NewConversationSystemMessagesCreator`, `ConversationProtocolGetter`, and `MLSResetEventRepository`. The new focused
    `MemberJoinEventRepository`, `MemberJoinEventUserRepository`, and `MemberLeaveEventUserRepository` expose only the
@@ -943,7 +949,7 @@ may retain public constructors for cross-module composition.
 6. The moved suites retain every original test name and assertion intent. Focused local fixtures replace logic-only broad
    mocks and add exact order, arguments and context identity, zero-count and branch characterization, returned-failure
    ownership, lazy-stage timing, ordinary-exception, and cancellation coverage.
-7. No receiver routing, NSE runtime wiring, CoreCrypto process lock, rollout flag, retry/outbox redesign, async
+7. No receiver routing, NSE runtime wiring, CoreCrypto process-safety change, rollout flag, retry/outbox redesign, async
    side-effect redesign, broad repository/use-case/legal-hold/call graph, or `UserEventReceiverImpl` work moved in this
    slice. `ConversationEventReceiverImpl` is now the remaining conversation extraction target;
    `UserEventReceiverImpl` remains explicitly outside this goal.
@@ -952,9 +958,8 @@ may retain public constructors for cross-module composition.
 
 1. `ConversationEventReceiverImpl` and its focused test suite now have one owner in
    `:domain:messaging:receiving` under their existing package and FQCN. The `ConversationEventReceiver` contract remains
-   owned by `:domain:event-processing`. Only the public class/constructor visibility and `@InternalKaliumApi` annotation
-   required for cross-module construction were added; the class remains a normal class with the exact constructor
-   parameter list, order, and types.
+   owned by `:domain:event-processing`. Only the public class/constructor visibility required for cross-module construction
+   was added; the class remains a normal class with the exact constructor parameter list, order, and types.
 2. `UserSessionScope` continues to construct the same FQCN with the same dependency expressions and evaluation order, so
    main-app composition and receiver routing are unchanged. No handler contract, handler implementation, event contract,
    or module dependency changed in this slice, and receiving retains its guard against depending on `:logic`.
@@ -971,8 +976,9 @@ may retain public constructors for cross-module composition.
    propagation, MLS-reset routing, flush behavior, exact transaction/event/delivery identity, and ordinary exception and
    cancellation propagation for event handling and flush.
 6. This completes the conversation-handler ownership extraction goal only. It does not add NSE runtime composition,
-   shared-storage bootstrap, CoreCrypto process locking, rollout behavior, durable side effects, retries, queues/outboxes,
-   or asynchronous redesign. `UserEventReceiverImpl` remains logic-owned and explicitly outside this goal.
+   shared-storage bootstrap, changes to CoreCrypto process-safety behavior, rollout behavior, durable side effects,
+   retries, queues/outboxes, or asynchronous redesign. `UserEventReceiverImpl` remains logic-owned and explicitly outside
+   this goal.
 
 ## Remaining User receiver closure
 
@@ -1044,5 +1050,11 @@ future NSE cross-process or durability design stays outside this leaf.
 extraction goal. `UserEventReceiverImpl` remains logic-owned and explicitly outside that goal. Separately, NSE runtime
 composition still lacks explicit ownership/adapters or durability for legal hold, stale-epoch recovery, reset/rejoin,
 confirmation delivery, self deletion, and pending side effects. Shared-storage bootstrap, durable subconversation
-mapping, pending-proposal ownership/outbox/execution, rollout work, and cross-process CoreCrypto locking also remain
-separate work.
+mapping, pending-proposal ownership/outbox/execution, the Kalium account event lock, validation of the assumed CoreCrypto
+process serialization, and rollout work also remain separate work. No separate Kalium CoreCrypto database-lock
+implementation is planned.
+
+For module-graph readiness, `:domain:messaging:receiving` now depends directly on `:data:network-model` rather than the
+transport implementation. `:data:network` is still present transitively through `:core:common` because `CoreFailure`
+contains transport-specific failure representation. The development `:nse` vertical slice may retain that resolved graph,
+but the split is required before production Wire iOS integration. It is not part of Milestone 3 shared-storage work.

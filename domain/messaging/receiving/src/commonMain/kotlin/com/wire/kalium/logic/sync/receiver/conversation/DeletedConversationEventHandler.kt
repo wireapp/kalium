@@ -35,15 +35,12 @@ import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.firstOrNull
 
-@InternalKaliumApi
 public interface DeletedConversationEventHandler {
     public suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.DeletedConversation)
 }
 
-@InternalKaliumApi
 @Suppress("LongParameterList")
 public class DeletedConversationEventHandlerImpl public constructor(
     private val userRepository: ConversationEventUserRepository,

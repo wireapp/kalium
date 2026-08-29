@@ -33,11 +33,9 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 
 /** Local persistence used only while applying incoming conversation lifecycle events. */
-@InternalKaliumApi
 public interface ConversationLifecycleEventRepository {
     public suspend fun clearContent(
         conversationId: ConversationId,
@@ -97,7 +95,6 @@ public interface ConversationLifecycleEventRepository {
 }
 
 /** DAO-backed lifecycle persistence shared by continuous and bounded event processing. */
-@InternalKaliumApi
 @Suppress("TooManyFunctions")
 public class ConversationLifecycleEventRepositoryImpl public constructor(
     private val conversationDAO: ConversationDAO,

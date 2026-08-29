@@ -21,14 +21,11 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.SystemMessageInserter
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public fun interface AccessUpdateEventHandler {
     public suspend fun handle(event: Event.Conversation.AccessUpdate): Either<StorageFailure, Unit>
 }
 
-@InternalKaliumApi
 public class AccessUpdateEventHandlerImpl public constructor(
     private val conversationEventRepository: ConversationEventRepository,
     private val systemMessageInserter: SystemMessageInserter,

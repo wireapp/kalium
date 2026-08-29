@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.message.reaction
+package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either

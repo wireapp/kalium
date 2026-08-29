@@ -27,10 +27,8 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.InternalKaliumApi
 
 /** Shared implementation of the user-properties receiver contract. */
-@InternalKaliumApi
 public class UserPropertiesEventReceiverImpl public constructor(
     private val userConfigRepository: UserPropertiesConfigRepository,
     private val conversationFolderRepository: UserPropertiesFolderRepository

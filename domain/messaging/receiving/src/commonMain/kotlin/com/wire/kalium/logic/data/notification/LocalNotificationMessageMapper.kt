@@ -29,9 +29,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface LocalNotificationMessageMapper {
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
     fun fromConnectionToLocalNotificationConversation(connection: ConversationDetails.Connection): LocalNotification
@@ -53,7 +51,6 @@ public interface LocalNotificationMessageMapper {
     ): List<LocalNotification.Conversation>
 }
 
-@InternalKaliumApi
 public class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
 
     override fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?) =

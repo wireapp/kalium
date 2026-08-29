@@ -28,10 +28,8 @@ import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 
-@InternalKaliumApi
 public interface CompositeMessageRepository {
     public suspend fun markSelected(
         messageId: MessageId,
@@ -52,7 +50,6 @@ public interface CompositeMessageRepository {
     ): Either<StorageFailure, Unit>
 }
 
-@InternalKaliumApi
 public class CompositeMessageDataSource public constructor(
     private val compositeMessageDAO: CompositeMessageDAO,
     private val messageDAO: MessageDAO,

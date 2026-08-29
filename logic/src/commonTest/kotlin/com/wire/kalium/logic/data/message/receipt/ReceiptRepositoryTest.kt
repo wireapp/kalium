@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.message.receipt
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.message.IncomingReceiptPersistenceImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser

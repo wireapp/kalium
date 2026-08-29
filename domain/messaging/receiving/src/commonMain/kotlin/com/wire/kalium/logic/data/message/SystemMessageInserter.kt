@@ -23,12 +23,10 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.LocalId
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.uuid.Uuid
 
-@InternalKaliumApi
 public interface SystemMessageInserter {
     public suspend fun insertProtocolChangedSystemMessage(
         conversationId: ConversationId,
@@ -60,7 +58,6 @@ public interface SystemMessageInserter {
     )
 }
 
-@InternalKaliumApi
 public class SystemMessageInserterImpl public constructor(
     private val selfUserId: UserId,
     private val persistMessage: PersistMessageUseCase,

@@ -40,12 +40,10 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
-import com.wire.kalium.util.InternalKaliumApi
 
 // Suppressed as it's an old issue
 // TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
 /** Shared implementation of the conversation receiver contract. */
-@InternalKaliumApi
 @Suppress("LongParameterList", "TooManyFunctions", "ComplexMethod")
 public class ConversationEventReceiverImpl public constructor(
     private val newMessageHandler: NewMessageEventHandler,

@@ -21,14 +21,11 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventRepository
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public fun interface CodeDeletedHandler {
     public suspend fun handle(event: Event.Conversation.CodeDeleted): Either<StorageFailure, Unit>
 }
 
-@InternalKaliumApi
 public class CodeDeletedHandlerImpl public constructor(
     private val conversationEventRepository: ConversationEventRepository,
 ) : CodeDeletedHandler {

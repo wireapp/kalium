@@ -24,9 +24,7 @@ import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public data class ApplicationMessage public constructor(
     public val message: ByteArray,
     public val senderID: UserId,
@@ -53,7 +51,6 @@ public data class ApplicationMessage public constructor(
     }
 }
 
-@InternalKaliumApi
 public sealed interface DecryptedMessageBundle {
     public val groupID: GroupID
     public val identity: WireIdentity?
@@ -77,7 +74,6 @@ public sealed interface DecryptedMessageBundle {
     ) : DecryptedMessageBundle
 }
 
-@InternalKaliumApi
 public interface MLSMessageDecryptor {
     public suspend fun decryptMessage(
         mlsContext: MlsCoreCryptoContext,

@@ -34,11 +34,9 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiver.EventMessagePersistence
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlin.uuid.Uuid
 
-@InternalKaliumApi
 public interface MemberJoinEventHandler {
     public suspend fun handle(
         transactionContext: CryptoTransactionContext,
@@ -46,7 +44,6 @@ public interface MemberJoinEventHandler {
     ): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 @Suppress("LongParameterList")
 public class MemberJoinEventHandlerImpl public constructor(
     private val conversationRepository: MemberJoinEventRepository,

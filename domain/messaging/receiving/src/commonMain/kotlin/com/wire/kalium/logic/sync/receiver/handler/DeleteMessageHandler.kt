@@ -28,9 +28,7 @@ import com.wire.kalium.logic.data.notification.DeleteMessageNotificationSchedule
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface DeleteMessageHandler {
     public suspend operator fun invoke(
         content: MessageContent.DeleteMessage,
@@ -39,12 +37,10 @@ public interface DeleteMessageHandler {
     )
 }
 
-@InternalKaliumApi
 public fun interface DeleteMessageAssetCleanup {
     public suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public class DeleteMessageHandlerImpl public constructor(
     private val messageDeletionPersistence: IncomingMessageDeletionPersistence,
     private val assetCleanup: DeleteMessageAssetCleanup,

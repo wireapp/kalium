@@ -19,14 +19,12 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -39,11 +37,10 @@ import com.wire.kalium.logic.data.message.typeDescription
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.InternalKaliumApi
+import com.wire.kalium.logic.util.wrapInMLSContext
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 
-@InternalKaliumApi
 public interface NewMessageEventHandler {
     public suspend fun handleNewProteusMessage(
         transactionContext: CryptoTransactionContext,
@@ -61,7 +58,6 @@ public interface NewMessageEventHandler {
 }
 
 @Suppress("LongParameterList")
-@InternalKaliumApi
 public class NewMessageEventHandlerImpl public constructor(
     private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val mlsMessageUnpacker: MLSMessageUnpacker,
@@ -271,9 +267,3 @@ public class NewMessageEventHandlerImpl public constructor(
         applicationMessageHandler.flushPendingSideEffects()
     }
 }
-
-private suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
-    block: suspend (mlsContext: MlsCoreCryptoContext) -> Either<CoreFailure, T>
-): Either<CoreFailure, T> = mls?.let {
-    block(it)
-} ?: Either.Left(MLSFailure.Disabled)

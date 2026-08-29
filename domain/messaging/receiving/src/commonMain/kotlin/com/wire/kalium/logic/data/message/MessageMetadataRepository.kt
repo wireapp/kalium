@@ -29,9 +29,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public fun interface MessageMetadataRepository {
     public suspend fun originalSenderId(
         conversationId: ConversationId,
@@ -39,7 +37,6 @@ public fun interface MessageMetadataRepository {
     ): Either<StorageFailure, UserId>
 }
 
-@InternalKaliumApi
 public fun interface CompositeEditMessageMetadataRepository {
     public suspend fun originalSenderIdForCompositeEdit(
         conversationId: ConversationId,
@@ -47,7 +44,6 @@ public fun interface CompositeEditMessageMetadataRepository {
     ): Either<StorageFailure, UserId>
 }
 
-@InternalKaliumApi
 public class MessageMetadataSource public constructor(
     private val messageMetaDataDAO: MessageMetadataDAO,
 ) : MessageMetadataRepository, CompositeEditMessageMetadataRepository {

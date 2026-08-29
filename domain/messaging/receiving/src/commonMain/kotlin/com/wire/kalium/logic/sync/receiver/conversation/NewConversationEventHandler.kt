@@ -38,14 +38,11 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.network.api.authenticated.conversation.cellEnabled
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface NewConversationEventHandler {
     public suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation)
 }
 
-@InternalKaliumApi
 @Suppress("LongParameterList")
 public class NewConversationEventHandlerImpl public constructor(
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,

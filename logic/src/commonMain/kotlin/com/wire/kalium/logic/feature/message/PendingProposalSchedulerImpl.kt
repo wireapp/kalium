@@ -28,12 +28,9 @@ import com.wire.kalium.common.functional.distinct
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.wrapInMLSContext
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isConversationNotFound
+import com.wire.kalium.logic.util.wrapInMLSContext
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -125,10 +122,7 @@ internal class PendingProposalSchedulerImpl(
 
 }
 
-private fun Throwable?.isConversationNotFoundError() =
-    this is KaliumException.InvalidRequestError && isConversationNotFound()
-
 private fun CoreFailure.isUnrecoverableProposalFailure() =
     this is MLSFailure.ConversationNotFound ||
         this is MLSFailure.StaleProposal ||
-        this is NetworkFailure.ServerMiscommunication && kaliumException.isConversationNotFoundError()
+        isConversationNotFoundError

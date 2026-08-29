@@ -26,9 +26,7 @@ import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public fun interface ButtonActionConfirmationHandler {
     public suspend fun handle(
         conversationId: ConversationId,
@@ -37,7 +35,6 @@ public fun interface ButtonActionConfirmationHandler {
     ): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public class ButtonActionConfirmationHandlerImpl public constructor(
     private val compositeMessageRepository: CompositeMessageRepository,
     private val messageMetadataRepository: MessageMetadataRepository,

@@ -25,12 +25,10 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 
 /** Processes a complete, already selected batch of events. */
-@InternalKaliumApi
 public interface EventBatchProcessor<Event> {
     public suspend fun processEvents(events: List<Event>)
 }
@@ -41,7 +39,6 @@ public interface EventBatchProcessor<Event> {
  * The fixed result types keep the reusable engine independent from event, crypto-provider,
  * persistence, and repository implementations owned by higher-level modules.
  */
-@InternalKaliumApi
 public interface EventBatchProcessingRuntime<Event, TransactionContext> {
     public suspend fun transaction(
         block: suspend (TransactionContext) -> Either<CoreFailure, List<String>>
@@ -65,7 +62,6 @@ public interface EventBatchProcessingRuntime<Event, TransactionContext> {
 }
 
 /** Observes processing without coupling the engine to an application logger. */
-@InternalKaliumApi
 public interface EventBatchProcessingObserver {
     public fun onBatchReceived(eventCount: Int)
     public fun onNoEventsToMarkAsProcessed()
@@ -73,7 +69,6 @@ public interface EventBatchProcessingObserver {
 }
 
 /** Default observer for callers that do not need batch-processing logs. */
-@InternalKaliumApi
 public object NoOpEventBatchProcessingObserver : EventBatchProcessingObserver {
     override fun onBatchReceived(eventCount: Int): Unit = Unit
     override fun onNoEventsToMarkAsProcessed(): Unit = Unit
@@ -85,7 +80,6 @@ public object NoOpEventBatchProcessingObserver : EventBatchProcessingObserver {
  *
  * The whole transaction/process/flush/mark sequence intentionally remains non-cancellable.
  */
-@InternalKaliumApi
 public class DefaultEventBatchProcessor<Event, TransactionContext>(
     private val runtime: EventBatchProcessingRuntime<Event, TransactionContext>,
     private val observer: EventBatchProcessingObserver = NoOpEventBatchProcessingObserver,

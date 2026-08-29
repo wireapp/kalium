@@ -26,8 +26,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.receipt.IncomingReceiptPersistence
-import com.wire.kalium.logic.data.message.receipt.IncomingReceiptPersistenceImpl
+import com.wire.kalium.logic.data.message.IncomingReceiptPersistence
+import com.wire.kalium.logic.data.message.IncomingReceiptPersistenceImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType

@@ -19,9 +19,7 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.persistence.config.E2EISettingsEntity
 import kotlinx.datetime.Instant
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public data class E2EISettings(
     public val isRequired: Boolean,
     public val discoverUrl: String?,

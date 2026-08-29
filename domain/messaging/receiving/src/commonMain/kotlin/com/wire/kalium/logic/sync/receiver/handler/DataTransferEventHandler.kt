@@ -22,9 +22,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface DataTransferEventHandler {
     public suspend fun handle(
         message: Message.Signaling,
@@ -32,7 +30,6 @@ public interface DataTransferEventHandler {
     )
 }
 
-@InternalKaliumApi
 public class DataTransferEventHandlerImpl public constructor(
     private val selfUserId: UserId,
     private val trackingIdentifierStorage: TrackingIdentifierStorage,

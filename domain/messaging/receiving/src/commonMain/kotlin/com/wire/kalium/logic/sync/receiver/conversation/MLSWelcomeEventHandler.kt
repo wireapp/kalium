@@ -20,7 +20,6 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -44,13 +43,10 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isConversationNotFound
-import com.wire.kalium.util.InternalKaliumApi
+import com.wire.kalium.logic.util.wrapInMLSContext
 import kotlinx.coroutines.flow.first
 import kotlin.io.encoding.Base64
 
-@InternalKaliumApi
 public interface MLSWelcomeEventHandler {
     public suspend fun handle(
         transactionContext: CryptoTransactionContext,
@@ -58,7 +54,6 @@ public interface MLSWelcomeEventHandler {
     ): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 @Suppress("LongParameterList", "LongMethod")
 public class MLSWelcomeEventHandlerImpl public constructor(
     private val conversationRepository: MLSWelcomeEventRepository,
@@ -96,7 +91,7 @@ public class MLSWelcomeEventHandlerImpl public constructor(
             }
             .flatMapLeft { failure ->
                 when {
-                    failure.isConversationNotFoundFailure() -> {
+                    failure.isConversationNotFoundError -> {
                         welcomeOutcome = OUTCOME_SKIPPED_CONVERSATION_NOT_FOUND
                         kaliumLogger.w(
                             "$TAG: Discarding welcome because the conversation no longer exists " +
@@ -222,15 +217,3 @@ public class MLSWelcomeEventHandlerImpl public constructor(
         private const val OUTCOME_FAILED = "failed"
     }
 }
-
-private fun CoreFailure.isConversationNotFoundFailure(): Boolean {
-    val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)
-        ?.kaliumException as? KaliumException.InvalidRequestError
-    return invalidRequest?.isConversationNotFound() == true
-}
-
-private suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
-    block: suspend (mlsContext: MlsCoreCryptoContext) -> Either<CoreFailure, T>
-): Either<CoreFailure, T> = mls?.let {
-    block(it)
-} ?: Either.Left(MLSFailure.Disabled)

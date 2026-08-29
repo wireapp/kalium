@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
@@ -29,7 +28,6 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MLSResetEventRepository
 import com.wire.kalium.logic.data.event.Event
@@ -42,9 +40,8 @@ import com.wire.kalium.logic.data.mls.ConversationProtocolGetter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiver.EventMessagePersistence
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.InternalKaliumApi
+import com.wire.kalium.logic.util.wrapInMLSContext
 
-@InternalKaliumApi
 public interface MemberLeaveEventHandler {
     public suspend fun handle(
         transactionContext: CryptoTransactionContext,
@@ -52,7 +49,6 @@ public interface MemberLeaveEventHandler {
     ): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 @Suppress("LongParameterList")
 public class MemberLeaveEventHandlerImpl public constructor(
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
@@ -169,9 +165,3 @@ public class MemberLeaveEventHandlerImpl public constructor(
             false -> Either.Right(Unit)
         }
 }
-
-private suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
-    block: suspend (mlsContext: MlsCoreCryptoContext) -> Either<CoreFailure, T>,
-): Either<CoreFailure, T> = mls?.let {
-    block(it)
-} ?: Either.Left(MLSFailure.Disabled)

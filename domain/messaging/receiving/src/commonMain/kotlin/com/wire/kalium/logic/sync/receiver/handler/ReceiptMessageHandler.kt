@@ -20,15 +20,13 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.receipt.IncomingReceiptPersistence
+import com.wire.kalium.logic.data.message.IncomingReceiptPersistence
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.message.receipt.toMessageStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReadReceiptEventData
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface ReceiptMessageHandler {
     public suspend fun handle(
         message: Message.Signaling,
@@ -36,7 +34,6 @@ public interface ReceiptMessageHandler {
     )
 }
 
-@InternalKaliumApi
 public class ReceiptMessageHandlerImpl public constructor(
     private val selfUserId: UserId,
     private val incomingReceiptPersistence: IncomingReceiptPersistence,

@@ -20,10 +20,8 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.UserConfigDAO
-import com.wire.kalium.util.InternalKaliumApi
 
 /** Tracking-identifier persistence required while receiving data-transfer messages. */
-@InternalKaliumApi
 public interface TrackingIdentifierStorage {
     public suspend fun getCurrentTrackingIdentifier(): String?
     public suspend fun setCurrentTrackingIdentifier(newIdentifier: String)
@@ -31,7 +29,6 @@ public interface TrackingIdentifierStorage {
 }
 
 /** DAO-backed tracking-identifier storage shared by the app and future bounded receivers. */
-@InternalKaliumApi
 public class TrackingIdentifierStorageImpl public constructor(
     private val userConfigDAO: UserConfigDAO,
 ) : TrackingIdentifierStorage {

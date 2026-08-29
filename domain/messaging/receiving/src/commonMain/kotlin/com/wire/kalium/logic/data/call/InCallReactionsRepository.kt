@@ -19,20 +19,17 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.filter
 
-@InternalKaliumApi
 public interface InCallReactionsRepository {
     public suspend fun addInCallReaction(conversationId: ConversationId, senderUserId: UserId, emojis: Set<String>)
     public fun observeInCallReactions(conversationId: ConversationId): Flow<InCallReactionMessage>
 }
 
-@InternalKaliumApi
 public class InCallReactionsDataSource : InCallReactionsRepository {
 
     private val inCallReactionsFlow: MutableSharedFlow<InCallReactionMessage> =

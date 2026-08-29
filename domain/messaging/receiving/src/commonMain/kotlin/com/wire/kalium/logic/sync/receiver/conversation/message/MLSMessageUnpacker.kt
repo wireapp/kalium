@@ -42,12 +42,10 @@ import com.wire.kalium.logic.data.message.ProtoContentDecoder
 import com.wire.kalium.logic.data.mls.ConversationProtocolGetter
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.seconds
 
-@InternalKaliumApi
 public interface MLSMessageUnpacker {
     public suspend fun unpackMlsMessage(
         mlsContext: MlsCoreCryptoContext,
@@ -61,7 +59,6 @@ public interface MLSMessageUnpacker {
     ): MessageUnpackResult
 }
 
-@InternalKaliumApi
 public class MLSMessageUnpackerImpl public constructor(
     private val conversationProtocolGetter: ConversationProtocolGetter,
     private val subconversationGroupInfoProvider: SubconversationGroupInfoProvider,

@@ -23,9 +23,7 @@ import com.wire.kalium.logic.configuration.CellsConfigPersistence
 import com.wire.kalium.logic.data.featureConfig.CellsInternalModel
 import com.wire.kalium.logic.data.featureConfig.CellsModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public class CellsConfigHandler(
     private val userConfigRepository: CellsConfigPersistence
 ) {

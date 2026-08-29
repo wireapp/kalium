@@ -36,15 +36,12 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.serialization.toJsonElement
 
-@InternalKaliumApi
 public interface MemberChangeEventHandler {
     public suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged)
 }
 
-@InternalKaliumApi
 public class MemberChangeEventHandlerImpl public constructor(
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
     private val fetchConversationIfUnknown: suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>,

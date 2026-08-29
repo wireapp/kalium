@@ -23,14 +23,11 @@ import com.wire.kalium.logic.data.conversation.MLSResetEventRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public interface MLSResetConversationEventHandler {
     public suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset)
 }
 
-@InternalKaliumApi
 public class MLSResetConversationEventHandlerImpl public constructor(
     private val mlsResetEventRepository: MLSResetEventRepository,
     private val endCallOnMLSReset: suspend (ConversationId) -> Unit,

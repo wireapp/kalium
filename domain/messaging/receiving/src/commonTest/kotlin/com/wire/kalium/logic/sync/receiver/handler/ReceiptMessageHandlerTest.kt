@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.receipt.IncomingReceiptPersistence
+import com.wire.kalium.logic.data.message.IncomingReceiptPersistence
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier

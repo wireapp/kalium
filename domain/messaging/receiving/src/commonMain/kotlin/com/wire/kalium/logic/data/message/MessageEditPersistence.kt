@@ -38,11 +38,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 
 /** Minimal stored message state needed to arbitrate an incoming text or multipart edit. */
-@InternalKaliumApi
 public data class MessageEditState(
     val senderUserId: UserId,
     val content: Content,
@@ -66,7 +64,6 @@ public data class MessageEditState(
 }
 
 /** Focused persistence used by incoming edit handlers and overlapping outgoing edit paths. */
-@InternalKaliumApi
 public interface MessageEditPersistence {
     public suspend fun loadMessageEditState(
         conversationId: ConversationId,
@@ -94,7 +91,6 @@ public interface MessageEditPersistence {
 }
 
 /** DAO-backed edit persistence shared by continuous and bounded event processing and outgoing app paths. */
-@InternalKaliumApi
 public class MessageEditPersistenceImpl public constructor(
     private val messageDAO: MessageDAO,
     private val selfUserId: UserId,

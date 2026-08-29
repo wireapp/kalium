@@ -33,25 +33,21 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.ConnectionDAO
-import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /** Minimal connection data used while applying federation events. */
-@InternalKaliumApi
 public data class FederationConnection(
     public val conversationId: ConversationId,
     public val userId: UserId,
     public val otherUserDomain: String?,
 )
 
-@InternalKaliumApi
 public interface FederationConnectionRepository {
     public fun getFederationConnections(): Either<StorageFailure, Flow<List<FederationConnection>>>
     public suspend fun deleteFederationConnection(connection: FederationConnection): Either<StorageFailure, Unit>
 }
 
-@InternalKaliumApi
 public class FederationConnectionRepositoryImpl public constructor(
     private val connectionDAO: ConnectionDAO,
     private val userDAO: UserDAO,
@@ -75,7 +71,6 @@ public class FederationConnectionRepositoryImpl public constructor(
         }
 }
 
-@InternalKaliumApi
 public interface FederationConversationRepository {
     public suspend fun getGroupConversationsWithMembersWithBothDomains(
         firstDomain: String,
@@ -92,7 +87,6 @@ public interface FederationConversationRepository {
     ): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public class FederationConversationRepositoryImpl public constructor(
     private val memberDAO: MemberDAO,
 ) : FederationConversationRepository {
@@ -124,12 +118,10 @@ public class FederationConversationRepositoryImpl public constructor(
     }.map { }
 }
 
-@InternalKaliumApi
 public fun interface FederationUserRepository {
     public suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
 }
 
-@InternalKaliumApi
 public class FederationUserRepositoryImpl public constructor(
     private val userDAO: UserDAO,
 ) : FederationUserRepository {

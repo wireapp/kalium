@@ -376,12 +376,6 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
     is MessageEntityContent.ConversationAppsAccessChanged -> MessageContent.ConversationAppsEnabledChanged(isEnabled)
 }
 
-internal fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
-    MessageEntity.Visibility.VISIBLE -> Message.Visibility.VISIBLE
-    MessageEntity.Visibility.HIDDEN -> Message.Visibility.HIDDEN
-    MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
-}
-
 @Suppress("ComplexMethod")
 private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewContent = when (this) {
     is MessagePreviewEntityContent.Asset -> MessagePreviewContent.WithUser.Asset(username = senderName, type = type.toModel())
@@ -447,16 +441,6 @@ internal fun AssetTypeEntity.toModel(): AssetType = when (this) {
     AssetTypeEntity.AUDIO -> AssetType.AUDIO
     AssetTypeEntity.GENERIC_ASSET -> AssetType.GENERIC_ASSET
 }
-
-internal fun MessageEntity.Status.toModel(readCount: Long) =
-    when (this) {
-        MessageEntity.Status.PENDING -> Message.Status.Pending
-        MessageEntity.Status.SENT -> Message.Status.Sent
-        MessageEntity.Status.DELIVERED -> Message.Status.Delivered
-        MessageEntity.Status.READ -> Message.Status.Read(readCount)
-        MessageEntity.Status.FAILED -> Message.Status.Failed
-        MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FailedRemotely
-    }
 
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: UserId): MessageContent.Regular = when (this) {

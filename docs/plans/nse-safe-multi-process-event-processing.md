@@ -94,7 +94,11 @@ separate CoreCrypto task rather than an expansion of the Kalium milestone in pro
 
 ## Decision
 
-Implement the feature as ordered milestones. No milestone may weaken the following invariants:
+Implement the feature as ordered milestones, with an explicit distinction between a working
+development vertical slice and the later production-ready path. The development slice may prove
+that an NSE can open prepared shared state and process one inline event, but it is not wired into
+the production Wire iOS NSE and must not be treated as safe concurrent processing. No
+production-ready milestone may weaken the following invariants:
 
 1. Crypto state is serialized across processes before transaction-scoped state is read.
 2. Main sync and NSE use the same event-processing engine and receiver implementation from a
@@ -120,11 +124,12 @@ facade and performs only the input acquisition agreed in Milestone 0. It does no
 The shared engine belongs below `:logic` in the dedicated KMP module
 `:domain:event-processing`. `:logic` and a lightweight NSE facade depend on that module; the event
 processing module must not depend on `:logic`. It owns the event contracts, event source, batch
-coordinator, dispatcher, receiver contracts, and processing logging. Milestone 2 keeps the existing
-concrete receiver and handler implementations in `:logic` behind those contracts to avoid changing
-their behavior while the boundary is established. Before the NSE facade is introduced in Milestone
-5, the concrete handler closure required by the agreed first-release slice moves below `:logic` so
-the app and NSE use the same implementation.
+coordinator, dispatcher, receiver contracts, and processing logging. Milestone 2 initially kept the
+concrete receiver and handler implementations in `:logic` while that boundary was established, then
+moved `ConversationEventReceiverImpl` and its handler graph into `:domain:messaging:receiving` without
+changing main-app composition. Before the production NSE path is enabled, the agreed
+first-release slice must be checked against that extracted closure; any additional required handler
+must also live below `:logic` so the app and NSE use the same implementation.
 
 ### Global lock order
 
@@ -133,8 +138,8 @@ possible:
 
 ```text
 1. account event-processing lock
-2. Proteus CoreCrypto database lock, when Proteus is needed
-3. MLS CoreCrypto database lock, when MLS is needed
+2. CoreCrypto-owned Proteus serialization/transaction boundary, when Proteus is needed
+3. CoreCrypto-owned MLS serialization/transaction boundary, when MLS is needed
 4. Kalium user-database transaction
 ```
 
@@ -262,9 +267,10 @@ Work:
   processing logger, and the Milestone 1 batch coordinator below `:logic`.
 - Introduce ports for crypto transactions, invalidation muting, per-event processing, processed
   markers, side-effect flushing, failure mapping, and processing observation.
-- Keep the existing concrete receiver and handler implementations plus main-app lifecycle
-  composition in `:logic` for this behavior-only move. They implement the shared contracts; no
-  second implementation is created for the NSE.
+- Initially keep the existing concrete receiver and handler implementations plus main-app lifecycle
+  composition in `:logic` for the behavior-only engine move. Follow with behavior-preserving
+  ownership slices into `:domain:messaging:receiving`; no second implementation is created for the
+  NSE.
 - Move the Milestone 1 characterization tests with the component and preserve their assertions.
 - Add a build-time dependency guard that prevents the event-processing module from depending on
   `:logic`.
@@ -285,13 +291,15 @@ Exit gate:
 - `:domain:event-processing` has no dependency on `:logic` and its build fails if one is added;
 - event models, event source, dispatcher, receiver contracts, processing logging, and batch
   coordination are compiled by `:domain:event-processing`, not `:logic`;
-- concrete receiver and handler behavior remains in `:logic` behind shared contracts until the
-  supported first-slice closure is moved as part of Milestone 5;
+- `ConversationEventReceiverImpl` and its handler graph are compiled by
+  `:domain:messaging:receiving`, while `UserEventReceiverImpl` remains logic-owned and outside the
+  completed conversation-receiver extraction goal;
 - transaction count, ordering, cancellation, invalidation muting, side-effect flushing, marker
   timing, and error propagation remain unchanged;
 - module tests and existing incremental-sync tests pass on the supported targets;
-- cross-module contracts are marked `InternalKaliumApi`; no exported `KaliumLogic`/Apple product
-  API, schema, Apple configuration, or externally observable behavior changes.
+- cross-module declarations expose only the visibility required for module composition; no exported
+  `KaliumLogic`/Apple product API, schema, Apple configuration, or externally observable behavior
+  changes.
 
 #### Milestone 2 receiver extraction status: MLS receiving Slice 2
 
@@ -318,18 +326,19 @@ This completed slice adds no NSE facade or runtime wiring and does not make MLS 
 instantiate in an NSE. The subconversation lookup is still process-local; NSE use requires durable
 `(conversationId, subconversationId) -> groupId` state. Pending proposals still require an ownership
 decision, durable outbox, and main-app executor design; the NSE must neither construct the current
-scheduler implementation nor replace it with a no-op. The CoreCrypto cross-process lock is not part
-of this slice. The broad protobuf encoder/mapper and `AssetMapper` graph remain in `:logic`, with the
-receiving unpacker consuming only the focused decoder contract. New-message orchestration has since
-moved below `:logic` in the next receiver-extraction slice.
+scheduler implementation nor replace it with a no-op. This slice neither adds nor changes CoreCrypto
+process serialization; validation of the existing cross-process-safety assumption remains later
+integration work. The broad protobuf encoder/mapper and `AssetMapper` graph remain in `:logic`, with
+the receiving unpacker consuming only the focused decoder contract. New-message orchestration has
+since moved below `:logic` in the next receiver-extraction slice.
 
 #### Milestone 2 receiver extraction status: new-message orchestration slice
 
 New-message orchestration is now below `:logic` as a behavior-preserving ownership refactor:
 
 - `NewMessageEventHandler`, `NewMessageEventHandlerImpl`, and their complete test suite retain their
-  package and FQCNs and are owned by `:domain:messaging:receiving`. Only the public visibility and
-  `@InternalKaliumApi` annotations required for cross-module composition were added.
+  package and FQCNs and are owned by `:domain:messaging:receiving`. Only the public visibility
+  required for cross-module composition was added.
 - The handler retains direct dependencies on `ProteusMessageUnpacker`, `MLSMessageUnpacker`,
   `ApplicationMessageHandler`, and `selfUserId`. The broad legal-hold, stale-epoch, and MLS-reset
   graphs cross the boundary only as
@@ -352,9 +361,9 @@ New-message orchestration is now below `:logic` as a behavior-preserving ownersh
 This does not make NSE runtime composition ready. Legal hold, stale-epoch recovery, reset/rejoin,
 confirmation delivery, self deletion, and pending-side-effect durability still need explicit NSE
 ownership/adapters or a durable action/outbox design. Durable subconversation mapping,
-pending-proposal ownership/outbox/execution, and cross-process CoreCrypto locking remain separate
-work. The larger conversation lifecycle handlers still remain in `:logic` and block the complete
-`ConversationEventReceiverImpl` move.
+pending-proposal ownership/outbox/execution, and validation of the assumed CoreCrypto process
+serialization remain separate work. The larger conversation lifecycle handlers still remain in
+`:logic` and block the complete `ConversationEventReceiverImpl` move.
 
 #### Milestone 2 receiver extraction status: grouped small conversation-state lifecycle slice
 
@@ -363,25 +372,23 @@ The member-change and MLS-reset handlers are now below `:logic` as one behavior-
 - `MemberChangeEventHandler`, `MemberChangeEventHandlerImpl`,
   `MLSResetConversationEventHandler`, and `MLSResetConversationEventHandlerImpl` retain their
   packages and FQCNs and are owned by `:domain:messaging:receiving`. Their complete test suites move
-  with them; only the visibility and `@InternalKaliumApi` annotations needed for cross-module
-  composition are added.
+  with them; only the visibility needed for cross-module composition is added.
 - Member change keeps direct access to the focused `ConversationLifecycleEventRepository`,
   `PersistMessageUseCase`, and self user ID. Fetch-if-unknown crosses the boundary only as
   `suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>`.
   `UserSessionScope` evaluates `fetchConversationIfUnknownUseCase` once per handler construction,
   captures that exact instance, and invokes it with the original two arguments so
   `ConversationSyncReason.Other` remains the default.
-- MLS reset depends on the focused `MLSResetEventRepository` operations for leaving a group,
-  checking the replacement group, and updating the local group ID/epoch/state, plus a focused
-  `suspend (ConversationId) -> Unit` call-termination callback. The existing `MLSConversationRepository`
-  extends that contract, and `UserSessionScope` supplies the exact observable wrapper and captured
-  `EndCallOnMLSResetUseCase`; successful leave operations therefore retain the existing crypto-state
-  hook without a duplicate data source or adapter.
+- MLS reset depends only on the focused `MLSResetEventRepository` operations for leaving a group,
+  checking the replacement group, and updating the local group ID/epoch/state. The existing
+  `MLSConversationRepository` extends that contract, and `UserSessionScope` supplies the exact
+  observable wrapper instance constructed for the handler; successful leave operations therefore
+  retain the existing crypto-state hook without a duplicate data source or adapter.
 - Member role-read/fetch/update/promotion-persistence order, ignored fetch and persistence results,
   muted/archive behavior, unsupported-variant skipping, logs, exact promotion payload, and
-  exception/cancellation propagation are unchanged. MLS call-termination/leave/check/conditional-epoch/update order,
-  the null-MLS short circuit after call termination, ignored leave and update results, failed-check fallback, exact
-  state/epoch values, and thrown exception/cancellation behavior are likewise unchanged.
+  exception/cancellation propagation are unchanged. MLS leave/check/conditional-epoch/update order,
+  ignored leave and update results, failed-check fallback, exact state/epoch values, and thrown
+  exception/cancellation behavior are likewise unchanged.
 
 This slice adds no NSE facade, runtime composition, lock, retry, queue, outbox, or CoreCrypto
 transaction change. At completion of this slice, `MLSWelcomeEventHandler` and the larger
@@ -392,10 +399,10 @@ since moved in the focused slices below.
 
 Protocol-update event handling is now below `:logic` as a behavior-preserving ownership refactor:
 
-- `ProtocolUpdateEventHandler`, `ProtocolUpdateEventHandlerImpl`, the private deleted-conversation
-  failure classifier, and the complete test suite retain their packages and FQCNs and are owned by
-  `:domain:messaging:receiving`. Only the public visibility and `@InternalKaliumApi` annotations
-  required for cross-module composition were added.
+- `ProtocolUpdateEventHandler`, `ProtocolUpdateEventHandlerImpl`, and the complete test suite retain
+  their packages and FQCNs and are owned by `:domain:messaging:receiving`. Deleted-conversation
+  classification now reuses `CoreFailure.isConversationNotFoundError`; only the public visibility
+  required for cross-module composition was added.
 - The handler keeps the receiving-owned `SystemMessageInserter` directly. The broad logic-owned
   update use case and call repository cross the boundary only as
   `suspend (CryptoTransactionContext, ConversationId, Conversation.Protocol, Boolean) -> Either<CoreFailure, Boolean>`
@@ -411,11 +418,11 @@ Protocol-update event handling is now below `:logic` as a behavior-preserving ow
   propagation are unchanged. The moved suite retains every prior test and adds narrow order,
   argument, first-emission, skip, classification, exception, and cancellation characterization.
 
-This slice adds no NSE runtime wiring, CoreCrypto lock, retry, queue, durable action/outbox, rollout
-switch, or receiver move. At completion of this slice, `MLSWelcomeEventHandler`,
+This slice adds no NSE runtime wiring, CoreCrypto process-safety change, retry, queue, durable
+action/outbox, rollout switch, or receiver move. At completion of this slice, `MLSWelcomeEventHandler`,
 `NewConversationEventHandler`, `DeletedConversationEventHandler`, `MemberJoinEventHandler`, and
 `MemberLeaveEventHandler` remained in `:logic`; they have since moved in the focused slices below.
-`ConversationEventReceiverImpl` remains logic-owned.
+`ConversationEventReceiverImpl` also moved in the final conversation-receiver slice below.
 
 #### Milestone 2 receiver extraction status: MLS-welcome conversation slice
 
@@ -423,8 +430,8 @@ MLS-welcome event handling is now below `:logic` as a behavior-preserving owners
 
 - `MLSWelcomeEventHandler`, `MLSWelcomeEventHandlerImpl`, their private helpers and outcome
   constants, and the complete test suite retain their package and FQCNs and are owned by
-  `:domain:messaging:receiving`. Only the public visibility and `@InternalKaliumApi` annotations
-  required for cross-module composition were added.
+  `:domain:messaging:receiving`. Only the public visibility required for cross-module composition was
+  added.
 - The receiving-owned, focused `MLSWelcomeEventRepository` extends the already-lower
   `ConversationProtocolGetter` and exposes only group-state update and conversation-details
   observation in addition to protocol lookup. The existing logic-owned `ConversationRepository`
@@ -439,14 +446,16 @@ MLS-welcome event handling is now below `:logic` as a behavior-preserving owners
 - MLS-null short-circuiting, fetch/process/CRL/establish/observe/resolve order, `Flow.first`, CRL URL
   order and ignored results, orphan-welcome classification and recovery, no-conversation skipping,
   refill logging/ignoring, event outcomes, exact log text, returned-failure short circuits, wrapped
-  MLS failures, exceptions, and cancellation remain unchanged. The logic-only
-  `CryptoTransactionContext.wrapInMLSContext` behavior is reproduced as a private local helper.
+  MLS failures, exceptions, and cancellation remain unchanged. The
+  `CryptoTransactionContext.wrapInMLSContext` helper is now shared from
+  `:domain:messaging:shared` without changing its semantics.
 
-This slice adds no NSE runtime wiring, CoreCrypto lock, retry, queue, durable action/outbox, rollout
-switch, receiver move, or other lifecycle handler. `NewConversationEventHandler`,
+This slice adds no NSE runtime wiring, CoreCrypto process-safety change, retry, queue, durable
+action/outbox, rollout switch, receiver move, or other lifecycle handler. `NewConversationEventHandler`,
 `DeletedConversationEventHandler`, `MemberJoinEventHandler`, and `MemberLeaveEventHandler` are the
-remaining concrete conversation lifecycle handlers in `:logic`; `ConversationEventReceiverImpl`
-also remains logic-owned. `UserEventReceiverImpl` is explicitly outside this extraction goal.
+remaining concrete conversation lifecycle handlers in `:logic` at this slice; they and
+`ConversationEventReceiverImpl` have since moved. `UserEventReceiverImpl` is explicitly outside this
+extraction goal.
 
 #### Milestone 2 receiver extraction status: grouped new/delete conversation slice
 
@@ -455,8 +464,8 @@ behavior-preserving ownership refactor:
 
 - `NewConversationEventHandler`, `DeletedConversationEventHandler`, their implementations, and all
   13 pre-existing named tests retain their packages and FQCNs and are owned by
-  `:domain:messaging:receiving`. Only the public visibility and `@InternalKaliumApi` annotations
-  required for cross-module composition were added.
+  `:domain:messaging:receiving`. Only the public visibility required for cross-module composition was
+  added.
 - Both handlers share the focused receiving-owned `ConversationEventUserRepository`, exposing only
   unknown-user fetch and single-user observation. New-conversation uses the five-operation
   `NewConversationSystemMessagesCreator`; deletion uses `DeletedConversationEventRepository` for
@@ -484,11 +493,12 @@ behavior-preserving ownership refactor:
   mapper-count, millisecond-time-bound, returned-failure, first/empty/null flow, ignored-message,
   ordinary-exception, and cancellation characterization.
 
-This slice adds no NSE runtime wiring, CoreCrypto lock, retry, queue, durable action/outbox, async
-redesign, rollout switch, or receiver move. `MemberJoinEventHandler` and
-`MemberLeaveEventHandler` are the only remaining concrete conversation handlers in `:logic`;
-`ConversationEventReceiverImpl` remains logic-owned. Durable/asynchronous deletion and main-app
-side-effect execution remain future work. `UserEventReceiverImpl` is explicitly outside this goal.
+This slice adds no NSE runtime wiring, CoreCrypto process-safety change, retry, queue, durable
+action/outbox, async redesign, rollout switch, or receiver move. `MemberJoinEventHandler` and
+`MemberLeaveEventHandler` are the only remaining concrete conversation handlers in `:logic` at this
+slice; they and `ConversationEventReceiverImpl` have since moved. Durable/asynchronous deletion and
+main-app side-effect execution remain future work. `UserEventReceiverImpl` is explicitly outside this
+goal.
 
 #### Milestone 2 receiver extraction status: grouped member-join/member-leave conversation slice
 
@@ -498,7 +508,7 @@ ownership refactor:
 - `MemberJoinEventHandler`, `MemberLeaveEventHandler`, their implementations, and all 25
   pre-existing named tests retain their packages and FQCNs and are owned by
   `:domain:messaging:receiving`. The handler contracts remain ordinary interfaces; only required
-  cross-module public visibility and `@InternalKaliumApi` annotations were added.
+  cross-module public visibility was added.
 - Both handlers reuse the receiving-owned lifecycle and message persistence contracts, the existing
   focused system-message contract, `ConversationProtocolGetter`, and `MLSResetEventRepository`.
   Focused join/leave conversation-user contracts add only the remaining lookup, active one-to-one,
@@ -521,8 +531,8 @@ ownership refactor:
   exact order, identity, arguments, result-ownership, branch, exception, and cancellation
   characterization.
 
-This slice adds no NSE runtime wiring, CoreCrypto process lock, retry, queue/outbox, rollout flag,
-async side-effect redesign, or receiver routing. `ConversationEventReceiverImpl` is now the
+This slice adds no NSE runtime wiring, CoreCrypto process-safety change, retry, queue/outbox, rollout
+flag, async side-effect redesign, or receiver routing. `ConversationEventReceiverImpl` is now the
 remaining conversation extraction target. `UserEventReceiverImpl` remains explicitly outside this
 goal.
 
@@ -535,9 +545,9 @@ refactor:
   by `:domain:messaging:receiving`. The `ConversationEventReceiver` contract remains in
   `:domain:event-processing`.
 - The implementation remains a normal class with the exact constructor parameter list, order, and
-  types. Only the public class/constructor visibility and `@InternalKaliumApi` annotation needed by
-  cross-module main-app composition were added. `UserSessionScope` keeps constructing the same FQCN
-  from the same dependency expressions, so composition and constructor evaluation are unchanged.
+  types. Only the public class/constructor visibility needed by cross-module main-app composition was
+  added. `UserSessionScope` keeps constructing the same FQCN from the same dependency expressions,
+  so composition and constructor evaluation are unchanged.
 - The exact branch order, handler arguments, ignored-versus-propagated `Either` ownership,
   `Right(Unit)` results, exception/cancellation propagation, and one-call pending-side-effect flush
   behavior are unchanged. The moved suite preserves all 19 original test names and uses focused
@@ -547,10 +557,15 @@ refactor:
   or runtime wiring changed in this slice. This completes the conversation-handler ownership
   extraction goal; `UserEventReceiverImpl` remains logic-owned and explicitly outside it.
 
+`:logic` uses `:domain:messaging:receiving` as an `implementation` dependency. Retaining packages and
+FQCNs keeps in-repository composition and source moves mechanical without exposing the receiving
+module as a new transitive `KaliumLogic` consumer dependency.
+
 Ownership extraction is not NSE runtime readiness. Shared-storage bootstrap, existing-state-only
 session construction, the NSE facade, durable side effects/outbox execution, durable
-subconversation and pending-proposal coordination, cross-process CoreCrypto locking, rollout, and
-retry/async redesign remain separate milestones.
+subconversation and pending-proposal coordination, the Kalium account event lock, validation of the
+assumed CoreCrypto process serialization, rollout, and retry/async redesign remain separate
+milestones. No separate Kalium implementation of a CoreCrypto database lock is planned.
 
 #### Deferred feature-configuration boundary follow-up
 
@@ -560,155 +575,149 @@ sync and any retained compatibility receiver must consume the same implementatio
 module. This is a later ownership cleanup, not part of Milestone 3, and must not expand the NSE event
 slice or pull `UserEventReceiverImpl` into the extraction.
 
-### Milestone 3 - Apple shared storage, keychain, and existing-state-only mode
+#### Transport-boundary follow-up required before production integration
+
+The shared-state milestone and development vertical slice may proceed with the current resolved
+graph: `:domain:messaging:receiving` depends
+directly on `:data:network-model`, while transport-specific failure representation still reaches it
+transitively through `:core:common -> :data:network`. Before production Wire iOS integration, move
+that transport-specific failure representation and classification out of `:core:common` or behind a
+neutral lower-level error boundary, then verify that the resolved NSE graph excludes the Ktor
+transport implementation unless the agreed first-release slice needs it. This is a module-graph
+decision, not shared-storage work and not a reason to expand Milestone 3.
+
+### Milestone 3 - Minimal Apple shared-state bootstrap
 
 Repository: Kalium.
 
-Goal: let the main app and NSE open the same prepared account safely without allowing the extension
-to create or repair identity state.
+Goal: let both processes address the same account while guaranteeing that the NSE never creates or
+repairs identity state.
 
 Work:
 
 - Define an explicit Apple shared-root configuration supplied from the App Group container.
-- Preserve existing account directory compatibility; use generic lock filenames under the account
-  root and never include raw IDs in lock names or logs.
-- Extend `ApplePersistenceConfig` with an optional keychain access group and an explicit
-  accessibility policy.
-- Implement and verify main-app-owned migration from legacy keychain entries to shared entries.
-  The NSE only reports that main-app preparation is required.
-- Add `MainAppReadWrite` and `NotificationExtensionExistingStateOnly` open modes through global DB,
-  user DB, CoreCrypto providers, credentials, and session construction.
-- In NSE mode, detect missing stores, missing keys, schema mismatch, migration need, and incompatible
-  versions before any creation or destructive recovery.
-- Use existing valid authentication in the first release. Unless a separate auth-refresh design is
-  approved, expired credentials return a typed main-app-required result.
-- Review App Group file data protection and whether Apple SQLDelight databases require encryption
-  before they contain a durable notification outbox.
+- Preserve the existing account directory layout and reserve one generic lock path below the account
+  root. Do not include raw IDs in lock filenames or logs.
+- Extend `ApplePersistenceConfig` with a keychain access group and explicit accessibility policy.
+- Add `MainAppReadWrite` and `NotificationExtensionExistingStateOnly` modes for global DB, user DB,
+  credentials, and CoreCrypto stores.
+- Keep the first result model deliberately small: `Ready`, `MainAppRequired`,
+  `Unavailable(DeviceLocked)`, and `Failed`. Internal diagnostics may retain a specific reason.
+- In existing-state-only mode, treat missing files or keys, old or newer schemas, legacy key formats,
+  missing client registration, and any required repair as `MainAppRequired`. Do not create a
+  directory, schema, identity, secret, or store; do not migrate, refresh credentials, recover, or
+  fetch configuration.
+- Support accounts prepared directly in the App Group first. Legacy filesystem and keychain
+  migration is intentionally deferred to the production-readiness milestone; a legacy account
+  returns `MainAppRequired` until the main app prepares it.
+- Keep the opener below `:logic`; do not construct `CoreLogic`, `UserSessionScope`, or the app's
+  authenticated network and observer graph.
 
 Exit gate:
 
-- both process configurations resolve byte-for-byte identical account, user DB, Proteus, MLS, and
-  lock paths;
-- both targets resolve the same keychain entries after main-app migration;
-- extension mode cannot create directories, databases, identities, secrets, or run migrations;
-- before-first-unlock and migration-required cases are typed and non-destructive;
+- app and NSE configurations resolve identical account, user DB, Proteus, MLS, and future lock paths;
+- both configurations resolve the same keychain entries for a freshly prepared account;
+- all existing-state-only failure cases are non-destructive;
+- before-first-unlock is typed;
 - two accounts remain isolated.
 
-### Milestone 4 - Durable notification and side-effect outbox
+### Milestone 4 - Working one-event NSE vertical slice
 
-Repository: Kalium.
+Repository: Kalium. A small test host may exercise the framework; production Wire iOS wiring is not
+part of this milestone.
 
-Goal: make notification intent and required follow-up work durable and idempotent.
-
-Work:
-
-- Add a dedicated outbox table rather than extending `PendingActions`, whose current key and payload
-  model cannot express event provenance, leases, acknowledgement, or notification data.
-- Separate authoritative receiver mutations from follow-up effects. Sender verification and the
-  message hard-delete or tombstone remain synchronous event-processing work; asset-file cleanup,
-  notification updates, and any hook that is classified as non-authoritative may become outbox work.
-- For every effect moved out of the receiver, commit the authoritative database mutation and its
-  outbox row in one targeted database transaction before the event may be marked processed. This
-  does not change the crypto/event transaction granularity reserved for Milestone 6.
-- Capture every value needed by a deferred effect before destructive mutation. In particular, write
-  the asset ID and stable message/conversation target into the outbox before hard-deleting a message
-  that may be their only source.
-- Store source event ID, effect type, stable target/payload, creation time, state, claim owner,
-  claim expiry, and deduplication key.
-- Enforce uniqueness by source event, effect type, and deduplication key.
-- Add transactional claim, acknowledge, release, and expired-claim recovery operations.
-- Change receiver notification scheduling to persist effects. Existing `MutableSharedFlow` APIs may
-  remain as same-process adapters but are no longer authoritative.
-- Add a main-app executor for slow or app-only effects such as local asset cleanup. Notification
-  effects may be claimed by the bounded NSE request when required for its response, with the main
-  app retaining recovery/cleanup ownership; consumers must use the same claim/acknowledgement model.
-- Persist network/long-running follow-up intents required by the agreed first NSE slice when they are
-  needed for retry correctness.
-
-Exit gate:
-
-- retrying an event creates one logical effect;
-- two claimers cannot own the same effect;
-- crashes before acknowledgement are recoverable;
-- a processed delete event always has both its authoritative message mutation and every required
-  deferred-effect row durably committed;
-- slow asset cleanup does not extend event or crypto lock duration, and losing the original message
-  row does not lose the asset-cleanup target;
-- edit, delete, seen, and the agreed first-slice notification types survive process termination;
-- existing main-app notification behavior remains compatible.
-
-### Milestone 5 - Public bounded Kalium NSE API
-
-Repository: Kalium.
-
-Goal: expose a small Swift-friendly one-shot processor from its own lightweight artifact, without
-linking the full `:logic` module or exporting incremental-sync internals.
+Goal: prove the simplest useful end-to-end path before adding production concurrency and durability.
 
 Work:
 
-- Before constructing the NSE facade, move the concrete receivers and handlers required by the
-  Milestone 0 event slice below `:logic`; the main app must switch to those same implementations.
-- Add a dedicated KMP `:nse` module that depends on `:domain:event-processing` and only the
-  lower-level modules required by the bounded path. It must not depend on `:logic`.
-- Export an Apple framework named `KaliumNSE` from `:nse`; the NSE target does not link
-  `KaliumLogic`.
-- Add a lightweight notification-extension scope that initializes only existing account metadata,
-  credentials, databases, CoreCrypto clients, event persistence, the shared processor, and outbox.
-- Accept inline payloads and a bounded pending-event fetch, using durable event IDs and
-  `INSERT OR IGNORE`.
-- Expose concrete, non-generic public input, budget, result, failure-reason, notification, and
-  acknowledgement types in line with ADR 7.
-- Define distinct outcomes for completed, nothing to process, busy, deadline reached,
-  main-app-required, and failed. Cross-process contention starts producing `Busy` in Milestone 6.
-- Claim effects after event processing and return a batch token for acknowledgement.
-- Make Swift task cancellation safe at current processing boundaries.
-- Update ABI dumps and add a changelog fragment for the new public surface.
-- Do not wire the API into the production Wire iOS NSE target yet.
+- Confirm that the extracted `ConversationEventReceiverImpl` closure covers one agreed inline event
+  and notification type. Do not expand the slice to `UserEventReceiverImpl`.
+- Add a dedicated KMP `:nse` module and `KaliumNSE` Apple framework. It must not depend on `:logic` or
+  link `KaliumLogic`.
+- Build a lightweight scope from Milestone 3's existing-state-only opener.
+- Accept exactly one inline event with a stable event ID. Do not fetch pending batches.
+- Process the event with the shared lower-level receiver and return notification content directly.
+  Do not add an outbox, claims, or acknowledgement API yet.
+- Expose only concrete Swift-friendly results: `Completed`, `MainAppRequired`, `Unavailable`, and
+  `Failed`. Do not expose `Either`.
+- Use existing credentials only. Do not refresh, log out, migrate, repair, start continuous sync, or
+  perform unrelated network work.
+- Keep this path development-only. It may run in focused integration tests or an internal test host,
+  but it is not enabled as the production Wire iOS NSE processing path.
 
 Exit gate:
 
-- inline, fetch, empty, deadline, cancellation, missing-state, and repeated-invocation API tests pass
-  on Apple;
+- one supported inline event opens prepared state, uses the shared receiver, and returns the expected
+  notification result on Apple;
+- missing state and locked-device cases return safely without mutation;
 - the `:nse` dependency graph contains no `:logic`, `CoreLogic`, or `UserSessionScope` dependency;
-- the scope does not start calls, analytics, WebSockets, background workers, or unrelated observers;
-- no generic `Either` is exposed to Swift.
+- repeated single-process invocation is characterized, even though concurrent execution is not yet
+  claimed safe.
 
-### Milestone 6 - Cross-process event coordination
+### Milestone 5 - Minimum cross-process safety
 
 Repository: Kalium.
 
-Goal: make the extracted processor safe for real concurrent main-app and NSE use.
+Goal: add the smallest useful correctness boundary before any real app/NSE concurrent processing.
 
 Work:
 
-- Add an injectable account-scoped `EventProcessingLock` with process-local and OS-backed protection
-  on Apple, plus deterministic test fakes.
-- Add a one-shot DAO/repository query for unprocessed events ordered by persistent `Events.id`.
-- Acquire the event lock before the authoritative pending-event query. Do not use the batch emitted
-  earlier by the process-local `Flow` as processing authority.
-- Add execution mode, lock policy, maximum event count, monotonic deadline, structured report, and
-  typed stop reasons to the shared processor.
-- Process one event per crypto transaction initially and preserve Proteus-before-MLS ordering.
-- Map observable CoreCrypto contention and cancellation into `Busy` or deadline outcomes instead of
-  an unknown failure.
-- Replace receiver `Unit`/swallowed-error behavior with explicit applied, duplicate, terminal-skip,
-  retryable-failure, and main-app-required outcomes where needed by the NSE slice.
-- Add a real per-event SQLDelight transaction boundary or document and test each temporarily
-  non-transactional mutation.
-- Narrow `NonCancellable` to the minimum commit/rollback boundary and permit cancellation before lock
-  acquisition and between events.
-- Move network work outside event and crypto locks, using the durable outbox for required follow-up
-  work.
+- Add one coarse, account-scoped OS-backed file lock, with an in-process guard and deterministic test
+  fake. Both main sync and NSE use the same generic lock path.
+- Acquire the lock non-blockingly. Contention returns `Busy`; do not wait beyond the NSE budget.
+- After acquiring the lock, insert or find the inline event by stable ID and re-check its durable
+  processed state. Never rely on a batch selected before lock acquisition.
+- Process at most one event, preserve Proteus-before-MLS ordering, mark it processed only after its
+  required mutations complete, then release the lock.
+- Characterize duplicate and crash behavior as at-least-once. Any receiver branch in the selected
+  slice that is not idempotent blocks production enablement and is moved to Milestone 6.
+- Keep network and unbounded work outside the lock.
 
 Exit gate:
 
-- two process-style coordinator instances cannot process the same event concurrently;
+- two process-style instances cannot process the same event concurrently;
+- the second invocation observes the durable processed marker after acquiring the lock;
+- contention maps to `Busy`;
+- different accounts make progress independently;
+- cancellation before lock acquisition and after the event boundary is safe.
+
+Passing this milestone is necessary but not sufficient for production release. It makes the narrow
+vertical slice usable for realistic integration and dogfood while the remaining durability work is
+completed.
+
+### Milestone 6 - Production durability and coordination
+
+Repository: Kalium.
+
+Goal: complete the crash, side-effect, batching, and coordination model required by ADR 0011 before
+production Wire iOS integration.
+
+Work:
+
+- Add the dedicated durable notification and side-effect outbox, including source event ID,
+  deduplication key, payload, state, claim owner, claim expiry, acknowledgement, release, and
+  expired-claim recovery.
+- Commit each authoritative application mutation and its required outbox row in one targeted
+  database transaction. Capture cleanup targets before destructive message mutations.
+- Replace process-local notification flows as the authoritative source. They may remain adapters.
+- Add the authoritative post-lock query for ordered unprocessed events and bounded multi-event
+  processing with a monotonic deadline and event limit.
+- Add explicit applied, duplicate, terminal-skip, retryable-failure, and main-app-required receiver
+  outcomes where required by the production event slice.
+- Process one event per crypto transaction initially, keep network work outside locks, and narrow
+  `NonCancellable` to commit or rollback boundaries.
+- Map CoreCrypto contention, cancellation, deadlines, and partial progress into stable results.
+- Document and test every crash boundary between crypto mutation, application persistence, outbox,
+  and the processed marker.
+
+Exit gate:
+
+- retrying an event creates one logical durable effect and two claimers cannot own it;
+- crashes before acknowledgement and at every commit boundary are recoverable;
+- ordered Proteus and MLS fixtures converge under concurrent app/NSE execution;
 - pending events are always queried after lock acquisition;
-- duplicate Proteus and MLS events complete successfully and are marked processed;
-- adjacent Proteus and ordered MLS fixtures converge under concurrent app/NSE execution;
-- cancellation and fault injection at every commit boundary leave recoverable state;
-- different accounts can make progress concurrently;
-- no network mock is called while an event or crypto lock is held.
+- no network mock is called while an event or crypto lock is held;
+- the complete first production slice satisfies all invariants in this plan.
 
 ### Milestone 7 - Wire iOS integration
 
@@ -765,11 +774,15 @@ Goal: demonstrate production safety and performance.
 
 Work:
 
+- Implement and verify main-app-owned migration from legacy private-container files and legacy
+  keychain entries into the shared App Group and access group. Migration must be idempotent,
+  crash-safe, and complete before an account is marked prepared for NSE use.
 - Repeatedly run the full app/NSE stress and crash matrix for same events, adjacent Proteus messages,
   ordered MLS messages, process kills at every commit boundary, two accounts, low disk, migrations,
   and deadline contention.
-- Review lock-file permissions, App Group data protection, keychain scope/accessibility, log privacy,
-  and extension restrictions.
+- Finalize and enforce lock-file permissions, App Group data protection, keychain
+  scope/accessibility, the Apple SQLDelight database-encryption decision, log privacy, and extension
+  restrictions.
 - Measure cold initialization, CoreCrypto open, lock acquisition and wait, one Proteus event, one MLS
   event, notification mapping, peak memory, and total NSE duration.
 - Validate through internal builds and dogfood before production release. This is release
@@ -792,16 +805,17 @@ Keep changes reviewable and dependency ordered:
 2. Extract current event processing without behavior changes.
 3. Move the characterized event-processing core and contracts into `:domain:event-processing`
    without behavior changes.
-4. Add Apple shared persistence and existing-state-only mode.
-5. Add the durable outbox.
-6. Add the public `:nse` API and `KaliumNSE` framework without production Wire iOS wiring.
-7. Add cross-process event coordination.
-8. Add the Wire iOS integration.
+4. Add the minimal Apple shared-state bootstrap and existing-state-only mode.
+5. Add the one-inline-event `:nse` API and `KaliumNSE` development vertical slice.
+6. Add the coarse account lock and post-lock durable event deduplication.
+7. Add the durable outbox and complete production coordination, crash, deadline, and batching work.
+8. Add the production Wire iOS integration.
 9. Add cross-process invalidation.
 10. Complete release hardening.
 
-Wire iOS must not invoke real shared-account event processing until cross-process coordination in
-step 7 is complete.
+Milestone 4 may be exercised by focused tests and an internal test host. Production Wire iOS must
+not enable shared-account event processing until the production durability and coordination work in
+step 7 is complete, and release remains gated by Milestone 9.
 
 ## Validation per Kalium milestone
 
@@ -821,21 +835,23 @@ Run the narrowest affected tests during development, then the relevant repositor
 Apple multi-process behavior requires process-based integration tests. Two coroutines, two
 dispatchers, or two in-process database objects are useful additional tests but are not substitutes.
 
-## Open decisions for Milestone 0
+## Open decisions for the production slice
 
-- Does the first release accept inline push payloads, fetch pending events, or support both inputs?
-- Which event and notification types belong to the first release?
+- Which single inline event and notification type prove the Milestone 4 development vertical slice?
+- After the vertical slice, does the production release remain inline-only, fetch pending events, or
+  support both inputs?
+- Which additional event and notification types belong to the production release?
 - What deadline safety margin, event limit, and contention behavior should the public budget use?
 - Which receiver work is allowed in the extension, and which work must wait for the main app?
 - What are the exact first-release notification effect types and rendering responsibilities?
-- Is existing-valid-auth-only acceptable for the first release, or is a separate cross-process token
+- Is existing-valid-auth-only acceptable for production, or is a separate cross-process token
   refresh coordinator required?
 - What should Wire iOS display for busy, deadline, main-app-required, and failed results?
 
-## Implementation decisions for Milestones 3, 5, and 6
+## Implementation decisions for Milestones 3 through 6
 
-- Which concrete receiver and handler implementations are required by the Milestone 0 slice and
-  therefore must move below `:logic` before the `:nse` module is introduced?
+- Does the already extracted conversation-receiver closure cover the single Milestone 4 event, and
+  which, if any, additional lower-level handler is required?
 - Which POSIX advisory lock primitive and cancellation strategy will be used by the Kalium account
   event-processing lock?
 - Does the Apple SQLDelight driver need an explicit busy timeout in addition to the event lock, and

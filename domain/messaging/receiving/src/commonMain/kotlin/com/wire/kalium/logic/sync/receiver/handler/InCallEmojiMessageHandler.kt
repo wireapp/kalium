@@ -21,14 +21,11 @@ package com.wire.kalium.logic.sync.receiver.handler
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.util.InternalKaliumApi
 
-@InternalKaliumApi
 public fun interface InCallEmojiMessageHandler {
     public suspend fun handle(message: Message.Signaling, messageContent: MessageContent.InCallEmoji)
 }
 
-@InternalKaliumApi
 public class InCallEmojiMessageHandlerImpl public constructor(
     private val inCallReactionsRepository: InCallReactionsRepository,
 ) : InCallEmojiMessageHandler {
