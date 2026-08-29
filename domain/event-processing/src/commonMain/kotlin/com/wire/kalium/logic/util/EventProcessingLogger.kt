@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -33,7 +34,8 @@ import kotlinx.datetime.Instant
  * @property event The event being processed.
  * @property startOfProcessing The start time of event processing. Defaults to the current system time.
  */
-internal class EventProcessingLogger(
+@InternalKaliumApi
+public class EventProcessingLogger(
     private val logger: KaliumLogger,
     private val event: Event,
     private val startOfProcessing: Instant
@@ -95,12 +97,14 @@ internal class EventProcessingLogger(
     }
 }
 
-internal enum class EventLoggingStatus {
+@InternalKaliumApi
+public enum class EventLoggingStatus {
     SUCCESS,
     FAILURE,
     SKIPPED
 }
 
-internal fun KaliumLogger.createEventProcessingLogger(
+@InternalKaliumApi
+public fun KaliumLogger.createEventProcessingLogger(
     event: Event
 ) = EventProcessingLogger(this, event, Clock.System.now())

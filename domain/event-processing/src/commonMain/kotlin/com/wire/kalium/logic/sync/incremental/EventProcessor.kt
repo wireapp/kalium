@@ -28,7 +28,6 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEI
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventEnvelope
-import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
@@ -38,6 +37,7 @@ import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -49,14 +49,14 @@ import kotlinx.coroutines.withContext
  * Each event is wrapped in an [EventEnvelope], containing both the event and its delivery metadata.
  * This interface allows disabling processing during testing or debug scenarios.
  *
- * Events are dispatched to corresponding domain-specific receivers (e.g., `ConversationEventReceiver`)
- * and marked as processed via [EventRepository] if processing is successful.
+ * Events are dispatched to corresponding domain-specific receivers (e.g., `ConversationEventReceiver`).
+ * Marking successful events as processed is owned by the surrounding batch coordinator.
  *
  * @see EventEnvelope
  * @see EventDeliveryInfo
- * @see EventRepository
  */
-internal interface EventProcessor {
+@InternalKaliumApi
+public interface EventProcessor {
 
     /**
      * When enabled events will be consumed but no event processing will occur.
@@ -91,7 +91,8 @@ internal interface EventProcessor {
 }
 
 @Suppress("LongParameterList")
-internal class EventProcessorImpl(
+@InternalKaliumApi
+public class EventProcessorImpl(
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: UserEventReceiver,
     private val teamEventReceiver: TeamEventReceiver,

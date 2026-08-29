@@ -55,8 +55,7 @@ import com.wire.kalium.network.exceptions.isNotFound
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
-internal interface UserEventReceiver : EventReceiver<Event.User>
-
+/** Logic-owned implementation of the shared user receiver contract. */
 @Suppress("LongParameterList")
 internal class UserEventReceiverImpl internal constructor(
     private val clientRepository: ClientRepository,

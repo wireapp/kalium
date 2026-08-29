@@ -458,6 +458,8 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.SyncStateObserverImpl
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
+import com.wire.kalium.logic.sync.incremental.EventBatchProcessor
+import com.wire.kalium.logic.sync.incremental.EventBatchProcessorImpl
 import com.wire.kalium.logic.sync.incremental.EventGatherer
 import com.wire.kalium.logic.sync.incremental.EventGathererImpl
 import com.wire.kalium.logic.sync.incremental.EventProcessor
@@ -1576,13 +1578,20 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    private val incrementalSyncWorker: IncrementalSyncWorker by lazy {
-        IncrementalSyncWorkerImpl(
-            eventGatherer,
+    private val eventBatchProcessor: EventBatchProcessor by lazy {
+        EventBatchProcessorImpl(
             eventProcessor,
             cryptoTransactionProvider,
             userStorage.database,
             eventRepository,
+            userScopedLogger,
+        )
+    }
+
+    private val incrementalSyncWorker: IncrementalSyncWorker by lazy {
+        IncrementalSyncWorkerImpl(
+            eventGatherer,
+            eventBatchProcessor,
             userScopedLogger,
         )
     }

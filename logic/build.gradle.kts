@@ -41,6 +41,10 @@ mutationTesting {
 
 kotlin {
     explicitApi()
+    sourceSets.configureEach {
+        languageSettings.optIn("com.wire.kalium.util.InternalKaliumApi")
+    }
+
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
     abiValidation {
         enabled.set(true)
@@ -85,6 +89,7 @@ kotlin {
                 implementation(projects.domain.usernetwork)
                 implementation(projects.domain.messaging.sending)
                 implementation(projects.domain.messaging.hooks)
+                implementation(projects.domain.eventProcessing)
 
                 // coroutines
                 implementation(libs.coroutines.core)

@@ -44,9 +44,8 @@ import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigH
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 
+/** Logic-owned implementation of the shared feature-config receiver contract. */
 @Deprecated("These events are not received/sent to clients anymore", ReplaceWith("SyncFeatureConfigsUseCase"))
-internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
-
 @Suppress("LongParameterList")
 internal class FeatureConfigEventReceiverImpl internal constructor(
     private val guestRoomConfigHandler: GuestRoomConfigHandler,

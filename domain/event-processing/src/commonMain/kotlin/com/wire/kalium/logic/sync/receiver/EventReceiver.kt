@@ -16,20 +16,16 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.sync.incremental
+package com.wire.kalium.logic.sync.receiver
 
-/**
- * Informs where an event came from.
- */
-internal enum class EventSource {
-    /**
-     * Event happened while this client was offline.
-     */
-    PENDING,
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.util.InternalKaliumApi
 
-    /**
-     * Event received in real-time, in an active
-     * connection with Wire servers.
-     */
-    LIVE
+@InternalKaliumApi
+public fun interface EventReceiver<T : Event> {
+    suspend fun onEvent(transactionContext: CryptoTransactionContext, event: T, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit>
 }

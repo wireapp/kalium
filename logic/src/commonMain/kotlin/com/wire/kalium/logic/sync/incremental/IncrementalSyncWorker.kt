@@ -18,20 +18,9 @@
 
 package com.wire.kalium.logic.sync.incremental
 
-import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -51,10 +40,7 @@ internal interface IncrementalSyncWorker {
 
 internal class IncrementalSyncWorkerImpl(
     private val eventGatherer: EventGatherer,
-    private val eventProcessor: EventProcessor,
-    private val transactionProvider: CryptoTransactionProvider,
-    private val databaseBuilder: UserDatabaseBuilder,
-    private val eventRepository: EventRepository,
+    private val eventBatchProcessor: EventBatchProcessor,
     logger: KaliumLogger = kaliumLogger,
 ) : IncrementalSyncWorker {
 
@@ -74,38 +60,7 @@ internal class IncrementalSyncWorkerImpl(
             }
             .filterIsInstance<EventStreamData.NewEvents>()
             .collect { streamData ->
-                withContext(NonCancellable) {
-                    val envelopes = streamData.eventList
-                    kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
-                    transactionProvider.transaction("processEvents") { context ->
-                        databaseBuilder.dbInvalidationController.runMuted {
-                            envelopes.map { envelope -> eventProcessor.processEvent(context, envelope) }
-                                .foldToEitherWhileRight(mutableListOf<String>()) { eventEither, acc ->
-                                    eventEither.map { eventId ->
-                                        eventId?.let(acc::add)
-                                        acc
-                                    }
-                                }
-                                .flatMap { eventIds ->
-                                    eventProcessor.flushPendingSideEffects().map { eventIds }
-                                }
-                        }
-                    }
-                        .onSuccess { eventIds ->
-                            if (eventIds.isEmpty()) {
-                                logger.i("No events to mark as processed")
-                                return@onSuccess
-                            }
-
-                            eventRepository.setEventsAsProcessed(eventIds)
-                                .onSuccess {
-                                    logger.i("${eventIds.size} events set as processed")
-                                }
-                        }
-                        .onFailure {
-                            throw KaliumSyncException("Processing failed", it)
-                        }
-                }
+                eventBatchProcessor.processEvents(streamData.eventList)
             }
         logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
     }.distinctUntilChanged()

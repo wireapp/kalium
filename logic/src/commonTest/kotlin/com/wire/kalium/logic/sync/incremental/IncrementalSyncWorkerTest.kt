@@ -19,72 +19,57 @@
 package com.wire.kalium.logic.sync.incremental
 
 import app.cash.turbine.test
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
-import com.wire.kalium.persistence.TestUserDatabase
-import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
-import kotlin.test.assertFailsWith
 
 class IncrementalSyncWorkerTest {
 
     @Test
-    fun givenGathererEmitsEvent_whenPerformingIncrementalSync_thenProcessorShouldReceiveTheEvent() = runTest(TestKaliumDispatcher.default) {
-        // Given
-        val envelope = TestEvent.memberJoin().wrapInEnvelope()
-        val (arrangement, worker) = Arrangement()
-            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
-            .arrange()
+    fun givenGathererEmitsEvents_whenPerformingIncrementalSync_thenWorkerDelegatesTheCompleteEventList() =
+        runTest(TestKaliumDispatcher.default) {
+            val envelopes = listOf(
+                TestEvent.memberJoin("event-1").wrapInEnvelope(),
+                TestEvent.memberJoin("event-2").wrapInEnvelope(),
+            )
+            val (arrangement, worker) = Arrangement()
+                .withEventGathererReturning(flowOf(EventStreamData.NewEvents(envelopes)))
+                .arrange()
 
-        // When
-        worker.processEventsFlow().collect()
+            worker.processEventsFlow().collect()
 
-        // Then
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.eventProcessor.processEvent(any(), eq(envelope))
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.eventBatchProcessor.processEvents(eq(envelopes))
+            }
         }
-    }
 
     @Test
     fun givenGathererEmitsSinglePageOfEvents_whenPerformingIncrementalSync_thenWorkerShouldEmitPendingSource() =
         runTest(TestKaliumDispatcher.default) {
-            // Given
             val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
                 .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
                 .arrange()
 
-            // When
             worker.processEventsFlow().test {
-                // Then
                 assertEquals(EventSource.PENDING, awaitItem())
                 awaitComplete()
             }
@@ -93,20 +78,17 @@ class IncrementalSyncWorkerTest {
     @Test
     fun givenGathererEmitsLiveSource_whenPerformingIncrementalSync_thenWorkerShouldEmitLiveSource() =
         runTest(TestKaliumDispatcher.default) {
-            // Given
             val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
                 .withEventGathererReturning(
                     flowOf(
                         EventStreamData.NewEvents(listOf(event)),
-                        EventStreamData.IsUpToDate
+                        EventStreamData.IsUpToDate,
                     )
                 )
                 .arrange()
 
-            // When
             worker.processEventsFlow().test {
-                // Then
                 assertEquals(EventSource.PENDING, awaitItem())
                 assertEquals(EventSource.LIVE, awaitItem())
                 awaitComplete()
@@ -114,15 +96,29 @@ class IncrementalSyncWorkerTest {
         }
 
     @Test
-    fun givenGathererThrows_whenPerformingIncrementalSync_thenTheFailureIsPropagated() = runTest(TestKaliumDispatcher.default) {
-        // Given
-        val coreFailureCause = NetworkFailure.NoNetworkConnection(null)
-        val exception = KaliumSyncException("Oopsie", coreFailureCause)
+    fun givenGathererThrows_whenPerformingIncrementalSync_thenTheFailureIsPropagated() =
+        runTest(TestKaliumDispatcher.default) {
+            val exception = KaliumSyncException("Oopsie", NetworkFailure.NoNetworkConnection(null))
+            val (_, worker) = Arrangement()
+                .withEventGathererReturning(flow { throw exception })
+                .arrange()
+
+            val resultException = assertFails {
+                worker.processEventsFlow().collect()
+            }
+
+            assertEquals(exception, resultException)
+        }
+
+    @Test
+    fun givenBatchProcessorThrows_whenPerformingIncrementalSync_thenTheFailureIsPropagated() = runTest {
+        val event = TestEvent.memberJoin().wrapInEnvelope()
+        val exception = KaliumSyncException("Processing failed", NetworkFailure.NoNetworkConnection(null))
         val (_, worker) = Arrangement()
-            .withEventGathererReturning(flow { throw exception })
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
+            .withEventBatchProcessorThrowing(exception)
             .arrange()
 
-        // When
         val resultException = assertFails {
             worker.processEventsFlow().collect()
         }
@@ -130,135 +126,22 @@ class IncrementalSyncWorkerTest {
         assertEquals(exception, resultException)
     }
 
-    @Test
-    fun givenProcessorFails_whenPerformingIncrementalSync_thenShouldThrowKaliumSyncException() = runTest {
-        val coreFailureCause = NetworkFailure.NoNetworkConnection(null)
-        val event = TestEvent.memberJoin().wrapInEnvelope()
-        val (_, worker) = Arrangement()
-            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
-            .withEventProcessorFailingWith(coreFailureCause)
-            .arrange()
-
-        val resultException = assertFailsWith<KaliumSyncException> {
-            worker.processEventsFlow().collect()
-        }
-
-        assertEquals(coreFailureCause, resultException.coreFailureCause)
-    }
-
-    @Test
-    fun givenProcessorReturnsEventId_whenPerformingIncrementalSync_thenWorkerMarksEventAsProcessed() = runTest {
-        val envelope = TestEvent.memberJoin().wrapInEnvelope()
-        val eventId = envelope.event.id
-
-        val (arrangement, worker) = Arrangement()
-            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
-            .withEventProcessorReturning(Either.Right(eventId))
-            .withSetEventsAsProcessedReturning(Either.Right(Unit))
-            .arrange()
-
-        worker.processEventsFlow().collect()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.eventRepository.setEventsAsProcessed(eq(listOf(eventId)))
-        }
-    }
-
-    @Test
-    fun givenProcessorReturnsNull_whenPerformingIncrementalSync_thenWorkerDoesNotMarkEventsAsProcessed() = runTest {
-        val envelope = TestEvent.memberJoin().wrapInEnvelope()
-
-        val (arrangement, worker) = Arrangement()
-            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
-            .withEventProcessorReturning(Either.Right(null))
-            .arrange()
-
-        worker.processEventsFlow().collect()
-
-        verifySuspend(VerifyMode.not) {
-            arrangement.eventRepository.setEventsAsProcessed(any())
-        }
-    }
-
-    @Test
-    fun givenCancellationDuringEventProcessing_whenPerformingIncrementalSync_thenWorkerMarksEventAsProcessed() = runTest {
-        val envelope = TestEvent.memberJoin().wrapInEnvelope()
-        val eventId = envelope.event.id
-        val processingStarted = CompletableDeferred<Unit>()
-        val allowProcessingToFinish = CompletableDeferred<Unit>()
-
-        val (arrangement, worker) = Arrangement()
-            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
-            .withSetEventsAsProcessedReturning(Either.Right(Unit))
-            .arrange()
-
-        everySuspend {
-            arrangement.eventProcessor.processEvent(any(), eq(envelope))
-        } calls {
-            processingStarted.complete(Unit)
-            allowProcessingToFinish.await()
-            Either.Right(eventId)
-        }
-
-        val job = launch {
-            worker.processEventsFlow().collect()
-        }
-
-        processingStarted.await()
-        job.cancel()
-        allowProcessingToFinish.complete(Unit)
-        job.join()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.eventRepository.setEventsAsProcessed(eq(listOf(eventId)))
-        }
-    }
-
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
-        val eventProcessor: EventProcessor = mock()
-        val eventGatherer: EventGatherer = mock()
-        val eventRepository: EventRepository = mock()
-        val database = TestUserDatabase(
-            userId = QualifiedID("value", "domain").toDao(),
-            dispatcher = TestKaliumDispatcher.default
-        )
+    private class Arrangement {
+        val eventBatchProcessor: EventBatchProcessor = mock()
+        private val eventGatherer: EventGatherer = mock()
 
         init {
-            runBlocking {
-                withEventProcessorSucceeding()
-                withSetEventsAsProcessedReturning(Either.Right(Unit))
-            }
+            everySuspend { eventBatchProcessor.processEvents(any()) } returns Unit
         }
 
-        suspend fun withEventGathererReturning(eventFlow: Flow<EventStreamData>) = apply {
-            everySuspend {
-                eventGatherer.gatherEvents()
-            } returns eventFlow
+        fun withEventGathererReturning(eventFlow: Flow<EventStreamData>) = apply {
+            everySuspend { eventGatherer.gatherEvents() } returns eventFlow
         }
 
-        suspend fun withEventProcessorReturning(result: Either<CoreFailure, String?>) = apply {
-            everySuspend {
-                eventProcessor.processEvent(any(), any())
-            } returns result
-            everySuspend {
-                eventProcessor.flushPendingSideEffects()
-            } returns Either.Right(Unit)
+        fun withEventBatchProcessorThrowing(exception: KaliumSyncException) = apply {
+            everySuspend { eventBatchProcessor.processEvents(any()) } throws exception
         }
 
-        suspend fun withEventProcessorSucceeding() = withEventProcessorReturning(Either.Right(null))
-
-        suspend fun withEventProcessorFailingWith(failure: CoreFailure) = withEventProcessorReturning(Either.Left(failure))
-
-        suspend fun withSetEventsAsProcessedReturning(result: Either<StorageFailure, Unit>) = apply {
-            everySuspend { eventRepository.setEventsAsProcessed(any()) } returns result
-        }
-
-        suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
-            block()
-            withTransactionReturning(Either.Right(Unit))
-            this to IncrementalSyncWorkerImpl(
-                eventGatherer, eventProcessor, cryptoTransactionProvider, database.builder, eventRepository
-            )
-        }
+        fun arrange() = this to IncrementalSyncWorkerImpl(eventGatherer, eventBatchProcessor)
     }
 }

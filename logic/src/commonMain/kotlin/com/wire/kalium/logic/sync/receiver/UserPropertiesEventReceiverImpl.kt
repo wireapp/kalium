@@ -30,8 +30,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.util.createEventProcessingLogger
 
-internal interface UserPropertiesEventReceiver : EventReceiver<Event.UserProperty>
-
+/** Logic-owned implementation of the shared user-properties receiver contract. */
 internal class UserPropertiesEventReceiverImpl internal constructor(
     private val userConfigRepository: UserConfigRepository,
     private val conversationFolderRepository: ConversationFolderRepository

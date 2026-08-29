@@ -47,8 +47,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 
-internal interface FederationEventReceiver : EventReceiver<Event.Federation>
-
+/** Logic-owned implementation of the shared federation receiver contract. */
 @Suppress("LongParameterList")
 internal class FederationEventReceiverImpl internal constructor(
     private val conversationRepository: ConversationRepository,
