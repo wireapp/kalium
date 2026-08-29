@@ -61,8 +61,9 @@ class FeatureConfigRepositoryImplTest {
     fun givenFileSharingEnabledAndAllowedTypes_whenQueried_thenReturnsEnabledSome() = runTest {
         val allowedFileTypes = listOf("image/png", "image/jpeg")
         val repository = repositoryReturning(status = true, isStatusChanged = true) { allowedFileTypes }
+        val provider: FileSharingStatusProvider = repository
 
-        val result = repository.isFileSharingEnabled()
+        val result = provider.isFileSharingEnabled()
 
         assertEquals(
             Either.Right(

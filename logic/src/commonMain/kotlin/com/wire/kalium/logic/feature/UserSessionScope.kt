@@ -160,6 +160,8 @@ import com.wire.kalium.logic.data.message.CompositeMessageDataSource
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
+import com.wire.kalium.logic.data.message.IncomingAssetMessageLookup
+import com.wire.kalium.logic.data.message.IncomingAssetMessageLookupImpl
 import com.wire.kalium.logic.data.message.IncomingLastReadPersistenceImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageDeletionPersistenceImpl
@@ -890,17 +892,22 @@ public class UserSessionScope internal constructor(
             userConfigStorage = userStorage.database.userPrefsDAO,
             userConfigDAO = userStorage.database.userConfigDAO,
             kaliumConfigs = kaliumConfigs,
+            featureConfigRepository = sharedFeatureConfigPersistenceRepository,
             trackingIdentifierStorage = trackingIdentifierStorage,
         )
 
     private val featureConfigPersistenceRepository: LocalFeatureConfigRepository
-        get() = FeatureConfigRepositoryImpl(
+        get() = sharedFeatureConfigPersistenceRepository
+
+    private val sharedFeatureConfigPersistenceRepository: FeatureConfigRepositoryImpl by lazy {
+        FeatureConfigRepositoryImpl(
             userConfigStorage = userStorage.database.userPrefsDAO,
             userConfigDAO = userStorage.database.userConfigDAO,
             allowedFileTypesProvider = {
                 (kaliumConfigs.fileRestrictionState.value as? BuildFileRestrictionState.AllowSome)?.allowedType
             },
         )
+    }
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
@@ -1073,6 +1080,10 @@ public class UserSessionScope internal constructor(
 
     private val messageDeletionPersistence: IncomingMessageDeletionPersistence by lazy {
         MessageDeletionPersistenceImpl(userStorage.database.messageDAO)
+    }
+
+    private val incomingAssetMessageLookup: IncomingAssetMessageLookup by lazy {
+        IncomingAssetMessageLookupImpl(userStorage.database.messageDAO)
     }
 
     private val messageEditPersistence: MessageEditPersistence by lazy {
@@ -1960,10 +1971,10 @@ public class UserSessionScope internal constructor(
 
     private val assetMessageHandler: AssetMessageHandler
         get() = AssetMessageHandlerImpl(
-            messageRepository,
-            persistMessage,
-            userConfigRepository,
-            validateAssetMimeType
+            incomingAssetMessageLookup = incomingAssetMessageLookup,
+            persistMessage = persistMessage,
+            fileSharingStatusProvider = sharedFeatureConfigPersistenceRepository,
+            validateAssetMimeTypeUseCase = validateAssetMimeType,
         )
 
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler

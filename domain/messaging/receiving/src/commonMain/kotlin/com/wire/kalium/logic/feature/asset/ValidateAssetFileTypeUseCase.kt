@@ -18,21 +18,24 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.util.InternalKaliumApi
 
 /**
  * Returns true if the file extension is present in file name and is allowed and false otherwise.
  * @param fileName the file name (with extension) to validate.
  * @param allowedExtension the list of allowed extension.
  */
-internal interface ValidateAssetFileTypeUseCase {
-    operator fun invoke(
+@InternalKaliumApi
+public interface ValidateAssetFileTypeUseCase {
+    public operator fun invoke(
         fileName: String?,
         mimeType: String,
         allowedExtension: List<String>
     ): Boolean
 }
 
-internal class ValidateAssetFileTypeUseCaseImpl : ValidateAssetFileTypeUseCase {
+@InternalKaliumApi
+public class ValidateAssetFileTypeUseCaseImpl : ValidateAssetFileTypeUseCase {
     override operator fun invoke(
         fileName: String?,
         mimeType: String,

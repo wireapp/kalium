@@ -3,6 +3,49 @@
 This note records the compile-time closure inspected while implementing the receiver-extraction milestone described by
 `nse-safe-multi-process-event-processing.md`. It supplements that plan without changing its design or the NSE runtime scope.
 
+## Completed AssetMessageHandler extraction slice
+
+Inspection of `AssetMessageHandlerImpl`, `UserConfigRepository`, `FeatureConfigRepositoryImpl`, `MessageRepository`,
+`MessageMapper`, `MessageDAO`, `PersistMessageUseCase`, `ValidateAssetFileTypeUseCase`, `UserSessionScope`, and their tests
+produced this completed behavior-preserving extraction:
+
+1. `AssetMessageHandler` and `AssetMessageHandlerImpl` now live in `:domain:messaging:receiving` with their existing
+   package and cross-module API exposed through `@InternalKaliumApi`. `ApplicationMessageHandler` routing and the incoming
+   asset call path remain unchanged in `:logic`.
+2. The handler now depends on the focused `FileSharingStatusProvider` contract in `:domain:messaging:receiving`.
+   The existing DAO-backed `FeatureConfigRepositoryImpl` extends that contract, and `UserSessionScope` shares one instance
+   with `UserConfigDataSource`, feature-config handlers, and `AssetMessageHandler`. Both broad app queries and incoming
+   asset handling therefore retain the same live allowed-file-types provider and status derivation.
+3. The handler now uses `IncomingAssetMessageLookup`, a concrete `MessageDAO.getMessageById` adapter in
+   `:domain:messaging:receiving`, instead of broad `MessageRepository.getMessageById`. The broad repository method remains
+   unchanged for other callers, and neither broad `MessageMapper` nor logic-only `MapperProvider` moved below `:logic`.
+4. `StoredIncomingAssetMessage` represents only the receiver-relevant classifications: regular asset, restricted asset,
+   unsupported regular content, and system content. Its focused mapper retains sender verification, existing log type/IDs,
+   asset metadata and remote data, and every stored regular field that influences the follow-up `Message.Regular`:
+   date, client, status/read count, edit state, expiration/self-deletion state, visibility baseline, sender name,
+   self-message state, read-confirmation expectation, reactions, and delivery status. Follow-ups replace only remote data
+   and recalculate visibility from `remoteData.hasValidData()` as before.
+5. The lookup uses the existing qualified-ID mapping and `wrapStorageRequest`: a missing row is `DataNotFound`, ordinary
+   DAO exceptions are wrapped, and cancellation escapes. Every returned lookup `Left` still enters the existing
+   missing-message path; no failure-kind filtering was introduced.
+6. `ValidateAssetFileTypeUseCase` and its implementation now live in `:domain:messaging:receiving` with the same package
+   and behavior. Filename extension parsing and precedence, MIME fallback, case-sensitive matching, logging, and the
+   existing duplicate-key MIME map contents—including their current result—remain unchanged. Existing outgoing `:logic`
+   callers use the moved implementation without adapters.
+7. The handler still reuses `PersistMessageUseCase` unchanged. Restricted, new-preview, and follow-up persistence retain
+   the same ignored returned `Left`, escaping exception/cancellation, notification, receipt-mode, persistence-hook, and
+   conversation-order behavior. This slice adds no filesystem work, async work, retries, outbox, process lock, rollout
+   switch, or NSE runtime wiring.
+8. Focused lower-module tests cover lookup classifications, exact asset and stored-field mapping, missing rows, wrapping,
+   cancellation, status-provider derivation, and validator quirks. The handler test suite now lives in the receiving
+   module and continues covering early return, every file-sharing state, null/empty-name conditional restriction, all
+   lookup/persist outcomes, preview visibility and image metadata, sender/type rejection, exact merge preservation,
+   arguments, counts, and order.
+
+This slice mechanically moved the handler and its tests without changing `ApplicationMessageHandler` routing or
+`UserSessionScope` construction. `CallingMessageHandler` is the remaining deeper application-message leaf and was not
+included in this slice.
+
 ## Completed clear-conversation-content application-message slice
 
 Inspection of `ClearConversationContentHandlerImpl`, `ConversationRepository.clearContent`, `ConversationDAO`,
@@ -562,7 +605,8 @@ The complete `NewMessageEventHandler` branch additionally closes over:
 
 - Proteus and MLS unpacking/failure handling (`ProteusMessageUnpacker`, `ProteusMessageFailureHandler`,
   `MLSMessageUnpacker`, `MLSMessageFailureHandler`, `MessageUnpackResult`);
-- application-message routing (`ApplicationMessageHandler`) and its remaining app-owned asset and call handlers. Its
+- application-message routing (`ApplicationMessageHandler`), whose asset handler is reusable below `:logic` and whose
+  remaining app-owned handler is `CallingMessageHandler`. Its
   button, data-transfer, receipt, reaction, delete-for-me, last-read, composite-edit, availability, client-action,
   in-call-emoji, text-edit, multipart-edit, delete-message, and clear-content leaves are reusable below `:logic`, but the
   facade stays in `:logic` until the remaining branches move;
@@ -584,10 +628,8 @@ filesystem executor and MLS/CoreCrypto deletion implementation intentionally rem
 handlers remain blocked on the remote-fetch, MLS, legal-hold, call, notification, user, and system-message closures
 above.
 
-The next meaningful application-message slice is `AssetMessageHandler`. It is now the remaining regular-message leaf
-with a tractable local boundary, but it first needs focused replacements for broad `MessageRepository.getMessageById`
-mapping and `UserConfigRepository.isFileSharingEnabled`, while retaining the existing MIME validation and
-`PersistMessageUseCase` behavior. `CallingMessageHandler` is a later, deeper slice because its current closure includes
+`AssetMessageHandler` and its focused lookup/configuration dependency closure are now extracted. `CallingMessageHandler`
+is the remaining deeper application-message leaf and was not included in this slice because its current closure includes
 `CallManager`, conversation-member observation, client identity, remote-mute policy, mute execution, and moderation
 state. A standalone `Ignored` move is still not a meaningful milestone, and `History` remains existing unsupported
 behavior rather than an extraction target. The extracted in-call reaction stream remains process-local and ephemeral,

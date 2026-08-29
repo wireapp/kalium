@@ -44,12 +44,18 @@ import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 
+/** File-sharing configuration required while receiving asset messages. */
+@InternalKaliumApi
+public fun interface FileSharingStatusProvider {
+    public suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
+}
+
 /** Local configuration operations required by feature-config event handlers. */
 @InternalKaliumApi
 @Suppress("TooManyFunctions")
-public interface FeatureConfigRepository {
+public interface FeatureConfigRepository : FileSharingStatusProvider {
     public suspend fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
-    public suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
+    public override suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
     public suspend fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>): Either<StorageFailure, Unit>
     public suspend fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     public suspend fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit>

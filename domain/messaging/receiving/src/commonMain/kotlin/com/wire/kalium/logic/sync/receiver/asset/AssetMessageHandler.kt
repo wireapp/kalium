@@ -18,27 +18,30 @@
 package com.wire.kalium.logic.sync.receiver.asset
 
 import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.FileSharingStatusProvider
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.IncomingAssetMessageLookup
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.message.getType
+import com.wire.kalium.logic.data.message.StoredIncomingAssetMessage
+import com.wire.kalium.logic.data.message.hasValidData
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface AssetMessageHandler {
-    suspend fun handle(message: Message.Regular)
+@InternalKaliumApi
+public interface AssetMessageHandler {
+    public suspend fun handle(message: Message.Regular)
 }
 
-internal class AssetMessageHandlerImpl(
-    private val messageRepository: MessageRepository,
+@InternalKaliumApi
+public class AssetMessageHandlerImpl public constructor(
+    private val incomingAssetMessageLookup: IncomingAssetMessageLookup,
     private val persistMessage: PersistMessageUseCase,
-    private val userConfigRepository: UserConfigRepository,
+    private val fileSharingStatusProvider: FileSharingStatusProvider,
     private val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase
 ) : AssetMessageHandler {
 
@@ -50,7 +53,7 @@ internal class AssetMessageHandlerImpl(
 
         val messageContent = message.content as MessageContent.Asset
 
-        userConfigRepository.isFileSharingEnabled().onSuccess {
+        fileSharingStatusProvider.isFileSharingEnabled().onSuccess {
             val isThisAssetAllowed = when (val restrictionState = it.state) {
                 FileSharingStatus.Value.Disabled -> AssetRestrictionContinuationStrategy.Restrict
                 FileSharingStatus.Value.EnabledAll -> AssetRestrictionContinuationStrategy.Continue
@@ -107,7 +110,7 @@ internal class AssetMessageHandlerImpl(
         assetContent: MessageContent.Asset,
         restrictIfNotAFollowUpMessage: Boolean
     ) {
-        messageRepository.getMessageById(processedMessage.conversationId, processedMessage.id).onFailure {
+        incomingAssetMessageLookup.getMessageById(processedMessage.conversationId, processedMessage.id).onFailure {
             // No asset message was received previously, so just persist the preview of the asset message
             // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
             // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
@@ -123,55 +126,46 @@ internal class AssetMessageHandlerImpl(
             }
         }.onSuccess { persistedMessage ->
             val validDecryptionKeys = assetContent.value.remoteData
-            // Check the second asset message is from the same original sender
-            if (isSenderVerified(persistedMessage, processedMessage) && persistedMessage is Message.Regular) {
-                // The second asset message received from Web/Mac clients contains the full asset decryption keys, so we need to update
-                // the preview message persisted previously with the rest of the data
-                updateAssetMessageWithDecryptionKeys(persistedMessage, validDecryptionKeys)?.let {
-                    persistMessage(it)
+            when {
+                persistedMessage.senderUserId != processedMessage.senderUserId ||
+                    persistedMessage is StoredIncomingAssetMessage.System -> {
+                    kaliumLogger.e("The previously persisted message has a different sender id than the one we are trying to process")
                 }
-            } else {
-                kaliumLogger.e("The previously persisted message has a different sender id than the one we are trying to process")
+
+                persistedMessage is StoredIncomingAssetMessage.RegularAsset -> {
+                    // The second asset message received from Web/Mac clients contains the full asset decryption keys, so we need to update
+                    // the preview message persisted previously with the rest of the data
+                    updateAssetMessageWithDecryptionKeys(persistedMessage.message, validDecryptionKeys).let {
+                        persistMessage(it)
+                    }
+                }
+
+                persistedMessage is StoredIncomingAssetMessage.UnsupportedRegular -> {
+                    kaliumLogger.e(
+                        "Invalid asset message content type=${persistedMessage.contentType} " +
+                            "messageId=${persistedMessage.messageId} conversationId=${persistedMessage.conversationId}"
+                    )
+                }
+
+                persistedMessage is StoredIncomingAssetMessage.RestrictedAsset -> Unit
             }
         }
     }
 
-    private fun isSenderVerified(persistedMessage: Message, processedMessage: Message): Boolean =
-        persistedMessage.senderUserId == processedMessage.senderUserId
-
     private fun updateAssetMessageWithDecryptionKeys(
         persistedMessage: Message.Regular,
         remoteData: AssetContent.RemoteData
-    ): Message.Regular? {
-        val assetMessageContent = when (persistedMessage.content) {
-            is MessageContent.Asset -> persistedMessage.content as MessageContent.Asset
-            is MessageContent.RestrictedAsset -> null // original message was a restricted asset message, ignoring
-            is MessageContent.FailedDecryption,
-            is MessageContent.Knock,
-            is MessageContent.Location,
-            is MessageContent.Composite,
-            is MessageContent.Text,
-            is MessageContent.Multipart,
-            is MessageContent.Unknown -> {
-                kaliumLogger.e(
-                    "Invalid asset message content type=${persistedMessage.content.getType()} " +
-                        "messageId=${persistedMessage.id} conversationId=${persistedMessage.conversationId}"
+    ): Message.Regular {
+        val assetContent = persistedMessage.content as MessageContent.Asset
+        return persistedMessage.copy(
+            content = assetContent.copy(
+                value = assetContent.value.copy(
+                    remoteData = remoteData
                 )
-                null
-            }
-        }
-        return assetMessageContent?.let { asset ->
-            // The message was previously received with just metadata info, so let's update it with the raw data info
-            persistedMessage.copy(
-                content = asset.copy(
-                    value = asset.value.copy(
-                        remoteData = remoteData
-                    )
-                ),
-                // If update message for any reason has still invalid encryption keys, message can't still be shown
-                visibility = if (remoteData.hasValidData()) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
-            )
-        }
+            ),
+            // If update message for any reason has still invalid encryption keys, message can't still be shown
+            visibility = if (remoteData.hasValidData()) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
+        )
     }
 }
 
