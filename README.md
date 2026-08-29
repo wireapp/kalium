@@ -41,8 +41,14 @@ Common commands:
 ```bash
 ./gradlew build
 ./gradlew jvmTest -Djava.library.path=./native/libs
+./gradlew runMutationTests
 ./gradlew detekt
 ```
+
+`runMutationTests` runs PIT against shared KMP code compiled for the JVM, so it does not need an emulator or device.
+Reports are written per module under `build/reports/pitest`. Resource use and the required score can be configured
+with `-Pmutation.maxParallelMutants=2`, `-Pmutation.maxHeap=2g`, `-Pmutation.timeoutConstantMs=1000`, and
+`-Pmutation.threshold=60`. The setup does not mutate Kotlin/Native, Kotlin/JS, or Android-only binaries.
 
 JVM tests and the CLI need native libraries. Build them with:
 

@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
+    id(libs.plugins.kalium.mutation.testing.get().pluginId)
     id("com.wire.kalium.apple-avs-runtime")
     alias(libs.plugins.ksp)
     alias(libs.plugins.mokkery)
@@ -31,6 +32,11 @@ kaliumLibrary {
     multiplatform {
         enableJs.set(false)
     }
+}
+
+mutationTesting {
+    targetClasses.set(listOf("com.wire.kalium.logic.sync.receiver.*"))
+    targetTests.set(listOf("com.wire.kalium.logic.sync.receiver.*"))
 }
 
 val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()

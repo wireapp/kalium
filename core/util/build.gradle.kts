@@ -19,6 +19,7 @@
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     id(libs.plugins.kalium.library.get().pluginId)
+    id(libs.plugins.kalium.mutation.testing.get().pluginId)
     alias(libs.plugins.ksp)
 }
 
