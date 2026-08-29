@@ -40,10 +40,53 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertSame
 
 class ConversationLifecycleEventRepositoryImplTest {
+
+    @Test
+    fun givenClearContent_whenApplied_thenQualifiedConversationIdIsForwardedAndSuccessIsReturned() = runTest {
+        val (arrangement, repository) = arrangement()
+
+        assertEquals(Either.Right(Unit), repository.clearContent(conversationId))
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationDAO.clearContent(eq(conversationIdEntity))
+        }
+    }
+
+    @Test
+    fun givenDaoException_whenClearingContent_thenStorageFailureIsReturned() = runTest {
+        val expectedException = IllegalStateException("clear content failed")
+        val (arrangement, repository) = arrangement()
+        everySuspend {
+            arrangement.conversationDAO.clearContent(eq(conversationIdEntity))
+        } throws expectedException
+
+        assertEquals(
+            Either.Left(StorageFailure.Generic(expectedException)),
+            repository.clearContent(conversationId),
+        )
+    }
+
+    @Test
+    fun givenDaoCancellation_whenClearingContent_thenSameCancellationEscapes() = runTest {
+        val expected = CancellationException("clear content cancelled")
+        val (arrangement, repository) = arrangement()
+        everySuspend {
+            arrangement.conversationDAO.clearContent(eq(conversationIdEntity))
+        } throws expected
+
+        val actual = assertFailsWith<CancellationException> {
+            repository.clearContent(conversationId)
+        }
+
+        assertSame(expected, actual)
+    }
 
     @Test
     fun givenConversationWrites_whenApplied_thenValuesAreForwardedToDao() = runTest {

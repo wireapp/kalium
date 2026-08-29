@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
  * This singleton allow us to queue checking for new regular notifications AND queue ephemeral notifications from different user flows.
  */
 @InternalKaliumApi
-public object NotificationEventsManagerImpl : NotificationEventsManager {
+public object NotificationEventsManagerImpl : NotificationEventsManager, DeleteMessageNotificationScheduler {
 
     private val mapper by lazy { LocalNotificationMessageMapperImpl() }
 
@@ -51,7 +51,11 @@ public object NotificationEventsManagerImpl : NotificationEventsManager {
     }
 
     override suspend fun scheduleDeleteMessageNotification(message: Message) {
-        val localNotification = mapper.fromMessageToMessageDeletedLocalNotification(message)
+        scheduleDeleteMessageNotification(message.conversationId, message.id)
+    }
+
+    override suspend fun scheduleDeleteMessageNotification(conversationId: ConversationId, messageId: String) {
+        val localNotification = mapper.toMessageDeletedLocalNotification(conversationId, messageId)
         ephemeralNotifications.emit(localNotification)
     }
 
@@ -78,6 +82,11 @@ public object NotificationEventsManagerImpl : NotificationEventsManager {
     }
 
     override suspend fun observeRegularNotificationsChecking(): Flow<Unit> = regularNotificationChecking
+}
+
+@InternalKaliumApi
+public fun interface DeleteMessageNotificationScheduler {
+    public suspend fun scheduleDeleteMessageNotification(conversationId: ConversationId, messageId: String)
 }
 
 @InternalKaliumApi

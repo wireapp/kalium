@@ -39,6 +39,10 @@ import kotlinx.datetime.Instant
 /** Local persistence used only while applying incoming conversation lifecycle events. */
 @InternalKaliumApi
 public interface ConversationLifecycleEventRepository {
+    public suspend fun clearContent(
+        conversationId: ConversationId,
+    ): Either<StorageFailure, Unit>
+
     public suspend fun updateConversationName(
         conversationId: ConversationId,
         conversationName: String,
@@ -94,10 +98,17 @@ public interface ConversationLifecycleEventRepository {
 
 /** DAO-backed lifecycle persistence shared by continuous and bounded event processing. */
 @InternalKaliumApi
+@Suppress("TooManyFunctions")
 public class ConversationLifecycleEventRepositoryImpl public constructor(
     private val conversationDAO: ConversationDAO,
     private val memberDAO: MemberDAO,
 ) : ConversationLifecycleEventRepository {
+
+    override suspend fun clearContent(
+        conversationId: ConversationId,
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        conversationDAO.clearContent(conversationId.toDao())
+    }
 
     override suspend fun updateConversationName(
         conversationId: ConversationId,

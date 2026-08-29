@@ -42,6 +42,7 @@ public interface LocalNotificationMessageMapper {
     ): LocalNotification
 
     fun fromMessageToMessageDeletedLocalNotification(message: Message): LocalNotification
+    fun toMessageDeletedLocalNotification(conversationId: ConversationId, messageId: String): LocalNotification
     fun fromMessageToMessageEditedLocalNotification(message: Message, messageContent: MessageContent.TextEdited): LocalNotification
     fun fromMessageToMessageEditedLocalNotification(message: Message, messageContent: MessageContent.MultipartEdited): LocalNotification
     fun toConversationSeen(conversationId: ConversationId): LocalNotification
@@ -103,9 +104,12 @@ public class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper
         LocalNotification.ConversationSeen(conversationId = conversationId)
 
     override fun fromMessageToMessageDeletedLocalNotification(message: Message): LocalNotification =
+        toMessageDeletedLocalNotification(message.conversationId, message.id)
+
+    override fun toMessageDeletedLocalNotification(conversationId: ConversationId, messageId: String): LocalNotification =
         LocalNotification.UpdateMessage(
-            message.conversationId,
-            message.id,
+            conversationId,
+            messageId,
             LocalNotificationUpdateMessageAction.Delete
         )
 

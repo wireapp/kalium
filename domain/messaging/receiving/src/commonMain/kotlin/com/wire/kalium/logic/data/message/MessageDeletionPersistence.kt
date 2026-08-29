@@ -21,10 +21,24 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.InternalKaliumApi
+
+@InternalKaliumApi
+public data class MessageDeletionSnapshot(
+    val messageId: String,
+    val conversationId: ConversationId,
+    val senderUserId: UserId,
+    val isRegularEphemeral: Boolean,
+    val remoteAssetId: String?,
+)
 
 @InternalKaliumApi
 public fun interface MessageDeletionPersistence {
@@ -35,13 +49,51 @@ public fun interface MessageDeletionPersistence {
 }
 
 @InternalKaliumApi
+public interface IncomingMessageDeletionPersistence : MessageDeletionPersistence {
+    public suspend fun loadMessageDeletionSnapshot(
+        conversationId: ConversationId,
+        messageId: String,
+    ): Either<StorageFailure, MessageDeletionSnapshot>
+
+    public suspend fun markMessageAsDeleted(
+        messageUuid: String,
+        conversationId: ConversationId,
+    ): Either<StorageFailure, Unit>
+}
+
+@InternalKaliumApi
 public class MessageDeletionPersistenceImpl public constructor(
     private val messageDAO: MessageDAO,
-) : MessageDeletionPersistence {
+) : IncomingMessageDeletionPersistence {
+    override suspend fun loadMessageDeletionSnapshot(
+        conversationId: ConversationId,
+        messageId: String,
+    ): Either<StorageFailure, MessageDeletionSnapshot> = wrapStorageRequest {
+        messageDAO.getMessageById(messageId, conversationId.toDao())
+    }.map { message ->
+        MessageDeletionSnapshot(
+            messageId = message.id,
+            conversationId = message.conversationId.toModel(),
+            senderUserId = message.senderUserId.toModel(),
+            isRegularEphemeral = message is MessageEntity.Regular && message.expireAfterMs != null,
+            remoteAssetId = (message as? MessageEntity.Regular)
+                ?.content
+                ?.let { it as? MessageEntityContent.Asset }
+                ?.assetId,
+        )
+    }
+
     override suspend fun deleteMessage(
         messageUuid: String,
         conversationId: ConversationId,
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         messageDAO.deleteMessage(messageUuid, conversationId.toDao())
+    }
+
+    override suspend fun markMessageAsDeleted(
+        messageUuid: String,
+        conversationId: ConversationId,
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        messageDAO.markMessageAsDeleted(messageUuid, conversationId.toDao())
     }
 }

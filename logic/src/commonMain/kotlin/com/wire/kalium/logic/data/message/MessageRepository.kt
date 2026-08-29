@@ -333,7 +333,7 @@ internal class MessageDataSource internal constructor(
     private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
     private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl(),
     private val eventMessageRepository: EventMessageRepository = EventMessageRepositoryImpl(messageDAO, selfUserId, messageMapper),
-    private val messageDeletionPersistence: MessageDeletionPersistence = MessageDeletionPersistenceImpl(messageDAO),
+    private val messageDeletionPersistence: IncomingMessageDeletionPersistence = MessageDeletionPersistenceImpl(messageDAO),
     private val messageEditPersistence: MessageEditPersistence = MessageEditPersistenceImpl(
         messageDAO,
         selfUserId,
@@ -418,9 +418,7 @@ internal class MessageDataSource internal constructor(
         messageUuid: String,
         conversationId: ConversationId
     ): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = conversationId.toDao())
-        }
+        messageDeletionPersistence.markMessageAsDeleted(messageUuid, conversationId)
 
     override suspend fun getMessageById(
         conversationId: ConversationId,

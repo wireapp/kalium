@@ -162,8 +162,8 @@ import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.IncomingLastReadPersistenceImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
-import com.wire.kalium.logic.data.message.MessageDeletionPersistence
 import com.wire.kalium.logic.data.message.MessageDeletionPersistenceImpl
+import com.wire.kalium.logic.data.message.IncomingMessageDeletionPersistence
 import com.wire.kalium.logic.data.message.MessageEditPersistence
 import com.wire.kalium.logic.data.message.MessageEditPersistenceImpl
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
@@ -555,6 +555,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUn
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.AssetRepositoryDeleteMessageAssetCleanup
 import com.wire.kalium.logic.sync.receiver.handler.AvailabilityMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.AvailabilityMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
@@ -565,6 +566,7 @@ import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.ClearConversationAssetsLocallyUseCaseAdapter
 import com.wire.kalium.logic.sync.receiver.handler.ClientActionMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
@@ -575,6 +577,8 @@ import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.TrackingIdentifierStorage
 import com.wire.kalium.logic.sync.receiver.handler.TrackingIdentifierStorageImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.DeleteConversationUseCaseAdapter
+import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageAssetCleanup
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.InCallEmojiMessageHandler
@@ -1067,7 +1071,7 @@ public class UserSessionScope internal constructor(
     private val availabilityMessageHandler: AvailabilityMessageHandler =
         AvailabilityMessageHandlerImpl(incomingAvailabilityPersistence)
 
-    private val messageDeletionPersistence: MessageDeletionPersistence by lazy {
+    private val messageDeletionPersistence: IncomingMessageDeletionPersistence by lazy {
         MessageDeletionPersistenceImpl(userStorage.database.messageDAO)
     }
 
@@ -1353,6 +1357,10 @@ public class UserSessionScope internal constructor(
             assetAuditLog = lazy { users.assetAuditLog },
             kaliumFileSystem = kaliumFileSystem
         )
+
+    private val deleteMessageAssetCleanup: DeleteMessageAssetCleanup by lazy {
+        AssetRepositoryDeleteMessageAssetCleanup(assetRepository)
+    }
 
     private val eventGatherer: EventGatherer
         get() = EventGathererImpl(
@@ -2009,11 +2017,11 @@ public class UserSessionScope internal constructor(
                 MessageMultipartEditHandlerImpl(messageEditPersistence, NotificationEventsManagerImpl),
                 lastReadContentHandler,
                 ClearConversationContentHandlerImpl(
-                    conversationRepository,
+                    conversationLifecycleEventRepository,
                     userId,
                     isMessageSentInSelfConversation,
-                    conversations.clearConversationAssetsLocally,
-                    deleteConversationUseCase,
+                    ClearConversationAssetsLocallyUseCaseAdapter(conversations.clearConversationAssetsLocally),
+                    DeleteConversationUseCaseAdapter(deleteConversationUseCase),
                     currentPersistenceEventHookNotifier,
                 ),
                 DeleteForMeHandlerImpl(
@@ -2023,11 +2031,11 @@ public class UserSessionScope internal constructor(
                     userId,
                 ),
                 DeleteMessageHandlerImpl(
-                    messageRepository,
-                    assetRepository,
-                    NotificationEventsManagerImpl,
-                    userId,
-                    currentPersistenceEventHookNotifier
+                    messageDeletionPersistence = messageDeletionPersistence,
+                    assetCleanup = deleteMessageAssetCleanup,
+                    deleteMessageNotificationScheduler = NotificationEventsManagerImpl,
+                    selfUserId = userId,
+                    persistenceEventHookNotifier = currentPersistenceEventHookNotifier,
                 ),
                 messageEncoder,
                 receiptMessageHandler,

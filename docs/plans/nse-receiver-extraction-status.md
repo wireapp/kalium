@@ -3,6 +3,89 @@
 This note records the compile-time closure inspected while implementing the receiver-extraction milestone described by
 `nse-safe-multi-process-event-processing.md`. It supplements that plan without changing its design or the NSE runtime scope.
 
+## Completed clear-conversation-content application-message slice
+
+Inspection of `ClearConversationContentHandlerImpl`, `ConversationRepository.clearContent`, `ConversationDAO`,
+`ClearConversationAssetsLocallyUseCase`, `DeleteConversationUseCase`, persistence hooks, `ApplicationMessageHandler`,
+`UserSessionScope`, and their tests produced this completed behavior-preserving extraction:
+
+1. `ClearConversationContentHandler` and its implementation now live in `:domain:messaging:receiving`.
+   `ApplicationMessageHandler` and `NewMessageEventHandler` remain in `:logic`, and the existing `MessageContent.Cleared`
+   routing expression is unchanged.
+2. Incoming content clearing now uses `ConversationLifecycleEventRepository.clearContent`, backed by the existing
+   `ConversationDAO.clearContent` operation and `wrapStorageRequest`. `ConversationDataSource.clearContent` delegates to
+   the same lifecycle-repository instance composed in `UserSessionScope`, so the extraction adds neither duplicate DAO
+   logic nor an NSE-specific repository.
+3. The extracted handler reuses `IsMessageSentInSelfConversationUseCase` unchanged. It still compares the signaling
+   sender with the self user, verifies the same full signaling envelope, and returns without effects when those two
+   booleans differ.
+4. Authorized effects retain the exact payload-ID sequence: clear database content, clear local conversation assets,
+   notify `onConversationCleared` with the payload conversation and self user, then optionally delete the whole
+   conversation. Whole-conversation deletion still requires both `needToRemoveLocally` and a self sender.
+5. Returned clear-content and asset-cleanup failures remain ignored so later work continues; the optional deletion result
+   is likewise ignored. Exceptions and cancellation remain uncaught and stop all later operations at each dependency.
+6. Filesystem and asset behavior remains in `:logic` behind the named `ClearConversationAssetsLocally` port. The
+   main-app `ClearConversationAssetsLocallyUseCaseAdapter` delegates directly to the existing
+   `ClearConversationAssetsLocallyUseCase`; `AssetRepository`, `MessageRepository`, `AssetDataSource`, and
+   `KaliumFileSystem` did not move.
+7. MLS-aware deletion remains in `:logic` behind the named `WholeConversationDeletion` port. The main-app
+   `DeleteConversationUseCaseAdapter` forwards the same `CryptoTransactionContext` and conversation ID to the existing
+   `DeleteConversationUseCase`; its Proteus local deletion, MLS local deletion plus CoreCrypto wipe, persistence hook,
+   and proposal-timer behavior did not move or change.
+8. The moved handler suite covers the full sender/self-conversation authorization matrix, exact arguments and order,
+   optional deletion, returned `Left` continuation, exact hook identity, and exception/cancellation short-circuiting at
+   every dependency. Focused lifecycle-persistence, broad-facade delegation, adapter-transparency, and exact application
+   routing tests cover the new boundaries.
+
+## Completed delete-message application-message slice
+
+Inspection of `DeleteMessageHandlerImpl`, `MessageRepository`, `MessageDeletionPersistence`, `MessageDAO`,
+`AssetRepository`, `AssetDAO`, `KaliumFileSystem`, `NotificationEventsManager`, persistence hooks, `UserSessionScope`, and
+their tests produced this completed behavior-preserving extraction:
+
+1. `DeleteMessageHandler` now lives in `:domain:messaging:receiving` and depends on focused incoming message-deletion,
+   ID-based delete-notification, named asset-cleanup, and persistence-hook contracts. `ApplicationMessageHandler` and
+   `NewMessageEventHandler` remain in `:logic` and route the same delete branch synchronously.
+2. `IncomingMessageDeletionPersistence` loads only the stored message ID/conversation, original sender,
+   regular-message ephemeral state, and optional remote asset ID directly from `MessageDAO`. The existing
+   `MessageDeletionPersistence` hard-delete path remains the shared base contract, while the incoming extension adds the
+   same DAO-backed tombstone operation; broad `MessageRepository` and the full app `MessageMapper` remain in `:logic`.
+3. Filesystem infrastructure remains in `:logic`. The lower-level handler owns only the named
+   `DeleteMessageAssetCleanup` port; the main-app `AssetRepositoryDeleteMessageAssetCleanup` adapter delegates directly
+   to the existing `AssetRepository.deleteAssetLocally`. `AssetDataSource`, `AssetDAO`, and `KaliumFileSystem` production
+   behavior are unchanged, including lookup/file/row ordering, wrapped failures, escaping exceptions, and cancellation.
+4. Deletion rules remain exact: a self-authored ephemeral original can be hard-deleted without verifying the delete
+   sender; otherwise the delete sender must be the original sender or self; verified ephemeral messages are hard-deleted;
+   and verified non-ephemeral messages notify before being marked deleted.
+5. The current unintuitive side-effect behavior remains characterized, not redesigned: asset cleanup runs
+   after a successful lookup even for an unverified delete sender; returned hard-delete, tombstone, and asset-cleanup
+   failures are ignored; and the persistence hook runs after lookup `Left` and returned mutation failures but is skipped
+   when an exception or cancellation escapes before it.
+6. Delete-notification scheduling uses a narrow stored-conversation/message-ID contract backed by the same
+   `NotificationEventsManagerImpl`; the existing `Message`-taking API delegates to the same ID-based mapping and remains
+   available to other callers. Hook payloads still use the incoming payload conversation/message IDs and self user.
+7. `UserSessionScope` composes one focused message-deletion persistence shared with `MessageDataSource`, plus one
+   session-scoped main-app asset-cleanup adapter around the existing `AssetRepository`. Handler, persistence, direct asset
+   infrastructure, adapter, broad message delegation, mapper, and application-routing tests cover the preserved branches,
+   ordering, failures, and cancellation.
+
+At the later durable-outbox transition, both main-app and NSE handler composition will replace the direct cleanup adapter
+with the same durable enqueue implementation. The main-app effect executor will then consume that action through the
+existing direct `AssetRepository` filesystem cleanup path; neither process will silently omit cleanup or use a no-op.
+
+Deferred design checkpoint for the durable-outbox milestone:
+
+- Sender verification plus the authoritative message hard-delete or tombstone remain synchronous. An event must not be
+  marked processed while that database mutation is merely queued for the main app.
+- When side effects are deferred, the authoritative mutation and deduplicated outbox rows are committed together before
+  processed marking. The outbox stores source event ID, effect type, stable payload/target, state, lease, acknowledgement,
+  and deduplication data; the existing `PendingActions` table is not extended for this purpose.
+- Capture the remote asset ID and every other required target before a destructive message delete. The main app later
+  claims slow/app-only work such as filesystem and asset-row cleanup. Notification effects may be claimed by the bounded
+  NSE request when required for its result, with main-app recovery through the same claim/acknowledgement protocol.
+- Classify persistence hooks individually and defer only non-authoritative work. This later change is intentional new
+  behavior with its own crash, retry, ordering, and cross-process tests; it is not part of the extraction slice.
+
 ## Current text/multipart-edit application-message slice plan
 
 Inspection of `MessageTextEditHandlerImpl`, `MessageMultipartEditHandlerImpl`, `MessageRepository`/`MessageDataSource`,
@@ -396,6 +479,32 @@ The following concrete receivers now live in `:domain:messaging:receiving`, and 
   - `UserSessionScope` supplies one persistence instance to both handlers and `MessageDataSource`, whose still-used broad
     outgoing text/multipart edit methods delegate to that same implementation; broad message lookup and unrelated
     repository APIs remain in `:logic`.
+- The delete-message application-message leaf
+  - `DeleteMessageHandlerImpl`, retaining lookup-first behavior, stored-sender verification, the self-authored ephemeral
+    exception, hard-delete versus notification-before-tombstone selection, post-lookup asset cleanup even for an
+    unverified sender, ignored returned failures, and incoming-ID hook payloads in the original order;
+  - the focused DAO-backed `IncomingMessageDeletionPersistence` maps only stored IDs, sender, regular-message ephemeral
+    state, and optional remote asset ID, while reusing the existing `MessageDeletionPersistence` hard-delete path and
+    adding the same wrapped tombstone operation;
+  - the named `DeleteMessageAssetCleanup` port keeps asset-cleanup policy below `:logic`, while the session-scoped
+    main-app adapter delegates directly to the unchanged `AssetRepository.deleteAssetLocally` implementation; direct
+    `AssetDAO`/`KaliumFileSystem` infrastructure remains app-owned and retains its characterized failure behavior;
+  - `MessageDataSource` delegates hard-delete and tombstone operations to the same focused persistence supplied to the
+    handler, and both delete-notification entry points use the same ID-based mapper/manager implementation;
+  - `ApplicationMessageHandlerImpl` delegates only its existing `DeleteMessage` branch and remains in `:logic` with
+    `NewMessageEventHandler`; no asynchronous execution, outbox, pending action, retry, or NSE-specific adapter was added.
+- The clear-conversation-content application-message leaf
+  - `ClearConversationContentHandlerImpl`, retaining full signaling-envelope self-conversation verification, the exact
+    sender/verifier authorization equality check, payload conversation IDs, clear/assets/hook/delete order, optional
+    self-sender deletion rule, ignored returned failures, and uncaught exception/cancellation short-circuiting;
+  - `ConversationLifecycleEventRepositoryImpl` now owns the existing wrapped `ConversationDAO.clearContent` operation,
+    and `ConversationDataSource` delegates its overlapping broad API to the same instance composed in
+    `UserSessionScope`;
+  - the named `ClearConversationAssetsLocally` and `WholeConversationDeletion` ports keep policy visible below `:logic`,
+    while thin main-app adapters delegate to the unchanged filesystem/asset cleanup and MLS-aware deletion use cases;
+  - `AssetRepository`, `MessageRepository`, `AssetDataSource`, `KaliumFileSystem`, `ConversationRepository`,
+    `MLSConversationRepository`, `DeleteConversationUseCase`, `CryptoTransactionContext` wrapping, CoreCrypto wiping,
+    proposal timers, and both application-message facades remain in `:logic`.
 
 Supporting ID, folder, feature-config, self-deletion, and supported-protocol mappers were moved to `:data:data-mappers`.
 The outgoing message-entity mapper and the link-preview, mention, attachment, encryption, and conversation-protocol
@@ -453,10 +562,10 @@ The complete `NewMessageEventHandler` branch additionally closes over:
 
 - Proteus and MLS unpacking/failure handling (`ProteusMessageUnpacker`, `ProteusMessageFailureHandler`,
   `MLSMessageUnpacker`, `MLSMessageFailureHandler`, `MessageUnpackResult`);
-- application-message routing (`ApplicationMessageHandler`) and its asset, call, delete, and clear-content handlers. Its
+- application-message routing (`ApplicationMessageHandler`) and its remaining app-owned asset and call handlers. Its
   button, data-transfer, receipt, reaction, delete-for-me, last-read, composite-edit, availability, client-action,
-  in-call-emoji, text-edit, and multipart-edit leaves are reusable below `:logic`, but the facade stays in `:logic` until
-  the remaining branches move;
+  in-call-emoji, text-edit, multipart-edit, delete-message, and clear-content leaves are reusable below `:logic`, but the
+  facade stays in `:logic` until the remaining branches move;
 - MLS recovery/key-package work (`RefillKeyPackagesUseCase`, `PendingProposalScheduler`, `StaleEpochVerifier`,
   `ResetMLSConversationUseCase`, `JoinExistingMLSConversationUseCase`);
 - certificate and legal-hold checks (`CertificateRevocationListRepository`, `RevocationListChecker`,
@@ -469,16 +578,20 @@ lower-level implementations first, then move handlers from the leaves toward `Ne
 receiver class, defining NSE-only adapters, or copying the repositories would leave an incomplete graph and is therefore
 intentionally not done here.
 
-Availability, ClientAction, InCallEmoji, TextEdited, and MultipartEdited, including their complete direct persistence or
-process-local stream closures, are now extracted. Delete handlers still require message lookup/deletion plus
-notification/asset side effects, while clear-content retains self-conversation, notification, asset, and
-conversation-deletion dependencies. The lifecycle handlers remain blocked on the remote-fetch, MLS, legal-hold, call,
-notification, user, and system-message closures above. The recommended next meaningful application-message slice is the
-complete `DeleteMessageHandler` closure: introduce focused lower-level message lookup/deletion and carry its asset,
-notification, self-user, and persistence-hook behavior together so ordering and failure semantics remain testable. A
-standalone `Ignored` move is intentionally not recommended as a milestone merely because its log-only implementation is
-small. The extracted in-call reaction stream remains process-local and ephemeral, so any future NSE cross-process or
-durability design stays outside this leaf.
+Availability, ClientAction, InCallEmoji, TextEdited, MultipartEdited, DeleteMessage, and ClearConversationContent,
+including their complete direct persistence and named app-owned side-effect boundaries, are now extracted. The direct
+filesystem executor and MLS/CoreCrypto deletion implementation intentionally remain app infrastructure. The lifecycle
+handlers remain blocked on the remote-fetch, MLS, legal-hold, call, notification, user, and system-message closures
+above.
+
+The next meaningful application-message slice is `AssetMessageHandler`. It is now the remaining regular-message leaf
+with a tractable local boundary, but it first needs focused replacements for broad `MessageRepository.getMessageById`
+mapping and `UserConfigRepository.isFileSharingEnabled`, while retaining the existing MIME validation and
+`PersistMessageUseCase` behavior. `CallingMessageHandler` is a later, deeper slice because its current closure includes
+`CallManager`, conversation-member observation, client identity, remote-mute policy, mute execution, and moderation
+state. A standalone `Ignored` move is still not a meaningful milestone, and `History` remains existing unsupported
+behavior rather than an extraction target. The extracted in-call reaction stream remains process-local and ephemeral,
+so any future NSE cross-process or durability design stays outside this leaf.
 `ConversationEventReceiverImpl` remains blocked until those lifecycle handlers plus `NewMessageEventHandler`, both
 unpackers/failure handlers, MLS recovery, certificate/legal-hold checks, and pending-side-effect flushing are all reusable
 below `:logic`.

@@ -195,6 +195,82 @@ class ApplicationMessageHandlerTest {
     }
 
     @Test
+    fun givenClearedMessage_whenHandling_thenExistingClearLeafReceivesExactTransactionEnvelopeAndPayloadOnce() = runTest {
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val payloadConversationId = messageEvent.conversationId.copy(value = "payload-conversation-id")
+        val cleared = MessageContent.Cleared(
+            conversationId = payloadConversationId,
+            time = messageEvent.messageInstant,
+            needToRemoveLocally = true,
+        )
+        val protoContent = ProtoContent.Readable(
+            messageUid = "cleared-signaling-message-id",
+            messageContent = cleared,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val expectedSignaling = Message.Signaling(
+            id = protoContent.messageUid,
+            content = cleared,
+            conversationId = messageEvent.conversationId,
+            date = messageEvent.messageInstant,
+            senderUserId = messageEvent.senderUserId,
+            senderClientId = messageEvent.senderClientId,
+            status = Message.Status.Sent,
+            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            expirationData = null,
+        )
+        val (arrangement, messageHandler) = Arrangement().arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clearConversationContentHandler.handle(
+                matches { it === arrangement.transactionContext },
+                matches { it == expectedSignaling },
+                matches { it == cleared },
+            )
+        }
+    }
+
+    @Test
+    fun givenDeleteMessage_whenHandling_thenExistingDeleteLeafReceivesExactPayloadAndEnvelopeIds() = runTest {
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val deleteMessage = MessageContent.DeleteMessage("deleted-message-id")
+        val protoContent = ProtoContent.Readable(
+            messageUid = "delete-signaling-message-id",
+            messageContent = deleteMessage,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val (arrangement, messageHandler) = Arrangement().arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.deleteMessageHandler(
+                matches { it == deleteMessage },
+                matches { it == messageEvent.conversationId },
+                matches { it == messageEvent.senderUserId },
+            )
+        }
+    }
+
+    @Test
     fun givenValidNewImageMessageEvent_whenHandling_shouldCallTheAssetMessageHandler() = runTest {
         val messageId = "messageId"
         val validImageContent = MessageContent.Asset(

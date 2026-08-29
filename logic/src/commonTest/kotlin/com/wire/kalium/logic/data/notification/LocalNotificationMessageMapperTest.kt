@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.notification
 
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -33,6 +34,16 @@ class LocalNotificationMessageMapperTest {
     @BeforeTest
     fun setup() {
         notificationMapper = LocalNotificationMessageMapperImpl()
+    }
+
+    @Test
+    fun givenMessageAndItsIds_whenMappingDeleteNotification_thenBothPathsProduceTheSameNotification() {
+        val message = TestMessage.TEXT_MESSAGE
+
+        assertEquals(
+            notificationMapper.fromMessageToMessageDeletedLocalNotification(message),
+            notificationMapper.toMessageDeletedLocalNotification(message.conversationId, message.id),
+        )
     }
 
     @Test

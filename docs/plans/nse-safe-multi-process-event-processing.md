@@ -337,12 +337,24 @@ Work:
 
 - Add a dedicated outbox table rather than extending `PendingActions`, whose current key and payload
   model cannot express event provenance, leases, acknowledgement, or notification data.
+- Separate authoritative receiver mutations from follow-up effects. Sender verification and the
+  message hard-delete or tombstone remain synchronous event-processing work; asset-file cleanup,
+  notification updates, and any hook that is classified as non-authoritative may become outbox work.
+- For every effect moved out of the receiver, commit the authoritative database mutation and its
+  outbox row in one targeted database transaction before the event may be marked processed. This
+  does not change the crypto/event transaction granularity reserved for Milestone 6.
+- Capture every value needed by a deferred effect before destructive mutation. In particular, write
+  the asset ID and stable message/conversation target into the outbox before hard-deleting a message
+  that may be their only source.
 - Store source event ID, effect type, stable target/payload, creation time, state, claim owner,
   claim expiry, and deduplication key.
 - Enforce uniqueness by source event, effect type, and deduplication key.
 - Add transactional claim, acknowledge, release, and expired-claim recovery operations.
 - Change receiver notification scheduling to persist effects. Existing `MutableSharedFlow` APIs may
   remain as same-process adapters but are no longer authoritative.
+- Add a main-app executor for slow or app-only effects such as local asset cleanup. Notification
+  effects may be claimed by the bounded NSE request when required for its response, with the main
+  app retaining recovery/cleanup ownership; consumers must use the same claim/acknowledgement model.
 - Persist network/long-running follow-up intents required by the agreed first NSE slice when they are
   needed for retry correctness.
 
@@ -351,6 +363,10 @@ Exit gate:
 - retrying an event creates one logical effect;
 - two claimers cannot own the same effect;
 - crashes before acknowledgement are recoverable;
+- a processed delete event always has both its authoritative message mutation and every required
+  deferred-effect row durably committed;
+- slow asset cleanup does not extend event or crypto lock duration, and losing the original message
+  row does not lose the asset-cleanup target;
 - edit, delete, seen, and the agreed first-slice notification types survive process termination;
 - existing main-app notification behavior remains compatible.
 

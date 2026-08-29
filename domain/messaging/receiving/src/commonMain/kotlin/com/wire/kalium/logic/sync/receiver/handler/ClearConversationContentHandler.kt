@@ -18,42 +18,58 @@
 
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
-import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepository
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface ClearConversationContentHandler {
-    suspend fun handle(
+@InternalKaliumApi
+public interface ClearConversationContentHandler {
+    public suspend fun handle(
         transactionContext: CryptoTransactionContext,
         message: Message.Signaling,
-        messageContent: MessageContent.Cleared
+        messageContent: MessageContent.Cleared,
     )
 }
 
-internal class ClearConversationContentHandlerImpl(
-    private val conversationRepository: ConversationRepository,
+@InternalKaliumApi
+public fun interface ClearConversationAssetsLocally {
+    public suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
+}
+
+@InternalKaliumApi
+public fun interface WholeConversationDeletion {
+    public suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+    ): Either<CoreFailure, Unit>
+}
+
+@InternalKaliumApi
+public class ClearConversationContentHandlerImpl public constructor(
+    private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
-    private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase,
-    private val deleteConversation: DeleteConversationUseCase,
+    private val clearLocalConversationAssets: ClearConversationAssetsLocally,
+    private val deleteConversation: WholeConversationDeletion,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
 ) : ClearConversationContentHandler {
 
     override suspend fun handle(
         transactionContext: CryptoTransactionContext,
         message: Message.Signaling,
-        messageContent: MessageContent.Cleared
+        messageContent: MessageContent.Cleared,
     ) {
         val isSelfSender = message.senderUserId == selfUserId
-        val isMessageInSelfConversation: Boolean = isMessageSentInSelfConversation(message)
+        val isMessageInSelfConversation = isMessageSentInSelfConversation(message)
 
         if (isSelfSender != isMessageInSelfConversation) return
 
@@ -65,11 +81,11 @@ internal class ClearConversationContentHandlerImpl(
     }
 
     private suspend fun clearConversation(conversationId: ConversationId) {
-        conversationRepository.clearContent(conversationId)
+        conversationLifecycleEventRepository.clearContent(conversationId)
         clearLocalConversationAssets(conversationId)
         persistenceEventHookNotifier.onConversationCleared(
             ConversationClearEventData(conversationId),
-            selfUserId
+            selfUserId,
         )
     }
 }

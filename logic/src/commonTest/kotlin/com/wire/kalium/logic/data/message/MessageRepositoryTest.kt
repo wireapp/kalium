@@ -102,6 +102,20 @@ class MessageRepositoryTest {
     }
 
     @Test
+    fun givenFocusedTombstoneResult_whenMarkingDeleted_thenRepositoryDelegatesItUnchanged() = runTest {
+        val expected = Either.Left(StorageFailure.DataNotFound)
+        val (arrangement, repository) = Arrangement().arrange()
+        everySuspend {
+            arrangement.messageDeletionPersistence.markMessageAsDeleted(eq(TEST_MESSAGE_ID), eq(TEST_CONVERSATION_ID))
+        }.returns(expected)
+
+        assertEquals(expected, repository.markMessageAsDeleted(TEST_MESSAGE_ID, TEST_CONVERSATION_ID))
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageDeletionPersistence.markMessageAsDeleted(eq(TEST_MESSAGE_ID), eq(TEST_CONVERSATION_ID))
+        }
+    }
+
+    @Test
     fun givenFocusedTextEditResult_whenUpdatingText_thenRepositoryDelegatesItUnchanged() = runTest {
         val content = MessageContent.TextEdited(TEST_MESSAGE_ID, "edited text")
         val expected = Either.Left(StorageFailure.DataNotFound)
@@ -745,7 +759,7 @@ class MessageRepositoryTest {
     }
 
     private class Arrangement {
-        val messageDeletionPersistence = mock<MessageDeletionPersistence>()
+        val messageDeletionPersistence = mock<IncomingMessageDeletionPersistence>()
         val messageEditPersistence = mock<MessageEditPersistence>()
         val messageApi = mock<MessageApi>(mode = MockMode.autoUnit)
         val mlsMessageApi = mock<MLSMessageApi>(mode = MockMode.autoUnit)

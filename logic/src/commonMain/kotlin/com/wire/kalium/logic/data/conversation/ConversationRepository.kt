@@ -608,6 +608,7 @@ internal class ConversationDataSource internal constructor(
             members.map(memberMapper::fromDaoModel)
         }
 
+    // TODO: only called from tests can be removed
     override suspend fun getConversationMemberRole(
         conversationId: ConversationId,
         userId: UserId
@@ -637,11 +638,13 @@ internal class ConversationDataSource internal constructor(
         memberDAO.getConversationMembers(conversationId.toDao()).map { it.toModel() }
     }
 
+    // TODO: only called from tests can be removed
     override suspend fun persistMembers(
         members: List<Conversation.Member>,
         conversationID: ConversationId
     ): Either<CoreFailure, Unit> = conversationLifecycleEventRepository.persistMembers(members, conversationID)
 
+    // TODO: only called from tests can be removed
     override suspend fun updateMemberFromEvent(member: Conversation.Member, conversationID: ConversationId): Either<CoreFailure, Unit> =
         conversationLifecycleEventRepository.updateMemberFromEvent(member, conversationID)
 
@@ -851,9 +854,7 @@ internal class ConversationDataSource internal constructor(
     ): Either<CoreFailure, Unit> = conversationLifecycleEventRepository.setConversationDeletedLocally(conversationId, deletedLocally)
 
     override suspend fun clearContent(conversationId: ConversationId): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            conversationDAO.clearContent(conversationId.toDao())
-        }
+        conversationLifecycleEventRepository.clearContent(conversationId)
 
     override fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>> =
         memberDAO.observeIsUserMember(conversationId.toDao(), userId.toDao())

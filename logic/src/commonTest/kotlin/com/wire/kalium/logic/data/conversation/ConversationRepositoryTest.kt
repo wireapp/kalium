@@ -41,6 +41,8 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepository
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepositoryImpl
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
@@ -121,6 +123,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.test.assertFailsWith
+import kotlin.test.assertSame
 
 @Suppress("LargeClass")
 class ConversationRepositoryTest {
@@ -460,6 +465,47 @@ class ConversationRepositoryTest {
                 conversationDAO.setConversationDeletedLocally(eq(conversationId.toDao()), eq(true))
             }
         }
+    }
+
+    @Test
+    fun givenLifecyclePersistenceResult_whenClearingContent_thenConversationDataSourceReturnsItUnchanged() = runTest {
+        val expected = Either.Left(StorageFailure.DataNotFound)
+        val lifecyclePersistence = mock<ConversationLifecycleEventRepository>()
+        everySuspend { lifecyclePersistence.clearContent(eq(CONVERSATION_ID)) } returns expected
+        val (_, conversationRepository) = Arrangement(lifecyclePersistence).arrange()
+
+        assertEquals(expected, conversationRepository.clearContent(CONVERSATION_ID))
+        verifySuspend(VerifyMode.exactly(1)) {
+            lifecyclePersistence.clearContent(eq(CONVERSATION_ID))
+        }
+    }
+
+    @Test
+    fun givenLifecyclePersistenceException_whenClearingContent_thenConversationDataSourceDoesNotTransformIt() = runTest {
+        val expected = IllegalStateException("clear content failed")
+        val lifecyclePersistence = mock<ConversationLifecycleEventRepository>()
+        everySuspend { lifecyclePersistence.clearContent(eq(CONVERSATION_ID)) } throws expected
+        val (_, conversationRepository) = Arrangement(lifecyclePersistence).arrange()
+
+        val actual = assertFailsWith<IllegalStateException> {
+            conversationRepository.clearContent(CONVERSATION_ID)
+        }
+
+        assertSame(expected, actual)
+    }
+
+    @Test
+    fun givenLifecyclePersistenceCancellation_whenClearingContent_thenConversationDataSourceDoesNotTransformIt() = runTest {
+        val expected = CancellationException("clear content cancelled")
+        val lifecyclePersistence = mock<ConversationLifecycleEventRepository>()
+        everySuspend { lifecyclePersistence.clearContent(eq(CONVERSATION_ID)) } throws expected
+        val (_, conversationRepository) = Arrangement(lifecyclePersistence).arrange()
+
+        val actual = assertFailsWith<CancellationException> {
+            conversationRepository.clearContent(CONVERSATION_ID)
+        }
+
+        assertSame(expected, actual)
     }
 
     @Test
@@ -1196,7 +1242,9 @@ class ConversationRepositoryTest {
         assertTrue { result.isRight() }
     }
 
-    private class Arrangement : MemberDAOArrangement by MemberDAOArrangementImpl() {
+    private class Arrangement(
+        private val conversationLifecycleEventRepositoryOverride: ConversationLifecycleEventRepository? = null,
+    ) : MemberDAOArrangement by MemberDAOArrangementImpl() {
 
         val userRepository: UserRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         val selfTeamIdProvider: SelfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
@@ -1208,6 +1256,8 @@ class ConversationRepositoryTest {
         private val messageDraftDAO = mock<MessageDraftDAO>(mode = MockMode.autoUnit)
         val conversationMetaDataDAO: ConversationMetaDataDAO = mock<ConversationMetaDataDAO>(mode = MockMode.autoUnit)
         val metadataDAO: MetadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
+        private val conversationLifecycleEventRepository = conversationLifecycleEventRepositoryOverride
+            ?: ConversationLifecycleEventRepositoryImpl(conversationDAO, memberDAO)
 
         val conversationRepository =
             ConversationDataSource(
@@ -1220,6 +1270,7 @@ class ConversationRepositoryTest {
                 clientDao,
                 clientApi,
                 conversationMetaDataDAO,
+                conversationLifecycleEventRepository = conversationLifecycleEventRepository,
             )
 
         suspend fun withSelfUserFlow(selfUserFlow: Flow<SelfUser>) = apply {
