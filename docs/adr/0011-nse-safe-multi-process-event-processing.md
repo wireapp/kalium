@@ -102,6 +102,38 @@ supplies the existing `LegalHoldHandler`, `StaleEpochVerifier`, and a once-per-h
 actions. Callback results that were ignored remain ignored, and ordering, logging, persistence,
 failure classification, exception, and cancellation behavior remain unchanged.
 
+The small member-change and MLS-reset conversation-state handlers are also owned by
+`:domain:messaging:receiving`. Member change retains the focused lifecycle repository, message
+persistence, and self user ID directly; fetch-if-unknown crosses as only
+`suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>`. Main-app
+composition captures one exact existing fetch use-case instance per handler construction and keeps
+its default `ConversationSyncReason.Other` call. MLS reset consumes `MLSResetEventRepository` plus
+a focused call-termination callback; the broad logic-owned `MLSConversationRepository` extends the
+repository contract, and composition supplies the same observable repository wrapper and captured
+`EndCallOnMLSResetUseCase` used before. Successful leave operations retain the crypto-state hook and
+existing delegate behavior. Role-read/fetch/update/persist and call-termination/leave/check/
+conditional-epoch/update ordering, ignored returned failures, exact promotion and group state data,
+logs, exception propagation, and cancellation propagation remain unchanged.
+
+Protocol-update event handling is likewise owned by `:domain:messaging:receiving` under its existing
+package. It retains `SystemMessageInserter` directly and accepts only focused protocol-update and
+established-call suspend functions from main-app composition. `UserSessionScope` captures one exact
+update use-case instance, call-repository object, and system-message-inserter instance per handler
+construction. The update action retains `localOnly = true`; the call action retains
+`establishedCallsFlow().first().isNotEmpty()`. Update, protocol-message insertion, call observation,
+and optional during-call-message order; the non-`MIXED` call observation; deleted-conversation
+classification; logging; returned failures; exceptions; and cancellation remain unchanged.
+
+MLS-welcome event handling is likewise owned by `:domain:messaging:receiving` under its existing
+package. It consumes a focused `MLSWelcomeEventRepository`, which extends the shared protocol getter
+and exposes only group-state update and conversation-details observation, plus focused callbacks for
+one-to-one resolution, key-package refill, CRL checking/persistence, external-commit rejoin, and
+fetch-if-unknown. The logic-owned `ConversationRepository` extends the focused contract, and
+main-app composition passes the same repository object while capturing the remaining exact objects
+once in their original evaluation order. MLS-null handling, fetch/process/CRL/establish/resolve
+order, first-flow observation, orphan recovery, outcome logging, returned failures, exceptions, and
+cancellation remain unchanged.
+
 This boundary is not an NSE runtime implementation. The broad legal-hold, stale-epoch, reset/rejoin,
 confirmation-delivery, self-deletion, and pending-side-effect implementations remain app-owned and
 need explicit NSE ownership/adapters or a durable action/outbox design. Subconversation group
@@ -110,8 +142,9 @@ state before a second process can use it. Pending-proposal work still needs expl
 durable outbox, and a main-app executor; the extension must not construct the current scheduler
 implementation or a no-op substitute. Cross-process CoreCrypto locking, NSE facade wiring, and the
 broad protobuf encoder/mapper plus `AssetMapper` graph remain separate work. Conversation lifecycle
-handlers remain in `:logic` and prevent the complete conversation receiver from moving below that
-boundary.
+handlers for new conversation, deletion, member join, and member leave remain in `:logic`;
+`ConversationEventReceiverImpl` is also still logic-owned and cannot yet move below that boundary.
+`UserEventReceiverImpl` is outside this conversation-receiver extraction goal.
 
 ### Rejected alternatives
 

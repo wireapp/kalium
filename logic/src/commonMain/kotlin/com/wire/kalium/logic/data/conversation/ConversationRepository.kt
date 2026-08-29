@@ -45,7 +45,6 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
-import com.wire.kalium.logic.data.mls.ConversationProtocolGetter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
@@ -96,13 +95,13 @@ internal data class ConversationMemberCounts(
 )
 
 @Suppress("TooManyFunctions")
-internal interface ConversationRepository : FederationConversationRepository, ChannelAddPermissionRepository, ConversationProtocolGetter {
+internal interface ConversationRepository : FederationConversationRepository, ChannelAddPermissionRepository, MLSWelcomeEventRepository {
     val extensions: ConversationRepositoryExtensions
 
     // region Get/Observe by id
 
     suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
-    suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
+    override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationLastReadDate(conversationId: ConversationId): Either<StorageFailure, Instant>
     suspend fun getNonDeletedConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
@@ -212,7 +211,7 @@ internal interface ConversationRepository : FederationConversationRepository, Ch
         groupState: GroupState
     ): Either<StorageFailure, List<Conversation>>
 
-    suspend fun updateConversationGroupState(groupID: GroupID, groupState: GroupState): Either<StorageFailure, Unit>
+    override suspend fun updateConversationGroupState(groupID: GroupID, groupState: GroupState): Either<StorageFailure, Unit>
     suspend fun updateConversationGroupStateByConversationId(
         conversationId: ConversationId,
         groupState: GroupState

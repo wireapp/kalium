@@ -34,37 +34,38 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSWelcomeEventRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toCrypto
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
-import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationNotFound
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.first
 import kotlin.io.encoding.Base64
 
-internal interface MLSWelcomeEventHandler {
-    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
+@InternalKaliumApi
+public interface MLSWelcomeEventHandler {
+    public suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.MLSWelcome
+    ): Either<CoreFailure, Unit>
 }
 
+@InternalKaliumApi
 @Suppress("LongParameterList", "LongMethod")
-internal class MLSWelcomeEventHandlerImpl(
-    private val conversationRepository: ConversationRepository,
-    private val oneOnOneResolver: OneOnOneResolver,
-    private val refillKeyPackages: RefillKeyPackagesUseCase,
-    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
-    private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase
+public class MLSWelcomeEventHandlerImpl public constructor(
+    private val conversationRepository: MLSWelcomeEventRepository,
+    private val resolveOneOnOne: suspend (CryptoTransactionContext, OtherUser, Boolean) -> Either<CoreFailure, ConversationId>,
+    private val refillKeyPackages: suspend (MlsCoreCryptoContext) -> Either<CoreFailure, Unit>,
+    private val joinExistingMLSConversation: suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>,
+    private val fetchConversationIfUnknown: suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>,
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(
         transactionContext: CryptoTransactionContext,
@@ -124,8 +125,8 @@ internal class MLSWelcomeEventHandlerImpl(
                                         "[conversationId=${event.conversationId.toLogString()}]"
                             )
                             joinExistingMLSConversation(
-                                transactionContext = transactionContext,
-                                conversationId = event.conversationId,
+                                transactionContext,
+                                event.conversationId,
                             ).onSuccess {
                                 welcomeOutcome = OUTCOME_RECOVERED_VIA_EXTERNAL_COMMIT
                             }.onFailure { joinFailure ->
@@ -152,13 +153,13 @@ internal class MLSWelcomeEventHandlerImpl(
                     )
                 } else transactionContext.wrapInMLSContext { mlsContext ->
                     val didSucceedRefillingKeyPackages = when (val refillResult = refillKeyPackages(mlsContext)) {
-                        is RefillKeyPackagesResult.Failure -> {
-                            val exception = (refillResult.failure as? CoreFailure.Unknown)?.rootCause
-                            kaliumLogger.w("$TAG: Failed to refill key packages; Failure: ${refillResult.failure}", exception)
+                        is Either.Left -> {
+                            val exception = (refillResult.value as? CoreFailure.Unknown)?.rootCause
+                            kaliumLogger.w("$TAG: Failed to refill key packages; Failure: ${refillResult.value}", exception)
                             false
                         }
 
-                        RefillKeyPackagesResult.Success -> {
+                        is Either.Right -> {
                             true
                         }
                     }
@@ -198,17 +199,17 @@ internal class MLSWelcomeEventHandlerImpl(
             .first()
             .flatMap {
                 if (it is ConversationDetails.OneOne) {
-                    oneOnOneResolver.resolveOneOnOneConversationWithUser(
-                        transactionContext = transactionContext,
-                        user = it.otherUser,
-                        invalidateCurrentKnownProtocols = true
+                    resolveOneOnOne(
+                        transactionContext,
+                        it.otherUser,
+                        true
                     ).map { Unit }
                 } else {
                     Either.Right(Unit)
                 }
             }
 
-    companion object {
+    private companion object {
         private const val TAG = "[MLSWelcomeEventHandler]"
 
         // Values for the structured "welcomeOutcome" field on the event log. Kept short and
@@ -220,7 +221,6 @@ internal class MLSWelcomeEventHandlerImpl(
         private const val OUTCOME_EXTERNAL_COMMIT_REJOIN_FAILED = "external-commit-rejoin-failed"
         private const val OUTCOME_FAILED = "failed"
     }
-
 }
 
 private fun CoreFailure.isConversationNotFoundFailure(): Boolean {
@@ -228,3 +228,9 @@ private fun CoreFailure.isConversationNotFoundFailure(): Boolean {
         ?.kaliumException as? KaliumException.InvalidRequestError
     return invalidRequest?.isConversationNotFound() == true
 }
+
+private suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
+    block: suspend (mlsContext: MlsCoreCryptoContext) -> Either<CoreFailure, T>
+): Either<CoreFailure, T> = mls?.let {
+    block(it)
+} ?: Either.Left(MLSFailure.Disabled)

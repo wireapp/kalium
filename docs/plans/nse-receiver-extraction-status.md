@@ -655,6 +655,29 @@ The following concrete receivers now live in `:domain:messaging:receiving`, and 
   - `ConversationDataSource` delegates every overlapping local operation to that same implementation, while the
     new-conversation, join, leave, and member-change handlers use the focused repository directly for their extracted
     local mutations.
+- The grouped small conversation-state lifecycle slice
+  - `MemberChangeEventHandlerImpl`, retaining muted/archive local writes and success logs, unsupported-variant skipping,
+    role-read-before-fetch behavior, fetch logging, update-after-fetch-failure behavior, update-controlled promotion,
+    the exact promotion message, ignored persistence results, and direct exception/cancellation propagation;
+  - fetch-if-unknown crosses only the focused
+    `suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>` callback, while `UserSessionScope`
+    captures one exact `FetchConversationIfUnknownUseCase` instance per handler construction and preserves its default
+    `ConversationSyncReason.Other` invocation;
+  - `MLSResetConversationEventHandlerImpl`, retaining unconditional call termination before the null-MLS short circuit,
+    exact leave/check/conditional-epoch/update ordering, ignored leave/update results, failed-check fallback, exact
+    epoch/state mapping, and uncaught exception/cancellation behavior;
+  - `MLSResetEventRepository` exposes only those three reset operations; the existing broad `MLSConversationRepository`
+    extends it. Call termination crosses as only a focused `suspend (ConversationId) -> Unit` callback, and
+    `UserSessionScope` passes the exact observable repository wrapper and captured `EndCallOnMLSResetUseCase` used by the
+    handler so the success-only leave hook and all delegate behavior remain unchanged.
+- The protocol-update conversation slice
+  - `ProtocolUpdateEventHandlerImpl`, its private no-conversation classifier, and its complete tests retain update-first,
+    message-before-call-query ordering, deleted-conversation classification, logging, and `Either` behavior;
+  - protocol mutation and established-call state cross only focused suspend callbacks, while the receiving-owned
+    `SystemMessageInserter` remains a direct dependency;
+  - `UserSessionScope` captures the exact update use case, call repository, and system-message inserter once per handler
+    construction; the call callback retains `establishedCallsFlow().first().isNotEmpty()` and remains evaluated before
+    the `MIXED` protocol check.
 - The first application-message leaf slice
   - `ButtonActionHandlerImpl` and `ButtonActionConfirmationHandlerImpl`;
   - the existing `CompositeMessageDataSource` and `MessageMetadataSource` DAO adapters used by both incoming button
@@ -796,6 +819,59 @@ The extraction-induced Konsist failures are also resolved. App layer rules now i
 receiver dependencies live outside the app `feature` package, and explicitly `@InternalKaliumApi` use-case implementations
 may retain public constructors for cross-module composition.
 
+## Completed ProtocolUpdateEventHandler extraction slice
+
+1. `ProtocolUpdateEventHandler`, `ProtocolUpdateEventHandlerImpl`, the private no-conversation failure classifier, and
+   every pre-existing test now have one owner in `:domain:messaging:receiving` under their existing packages and FQCNs.
+   Only cross-module public visibility and `@InternalKaliumApi` annotations were added.
+2. `SystemMessageInserter` remains a direct receiving-owned dependency. The logic-owned
+   `UpdateConversationProtocolUseCase` and `CallRepository` remain unexposed and cross the boundary only as
+   `suspend (CryptoTransactionContext, ConversationId, Conversation.Protocol, Boolean) -> Either<CoreFailure, Boolean>`
+   and `suspend () -> Boolean` callbacks.
+3. `UserSessionScope` uses named constructor arguments and captures exactly one update use-case instance, the existing
+   stable call-repository object, and one system-message-inserter instance for each handler construction. The callbacks
+   do not re-resolve those getter-backed objects per event. Protocol updates still pass `localOnly = true`; call state
+   still uses `establishedCallsFlow().first().isNotEmpty()` rather than a cached/current value.
+4. The handler still updates first. Only a `ServerMiscommunication` wrapping an `InvalidRequestError` classified by
+   `isConversationNotFound` becomes `Right(false)` with the existing informational log; all other returned failures are
+   propagated. `Right(false)` skips both messages and the call query. `Right(true)` inserts the protocol message, queries
+   established calls before testing `protocol == MIXED`, conditionally inserts the during-call message, logs success,
+   and maps to `Unit` exactly as before.
+5. The moved suite keeps every original test name and assertion intent, replaces logic-only fixtures with local event and
+   network failures plus focused callback recorders, and adds exact order/argument, skip, non-`MIXED` query,
+   first-flow-emission, classification, ordinary-exception, and cancellation characterization at every callback/message
+   stage.
+6. No update use-case/repository implementation, receiver, NSE runtime wiring, CoreCrypto lock, retry, queue, durable
+   action/outbox, rollout switch, or unrelated lifecycle handler moved in this slice. `ConversationEventReceiverImpl`
+   remains logic-owned.
+
+## Completed MLSWelcomeEventHandler extraction slice
+
+1. `MLSWelcomeEventHandler`, `MLSWelcomeEventHandlerImpl`, their private helpers and structured outcome constants, and
+   every pre-existing test now have one owner in `:domain:messaging:receiving` under their existing package and FQCNs.
+   Only cross-module public visibility and `@InternalKaliumApi` annotations were added.
+2. The focused receiving-owned `MLSWelcomeEventRepository` extends `ConversationProtocolGetter` and adds only
+   `updateConversationGroupState(GroupID, GroupState): Either<StorageFailure, Unit>` and
+   `observeConversationDetailsById(ConversationId): Flow<Either<StorageFailure, ConversationDetails>>`.
+   The existing logic-owned `ConversationRepository` extends this contract and reuses its existing implementations and
+   exact object identity; no broad conversation repository/data source, second adapter, or duplicate state was added.
+3. The other logic-owned dependencies cross the boundary only as focused callbacks for fetch-if-unknown, one-to-one
+   resolution, key-package refill, CRL checking, CRL persistence, and external-commit rejoin. `UserSessionScope` captures
+   exactly one conversation repository, resolver, refill use case, CRL checker, CRL repository, join use case, and fetch
+   use case per handler construction in precisely their original written evaluation order. Fetch and join retain their
+   two-argument calls and defaults; refill maps only its returned `Success`/`Failure` result to `Either` without catching.
+4. The handler still reads MLS first; runs fetch, Base64/process, ordered CRL checks/persistence, establish, first-detail
+   observation, and optional one-to-one resolution in the same order; and preserves every returned-failure short circuit.
+   Conversation-not-found, already-existing, orphan/local-established, external-commit recovery/failure, all other
+   failure classifications, exact logs and outcome strings, refill behavior, exceptions, and cancellation are unchanged.
+   The original private `wrapInMLSContext` semantics are reproduced locally without exposing or moving the logic helper.
+5. The moved suite preserves all 14 original test names and assertion intent, uses local model/network/transaction
+   fixtures plus a focused repository and callback recorders, and adds null-MLS, exact order/arguments, `Flow.first`,
+   multiple-CRL, short-circuit, ignored-refill-failure, already-existing/orphan variants, join-failure, wrapped-exception,
+   ordinary-exception, and cancellation characterization.
+6. No receiver, NSE runtime wiring, CoreCrypto lock, retry, queue, durable action/outbox, rollout switch, other lifecycle
+   handler, or `UserEventReceiverImpl` work moved in this slice. `ConversationEventReceiverImpl` remains logic-owned.
+
 ## Remaining User receiver closure
 
 `UserEventReceiverImpl` is not yet safe to move as a coherent concrete graph. Its compile-time closure contains these
@@ -826,15 +902,20 @@ Conversation extraction rather than being duplicated in the receiving module.
 `ConversationEventReceiverImpl` still composes these concrete event handlers in `:logic`:
 
 - `NewConversationEventHandler`, `DeletedConversationEventHandler`, `MemberJoinEventHandler`,
-  `MemberLeaveEventHandler`, and `MemberChangeEventHandler`;
-- `MLSWelcomeEventHandler`, `MLSResetConversationEventHandler`, and `ProtocolUpdateEventHandler`.
+  and `MemberLeaveEventHandler`.
 
 The remaining lifecycle handlers now use focused local persistence, but their complete concrete closures are not yet
 reusable. New-conversation still depends on conversation persistence, one-to-one resolution, unknown-user fetching, and
 group-system-message creation. Delete still depends on MLS-aware deletion, user observation, notification scheduling, and
 the persistence hook. Join still depends on remote conversation/user fetches, legal hold, group-system-message creation,
 and conversation-type lookup. Leave still depends on user deletion/fetch, call updates, legal hold, team membership, and
-MLS group cleanup. Member-change still depends on fetch-if-unknown before its extracted local member update.
+MLS group cleanup. `MemberChangeEventHandler` now crosses fetch-if-unknown through its focused callback, while
+`MLSResetConversationEventHandler` uses the focused reset repository; both are receiving-owned.
+
+`MLSWelcomeEventHandler` is now receiving-owned. It uses the focused `MLSWelcomeEventRepository` plus captured callbacks
+for one-to-one resolution, refill, CRL work, join, and fetch while preserving the original repository object and use-case
+defaults. Those logic-owned actions still need explicit NSE ownership/adapters or durable follow-up design before runtime
+composition, but they no longer prevent handler ownership below `:logic`.
 
 `NewMessageEventHandler` is now receiving-owned. Proteus and MLS unpacking plus application-message routing are direct
 receiving dependencies. Legal hold, stale-epoch verification, and MLS reset cross focused callbacks while
@@ -846,8 +927,8 @@ need explicit NSE ownership/adapters or a durable action/outbox design before ru
 `ApplicationMessageHandler` and its Availability, ClientAction, InCallEmoji, TextEdited, MultipartEdited, DeleteMessage,
 and ClearConversationContent leaves, including their complete direct persistence and named app-owned side-effect
 boundaries, are now extracted. The direct filesystem executor, link-preview implementation, and MLS/CoreCrypto deletion
-implementation intentionally remain app infrastructure. The lifecycle handlers remain blocked on the remote-fetch, MLS,
-legal-hold, call, notification, user, and system-message closures above.
+implementation intentionally remain app infrastructure. The larger lifecycle handlers remain blocked on the
+remote-fetch, MLS, legal-hold, call, notification, user, and system-message closures above.
 
 `AssetMessageHandler` and `CallingMessageHandler`, with their focused dependency closures and tests, are now extracted to
 `:domain:messaging:receiving`. Normal forwarding, client identity, conversation-member observation, mute execution,
@@ -857,8 +938,10 @@ in `:logic` behind the receiving-owned ports.
 A standalone `Ignored` move is still not a meaningful milestone, and `History` remains existing unsupported behavior
 rather than an extraction target. The extracted in-call reaction stream remains process-local and ephemeral, so any
 future NSE cross-process or durability design stays outside this leaf.
-The conversation lifecycle handlers above are now the remaining blockers to moving
-`ConversationEventReceiverImpl` as a coherent concrete receiver. Separately, NSE runtime composition still lacks
+The new/delete/join/leave conversation lifecycle handlers above are now the remaining concrete handlers in `:logic` and
+the blockers to moving the still logic-owned `ConversationEventReceiverImpl` as a coherent concrete receiver.
+`UserEventReceiverImpl` remains explicitly outside this conversation-receiver extraction goal. Separately, NSE runtime
+composition still lacks
 explicit ownership/adapters or durability for legal hold, stale-epoch recovery, reset/rejoin, confirmation delivery,
 self deletion, and pending side effects. Durable subconversation mapping, pending-proposal ownership/outbox/execution,
 and cross-process CoreCrypto locking also remain separate work.

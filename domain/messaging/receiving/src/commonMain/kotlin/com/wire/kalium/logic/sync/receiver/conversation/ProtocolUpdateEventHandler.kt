@@ -28,27 +28,33 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationNotFound
-import kotlinx.coroutines.flow.first
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface ProtocolUpdateEventHandler {
-    suspend fun handle(
+@InternalKaliumApi
+public interface ProtocolUpdateEventHandler {
+    public suspend fun handle(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.ConversationProtocol
     ): Either<CoreFailure, Unit>
 }
 
-internal class ProtocolUpdateEventHandlerImpl(
+@InternalKaliumApi
+public class ProtocolUpdateEventHandlerImpl public constructor(
     private val systemMessageInserter: SystemMessageInserter,
-    private val callRepository: CallRepository,
-    private val updateConversationProtocol: UpdateConversationProtocolUseCase
+    private val hasEstablishedCalls: suspend () -> Boolean,
+    private val updateConversationProtocol: suspend (
+        CryptoTransactionContext,
+        ConversationId,
+        Conversation.Protocol,
+        Boolean,
+    ) -> Either<CoreFailure, Boolean>,
 ) : ProtocolUpdateEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -58,7 +64,7 @@ internal class ProtocolUpdateEventHandlerImpl(
         event: Event.Conversation.ConversationProtocol
     ): Either<CoreFailure, Unit> {
         val eventLogger = logger.createEventProcessingLogger(event)
-        return updateConversationProtocol(transactionContext, event.conversationId, event.protocol, localOnly = true)
+        return updateConversationProtocol(transactionContext, event.conversationId, event.protocol, true)
             .flatMapLeft { failure ->
                 if (failure.isNoConversationFailure()) {
                     logger.i("Ignoring protocol update event for a deleted conversation")
@@ -74,7 +80,7 @@ internal class ProtocolUpdateEventHandlerImpl(
                         event.senderUserId,
                         event.protocol
                     )
-                    if (callRepository.establishedCallsFlow().first().isNotEmpty() &&
+                    if (hasEstablishedCalls() &&
                         event.protocol == Conversation.Protocol.MIXED
                     ) {
                         systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(

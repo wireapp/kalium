@@ -101,7 +101,7 @@ internal data class PreparedX509KeyPackages(
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
-internal interface MLSConversationRepository : MLSMemberAdder, MLSMessageDecryptor {
+internal interface MLSConversationRepository : MLSResetEventRepository, MLSMemberAdder, MLSMessageDecryptor {
     override suspend fun decryptMessage(
         mlsContext: MlsCoreCryptoContext,
         message: ByteArray,
@@ -143,8 +143,6 @@ internal interface MLSConversationRepository : MLSMemberAdder, MLSMessageDecrypt
         parentId: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun hasEstablishedMLSGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<MLSFailure, Boolean>
-
     override suspend fun getLocalGroupEpoch(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID
@@ -160,11 +158,6 @@ internal interface MLSConversationRepository : MLSMemberAdder, MLSMessageDecrypt
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID,
         clientIdList: List<QualifiedClientID>
-    ): Either<CoreFailure, Unit>
-
-    suspend fun leaveGroup(
-        mlsContext: MlsCoreCryptoContext,
-        groupID: GroupID
     ): Either<CoreFailure, Unit>
 
     suspend fun joinGroupByExternalCommit(
@@ -230,12 +223,6 @@ internal interface MLSConversationRepository : MLSMemberAdder, MLSMessageDecrypt
         userIds: List<UserId>
     ): Either<CoreFailure, Map<UserId, List<WireIdentity>>>
 
-    suspend fun updateGroupIdAndState(
-        conversationId: ConversationId,
-        newGroupId: GroupID,
-        newEpoch: Long,
-        groupState: ConversationEntity.GroupState = ConversationEntity.GroupState.PENDING_JOIN
-    ): Either<CoreFailure, Unit>
 }
 
 private sealed interface CommitStrategy {

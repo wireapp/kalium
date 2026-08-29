@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -26,23 +28,26 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member.Role.Admin
-import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.serialization.toJsonElement
 
-internal interface MemberChangeEventHandler {
-    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged)
+@InternalKaliumApi
+public interface MemberChangeEventHandler {
+    public suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged)
 }
 
-internal class MemberChangeEventHandlerImpl(
+@InternalKaliumApi
+public class MemberChangeEventHandlerImpl public constructor(
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository,
-    private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
+    private val fetchConversationIfUnknown: suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>,
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
 ) : MemberChangeEventHandler {

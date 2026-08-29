@@ -344,6 +344,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordC
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.legalhold.ApproveLegalHoldRequestUseCase
 import com.wire.kalium.logic.feature.legalhold.ApproveLegalHoldRequestUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
@@ -2189,20 +2190,47 @@ public class UserSessionScope internal constructor(
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
-        get() = MemberChangeEventHandlerImpl(
-            conversationLifecycleEventRepository = conversationLifecycleEventRepository,
-            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase,
-            persistMessage = persistMessage,
-            selfUserId = userId,
-        )
+        get() {
+            val capturedFetchConversationIfUnknownUseCase = fetchConversationIfUnknownUseCase
+            return MemberChangeEventHandlerImpl(
+                conversationLifecycleEventRepository = conversationLifecycleEventRepository,
+                fetchConversationIfUnknown = { transactionContext, conversationId ->
+                    capturedFetchConversationIfUnknownUseCase(transactionContext, conversationId)
+                },
+                persistMessage = persistMessage,
+                selfUserId = userId,
+            )
+        }
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
-        get() = MLSWelcomeEventHandlerImpl(
-            conversationRepository = conversationRepository,
-            oneOnOneResolver = oneOnOneResolver,
-            refillKeyPackages = client.refillKeyPackages,
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
-            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase
-        )
+        get() {
+            val capturedConversationRepository = conversationRepository
+            val capturedOneOnOneResolver = oneOnOneResolver
+            val capturedRefillKeyPackages = client.refillKeyPackages
+            val capturedJoinExistingMLSConversationUseCase = joinExistingMLSConversationUseCase
+            val capturedFetchConversationIfUnknownUseCase = fetchConversationIfUnknownUseCase
+            return MLSWelcomeEventHandlerImpl(
+                conversationRepository = capturedConversationRepository,
+                resolveOneOnOne = { transactionContext, otherUser, invalidateCurrentKnownProtocols ->
+                    capturedOneOnOneResolver.resolveOneOnOneConversationWithUser(
+                        transactionContext,
+                        otherUser,
+                        invalidateCurrentKnownProtocols
+                    )
+                },
+                refillKeyPackages = { mlsContext ->
+                    when (val result = capturedRefillKeyPackages(mlsContext)) {
+                        RefillKeyPackagesResult.Success -> Either.Right(Unit)
+                        is RefillKeyPackagesResult.Failure -> Either.Left(result.failure)
+                    }
+                },
+                joinExistingMLSConversation = { transactionContext, conversationId ->
+                    capturedJoinExistingMLSConversationUseCase(transactionContext, conversationId)
+                },
+                fetchConversationIfUnknown = { transactionContext, conversationId ->
+                    capturedFetchConversationIfUnknownUseCase(transactionContext, conversationId)
+                },
+            )
+        }
 
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
@@ -2240,11 +2268,25 @@ public class UserSessionScope internal constructor(
         get() = TypingIndicatorHandlerImpl(userId, conversations.typingIndicatorIncomingRepository)
 
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
-        get() = ProtocolUpdateEventHandlerImpl(
-            systemMessageInserter = systemMessageInserter,
-            callRepository = callRepository,
-            updateConversationProtocolUseCase
-        )
+        get() {
+            val capturedSystemMessageInserter = systemMessageInserter
+            val capturedCallRepository = callRepository
+            val capturedUpdateConversationProtocolUseCase = updateConversationProtocolUseCase
+            return ProtocolUpdateEventHandlerImpl(
+                systemMessageInserter = capturedSystemMessageInserter,
+                hasEstablishedCalls = {
+                    capturedCallRepository.establishedCallsFlow().first().isNotEmpty()
+                },
+                updateConversationProtocol = { transactionContext, conversationId, protocol, localOnly ->
+                    capturedUpdateConversationProtocolUseCase(
+                        transactionContext,
+                        conversationId,
+                        protocol,
+                        localOnly = localOnly,
+                    )
+                },
+            )
+        }
 
     private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler
         get() = ChannelAddPermissionUpdateEventHandlerImpl(
@@ -2258,30 +2300,34 @@ public class UserSessionScope internal constructor(
         )
 
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
-        get() = MLSResetConversationEventHandlerImpl(
-            mlsConversationRepository = mlsConversationRepository,
-            endCallOnMLSReset = endCallOnMLSReset,
-        )
+        get() {
+            val capturedMLSConversationRepository = mlsConversationRepository
+            val capturedEndCallOnMLSReset = endCallOnMLSReset
+            return MLSResetConversationEventHandlerImpl(
+                mlsResetEventRepository = capturedMLSConversationRepository,
+                endCallOnMLSReset = { conversationId -> capturedEndCallOnMLSReset(conversationId) },
+            )
+        }
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
-            newMessageHandler,
-            newConversationHandler,
-            deletedConversationHandler,
-            memberJoinHandler,
-            memberLeaveHandler,
-            memberChangeHandler,
-            mlsWelcomeHandler,
-            renamedConversationHandler,
-            receiptModeUpdateEventHandler,
-            conversationMessageTimerEventHandler,
-            conversationCodeUpdateHandler,
-            conversationCodeDeletedHandler,
-            typingIndicatorHandler,
-            protocolUpdateEventHandler,
-            channelAddPermissionUpdateEventHandler,
-            conversationAccessUpdateEventHandler,
-            mlsResetConversationEventHandler,
+            newMessageHandler = newMessageHandler,
+            newConversationHandler = newConversationHandler,
+            deletedConversationHandler = deletedConversationHandler,
+            memberJoinHandler = memberJoinHandler,
+            memberLeaveHandler = memberLeaveHandler,
+            memberChangeHandler = memberChangeHandler,
+            mlsWelcomeHandler = mlsWelcomeHandler,
+            renamedConversationHandler = renamedConversationHandler,
+            receiptModeUpdateEventHandler = receiptModeUpdateEventHandler,
+            conversationMessageTimerEventHandler = conversationMessageTimerEventHandler,
+            codeUpdatedHandler = conversationCodeUpdateHandler,
+            codeDeletedHandler = conversationCodeDeletedHandler,
+            typingIndicatorHandler = typingIndicatorHandler,
+            protocolUpdateEventHandler = protocolUpdateEventHandler,
+            channelAddPermissionUpdateEventHandler = channelAddPermissionUpdateEventHandler,
+            accessUpdateEventHandler = conversationAccessUpdateEventHandler,
+            mlsResetConversationEventHandler = mlsResetConversationEventHandler,
         )
     }
     private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(

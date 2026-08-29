@@ -19,26 +19,29 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSResetEventRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface MLSResetConversationEventHandler {
-    suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset)
+@InternalKaliumApi
+public interface MLSResetConversationEventHandler {
+    public suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset)
 }
 
-internal class MLSResetConversationEventHandlerImpl(
-    private val mlsConversationRepository: MLSConversationRepository,
-    private val endCallOnMLSReset: EndCallOnMLSResetUseCase,
+@InternalKaliumApi
+public class MLSResetConversationEventHandlerImpl public constructor(
+    private val mlsResetEventRepository: MLSResetEventRepository,
+    private val endCallOnMLSReset: suspend (ConversationId) -> Unit,
 ) : MLSResetConversationEventHandler {
     override suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset) {
         endCallOnMLSReset(event.conversationId)
 
         transaction.mls?.let { mlsContext ->
-            mlsConversationRepository.leaveGroup(mlsContext, event.groupID)
+            mlsResetEventRepository.leaveGroup(mlsContext, event.groupID)
 
-            val hasEstablishedMLSGroup = mlsConversationRepository.hasEstablishedMLSGroup(
+            val hasEstablishedMLSGroup = mlsResetEventRepository.hasEstablishedMLSGroup(
                 mlsContext,
                 event.newGroupID
             ).getOrElse { false }
@@ -58,7 +61,7 @@ internal class MLSResetConversationEventHandlerImpl(
                 ConversationEntity.GroupState.PENDING_AFTER_RESET
             }
 
-            mlsConversationRepository.updateGroupIdAndState(
+            mlsResetEventRepository.updateGroupIdAndState(
                 event.conversationId,
                 event.newGroupID,
                 groupState = newState,
