@@ -20,16 +20,18 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.util.InternalKaliumApi
 
-internal interface ProtocolInfoMapper {
-    fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo): Conversation.ProtocolInfo
-    fun toEntity(protocolInfo: Conversation.ProtocolInfo): ConversationEntity.ProtocolInfo
+@InternalKaliumApi
+public interface ProtocolInfoMapper {
+    public fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo): Conversation.ProtocolInfo
+    public fun toEntity(protocolInfo: Conversation.ProtocolInfo): ConversationEntity.ProtocolInfo
 }
 
-internal class ProtocolInfoMapperImpl(
-    internal val idMapper: IdMapper = MapperProvider.idMapper()
+@InternalKaliumApi
+public class ProtocolInfoMapperImpl public constructor(
+    internal val idMapper: IdMapper = IdMapper()
 ) : ProtocolInfoMapper {
     override fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo) =
         when (protocolInfo) {

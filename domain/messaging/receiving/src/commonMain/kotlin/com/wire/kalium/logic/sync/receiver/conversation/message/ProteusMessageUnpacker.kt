@@ -38,14 +38,14 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
-import com.wire.kalium.logic.data.message.ProtoContentMapper
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.data.message.ProtoContentDecoder
+import com.wire.kalium.util.InternalKaliumApi
 import kotlin.io.encoding.Base64
 
-internal interface ProteusMessageUnpacker {
+@InternalKaliumApi
+public interface ProteusMessageUnpacker {
 
-    suspend fun <T : Any> unpackProteusMessage(
+    public suspend fun <T : Any> unpackProteusMessage(
         proteusContext: ProteusCoreCryptoContext,
         event: Event.Conversation.NewMessage,
         handleMessage: suspend (applicationMessage: MessageUnpackResult.ApplicationMessage) -> T
@@ -53,15 +53,15 @@ internal interface ProteusMessageUnpacker {
 
 }
 
-internal class ProteusMessageUnpackerImpl(
-    private val selfUserId: UserId,
-    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
+@InternalKaliumApi
+public class ProteusMessageUnpackerImpl public constructor(
+    private val protoContentDecoder: ProtoContentDecoder,
+    private val idMapper: IdMapper = IdMapper(),
 ) : ProteusMessageUnpacker {
 
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
 
-    override suspend fun <T : Any> unpackProteusMessage(
+    public override suspend fun <T : Any> unpackProteusMessage(
         proteusContext: ProteusCoreCryptoContext,
         event: Event.Conversation.NewMessage,
         handleMessage: suspend (applicationMessage: MessageUnpackResult.ApplicationMessage) -> T
@@ -133,7 +133,7 @@ internal class ProteusMessageUnpackerImpl(
     private fun getReadableMessageContent(
         plainMessageBlob: PlainMessageBlob,
         encryptedData: EncryptedData?
-    ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
+    ) = when (val protoContent = protoContentDecoder.decodeFromProtobuf(plainMessageBlob)) {
         is ProtoContent.Readable -> Either.Right(protoContent)
         is ProtoContent.ExternalMessageInstructions -> encryptedData?.let {
             solveExternalContentForProteusMessage(protoContent, encryptedData)
@@ -151,7 +151,7 @@ internal class ProteusMessageUnpackerImpl(
     ): Either<CoreFailure, ProtoContent.Readable> = wrapProteusRequest {
         val decryptedExternalMessage = decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data
         PlainMessageBlob(decryptedExternalMessage)
-    }.map(protoContentMapper::decodeFromProtobuf).flatMap { decodedProtobuf ->
+    }.map(protoContentDecoder::decodeFromProtobuf).flatMap { decodedProtobuf ->
         if (decodedProtobuf !is ProtoContent.Readable) {
             val rootCause = IllegalArgumentException(
                 "матрёшка! External message can't contain another external message inside!"

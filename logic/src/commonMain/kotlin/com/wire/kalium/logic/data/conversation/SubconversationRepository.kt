@@ -35,7 +35,7 @@ import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-internal interface SubconversationRepository {
+internal interface SubconversationRepository : SubconversationGroupInfoProvider {
 
     suspend fun insertSubconversation(
         conversationId: ConversationId,
@@ -43,7 +43,7 @@ internal interface SubconversationRepository {
         groupId: GroupID
     )
 
-    suspend fun getSubconversationInfo(
+    override suspend fun getSubconversationInfo(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): GroupID?

@@ -18,61 +18,76 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.ProteusFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.typeDescription
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.StaleEpochVerifier
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.client.wrapInMLSContext
-import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Instant
 
-internal interface NewMessageEventHandler {
-    suspend fun handleNewProteusMessage(
+@InternalKaliumApi
+public interface NewMessageEventHandler {
+    public suspend fun handleNewProteusMessage(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMessage,
         deliveryInfo: EventDeliveryInfo
     )
 
-    suspend fun handleNewMLSMessage(
+    public suspend fun handleNewMLSMessage(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMLSMessage,
         deliveryInfo: EventDeliveryInfo
     )
 
-    suspend fun flushPendingSideEffects()
+    public suspend fun flushPendingSideEffects()
 }
 
 @Suppress("LongParameterList")
-internal class NewMessageEventHandlerImpl(
+@InternalKaliumApi
+public class NewMessageEventHandlerImpl public constructor(
     private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val mlsMessageUnpacker: MLSMessageUnpacker,
     private val applicationMessageHandler: ApplicationMessageHandler,
-    private val legalHoldHandler: LegalHoldHandler,
+    private val handleLegalHoldMessage: suspend (
+        message: MessageUnpackResult.ApplicationMessage,
+        isLive: Boolean,
+    ) -> Either<CoreFailure, Unit>,
     private val enqueueSelfDeletion: (conversationId: ConversationId, messageId: String) -> Unit,
     private val enqueueConfirmationDelivery: suspend (conversationId: ConversationId, messageId: String) -> Unit,
     private val selfUserId: UserId,
-    private val staleEpochVerifier: StaleEpochVerifier,
-    private val resetMLSConversation: ResetMLSConversationUseCase,
+    private val verifyStaleEpoch: suspend (
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        subConversationId: SubconversationId?,
+        timestamp: Instant?,
+    ) -> Either<CoreFailure, Unit>,
+    private val resetMLSConversation: suspend (
+        conversationId: ConversationId,
+        transactionContext: CryptoTransactionContext,
+    ) -> Either<CoreFailure, Unit>,
 ) : NewMessageEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handleNewProteusMessage(
+    public override suspend fun handleNewProteusMessage(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMessage,
         deliveryInfo: EventDeliveryInfo
@@ -144,7 +159,7 @@ internal class NewMessageEventHandlerImpl(
         )
     }
 
-    override suspend fun handleNewMLSMessage(
+    public override suspend fun handleNewMLSMessage(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMLSMessage,
         deliveryInfo: EventDeliveryInfo
@@ -177,7 +192,7 @@ internal class NewMessageEventHandlerImpl(
 
                     is MLSMessageFailureResolution.OutOfSync -> {
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
-                        staleEpochVerifier.verifyEpoch(
+                        verifyStaleEpoch(
                             transactionContext,
                             event.conversationId,
                             event.subconversationId,
@@ -212,7 +227,7 @@ internal class NewMessageEventHandlerImpl(
         deliveryInfo: EventDeliveryInfo
     ) {
         if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-            legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
+            handleLegalHoldMessage(it, deliveryInfo.source == EventSource.LIVE)
         }
         handleSuccessfulResult(transactionContext, it)
         onMessageInserted(it)
@@ -252,7 +267,13 @@ internal class NewMessageEventHandlerImpl(
         )
     }
 
-    override suspend fun flushPendingSideEffects() {
+    public override suspend fun flushPendingSideEffects() {
         applicationMessageHandler.flushPendingSideEffects()
     }
 }
+
+private suspend fun <T> CryptoTransactionContext.wrapInMLSContext(
+    block: suspend (mlsContext: MlsCoreCryptoContext) -> Either<CoreFailure, T>
+): Either<CoreFailure, T> = mls?.let {
+    block(it)
+} ?: Either.Left(MLSFailure.Disabled)

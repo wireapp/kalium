@@ -47,6 +47,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(projects.data.networkModel)
                 implementation(libs.coroutines.test)
             }
         }

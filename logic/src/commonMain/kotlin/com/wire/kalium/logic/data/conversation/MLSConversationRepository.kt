@@ -85,55 +85,6 @@ import kotlin.io.encoding.Base64
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-internal data class ApplicationMessage(
-    val message: ByteArray,
-    val senderID: UserId,
-    val senderClientID: ClientId
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as ApplicationMessage
-
-        if (!message.contentEquals(other.message)) return false
-        if (senderID != other.senderID) return false
-        if (senderClientID != other.senderClientID) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = message.contentHashCode()
-        result = 31 * result + senderID.hashCode()
-        result = 31 * result + senderClientID.hashCode()
-        return result
-    }
-}
-
-internal sealed interface DecryptedMessageBundle {
-    val groupID: GroupID
-    val identity: WireIdentity?
-
-    data class Text(
-        override val groupID: GroupID,
-        val applicationMessage: ApplicationMessage,
-        override val identity: WireIdentity?
-    ) : DecryptedMessageBundle
-
-    data class Commit(
-        override val groupID: GroupID,
-        val isActive: Boolean,
-        override val identity: WireIdentity?
-    ) : DecryptedMessageBundle
-
-    data class Proposal(
-        override val groupID: GroupID,
-        val commitDelay: Long?,
-        override val identity: WireIdentity?
-    ) : DecryptedMessageBundle
-}
-
 internal data class PreparedX509KeyPackages(
     val keyPackages: List<ByteArray>,
     val cipherSuite: CipherSuite
@@ -150,8 +101,8 @@ internal data class PreparedX509KeyPackages(
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
-internal interface MLSConversationRepository : MLSMemberAdder {
-    suspend fun decryptMessage(
+internal interface MLSConversationRepository : MLSMemberAdder, MLSMessageDecryptor {
+    override suspend fun decryptMessage(
         mlsContext: MlsCoreCryptoContext,
         message: ByteArray,
         groupID: GroupID
@@ -194,7 +145,7 @@ internal interface MLSConversationRepository : MLSMemberAdder {
 
     suspend fun hasEstablishedMLSGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<MLSFailure, Boolean>
 
-    suspend fun getLocalGroupEpoch(
+    override suspend fun getLocalGroupEpoch(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID
     ): Either<CoreFailure, ULong>

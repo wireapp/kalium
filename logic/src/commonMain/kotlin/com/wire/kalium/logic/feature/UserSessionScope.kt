@@ -1954,16 +1954,16 @@ public class UserSessionScope internal constructor(
 
     private val mlsUnpacker: MLSMessageUnpacker
         get() = MLSMessageUnpackerImpl(
-            conversationRepository = conversationRepository,
-            subconversationRepository = subconversationRepository,
-            mlsConversationRepository = mlsConversationRepository,
+            conversationProtocolGetter = conversationRepository,
+            subconversationGroupInfoProvider = subconversationRepository,
+            mlsMessageDecryptor = mlsConversationRepository,
             pendingProposalScheduler = pendingProposalScheduler,
-            selfUserId = userId
+            protoContentDecoder = protoContentMapper,
         )
 
     private val proteusUnpacker: ProteusMessageUnpacker
         get() = ProteusMessageUnpackerImpl(
-            selfUserId = userId
+            protoContentDecoder = protoContentMapper,
         )
 
     private val messageEncoder get() = MessageContentEncoder()
@@ -2116,21 +2116,26 @@ public class UserSessionScope internal constructor(
         )
 
     private val newMessageHandler: NewMessageEventHandler
-        get() = NewMessageEventHandlerImpl(
-            proteusUnpacker,
-            mlsUnpacker,
-            applicationMessageHandler,
-            legalHoldHandler,
-            { conversationId, messageId ->
-                messages.ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
-            },
-            { conversationId, messageId ->
-                messages.confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
-            },
-            userId,
-            staleEpochVerifier,
-            resetMlsConversation,
-        )
+        get() {
+            val resetMLSConversationUseCase = resetMlsConversation
+            return NewMessageEventHandlerImpl(
+                proteusMessageUnpacker = proteusUnpacker,
+                mlsMessageUnpacker = mlsUnpacker,
+                applicationMessageHandler = applicationMessageHandler,
+                handleLegalHoldMessage = legalHoldHandler::handleNewMessage,
+                enqueueSelfDeletion = { conversationId, messageId ->
+                    messages.ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
+                },
+                enqueueConfirmationDelivery = { conversationId, messageId ->
+                    messages.confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
+                },
+                selfUserId = userId,
+                verifyStaleEpoch = staleEpochVerifier::verifyEpoch,
+                resetMLSConversation = { conversationId, transactionContext ->
+                    resetMLSConversationUseCase(conversationId, transactionContext).toEither()
+                },
+            )
+        }
 
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
         get() = NewGroupConversationSystemMessagesCreatorImpl(

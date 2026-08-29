@@ -30,50 +30,49 @@ import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.conversation.MLSMessageDecryptor
+import com.wire.kalium.logic.data.conversation.SubconversationGroupInfoProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
-import com.wire.kalium.logic.data.message.ProtoContentMapper
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.data.message.ProtoContentDecoder
+import com.wire.kalium.logic.data.mls.ConversationProtocolGetter
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.seconds
 
-internal interface MLSMessageUnpacker {
-    suspend fun unpackMlsMessage(
+@InternalKaliumApi
+public interface MLSMessageUnpacker {
+    public suspend fun unpackMlsMessage(
         mlsContext: MlsCoreCryptoContext,
         event: Event.Conversation.NewMLSMessage
     ): Either<CoreFailure, List<MessageUnpackResult>>
 
-    suspend fun unpackMlsBundle(
+    public suspend fun unpackMlsBundle(
         bundle: DecryptedMessageBundle,
         conversationId: ConversationId,
         messageInstant: Instant
     ): MessageUnpackResult
 }
 
-@Suppress("LongParameterList")
-internal class MLSMessageUnpackerImpl(
-    private val conversationRepository: ConversationRepository,
-    private val subconversationRepository: SubconversationRepository,
-    private val mlsConversationRepository: MLSConversationRepository,
+@InternalKaliumApi
+public class MLSMessageUnpackerImpl public constructor(
+    private val conversationProtocolGetter: ConversationProtocolGetter,
+    private val subconversationGroupInfoProvider: SubconversationGroupInfoProvider,
+    private val mlsMessageDecryptor: MLSMessageDecryptor,
     private val pendingProposalScheduler: PendingProposalScheduler,
-    private val selfUserId: UserId,
-    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
+    private val protoContentDecoder: ProtoContentDecoder,
 ) : MLSMessageUnpacker {
 
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
 
-    override suspend fun unpackMlsMessage(
+    public override suspend fun unpackMlsMessage(
         mlsContext: MlsCoreCryptoContext,
         event: Event.Conversation.NewMLSMessage
     ): Either<CoreFailure, List<MessageUnpackResult>> = messageFromMLSMessage(mlsContext, event)
@@ -84,13 +83,13 @@ internal class MLSMessageUnpackerImpl(
             }
         }
 
-    override suspend fun unpackMlsBundle(
+    public override suspend fun unpackMlsBundle(
         bundle: DecryptedMessageBundle,
         conversationId: ConversationId,
         messageInstant: Instant
     ): MessageUnpackResult = when (bundle) {
         is DecryptedMessageBundle.Text -> {
-            val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(bundle.applicationMessage.message))
+            val protoContent = protoContentDecoder.decodeFromProtobuf(PlainMessageBlob(bundle.applicationMessage.message))
             if (protoContent !is ProtoContent.Readable) {
                 throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
             }
@@ -137,7 +136,7 @@ internal class MLSMessageUnpackerImpl(
         messageEvent: Event.Conversation.NewMLSMessage
     ): Either<CoreFailure, List<DecryptedMessageBundle>> =
         messageEvent.subconversationId?.let { subConversationId ->
-            subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subConversationId)?.let { groupID ->
+            subconversationGroupInfoProvider.getSubconversationInfo(messageEvent.conversationId, subConversationId)?.let { groupID ->
                 logger.logStructuredJson(
                     KaliumLogLevel.DEBUG, "Decrypting MLS for SubConversation",
                         mapOf(
@@ -148,7 +147,7 @@ internal class MLSMessageUnpackerImpl(
                 )
                 decryptMessageAndLogIfBuffered(mlsContext, messageEvent, groupID)
             }
-        } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
+        } ?: conversationProtocolGetter.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
                 logger.logStructuredJson(
                     KaliumLogLevel.DEBUG, "Decrypting MLS for Conversation",
@@ -169,13 +168,13 @@ internal class MLSMessageUnpackerImpl(
         messageEvent: Event.Conversation.NewMLSMessage,
         groupId: GroupID
     ): Either<CoreFailure, List<DecryptedMessageBundle>> {
-        val result = mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), groupId)
+        val result = mlsMessageDecryptor.decryptMessage(mlsContext, Base64.decode(messageEvent.content), groupId)
         val bufferType = when ((result as? Either.Left)?.value) {
             MLSFailure.BufferedFutureMessage -> "FUTURE_MESSAGE"
             MLSFailure.BufferedCommit -> "COMMIT"
             else -> return result
         }
-        val localEpoch = mlsConversationRepository.getLocalGroupEpoch(mlsContext, groupId).getOrNull()
+        val localEpoch = mlsMessageDecryptor.getLocalGroupEpoch(mlsContext, groupId).getOrNull()
         logger.logStructuredJson(
             level = KaliumLogLevel.WARN,
             leadingMessage = "MLS message buffered",

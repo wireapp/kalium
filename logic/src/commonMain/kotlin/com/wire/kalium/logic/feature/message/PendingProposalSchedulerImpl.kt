@@ -48,26 +48,6 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
 
-/**
- * Schedule pending MLS proposals in a conversation to be committed at a given
- * date. The scheduling persisted and resumes automatically.
- *
- * This is desirable since all clients in an MLS group a collaborating
- * on committing pending proposals, and we want to avoid the scenario of everyone
- * committing pending proposals at same time.
- */
-internal interface PendingProposalScheduler {
-
-    /**
-     * Schedule to commit pending proposals in a given MLS group.
-     *
-     * @param groupID
-     * @param date desired time for when proposals should be committed
-     */
-    suspend fun scheduleCommit(groupID: GroupID, date: Instant)
-
-}
-
 internal class PendingProposalSchedulerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val mlsConversationRepository: Lazy<MLSConversationRepository>,

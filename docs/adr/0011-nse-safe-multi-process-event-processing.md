@@ -77,6 +77,42 @@ contention, deadline exhaustion, main-app-required state, and failure.
 Wire iOS uses this as its single NSE event-processing path. There is no legacy NSE processing path
 to preserve and no runtime rollout switch.
 
+### Current extraction boundary
+
+MLS receive unpacking uses the shared architecture boundary without changing main-app runtime
+behavior. `KaliumSyncException` is owned by `:domain:event-processing`; the
+`PendingProposalScheduler` contract and `MLSMessageUnpacker` implementation are owned by
+`:domain:messaging:receiving`; and the shared `MLSMessageFailureHandler` classification model is
+owned by `:domain:messaging:shared`. The unpacker consumes only focused protocol, subconversation,
+decryptor, scheduler, and protobuf-decoder contracts.
+
+Main-app composition supplies the same `conversationRepository` as protocol getter, stable
+process-local `subconversationRepository` as group-info provider, observable
+`mlsConversationRepository` wrapper as decryptor, eager `PendingProposalSchedulerImpl`, and
+`protoContentMapper` as protobuf decoder. The observable decryptor therefore retains its
+success-only crypto-state hook, while failed decrypts do not notify it; decrypt, scheduling,
+decoding, classification, logging, exception, and cancellation behavior remain unchanged.
+
+Concrete new-message orchestration, Proteus unpacking, and application-message routing are also
+owned by `:domain:messaging:receiving`. The new-message handler retains focused dependencies on the
+two unpackers, application-message handler, and self user ID. Legal-hold handling, stale-epoch
+verification, and MLS reset cross the boundary as focused suspend functions; main-app composition
+supplies the existing `LegalHoldHandler`, `StaleEpochVerifier`, and a once-per-handler captured
+`ResetMLSConversationUseCase`. Self-deletion and confirmation-delivery likewise remain injected
+actions. Callback results that were ignored remain ignored, and ordering, logging, persistence,
+failure classification, exception, and cancellation behavior remain unchanged.
+
+This boundary is not an NSE runtime implementation. The broad legal-hold, stale-epoch, reset/rejoin,
+confirmation-delivery, self-deletion, and pending-side-effect implementations remain app-owned and
+need explicit NSE ownership/adapters or a durable action/outbox design. Subconversation group
+mapping remains process-local and requires durable `(conversationId, subconversationId) -> groupId`
+state before a second process can use it. Pending-proposal work still needs explicit ownership, a
+durable outbox, and a main-app executor; the extension must not construct the current scheduler
+implementation or a no-op substitute. Cross-process CoreCrypto locking, NSE facade wiring, and the
+broad protobuf encoder/mapper plus `AssetMapper` graph remain separate work. Conversation lifecycle
+handlers remain in `:logic` and prevent the complete conversation receiver from moving below that
+boundary.
+
 ### Rejected alternatives
 
 - **Start full synchronization in the NSE.** Rejected because it creates long-lived and potentially

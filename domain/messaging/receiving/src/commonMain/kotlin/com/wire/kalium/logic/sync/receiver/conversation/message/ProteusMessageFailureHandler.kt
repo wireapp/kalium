@@ -20,15 +20,18 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.util.InternalKaliumApi
 
-internal sealed class ProteusMessageFailureResolution {
-    internal data object Ignore : ProteusMessageFailureResolution()
-    internal data object RecoverSession : ProteusMessageFailureResolution()
-    internal data object InformUser : ProteusMessageFailureResolution()
+@InternalKaliumApi
+public sealed class ProteusMessageFailureResolution {
+    public data object Ignore : ProteusMessageFailureResolution()
+    public data object RecoverSession : ProteusMessageFailureResolution()
+    public data object InformUser : ProteusMessageFailureResolution()
 }
 
-internal object ProteusMessageFailureHandler {
-    fun handleFailure(failure: CoreFailure): ProteusMessageFailureResolution {
+@InternalKaliumApi
+public object ProteusMessageFailureHandler {
+    public fun handleFailure(failure: CoreFailure): ProteusMessageFailureResolution {
         if (failure !is ProteusFailure) return ProteusMessageFailureResolution.InformUser
 
         return when (failure.proteusException.code) {

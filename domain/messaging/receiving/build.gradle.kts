@@ -58,6 +58,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(projects.data.persistenceTest)
+                implementation(projects.data.protobuf)
                 implementation(projects.test.dataMocks)
                 implementation(libs.coroutines.test)
                 implementation(libs.okio.core)

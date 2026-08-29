@@ -45,6 +45,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.mls.ConversationProtocolGetter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
@@ -95,7 +96,7 @@ internal data class ConversationMemberCounts(
 )
 
 @Suppress("TooManyFunctions")
-internal interface ConversationRepository : FederationConversationRepository, ChannelAddPermissionRepository {
+internal interface ConversationRepository : FederationConversationRepository, ChannelAddPermissionRepository, ConversationProtocolGetter {
     val extensions: ConversationRepositoryExtensions
 
     // region Get/Observe by id
@@ -153,7 +154,7 @@ internal interface ConversationRepository : FederationConversationRepository, Ch
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getRecipientById(conversationId: ConversationId, userIDList: List<UserId>): Either<StorageFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
-    suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
+    override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
     suspend fun getConversationMemberRole(
         conversationId: ConversationId,

@@ -44,5 +44,10 @@ kotlin {
                 implementation(libs.okio.core)
             }
         }
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.coroutines.test)
+            }
+        }
     }
 }

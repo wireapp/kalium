@@ -18,46 +18,45 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.ProteusFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.cryptography.ProteusCoreCryptoContext
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.StaleEpochVerifier
-import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandler
-import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
-import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
-import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
-import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.logic.sync.incremental.EventSource
+import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
-import dev.mokkery.MockMode
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
-import dev.mokkery.verify
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 class NewMessageEventHandlerTest {
 
@@ -78,9 +77,9 @@ class NewMessageEventHandlerTest {
             .withProteusUnpackerReturning(Either.Left(CoreFailure.InvalidEventSenderID))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        val newMessageEvent = newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -103,9 +102,9 @@ class NewMessageEventHandlerTest {
             )
             .arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        val newMessageEvent = newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -132,9 +131,9 @@ class NewMessageEventHandlerTest {
             )
             .arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        val newMessageEvent = newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -161,9 +160,9 @@ class NewMessageEventHandlerTest {
             )
             .arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        val newMessageEvent = newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -190,9 +189,9 @@ class NewMessageEventHandlerTest {
             )
             .arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        val newMessageEvent = newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.applicationMessageHandler.handleDecryptionError(
@@ -230,9 +229,9 @@ class NewMessageEventHandlerTest {
             )
             .arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        val newMessageEvent = newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.applicationMessageHandler.handleDecryptionError(
@@ -260,9 +259,9 @@ class NewMessageEventHandlerTest {
             .withMLSUnpackerReturning(Either.Right(listOf(MessageUnpackResult.HandshakeMessage)))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val newMessageEvent = newMLSMessageEvent(TEST_INSTANT)
 
-        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), eq(newMessageEvent))
@@ -286,13 +285,11 @@ class NewMessageEventHandlerTest {
             )
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val newMessageEvent = newMLSMessageEvent(TEST_INSTANT)
 
-        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
-        verifySuspend(VerifyMode.not) {
-            arrangement.legalHoldHandler.handleNewMessage(any(), any())
-        }
+        assertTrue(arrangement.legalHoldCalls.isEmpty())
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any())
@@ -306,17 +303,15 @@ class NewMessageEventHandlerTest {
             .withMLSUnpackerReturning(Either.Right(listOf(applicationMessage)))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val newMessageEvent = newMLSMessageEvent(TEST_INSTANT)
 
-        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), eq(newMessageEvent))
         }
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.legalHoldHandler.handleNewMessage(eq(applicationMessage), any())
-        }
+        assertEquals(listOf(LegalHoldCall(applicationMessage, isLive = true)), arrangement.legalHoldCalls)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any())
@@ -335,9 +330,9 @@ class NewMessageEventHandlerTest {
                 )
             ).arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        val newMessageEvent = newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -347,9 +342,10 @@ class NewMessageEventHandlerTest {
             arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
         }
 
-        verify(VerifyMode.exactly(1)) {
-            arrangement.ephemeralMessageDeletionHandler.startSelfDeletion(any(), any())
-        }
+        assertEquals(
+            listOf(MessageActionCall(applicationMessage.conversationId, applicationMessage.content.messageUid)),
+            arrangement.selfDeletionCalls
+        )
     }
 
     @Test
@@ -359,9 +355,9 @@ class NewMessageEventHandlerTest {
             .withProteusUnpackerReturning(Either.Right(applicationMessage))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        val newMessageEvent = newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
@@ -371,9 +367,7 @@ class NewMessageEventHandlerTest {
             arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
         }
 
-        verify(VerifyMode.not) {
-            arrangement.ephemeralMessageDeletionHandler.startSelfDeletion(any(), any())
-        }
+        assertTrue(arrangement.selfDeletionCalls.isEmpty())
     }
 
     @Test
@@ -382,12 +376,12 @@ class NewMessageEventHandlerTest {
             .withHandleLegalHoldSuccess()
             .withProteusUnpackerReturning(Either.Right(applicationMessage)).arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        val newMessageEvent = newMessageEvent("encryptedContent")
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any()) }
         verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }
-        verifySuspend(VerifyMode.not) { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }
+        assertTrue(arrangement.confirmationDeliveryCalls.isEmpty())
     }
 
     @Test
@@ -397,40 +391,46 @@ class NewMessageEventHandlerTest {
             .withProteusUnpackerReturning(Either.Right(signalingMessage))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        val newMessageEvent = newMessageEvent("encryptedContent")
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any()) }
         verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }
-        verifySuspend(VerifyMode.not) { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }
+        assertTrue(arrangement.confirmationDeliveryCalls.isEmpty())
     }
 
     @Test
     fun givenAProteusMessage_whenHandling_thenEnqueueDeliveryConfirmation() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withHandleLegalHoldSuccess()
-            .withProteusUnpackerReturning(Either.Right(applicationMessage.copy(senderUserId = TestUser.OTHER_USER_ID_2))).arrange()
+            .withProteusUnpackerReturning(Either.Right(applicationMessage.copy(senderUserId = OTHER_USER_ID))).arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        val newMessageEvent = newMessageEvent("encryptedContent")
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any()) }
         verifySuspend(VerifyMode.not) { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }
+        assertEquals(
+            listOf(MessageActionCall(applicationMessage.conversationId, applicationMessage.content.messageUid)),
+            arrangement.confirmationDeliveryCalls
+        )
     }
 
     @Test
     fun givenAMLSMessage_whenHandling_thenEnqueueDeliveryConfirmation() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withHandleLegalHoldSuccess()
-            .withMLSUnpackerReturning(Either.Right(listOf(applicationMessage.copy(senderUserId = TestUser.OTHER_USER_ID_2))))
+            .withMLSUnpackerReturning(Either.Right(listOf(applicationMessage.copy(senderUserId = OTHER_USER_ID))))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
-        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        val newMessageEvent = newMLSMessageEvent(TEST_INSTANT)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMessageUnpacker.unpackMlsMessage(any(), eq(newMessageEvent)) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }
+        assertEquals(
+            listOf(MessageActionCall(applicationMessage.conversationId, applicationMessage.content.messageUid)),
+            arrangement.confirmationDeliveryCalls
+        )
     }
 
     @Test
@@ -448,17 +448,15 @@ class NewMessageEventHandlerTest {
             )
             .arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        val newMessageEvent = newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
         }
 
-        verifySuspend(VerifyMode.not) {
-            arrangement.legalHoldHandler.handleNewMessage(any(), any())
-        }
+        assertTrue(arrangement.legalHoldCalls.isEmpty())
     }
 
     @Test
@@ -468,25 +466,21 @@ class NewMessageEventHandlerTest {
             .withProteusUnpackerReturning(Either.Right(applicationMessage))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        val newMessageEvent = newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewProteusMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusMessageUnpacker.unpackProteusMessage<Any>(any(), eq(newMessageEvent), any())
         }
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.legalHoldHandler.handleNewMessage(eq(applicationMessage), any())
-        }
+        assertEquals(listOf(LegalHoldCall(applicationMessage, isLive = true)), arrangement.legalHoldCalls)
 
         verifySuspend(VerifyMode.not) {
             arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
         }
 
-        verify(VerifyMode.not) {
-            arrangement.ephemeralMessageDeletionHandler.startSelfDeletion(any(), any())
-        }
+        assertTrue(arrangement.selfDeletionCalls.isEmpty())
     }
 
     @Test
@@ -496,18 +490,21 @@ class NewMessageEventHandlerTest {
             .withVerifyEpoch(Either.Right(Unit))
             .arrange()
 
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val newMessageEvent = newMLSMessageEvent(TEST_INSTANT)
 
-        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.staleEpochVerifier.verifyEpoch(
-                any(),
-                eq(newMessageEvent.conversationId),
-                any(),
-                eq(newMessageEvent.messageInstant)
-            )
-        }
+        assertEquals(
+            listOf(
+                StaleEpochCall(
+                    transactionContext = arrangement.transactionContext,
+                    conversationId = newMessageEvent.conversationId,
+                    subConversationId = newMessageEvent.subconversationId,
+                    timestamp = newMessageEvent.messageInstant,
+                )
+            ),
+            arrangement.staleEpochCalls
+        )
     }
 
     @Test
@@ -518,9 +515,9 @@ class NewMessageEventHandlerTest {
                 .withVerifyEpoch(Either.Right(Unit))
                 .arrange()
 
-            val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+            val newMessageEvent = newMLSMessageEvent(TEST_INSTANT)
 
-            newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+            newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
             verifySuspend(VerifyMode.not) {
                 arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
@@ -529,23 +526,23 @@ class NewMessageEventHandlerTest {
 
     @Test
     fun givenMLSEventFailsWithInvalidLeafNodeIndex_whenHandling_thenResetConversation() = runTest {
-        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        val newMessageEvent = newMLSMessageEvent(TEST_INSTANT)
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withMLSUnpackerReturning(Either.Left(NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex))
-            .withResetConversationReturning(ResetMLSConversationResult.Success)
             .arrange()
 
-        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, newMessageEvent, liveDeliveryInfo)
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.resetMlsConversation(eq(newMessageEvent.conversationId), eq(arrangement.transactionContext))
-        }
+        assertEquals(
+            listOf(ResetCall(newMessageEvent.conversationId, arrangement.transactionContext)),
+            arrangement.resetCalls,
+        )
     }
 
     @Test
     fun givenSubconversationId_whenHandlingInformUserFailure_thenShouldNotSendSystemMessage() = runTest {
-        val event = TestEvent.newMLSMessageEvent(
-            dateTime = DateTimeUtil.currentInstant(),
+        val event = newMLSMessageEvent(
+            dateTime = TEST_INSTANT,
             subConversationId = SubconversationId("subconversation-id")
         )
 
@@ -555,7 +552,7 @@ class NewMessageEventHandlerTest {
             }
             .arrange()
 
-        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.not) {
             arrangement.applicationMessageHandler.handleDecryptionError(
@@ -571,12 +568,12 @@ class NewMessageEventHandlerTest {
 
     @Test
     fun givenParentConversation_whenHandlingInformUserFailure_thenShouldPersistDecryptionError() = runTest {
-        val event = TestEvent.newMLSMessageEvent(dateTime = DateTimeUtil.currentInstant())
+        val event = newMLSMessageEvent(dateTime = TEST_INSTANT)
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withMLSUnpackerReturning(Either.Left(CoreFailure.Unknown(null)))
             .arrange()
 
-        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.applicationMessageHandler.handleDecryptionError(
@@ -590,33 +587,187 @@ class NewMessageEventHandlerTest {
         }
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+    @Test
+    fun givenResetConversationFailure_whenHandling_thenResetWithoutStaleEpochRecoveryOrDecryptionError() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeSignature))
+            .arrange()
+        val event = newMLSMessageEvent(TEST_INSTANT)
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, event, liveDeliveryInfo)
+
+        assertEquals(
+            listOf(ResetCall(event.conversationId, arrangement.transactionContext)),
+            arrangement.resetCalls
+        )
+        assertTrue(arrangement.staleEpochCalls.isEmpty())
+        verifySuspend(VerifyMode.not) {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenPendingSideEffects_whenFlushing_thenDelegateExactlyOnce() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement().arrange()
+
+        newMessageEventHandler.flushPendingSideEffects()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.applicationMessageHandler.flushPendingSideEffects()
+        }
+    }
+
+    @Test
+    fun givenRemoteRegularMessage_whenHandling_thenLegalHoldPrecedesContentAndConfirmation() = runTest {
+        val remoteMessage = applicationMessage.copy(senderUserId = OTHER_USER_ID)
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withProteusUnpackerReturning(Either.Right(remoteMessage))
+            .arrange()
+
+        newMessageEventHandler.handleNewProteusMessage(
+            arrangement.transactionContext,
+            newMessageEvent("encryptedContent"),
+            liveDeliveryInfo
+        )
+
+        assertEquals(listOf("legalHold", "content", "confirmation"), arrangement.processingOrder)
+    }
+
+    @Test
+    fun givenSelfAuthoredExpiringMessage_whenHandling_thenLegalHoldPrecedesContentAndSelfDeletion() = runTest {
+        val expiringMessage = applicationMessage.copy(
+            content = applicationMessage.content.copy(expiresAfterMillis = 123L)
+        )
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withProteusUnpackerReturning(Either.Right(expiringMessage))
+            .arrange()
+
+        newMessageEventHandler.handleNewProteusMessage(
+            arrangement.transactionContext,
+            newMessageEvent("encryptedContent"),
+            liveDeliveryInfo
+        )
+
+        assertEquals(listOf("legalHold", "content", "selfDeletion"), arrangement.processingOrder)
+    }
+
+    @Test
+    fun givenLegalHoldCallbackFailureResult_whenHandling_thenContinueProcessingMessage() = runTest {
+        val remoteMessage = applicationMessage.copy(senderUserId = OTHER_USER_ID)
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withLegalHoldResult(Either.Left(CoreFailure.InvalidEventSenderID))
+            .withProteusUnpackerReturning(Either.Right(remoteMessage))
+            .arrange()
+
+        newMessageEventHandler.handleNewProteusMessage(
+            arrangement.transactionContext,
+            newMessageEvent("encryptedContent"),
+            liveDeliveryInfo
+        )
+
+        assertEquals(listOf("legalHold", "content", "confirmation"), arrangement.processingOrder)
+    }
+
+    @Test
+    fun givenDependencyException_whenHandling_thenPropagateSameException() = runTest {
+        val expected = IllegalStateException("legal-hold failure")
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withLegalHoldException(expected)
+            .withProteusUnpackerReturning(Either.Right(applicationMessage))
+            .arrange()
+
+        val actual = assertFailsWith<IllegalStateException> {
+            newMessageEventHandler.handleNewProteusMessage(
+                arrangement.transactionContext,
+                newMessageEvent("encryptedContent"),
+                liveDeliveryInfo
+            )
+        }
+
+        assertSame(expected, actual)
+        assertEquals(listOf("legalHold"), arrangement.processingOrder)
+    }
+
+    @Test
+    fun givenDependencyCancellation_whenHandling_thenPropagateSameCancellation() = runTest {
+        val expected = CancellationException("content cancelled")
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withContentException(expected)
+            .withProteusUnpackerReturning(Either.Right(applicationMessage))
+            .arrange()
+
+        val actual = assertFailsWith<CancellationException> {
+            newMessageEventHandler.handleNewProteusMessage(
+                arrangement.transactionContext,
+                newMessageEvent("encryptedContent"),
+                liveDeliveryInfo
+            )
+        }
+
+        assertSame(expected, actual)
+        assertEquals(listOf("legalHold", "content"), arrangement.processingOrder)
+    }
+
+    private class Arrangement {
         val proteusMessageUnpacker = mock<ProteusMessageUnpacker>()
         val mlsMessageUnpacker = mock<MLSMessageUnpacker>()
         val applicationMessageHandler = mock<ApplicationMessageHandler>(mode = MockMode.autoUnit)
-        val staleEpochVerifier = mock<StaleEpochVerifier>()
-        val ephemeralMessageDeletionHandler = mock<EphemeralMessageDeletionHandler>(mode = MockMode.autoUnit)
-        val confirmationDeliveryHandler = mock<ConfirmationDeliveryHandler>(mode = MockMode.autoUnit)
-        val legalHoldHandler = mock<LegalHoldHandler>()
-        val resetMlsConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val proteusContext = mock<ProteusCoreCryptoContext>(mode = MockMode.autoUnit)
+        val mlsContext = mock<MlsCoreCryptoContext>(mode = MockMode.autoUnit)
+        val transactionContext = mock<CryptoTransactionContext>()
+
+        val legalHoldCalls = mutableListOf<LegalHoldCall>()
+        val staleEpochCalls = mutableListOf<StaleEpochCall>()
+        val resetCalls = mutableListOf<ResetCall>()
+        val selfDeletionCalls = mutableListOf<MessageActionCall>()
+        val confirmationDeliveryCalls = mutableListOf<MessageActionCall>()
+        val processingOrder = mutableListOf<String>()
+
+        private var legalHoldResult: Either<CoreFailure, Unit> = Either.Right(Unit)
+        private var staleEpochResult: Either<CoreFailure, Unit> = Either.Right(Unit)
+        private var resetResult: Either<CoreFailure, Unit> = Either.Right(Unit)
+        private var legalHoldException: Throwable? = null
+        private var contentException: Throwable? = null
+
+        init {
+            every { transactionContext.proteus } returns proteusContext
+            every { transactionContext.mls } returns mlsContext
+            everySuspend {
+                applicationMessageHandler.handleContent(any(), any(), any(), any(), any(), any())
+            } calls {
+                processingOrder += "content"
+                contentException?.let { throw it }
+                Unit
+            }
+        }
 
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(
-            proteusMessageUnpacker,
-            mlsMessageUnpacker,
-            applicationMessageHandler,
-            legalHoldHandler,
-            { conversationId, messageId ->
-                ephemeralMessageDeletionHandler.startSelfDeletion(
-                    conversationId,
-                    messageId
-                )
+            proteusMessageUnpacker = proteusMessageUnpacker,
+            mlsMessageUnpacker = mlsMessageUnpacker,
+            applicationMessageHandler = applicationMessageHandler,
+            handleLegalHoldMessage = { message, isLive ->
+                processingOrder += "legalHold"
+                legalHoldCalls += LegalHoldCall(message, isLive)
+                legalHoldException?.let { throw it }
+                legalHoldResult
             },
-            { conversationId, messageId ->
-                confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
+            enqueueSelfDeletion = { conversationId, messageId ->
+                processingOrder += "selfDeletion"
+                selfDeletionCalls += MessageActionCall(conversationId, messageId)
             },
-            SELF_USER_ID,
-            staleEpochVerifier,
-            resetMlsConversation,
+            enqueueConfirmationDelivery = { conversationId, messageId ->
+                processingOrder += "confirmation"
+                confirmationDeliveryCalls += MessageActionCall(conversationId, messageId)
+            },
+            selfUserId = SELF_USER_ID,
+            verifyStaleEpoch = { context, conversationId, subConversationId, timestamp ->
+                staleEpochCalls += StaleEpochCall(context, conversationId, subConversationId, timestamp)
+                staleEpochResult
+            },
+            resetMLSConversation = { conversationId, context ->
+                resetCalls += ResetCall(conversationId, context)
+                resetResult
+            },
         )
 
         suspend fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult.ApplicationMessage>) = apply {
@@ -633,9 +784,19 @@ class NewMessageEventHandlerTest {
         }
 
         suspend fun withHandleLegalHoldSuccess() = apply {
-            everySuspend {
-                legalHoldHandler.handleNewMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            legalHoldResult = Either.Right(Unit)
+        }
+
+        fun withLegalHoldResult(result: Either<CoreFailure, Unit>) = apply {
+            legalHoldResult = result
+        }
+
+        fun withLegalHoldException(exception: Throwable) = apply {
+            legalHoldException = exception
+        }
+
+        fun withContentException(exception: Throwable) = apply {
+            contentException = exception
         }
 
         suspend fun withMLSUnpackerReturning(result: Either<CoreFailure, List<MessageUnpackResult>>) =
@@ -646,25 +807,64 @@ class NewMessageEventHandlerTest {
             }
 
         suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>) = apply {
-            everySuspend {
-                staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
-            }.returns(result)
+            staleEpochResult = result
         }
 
-        suspend fun withResetConversationReturning(result: ResetMLSConversationResult) = apply {
-            everySuspend {
-                resetMlsConversation(any(), any())
-            }.returns(result)
-        }
-
-        fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
-            runBlocking { block() }
-            this to newMessageEventHandler
-        }
+        fun arrange() = this to newMessageEventHandler
     }
 
+    private data class LegalHoldCall(
+        val message: MessageUnpackResult.ApplicationMessage,
+        val isLive: Boolean,
+    )
+
+    private data class StaleEpochCall(
+        val transactionContext: CryptoTransactionContext,
+        val conversationId: ConversationId,
+        val subConversationId: SubconversationId?,
+        val timestamp: Instant?,
+    )
+
+    private data class ResetCall(
+        val conversationId: ConversationId,
+        val transactionContext: CryptoTransactionContext,
+    )
+
+    private data class MessageActionCall(
+        val conversationId: ConversationId,
+        val messageId: String,
+    )
+
     private companion object {
+        val TEST_INSTANT = Instant.parse("2024-01-02T03:04:05Z")
+        val CONVERSATION_ID = ConversationId("conversationId", "conversationDomain")
         val SELF_USER_ID = UserId("selfUserId", "selfDomain")
+        val OTHER_USER_ID = UserId("otherUserId", "otherDomain")
+        val SENDER_CLIENT_ID = ClientId("senderClientId")
+        val liveDeliveryInfo = EventDeliveryInfo(EventSource.LIVE)
+
+        fun newMessageEvent(content: String) = Event.Conversation.NewMessage(
+            id = "eventId",
+            conversationId = CONVERSATION_ID,
+            senderUserId = SELF_USER_ID,
+            senderClientId = SENDER_CLIENT_ID,
+            messageInstant = TEST_INSTANT,
+            content = content,
+            encryptedExternalContent = null,
+        )
+
+        fun newMLSMessageEvent(
+            dateTime: Instant,
+            subConversationId: SubconversationId? = null,
+        ) = Event.Conversation.NewMLSMessage(
+            id = "eventId",
+            conversationId = CONVERSATION_ID,
+            subconversationId = subConversationId,
+            senderUserId = SELF_USER_ID,
+            messageInstant = dateTime,
+            content = "encryptedContent",
+        )
+
         val signalingMessage = MessageUnpackResult.ApplicationMessage(
             conversationId = ConversationId("conversationID", "domain"),
             instant = Instant.DISTANT_PAST,

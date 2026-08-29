@@ -293,6 +293,69 @@ Exit gate:
 - cross-module contracts are marked `InternalKaliumApi`; no exported `KaliumLogic`/Apple product
   API, schema, Apple configuration, or externally observable behavior changes.
 
+#### Milestone 2 receiver extraction status: MLS receiving Slice 2
+
+MLS receive unpacking is now below `:logic` as a behavior-preserving module-boundary slice:
+
+- `KaliumSyncException` retains its package and FQCN and is owned by `:domain:event-processing`.
+- The `PendingProposalScheduler` contract retains its package and FQCN and is owned by
+  `:domain:messaging:receiving`. `PendingProposalSchedulerImpl` and its eager coroutine, timer,
+  transaction, and repository graph remain in `:logic`.
+- `MLSMessageFailureHandler` and its resolution model retain their package and FQCN and are owned by
+  `:domain:messaging:shared`, because receiving and non-receiving MLS consumers share the complete
+  normalization and classification table. Its characterization tests run in that module.
+- `MLSMessageUnpacker`, `MLSMessageUnpackerImpl`, and their characterization tests retain their
+  package and FQCN and are owned by `:domain:messaging:receiving`. The implementation depends only
+  on `ConversationProtocolGetter`, `SubconversationGroupInfoProvider`, `MLSMessageDecryptor`,
+  `PendingProposalScheduler`, and `ProtoContentDecoder`.
+- Main-app composition supplies the same existing objects: the broad conversation repository as the
+  protocol getter, the stable process-local subconversation repository, the observable MLS
+  repository wrapper as the decryptor, the existing eager scheduler implementation, and the
+  existing protobuf mapper as the decoder. Successful decrypts therefore still pass through the
+  observable crypto-state hook, while failures do not notify it.
+
+This completed slice adds no NSE facade or runtime wiring and does not make MLS receiving ready to
+instantiate in an NSE. The subconversation lookup is still process-local; NSE use requires durable
+`(conversationId, subconversationId) -> groupId` state. Pending proposals still require an ownership
+decision, durable outbox, and main-app executor design; the NSE must neither construct the current
+scheduler implementation nor replace it with a no-op. The CoreCrypto cross-process lock is not part
+of this slice. The broad protobuf encoder/mapper and `AssetMapper` graph remain in `:logic`, with the
+receiving unpacker consuming only the focused decoder contract. New-message orchestration has since
+moved below `:logic` in the next receiver-extraction slice.
+
+#### Milestone 2 receiver extraction status: new-message orchestration slice
+
+New-message orchestration is now below `:logic` as a behavior-preserving ownership refactor:
+
+- `NewMessageEventHandler`, `NewMessageEventHandlerImpl`, and their complete test suite retain their
+  package and FQCNs and are owned by `:domain:messaging:receiving`. Only the public visibility and
+  `@InternalKaliumApi` annotations required for cross-module composition were added.
+- The handler retains direct dependencies on `ProteusMessageUnpacker`, `MLSMessageUnpacker`,
+  `ApplicationMessageHandler`, and `selfUserId`. The broad legal-hold, stale-epoch, and MLS-reset
+  graphs cross the boundary only as
+  `suspend (MessageUnpackResult.ApplicationMessage, Boolean) -> Either<CoreFailure, Unit>`,
+  `suspend (CryptoTransactionContext, ConversationId, SubconversationId?, Instant?) -> Either<CoreFailure, Unit>`,
+  and `suspend (ConversationId, CryptoTransactionContext) -> Either<CoreFailure, Unit>` callbacks.
+  The existing self-deletion and confirmation-delivery callbacks retain their meaning.
+- `UserSessionScope` supplies the same actions through `legalHoldHandler::handleNewMessage`,
+  `staleEpochVerifier::verifyEpoch`, and the existing ephemeral self-deletion and
+  confirmation-delivery actions. It captures `resetMlsConversation` once per handler construction
+  and supplies an unambiguous lambda invoking that captured instance with
+  `(conversationId, transactionContext)` before converting the result to `Either`.
+- Proteus and MLS failure classification, exact decryption-error payloads, parent-only MLS failure
+  persistence, transaction wrapping, batch order and per-item logger reset, legal-hold/content/
+  insertion-side-effect order, pending-side-effect flushing, ignored callback results, exceptions,
+  and cancellation are unchanged. The complete moved suite uses local event/transaction fixtures
+  and focused callback recorders and adds characterization for reset exclusivity, exact flush
+  delegation, processing order, and exception/cancellation propagation.
+
+This does not make NSE runtime composition ready. Legal hold, stale-epoch recovery, reset/rejoin,
+confirmation delivery, self deletion, and pending-side-effect durability still need explicit NSE
+ownership/adapters or a durable action/outbox design. Durable subconversation mapping,
+pending-proposal ownership/outbox/execution, and cross-process CoreCrypto locking remain separate
+work. Conversation lifecycle handlers still remain in `:logic` and block the complete
+`ConversationEventReceiverImpl` move.
+
 ### Milestone 3 - Apple shared storage, keychain, and existing-state-only mode
 
 Repository: Kalium.

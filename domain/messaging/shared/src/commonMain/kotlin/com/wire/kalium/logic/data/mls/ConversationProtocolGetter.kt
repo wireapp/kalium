@@ -23,19 +23,24 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapper
+import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperImpl
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.util.InternalKaliumApi
 
-internal fun interface ConversationProtocolGetter {
-    suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo>
+@InternalKaliumApi
+public fun interface ConversationProtocolGetter {
+    public suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo>
 }
 
-internal class ConversationProtocolGetterImpl(
+@InternalKaliumApi
+public class ConversationProtocolGetterImpl private constructor(
     private val conversationDAO: ConversationDAO,
-    private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper()
+    private val protocolInfoMapper: ProtocolInfoMapper
 ) : ConversationProtocolGetter {
+    public constructor(conversationDAO: ConversationDAO) : this(conversationDAO, ProtocolInfoMapperImpl())
+
     override suspend fun getConversationProtocolInfo(
         conversationId: ConversationId
     ): Either<CoreFailure, Conversation.ProtocolInfo> = wrapStorageRequest {

@@ -77,9 +77,8 @@ import kotlinx.datetime.Instant
 import pbandk.ByteArr
 import com.wire.kalium.protobuf.messages.HistoryClient as ProtoHistoryClient
 
-internal interface ProtoContentMapper {
+internal interface ProtoContentMapper : ProtoContentDecoder {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
-    fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
 }
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")

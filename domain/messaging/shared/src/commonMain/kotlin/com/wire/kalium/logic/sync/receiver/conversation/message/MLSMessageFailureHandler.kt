@@ -25,16 +25,19 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
+import com.wire.kalium.util.InternalKaliumApi
 
-internal sealed class MLSMessageFailureResolution {
-    internal data object Ignore : MLSMessageFailureResolution()
-    internal data object InformUser : MLSMessageFailureResolution()
-    internal data object OutOfSync : MLSMessageFailureResolution()
-    internal data object ResetConversation : MLSMessageFailureResolution()
+@InternalKaliumApi
+public sealed class MLSMessageFailureResolution {
+    public data object Ignore : MLSMessageFailureResolution()
+    public data object InformUser : MLSMessageFailureResolution()
+    public data object OutOfSync : MLSMessageFailureResolution()
+    public data object ResetConversation : MLSMessageFailureResolution()
 }
 
-internal object MLSMessageFailureHandler {
-    fun handleFailure(failure: CoreFailure): MLSMessageFailureResolution {
+@InternalKaliumApi
+public object MLSMessageFailureHandler {
+    public fun handleFailure(failure: CoreFailure): MLSMessageFailureResolution {
         fun handleRejected(rejectedFailure: NetworkFailure.MlsMessageRejectedFailure) = when (rejectedFailure) {
             is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync,
             NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex,
