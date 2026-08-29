@@ -527,6 +527,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEve
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationMembersProvider
+import com.wire.kalium.logic.sync.receiver.conversation.DaoConversationMembersProvider
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
@@ -585,12 +587,15 @@ import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.InCallEmojiMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.InCallEmojiMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.IncomingCallingMessageConsumer
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.RemoteMuteActionRecorder
+import com.wire.kalium.logic.sync.receiver.handler.RemoteMuteCall
 import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
@@ -1025,7 +1030,12 @@ public class UserSessionScope internal constructor(
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,
             conversationLifecycleEventRepository = conversationLifecycleEventRepository,
+            conversationMembersProvider = conversationMembersProvider,
         )
+
+    private val conversationMembersProvider: ConversationMembersProvider by lazy {
+        DaoConversationMembersProvider(userStorage.database.memberDAO)
+    }
 
     private val conversationMetaDataRepository: ConversationMetaDataRepository
         get() = ConversationMetaDataDataSource(
@@ -2006,11 +2016,23 @@ public class UserSessionScope internal constructor(
     private val callingMessageHandler: CallingMessageHandler by lazy {
         CallingMessageHandlerImpl(
             selfUserId = userId,
-            currentClientIdProvider = clientIdProvider,
-            callManager = callManager,
-            conversationRepository = conversationRepository,
-            callModerationActionsRepository = callModerationActionsRepository,
-            muteCall = calls.muteCall,
+            currentClientIdProvider = clientIdProvider::invoke,
+            incomingCallingMessageConsumer = IncomingCallingMessageConsumer { message, content ->
+                callManager.value.onCallingMessageReceived(message, content)
+            },
+            conversationMembersProvider = conversationMembersProvider,
+            remoteMuteActionRecorder = run {
+                val sharedCallModerationActionsRepository = callModerationActionsRepository
+                RemoteMuteActionRecorder { conversationId, action ->
+                    sharedCallModerationActionsRepository.addAction(conversationId, action)
+                }
+            },
+            remoteMuteCall = run {
+                val sharedMuteCall = calls.muteCall
+                RemoteMuteCall { conversationId ->
+                    sharedMuteCall(conversationId, true)
+                }
+            },
         )
     }
 

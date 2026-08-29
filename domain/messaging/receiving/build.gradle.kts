@@ -52,6 +52,7 @@ kotlin {
                 api(libs.coroutines.core)
                 api(libs.ktxDateTime)
                 implementation(libs.concurrentCollections)
+                implementation(libs.ktxSerialization)
             }
         }
         val commonTest by getting {

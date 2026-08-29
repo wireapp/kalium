@@ -84,6 +84,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventReposit
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationEventRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepository
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationLifecycleEventRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationMembersProvider
+import com.wire.kalium.logic.sync.receiver.conversation.DaoConversationMembersProvider
 
 internal data class ConversationMemberCounts(
     val conversationSize: Int,
@@ -405,6 +407,7 @@ internal class ConversationDataSource internal constructor(
     private val conversationEventRepository: ConversationEventRepository = ConversationEventRepositoryImpl(conversationDAO),
     private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository =
         ConversationLifecycleEventRepositoryImpl(conversationDAO, memberDAO),
+    private val conversationMembersProvider: ConversationMembersProvider = DaoConversationMembersProvider(memberDAO),
 ) : ConversationRepository {
 
     override suspend fun deleteFederatedMembers(
@@ -604,9 +607,7 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =
-        memberDAO.observeConversationMembers(conversationID.toDao()).map { members ->
-            members.map(memberMapper::fromDaoModel)
-        }
+        conversationMembersProvider.observeConversationMembers(conversationID)
 
     // TODO: only called from tests can be removed
     override suspend fun getConversationMemberRole(

@@ -42,9 +42,53 @@ produced this completed behavior-preserving extraction:
    lookup/persist outcomes, preview visibility and image metadata, sender/type rejection, exact merge preservation,
    arguments, counts, and order.
 
-This slice mechanically moved the handler and its tests without changing `ApplicationMessageHandler` routing or
-`UserSessionScope` construction. `CallingMessageHandler` is the remaining deeper application-message leaf and was not
-included in this slice.
+The asset slice mechanically moved its handler and tests without changing `ApplicationMessageHandler` routing or
+`UserSessionScope` construction. The following calling slices first decoupled the normal-forwarding and remote-mute
+dependency closures, then mechanically moved `CallingMessageHandler` and its tests.
+
+## Completed CallingMessageHandler extraction slice
+
+Inspection of `CallingMessageHandlerImpl`, `CallManager`, the remote-mute policy and effects, `UserSessionScope`, and their
+tests produced this completed behavior-preserving extraction slice:
+
+1. `CallingMessageHandler` and `CallingMessageHandlerImpl` now live in `:domain:messaging:receiving` with their existing
+   package and cross-module API exposed through `@InternalKaliumApi`. Non-`REMOTEMUTE` messages cross the one-method
+   `IncomingCallingMessageConsumer` port, forwarding the exact same signaling message and calling content once.
+2. `UserSessionScope` supplies a lambda whose body remains the existing
+   `callManager.value.onCallingMessageReceived(message, content)` call. This new normal-message forwarding adapter
+   evaluates `callManager.value` only when its consumer is invoked, preserving the `CallManager` lazy lifecycle and
+   identity for that path. `REMOTEMUTE` bypasses this adapter, but a successful remote mute may still access the same
+   `CallManager` through the existing `calls.muteCall` to `MuteCallUseCaseImpl` path exactly as before.
+3. The pure `ShouldRemoteMuteChecker`, `ShouldRemoteMuteCheckerImpl`, and their tests now live in
+   `:domain:messaging:receiving`, retaining their package and exact admin, target-domain, user/client, null, and
+   case-sensitive matching behavior. Only the `@InternalKaliumApi` and public visibility required for cross-module use
+   were added.
+4. The remote-mute closure is now decoupled from its broad `:logic` contracts. Current client lookup is the precise
+   `suspend () -> Either<CoreFailure, ClientId>` function dependency and `UserSessionScope` supplies it exactly as
+   `currentClientIdProvider = clientIdProvider::invoke`. Conversation members cross the focused
+   `ConversationMembersProvider` boundary owned by `:domain:messaging:receiving`; its `DaoConversationMembersProvider`
+   uses the existing `MemberDAO` flow and maps qualified IDs plus `Admin`, `Member`, and named `Unknown` roles exactly as
+   the former broad repository path did. `ConversationDataSource.observeConversationMembers` delegates to this same
+   focused provider instead of retaining a second DAO observation/mapping path.
+5. Remote-mute effects now cross the receiving-owned `RemoteMuteCall` and `RemoteMuteActionRecorder` ports.
+   While constructing its lazy handler, `UserSessionScope` resolves and captures the existing `calls.muteCall` use-case
+   instance and `callModerationActionsRepository` instance once, preserving their former initialization lifecycle. The
+   adapters call those captured instances with `(conversationId, true)` and `(conversationId, action)`, respectively.
+   `CallManager`, `MuteCallUseCase`, `CallsScope`, and the process-local `CallModerationActionsRepository` remain in
+   `:logic` behind these receiving-owned ports. The handler still builds the exact
+   `CallModerationAction(message.id, message.senderUserId, MUTED)`, mutes first, and records second.
+6. The handler still performs JSON decoding and `REMOTEMUTE` branching before touching remote-mute dependencies. Its
+   remote-mute sequence remains current client ID, unavailable-client return, member-flow `first()`, checker, logging,
+   then accepted-only mute and action recording. Target-conversation selection, normal-message forwarding, dependency
+   exception/cancellation propagation, and short-circuiting are unchanged. No queue, async dispatch, outbox, retry,
+   fallback, exception handling, NSE runtime wiring, or eager call-object evaluation was added.
+7. Focused tests now characterize normal-path isolation, all self/non-self target-conversation cases, the missing-client
+   return, first member emission, checker rejection, exact accepted effect order and action identity, and same-instance
+   exception/cancellation propagation with later-work suppression at every remote-mute dependency. DAO-backed provider
+   tests cover qualified member IDs, every role mapping including named unknown roles, and multiple flow emissions.
+8. The handler suite now lives in `:domain:messaging:receiving`; only its former broad `:logic` fixture references were
+   replaced with equivalent local IDs. The mechanical move did not change `ApplicationMessageHandler` routing or
+   `UserSessionScope` construction, including the current-client provider and once-captured mute/moderation adapters.
 
 ## Completed clear-conversation-content application-message slice
 
@@ -605,8 +649,9 @@ The complete `NewMessageEventHandler` branch additionally closes over:
 
 - Proteus and MLS unpacking/failure handling (`ProteusMessageUnpacker`, `ProteusMessageFailureHandler`,
   `MLSMessageUnpacker`, `MLSMessageFailureHandler`, `MessageUnpackResult`);
-- application-message routing (`ApplicationMessageHandler`), whose asset handler is reusable below `:logic` and whose
-  remaining app-owned handler is `CallingMessageHandler`. Its
+- application-message routing (`ApplicationMessageHandler`), whose asset and calling handlers are reusable below
+  `:logic`. All normal-calling and remote-mute dependencies cross focused lower-module boundaries, while
+  `ApplicationMessageHandler` itself remains in `:logic` and was not extracted in the calling slice. Its
   button, data-transfer, receipt, reaction, delete-for-me, last-read, composite-edit, availability, client-action,
   in-call-emoji, text-edit, multipart-edit, delete-message, and clear-content leaves are reusable below `:logic`, but the
   facade stays in `:logic` until the remaining branches move;
@@ -628,12 +673,14 @@ filesystem executor and MLS/CoreCrypto deletion implementation intentionally rem
 handlers remain blocked on the remote-fetch, MLS, legal-hold, call, notification, user, and system-message closures
 above.
 
-`AssetMessageHandler` and its focused lookup/configuration dependency closure are now extracted. `CallingMessageHandler`
-is the remaining deeper application-message leaf and was not included in this slice because its current closure includes
-`CallManager`, conversation-member observation, client identity, remote-mute policy, mute execution, and moderation
-state. A standalone `Ignored` move is still not a meaningful milestone, and `History` remains existing unsupported
-behavior rather than an extraction target. The extracted in-call reaction stream remains process-local and ephemeral,
-so any future NSE cross-process or durability design stays outside this leaf.
+`AssetMessageHandler` and `CallingMessageHandler`, with their focused dependency closures and tests, are now extracted to
+`:domain:messaging:receiving`. Normal forwarding, client identity, conversation-member observation, mute execution,
+moderation state, and the pure remote-mute checker cross focused boundaries owned below `:logic`. `CallManager`,
+`MuteCallUseCase`, `CallsScope`, the process-local `CallModerationActionsRepository`, and AVS/calling infrastructure remain
+in `:logic` behind the receiving-owned ports.
+A standalone `Ignored` move is still not a meaningful milestone, and `History` remains existing unsupported behavior
+rather than an extraction target. The extracted in-call reaction stream remains process-local and ephemeral, so any
+future NSE cross-process or durability design stays outside this leaf.
 `ConversationEventReceiverImpl` remains blocked until those lifecycle handlers plus `NewMessageEventHandler`, both
 unpackers/failure handlers, MLS recovery, certificate/legal-hold checks, and pending-side-effect flushing are all reusable
 below `:logic`.

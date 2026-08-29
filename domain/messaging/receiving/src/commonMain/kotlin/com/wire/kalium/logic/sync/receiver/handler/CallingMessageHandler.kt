@@ -18,34 +18,37 @@
 
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.CallModerationAction
-import com.wire.kalium.logic.data.call.CallModerationActionsRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.ShouldRemoteMuteChecker
 import com.wire.kalium.logic.feature.call.ShouldRemoteMuteCheckerImpl
-import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationMembersProvider
+import com.wire.kalium.util.InternalKaliumApi
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 
-internal interface CallingMessageHandler {
-    suspend fun handle(message: Message.Signaling, content: MessageContent.Calling)
+@InternalKaliumApi
+public interface CallingMessageHandler {
+    public suspend fun handle(message: Message.Signaling, content: MessageContent.Calling)
 }
 
 @Suppress("LongParameterList")
-internal class CallingMessageHandlerImpl internal constructor(
+@InternalKaliumApi
+public class CallingMessageHandlerImpl public constructor(
     private val selfUserId: UserId,
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    private val callManager: Lazy<CallManager>,
-    private val conversationRepository: ConversationRepository,
-    private val callModerationActionsRepository: CallModerationActionsRepository,
-    private val muteCall: MuteCallUseCase,
+    private val currentClientIdProvider: suspend () -> Either<CoreFailure, ClientId>,
+    private val incomingCallingMessageConsumer: IncomingCallingMessageConsumer,
+    private val conversationMembersProvider: ConversationMembersProvider,
+    private val remoteMuteActionRecorder: RemoteMuteActionRecorder,
+    private val remoteMuteCall: RemoteMuteCall,
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) : CallingMessageHandler {
@@ -65,7 +68,7 @@ internal class CallingMessageHandlerImpl internal constructor(
                 callingValue = callingValue
             )
 
-            else -> callManager.value.onCallingMessageReceived(message = message, content = content)
+            else -> incomingCallingMessageConsumer.onCallingMessageReceived(message = message, content = content)
         }
     }
 
@@ -80,21 +83,20 @@ internal class CallingMessageHandlerImpl internal constructor(
             return
         }
 
-        val isSenderAdmin = conversationRepository
-            .isConversationMemberAdmin(targetConversationId, message.senderUserId)
-            .getOrNull() ?: false
+        val conversationMembers = conversationMembersProvider.observeConversationMembers(targetConversationId).first()
         val shouldRemoteMute = shouldRemoteMuteChecker.check(
-            isSenderAdmin = isSenderAdmin,
+            senderUserId = message.senderUserId,
             selfUserId = selfUserId,
             selfClientId = clientId.value,
-            targets = callingValue.targets
+            targets = callingValue.targets,
+            conversationMembers = conversationMembers
         )
         callingLogger.i("$tagWithUserId: Calling $REMOTE_MUTE_TYPE message received for conversationId: $targetConversationId.")
         if (shouldRemoteMute) {
-            muteCall(targetConversationId, true)
-            callModerationActionsRepository.addAction(
+            remoteMuteCall(targetConversationId)
+            remoteMuteActionRecorder.record(
                 conversationId = targetConversationId,
-                callModerationAction = CallModerationAction(message.id, message.senderUserId, CallModerationAction.Type.MUTED)
+                action = CallModerationAction(message.id, message.senderUserId, CallModerationAction.Type.MUTED)
             )
         }
     }
