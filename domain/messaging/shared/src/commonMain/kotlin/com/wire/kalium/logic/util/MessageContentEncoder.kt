@@ -23,14 +23,16 @@ import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.uuid
+import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
 import kotlinx.datetime.Instant
 import kotlin.math.roundToLong
 
-internal class MessageContentEncoder {
-    internal fun encodeMessageContent(messageInstant: Instant, messageContent: MessageContent): EncodedMessageContent? {
+@InternalKaliumApi
+public class MessageContentEncoder {
+    public fun encodeMessageContent(messageInstant: Instant, messageContent: MessageContent): EncodedMessageContent? {
         return when (messageContent) {
             is MessageContent.Asset ->
                 encodeMessageAsset(
@@ -122,7 +124,8 @@ internal class MessageContentEncoder {
     }
 }
 
-internal class EncodedMessageContent(val byteArray: ByteArray) {
-    internal val asHexString = byteArray.toHexString()
-    internal val sha256Digest = calcSHA256(byteArray)
+@InternalKaliumApi
+public class EncodedMessageContent internal constructor(internal val byteArray: ByteArray) {
+    public val asHexString: String = byteArray.toHexString()
+    public val sha256Digest: ByteArray = calcSHA256(byteArray)
 }

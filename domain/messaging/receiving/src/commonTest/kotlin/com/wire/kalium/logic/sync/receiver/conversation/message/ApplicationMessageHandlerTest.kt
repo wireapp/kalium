@@ -23,16 +23,16 @@ import co.touchlab.kermit.Severity
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.history.HistoryClient
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -40,9 +40,6 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
-import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.AvailabilityMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
@@ -59,9 +56,7 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
-import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -73,19 +68,38 @@ import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
-import kotlin.io.encoding.Base64
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.time.Duration.Companion.seconds
 
+private val SELF_USER_ID = UserId("41d2b365-f4a9-4ba1-bddf-5afb8aca6786", "domain")
+private val TEST_CONVERSATION_ID = ConversationId("valueConvo", "domainConvo")
+private val TEST_SENDER_CLIENT_ID = ClientId("test")
+private val TEST_MESSAGE_INSTANT = Instant.UNIX_FIRST_DATE
+
+private data class NewMessageFixture(
+    val conversationId: ConversationId,
+    val senderUserId: UserId,
+    val senderClientId: ClientId,
+    val messageInstant: Instant,
+)
+
+private fun newMessageEvent() = NewMessageFixture(
+    conversationId = TEST_CONVERSATION_ID,
+    senderUserId = SELF_USER_ID,
+    senderClientId = TEST_SENDER_CLIENT_ID,
+    messageInstant = TEST_MESSAGE_INSTANT,
+)
+
 @Suppress("TooManyFunctions")
 class ApplicationMessageHandlerTest {
 
     @Test
     fun givenAvailabilityMessage_whenHandling_thenAvailabilityLeafReceivesSignalingEnvelopeExactlyOnce() = runTest {
-        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val messageEvent = newMessageEvent()
         val availabilityContent = MessageContent.Availability(UserAvailabilityStatus.BUSY)
         val protoContent = ProtoContent.Readable(
             messageUid = "availability-signaling-id",
@@ -101,7 +115,7 @@ class ApplicationMessageHandlerTest {
             senderUserId = messageEvent.senderUserId,
             senderClientId = messageEvent.senderClientId,
             status = Message.Status.Sent,
-            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            isSelfMessage = messageEvent.senderUserId == SELF_USER_ID,
             expirationData = null,
         )
         val (arrangement, messageHandler) = Arrangement().arrange()
@@ -125,7 +139,7 @@ class ApplicationMessageHandlerTest {
 
     @Test
     fun givenClientActionMessage_whenHandling_thenClientActionLeafReceivesExactSignalingEnvelopeOnce() = runTest {
-        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val messageEvent = newMessageEvent()
         val protoContent = ProtoContent.Readable(
             messageUid = "client-action-signaling-id",
             messageContent = MessageContent.ClientAction,
@@ -141,7 +155,7 @@ class ApplicationMessageHandlerTest {
             senderUserId = messageEvent.senderUserId,
             senderClientId = messageEvent.senderClientId,
             status = Message.Status.Sent,
-            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            isSelfMessage = messageEvent.senderUserId == SELF_USER_ID,
             expirationData = Message.ExpirationData(30.seconds),
         )
         val (arrangement, messageHandler) = Arrangement().arrange()
@@ -164,7 +178,7 @@ class ApplicationMessageHandlerTest {
 
     @Test
     fun givenDeleteForMeMessage_whenHandling_thenExistingDeleteForMeLeafIsInvoked() = runTest {
-        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val messageEvent = newMessageEvent()
         val deleteForMe = MessageContent.DeleteForMe(
             messageId = "deleted-message-id",
             conversationId = messageEvent.conversationId,
@@ -196,7 +210,7 @@ class ApplicationMessageHandlerTest {
 
     @Test
     fun givenClearedMessage_whenHandling_thenExistingClearLeafReceivesExactTransactionEnvelopeAndPayloadOnce() = runTest {
-        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val messageEvent = newMessageEvent()
         val payloadConversationId = messageEvent.conversationId.copy(value = "payload-conversation-id")
         val cleared = MessageContent.Cleared(
             conversationId = payloadConversationId,
@@ -217,7 +231,7 @@ class ApplicationMessageHandlerTest {
             senderUserId = messageEvent.senderUserId,
             senderClientId = messageEvent.senderClientId,
             status = Message.Status.Sent,
-            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            isSelfMessage = messageEvent.senderUserId == SELF_USER_ID,
             expirationData = null,
         )
         val (arrangement, messageHandler) = Arrangement().arrange()
@@ -242,7 +256,7 @@ class ApplicationMessageHandlerTest {
 
     @Test
     fun givenDeleteMessage_whenHandling_thenExistingDeleteLeafReceivesExactPayloadAndEnvelopeIds() = runTest {
-        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val messageEvent = newMessageEvent()
         val deleteMessage = MessageContent.DeleteMessage("deleted-message-id")
         val protoContent = ProtoContent.Readable(
             messageUid = "delete-signaling-message-id",
@@ -287,15 +301,11 @@ class ApplicationMessageHandlerTest {
             false,
             Conversation.LegalHoldStatus.DISABLED
         )
-        val coreFailure = StorageFailure.DataNotFound
         val (arrangement, messageHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
-            .withFileSharingEnabled()
-            .withErrorGetMessageById(coreFailure)
             .arrange()
 
-        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        val messageEvent = newMessageEvent()
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
@@ -331,8 +341,7 @@ class ApplicationMessageHandlerTest {
             .withPersistingMessageReturning(Either.Right(Unit))
             .arrange()
 
-        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        val messageEvent = newMessageEvent()
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
@@ -369,8 +378,7 @@ class ApplicationMessageHandlerTest {
             .withMessageCompositeEditHandler()
             .arrange()
 
-        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        val messageEvent = newMessageEvent()
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
@@ -397,7 +405,7 @@ class ApplicationMessageHandlerTest {
             expectsReadConfirmation = false,
             legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
         )
-        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val messageEvent = newMessageEvent()
         val expectedSignaling = Message.Signaling(
             id = protoContent.messageUid,
             content = textEditedContent,
@@ -406,7 +414,7 @@ class ApplicationMessageHandlerTest {
             senderUserId = messageEvent.senderUserId,
             senderClientId = messageEvent.senderClientId,
             status = Message.Status.Sent,
-            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            isSelfMessage = messageEvent.senderUserId == SELF_USER_ID,
             expirationData = null,
         )
         val (arrangement, messageHandler) = Arrangement()
@@ -442,7 +450,7 @@ class ApplicationMessageHandlerTest {
             expectsReadConfirmation = false,
             legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
         )
-        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val messageEvent = newMessageEvent()
         val expectedSignaling = Message.Signaling(
             id = protoContent.messageUid,
             content = multipartEditedContent,
@@ -451,7 +459,7 @@ class ApplicationMessageHandlerTest {
             senderUserId = messageEvent.senderUserId,
             senderClientId = messageEvent.senderClientId,
             status = Message.Status.Sent,
-            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            isSelfMessage = messageEvent.senderUserId == SELF_USER_ID,
             expirationData = null,
         )
         val (arrangement, messageHandler) = Arrangement()
@@ -493,8 +501,7 @@ class ApplicationMessageHandlerTest {
             .withButtonActionConfirmation(Either.Right(Unit))
             .arrange()
 
-        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        val messageEvent = newMessageEvent()
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
@@ -529,8 +536,7 @@ class ApplicationMessageHandlerTest {
             .withPersistingMessageReturning(Either.Right(Unit))
             .arrange()
 
-        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        val messageEvent = newMessageEvent()
 
         // when
         messageHandler.handleContent(
@@ -559,8 +565,7 @@ class ApplicationMessageHandlerTest {
             expectsReadConfirmation = false,
             legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
         )
-        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        val messageEvent = newMessageEvent()
         val expectedSignaling = Message.Signaling(
             id = protoContent.messageUid,
             content = inCallReactionContent,
@@ -569,7 +574,7 @@ class ApplicationMessageHandlerTest {
             senderUserId = messageEvent.senderUserId,
             senderClientId = messageEvent.senderClientId,
             status = Message.Status.Sent,
-            isSelfMessage = messageEvent.senderUserId == TestUser.SELF.id,
+            isSelfMessage = messageEvent.senderUserId == SELF_USER_ID,
             expirationData = null,
         )
         val (arrangement, messageHandler) = Arrangement().arrange()
@@ -595,8 +600,7 @@ class ApplicationMessageHandlerTest {
     fun givenCallingMessageReceived_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
         // given
         val messageId = "messageId"
-        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
-        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        val messageEvent = newMessageEvent()
         val callingContent = MessageContent.Calling(value = "json content", conversationId = messageEvent.conversationId)
         val protoContent = ProtoContent.Readable(
             messageUid = messageId,
@@ -620,6 +624,150 @@ class ApplicationMessageHandlerTest {
         // then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callingMessageHandler.handle(any(), callingContent)
+        }
+    }
+
+    @Test
+    fun givenQuotedTextMessage_whenHandling_thenQuoteIsVerifiedBeforeAdjustedMessageIsPersisted() = runTest {
+        val messageEvent = newMessageEvent()
+        val quoteReference = MessageContent.QuoteReference("quoted-message", byteArrayOf(1, 2), false)
+        val adjustedQuoteReference = quoteReference.copy(isVerified = true)
+        val protoContent = ProtoContent.Readable(
+            messageUid = "text-message",
+            messageContent = MessageContent.Text("quoted text", quotedMessageReference = quoteReference),
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withQuoteVerification(adjustedQuoteReference)
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        verifySuspend(VerifyMode.order) {
+            arrangement.incomingQuotedMessageVerifier.invoke(
+                matches { it == messageEvent.conversationId },
+                matches { it === quoteReference },
+            )
+            arrangement.persistMessage.invoke(
+                matches<Message.Regular> {
+                    (it.content as? MessageContent.Text)?.quotedMessageReference === adjustedQuoteReference
+                }
+            )
+        }
+    }
+
+    @Test
+    fun givenQuotedMultipartMessage_whenHandling_thenQuoteIsVerifiedBeforeAdjustedMessageIsPersisted() = runTest {
+        val messageEvent = newMessageEvent()
+        val quoteReference = MessageContent.QuoteReference("quoted-message", byteArrayOf(1, 2), false)
+        val adjustedQuoteReference = quoteReference.copy(isVerified = true)
+        val protoContent = ProtoContent.Readable(
+            messageUid = "multipart-message",
+            messageContent = MessageContent.Multipart("quoted multipart", quotedMessageReference = quoteReference),
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withQuoteVerification(adjustedQuoteReference)
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        verifySuspend(VerifyMode.order) {
+            arrangement.incomingQuotedMessageVerifier.invoke(
+                matches { it == messageEvent.conversationId },
+                matches { it === quoteReference },
+            )
+            arrangement.persistMessage.invoke(
+                matches<Message.Regular> {
+                    (it.content as? MessageContent.Multipart)?.quotedMessageReference === adjustedQuoteReference
+                }
+            )
+        }
+    }
+
+    @Test
+    fun givenTextMessageWithoutQuote_whenHandling_thenVerificationIsSkippedAndNullReferenceIsPersisted() = runTest {
+        val messageEvent = newMessageEvent()
+        val protoContent = ProtoContent.Readable(
+            messageUid = "text-message",
+            messageContent = MessageContent.Text("plain text"),
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.incomingQuotedMessageVerifier.invoke(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(
+                matches<Message.Regular> {
+                    (it.content as? MessageContent.Text)?.quotedMessageReference == null
+                }
+            )
+        }
+    }
+
+    @Test
+    fun givenMultipartMessageWithoutQuote_whenHandling_thenVerificationIsSkippedAndNullReferenceIsPersisted() = runTest {
+        val messageEvent = newMessageEvent()
+        val protoContent = ProtoContent.Readable(
+            messageUid = "multipart-message",
+            messageContent = MessageContent.Multipart("plain multipart"),
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent,
+        )
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.incomingQuotedMessageVerifier.invoke(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(
+                matches<Message.Regular> {
+                    (it.content as? MessageContent.Multipart)?.quotedMessageReference == null
+                }
+            )
         }
     }
 
@@ -657,7 +805,7 @@ class ApplicationMessageHandlerTest {
             .withPersistingMessageReturning(Either.Right(Unit))
             .arrange()
 
-        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val messageEvent = newMessageEvent()
         messageHandler.handleContent(
             arrangement.transactionContext,
             messageEvent.conversationId,
@@ -868,94 +1016,6 @@ class ApplicationMessageHandlerTest {
     }
 
     @Test
-    fun givenQuoteWithoutHash_whenHandlingText_thenQuoteIsMarkedUnverifiedWithoutLookup() = runTest {
-        val quote = MessageContent.QuoteReference("quoted-message", quotedMessageSha256 = null, isVerified = true)
-        val content = MessageContent.Text(value = "quoted text", quotedMessageReference = quote)
-        val (arrangement, handler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .arrange()
-
-        dispatch(arrangement, handler, content)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(
-                matches {
-                    val text = (it.content as? MessageContent.Text)
-                    text?.quotedMessageReference?.isVerified == false
-                }
-            )
-        }
-        verifySuspend(VerifyMode.not) { arrangement.messageRepository.getMessageById(any(), any()) }
-    }
-
-    @Test
-    fun givenQuoteWithMatchingHash_whenHandlingMultipart_thenQuoteIsMarkedVerified() = runTest {
-        val original = TestMessage.TEXT_MESSAGE
-        val hash = MessageContentEncoder()
-            .encodeMessageContent(original.date, original.content)
-            ?.sha256Digest ?: error("Expected encodable test message")
-        val quote = MessageContent.QuoteReference(original.id, hash, isVerified = false)
-        val content = MessageContent.Multipart(value = "quoted multipart", quotedMessageReference = quote)
-        val (arrangement, handler) = Arrangement()
-            .withMessageById(Either.Right(original))
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .arrange()
-
-        dispatch(arrangement, handler, content)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(
-                matches {
-                    val multipart = (it.content as? MessageContent.Multipart)
-                    multipart?.quotedMessageReference?.isVerified == true
-                }
-            )
-        }
-    }
-
-    @Test
-    fun givenQuotedMessageMissing_whenHandlingText_thenQuoteIsMarkedUnverified() = runTest {
-        val quote = MessageContent.QuoteReference("missing-message", byteArrayOf(1, 2, 3), isVerified = true)
-        val content = MessageContent.Text(value = "quoted text", quotedMessageReference = quote)
-        val (arrangement, handler) = Arrangement()
-            .withMessageById(Either.Left(StorageFailure.DataNotFound))
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .arrange()
-
-        dispatch(arrangement, handler, content)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(
-                matches {
-                    val text = (it.content as? MessageContent.Text)
-                    text?.quotedMessageReference?.isVerified == false
-                }
-            )
-        }
-    }
-
-    @Test
-    fun givenQuotedMessageHashDoesNotMatch_whenHandlingText_thenQuoteIsMarkedUnverified() = runTest {
-        val original = TestMessage.TEXT_MESSAGE
-        val quote = MessageContent.QuoteReference(original.id, byteArrayOf(9, 8, 7), isVerified = true)
-        val content = MessageContent.Text(value = "quoted text", quotedMessageReference = quote)
-        val (arrangement, handler) = Arrangement()
-            .withMessageById(Either.Right(original))
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .arrange()
-
-        dispatch(arrangement, handler, content)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(
-                matches {
-                    (it.content as? MessageContent.Text)?.quotedMessageReference?.isVerified == false
-                }
-            )
-        }
-    }
-
-    @Test
     fun givenDecryptionErrorFromSelf_whenHandling_thenVisibleSelfMessageIsPersisted() = runTest {
         val event = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
         val content = MessageContent.FailedDecryption(
@@ -1017,7 +1077,7 @@ class ApplicationMessageHandlerTest {
     ) {
         val logWriter = RecordingLogWriter()
         val (arrangement, messageHandler) = Arrangement(recordingLogger(logWriter)).arrange()
-        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val messageEvent = newMessageEvent()
         val protoContent = ProtoContent.Readable(
             messageUid = "messageId",
             messageContent = content,
@@ -1068,13 +1128,13 @@ class ApplicationMessageHandlerTest {
 
     private class Arrangement(
         kaliumLogger: KaliumLogger = KaliumLogger.disabled(),
-    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    ) {
 
+        val transactionContext = mock<CryptoTransactionContext>()
         val persistMessage = mock<PersistMessageUseCase>(MockMode.autoUnit)
-        val messageRepository = mock<MessageRepository>(MockMode.autoUnit)
+        val incomingQuotedMessageVerifier = mock<IncomingQuotedMessageVerifier>(MockMode.autoUnit)
         val availabilityMessageHandler = mock<AvailabilityMessageHandler>(MockMode.autoUnit)
         val clientActionMessageHandler = mock<ClientActionMessageHandler>(MockMode.autoUnit)
-        val userConfigRepository = mock<UserConfigRepository>(MockMode.autoUnit)
         val persistReactionsUseCase = mock<PersistReactionUseCase>(MockMode.autoUnit)
         val messageTextEditHandler = mock<MessageTextEditHandler>(MockMode.autoUnit)
         val messageMultipartEditHandler = mock<MessageMultipartEditHandler>(MockMode.autoUnit)
@@ -1095,7 +1155,7 @@ class ApplicationMessageHandlerTest {
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             availabilityMessageHandler,
             clientActionMessageHandler,
-            messageRepository,
+            incomingQuotedMessageVerifier,
             assetMessageHandler,
             persistMessage,
             persistReactionsUseCase,
@@ -1105,7 +1165,6 @@ class ApplicationMessageHandlerTest {
             clearConversationContentHandler,
             deleteForMeHandler,
             deleteMessageHandler,
-            MessageContentEncoder(),
             receiptMessageHandler,
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
@@ -1114,7 +1173,7 @@ class ApplicationMessageHandlerTest {
             messageCompositeEditHandler,
             callingMessageHandler,
             linkPreviewImagesResolver,
-            TestUser.SELF.id,
+            SELF_USER_ID,
             kaliumLogger,
         )
 
@@ -1127,28 +1186,9 @@ class ApplicationMessageHandlerTest {
             } returns Unit
         }
 
-        fun withFileSharingEnabled() = apply {
+        fun withQuoteVerification(result: MessageContent.QuoteReference) = apply {
             everySuspend {
-                userConfigRepository.isFileSharingEnabled()
-            }.returns(
-                Either.Right(
-                    FileSharingStatus(
-                        state = FileSharingStatus.Value.EnabledAll,
-                        isStatusChanged = false
-                    )
-                )
-            )
-        }
-
-        fun withErrorGetMessageById(storageFailure: StorageFailure) = apply {
-            everySuspend {
-                messageRepository.getMessageById(any(), any())
-            }.returns(Either.Left(storageFailure))
-        }
-
-        fun withMessageById(result: Either<StorageFailure, Message>) = apply {
-            everySuspend {
-                messageRepository.getMessageById(any(), any())
+                incomingQuotedMessageVerifier.invoke(any(), any())
             }.returns(result)
         }
 

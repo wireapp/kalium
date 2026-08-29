@@ -551,6 +551,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEvent
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.IncomingQuotedMessageVerifierImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
@@ -1017,6 +1018,13 @@ public class UserSessionScope internal constructor(
 
     private val subconversationRepository =
         SubconversationRepositoryImpl(conversationApi = authenticatedNetworkContainer.conversationApi)
+
+    private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository by lazy {
+        ConversationLifecycleEventRepositoryImpl(
+            userStorage.database.conversationDAO,
+            userStorage.database.memberDAO,
+        )
+    }
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -2039,10 +2047,15 @@ public class UserSessionScope internal constructor(
     private val applicationMessageHandler: ApplicationMessageHandler
         get() {
             val sharedPersistMessage = persistMessage
+            val sharedMessageEncoder = messageEncoder
+            val incomingQuotedMessageVerifier = IncomingQuotedMessageVerifierImpl(
+                messageDAO = userStorage.database.messageDAO,
+                messageContentEncoder = sharedMessageEncoder,
+            )
             return ApplicationMessageHandlerImpl(
                 availabilityMessageHandler,
                 ClientActionMessageHandlerImpl(sharedPersistMessage),
-                messageRepository,
+                incomingQuotedMessageVerifier,
                 assetMessageHandler,
                 sharedPersistMessage,
                 persistReaction,
@@ -2070,7 +2083,6 @@ public class UserSessionScope internal constructor(
                     selfUserId = userId,
                     persistenceEventHookNotifier = currentPersistenceEventHookNotifier,
                 ),
-                messageEncoder,
                 receiptMessageHandler,
                 buttonActionConfirmationHandler,
                 dataTransferEventHandler,
@@ -2192,13 +2204,6 @@ public class UserSessionScope internal constructor(
             conversationLifecycleEventRepository,
             persistMessage
         )
-
-    private val conversationLifecycleEventRepository: ConversationLifecycleEventRepository by lazy {
-        ConversationLifecycleEventRepositoryImpl(
-            userStorage.database.conversationDAO,
-            userStorage.database.memberDAO,
-        )
-    }
 
     private val conversationEventRepository: ConversationEventRepository
         get() = ConversationEventRepositoryImpl(userStorage.database.conversationDAO)

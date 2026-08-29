@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.util
 
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.util.string.toHexString
 import kotlinx.coroutines.test.runTest
@@ -140,6 +143,33 @@ class MessageContentEncoderTest {
         assertEquals(expectedHash, result.sha256Digest.toHexString())
     }
 
+    @Test
+    fun givenAnAssetMessage_whenEncoding_thenAssetIdBytesAndHashRemainStable() = runTest {
+        val result = messageContentEncoder.encodeMessageContent(
+            messageInstant = asset.first,
+            messageContent = asset.second,
+        )
+
+        assertNotNull(result)
+        assertEquals("feff00610073007300650074002d00690064000000005bcdcc09", result.asHexString)
+        assertEquals("3b43e1366a27e75a9ddc4d62163928d082d820d4189cf7635a35586dca6727cc", result.sha256Digest.toHexString())
+    }
+
+    @Test
+    fun givenAMultipartMessage_whenEncoding_thenBodyAndAttachmentOrderRemainStable() = runTest {
+        val result = messageContentEncoder.encodeMessageContent(
+            messageInstant = multipart.first,
+            messageContent = multipart.second,
+        )
+
+        assertNotNull(result)
+        assertEquals(
+            "feff0062006f0064007900660069007200730074002c0020007300650063006f006e0064000000005bcdcc09",
+            result.asHexString,
+        )
+        assertEquals("111625374502b94cfe983ec70c7209d63a462889b811bc642b95974937a4c64a", result.sha256Digest.toHexString())
+    }
+
     private companion object TestData {
         val textWithEmoji =
             (
@@ -184,6 +214,36 @@ class MessageContentEncoderTest {
             MessageContent.Location(52.516666f, 13.4f, "someLocation", 10),
             Instant.parse("2018-10-22T15:09:29.000+02:00"),
             "56a5fa30081bc16688574fdfbbe96c2eee004d1fb37dc714eec6efb340192816"
+        )
+
+        val asset = Instant.parse("2018-10-22T15:09:29.000+02:00") to MessageContent.Asset(
+            AssetContent(
+                sizeInBytes = 1,
+                mimeType = "application/octet-stream",
+                remoteData = AssetContent.RemoteData(
+                    otrKey = byteArrayOf(),
+                    sha256 = byteArrayOf(),
+                    assetId = "asset-id",
+                    assetToken = null,
+                    assetDomain = null,
+                    encryptionAlgorithm = null,
+                ),
+            )
+        )
+
+        val multipart = Instant.parse("2018-10-22T15:09:29.000+02:00") to MessageContent.Multipart(
+            value = "body",
+            attachments = listOf(cellAttachment("first"), cellAttachment("second")),
+        )
+
+        private fun cellAttachment(id: String) = CellAssetContent(
+            id = id,
+            versionId = "",
+            mimeType = "application/octet-stream",
+            assetPath = null,
+            assetSize = null,
+            metadata = null,
+            transferStatus = AssetTransferStatus.NOT_DOWNLOADED,
         )
     }
 }

@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
@@ -29,17 +27,14 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.getType
-import com.wire.kalium.logic.data.message.hasValidData
-import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.AvailabilityMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
@@ -56,17 +51,16 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
-import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
-import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.util.string.toHexString
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.datetime.Instant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-internal interface ApplicationMessageHandler {
+@InternalKaliumApi
+public interface ApplicationMessageHandler {
 
     @Suppress("LongParameterList")
-    suspend fun handleContent(
+    public suspend fun handleContent(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
         messageInstant: Instant,
@@ -76,7 +70,7 @@ internal interface ApplicationMessageHandler {
     )
 
     @Suppress("LongParameterList")
-    suspend fun handleDecryptionError(
+    public suspend fun handleDecryptionError(
         eventId: String,
         conversationId: ConversationId,
         messageInstant: Instant,
@@ -85,14 +79,15 @@ internal interface ApplicationMessageHandler {
         content: MessageContent.FailedDecryption
     )
 
-    suspend fun flushPendingSideEffects()
+    public suspend fun flushPendingSideEffects()
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
-internal class ApplicationMessageHandlerImpl(
+@InternalKaliumApi
+public class ApplicationMessageHandlerImpl public constructor(
     private val availabilityMessageHandler: AvailabilityMessageHandler,
     private val clientActionMessageHandler: ClientActionMessageHandler,
-    private val messageRepository: MessageRepository,
+    private val incomingQuotedMessageVerifier: IncomingQuotedMessageVerifier,
     private val assetMessageHandler: AssetMessageHandler,
     private val persistMessage: PersistMessageUseCase,
     private val persistReaction: PersistReactionUseCase,
@@ -102,7 +97,6 @@ internal class ApplicationMessageHandlerImpl(
     private val clearConversationContentHandler: ClearConversationContentHandler,
     private val deleteForMeHandler: DeleteForMeHandler,
     private val deleteMessageHandler: DeleteMessageHandler,
-    private val messageEncoder: MessageContentEncoder,
     private val receiptMessageHandler: ReceiptMessageHandler,
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler,
     private val dataTransferEventHandler: DataTransferEventHandler,
@@ -283,7 +277,7 @@ internal class ApplicationMessageHandlerImpl(
     ) {
         val quotedReference = messageContent.quotedMessageReference
         val adjustedQuoteReference = if (quotedReference != null) {
-            verifyMessageQuote(quotedReference, message)
+            incomingQuotedMessageVerifier(message.conversationId, quotedReference)
         } else {
             messageContent.quotedMessageReference
         }
@@ -299,7 +293,7 @@ internal class ApplicationMessageHandlerImpl(
     ) {
         val quotedReference = messageContent.quotedMessageReference
         val adjustedQuoteReference = if (quotedReference != null) {
-            verifyMessageQuote(quotedReference, message)
+            incomingQuotedMessageVerifier(message.conversationId, quotedReference)
         } else {
             messageContent.quotedMessageReference
         }
@@ -308,30 +302,6 @@ internal class ApplicationMessageHandlerImpl(
         )
         persistMessage(adjustedMessage).onSuccess {
             resolveLinkPreviewImages(adjustedMessage.conversationId, adjustedMessage.id)
-        }
-    }
-
-    private suspend fun verifyMessageQuote(
-        quotedReference: MessageContent.QuoteReference,
-        message: Message.Regular
-    ): MessageContent.QuoteReference {
-        val quotedMessageSha256 = quotedReference.quotedMessageSha256 ?: run {
-            logger.i("Quote message received with null hash. Marking as unverified.")
-            return quotedReference.copy(isVerified = false)
-        }
-
-        val originalHash =
-            messageRepository.getMessageById(message.conversationId, quotedReference.quotedMessageId).map { originalMessage ->
-                messageEncoder.encodeMessageContent(originalMessage.date, originalMessage.content)
-            }.getOrElse(null)
-
-        return if (quotedMessageSha256.contentEquals(originalHash?.sha256Digest)) {
-            quotedReference.copy(isVerified = true)
-        } else {
-            logger.d("Expected hash = ${originalHash?.sha256Digest?.toHexString()}")
-            logger.d("Received hash = ${quotedMessageSha256.toHexString()}")
-            logger.i("Quote message received but original doesn't match or wasn't found. Marking as unverified.")
-            quotedReference.copy(isVerified = false)
         }
     }
 
@@ -363,15 +333,3 @@ internal class ApplicationMessageHandlerImpl(
         lastReadContentHandler.flushPendingLastReads()
     }
 }
-
-@Deprecated(
-    "This will be moved to another package",
-    ReplaceWith("com.wire.kalium.logic.data.message.hasValidRemoteData")
-)
-internal fun AssetContent.hasValidRemoteData() = hasValidRemoteData()
-
-@Deprecated(
-    "This will be moved to another package",
-    ReplaceWith("com.wire.kalium.logic.data.message.hasValidData")
-)
-internal fun AssetContent.RemoteData.hasValidData() = hasValidData()

@@ -37,10 +37,12 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(projects.core.common)
+                implementation(projects.core.cryptography)
                 api(projects.core.data)
                 api(projects.core.util)
                 implementation(projects.data.dataMappers)
                 api(projects.data.persistence)
+                api(libs.ktxDateTime)
             }
         }
         val commonTest by getting {

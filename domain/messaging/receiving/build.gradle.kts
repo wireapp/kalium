@@ -60,6 +60,7 @@ kotlin {
                 implementation(projects.data.persistenceTest)
                 implementation(projects.test.dataMocks)
                 implementation(libs.coroutines.test)
+                implementation(libs.okio.core)
                 implementation(libs.turbine)
             }
         }

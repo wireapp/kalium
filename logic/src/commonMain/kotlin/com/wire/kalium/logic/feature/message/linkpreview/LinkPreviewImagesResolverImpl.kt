@@ -31,15 +31,6 @@ import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-/**
- * Opportunistically resolves remotely-backed link preview images into persistent local files.
- *
- * This is intentionally fire-and-forget. It is safe to invoke from receiver paths and UI paths.
- */
-public interface LinkPreviewImagesResolver {
-    public operator fun invoke(conversationId: ConversationId, messageId: String)
-}
-
 internal class LinkPreviewImagesResolverImpl(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
