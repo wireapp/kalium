@@ -62,6 +62,10 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.receiver.TeamEventUserRepository
+import com.wire.kalium.logic.sync.receiver.TeamEventUserRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.FederationUserRepository
+import com.wire.kalium.logic.sync.receiver.FederationUserRepositoryImpl
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
@@ -80,7 +84,6 @@ import com.wire.kalium.network.api.model.isLegacyBot
 import com.wire.kalium.network.api.model.isTeamMember
 import com.wire.kalium.persistence.dao.AppDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -92,7 +95,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
-internal interface UserRepository : SelfUserObservationProvider {
+internal interface UserRepository : SelfUserObservationProvider, TeamEventUserRepository, FederationUserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit>
 
@@ -120,7 +123,9 @@ internal interface UserRepository : SelfUserObservationProvider {
      */
     suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
-    suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, List<ConversationId>>
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(
+        userId: UserId
+    ): Either<CoreFailure, List<ConversationId>>
 
     suspend fun markAsDeleted(userId: List<UserId>): Either<StorageFailure, Unit>
 
@@ -128,7 +133,7 @@ internal interface UserRepository : SelfUserObservationProvider {
      * Marks federated user as defederated in order to hold conversation history
      * when backends stops federating.
      */
-    suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
+    override suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
 
     // TODO: move to migration repo
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
@@ -183,6 +188,8 @@ internal class UserDataSource internal constructor(
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val legalHoldHandler: LegalHoldHandler,
+    private val teamEventUserRepository: TeamEventUserRepository = TeamEventUserRepositoryImpl(userDAO),
+    private val federationUserRepository: FederationUserRepository = FederationUserRepositoryImpl(userDAO),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
@@ -593,18 +600,14 @@ internal class UserDataSource internal constructor(
     override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(
         userId: UserId
     ): Either<CoreFailure, List<ConversationId>> =
-        wrapStorageRequest {
-            userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao())
-        }.map { it.map(ConversationIDEntity::toModel) }
+        teamEventUserRepository.markUserAsDeletedAndRemoveFromGroupConversations(userId)
 
     override suspend fun markAsDeleted(userId: List<UserId>): Either<StorageFailure, Unit> = wrapStorageRequest {
         userDAO.markAsDeleted(userId.map { it.toDao() })
     }
 
     override suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            userDAO.markUserAsDefederated(userId.toDao())
-        }
+        return federationUserRepository.defederateUser(userId)
     }
 
     override suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit> =

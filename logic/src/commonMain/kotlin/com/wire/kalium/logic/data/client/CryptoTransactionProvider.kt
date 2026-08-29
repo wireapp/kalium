@@ -29,6 +29,7 @@ import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.util.InternalCryptoAccess
+import com.wire.kalium.logic.feature.featureConfig.handler.FeatureConfigTransactionProvider
 
 /**
  * Provides transactional access to cryptographic operations using either
@@ -49,7 +50,7 @@ import com.wire.kalium.util.InternalCryptoAccess
  * }
  * ```
  */
-internal interface CryptoTransactionProvider {
+internal interface CryptoTransactionProvider : FeatureConfigTransactionProvider {
     val mlsClientProvider: MLSClientProvider
     val proteusClientProvider: ProteusClientProvider
     suspend fun <R> proteusTransaction(
@@ -62,8 +63,8 @@ internal interface CryptoTransactionProvider {
         block: suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
     ): Either<CoreFailure, R>
 
-    suspend fun <R> transaction(
-        name: String? = null,
+    override suspend fun <R> transaction(
+        name: String?,
         block: suspend (transactionContext: CryptoTransactionContext) -> Either<CoreFailure, R>
     ): Either<CoreFailure, R>
 }

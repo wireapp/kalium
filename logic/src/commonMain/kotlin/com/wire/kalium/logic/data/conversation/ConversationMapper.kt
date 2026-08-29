@@ -742,12 +742,6 @@ internal fun Conversation.Protocol.toApi(): ConvProtocol = when (this) {
     Conversation.Protocol.MLS -> ConvProtocol.MLS
 }
 
-internal fun Conversation.Protocol.toDao(): Protocol = when (this) {
-    Conversation.Protocol.PROTEUS -> Protocol.PROTEUS
-    Conversation.Protocol.MIXED -> Protocol.MIXED
-    Conversation.Protocol.MLS -> Protocol.MLS
-}
-
 internal fun ConvProtocol.toModel(): Conversation.Protocol = when (this) {
     ConvProtocol.PROTEUS -> Conversation.Protocol.PROTEUS
     ConvProtocol.MIXED -> Conversation.Protocol.MIXED
@@ -767,12 +761,6 @@ internal fun ChannelAddPermission.toApi(): ChannelAddPermissionTypeDTO = when (t
 private fun ChannelAddPermissionTypeDTO.toDAO(): ConversationEntity.ChannelAddPermission = when (this) {
     ChannelAddPermissionTypeDTO.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
     ChannelAddPermissionTypeDTO.EVERYONE -> ConversationEntity.ChannelAddPermission.EVERYONE
-}
-
-internal fun Protocol.toModel(): Conversation.Protocol = when (this) {
-    Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
-    Protocol.MIXED -> Conversation.Protocol.MIXED
-    Protocol.MLS -> Conversation.Protocol.MLS
 }
 
 internal fun E2EIConversationState.toModel(): Conversation.VerificationStatus = when (this) {

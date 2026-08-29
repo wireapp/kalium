@@ -33,7 +33,6 @@ import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.ManagedByDTO
 import com.wire.kalium.network.api.model.SelfUserDTO
-import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
@@ -448,33 +447,3 @@ internal class UserMapperImpl(
         else -> null
     }
 }
-
-internal fun SupportedProtocol.toApi() = when (this) {
-    SupportedProtocol.MLS -> SupportedProtocolDTO.MLS
-    SupportedProtocol.PROTEUS -> SupportedProtocolDTO.PROTEUS
-}
-
-internal fun SupportedProtocol.toDao() = when (this) {
-    SupportedProtocol.MLS -> SupportedProtocolEntity.MLS
-    SupportedProtocol.PROTEUS -> SupportedProtocolEntity.PROTEUS
-}
-
-internal fun SupportedProtocolDTO.toModel() = when (this) {
-    SupportedProtocolDTO.MLS -> SupportedProtocol.MLS
-    SupportedProtocolDTO.PROTEUS -> SupportedProtocol.PROTEUS
-}
-
-internal fun SupportedProtocolDTO.toDao() = when (this) {
-    SupportedProtocolDTO.MLS -> SupportedProtocolEntity.MLS
-    SupportedProtocolDTO.PROTEUS -> SupportedProtocolEntity.PROTEUS
-}
-
-internal fun SupportedProtocolEntity.toModel() = when (this) {
-    SupportedProtocolEntity.MLS -> SupportedProtocol.MLS
-    SupportedProtocolEntity.PROTEUS -> SupportedProtocol.PROTEUS
-}
-
-internal fun List<SupportedProtocolDTO>.toDao() = this.map { it.toDao() }.toSet()
-internal fun List<SupportedProtocolDTO>.toModel() = this.map { it.toModel() }.toSet()
-internal fun Set<SupportedProtocol>.toDao() = this.map { it.toDao() }.toSet()
-internal fun Set<SupportedProtocolEntity>.toModel() = this.map { it.toModel() }.toSet()

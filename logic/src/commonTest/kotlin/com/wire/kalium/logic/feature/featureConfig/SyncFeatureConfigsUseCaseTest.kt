@@ -1001,14 +1001,14 @@ class SyncFeatureConfigsUseCaseTest {
         fun arrange(): Pair<Arrangement, SyncFeatureConfigsUseCase> {
             syncFeatureConfigsUseCase = SyncFeatureConfigsUseCaseImpl(
                 featureConfigRepository,
-                GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
+                GuestRoomConfigHandler(userConfigRepository, kaliumConfigs.guestRoomLink),
                 FileSharingConfigHandler(userConfigRepository),
                 MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
                 MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
                 ClassifiedDomainsConfigHandler(userConfigRepository),
                 ConferenceCallingConfigHandler(userConfigRepository),
                 SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
-                SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
+                SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs.selfDeletingMessages),
                 E2EIConfigHandler(userConfigRepository),
                 AppLockConfigHandler(userConfigRepository),
                 ChannelsFeatureConfigurationHandler(channelsConfigurationStorage),

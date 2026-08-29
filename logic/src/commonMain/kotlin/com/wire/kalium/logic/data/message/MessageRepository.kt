@@ -76,7 +76,7 @@ import kotlinx.datetime.Instant
 import kotlin.collections.map
 
 @Suppress("TooManyFunctions")
-internal interface MessageRepository {
+internal interface MessageRepository : EventMessageRepository {
     /**
      * this fun should never be used directly, use PersistMessageUseCase() instead
      * @see PersistMessageUseCase
@@ -85,9 +85,9 @@ internal interface MessageRepository {
         message = "Calling this function directly may cause conversation list to be displayed in an incorrect order",
         replaceWith = ReplaceWith("com.wire.kalium.logic.data.message.PersistMessageUseCase")
     )
-    suspend fun persistMessage(
+    override suspend fun persistMessage(
         message: Message.Standalone,
-        updateConversationModifiedDate: Boolean = false,
+        updateConversationModifiedDate: Boolean,
     ): Either<CoreFailure, InsertMessageResult>
 
     suspend fun persistSystemMessageToAllConversations(
@@ -210,7 +210,7 @@ internal interface MessageRepository {
         clientId: ClientId,
     ): Either<CoreFailure, Unit>
 
-    suspend fun getReceiptModeFromGroupConversationByQualifiedID(
+    override suspend fun getReceiptModeFromGroupConversationByQualifiedID(
         conversationId: ConversationId
     ): Either<CoreFailure, Conversation.ReceiptMode?>
 
@@ -348,7 +348,8 @@ internal class MessageDataSource internal constructor(
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
-    private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
+    private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl(),
+    private val eventMessageRepository: EventMessageRepository = EventMessageRepositoryImpl(messageDAO, selfUserId, messageMapper),
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(
@@ -405,12 +406,8 @@ internal class MessageDataSource internal constructor(
     override suspend fun persistMessage(
         message: Message.Standalone,
         updateConversationModifiedDate: Boolean,
-    ): Either<CoreFailure, InsertMessageResult> = wrapStorageRequest {
-        messageDAO.insertOrIgnoreMessage(
-            messageMapper.fromMessageToEntity(message),
-            updateConversationModifiedDate
-        )
-    }
+    ): Either<CoreFailure, InsertMessageResult> =
+        eventMessageRepository.persistMessage(message, updateConversationModifiedDate)
 
     override suspend fun persistSystemMessageToAllConversations(
         message: Message.System
@@ -725,10 +722,8 @@ internal class MessageDataSource internal constructor(
 
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(
         conversationId: ConversationId
-    ): Either<CoreFailure, Conversation.ReceiptMode?> = wrapStorageRequest {
-        messageDAO.getReceiptModeFromGroupConversationByQualifiedID(conversationId.toDao())
-            ?.let { receiptModeMapper.fromEntityToModel(it) }
-    }
+    ): Either<CoreFailure, Conversation.ReceiptMode?> =
+        eventMessageRepository.getReceiptModeFromGroupConversationByQualifiedID(conversationId)
 
     override suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationId,

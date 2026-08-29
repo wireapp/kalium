@@ -51,7 +51,7 @@ internal class AssetMessageHandlerImpl(
         val messageContent = message.content as MessageContent.Asset
 
         userConfigRepository.isFileSharingEnabled().onSuccess {
-            val isThisAssetAllowed = when (it.state) {
+            val isThisAssetAllowed = when (val restrictionState = it.state) {
                 FileSharingStatus.Value.Disabled -> AssetRestrictionContinuationStrategy.Restrict
                 FileSharingStatus.Value.EnabledAll -> AssetRestrictionContinuationStrategy.Continue
 
@@ -63,7 +63,7 @@ internal class AssetMessageHandlerImpl(
                     if (validateAssetMimeTypeUseCase(
                             fileName = messageContent.value.name,
                             mimeType = messageContent.value.mimeType,
-                            allowedExtension = it.state.allowedType
+                            allowedExtension = restrictionState.allowedType
                         )
                     ) {
                         AssetRestrictionContinuationStrategy.Continue

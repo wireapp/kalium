@@ -26,9 +26,6 @@ import com.wire.kalium.logic.data.conversation.toDao
 import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.attachment.MessageAttachmentMapper
 import com.wire.kalium.logic.data.message.attachment.toModel
 import com.wire.kalium.logic.data.message.composite.Button
@@ -44,7 +41,6 @@ import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
-import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageAssetStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -57,14 +53,14 @@ import okio.Path.Companion.toPath
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-internal interface MessageMapper {
-    fun fromMessageToEntity(message: Message.Standalone): MessageEntity
+internal interface MessageMapper : EventMessageEntityMapper {
+    override fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromAssetEntityToAssetMessage(message: AssetMessageEntity): AssetMessage
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromDraftToMessagePreview(message: MessageDraftEntity): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
-    fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
+    override fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
 
 @Suppress("TooManyFunctions")
@@ -74,64 +70,16 @@ internal class MessageMapperImpl(
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val attachmentsMapper: MessageAttachmentMapper = MapperProvider.attachmentsMapper(),
+    private val eventMessageEntityMapper: EventMessageEntityMapper = EventMessageEntityMapperImpl(
+        selfUserId,
+        linkPreviewMapper,
+        messageMentionMapper,
+        attachmentsMapper,
+    ),
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity =
-        when (message) {
-            is Message.Regular -> mapFromRegularMessage(message)
-            is Message.System -> mapFromSystemMessage(message)
-        }
-
-    private fun mapFromRegularMessage(
-        message: Message.Regular
-    ) = MessageEntity.Regular(
-        id = message.id,
-        content = toMessageEntityContent(message.content),
-        conversationId = message.conversationId.toDao(),
-        date = message.date,
-        senderUserId = message.senderUserId.toDao(),
-        senderClientId = message.senderClientId.value,
-        status = message.status.toEntityStatus(),
-        readCount = message.status.let { if (it is Message.Status.Read) it.readCount else 0 },
-        editStatus = message.editStatus.let {
-            when (it) {
-                is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
-                is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(it.lastEditInstant)
-            }
-        },
-        expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
-        selfDeletionEndDate = message.expirationData?.selfDeletionStatus?.let {
-            when (it) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionEndDate
-                is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
-            }
-        },
-        visibility = message.visibility.toEntityVisibility(),
-        senderName = message.senderUserName,
-        isSelfMessage = message.isSelfMessage,
-        expectsReadConfirmation = message.expectsReadConfirmation
-    )
-
-    private fun mapFromSystemMessage(
-        message: Message.System
-    ) = MessageEntity.System(
-        id = message.id,
-        content = message.content.toMessageEntityContent(),
-        conversationId = message.conversationId.toDao(),
-        date = message.date,
-        senderUserId = message.senderUserId.toDao(),
-        status = message.status.toEntityStatus(),
-        visibility = message.visibility.toEntityVisibility(),
-        senderName = message.senderUserName,
-        expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
-        readCount = message.status.let { if (it is Message.Status.Read) it.readCount else 0 },
-        selfDeletionEndDate = message.expirationData?.selfDeletionStatus?.let {
-            when (it) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionEndDate
-                is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
-            }
-        }
-    )
+        eventMessageEntityMapper.fromMessageToEntity(message)
 
     override fun fromEntityToMessage(message: MessageEntity): Message.Standalone {
         return when (message) {
@@ -356,102 +304,8 @@ internal class MessageMapperImpl(
         }
     }
 
-    @Suppress("ComplexMethod", "LongMethod")
-    override fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular = when (regularMessage) {
-        is MessageContent.Text -> toTextEntity(regularMessage)
-
-        is MessageContent.Asset -> with(regularMessage.value) {
-            val metadata = metadata
-            val assetWidth = when (metadata) {
-                is Image -> metadata.width
-                is Video -> metadata.width
-                else -> null
-            }
-            val assetHeight = when (metadata) {
-                is Image -> metadata.height
-                is Video -> metadata.height
-                else -> null
-            }
-            val assetDurationMs = when (metadata) {
-                is Video -> metadata.durationMs
-                is Audio -> metadata.durationMs
-                else -> null
-            }
-            MessageEntityContent.Asset(
-                assetSizeInBytes = sizeInBytes,
-                assetName = name,
-                assetMimeType = mimeType,
-                assetOtrKey = remoteData.otrKey,
-                assetSha256Key = remoteData.sha256,
-                assetId = remoteData.assetId,
-                assetDomain = remoteData.assetDomain,
-                assetToken = remoteData.assetToken,
-                assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
-                assetWidth = assetWidth,
-                assetHeight = assetHeight,
-                assetDurationMs = assetDurationMs,
-                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
-            )
-        }
-
-        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(
-            regularMessage.mimeType,
-            regularMessage.sizeInBytes,
-            regularMessage.name
-        )
-
-        // We store the encoded data in case we decide to try to decrypt them again in the future
-        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(
-            regularMessage.encodedData,
-            regularMessage.errorCode,
-            regularMessage.isDecryptionResolved,
-            regularMessage.senderUserId.toDao(),
-            regularMessage.clientId?.value
-        )
-
-        // We store the unknown fields of the message in case we want to start handling them in the future
-        is MessageContent.Unknown -> MessageEntityContent.Unknown(regularMessage.typeName, regularMessage.encodedData)
-
-        // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
-        // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
-        is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = regularMessage.hotKnock)
-        is MessageContent.Composite -> MessageEntityContent.Composite(
-            text = regularMessage.textContent?.let(this::toTextEntity),
-            buttonList = regularMessage.buttonList.map {
-                ButtonEntity(
-                    id = it.id,
-                    text = it.text,
-                    isSelected = it.isSelected
-                )
-            },
-        )
-
-        is MessageContent.Location -> MessageEntityContent.Location(
-            latitude = regularMessage.latitude,
-            longitude = regularMessage.longitude,
-            name = regularMessage.name,
-            zoom = regularMessage.zoom
-        )
-
-        is MessageContent.Multipart -> MessageEntityContent.Multipart(
-            messageBody = regularMessage.value,
-            linkPreview = regularMessage.linkPreviews.map(linkPreviewMapper::fromModelToDao),
-            mentions = regularMessage.mentions.map(messageMentionMapper::fromModelToDao),
-            attachments = regularMessage.attachments.mapIndexedNotNull { index, attachment ->
-                attachmentsMapper.fromModelToDao(attachment)?.copy(assetIndex = index)
-            },
-            quotedMessageId = regularMessage.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = regularMessage.quotedMessageReference?.isVerified,
-        )
-    }
-
-    private fun toTextEntity(textContent: MessageContent.Text): MessageEntityContent.Text = MessageEntityContent.Text(
-        messageBody = textContent.value,
-        linkPreview = textContent.linkPreviews.map(linkPreviewMapper::fromModelToDao),
-        mentions = textContent.mentions.map(messageMentionMapper::fromModelToDao),
-        quotedMessageId = textContent.quotedMessageReference?.quotedMessageId,
-        isQuoteVerified = textContent.quotedMessageReference?.isVerified,
-    )
+    override fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular =
+        eventMessageEntityMapper.toMessageEntityContent(regularMessage)
 }
 
 @Suppress("ComplexMethod")
@@ -525,12 +379,6 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
     is MessageEntityContent.ConversationAppsAccessChanged -> MessageContent.ConversationAppsEnabledChanged(isEnabled)
 }
 
-internal fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (this) {
-    Message.Visibility.VISIBLE -> MessageEntity.Visibility.VISIBLE
-    Message.Visibility.HIDDEN -> MessageEntity.Visibility.HIDDEN
-    Message.Visibility.DELETED -> MessageEntity.Visibility.DELETED
-}
-
 internal fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
     MessageEntity.Visibility.VISIBLE -> Message.Visibility.VISIBLE
     MessageEntity.Visibility.HIDDEN -> Message.Visibility.HIDDEN
@@ -602,16 +450,6 @@ internal fun AssetTypeEntity.toModel(): AssetType = when (this) {
     AssetTypeEntity.AUDIO -> AssetType.AUDIO
     AssetTypeEntity.GENERIC_ASSET -> AssetType.GENERIC_ASSET
 }
-
-internal fun Message.Status.toEntityStatus() =
-    when (this) {
-        Message.Status.Delivered -> MessageEntity.Status.DELIVERED
-        Message.Status.Pending -> MessageEntity.Status.PENDING
-        is Message.Status.Read -> MessageEntity.Status.READ
-        Message.Status.Sent -> MessageEntity.Status.SENT
-        Message.Status.Failed -> MessageEntity.Status.FAILED
-        Message.Status.FailedRemotely -> MessageEntity.Status.FAILED_REMOTELY
-    }
 
 internal fun MessageEntity.Status.toModel(readCount: Long) =
     when (this) {
@@ -757,104 +595,6 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
 
     // If a new content type can be replied to (Pings, for example), fallback to Invalid
     else -> MessageContent.QuotedMessageDetails.Invalid
-}
-
-@Suppress("ComplexMethod", "LongMethod")
-internal fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
-    is MessageContent.MemberChange -> {
-        val memberUserIdList = this.members.map { it.toDao() }
-        when (this) {
-            is MessageContent.MemberChange.Added ->
-                MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.ADDED)
-
-            is MessageContent.MemberChange.Removed ->
-                MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.REMOVED)
-
-            is MessageContent.MemberChange.CreationAdded ->
-                MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.CREATION_ADDED)
-
-            is MessageContent.MemberChange.FailedToAdd ->
-                when (this.type) {
-                    MessageContent.MemberChange.FailedToAdd.Type.Federation ->
-                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION)
-
-                    MessageContent.MemberChange.FailedToAdd.Type.LegalHold ->
-                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD)
-
-                    MessageContent.MemberChange.FailedToAdd.Type.Unknown ->
-                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN)
-
-                    MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages ->
-                        MessageEntityContent.MemberChange(
-                            memberUserIdList,
-                            MessageEntity.MemberChangeType.FAILED_TO_ADD_MISSING_KEY_PACKAGES
-                        )
-                }
-
-            is MessageContent.MemberChange.FederationRemoved -> MessageEntityContent.MemberChange(
-                memberUserIdList,
-                MessageEntity.MemberChangeType.FEDERATION_REMOVED
-            )
-
-            is MessageContent.MemberChange.RemovedFromTeam -> MessageEntityContent.MemberChange(
-                memberUserIdList,
-                MessageEntity.MemberChangeType.REMOVED_FROM_TEAM
-            )
-
-            is MessageContent.MemberChange.UserPromotedToAdmin -> MessageEntityContent.MemberChange(
-                memberUserIdList,
-                MessageEntity.MemberChangeType.USER_PROMOTED_TO_ADMIN
-            )
-        }
-    }
-
-    is MessageContent.CryptoSessionReset -> MessageEntityContent.CryptoSessionReset
-    is MessageContent.MissedCall -> MessageEntityContent.MissedCall
-    is MessageContent.ConversationRenamed -> MessageEntityContent.ConversationRenamed(conversationName)
-    is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
-    is MessageContent.NewConversationReceiptMode -> MessageEntityContent.NewConversationReceiptMode(receiptMode)
-    is MessageContent.ConversationReceiptModeChanged -> MessageEntityContent.ConversationReceiptModeChanged(receiptMode)
-    is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
-    is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
-    is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
-    is MessageContent.MLSWrongEpochWarning -> MessageEntityContent.MLSWrongEpochWarning
-    is MessageContent.ConversationDegradedMLS -> MessageEntityContent.ConversationDegradedMLS
-    is MessageContent.ConversationDegradedProteus -> MessageEntityContent.ConversationDegradedProteus
-    is MessageContent.FederationStopped.ConnectionRemoved -> MessageEntityContent.Federation(
-        domainList,
-        MessageEntity.FederationType.CONNECTION_REMOVED
-    )
-
-    is MessageContent.FederationStopped.Removed -> MessageEntityContent.Federation(
-        listOf(domain),
-        MessageEntity.FederationType.DELETE
-    )
-
-    MessageContent.ConversationVerifiedMLS -> MessageEntityContent.ConversationVerifiedMLS
-    MessageContent.ConversationVerifiedProteus -> MessageEntityContent.ConversationVerifiedProteus
-    is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
-    is MessageContent.ConversationProtocolChangedDuringACall -> MessageEntityContent.ConversationProtocolChangedDuringACall
-    MessageContent.HistoryLostProtocolChanged -> MessageEntityContent.HistoryLostProtocolChanged
-    is MessageContent.ConversationStartedUnverifiedWarning -> MessageEntityContent.ConversationStartedUnverifiedWarning
-    is MessageContent.LegalHold -> when (this) {
-        MessageContent.LegalHold.ForConversation.Disabled ->
-            MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION)
-
-        MessageContent.LegalHold.ForConversation.Enabled ->
-            MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION)
-
-        is MessageContent.LegalHold.ForMembers.Disabled ->
-            MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS)
-
-        is MessageContent.LegalHold.ForMembers.Enabled ->
-            MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
-    }
-
-    MessageContent.NewConversationWithCellMessage -> MessageEntityContent.NewConversationWithCellMessage
-    MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage
-    MessageContent.CellEditorAccessMessage -> MessageEntityContent.CellEditorAccessMessage
-    MessageContent.CellViewerAccessMessage -> MessageEntityContent.CellViewerAccessMessage
-    is MessageContent.ConversationAppsEnabledChanged -> MessageEntityContent.ConversationAppsAccessChanged(isEnabled)
 }
 
 internal fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {

@@ -78,6 +78,8 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
+import com.wire.kalium.logic.sync.receiver.FederationConversationRepository
+import com.wire.kalium.logic.sync.receiver.FederationConversationRepositoryImpl
 
 internal data class ConversationMemberCounts(
     val conversationSize: Int,
@@ -87,7 +89,7 @@ internal data class ConversationMemberCounts(
 )
 
 @Suppress("TooManyFunctions")
-internal interface ConversationRepository {
+internal interface ConversationRepository : FederationConversationRepository {
     val extensions: ConversationRepositoryExtensions
 
     // region Get/Observe by id
@@ -289,12 +291,12 @@ internal interface ConversationRepository {
         isInformed: Boolean
     ): Either<StorageFailure, Unit>
 
-    suspend fun getGroupConversationsWithMembersWithBothDomains(
+    override suspend fun getGroupConversationsWithMembersWithBothDomains(
         firstDomain: String,
         secondDomain: String
     ): Either<CoreFailure, GroupConversationMembers>
 
-    suspend fun getOneOnOneConversationsWithFederatedMembers(
+    override suspend fun getOneOnOneConversationsWithFederatedMembers(
         domain: String
     ): Either<CoreFailure, OneOnOneMembers>
 
@@ -403,8 +405,15 @@ internal class ConversationDataSource internal constructor(
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
-    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
+    private val federationConversationRepository: FederationConversationRepository =
+        FederationConversationRepositoryImpl(memberDAO),
 ) : ConversationRepository {
+
+    override suspend fun deleteFederatedMembers(
+        userIds: List<UserId>,
+        conversationId: ConversationId,
+    ): Either<CoreFailure, Unit> = federationConversationRepository.deleteFederatedMembers(userIds, conversationId)
     override val extensions: ConversationRepositoryExtensions =
         ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)
 
@@ -1019,19 +1028,13 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getGroupConversationsWithMembersWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): Either<CoreFailure, GroupConversationMembers> = wrapStorageRequest {
-        memberDAO.getGroupConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
-            .mapKeys { it.key.toModel() }
-            .mapValues { it.value.map { userId -> userId.toModel() } }
-    }
+    ): Either<CoreFailure, GroupConversationMembers> =
+        federationConversationRepository.getGroupConversationsWithMembersWithBothDomains(firstDomain, secondDomain)
 
     override suspend fun getOneOnOneConversationsWithFederatedMembers(
         domain: String
-    ): Either<CoreFailure, OneOnOneMembers> = wrapStorageRequest {
-        memberDAO.getOneOneConversationWithFederatedMembers(domain)
-            .mapKeys { it.key.toModel() }
-            .mapValues { it.value.toModel() }
-    }
+    ): Either<CoreFailure, OneOnOneMembers> =
+        federationConversationRepository.getOneOnOneConversationsWithFederatedMembers(domain)
 
     override suspend fun updateMlsVerificationStatus(
         verificationStatus: Conversation.VerificationStatus,

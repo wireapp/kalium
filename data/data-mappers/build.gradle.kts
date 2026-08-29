@@ -40,6 +40,7 @@ kotlin {
                 implementation(libs.ktxDateTime)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktor.serialization)
+                implementation(libs.okio.core)
             }
         }
     }

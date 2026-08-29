@@ -319,20 +319,3 @@ internal fun AssetContent.AssetMetadata.toProto(): CellAsset.InitialMetaData<*> 
             )
         )
     }
-
-internal fun CellAsset.InitialMetaData<*>.toModel(): AssetContent.AssetMetadata =
-    when (this) {
-        is CellAsset.InitialMetaData.Image -> Image(
-            width = value.width,
-            height = value.height
-        )
-        is CellAsset.InitialMetaData.Audio -> Audio(
-            durationMs = value.durationInMillis,
-            normalizedLoudness = null,
-        )
-        is CellAsset.InitialMetaData.Video -> Video(
-            width = value.width,
-            height = value.height,
-            durationMs = value.durationInMillis
-        )
-    }

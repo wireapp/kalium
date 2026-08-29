@@ -71,8 +71,11 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.ConversationPersistenceApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import com.wire.kalium.logic.sync.receiver.FederationConnection
+import com.wire.kalium.logic.sync.receiver.FederationConnectionRepository
+import com.wire.kalium.logic.sync.receiver.FederationConnectionRepositoryImpl
 
-internal interface ConnectionRepository {
+internal interface ConnectionRepository : FederationConnectionRepository {
     suspend fun fetchSelfUserConnections(transactionContext: CryptoTransactionContext): Either<CoreFailure, Unit>
     suspend fun sendUserConnection(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Unit>
     suspend fun updateConnectionStatus(
@@ -107,8 +110,16 @@ internal class ConnectionDataSource(
     private val conversationRepository: ConversationRepository,
     private val persistConversations: PersistConversationsUseCase,
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
-    private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper()
+    private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
+    private val federationConnectionRepository: FederationConnectionRepository =
+        FederationConnectionRepositoryImpl(connectionDAO, userDAO),
 ) : ConnectionRepository {
+
+    override fun getFederationConnections(): Either<StorageFailure, Flow<List<FederationConnection>>> =
+        federationConnectionRepository.getFederationConnections()
+
+    override suspend fun deleteFederationConnection(connection: FederationConnection): Either<StorageFailure, Unit> =
+        federationConnectionRepository.deleteFederationConnection(connection)
 
     override suspend fun fetchSelfUserConnections(transactionContext: CryptoTransactionContext): Either<CoreFailure, Unit> {
         var hasMore = true

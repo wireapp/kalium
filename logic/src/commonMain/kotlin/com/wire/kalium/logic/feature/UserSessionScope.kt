@@ -36,6 +36,8 @@ import com.wire.kalium.logic.cache.ProteusSelfConversationIdProviderImpl
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.cache.SelfConversationIdProviderImpl
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.configuration.FeatureConfigRepository as LocalFeatureConfigRepository
+import com.wire.kalium.logic.configuration.FeatureConfigRepositoryImpl
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
@@ -162,6 +164,7 @@ import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
+import com.wire.kalium.logic.data.message.EventMessageRepositoryImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -324,6 +327,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHand
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MeetingsSlowSyncRepositoryImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -443,6 +447,7 @@ import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSo
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.network.SessionManagerImpl
@@ -481,14 +486,20 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.FederationConnectionRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.FederationConversationRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.FederationUserRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.MeetingEventReceiver
 import com.wire.kalium.logic.sync.receiver.MeetingEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.TeamEventUserRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.UserPropertiesConfigRepositoryImpl
+import com.wire.kalium.logic.sync.receiver.UserPropertiesFolderRepositoryImpl
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
@@ -845,6 +856,15 @@ public class UserSessionScope internal constructor(
             userStorage.database.userPrefsDAO,
             userStorage.database.userConfigDAO,
             kaliumConfigs
+        )
+
+    private val featureConfigPersistenceRepository: LocalFeatureConfigRepository
+        get() = FeatureConfigRepositoryImpl(
+            userConfigStorage = userStorage.database.userPrefsDAO,
+            userConfigDAO = userStorage.database.userConfigDAO,
+            allowedFileTypesProvider = {
+                (kaliumConfigs.fileRestrictionState.value as? BuildFileRestrictionState.AllowSome)?.allowedType
+            },
         )
 
     private val userPropertyRepository: UserPropertyRepository
@@ -1204,7 +1224,7 @@ public class UserSessionScope internal constructor(
 
     internal val persistMessage: PersistMessageUseCase
         get() = PersistMessageUseCaseImpl(
-            messageRepository = messageRepository,
+            messageRepository = EventMessageRepositoryImpl(userStorage.database.messageDAO, userId),
             selfUserId = userId,
             notificationEventsManager = NotificationEventsManagerImpl,
             persistMessageHookNotifier = currentPersistenceEventHookNotifier
@@ -2207,38 +2227,55 @@ public class UserSessionScope internal constructor(
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
-        get() = UserPropertiesEventReceiverImpl(userConfigRepository, conversationFolderRepository)
+        get() = UserPropertiesEventReceiverImpl(
+            UserPropertiesConfigRepositoryImpl(userStorage.database.userPrefsDAO),
+            UserPropertiesFolderRepositoryImpl(userStorage.database.conversationFolderDAO),
+        )
 
     private val federationEventReceiver: FederationEventReceiver
         get() = FederationEventReceiverImpl(
-            conversationRepository,
-            connectionRepository,
-            userRepository,
-            userStorage.database.memberDAO,
+            FederationConversationRepositoryImpl(userStorage.database.memberDAO),
+            FederationConnectionRepositoryImpl(
+                userStorage.database.connectionDAO,
+                userStorage.database.userDAO,
+            ),
+            FederationUserRepositoryImpl(userStorage.database.userDAO),
             persistMessage,
             userId
         )
 
     private val teamEventReceiver: TeamEventReceiver
-        get() = TeamEventReceiverImpl(userRepository, persistMessage, userId)
+        get() = TeamEventReceiverImpl(
+            TeamEventUserRepositoryImpl(userStorage.database.userDAO),
+            persistMessage,
+            userId,
+        )
 
     private val guestRoomConfigHandler
-        get() = GuestRoomConfigHandler(userConfigRepository, kaliumConfigs)
+        get() = GuestRoomConfigHandler(featureConfigPersistenceRepository, kaliumConfigs.guestRoomLink)
 
     private val fileSharingConfigHandler
-        get() = FileSharingConfigHandler(userConfigRepository)
+        get() = FileSharingConfigHandler(featureConfigPersistenceRepository)
 
     private val mlsConfigHandler
-        get() = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider)
+        get() = MLSConfigHandler(
+            featureConfigPersistenceRepository,
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            cryptoTransactionProvider,
+        )
 
     private val mlsMigrationConfigHandler
-        get() = MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider)
+        get() = MLSMigrationConfigHandler(
+            featureConfigPersistenceRepository,
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            cryptoTransactionProvider,
+        )
 
     private val classifiedDomainsConfigHandler
-        get() = ClassifiedDomainsConfigHandler(userConfigRepository)
+        get() = ClassifiedDomainsConfigHandler(featureConfigPersistenceRepository)
 
     private val conferenceCallingConfigHandler
-        get() = ConferenceCallingConfigHandler(userConfigRepository)
+        get() = ConferenceCallingConfigHandler(featureConfigPersistenceRepository)
 
     private val consumableNotificationsConfigHandler
         get() = ConsumableNotificationsConfigHandler(userConfigRepository)
@@ -2250,31 +2287,34 @@ public class UserSessionScope internal constructor(
         get() = SecondFactorPasswordChallengeConfigHandler(userConfigRepository)
 
     private val selfDeletingMessagesConfigHandler
-        get() = SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs)
+        get() = SelfDeletingMessagesConfigHandler(featureConfigPersistenceRepository, kaliumConfigs.selfDeletingMessages)
 
     private val e2eiConfigHandler
-        get() = E2EIConfigHandler(userConfigRepository)
+        get() = E2EIConfigHandler(featureConfigPersistenceRepository)
 
     private val appLockConfigHandler
-        get() = AppLockConfigHandler(userConfigRepository)
+        get() = AppLockConfigHandler(featureConfigPersistenceRepository)
 
     private val allowedGlobalOperationsHandler
-        get() = AllowedGlobalOperationsHandler(userConfigRepository)
+        get() = AllowedGlobalOperationsHandler(featureConfigPersistenceRepository)
 
     private val cellsConfigHandler
-        get() = CellsConfigHandler(userConfigRepository)
+        get() = CellsConfigHandler(featureConfigPersistenceRepository)
 
     private val enableUserProfileQRCodeConfigHandler
-        get() = EnableUserProfileQRCodeConfigHandler(userConfigRepository)
+        get() = EnableUserProfileQRCodeConfigHandler(featureConfigPersistenceRepository)
 
     private val assetAuditLogConfigHandler
-        get() = AssetAuditLogConfigHandler(userConfigRepository)
+        get() = AssetAuditLogConfigHandler(featureConfigPersistenceRepository)
 
     private val preventAdminlessGroupsConfigHandler
-        get() = PreventAdminlessGroupsConfigHandler(userConfigRepository)
+        get() = PreventAdminlessGroupsConfigHandler(featureConfigPersistenceRepository)
 
     private val meetingsConfigHandler
-        get() = MeetingsConfigHandler(userConfigRepository, slowSyncRepository)
+        get() = MeetingsConfigHandler(
+            featureConfigPersistenceRepository,
+            MeetingsSlowSyncRepositoryImpl(userStorage.database.metadataDAO),
+        )
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(

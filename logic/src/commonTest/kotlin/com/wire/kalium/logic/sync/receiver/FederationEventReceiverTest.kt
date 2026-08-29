@@ -19,7 +19,6 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConnection
@@ -29,8 +28,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
-import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
@@ -46,6 +43,9 @@ import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
@@ -81,6 +81,14 @@ class FederationEventReceiverTest {
         }
 
         val connectionConversationList = defederatedConnections + otherConnections
+        val federationConnections = connectionConversationList.map {
+            val otherUserId = requireNotNull(it.otherUser).id
+            FederationConnection(
+                conversationId = it.conversationId,
+                userId = otherUserId,
+                otherUserDomain = otherUserId.domain,
+            )
+        }
 
         val defederatedUserIdList = List(defederatedUsersCount) { UserId(value = "defId$it", domain = defederatedDomain) }
         val selfUserIdList = List(selfUsersCount) { UserId(value = "selfId$it", domain = selfDomain) }
@@ -103,12 +111,12 @@ class FederationEventReceiverTest {
 
         val (arrangement, useCase) = arrange {
             dispatcher = testKaliumDispatcher
-            withGetConnections(Either.Right(flowOf(connectionConversationList)))
-            withDeleteConnection(Either.Right(Unit))
+            withGetFederationConnections(federationConnections)
+            withDeleteFederationConnection()
             withGetGroupConversationsWithMembersWithBothDomains(Either.Right(defederatedGroupConversations))
             withGetOneOnOneConversationsWithFederatedMember(Either.Right(defederatedOneOnOneConversations))
             withDefederateUser(Either.Right(Unit))
-            withDeleteMembersByQualifiedID(defederatedConnections.size.toLong())
+            withDeleteFederatedMembers()
             withPersistingMessage(Either.Right(Unit))
         }
 
@@ -122,11 +130,11 @@ class FederationEventReceiverTest {
         useCase.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(defederatedConnections.size)) {
-            arrangement.connectionRepository.deleteConnection(matches { it.qualifiedConversationId.domain == defederatedDomain })
+            arrangement.connectionRepository.deleteFederationConnection(matches { it.otherUserDomain == defederatedDomain })
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.connectionRepository.deleteConnection(any())
+            arrangement.connectionRepository.deleteFederationConnection(any())
         }
 
         verifySuspend(VerifyMode.exactly(defederatedOneOnOneConversations.size)) {
@@ -134,17 +142,17 @@ class FederationEventReceiverTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.memberDAO.deleteMembersByQualifiedID(eq(defederatedUserIdList.map { it.toDao() }), eq(selfConversation.toDao()))
+            arrangement.conversationRepository.deleteFederatedMembers(eq(defederatedUserIdList), eq(selfConversation))
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.memberDAO.deleteMembersByQualifiedID(eq(selfUserIdList.map { it.toDao() }), eq(defederatedConversation.toDao()))
+            arrangement.conversationRepository.deleteFederatedMembers(eq(selfUserIdList), eq(defederatedConversation))
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.memberDAO.deleteMembersByQualifiedID(
-                eq(userIdWithBothDomainsList.map { it.toDao() }),
-                eq(otherConversation.toDao())
+            arrangement.conversationRepository.deleteFederatedMembers(
+                eq(userIdWithBothDomainsList),
+                eq(otherConversation)
             )
         }
 
@@ -174,7 +182,7 @@ class FederationEventReceiverTest {
             val (arrangement, useCase) = arrange {
                 dispatcher = testKaliumDispatcher
                 withGetGroupConversationsWithMembersWithBothDomains(Either.Right(defederatedGroupConversations))
-                withDeleteMembersByQualifiedID(defederatedUserIdList.size.toLong())
+                withDeleteFederatedMembers()
                 withPersistingMessage(Either.Right(Unit))
             }
 
@@ -188,23 +196,23 @@ class FederationEventReceiverTest {
             useCase.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.memberDAO.deleteMembersByQualifiedID(
-                    eq(defederatedUserIdListTwo.map { it.toDao() }),
-                    eq(defederatedConversation.toDao())
+                arrangement.conversationRepository.deleteFederatedMembers(
+                    eq(defederatedUserIdListTwo),
+                    eq(defederatedConversation)
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.memberDAO.deleteMembersByQualifiedID(
-                    eq(defederatedUserIdList.map { it.toDao() }),
-                    eq(defederatedConversationTwo.toDao())
+                arrangement.conversationRepository.deleteFederatedMembers(
+                    eq(defederatedUserIdList),
+                    eq(defederatedConversationTwo)
                 )
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.memberDAO.deleteMembersByQualifiedID(
-                    eq(userIdWithBothDomainsList.map { it.toDao() }),
-                    eq(selfConversation.toDao())
+                arrangement.conversationRepository.deleteFederatedMembers(
+                    eq(userIdWithBothDomainsList),
+                    eq(selfConversation)
                 )
             }
 
@@ -236,7 +244,6 @@ class FederationEventReceiverTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        MemberDAOArrangement by MemberDAOArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl()
     {
 
@@ -248,11 +255,28 @@ class FederationEventReceiverTest {
                 conversationRepository = conversationRepository,
                 connectionRepository = connectionRepository,
                 userRepository = userRepository,
-                memberDAO = memberDAO,
                 persistMessage = persistMessageUseCase,
                 selfUserId = selfUserId,
                 dispatchers = dispatcher
             )
+        }
+
+        suspend fun withDeleteFederatedMembers() {
+            everySuspend {
+                conversationRepository.deleteFederatedMembers(any(), any())
+            } returns Either.Right(Unit)
+        }
+
+        fun withGetFederationConnections(connections: List<FederationConnection>) {
+            every {
+                connectionRepository.getFederationConnections()
+            } returns Either.Right(flowOf(connections))
+        }
+
+        suspend fun withDeleteFederationConnection() {
+            everySuspend {
+                connectionRepository.deleteFederationConnection(any())
+            } returns Either.Right(Unit)
         }
 
     }

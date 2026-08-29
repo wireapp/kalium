@@ -22,19 +22,23 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.feature.featureConfig.handler.FeatureConfigSupportedProtocolsUpdater
 
 /**
  * Update self supported protocols, and if the supported protocols
  * did change we also resolve the active protocol for all one-on-one
  * conversations.
  */
-internal interface UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
+internal interface UpdateSupportedProtocolsAndResolveOneOnOnesUseCase : FeatureConfigSupportedProtocolsUpdater {
 
     /**
      * @param synchroniseUsers if true we synchronize all known users from backend
      * in order to have to up-to-date information about which protocols are supported.
      */
-    suspend operator fun invoke(transactionContext: CryptoTransactionContext, synchroniseUsers: Boolean): Either<CoreFailure, Unit>
+    override suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
+        synchroniseUsers: Boolean,
+    ): Either<CoreFailure, Unit>
 }
 
 internal class UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl(

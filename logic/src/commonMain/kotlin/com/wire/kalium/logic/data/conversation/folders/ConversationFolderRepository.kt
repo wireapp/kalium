@@ -40,6 +40,8 @@ import com.wire.kalium.logic.data.conversation.FolderWithConversations
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.sync.receiver.UserPropertiesFolderRepository
+import com.wire.kalium.logic.sync.receiver.UserPropertiesFolderRepositoryImpl
 import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
@@ -50,11 +52,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-internal interface ConversationFolderRepository {
+internal interface ConversationFolderRepository : UserPropertiesFolderRepository {
 
     suspend fun getFavoriteConversationFolder(): Either<CoreFailure, ConversationFolder>
     fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>>
-    suspend fun updateConversationFolders(folderWithConversations: List<FolderWithConversations>): Either<CoreFailure, Unit>
+    override suspend fun updateConversationFolders(folderWithConversations: List<FolderWithConversations>): Either<CoreFailure, Unit>
     suspend fun fetchConversationFolders(): Either<CoreFailure, Unit>
     suspend fun addConversationToFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
     suspend fun removeConversationFromFolder(
@@ -73,13 +75,13 @@ internal class ConversationFolderDataSource internal constructor(
     private val conversationFolderDAO: ConversationFolderDAO,
     private val userPropertiesApi: PropertiesApi,
     private val selfUserId: QualifiedID,
-    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
+    private val userPropertiesFolderRepository: UserPropertiesFolderRepository =
+        UserPropertiesFolderRepositoryImpl(conversationFolderDAO)
 ) : ConversationFolderRepository {
 
     override suspend fun updateConversationFolders(folderWithConversations: List<FolderWithConversations>): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            conversationFolderDAO.updateConversationFolders(folderWithConversations.map { it.toDao() })
-        }
+        userPropertiesFolderRepository.updateConversationFolders(folderWithConversations)
 
     override suspend fun getFavoriteConversationFolder(): Either<CoreFailure, ConversationFolder> = wrapStorageRequest {
         conversationFolderDAO.getFavoriteConversationFolder()?.toModel()

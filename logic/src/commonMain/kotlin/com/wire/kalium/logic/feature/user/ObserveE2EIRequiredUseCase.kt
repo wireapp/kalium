@@ -119,7 +119,7 @@ internal class ObserveE2EIRequiredUseCaseImpl(
         flowOf(instant).onStart { delay(delayMillis) }
     }
 
-    private fun E2EISettings.gracePeriodLeft(): Duration? = gracePeriodEnd?.let {
+    private fun E2EISettings.gracePeriodLeft(): Duration? = gracePeriodEnd?.let { gracePeriodEnd ->
         if (gracePeriodEnd <= DateTimeUtil.currentInstant()) null
         else gracePeriodEnd.minus(DateTimeUtil.currentInstant())
     }

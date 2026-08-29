@@ -29,11 +29,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
+import com.wire.kalium.logic.feature.featureConfig.handler.MeetingsSlowSyncRepository
+import com.wire.kalium.logic.feature.featureConfig.handler.MeetingsSlowSyncRepositoryImpl
 
-internal interface SlowSyncRepository {
+internal interface SlowSyncRepository : MeetingsSlowSyncRepository {
     val slowSyncStatus: StateFlow<SlowSyncStatus>
     suspend fun setLastSlowSyncCompletionInstant(instant: Instant)
-    suspend fun clearLastSlowSyncCompletionInstant()
+    override suspend fun clearLastSlowSyncCompletionInstant()
     suspend fun setNeedsToRecoverMLSGroups(value: Boolean)
     suspend fun needsToRecoverMLSGroups(): Boolean
     suspend fun setNeedsToPersistHistoryLostMessage(value: Boolean)
@@ -47,6 +49,7 @@ internal interface SlowSyncRepository {
 internal class SlowSyncRepositoryImpl(
     private val metadataDao: MetadataDAO,
     logger: KaliumLogger = kaliumLogger,
+    private val meetingsSlowSyncRepository: MeetingsSlowSyncRepository = MeetingsSlowSyncRepositoryImpl(metadataDao),
 ) : SlowSyncRepository {
     private val logger = logger.withFeatureId(SYNC)
 
@@ -59,7 +62,7 @@ internal class SlowSyncRepositoryImpl(
     }
 
     override suspend fun clearLastSlowSyncCompletionInstant() {
-        metadataDao.deleteValue(key = LAST_SLOW_SYNC_INSTANT_KEY)
+        meetingsSlowSyncRepository.clearLastSlowSyncCompletionInstant()
     }
 
     override suspend fun setNeedsToRecoverMLSGroups(value: Boolean) {

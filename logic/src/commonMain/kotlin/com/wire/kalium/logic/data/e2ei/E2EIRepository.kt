@@ -266,10 +266,11 @@ private data class E2EIRepositoryDependencies(
     suspend fun discoveryUrl(): Either<E2EIFailure, String> = userConfigRepository.getE2EISettings().fold(
         { E2EIFailure.MissingTeamSettings.left() },
         { settings ->
+            val discoveryUrl = settings.discoverUrl
             when {
                 !settings.isRequired -> E2EIFailure.Disabled.left()
-                settings.discoverUrl.isNullOrBlank() -> E2EIFailure.MissingDiscoveryUrl.left()
-                else -> settings.discoverUrl.right()
+                discoveryUrl.isNullOrBlank() -> E2EIFailure.MissingDiscoveryUrl.left()
+                else -> discoveryUrl.right()
             }
         }
     )

@@ -154,7 +154,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
 
     private suspend fun validateAsset(asset: AssetUploadParams): Either<Failure, Unit> =
         observeFileSharingStatus().firstOrNull()?.let { fileSharingStatus ->
-            when (fileSharingStatus.state) {
+            when (val restrictionState = fileSharingStatus.state) {
                 FileSharingStatus.Value.EnabledAll -> Unit.right()
                 FileSharingStatus.Value.Disabled -> Failure.DisabledByTeam.left()
 
@@ -162,7 +162,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     if (!validateAssetFileUseCase(
                             fileName = asset.assetName,
                             mimeType = asset.assetMimeType,
-                            allowedExtension = fileSharingStatus.state.allowedType
+                            allowedExtension = restrictionState.allowedType
                         )
                     ) {
                         kaliumLogger.e("The asset message trying to be processed has invalid content data")

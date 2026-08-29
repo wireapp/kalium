@@ -28,7 +28,6 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigDat
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
-import com.wire.kalium.persistence.config.MLSMigrationEntity
 
 @Suppress("TooManyFunctions")
 internal interface FeatureConfigMapper {
@@ -260,17 +259,3 @@ internal class FeatureConfigMapperImpl : FeatureConfigMapper {
             fromModel(model.status)
         )
 }
-
-internal fun MLSMigrationModel.toEntity(): MLSMigrationEntity =
-    MLSMigrationEntity(
-        status = status.equals(Status.ENABLED),
-        startTime = startTime,
-        endTime = endTime
-    )
-
-internal fun MLSMigrationEntity.toModel(): MLSMigrationModel =
-    MLSMigrationModel(
-        status = if (status) Status.ENABLED else Status.DISABLED,
-        startTime = startTime,
-        endTime = endTime
-    )
