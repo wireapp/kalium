@@ -245,7 +245,7 @@ internal class MLSMessageUnpackerTest {
             .arrange()
 
         val result = mlsUnpacker.unpackMlsBundle(
-            DECRYPTED_MESSAGE_BUNDLE.copy(applicationMessage = applicationMessage),
+            decryptedText(applicationMessage),
             TestConversation.ID,
             DateTimeUtil.currentInstant(),
         )
@@ -270,9 +270,7 @@ internal class MLSMessageUnpackerTest {
 
         assertFailsWith<KaliumSyncException> {
             mlsUnpacker.unpackMlsBundle(
-                DECRYPTED_MESSAGE_BUNDLE.copy(
-                    applicationMessage = ApplicationMessage(byteArrayOf(1), SELF_USER_ID, ClientId("client-id"))
-                ),
+                decryptedText(ApplicationMessage(byteArrayOf(1), SELF_USER_ID, ClientId("client-id"))),
                 TestConversation.ID,
                 DateTimeUtil.currentInstant(),
             )
@@ -349,6 +347,12 @@ internal class MLSMessageUnpackerTest {
         fun decryptedProposal(commitDelay: Long?) = DecryptedMessageBundle.Proposal(
             groupID = TestConversation.GROUP_ID,
             commitDelay = commitDelay,
+            identity = null
+        )
+
+        fun decryptedText(applicationMessage: ApplicationMessage) = DecryptedMessageBundle.Text(
+            groupID = TestConversation.GROUP_ID,
+            applicationMessage = applicationMessage,
             identity = null
         )
     }
