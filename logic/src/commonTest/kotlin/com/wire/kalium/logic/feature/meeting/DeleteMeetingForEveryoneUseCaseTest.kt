@@ -32,7 +32,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class DeleteMeetingUseCaseTest {
+class DeleteMeetingForEveryoneUseCaseTest {
 
     @Test
     fun givenRepositoryDeleteSucceeds_whenInvoking_thenReturnsSuccess() = runTest {
@@ -43,7 +43,7 @@ class DeleteMeetingUseCaseTest {
 
         val result = useCase(meetingId)
 
-        assertEquals(DeleteMeetingUseCase.Result.Success, result)
+        assertEquals(DeleteMeetingForEveryoneUseCase.Result.Success, result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.deleteMeeting(meetingId)
         }
@@ -59,7 +59,7 @@ class DeleteMeetingUseCaseTest {
 
         val result = useCase(meetingId)
 
-        assertEquals(failure, assertIs<DeleteMeetingUseCase.Result.Failure>(result).coreFailure)
+        assertEquals(failure, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure>(result).coreFailure)
     }
 
     inner class Arrangement {
@@ -69,6 +69,6 @@ class DeleteMeetingUseCaseTest {
             everySuspend { meetingRepository.deleteMeeting(meetingId) } returns result
         }
 
-        internal fun arrange() = this to DeleteMeetingUseCaseImpl(meetingRepository)
+        internal fun arrange() = this to DeleteMeetingForEveryoneUseCaseImpl(meetingRepository)
     }
 }

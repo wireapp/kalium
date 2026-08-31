@@ -21,11 +21,13 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.feature.conversation.LeaveConversationUseCase
+import com.wire.kalium.logic.feature.conversation.RemoveMemberFromConversationUseCase
 
 /**
- * Use case for deleting a meeting by its ID.
+ * Use case for deleting a meeting only for the self user.
  */
-public interface DeleteMeetingUseCase {
+public interface DeleteMeetingForMeUseCase {
     public suspend operator fun invoke(meetingId: MeetingId): Result
 
     public sealed interface Result {
@@ -34,14 +36,21 @@ public interface DeleteMeetingUseCase {
     }
 }
 
-internal class DeleteMeetingUseCaseImpl(
+internal class DeleteMeetingForMeUseCaseImpl(
     private val meetingRepository: MeetingRepository,
-) : DeleteMeetingUseCase {
-    override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingUseCase.Result {
-        return meetingRepository.deleteMeeting(meetingId).fold({
-            DeleteMeetingUseCase.Result.Failure(it)
-        }, {
-            DeleteMeetingUseCase.Result.Success
-        })
-    }
+    private val leaveConversation: LeaveConversationUseCase,
+) : DeleteMeetingForMeUseCase {
+    override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingForMeUseCase.Result =
+        meetingRepository.getMeeting(meetingId).fold(
+            {
+                DeleteMeetingForMeUseCase.Result.Failure(it)
+            },
+            { meeting ->
+                when (val result = leaveConversation(meeting.conversationId)) {
+                    is RemoveMemberFromConversationUseCase.Result.Failure -> DeleteMeetingForMeUseCase.Result.Failure(result.cause)
+                    is RemoveMemberFromConversationUseCase.Result.Success -> meetingRepository.deleteMeetingLocally(meetingId)
+                        .fold({ DeleteMeetingForMeUseCase.Result.Failure(it) }, { DeleteMeetingForMeUseCase.Result.Success })
+                }
+            }
+        )
 }
