@@ -21,11 +21,10 @@ package com.wire.kalium.logic.feature.meeting
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.meeting.MeetingRepository
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.IsMeetingsEnabledUseCase
 
 internal interface SyncMeetingsUseCase {
@@ -38,7 +37,6 @@ internal interface SyncMeetingsUseCase {
  */
 internal class SyncMeetingsUseCaseImpl(
     private val meetingRepository: MeetingRepository,
-    private val userRepository: UserRepository,
     private val isMeetingsEnabledUseCase: IsMeetingsEnabledUseCase,
     private val transactionProvider: CryptoTransactionProvider
 ) : SyncMeetingsUseCase {
@@ -48,15 +46,7 @@ internal class SyncMeetingsUseCaseImpl(
     override suspend operator fun invoke(): Either<CoreFailure, Unit> = when (isEnabled()) {
         false -> Either.Right(Unit)
         true -> transactionProvider.transaction("SyncMeetings") {
-            meetingRepository.fetchAndPersistMeetings()
-                .flatMap { meetings ->
-                    val creatorIds = meetings.map { it.creatorId }.toSet()
-                    if (creatorIds.isEmpty()) {
-                        Either.Right(Unit)
-                    } else {
-                        userRepository.fetchUsersIfUnknownByIds(creatorIds)
-                    }
-                }
+            meetingRepository.fetchAndPersistMeetings().map {}
         }.flatMapLeft {
             when (it) {
                 is NetworkFailure.FeatureNotSupported -> Either.Right(Unit)

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -65,6 +66,17 @@ internal interface NewGroupConversationSystemMessagesCreator {
     ): Either<CoreFailure, Unit>
 
     suspend fun conversationCellStatus(conversation: ConversationEntity): Either<CoreFailure, Unit>
+
+    /**
+     * Creates the system message telling the self user which access they have to the Shared Drive of the conversation.
+     */
+    suspend fun conversationCellAccessStatus(
+        conversationId: ConversationId,
+        conversationTeamId: String?,
+        isCellEnabled: Boolean,
+        instant: Instant = Clock.System.now(),
+    ): Either<CoreFailure, Unit>
+
     suspend fun conversationAppsAccessIfEnabled(
         eventId: String = LocalId.generate(),
         conversationId: ConversationId,
@@ -259,6 +271,32 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                 )
             )
         } ?: Either.Right(Unit)
+    }
+
+    override suspend fun conversationCellAccessStatus(
+        conversationId: ConversationId,
+        conversationTeamId: String?,
+        isCellEnabled: Boolean,
+        instant: Instant,
+    ): Either<CoreFailure, Unit> = run {
+        if (!isCellEnabled) {
+            return Either.Right(Unit)
+        }
+         val selfTeamId = selfTeamIdProvider().getOrNull()
+        val isViewer = conversationTeamId != selfTeamId?.value
+
+        persistMessage(
+            Message.System(
+                LocalId.generate(),
+                if (isViewer) MessageContent.CellViewerAccessMessage else MessageContent.CellEditorAccessMessage,
+                conversationId,
+                instant,
+                selfUserId,
+                Message.Status.Sent,
+                Message.Visibility.VISIBLE,
+                expirationData = null
+            )
+        )
     }
 
     override suspend fun conversationAppsAccessIfEnabled(

@@ -17,9 +17,11 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
+import com.wire.kalium.cells.domain.model.WireCellsConfig
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
@@ -55,6 +57,13 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withConferenceCallingEnabled(result: Boolean)
     suspend fun withDeleteLegalHoldRequestSuccess(): UserConfigRepositoryArrangement
     suspend fun withSetLegalHoldChangeNotifiedSuccess(): UserConfigRepositoryArrangement
+    suspend fun withFileSharingEnabledReturning(result: Either<StorageFailure, FileSharingStatus>)
+    suspend fun withSetMlsConversationsResetEnabledReturning(result: Either<StorageFailure, Unit>)
+    suspend fun withSetCellsEnabledReturning(result: Either<StorageFailure, Unit>)
+    suspend fun withSetWireCellsConfigReturning(result: Either<StorageFailure, Unit>)
+    suspend fun withSetAssetAuditLogEnabledReturning(result: Either<StorageFailure, Unit>)
+    suspend fun withSetProfileQRCodeEnabledReturning(result: Either<StorageFailure, Unit>)
+    suspend fun withSetPreventAdminlessGroupsEnabledReturning(result: Either<StorageFailure, Unit>)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -157,5 +166,33 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override suspend fun withSetLegalHoldChangeNotifiedSuccess() = apply {
         everySuspend { userConfigRepository.setLegalHoldChangeNotified(any()) }.returns(Either.Right(Unit))
+    }
+
+    override suspend fun withFileSharingEnabledReturning(result: Either<StorageFailure, FileSharingStatus>) {
+        everySuspend { userConfigRepository.isFileSharingEnabled() }.returns(result)
+    }
+
+    override suspend fun withSetMlsConversationsResetEnabledReturning(result: Either<StorageFailure, Unit>) {
+        everySuspend { userConfigRepository.setMlsConversationsResetEnabled(any()) }.returns(result)
+    }
+
+    override suspend fun withSetCellsEnabledReturning(result: Either<StorageFailure, Unit>) {
+        everySuspend { userConfigRepository.setCellsEnabled(any()) }.returns(result)
+    }
+
+    override suspend fun withSetWireCellsConfigReturning(result: Either<StorageFailure, Unit>) {
+        everySuspend { userConfigRepository.setWireCellsConfig(any<WireCellsConfig?>()) }.returns(result)
+    }
+
+    override suspend fun withSetAssetAuditLogEnabledReturning(result: Either<StorageFailure, Unit>) {
+        everySuspend { userConfigRepository.setAssetAuditLogEnabled(any()) }.returns(result)
+    }
+
+    override suspend fun withSetProfileQRCodeEnabledReturning(result: Either<StorageFailure, Unit>) {
+        everySuspend { userConfigRepository.setProfileQRCodeEnabled(any()) }.returns(result)
+    }
+
+    override suspend fun withSetPreventAdminlessGroupsEnabledReturning(result: Either<StorageFailure, Unit>) {
+        everySuspend { userConfigRepository.setPreventAdminlessGroupsEnabled(any()) }.returns(result)
     }
 }

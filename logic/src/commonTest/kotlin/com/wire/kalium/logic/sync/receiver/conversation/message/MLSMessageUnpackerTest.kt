@@ -19,11 +19,20 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ApplicationMessage
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PlainMessageBlob
+import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
@@ -34,9 +43,11 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -49,6 +60,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.seconds
 
 internal class MLSMessageUnpackerTest {
@@ -141,18 +154,145 @@ internal class MLSMessageUnpackerTest {
         }
     }
 
+    @Test
+    fun givenEmptyDecryptedBundleList_whenUnpacking_thenReturnHandshakeMessage() = runTest {
+        val (arrangement, mlsUnpacker) = Arrangement()
+            .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
+            .withDecryptMessageReturning(Either.Right(emptyList()))
+            .arrange()
+
+        val result = mlsUnpacker.unpackMlsMessage(
+            arrangement.mlsContext,
+            TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant()),
+        )
+
+        result.shouldSucceed {
+            assertEquals(listOf(MessageUnpackResult.HandshakeMessage), it)
+        }
+    }
+
+    @Test
+    fun givenSubconversationGroupExists_whenUnpacking_thenDecryptUsingSubconversationGroup() = runTest {
+        val subConversationId = SubconversationId("conference")
+        val subConversationGroupId = GroupID("subconversation-group")
+        val (arrangement, mlsUnpacker) = Arrangement()
+            .withSubconversationInfo(subConversationGroupId)
+            .withDecryptMessageReturning(Either.Right(emptyList()))
+            .arrange()
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), subConversationId)
+
+        mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, event)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.decryptMessage(any(), any(), eq(subConversationGroupId))
+        }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.getConversationProtocolInfo(any()) }
+    }
+
+    @Test
+    fun givenSubconversationGroupIsMissing_whenUnpacking_thenFallBackToParentConversationGroup() = runTest {
+        val subConversationId = SubconversationId("conference")
+        val (arrangement, mlsUnpacker) = Arrangement()
+            .withSubconversationInfo(null)
+            .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
+            .withDecryptMessageReturning(Either.Right(emptyList()))
+            .arrange()
+        val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), subConversationId)
+
+        mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, event)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.decryptMessage(any(), any(), eq(TestConversation.GROUP_ID))
+        }
+    }
+
+    @Test
+    fun givenBufferedMlsFailure_whenUnpacking_thenReadEpochAndPropagateFailure() = runTest {
+        listOf(MLSFailure.BufferedFutureMessage, MLSFailure.BufferedCommit).forEach { failure ->
+            val (arrangement, mlsUnpacker) = Arrangement()
+                .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
+                .withDecryptMessageReturning(Either.Left(failure))
+                .withLocalGroupEpoch(Either.Right(42UL))
+                .arrange()
+
+            val result = mlsUnpacker.unpackMlsMessage(
+                arrangement.mlsContext,
+                TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant()),
+            )
+
+            result.shouldFail { assertEquals(failure, it) }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.mlsConversationRepository.getLocalGroupEpoch(any(), eq(TestConversation.GROUP_ID))
+            }
+        }
+    }
+
+    @Test
+    fun givenReadableApplicationBundle_whenUnpacking_thenMapApplicationMessage() = runTest {
+        val readable = ProtoContent.Readable(
+            messageUid = "message-id",
+            messageContent = MessageContent.Text("hello"),
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+        val applicationMessage = ApplicationMessage(
+            message = byteArrayOf(1, 2, 3),
+            senderID = SELF_USER_ID,
+            senderClientID = ClientId("client-id"),
+        )
+        val (_, mlsUnpacker) = Arrangement()
+            .withDecodedProtoContent(readable)
+            .arrange()
+
+        val result = mlsUnpacker.unpackMlsBundle(
+            DECRYPTED_MESSAGE_BUNDLE.copy(applicationMessage = applicationMessage),
+            TestConversation.ID,
+            DateTimeUtil.currentInstant(),
+        )
+
+        assertIs<MessageUnpackResult.ApplicationMessage>(result)
+        assertEquals(readable, result.content)
+        assertEquals(SELF_USER_ID, result.senderUserId)
+        assertEquals(applicationMessage.senderClientID, result.senderClientId)
+    }
+
+    @Test
+    fun givenExternalApplicationBundle_whenUnpacking_thenRejectNestedExternalContent() = runTest {
+        val external = ProtoContent.ExternalMessageInstructions(
+            messageUid = "message-id",
+            otrKey = byteArrayOf(1),
+            sha256 = null,
+            encryptionAlgorithm = null,
+        )
+        val (_, mlsUnpacker) = Arrangement()
+            .withDecodedProtoContent(external)
+            .arrange()
+
+        assertFailsWith<KaliumSyncException> {
+            mlsUnpacker.unpackMlsBundle(
+                DECRYPTED_MESSAGE_BUNDLE.copy(
+                    applicationMessage = ApplicationMessage(byteArrayOf(1), SELF_USER_ID, ClientId("client-id"))
+                ),
+                TestConversation.ID,
+                DateTimeUtil.currentInstant(),
+            )
+        }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val conversationRepository = mock<ConversationRepository>()
         val mlsConversationRepository = mock<MLSConversationRepository>()
         val pendingProposalScheduler = mock<PendingProposalScheduler>(mode = MockMode.autoUnit)
         val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
+        val protoContentMapper = mock<ProtoContentMapper>()
 
         private val mlsMessageUnpacker = MLSMessageUnpackerImpl(
             conversationRepository,
             subconversationRepository,
             mlsConversationRepository,
             pendingProposalScheduler,
-            SELF_USER_ID
+            SELF_USER_ID,
+            protoContentMapper,
         )
 
 
@@ -172,6 +312,24 @@ internal class MLSMessageUnpackerTest {
             everySuspend {
                 conversationRepository.getConversationProtocolInfo(any())
             }.returns(Either.Right(protocolInfo))
+        }
+
+        suspend fun withSubconversationInfo(groupId: GroupID?) = apply {
+            everySuspend {
+                subconversationRepository.getSubconversationInfo(any(), any())
+            }.returns(groupId)
+        }
+
+        suspend fun withLocalGroupEpoch(result: Either<CoreFailure, ULong>) = apply {
+            everySuspend {
+                mlsConversationRepository.getLocalGroupEpoch(any(), any())
+            }.returns(result)
+        }
+
+        fun withDecodedProtoContent(content: ProtoContent) = apply {
+            every {
+                protoContentMapper.decodeFromProtobuf(any<PlainMessageBlob>())
+            }.returns(content)
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {

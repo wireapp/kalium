@@ -562,6 +562,12 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHan
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -1435,7 +1441,8 @@ public class UserSessionScope internal constructor(
         get() = MLSOneOnOneConversationResolverImpl(
             conversationRepository,
             joinExistingMLSConversationUseCase,
-            fetchMLSOneToOneConversationUseCase
+            fetchMLSOneToOneConversationUseCase,
+            mlsConversationRepository,
         )
 
     private val oneOnOneMigrator: OneOnOneMigrator
@@ -2006,7 +2013,8 @@ public class UserSessionScope internal constructor(
             legalHoldHandler = legalHoldHandler,
             newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
             selfUserId = userId,
-            fetchConversationUseCase
+            fetchConversation = fetchConversationUseCase,
+            kaliumConfigs = kaliumConfigs
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
@@ -2018,6 +2026,7 @@ public class UserSessionScope internal constructor(
             legalHoldHandler = legalHoldHandler,
             selfTeamIdProvider = selfTeamId,
             mlsConversationRepository = mlsConversationRepository,
+            meetingRepository = meetingRepository,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
@@ -2296,9 +2305,27 @@ public class UserSessionScope internal constructor(
             meetingRepository = meetingRepository,
         )
 
+    private val meetingDeleteEventHandler: MeetingDeleteEventHandler
+        get() = MeetingDeleteEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
+    private val meetingUpdateEventHandler: MeetingUpdateEventHandler
+        get() = MeetingUpdateEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
+    private val meetingMemberAddEventHandler: MeetingMemberAddEventHandler
+        get() = MeetingMemberAddEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
     private val meetingEventReceiver: MeetingEventReceiver
         get() = MeetingEventReceiverImpl(
-            meetingCreateEventHandler = meetingCreateEventHandler
+            meetingCreateEventHandler = meetingCreateEventHandler,
+            meetingDeleteEventHandler = meetingDeleteEventHandler,
+            meetingUpdateEventHandler = meetingUpdateEventHandler,
+            meetingMemberAddEventHandler = meetingMemberAddEventHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -3021,7 +3048,6 @@ public class UserSessionScope internal constructor(
     private val syncMeetingsUseCase: SyncMeetingsUseCase
         get() = SyncMeetingsUseCaseImpl(
             meetingRepository = meetingRepository,
-            userRepository = userRepository,
             isMeetingsEnabledUseCase = isMeetingsEnabled,
             transactionProvider = cryptoTransactionProvider
         )

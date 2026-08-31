@@ -211,11 +211,6 @@ class UserDatabaseBuilder internal constructor(
         ) {
             bindString(0, userId.toString())
         }
-        sqlDriver.execute(
-            identifier = null,
-            sql = "PRAGMA foreign_keys = 1;",
-            parameters = 0,
-        )
     }
 
     val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(MAX_READ_PARALLELISM))
