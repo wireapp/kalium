@@ -61,8 +61,7 @@ class PkiTrustAnchorReconciliationIntegrationTest {
         override suspend fun authenticate(
             idp: String,
             keyAuth: String,
-            acmeAud: String,
-            acquisitionSnapshot: ByteArray
+            acmeAud: String
         ): String = error("No authentication is expected while reconciling roots")
 
         override suspend fun getBackendNonce(): String =

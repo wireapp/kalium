@@ -70,30 +70,49 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 
 class E2EIRepositoryTest {
 
     @Test
-    fun givenCoreCryptoRequestsAuthentication_whenStartingAcquisition_thenPersistsSnapshotAndReturnsChallenge() = runTest {
+    fun givenCoreCryptoRequestsAuthentication_whenAcquiring_thenAwaitsCallbackAndInstallsCredential() = runTest {
         val (arrangement, repository) = Arrangement().arrange()
+        var authenticationRequest: E2EIAuthenticationRequest? = null
 
-        val result = repository.startCredentialAcquisition(isNewClient = false)
+        val result = repository.acquireCredential(
+            authenticate = { request ->
+                authenticationRequest = request
+                ID_TOKEN
+            },
+            groupIdListProvider = { listOf(GroupID("group-1")) },
+            isNewClient = false
+        )
 
-        result.shouldSucceed { request ->
-            assertEquals(IDP_URL, request.target)
-            assertEquals(KEY_AUTH, request.keyAuth)
-            assertEquals(ACME_AUDIENCE, request.acmeAudience)
+        result.shouldSucceed { checkpoint ->
+            assertEquals(CERTIFICATE_CHAIN, checkpoint.certificateChain)
+            assertEquals(PREVIOUS_CREDENTIAL_ID, checkpoint.previousCredentialId)
+            assertEquals(NEW_CREDENTIAL_ID, checkpoint.newCredentialId)
+            assertEquals(listOf("group-1"), checkpoint.groupIds)
+            assertEquals(E2EIRotationPhase.CREDENTIAL_INSTALLED, checkpoint.phase)
         }
-        assertContentEquals(SNAPSHOT, arrangement.persistedSnapshot)
+        assertEquals(E2EIAuthenticationRequest(IDP_URL, KEY_AUTH, ACME_AUDIENCE), authenticationRequest)
+        assertEquals(ID_TOKEN, arrangement.returnedIdToken)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.coreCrypto.startX509CredentialAcquisition(eq(ACQUISITION_CONFIG), eq(arrangement.previousCredentialRef))
+            arrangement.coreCrypto.startX509CredentialAcquisition(
+                eq(ACQUISITION_CONFIG),
+                eq(arrangement.previousCredentialRef)
+            )
+            arrangement.coreCrypto.installCredential(eq(arrangement.credential))
         }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setE2EIAcquisitionSnapshot(eq(SNAPSHOT))
-        }
+        assertTrue(
+            arrangement.checkpointEvents.indexOf("persist-ACQUIRED") <
+                    arrangement.checkpointEvents.indexOf("install")
+        )
+        assertTrue(
+            arrangement.checkpointEvents.indexOf("install") <
+                    arrangement.checkpointEvents.indexOf("persist-CREDENTIAL_INSTALLED")
+        )
     }
 
     @Test
@@ -104,7 +123,7 @@ class E2EIRepositoryTest {
             ).right()
         }
 
-        repository.startCredentialAcquisition(isNewClient = false).shouldSucceed()
+        repository.acquireCredential({ ID_TOKEN }, { emptyList() }, isNewClient = false).shouldSucceed()
         val response = requireNotNull(arrangement.pkiHooks).httpRequest(
             PkiHttpMethod.GET,
             "$HOST_ONLY_DISCOVERY_URL/",
@@ -119,12 +138,12 @@ class E2EIRepositoryTest {
     }
 
     @Test
-    fun givenProxyEnabled_whenResumingAcquisition_thenExactDiscoveryGetRemainsDirect() = runTest {
+    fun givenProxyEnabled_whenAcquiring_thenExactDiscoveryGetRemainsDirect() = runTest {
         val (arrangement, repository) = Arrangement().arrange {
             everySuspend { userConfigRepository.getE2EISettings() } returns PROXIED_E2EI_SETTINGS.right()
         }
 
-        repository.resumeCredentialAcquisition(ID_TOKEN, emptyList(), isNewClient = false).shouldSucceed()
+        repository.acquireCredential({ ID_TOKEN }, { emptyList() }, isNewClient = false).shouldSucceed()
         val response = requireNotNull(arrangement.pkiHooks).httpRequest(
             PkiHttpMethod.GET,
             DISCOVERY_URL,
@@ -163,67 +182,45 @@ class E2EIRepositoryTest {
     }
 
     @Test
-    fun givenPersistedSnapshotAndIdToken_whenResumingAcquisition_thenInstallsCredentialAndDeletesOneShotSnapshot() = runTest {
-        val (arrangement, repository) = Arrangement().arrange()
-        val groups = listOf(GroupID("group-1"))
-
-        val result = repository.resumeCredentialAcquisition(ID_TOKEN, groups, isNewClient = false)
-
-        result.shouldSucceed { checkpoint ->
-            assertEquals(CERTIFICATE_CHAIN, checkpoint.certificateChain)
-            assertEquals(PREVIOUS_CREDENTIAL_ID, checkpoint.previousCredentialId)
-            assertEquals(NEW_CREDENTIAL_ID, checkpoint.newCredentialId)
-            assertEquals(listOf("group-1"), checkpoint.groupIds)
-            assertEquals(E2EIRotationPhase.CREDENTIAL_INSTALLED, checkpoint.phase)
-        }
-        assertEquals(ID_TOKEN, arrangement.returnedIdToken)
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.coreCrypto.resumeX509CredentialAcquisition(eq(SNAPSHOT))
-        }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
-        }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.coreCrypto.installCredential(eq(arrangement.credential))
-        }
-        assertTrue(
-            arrangement.checkpointEvents.indexOf("persist-CREDENTIAL_INSTALLED") <
-                    arrangement.checkpointEvents.indexOf("delete-snapshot")
-        )
-    }
-
-    @Test
-    fun givenAcquiredCheckpointCannotBePersisted_whenResuming_thenDoesNotInstallOrDeleteSnapshot() = runTest {
+    fun givenAcquiredCheckpointCannotBePersisted_whenAcquiring_thenDoesNotInstallCredential() = runTest {
         val (arrangement, repository) = Arrangement().arrange {
             rotationCheckpointWriteFailurePhase = E2EIRotationPhase.ACQUIRED
         }
 
-        val result = repository.resumeCredentialAcquisition(
-            ID_TOKEN,
-            listOf(GroupID("group-1")),
+        val result = repository.acquireCredential(
+            authenticate = { ID_TOKEN },
+            groupIdListProvider = { listOf(GroupID("group-1")) },
             isNewClient = false
         )
 
         kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(result)
         verifySuspend(VerifyMode.not) {
             arrangement.coreCrypto.installCredential(any())
-            arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
         }
     }
 
     @Test
-    fun givenPersistedRotationCheckpoint_whenFinalizationIsRetried_thenDoesNotResumeAcquisitionAgain() = runTest {
+    fun givenPersistedRotationCheckpoint_whenEnrollmentIsRetried_thenResumesRotationWithoutAcquiringAgain() = runTest {
         val checkpoint = installedCheckpoint()
         val (arrangement, repository) = Arrangement().arrange {
             persistedRotationCheckpoint = Json.encodeToString(E2EIRotationCheckpoint.serializer(), checkpoint).encodeToByteArray()
         }
+        var authenticationCalled = false
 
-        repository.resumeCredentialAcquisition(ID_TOKEN, emptyList(), isNewClient = false).shouldSucceed {
+        repository.acquireCredential(
+            authenticate = {
+                authenticationCalled = true
+                ID_TOKEN
+            },
+            groupIdListProvider = { emptyList() },
+            isNewClient = false
+        ).shouldSucceed {
             assertEquals(checkpoint, it)
         }
 
+        assertEquals(false, authenticationCalled)
         verifySuspend(VerifyMode.not) {
-            arrangement.coreCrypto.resumeX509CredentialAcquisition(any())
+            arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
             arrangement.coreCrypto.installCredential(any())
         }
     }
@@ -247,9 +244,9 @@ class E2EIRepositoryTest {
                     listOf(newCredentialRef, previousCredentialRef, olderCredentialRef)
         }
 
-        repository.resumeCredentialAcquisition(
-            ID_TOKEN,
-            listOf(GroupID("group-created-during-idp")),
+        repository.acquireCredential(
+            authenticate = { ID_TOKEN },
+            groupIdListProvider = { listOf(GroupID("group-created-during-idp")) },
             isNewClient = false
         ).shouldSucceed { recovered ->
             assertEquals(NEW_CREDENTIAL_ID, recovered.newCredentialId)
@@ -261,16 +258,13 @@ class E2EIRepositoryTest {
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.coreCrypto.resumeX509CredentialAcquisition(any())
+            arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
             arrangement.coreCrypto.installCredential(any())
-        }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
         }
     }
 
     @Test
-    fun givenPendingRotationCheckpoint_whenStartingAnotherAcquisition_thenFailsWithoutOverwritingState() = runTest {
+    fun givenPendingInstalledCheckpoint_whenAcquiring_thenReturnsItWithoutOverwritingState() = runTest {
         val checkpoint = installedCheckpoint()
         val (arrangement, repository) = Arrangement().arrange {
             persistedRotationCheckpoint = Json.encodeToString(
@@ -279,12 +273,11 @@ class E2EIRepositoryTest {
             ).encodeToByteArray()
         }
 
-        val result = repository.startCredentialAcquisition(isNewClient = false)
+        val result = repository.acquireCredential({ ID_TOKEN }, { emptyList() }, isNewClient = false)
 
-        kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(result)
+        result.shouldSucceed { assertEquals(checkpoint, it) }
         verifySuspend(VerifyMode.not) {
             arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
-            arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
         }
     }
 
@@ -302,14 +295,12 @@ class E2EIRepositoryTest {
             ).encodeToByteArray()
         }
 
-        repository.startCredentialAcquisition(isNewClient = false).shouldSucceed()
+        repository.acquireCredential({ ID_TOKEN }, { emptyList() }, isNewClient = false).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.deleteE2EIRotationCheckpoint()
-            arrangement.userConfigRepository.deleteE2EIAcquisitionSnapshot()
             arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
         }
-        assertNull(arrangement.persistedRotationCheckpoint)
     }
 
     @Test
@@ -327,9 +318,12 @@ class E2EIRepositoryTest {
                     listOf(newCredentialRef, previousCredentialRef)
         }
 
-        val result = repository.startCredentialAcquisition(isNewClient = false)
+        val result = repository.acquireCredential({ ID_TOKEN }, { emptyList() }, isNewClient = false)
 
-        kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(result)
+        result.shouldSucceed { recovered ->
+            assertEquals(E2EIRotationPhase.CREDENTIAL_INSTALLED, recovered.phase)
+            assertEquals(NEW_CREDENTIAL_ID, recovered.newCredentialId)
+        }
         val recoveredCheckpoint = Json.decodeFromString(
             E2EIRotationCheckpoint.serializer(),
             requireNotNull(arrangement.persistedRotationCheckpoint).decodeToString()
@@ -338,21 +332,6 @@ class E2EIRepositoryTest {
         assertEquals(NEW_CREDENTIAL_ID, recoveredCheckpoint.newCredentialId)
         verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.deleteE2EIRotationCheckpoint()
-            arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
-        }
-    }
-
-    @Test
-    fun givenSnapshotCleanupFails_whenStartingAcquisition_thenDoesNotStartCoreCrypto() = runTest {
-        val cleanupFailure = StorageFailure.Generic(IllegalStateException("snapshot cleanup failed"))
-        val (arrangement, repository) = Arrangement().arrange {
-            everySuspend { userConfigRepository.deleteE2EIAcquisitionSnapshot() } returns cleanupFailure.left()
-        }
-
-        val result = repository.startCredentialAcquisition(isNewClient = false)
-
-        kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(result)
-        verifySuspend(VerifyMode.not) {
             arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
         }
     }
@@ -483,27 +462,17 @@ class E2EIRepositoryTest {
         val newCredentialRef = mock<CryptoCredentialRef>(mode = MockMode.autoUnit)
 
         var pkiHooks: PkiEnvironmentHooks? = null
-        var persistedSnapshot: ByteArray? = null
         var persistedRotationCheckpoint: ByteArray? = null
         var returnedIdToken: String? = null
         val checkpointEvents = mutableListOf<String>()
         var rotationCheckpointWriteFailurePhase: E2EIRotationPhase? = null
 
         suspend fun arrange(configure: suspend Arrangement.() -> Unit = {}): Pair<Arrangement, E2EIRepository> {
-            everySuspend { userConfigRepository.deleteE2EIAcquisitionSnapshot() } calls {
-                checkpointEvents += "delete-snapshot"
-                Unit.right()
-            }
             everySuspend { userConfigRepository.deleteE2EIRotationCheckpoint() } calls {
                 persistedRotationCheckpoint = null
                 Unit.right()
             }
             everySuspend { userConfigRepository.getE2EISettings() } returns E2EI_SETTINGS.right()
-            everySuspend { userConfigRepository.setE2EIAcquisitionSnapshot(any()) } calls { invocation ->
-                persistedSnapshot = invocation.args[0] as ByteArray
-                Unit.right()
-            }
-            everySuspend { userConfigRepository.getE2EIAcquisitionSnapshot() } returns SNAPSHOT.right()
             everySuspend { userConfigRepository.getE2EIRotationCheckpoint() } calls {
                 persistedRotationCheckpoint.right()
             }
@@ -554,11 +523,7 @@ class E2EIRepositoryTest {
             everySuspend { acmeApi.getTrustAnchors(any()) } returns success(TRUST_ANCHOR.encodeToByteArray())
             everySuspend { acmeApi.getACMEFederationCertificateChain(any()) } returns success(listOf(INTERMEDIATE))
             everySuspend { coreCrypto.startX509CredentialAcquisition(any(), any()) } calls {
-                requireNotNull(pkiHooks).authenticate(IDP_URL, KEY_AUTH, ACME_AUDIENCE, SNAPSHOT)
-                credential
-            }
-            everySuspend { coreCrypto.resumeX509CredentialAcquisition(any()) } calls {
-                returnedIdToken = requireNotNull(pkiHooks).authenticate(IDP_URL, KEY_AUTH, ACME_AUDIENCE, SNAPSHOT)
+                returnedIdToken = requireNotNull(pkiHooks).authenticate(IDP_URL, KEY_AUTH, ACME_AUDIENCE)
                 credential
             }
             configure()
@@ -594,7 +559,6 @@ class E2EIRepositoryTest {
         val NEW_CREDENTIAL_HASH = "new-credential".encodeToByteArray()
         val PREVIOUS_CREDENTIAL_ID = kotlin.io.encoding.Base64.encode(PREVIOUS_CREDENTIAL_HASH)
         val NEW_CREDENTIAL_ID = kotlin.io.encoding.Base64.encode(NEW_CREDENTIAL_HASH)
-        val SNAPSHOT = "encrypted-core-crypto-snapshot".encodeToByteArray()
         val PROXIED_CRL = "proxied-crl".encodeToByteArray()
         val E2EI_SETTINGS = E2EISettings(
             isRequired = true,

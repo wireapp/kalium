@@ -151,9 +151,6 @@ internal interface UserConfigRepository {
     suspend fun deletePreviousTrackingIdentifier()
     suspend fun updateNextTimeForCallFeedback(valueMs: Long)
     suspend fun getNextTimeForCallFeedback(): Either<StorageFailure, Long>
-    suspend fun setE2EIAcquisitionSnapshot(snapshot: ByteArray): Either<StorageFailure, Unit>
-    suspend fun getE2EIAcquisitionSnapshot(): Either<StorageFailure, ByteArray?>
-    suspend fun deleteE2EIAcquisitionSnapshot(): Either<StorageFailure, Unit>
     suspend fun setE2EIRotationCheckpoint(checkpoint: ByteArray): Either<StorageFailure, Unit>
     suspend fun getE2EIRotationCheckpoint(): Either<StorageFailure, ByteArray?>
     suspend fun deleteE2EIRotationCheckpoint(): Either<StorageFailure, Unit>
@@ -288,7 +285,6 @@ internal class UserConfigDataSource internal constructor(
         wrapStorageRequest {
             userConfigStorage.setE2EISettings(null)
             userConfigStorage.updateE2EINotificationTime(0)
-            userConfigDAO.deleteE2EIAcquisitionSnapshot()
             userConfigDAO.deleteE2EIRotationCheckpoint()
         }
     }
@@ -314,15 +310,6 @@ internal class UserConfigDataSource internal constructor(
             default = CipherSuite.fromTag(it.default)
         )
     }
-
-    override suspend fun setE2EIAcquisitionSnapshot(snapshot: ByteArray): Either<StorageFailure, Unit> =
-        wrapStorageRequest { userConfigDAO.setE2EIAcquisitionSnapshot(Base64.encode(snapshot)) }
-
-    override suspend fun getE2EIAcquisitionSnapshot(): Either<StorageFailure, ByteArray?> =
-        wrapStorageRequest { userConfigDAO.getE2EIAcquisitionSnapshot()?.let(Base64::decode) }
-
-    override suspend fun deleteE2EIAcquisitionSnapshot(): Either<StorageFailure, Unit> =
-        wrapStorageRequest { userConfigDAO.deleteE2EIAcquisitionSnapshot() }
 
     override suspend fun setE2EIRotationCheckpoint(checkpoint: ByteArray): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigDAO.setE2EIRotationCheckpoint(Base64.encode(checkpoint)) }

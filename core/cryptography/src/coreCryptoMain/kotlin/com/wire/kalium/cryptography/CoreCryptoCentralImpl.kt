@@ -214,12 +214,6 @@ class CoreCryptoCentralImpl(
         }
     }
 
-    override suspend fun resumeX509CredentialAcquisition(snapshot: ByteArray): CryptoCredential =
-        pkiEnvironmentMutex.withLock {
-            val acquisition = X509CredentialAcquisition.fromBytes(requirePkiEnvironment(), snapshot)
-            acquisition.finalizeCredential()
-        }
-
     override suspend fun installCredential(credential: CryptoCredential): CryptoCredentialRef {
         val nativeCredential = credential.unwrap()
         return try {
@@ -367,9 +361,9 @@ private fun PkiEnvironmentHooks.toCoreCrypto(): CoreCryptoPkiEnvironmentHooks = 
         idp: String,
         keyAuth: String,
         acmeAud: String,
-        acquisitionSnapshot: ByteArray
+        @Suppress("UNUSED_PARAMETER") acquisitionSnapshot: ByteArray
     ): String = mapPkiHookException {
-        this@toCoreCrypto.authenticate(idp, keyAuth, acmeAud, acquisitionSnapshot)
+        this@toCoreCrypto.authenticate(idp, keyAuth, acmeAud)
     }
 
     override suspend fun getBackendNonce(): String = mapPkiHookException {

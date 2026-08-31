@@ -52,21 +52,13 @@ interface CoreCryptoCentral {
     suspend fun addPkiIntermediateCertificate(pem: CertificateChain)
 
     /**
-     * Starts an X509 acquisition and runs it until it either obtains a credential or the
-     * authentication hook pauses/fails the operation. The hook receives a resumable snapshot
-     * before authentication starts. Ownership of [existingCredentialRef] is consumed.
+     * Starts an X509 acquisition and keeps it alive while [PkiEnvironmentHooks.authenticate]
+     * performs authentication. Ownership of [existingCredentialRef] is consumed.
      */
     suspend fun startX509CredentialAcquisition(
         config: X509CredentialAcquisitionConfig,
         existingCredentialRef: CryptoCredentialRef? = null
     ): CryptoCredential
-
-    /**
-     * Resumes an X509 acquisition from a snapshot previously supplied to
-     * [PkiEnvironmentHooks.authenticate]. The caller owns the returned credential and must
-     * either pass it to [installCredential] or close it.
-     */
-    suspend fun resumeX509CredentialAcquisition(snapshot: ByteArray): CryptoCredential
 
     /** Persists [credential] and consumes its native resources. */
     suspend fun installCredential(credential: CryptoCredential): CryptoCredentialRef
@@ -119,8 +111,7 @@ interface PkiEnvironmentHooks {
     suspend fun authenticate(
         idp: String,
         keyAuth: String,
-        acmeAud: String,
-        acquisitionSnapshot: ByteArray
+        acmeAud: String
     ): String
 
     suspend fun getBackendNonce(): String

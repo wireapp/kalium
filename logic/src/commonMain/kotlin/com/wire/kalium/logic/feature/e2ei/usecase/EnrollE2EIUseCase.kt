@@ -23,41 +23,31 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.e2ei.E2EIAuthenticationRequest
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 
 /** Issue an E2EI certificate and update the MLS client's X.509 credential. */
 public interface EnrollE2EIUseCase {
-    public suspend fun initialEnrollment(isNewClientRegistration: Boolean = false): InitialEnrollmentResult
-
-    public suspend fun finalizeEnrollment(
-        idToken: String,
-        oAuthState: String,
-        initializationResult: E2EIEnrollmentResult.Initialized
-    ): FinalizeEnrollmentResult
+    /**
+     * Runs credential acquisition, authentication, installation, key rotation, and conversation
+     * migration as one continuous operation.
+     */
+    public suspend operator fun invoke(
+        isNewClientRegistration: Boolean = false,
+        authenticate: suspend (E2EIAuthenticationRequest) -> String
+    ): EnrollE2EIResult
 }
 
-public sealed class InitialEnrollmentResult {
-    public data class Success(val initializationResult: E2EIEnrollmentResult.Initialized) : InitialEnrollmentResult()
+public sealed class EnrollE2EIResult {
+    public data class Success(val certificate: String) : EnrollE2EIResult()
 
-    public sealed class Failure : InitialEnrollmentResult() {
+    public sealed class Failure : EnrollE2EIResult() {
         public data object E2EIDisabled : Failure()
         public data object MissingTeamSettings : Failure()
-        public data class Generic(val e2EIFailure: E2EIFailure) : Failure()
-    }
-}
-
-public sealed class FinalizeEnrollmentResult {
-    public data class Success(val certificate: String) : FinalizeEnrollmentResult()
-
-    public sealed class Failure : FinalizeEnrollmentResult() {
-        public data class OAuthError(val reason: String) : Failure()
-        public data object InvalidChallenge : Failure()
         public data class Generic(val e2EIFailure: E2EIFailure) : Failure()
     }
 }
@@ -71,55 +61,24 @@ internal class EnrollE2EIUseCaseImpl internal constructor(
     private val transactionProvider: CryptoTransactionProvider
 ) : EnrollE2EIUseCase {
 
-    override suspend fun initialEnrollment(isNewClientRegistration: Boolean): InitialEnrollmentResult {
+    override suspend fun invoke(
+        isNewClientRegistration: Boolean,
+        authenticate: suspend (E2EIAuthenticationRequest) -> String
+    ): EnrollE2EIResult {
         if (isNewClientRegistration) {
             coroutineScope.launch { userRepository.fetchSelfUser() }.join()
         }
 
-        kaliumLogger.i("Starting Core Crypto X.509 credential acquisition (new client: $isNewClientRegistration)")
-        val authenticationRequest = e2EIRepository.startCredentialAcquisition(isNewClientRegistration).getOrFail {
-            kaliumLogger.e("Starting Core Crypto X.509 credential acquisition failed: $it")
-            return it.toInitialEnrollmentFailure()
-        }
-
-        return InitialEnrollmentResult.Success(
-            E2EIEnrollmentResult.Initialized(
-                target = authenticationRequest.target,
-                oAuthClaims = getOAuthClaims(
-                    keyAuth = authenticationRequest.keyAuth,
-                    acmeAudience = authenticationRequest.acmeAudience
-                ),
-                isNewClientRegistration = isNewClientRegistration
-            )
-        )
-    }
-
-    /**
-     * Resume the acquisition snapshot persisted by Core Crypto's authentication hook.
-     *
-     * [oAuthState] is retained for source compatibility. Core Crypto v10 consumes the IdP
-     * token directly and no longer accepts the old refresh-token/state value.
-     */
-    override suspend fun finalizeEnrollment(
-        idToken: String,
-        @Suppress("UNUSED_PARAMETER") oAuthState: String,
-        initializationResult: E2EIEnrollmentResult.Initialized
-    ): FinalizeEnrollmentResult {
-        val groupIdList = conversationRepository.observeConversationList().first().mapNotNull {
-            when (val protocol = it.protocol) {
-                is Conversation.ProtocolInfo.MLS -> protocol.groupId
-                is Conversation.ProtocolInfo.Mixed -> protocol.groupId
-                Conversation.ProtocolInfo.Proteus -> null
-            }
-        }
-        val checkpoint = e2EIRepository.resumeCredentialAcquisition(
-            idToken = idToken,
-            groupIdList = groupIdList,
-            isNewClient = initializationResult.isNewClientRegistration
+        kaliumLogger.i("Starting continuous Core Crypto X.509 enrollment (new client: $isNewClientRegistration)")
+        val checkpoint = e2EIRepository.acquireCredential(
+            authenticate = authenticate,
+            groupIdListProvider = ::currentMlsGroupIds,
+            isNewClient = isNewClientRegistration
         ).getOrFail {
-            return it.toFinalizeEnrollmentFailure()
+            kaliumLogger.e("Core Crypto X.509 credential acquisition failed: $it")
+            return it.toEnrollmentFailure()
         }
-        val certificateChain = checkpoint.certificateChain ?: return FinalizeEnrollmentResult.Failure.Generic(
+        val certificateChain = checkpoint.certificateChain ?: return EnrollE2EIResult.Failure.Generic(
             E2EIFailure.Generic(IllegalStateException("The acquired X.509 certificate checkpoint is missing"))
         )
 
@@ -127,38 +86,25 @@ internal class EnrollE2EIUseCaseImpl internal constructor(
             transactionProvider = transactionProvider,
             checkpoint = checkpoint
         ).getOrFail {
-            return it.toFinalizeEnrollmentFailure()
+            return it.toEnrollmentFailure()
         }
 
-        return FinalizeEnrollmentResult.Success(certificateChain.leafCertificate())
+        return EnrollE2EIResult.Success(certificateChain.leafCertificate())
     }
 
-    private fun E2EIFailure.toInitialEnrollmentFailure(): InitialEnrollmentResult.Failure = when (this) {
-        is E2EIFailure.Disabled -> InitialEnrollmentResult.Failure.E2EIDisabled
-        is E2EIFailure.MissingTeamSettings -> InitialEnrollmentResult.Failure.MissingTeamSettings
-        else -> InitialEnrollmentResult.Failure.Generic(this)
+    private suspend fun currentMlsGroupIds() = conversationRepository.observeConversationList().first().mapNotNull {
+        when (val protocol = it.protocol) {
+            is Conversation.ProtocolInfo.MLS -> protocol.groupId
+            is Conversation.ProtocolInfo.Mixed -> protocol.groupId
+            Conversation.ProtocolInfo.Proteus -> null
+        }
     }
 
-    private fun E2EIFailure.toFinalizeEnrollmentFailure(): FinalizeEnrollmentResult.Failure = when (this) {
-        is E2EIFailure.OAuth -> FinalizeEnrollmentResult.Failure.OAuthError(this.reason)
-        is E2EIFailure.InvalidChallenge -> FinalizeEnrollmentResult.Failure.InvalidChallenge
-        else -> FinalizeEnrollmentResult.Failure.Generic(this)
+    private fun E2EIFailure.toEnrollmentFailure(): EnrollE2EIResult.Failure = when (this) {
+        is E2EIFailure.Disabled -> EnrollE2EIResult.Failure.E2EIDisabled
+        is E2EIFailure.MissingTeamSettings -> EnrollE2EIResult.Failure.MissingTeamSettings
+        else -> EnrollE2EIResult.Failure.Generic(this)
     }
-
-    private fun getOAuthClaims(keyAuth: String, acmeAudience: String) = JsonObject(
-        mapOf(
-            ID_TOKEN to JsonObject(
-                mapOf(
-                    KEY_AUTH to JsonObject(
-                        mapOf(ESSENTIAL to JsonPrimitive(true), VALUE to JsonPrimitive(keyAuth))
-                    ),
-                    ACME_AUD to JsonObject(
-                        mapOf(ESSENTIAL to JsonPrimitive(true), VALUE to JsonPrimitive(acmeAudience))
-                    )
-                )
-            )
-        )
-    )
 
     private fun String.leafCertificate(): String {
         val endIndex = indexOf(CERT_END)
@@ -166,21 +112,6 @@ internal class EnrollE2EIUseCaseImpl internal constructor(
     }
 
     private companion object {
-        const val ID_TOKEN = "id_token"
-        const val KEY_AUTH = "keyauth"
-        const val ESSENTIAL = "essential"
-        const val VALUE = "value"
-        const val ACME_AUD = "acme_aud"
         const val CERT_END = "-----END CERTIFICATE-----"
     }
-}
-
-public sealed interface E2EIEnrollmentResult {
-    public data class Initialized(
-        val target: String,
-        val oAuthClaims: JsonObject,
-        val isNewClientRegistration: Boolean = false
-    ) : E2EIEnrollmentResult
-
-    public class Finalized(public val certificate: String) : E2EIEnrollmentResult
 }

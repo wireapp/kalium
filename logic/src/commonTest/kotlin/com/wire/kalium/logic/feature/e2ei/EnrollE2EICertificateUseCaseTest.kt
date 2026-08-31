@@ -28,13 +28,12 @@ import com.wire.kalium.logic.data.e2ei.E2EIRotationCheckpoint
 import com.wire.kalium.logic.data.e2ei.E2EIRotationPhase
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
+import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIResult
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.FinalizeEnrollmentResult
-import com.wire.kalium.logic.feature.e2ei.usecase.InitialEnrollmentResult
 import com.wire.kalium.logic.framework.TestConversation
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -46,8 +45,6 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -55,47 +52,7 @@ import kotlin.test.assertIs
 internal class EnrollE2EICertificateUseCaseTest {
 
     @Test
-    fun givenAuthenticationChallenge_whenStartingEnrollment_thenReturnsIdpTargetAndClaims() = runTest {
-        val (arrangement, useCase) = Arrangement(this).arrange()
-
-        val result = useCase.initialEnrollment()
-
-        val initialized = assertIs<InitialEnrollmentResult.Success>(result).initializationResult
-        assertEquals(IDP_URL, initialized.target)
-        assertEquals(EXPECTED_OAUTH_CLAIMS, initialized.oAuthClaims)
-        assertEquals(false, initialized.isNewClientRegistration)
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.e2eiRepository.startCredentialAcquisition(eq(false))
-        }
-    }
-
-    @Test
-    fun givenNewClientEnrollment_whenStarting_thenRefreshesSelfUserAndSetsRegistrationFlag() = runTest {
-        val (arrangement, useCase) = Arrangement(this).arrange()
-
-        val result = useCase.initialEnrollment(isNewClientRegistration = true)
-
-        val initialized = assertIs<InitialEnrollmentResult.Success>(result).initializationResult
-        assertEquals(true, initialized.isNewClientRegistration)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.userRepository.fetchSelfUser() }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.e2eiRepository.startCredentialAcquisition(eq(true))
-        }
-    }
-
-    @Test
-    fun givenE2EIIsDisabled_whenStartingEnrollment_thenReturnsDisabled() = runTest {
-        val (_, useCase) = Arrangement(this).arrange {
-            everySuspend { e2eiRepository.startCredentialAcquisition(any()) } returns E2EIFailure.Disabled.left()
-        }
-
-        val result = useCase.initialEnrollment()
-
-        assertIs<InitialEnrollmentResult.Failure.E2EIDisabled>(result)
-    }
-
-    @Test
-    fun givenInstalledCredentialCheckpoint_whenFinalizing_thenResumesRotationForCurrentMlsGroups() = runTest {
+    fun givenAuthenticationCallback_whenEnrolling_thenCompletesAcquisitionAndRotationInOneInvocation() = runTest {
         val mixedGroup = GroupID("mixed-group")
         val conversations = listOf(
             TestConversation.MLS_CONVERSATION,
@@ -105,22 +62,19 @@ internal class EnrollE2EICertificateUseCaseTest {
             TestConversation.CONVERSATION
         )
         val (arrangement, useCase) = Arrangement(this).arrange {
-            everySuspend {
-                e2eiRepository.resumeCredentialAcquisition(eq(ID_TOKEN), any(), eq(false))
-            } returns checkpoint.right()
             every { conversationRepository.observeConversationList() } returns flowOf(conversations)
         }
+        var authenticationRequest: E2EIAuthenticationRequest? = null
 
-        val result = useCase.finalizeEnrollment(ID_TOKEN, "ignored-oauth-state", INITIALIZED)
-
-        assertEquals(FinalizeEnrollmentResult.Success(LEAF_CERTIFICATE), result)
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.e2eiRepository.resumeCredentialAcquisition(
-                eq(ID_TOKEN),
-                eq(listOf(TestConversation.GROUP_ID, mixedGroup)),
-                eq(false)
-            )
+        val result = useCase { request ->
+            authenticationRequest = request
+            ID_TOKEN
         }
+
+        assertEquals(EnrollE2EIResult.Success(LEAF_CERTIFICATE), result)
+        assertEquals(AUTHENTICATION_REQUEST, authenticationRequest)
+        assertEquals(ID_TOKEN, arrangement.returnedIdToken)
+        assertEquals(listOf(TestConversation.GROUP_ID, mixedGroup), arrangement.providedGroupIds)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2eiRepository.rotateKeysAndMigrateConversations(
                 eq(arrangement.transactionProvider),
@@ -130,23 +84,43 @@ internal class EnrollE2EICertificateUseCaseTest {
     }
 
     @Test
-    fun givenRotationFails_whenFinalizing_thenKeepsSnapshotForRetry() = runTest {
+    fun givenNewClientEnrollment_whenInvoked_thenRefreshesSelfUserAndUsesRegistrationMode() = runTest {
+        val (arrangement, useCase) = Arrangement(this).arrange()
+
+        val result = useCase(isNewClientRegistration = true) { ID_TOKEN }
+
+        assertIs<EnrollE2EIResult.Success>(result)
+        assertEquals(true, arrangement.isNewClient)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userRepository.fetchSelfUser() }
+    }
+
+    @Test
+    fun givenE2EIIsDisabled_whenEnrolling_thenReturnsDisabled() = runTest {
+        val (_, useCase) = Arrangement(this).arrange {
+            everySuspend {
+                e2eiRepository.acquireCredential(any(), any(), any())
+            } returns E2EIFailure.Disabled.left()
+        }
+
+        val result = useCase { ID_TOKEN }
+
+        assertIs<EnrollE2EIResult.Failure.E2EIDisabled>(result)
+    }
+
+    @Test
+    fun givenRotationFails_whenEnrolling_thenReturnsFailureAndLeavesCheckpointForRetry() = runTest {
         val rotationFailure = E2EIFailure.Generic(IllegalStateException("rotation failed"))
         val (arrangement, useCase) = Arrangement(this).arrange {
-            everySuspend {
-                e2eiRepository.resumeCredentialAcquisition(any(), any(), any())
-            } returns checkpoint.right()
-            every { conversationRepository.observeConversationList() } returns flowOf(emptyList())
             everySuspend {
                 e2eiRepository.rotateKeysAndMigrateConversations(any(), any())
             } returns rotationFailure.left()
         }
 
-        val result = useCase.finalizeEnrollment(ID_TOKEN, "ignored-oauth-state", INITIALIZED)
+        val result = useCase { ID_TOKEN }
 
-        assertIs<FinalizeEnrollmentResult.Failure.Generic>(result)
+        assertIs<EnrollE2EIResult.Failure.Generic>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.e2eiRepository.resumeCredentialAcquisition(eq(ID_TOKEN), eq(emptyList()), eq(false))
+            arrangement.e2eiRepository.acquireCredential(any(), any(), eq(false))
         }
     }
 
@@ -157,9 +131,25 @@ internal class EnrollE2EICertificateUseCaseTest {
         val transactionProvider = mock<CryptoTransactionProvider>()
         val checkpoint = CHECKPOINT
 
+        var returnedIdToken: String? = null
+        var providedGroupIds: List<GroupID>? = null
+        var isNewClient: Boolean? = null
+
         suspend fun arrange(configure: suspend Arrangement.() -> Unit = {}): Pair<Arrangement, EnrollE2EIUseCase> {
             everySuspend { userRepository.fetchSelfUser() } returns Unit.right()
-            everySuspend { e2eiRepository.startCredentialAcquisition(any()) } returns AUTHENTICATION_REQUEST.right()
+            every { conversationRepository.observeConversationList() } returns flowOf(emptyList())
+            everySuspend {
+                e2eiRepository.acquireCredential(any(), any(), any())
+            } calls { invocation ->
+                @Suppress("UNCHECKED_CAST")
+                val authenticate = invocation.args[0] as suspend (E2EIAuthenticationRequest) -> String
+                @Suppress("UNCHECKED_CAST")
+                val groupIdListProvider = invocation.args[1] as suspend () -> List<GroupID>
+                returnedIdToken = authenticate(AUTHENTICATION_REQUEST)
+                providedGroupIds = groupIdListProvider()
+                isNewClient = invocation.args[2] as Boolean
+                checkpoint.right()
+            }
             everySuspend {
                 e2eiRepository.rotateKeysAndMigrateConversations(any(), any())
             } returns Unit.right()
@@ -193,24 +183,5 @@ internal class EnrollE2EICertificateUseCaseTest {
             phase = E2EIRotationPhase.CREDENTIAL_INSTALLED
         )
         val AUTHENTICATION_REQUEST = E2EIAuthenticationRequest(IDP_URL, KEY_AUTH, ACME_AUDIENCE)
-        val EXPECTED_OAUTH_CLAIMS = JsonObject(
-            mapOf(
-                "id_token" to JsonObject(
-                    mapOf(
-                        "keyauth" to JsonObject(
-                            mapOf("essential" to JsonPrimitive(true), "value" to JsonPrimitive(KEY_AUTH))
-                        ),
-                        "acme_aud" to JsonObject(
-                            mapOf("essential" to JsonPrimitive(true), "value" to JsonPrimitive(ACME_AUDIENCE))
-                        )
-                    )
-                )
-            )
-        )
-        val INITIALIZED = E2EIEnrollmentResult.Initialized(
-            target = IDP_URL,
-            oAuthClaims = EXPECTED_OAUTH_CLAIMS,
-            isNewClientRegistration = false
-        )
     }
 }

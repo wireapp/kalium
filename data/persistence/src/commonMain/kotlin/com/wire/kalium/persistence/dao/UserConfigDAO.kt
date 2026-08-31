@@ -65,9 +65,6 @@ interface UserConfigDAO {
     suspend fun deletePreviousTrackingIdentifier()
     suspend fun getNextTimeForCallFeedback(): Long?
     suspend fun setNextTimeForCallFeedback(timestamp: Long)
-    suspend fun setE2EIAcquisitionSnapshot(snapshot: String)
-    suspend fun getE2EIAcquisitionSnapshot(): String?
-    suspend fun deleteE2EIAcquisitionSnapshot()
     suspend fun setE2EIRotationCheckpoint(checkpoint: String)
     suspend fun getE2EIRotationCheckpoint(): String?
     suspend fun deleteE2EIRotationCheckpoint()
@@ -246,17 +243,6 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun setNextTimeForCallFeedback(timestamp: Long) =
         metadataDAO.insertValue(timestamp.toString(), NEXT_TIME_TO_ASK_CALL_FEEDBACK)
 
-    override suspend fun setE2EIAcquisitionSnapshot(snapshot: String) {
-        metadataDAO.insertValue(value = snapshot, key = E2EI_ACQUISITION_SNAPSHOT)
-    }
-
-    override suspend fun getE2EIAcquisitionSnapshot(): String? =
-        metadataDAO.valueByKey(E2EI_ACQUISITION_SNAPSHOT)
-
-    override suspend fun deleteE2EIAcquisitionSnapshot() {
-        metadataDAO.deleteValue(E2EI_ACQUISITION_SNAPSHOT)
-    }
-
     override suspend fun setE2EIRotationCheckpoint(checkpoint: String) {
         metadataDAO.insertValue(value = checkpoint, key = E2EI_ROTATION_CHECKPOINT)
     }
@@ -362,7 +348,6 @@ internal class UserConfigDAOImpl internal constructor(
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
         private const val ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY = "analytics_tracking_identifier_previous"
         private const val ANALYTICS_TRACKING_IDENTIFIER_KEY = "analytics_tracking_identifier"
-        private const val E2EI_ACQUISITION_SNAPSHOT = "e2ei_acquisition_snapshot"
         private const val E2EI_ROTATION_CHECKPOINT = "e2ei_rotation_checkpoint"
         const val MLS_CONVERSATIONS_RESET = "mls_conversations_reset"
         const val ASYNC_NOTIFICATIONS_ENABLED = "async_notifications_enabled"
