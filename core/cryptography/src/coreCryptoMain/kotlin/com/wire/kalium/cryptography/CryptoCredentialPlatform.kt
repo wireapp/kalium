@@ -24,57 +24,47 @@ import com.wire.kalium.cryptography.utils.toCryptography
 internal class CryptoCredentialImpl(
     credential: Credential
 ) : CryptoCredential {
-    private var native: Credential? = credential
+    internal var native: Credential? = credential
+        private set
 
-    override fun exportPem(): String = borrow().exportPem()
+    override fun exportPem(): String = unwrap().exportPem()
 
     override fun close() {
         native?.close()
         native = null
-    }
-
-    internal fun borrow(): Credential = checkNotNull(native) {
-        "CryptoCredential has already been closed"
     }
 }
 
 internal class CryptoCredentialRefImpl(
     credentialRef: CredentialRef
 ) : CryptoCredentialRef {
-    private var native: CredentialRef? = credentialRef
-    private var ownsNative = true
+    internal var native: CredentialRef? = credentialRef
+        private set
+    internal var ownsNative = true
 
-    override fun credentialType(): CredentialType = borrow().type().toCryptography()
+    override fun credentialType(): CredentialType = unwrap().type().toCryptography()
 
-    override fun publicKeyHash(): ByteArray = borrow().publicKeyHash()
+    override fun publicKeyHash(): ByteArray = unwrap().publicKeyHash()
 
     override fun close() {
         if (ownsNative) native?.close()
         native = null
         ownsNative = false
     }
-
-    internal fun borrow(): CredentialRef = checkNotNull(native) {
-        "CryptoCredentialRef has already been closed"
-    }
-
-    internal fun transferOwnership() {
-        ownsNative = false
-    }
 }
 
 internal fun CryptoCredential.unwrap(): Credential =
-    requireNotNull(this as? CryptoCredentialImpl) {
-        "Unsupported CryptoCredential implementation"
-    }.borrow()
+    checkNotNull((this as? CryptoCredentialImpl)?.native) {
+        "Unsupported or closed CryptoCredential"
+    }
 
 internal fun CryptoCredentialRef.unwrap(): CredentialRef =
-    requireNotNull(this as? CryptoCredentialRefImpl) {
-        "Unsupported CryptoCredentialRef implementation"
-    }.borrow()
+    checkNotNull((this as? CryptoCredentialRefImpl)?.native) {
+        "Unsupported or closed CryptoCredentialRef"
+    }
 
 internal fun CryptoCredentialRef.transferNativeOwnership() {
     requireNotNull(this as? CryptoCredentialRefImpl) {
         "Unsupported CryptoCredentialRef implementation"
-    }.transferOwnership()
+    }.ownsNative = false
 }
