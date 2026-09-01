@@ -92,6 +92,9 @@ class RegisterMLSClientUseCaseTest {
             verify(VerifyMode.exactly(1)) {
                 arrangement.mlsContext.selectCredential(arrangement.x509CredentialRef)
             }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsClient.initializeBasicCredential()
+            }
         }
 
     @Test
@@ -125,6 +128,7 @@ class RegisterMLSClientUseCaseTest {
 
             verifySuspend(VerifyMode.not) {
                 arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
+                arrangement.mlsClient.initializeBasicCredential()
             }
         }
 
@@ -191,6 +195,9 @@ class RegisterMLSClientUseCaseTest {
 
             verifySuspend {
                 arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.mlsClient.initializeBasicCredential()
             }
         }
 

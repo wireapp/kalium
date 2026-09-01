@@ -20,8 +20,11 @@ package com.wire.kalium.cryptography
 
 import com.wire.crypto.Credential
 import com.wire.kalium.cryptography.utils.toCrypto
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -34,6 +37,95 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MLSClientCredentialTest {
+
+    @Test
+    fun givenANewClient_whenCreated_thenNoCredentialIsInstalledImplicitly() = runTest {
+        withCredentialTestClient(this, initializeBasicCredential = false) { testClient ->
+            assertTrue(testClient.client.getCredentialRefs(CredentialType.Basic).isEmpty())
+            assertTrue(testClient.client.getCredentialRefs(CredentialType.X509).isEmpty())
+
+            val publicKeyFailure = assertFailsWith<IllegalStateException> {
+                testClient.client.getPublicKey()
+            }
+            assertEquals(NO_ACTIVE_CREDENTIAL_MESSAGE, publicKeyFailure.message)
+
+            val keyPackageFailure = assertFailsWith<IllegalStateException> {
+                testClient.client.transaction { it.generateKeyPackages(1) }
+            }
+            assertEquals(NO_ACTIVE_CREDENTIAL_MESSAGE, keyPackageFailure.message)
+        }
+    }
+
+    @Test
+    fun givenANewClient_whenBasicCredentialIsInitializedRepeatedly_thenExactlyOneCredentialIsInstalled() = runTest {
+        withCredentialTestClient(this, initializeBasicCredential = false) { testClient ->
+            testClient.client.initializeBasicCredential()
+            testClient.client.initializeBasicCredential()
+
+            assertEquals(1, testClient.client.getCredentialRefs(CredentialType.Basic).size)
+            assertTrue(testClient.client.getPublicKey().first.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun givenNoActiveCredential_whenSelectingTheFirstInstalledCredential_thenItBecomesActive() = runTest {
+        withCredentialTestClient(this, initializeBasicCredential = false) { testClient ->
+            val credentialRef = testClient.addBasicCredential()
+
+            testClient.client.transaction("selectFirstCredential") {
+                it.selectCredential(credentialRef)
+            }
+
+            assertTrue(testClient.client.getPublicKey().first.isNotEmpty())
+            assertTrue(testClient.client.transaction { it.generateKeyPackages(1) }.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun givenNoActiveCredential_whenFirstSelectionRollsBack_thenTheClientStillHasNoActiveCredential() = runTest {
+        withCredentialTestClient(this, initializeBasicCredential = false) { testClient ->
+            val credentialRef = testClient.addBasicCredential()
+
+            assertFailsWith<ExpectedTransactionFailure> {
+                testClient.client.transaction("failedFirstCredentialSelection") {
+                    it.selectCredential(credentialRef)
+                    throw ExpectedTransactionFailure()
+                }
+            }
+
+            val failure = assertFailsWith<IllegalStateException> { testClient.client.getPublicKey() }
+            assertEquals(NO_ACTIVE_CREDENTIAL_MESSAGE, failure.message)
+        }
+    }
+
+    @Test
+    fun givenAQueuedTransaction_whenCredentialSelectionSucceeds_thenTheSelectionIsNotLost() = runTest {
+        withCredentialTestClient(this) { testClient ->
+            val initialPublicKey = testClient.client.getPublicKey().first
+            val newCredentialRef = testClient.addBasicCredential()
+            val selectionTransactionStarted = CompletableDeferred<Unit>()
+            val allowSelection = CompletableDeferred<Unit>()
+
+            val selection = async {
+                testClient.client.transaction("selectCredential") {
+                    selectionTransactionStarted.complete(Unit)
+                    allowSelection.await()
+                    it.selectCredential(newCredentialRef)
+                }
+            }
+            selectionTransactionStarted.await()
+
+            val queuedTransaction = async(start = CoroutineStart.UNDISPATCHED) {
+                testClient.client.transaction("queuedTransaction") { Unit }
+            }
+            allowSelection.complete(Unit)
+
+            selection.await()
+            queuedTransaction.await()
+
+            assertFalse(initialPublicKey.contentEquals(testClient.client.getPublicKey().first))
+        }
+    }
 
     @Test
     fun givenCredentialSelectionSucceeds_whenUsingDefaultOperations_thenTheSelectedCredentialIsUsed() = runTest {
@@ -71,14 +163,19 @@ class MLSClientCredentialTest {
     fun givenAnExistingBasicCredential_whenReinitializingTheClient_thenItIsReusedInsteadOfCreatingAnother() = runTest {
         val root = Files.createTempDirectory("mls-credential-reuse").toFile()
         try {
-            val firstClient = createCredentialTestClient(this, root.absolutePath)
+            val firstClient = createCredentialTestClient(this, root.absolutePath, initializeBasicCredential = false)
+            firstClient.client.initializeBasicCredential()
             val initialCredentialHash = firstClient.useAndGetBasicCredentialHash()
 
-            val reopenedClient = createCredentialTestClient(this, root.absolutePath)
+            val reopenedClient = createCredentialTestClient(this, root.absolutePath, initializeBasicCredential = false)
             try {
                 val credentialRefs = reopenedClient.client.getCredentialRefs(CredentialType.Basic)
                 assertEquals(1, credentialRefs.size)
                 assertContentEquals(initialCredentialHash, credentialRefs.single().publicKeyHash())
+                assertTrue(reopenedClient.client.getPublicKey().first.isNotEmpty())
+
+                reopenedClient.client.initializeBasicCredential()
+                assertEquals(1, reopenedClient.client.getCredentialRefs(CredentialType.Basic).size)
             } finally {
                 reopenedClient.client.close()
             }
@@ -89,11 +186,12 @@ class MLSClientCredentialTest {
 
     private suspend fun withCredentialTestClient(
         scope: CoroutineScope,
+        initializeBasicCredential: Boolean = true,
         block: suspend (CredentialTestClient) -> Unit
     ) {
         val root = Files.createTempDirectory("mls-credential-selection").toFile()
         try {
-            val testClient = createCredentialTestClient(scope, root.absolutePath)
+            val testClient = createCredentialTestClient(scope, root.absolutePath, initializeBasicCredential)
             try {
                 block(testClient)
             } finally {
@@ -106,19 +204,22 @@ class MLSClientCredentialTest {
 
     private suspend fun createCredentialTestClient(
         scope: CoroutineScope,
-        rootPath: String
+        rootPath: String,
+        initializeBasicCredential: Boolean = true
     ): CredentialTestClient {
         val central = coreCryptoCentral(rootPath, PASSPHRASE) as CoreCryptoCentralImpl
         return try {
+            val client = central.mlsClient(
+                clientId = CLIENT_ID,
+                defaultCipherSuite = CIPHER_SUITE,
+                mlsTransporter = NO_OP_TRANSPORTER,
+                epochObserver = NO_OP_EPOCH_OBSERVER,
+                coroutineScope = scope
+            )
+            if (initializeBasicCredential) client.initializeBasicCredential()
             CredentialTestClient(
                 central = central,
-                client = central.mlsClient(
-                    clientId = CLIENT_ID,
-                    defaultCipherSuite = CIPHER_SUITE,
-                    mlsTransporter = NO_OP_TRANSPORTER,
-                    epochObserver = NO_OP_EPOCH_OBSERVER,
-                    coroutineScope = scope
-                )
+                client = client
             )
         } catch (exception: Exception) {
             central.close()
@@ -161,6 +262,8 @@ class MLSClientCredentialTest {
     private class ExpectedTransactionFailure : Exception()
 
     private companion object {
+        const val NO_ACTIVE_CREDENTIAL_MESSAGE =
+            "MLS client has no active credential. Initialize Basic or select an installed credential first."
         val PASSPHRASE = ByteArray(32)
         val CIPHER_SUITE = MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         val CLIENT_ID = CryptoQualifiedClientId(

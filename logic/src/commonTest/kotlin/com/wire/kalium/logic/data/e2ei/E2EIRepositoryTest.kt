@@ -60,6 +60,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
 import dev.mokkery.verifySuspend
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -74,6 +75,45 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 
 class E2EIRepositoryTest {
+
+    @Test
+    fun givenANewClient_whenEnrolling_thenInstallsAndSelectsX509WithoutInitializingBasic() = runTest {
+        var credentialInstalled = false
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } calls {
+                if (credentialInstalled) listOf(newCredentialRef) else emptyList()
+            }
+            everySuspend { coreCrypto.installCredential(any()) } calls {
+                checkpointEvents += "install"
+                credentialInstalled = true
+                newCredentialRef
+            }
+        }
+
+        val acquisition = repository.acquireCredential(
+            authenticate = { ID_TOKEN },
+            groupIdListProvider = { emptyList() },
+            isNewClient = true
+        )
+        acquisition.shouldSucceed()
+        val checkpoint = acquisition.value
+
+        assertTrue(checkpoint.preExistingCredentialIds.isEmpty())
+        assertEquals(null, checkpoint.previousCredentialId)
+        assertEquals(NEW_CREDENTIAL_ID, checkpoint.newCredentialId)
+        repository.rotateKeysAndMigrateConversations(arrangement.transactionProvider, checkpoint).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.coreCrypto.startX509CredentialAcquisition(eq(ACQUISITION_CONFIG), eq(null))
+            arrangement.coreCrypto.installCredential(eq(arrangement.credential))
+        }
+        verify(VerifyMode.exactly(1)) {
+            arrangement.mlsContext.selectCredential(arrangement.newCredentialRef)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsClient.initializeBasicCredential()
+        }
+    }
 
     @Test
     fun givenCoreCryptoRequestsAuthentication_whenAcquiring_thenAwaitsCallbackAndInstallsCredential() = runTest {

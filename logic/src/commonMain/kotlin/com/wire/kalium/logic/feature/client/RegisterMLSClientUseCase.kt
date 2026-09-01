@@ -66,7 +66,7 @@ internal class RegisterMLSClientUseCaseImpl(
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> {
         return userConfigRepository.getE2EISettings().flatMap { e2eiSettings ->
             if (!e2eiSettings.isRequired) {
-                registerMLSClient(clientId)
+                registerBasicMLSClient(clientId)
             } else if (!mlsClientProvider.isMLSClientInitialised()) {
                 RegisterMLSClientResult.E2EICertificateRequired.right()
             } else {
@@ -90,6 +90,13 @@ internal class RegisterMLSClientUseCaseImpl(
         }.onFailure {
             kaliumLogger.e("Failed to register MLS client: $it")
         }
+    }
+
+    private suspend fun registerBasicMLSClient(
+        clientId: ClientId
+    ): Either<CoreFailure, RegisterMLSClientResult> = mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
+        wrapMLSRequest { mlsClient.initializeBasicCredential() }
+            .flatMap { registerMLSClient(clientId, mlsClient) }
     }
 
     private suspend fun registerMLSClient(

@@ -156,6 +156,13 @@ interface MLSClient {
     suspend fun close()
 
     /**
+     * Adds and selects a Basic credential when this client has no active credential.
+     *
+     * Calling this more than once does not add another credential or replace an active credential.
+     */
+    suspend fun initializeBasicCredential()
+
+    /**
      * Public key of the client's identity.
      *
      * @return public key of the client

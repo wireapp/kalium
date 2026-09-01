@@ -38,7 +38,7 @@ actual open class BaseMLSClientTest actual constructor() {
             mlsTransporter,
             epochObserver,
             coroutineScope
-        )
+        ).also { it.initializeBasicCredential() }
     }
 
     actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral {
