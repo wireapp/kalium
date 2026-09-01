@@ -993,10 +993,16 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenConversationUsesPreviousCredential_whenMigrating_thenSelectsAndUpdatesCredential() = runTest {
+    fun givenConversationUsesBasicCredentialWithSameSigningKey_whenMigrating_thenUpdatesToX509() = runTest {
+        val signingKeyHash = byteArrayOf(1)
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withConversationExists(true)
-            .withConversationCredential(arrangementCredential = CredentialChoice.PREVIOUS)
+            .withConversationCredential(
+                arrangementCredential = CredentialChoice.PREVIOUS,
+                previousCredentialType = CredentialType.Basic,
+                previousPublicKeyHash = signingKeyHash,
+                newPublicKeyHash = signingKeyHash
+            )
             .withSetConversationCredentialSuccessful()
             .arrange()
 
@@ -1480,14 +1486,21 @@ class MLSConversationRepositoryTest {
             everySuspend { mlsContext.conversationExists(any()) } returns exists
         }
 
-        fun withConversationCredential(arrangementCredential: CredentialChoice) = apply {
+        fun withConversationCredential(
+            arrangementCredential: CredentialChoice,
+            previousCredentialType: CredentialType = CredentialType.X509,
+            previousPublicKeyHash: ByteArray = byteArrayOf(1),
+            newPublicKeyHash: ByteArray = byteArrayOf(2)
+        ) = apply {
             val selectedCredential = when (arrangementCredential) {
                 CredentialChoice.PREVIOUS -> previousCredentialRef
                 CredentialChoice.NEW -> newCredentialRef
             }
             everySuspend { mlsContext.getConversationCredentialRef(any()) } returns selectedCredential
-            every { previousCredentialRef.publicKeyHash() } returns byteArrayOf(1)
-            every { newCredentialRef.publicKeyHash() } returns byteArrayOf(2)
+            every { previousCredentialRef.credentialType() } returns previousCredentialType
+            every { previousCredentialRef.publicKeyHash() } returns previousPublicKeyHash
+            every { newCredentialRef.credentialType() } returns CredentialType.X509
+            every { newCredentialRef.publicKeyHash() } returns newPublicKeyHash
         }
 
         fun withSetConversationCredentialSuccessful() = apply {

@@ -145,6 +145,9 @@ class E2EIRepositoryTest {
             )
             arrangement.coreCrypto.installCredential(eq(arrangement.credential))
         }
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsClient.getCredentialRef(CredentialType.Basic)
+        }
         assertTrue(
             arrangement.checkpointEvents.indexOf("persist-ACQUIRED") <
                     arrangement.checkpointEvents.indexOf("install")
@@ -153,6 +156,34 @@ class E2EIRepositoryTest {
             arrangement.checkpointEvents.indexOf("install") <
                     arrangement.checkpointEvents.indexOf("persist-CREDENTIAL_INSTALLED")
         )
+    }
+
+    @Test
+    fun givenNoX509Credential_whenAcquiring_thenUsesBasicCredentialForAcquisition() = runTest {
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { mlsClient.getCredentialRef(CredentialType.X509) } returns null
+            everySuspend { mlsClient.getCredentialRef(CredentialType.Basic) } returns previousCredentialRef
+            everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns emptyList()
+        }
+
+        repository.acquireCredential(
+            authenticate = { ID_TOKEN },
+            groupIdListProvider = { listOf(GroupID("group-1")) },
+            isNewClient = false
+        ).shouldSucceed { checkpoint ->
+            assertTrue(checkpoint.preExistingCredentialIds.isEmpty())
+            assertEquals(null, checkpoint.previousCredentialId)
+            assertEquals(NEW_CREDENTIAL_ID, checkpoint.newCredentialId)
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsClient.getCredentialRef(CredentialType.X509)
+            arrangement.mlsClient.getCredentialRef(CredentialType.Basic)
+            arrangement.coreCrypto.startX509CredentialAcquisition(
+                eq(ACQUISITION_CONFIG),
+                eq(arrangement.previousCredentialRef)
+            )
+        }
     }
 
     @Test

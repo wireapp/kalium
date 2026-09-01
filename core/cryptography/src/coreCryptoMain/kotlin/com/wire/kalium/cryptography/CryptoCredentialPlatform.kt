@@ -19,6 +19,7 @@ package com.wire.kalium.cryptography
 
 import com.wire.crypto.Credential
 import com.wire.crypto.CredentialRef
+import com.wire.kalium.cryptography.utils.toCryptography
 
 internal class CryptoCredentialImpl(
     internal val native: Credential
@@ -29,6 +30,8 @@ internal class CryptoCredentialImpl(
 internal class CryptoCredentialRefImpl(
     internal val native: CredentialRef
 ) : CryptoCredentialRef {
+    override fun credentialType(): CredentialType = native.type().toCryptography()
+
     override fun publicKeyHash(): ByteArray = native.publicKeyHash()
 }
 

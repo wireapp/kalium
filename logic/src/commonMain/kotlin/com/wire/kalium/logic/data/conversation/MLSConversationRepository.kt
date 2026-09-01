@@ -781,7 +781,9 @@ internal class MLSConversationDataSource(
         if (!mlsContext.conversationExists(cryptoGroupID)) return
 
         val currentCredentialRef = mlsContext.getConversationCredentialRef(cryptoGroupID)
-        if (!currentCredentialRef.publicKeyHash().contentEquals(credentialRef.publicKeyHash())) {
+        if (currentCredentialRef.credentialType() != credentialRef.credentialType() ||
+            !currentCredentialRef.publicKeyHash().contentEquals(credentialRef.publicKeyHash())
+        ) {
             mlsContext.setConversationCredential(cryptoGroupID, credentialRef)
         }
     }

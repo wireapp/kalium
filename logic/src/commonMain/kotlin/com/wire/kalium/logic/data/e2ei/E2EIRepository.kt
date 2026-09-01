@@ -437,7 +437,10 @@ private class E2EICredentialAcquisitionWorkflow(
     ): Either<E2EIFailure, CryptoCredentialRef?> = if (isNewClient) {
         null.right()
     } else {
-        wrapCoreCryptoInterop { mlsClient.getCredentialRef(CredentialType.X509) }
+        wrapCoreCryptoInterop {
+            mlsClient.getCredentialRef(CredentialType.X509)
+                ?: mlsClient.getCredentialRef(CredentialType.Basic)
+        }
     }
 
     private suspend fun createAcquiredCheckpoint(
