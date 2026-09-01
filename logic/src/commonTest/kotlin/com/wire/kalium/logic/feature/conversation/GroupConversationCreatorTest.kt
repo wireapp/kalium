@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -32,6 +33,7 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCas
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreatorImpl
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
@@ -57,6 +59,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 class GroupConversationCreatorTest {
 
@@ -172,6 +175,62 @@ class GroupConversationCreatorTest {
     }
 
     @Test
+    fun givenInitialCreationFailsWithBackendConflict_whenCreatingGroupConversation_thenReturnsBackendConflict() = runTest {
+        val domains = listOf("backend-a.example", "backend-b.example")
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withCurrentClientIdReturning(ClientId("client-id"))
+            .withMarkingConversationDeletedLocallySucceeding()
+            .withCreateGroupConversationFailingWith(
+                MLSFailure.FederatedBackendConflict(domains),
+                TestConversation.ID,
+            )
+            .arrange()
+
+        val result = createGroupConversation(
+            "Conversation name",
+            listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID),
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
+        )
+
+        val conflict = assertIs<ConversationCreationResult.BackendConflictFailure>(result)
+        assertEquals(domains, conflict.domains)
+        assertNull(conflict.conversationId)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(TestConversation.ID))
+        }
+    }
+
+    @Test
+    fun givenInitialBackendConflictAndCleanupFails_whenCreatingGroupConversation_thenReturnsCleanupFallbackId() = runTest {
+        val domains = listOf("backend-a.example", "backend-b.example")
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withCurrentClientIdReturning(ClientId("client-id"))
+            .withMarkingConversationDeletedLocallyFailing()
+            .withCreateGroupConversationFailingWith(
+                MLSFailure.FederatedBackendConflict(domains),
+                TestConversation.ID,
+            )
+            .arrange()
+
+        val result = createGroupConversation(
+            "Conversation name",
+            listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID),
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
+        )
+
+        val conflict = assertIs<ConversationCreationResult.BackendConflictFailure>(result)
+        assertEquals(domains, conflict.domains)
+        assertEquals(TestConversation.ID, conflict.conversationId)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(TestConversation.ID))
+        }
+    }
+
+    @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenConversationModifiedDateIsUpdated() = runTest {
         val name = "Conv Name"
         val creatorClientId = ClientId("ClientId")
@@ -223,9 +282,10 @@ class GroupConversationCreatorTest {
     fun givenMLSGroupEstablishFails_whenCreatingGroupConversation_thenPendingConversationIsReturned() = runTest {
         val conversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO)
         val rootCause = StorageFailure.DataNotFound
-        val (_, createGroupConversation) = Arrangement()
+        val (arrangement, createGroupConversation) = Arrangement()
             .withWaitingForSyncSucceeding()
             .withCurrentClientIdReturning(ClientId("client-id"))
+            .withMarkingConversationDeletedLocallySucceeding()
             .withCreateGroupConversationReturning(
                 CreateGroupConversationResult.PendingMLSGroupCreation(conversation.id, rootCause)
             )
@@ -240,6 +300,9 @@ class GroupConversationCreatorTest {
         assertIs<ConversationCreationResult.PendingMLSGroupCreation>(result)
         assertEquals(conversation.id, result.conversationId)
         assertEquals(rootCause, result.cause)
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.setConversationDeletedLocally(any(), any())
+        }
     }
 
     @Test
@@ -292,6 +355,48 @@ class GroupConversationCreatorTest {
         assertIs<ConversationCreationResult.UnknownFailure>(result)
         verifySuspend(VerifyMode.not) {
             arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any())
+        }
+    }
+
+    @Test
+    fun givenJoinFailsWithBackendConflict_whenRetryingCreation_thenReturnsConflictAndAcknowledgesPendingAction() = runTest {
+        val conversation = TestConversation.GROUP(
+            TestConversation.MLS_PROTOCOL_INFO.copy(
+                groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
+            )
+        )
+        val domains = listOf("backend-a.example", "backend-b.example")
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withConversationReturning(conversation)
+            .withJoiningExistingMLSConversationReturning(Either.Left(MLSFailure.FederatedBackendConflict(domains)))
+            .withMarkingConversationDeletedLocallySucceeding()
+            .withTransactionInvokingBlock()
+            .arrange()
+
+        val result = createGroupConversation.retryPendingMLSGroupCreation(conversation.id)
+
+        val conflict = assertIs<ConversationCreationResult.BackendConflictFailure>(result)
+        assertEquals(domains, conflict.domains)
+        assertNull(conflict.conversationId)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.setConversationDeletedLocally(conversation.id, true)
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(conversation.id))
+        }
+    }
+
+    @Test
+    fun givenTerminallyFailedMLSGroup_whenDiscardingCreation_thenConversationIsHiddenAndPendingActionIsAcknowledged() = runTest {
+        val conversationId = TestConversation.ID
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withMarkingConversationDeletedLocallySucceeding()
+            .arrange()
+
+        createGroupConversation.discardPendingMLSGroupCreation(conversationId)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.setConversationDeletedLocally(conversationId, true)
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(conversationId))
         }
     }
 
@@ -363,8 +468,10 @@ class GroupConversationCreatorTest {
             } returns result
         }
 
-        suspend fun withCreateGroupConversationFailingWith(coreFailure: CoreFailure) =
-            withCreateGroupConversationReturning(CreateGroupConversationResult.Failure(coreFailure))
+        suspend fun withCreateGroupConversationFailingWith(
+            coreFailure: CoreFailure,
+            conversationId: ConversationId? = null,
+        ) = withCreateGroupConversationReturning(CreateGroupConversationResult.Failure(coreFailure, conversationId))
 
         suspend fun withCreateGroupConversationReturning(conversation: Conversation) =
             withCreateGroupConversationReturning(CreateGroupConversationResult.Success(conversation))
@@ -388,9 +495,13 @@ class GroupConversationCreatorTest {
         }
 
         suspend fun withJoiningExistingMLSConversationSucceeding() = apply {
+            withJoiningExistingMLSConversationReturning(Either.Right(Unit))
+        }
+
+        suspend fun withJoiningExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
                 joinExistingMLSConversation.invoke(any(), any())
-            } returns Either.Right(Unit)
+            } returns result
         }
 
         suspend fun withTransactionInvokingBlock() = apply {
@@ -407,6 +518,18 @@ class GroupConversationCreatorTest {
             everySuspend {
                 conversationRepository.updateConversationModifiedDate(any(), any())
             } returns Either.Right(Unit)
+        }
+
+        suspend fun withMarkingConversationDeletedLocallySucceeding() = apply {
+            everySuspend {
+                conversationRepository.setConversationDeletedLocally(any(), eq(true))
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withMarkingConversationDeletedLocallyFailing() = apply {
+            everySuspend {
+                conversationRepository.setConversationDeletedLocally(any(), eq(true))
+            } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         suspend fun withPersistingReadReceiptsSystemMessage() = apply {
