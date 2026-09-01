@@ -54,16 +54,12 @@ class MLSClientImpl private constructor(
         if (isClosed) return
         isClosed = true
         try {
-            activeCredentialRef.close()
+            clientId.close()
         } finally {
             try {
-                clientId.close()
+                coreCrypto.close()
             } finally {
-                try {
-                    coreCrypto.close()
-                } finally {
-                    onClose()
-                }
+                onClose()
             }
         }
     }
@@ -75,21 +71,18 @@ class MLSClientImpl private constructor(
 
     override suspend fun getCredentialRef(credentialType: CredentialType): CryptoCredentialRef? =
         coreCrypto.findCredentials(
+            clientId = clientId,
             cipherSuite = defaultCipherSuite,
             credentialType = credentialType.toCrypto()
         ).takeNewest()?.let(::CryptoCredentialRefImpl)
 
     override suspend fun getCredentialRefs(credentialType: CredentialType): List<CryptoCredentialRef> {
         val credentialRefs = coreCrypto.findCredentials(
+            clientId = clientId,
             cipherSuite = defaultCipherSuite,
             credentialType = credentialType.toCrypto()
         )
-        return try {
-            credentialRefs.sortedByDescending { it.earliestValidity() }.map(::CryptoCredentialRefImpl)
-        } catch (throwable: Throwable) {
-            credentialRefs.forEach { it.close() }
-            throw throwable
-        }
+        return credentialRefs.sortedByDescending { it.earliestValidity() }.map(::CryptoCredentialRefImpl)
     }
 
     override suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState = groupId.toCrypto().useNative {
@@ -106,38 +99,25 @@ class MLSClientImpl private constructor(
     }
 
     override suspend fun <R> transaction(name: String, block: suspend (context: MlsCoreCryptoContext) -> R): R {
-        var pendingCredentialSelection: PendingCredentialSelection? = null
-        return try {
-            val result = coreCrypto.transaction(name) { context ->
-                block(
-                    mlsCoreCryptoContext(
-                        context = context,
-                        selectedCredential = { pendingCredentialSelection?.credentialRef ?: activeCredentialRef },
-                        onCredentialSelected = { selection ->
-                            if (pendingCredentialSelection?.credentialRef !== selection.credentialRef) {
-                                pendingCredentialSelection?.rollback()
-                            }
-                            pendingCredentialSelection = selection
-                        }
-                    )
+        var transactionCredential = activeCredentialRef
+        val result = coreCrypto.transaction(name) { context ->
+            block(
+                mlsCoreCryptoContext(
+                    context = context,
+                    selectedCredential = { transactionCredential },
+                    onCredentialSelected = { transactionCredential = it }
                 )
-            }
-
-            pendingCredentialSelection?.credentialRef?.let { newCredentialRef ->
-                if (activeCredentialRef !== newCredentialRef) activeCredentialRef.close()
-                activeCredentialRef = newCredentialRef
-            }
-            result
-        } catch (throwable: Throwable) {
-            pendingCredentialSelection?.rollback()
-            throw throwable
+            )
         }
+
+        activeCredentialRef = transactionCredential
+        return result
     }
 
     private fun mlsCoreCryptoContext(
         context: CoreCryptoContext,
         selectedCredential: () -> CredentialRef,
-        onCredentialSelected: (PendingCredentialSelection) -> Unit
+        onCredentialSelected: (CredentialRef) -> Unit
     ) = object : MlsCoreCryptoContext {
         override fun getDefaultCipherSuite(): MLSCiphersuite = defaultCipherSuite.toCryptography()
 
@@ -298,25 +278,9 @@ class MLSClientImpl private constructor(
             }
         }
 
-        override suspend fun addCredential(credential: CryptoCredential): CryptoCredentialRef {
-            val nativeCredential = credential.unwrap()
-            return try {
-                val credentialRef = context.addCredential(nativeCredential)
-                onCredentialSelected(PendingCredentialSelection(credentialRef, credentialRef::close))
-                CryptoCredentialRefImpl(credentialRef, ownsCredentialRef = false)
-            } finally {
-                credential.close()
-            }
-        }
-
         override fun selectCredential(credentialRef: CryptoCredentialRef) {
             if (credentialRef.unwrap().matches(selectedCredential())) return
-            val nativeCredentialRef = credentialRef.takeNativeOwnership()
-            onCredentialSelected(
-                PendingCredentialSelection(nativeCredentialRef) {
-                    credentialRef.restoreNativeOwnership(nativeCredentialRef)
-                }
-            )
+            onCredentialSelected(credentialRef.unwrap())
         }
 
         override suspend fun setConversationCredential(groupId: MLSGroupId, credentialRef: CryptoCredentialRef) {
@@ -338,12 +302,7 @@ class MLSClientImpl private constructor(
             require(!credential.matches(selectedCredential())) {
                 "Select a replacement credential before removing the active credential"
             }
-            val ownedCredential = credentialRef.takeNativeOwnership()
-            try {
-                context.removeCredential(ownedCredential)
-            } finally {
-                ownedCredential.close()
-            }
+            context.removeCredential(credential)
         }
 
         override suspend fun checkCredentials() {
@@ -391,7 +350,8 @@ class MLSClientImpl private constructor(
          * Creates the Kalium facade and restores the credential used for new MLS operations.
          *
          * Existing X509 credentials are preferred so an upgraded E2EI client does not silently
-         * fall back to Basic. A fresh client receives one Basic credential.
+         * fall back to Basic. A Basic credential is added once for a new client and reused on
+         * subsequent initializations.
          */
         suspend fun create(
             coreCrypto: CoreCrypto,
@@ -414,11 +374,11 @@ class MLSClientImpl private constructor(
                 null
             }
             val activeCredential = x509Credential ?: basicCredential ?: coreCrypto.transaction { context ->
-                val basicCredential = Credential.basic(defaultCipherSuite, clientId)
+                val credential = Credential.basic(defaultCipherSuite, clientId)
                 try {
-                    context.addCredential(basicCredential)
+                    context.addCredential(credential)
                 } finally {
-                    basicCredential.close()
+                    credential.close()
                 }
             }
 
@@ -426,11 +386,6 @@ class MLSClientImpl private constructor(
         }
     }
 }
-
-private class PendingCredentialSelection(
-    val credentialRef: CredentialRef,
-    val rollback: () -> Unit
-)
 
 private inline fun <T : Disposable, R> T.useNative(block: (T) -> R): R = try {
     block(this)
@@ -474,18 +429,7 @@ private fun Map<Uuid, List<com.wire.crypto.WireIdentity>>.toCryptographyAndClose
     }
 }
 
-private fun List<CredentialRef>.takeNewest(): CredentialRef? {
-    val newest = try {
-        maxByOrNull { it.earliestValidity() }
-    } catch (throwable: Throwable) {
-        forEach { it.close() }
-        throw throwable
-    }
-    forEach {
-        if (it !== newest) it.close()
-    }
-    return newest
-}
+private fun List<CredentialRef>.takeNewest(): CredentialRef? = maxByOrNull { it.earliestValidity() }
 
 private fun List<KeyPackageRef>.countMatching(credentialRef: CredentialRef): Int = try {
     count { keyPackageRef ->

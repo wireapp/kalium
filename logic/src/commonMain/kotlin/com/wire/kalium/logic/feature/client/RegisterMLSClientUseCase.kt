@@ -73,14 +73,10 @@ internal class RegisterMLSClientUseCaseImpl(
                 mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
                     wrapMLSRequest {
                         mlsClient.getCredentialRef(CredentialType.X509)?.let { credentialRef ->
-                            try {
-                                mlsClient.transaction("selectX509CredentialForRegistration") {
-                                    it.selectCredential(credentialRef)
-                                }
-                                true
-                            } finally {
-                                credentialRef.close()
+                            mlsClient.transaction("selectX509CredentialForRegistration") {
+                                it.selectCredential(credentialRef)
                             }
+                            true
                         } ?: false
                     }.flatMap { hasX509Credential ->
                         if (hasX509Credential) {

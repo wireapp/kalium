@@ -92,7 +92,6 @@ class RegisterMLSClientUseCaseTest {
             verify(VerifyMode.exactly(1)) {
                 arrangement.mlsContext.selectCredential(arrangement.x509CredentialRef)
             }
-            verify(VerifyMode.exactly(1)) { arrangement.x509CredentialRef.close() }
         }
 
     @Test

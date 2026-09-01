@@ -1470,10 +1470,6 @@ class MLSConversationRepositoryTest {
             } returns EXTERNAL_SENDER_KEY
         }
 
-        fun withAddCredentialSuccessful() = apply {
-            everySuspend { mlsContext.addCredential(any()) } returns newCredentialRef
-        }
-
         fun withGenerateKeyPackageSuccessful(keyPackages: List<ByteArray>) = apply {
             everySuspend {
                 mlsContext.generateKeyPackages(any(), any())

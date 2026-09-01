@@ -202,19 +202,13 @@ interface MlsCoreCryptoContext {
      */
     suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 
-    /** Persist a credential acquired through the Core Crypto v10 PKI flow and select it for new MLS operations. */
-    suspend fun addCredential(credential: CryptoCredential): CryptoCredentialRef
-
-    /**
-     * Select an already installed credential for new conversations and key packages.
-     * Ownership of [credentialRef] is transferred to the client.
-     */
+    /** Select an already installed credential for new conversations and key packages. */
     fun selectCredential(credentialRef: CryptoCredentialRef)
 
     /** Change an existing conversation to use the supplied credential. */
     suspend fun setConversationCredential(groupId: MLSGroupId, credentialRef: CryptoCredentialRef)
 
-    /** Return the credential currently used by an existing conversation. The caller owns the returned reference. */
+    /** Return the credential currently used by an existing conversation. */
     suspend fun getConversationCredentialRef(groupId: MLSGroupId): CryptoCredentialRef
 
     /** Remove all key packages associated with a credential. */

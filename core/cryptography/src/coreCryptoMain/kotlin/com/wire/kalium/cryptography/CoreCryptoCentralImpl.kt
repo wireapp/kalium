@@ -178,50 +178,42 @@ class CoreCryptoCentralImpl(
         config: X509CredentialAcquisitionConfig,
         existingCredentialRef: CryptoCredentialRef?
     ): CryptoCredential = pkiEnvironmentMutex.withLock {
-        try {
-            val validityPeriodSeconds = config.validity.inWholeSeconds
-            require(validityPeriodSeconds > 0) { "X509 credential validity must be positive" }
-            val nativeClientId = config.clientId.toCoreCryptoClientId()
-            val nativeConfig = try {
-                X509CredentialAcquisitionConfiguration(
-                    acmeDirectoryUrl = config.acmeDirectoryUrl,
-                    cipherSuite = config.cipherSuite.toCrypto(),
-                    displayName = config.displayName,
-                    clientId = nativeClientId,
-                    handle = config.handle,
-                    domain = config.clientId.userId.domain,
-                    team = config.teamId,
-                    validityPeriodSecs = validityPeriodSeconds.toULong()
-                )
-            } catch (throwable: Throwable) {
-                nativeClientId.close()
-                throw throwable
-            }
-            val acquisition = try {
-                existingCredentialRef?.let {
-                    X509CredentialAcquisition.newFromCredentialRef(
-                        pkiEnvironment = requirePkiEnvironment(),
-                        config = nativeConfig,
-                        credentialRef = it.unwrap()
-                    )
-                } ?: X509CredentialAcquisition(requirePkiEnvironment(), nativeConfig)
-            } finally {
-                nativeConfig.destroy()
-            }
-            acquisition.finalizeCredential()
-        } finally {
-            existingCredentialRef?.close()
+        val validityPeriodSeconds = config.validity.inWholeSeconds
+        require(validityPeriodSeconds > 0) { "X509 credential validity must be positive" }
+        val nativeClientId = config.clientId.toCoreCryptoClientId()
+        val nativeConfig = try {
+            X509CredentialAcquisitionConfiguration(
+                acmeDirectoryUrl = config.acmeDirectoryUrl,
+                cipherSuite = config.cipherSuite.toCrypto(),
+                displayName = config.displayName,
+                clientId = nativeClientId,
+                handle = config.handle,
+                domain = config.clientId.userId.domain,
+                team = config.teamId,
+                validityPeriodSecs = validityPeriodSeconds.toULong()
+            )
+        } catch (throwable: Throwable) {
+            nativeClientId.close()
+            throw throwable
         }
+        val acquisition = try {
+            existingCredentialRef?.let {
+                X509CredentialAcquisition.newFromCredentialRef(
+                    pkiEnvironment = requirePkiEnvironment(),
+                    config = nativeConfig,
+                    credentialRef = it.unwrap()
+                )
+            } ?: X509CredentialAcquisition(requirePkiEnvironment(), nativeConfig)
+        } finally {
+            nativeConfig.destroy()
+        }
+        acquisition.finalizeCredential()
     }
 
     override suspend fun installCredential(credential: CryptoCredential): CryptoCredentialRef {
         val nativeCredential = credential.unwrap()
-        return try {
-            cc.transaction("installCredential") {
-                CryptoCredentialRefImpl(it.addCredential(nativeCredential))
-            }
-        } finally {
-            credential.close()
+        return cc.transaction("installCredential") {
+            CryptoCredentialRefImpl(it.addCredential(nativeCredential))
         }
     }
 

@@ -27,22 +27,10 @@ package com.wire.kalium.cryptography
 interface CryptoCredential {
     /** Export the public credential as PEM; X509 credentials return their full certificate chain. */
     fun exportPem(): String
-
-    /** Release the acquired native credential if it has not already been consumed. */
-    fun close()
 }
 
-/**
- * A stable reference to a credential stored by Core Crypto.
- *
- * References returned by [MLSClient.getCredentialRef] are owned by the caller and must be
- * closed. References returned by [MlsCoreCryptoContext.addCredential] are borrowed from the
- * client and remain valid until the client replaces its active credential or is closed.
- */
+/** A stable reference to a credential stored by Core Crypto. */
 interface CryptoCredentialRef {
     /** Stable identifier used to recover this installed credential after a process restart. */
     fun publicKeyHash(): ByteArray
-
-    /** Release the native reference. Safe to call more than once. */
-    fun close()
 }
