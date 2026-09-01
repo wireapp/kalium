@@ -103,6 +103,7 @@ import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveSelfUserUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
@@ -190,6 +191,13 @@ public class ConversationScope internal constructor(
 
     public val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
+
+    public val observeConversationRoleForUser: ObserveConversationRoleForUserUseCase
+        get() = ObserveConversationRoleForUserUseCase(
+            observeConversationMembers,
+            observeConversationDetails,
+            ObserveSelfUserUseCaseImpl(userRepository),
+        )
 
     public val getConversationProtocolInfo: GetConversationProtocolInfoUseCase
         get() = GetConversationProtocolInfoUseCase(conversationRepository)
