@@ -3592,6 +3592,23 @@ public abstract interface class com/wire/kalium/logic/feature/conversation/Clear
 	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class com/wire/kalium/logic/feature/conversation/ConversationRoleData {
+	public fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/data/conversation/Conversation$Member$Role;Lcom/wire/kalium/logic/data/conversation/Conversation$Member$Role;Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/wire/kalium/logic/data/conversation/Conversation$Member$Role;
+	public final fun component3 ()Lcom/wire/kalium/logic/data/conversation/Conversation$Member$Role;
+	public final fun component4 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun copy (Ljava/lang/String;Lcom/wire/kalium/logic/data/conversation/Conversation$Member$Role;Lcom/wire/kalium/logic/data/conversation/Conversation$Member$Role;Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/conversation/ConversationRoleData;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/ConversationRoleData;Ljava/lang/String;Lcom/wire/kalium/logic/data/conversation/Conversation$Member$Role;Lcom/wire/kalium/logic/data/conversation/Conversation$Member$Role;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/ConversationRoleData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getConversationName ()Ljava/lang/String;
+	public final fun getSelfRole ()Lcom/wire/kalium/logic/data/conversation/Conversation$Member$Role;
+	public final fun getUserRole ()Lcom/wire/kalium/logic/data/conversation/Conversation$Member$Role;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/wire/kalium/logic/feature/conversation/ConversationScope {
 	public final fun getAddConversationToFavorites ()Lcom/wire/kalium/logic/feature/conversation/folder/AddConversationToFavoritesUseCase;
 	public final fun getAddMemberToConversationUseCase ()Lcom/wire/kalium/logic/feature/conversation/AddMemberToConversationUseCase;
@@ -3629,6 +3646,7 @@ public final class com/wire/kalium/logic/feature/conversation/ConversationScope 
 	public final fun getObserveConversationListDetails ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationListDetailsUseCase;
 	public final fun getObserveConversationListDetailsWithEvents ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationListDetailsWithEventsUseCase;
 	public final fun getObserveConversationMembers ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationMembersUseCase;
+	public final fun getObserveConversationRoleForUser ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationRoleForUserUseCase;
 	public final fun getObserveConversationUnderLegalHoldNotified ()Lcom/wire/kalium/logic/feature/conversation/ObserveConversationUnderLegalHoldNotifiedUseCase;
 	public final fun getObserveConversationsFromFolder ()Lcom/wire/kalium/logic/feature/conversation/folder/ObserveConversationsFromFolderUseCase;
 	public final fun getObserveEligibleMembersForConversationAdminRole ()Lcom/wire/kalium/logic/feature/conversation/ObserveEligibleMembersForConversationAdminRoleUseCase;
@@ -4081,6 +4099,10 @@ public final class com/wire/kalium/logic/feature/conversation/ObserveConversatio
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/ObserveConversationMembersUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/conversation/ObserveConversationRoleForUserUseCase {
+	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/ObserveConversationUnderLegalHoldNotifiedUseCase {

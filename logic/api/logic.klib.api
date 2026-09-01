@@ -3988,6 +3988,28 @@ final class com.wire.kalium.logic.feature.conversation/CheckConversationInviteCo
     }
 }
 
+final class com.wire.kalium.logic.feature.conversation/ConversationRoleData { // com.wire.kalium.logic.feature.conversation/ConversationRoleData|null[0]
+    constructor <init>(kotlin/String, com.wire.kalium.logic.data.conversation/Conversation.Member.Role?, com.wire.kalium.logic.data.conversation/Conversation.Member.Role?, com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.feature.conversation/ConversationRoleData.<init>|<init>(kotlin.String;com.wire.kalium.logic.data.conversation.Conversation.Member.Role?;com.wire.kalium.logic.data.conversation.Conversation.Member.Role?;com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+    final val conversationId // com.wire.kalium.logic.feature.conversation/ConversationRoleData.conversationId|{}conversationId[0]
+        final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.conversation/ConversationRoleData.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+    final val conversationName // com.wire.kalium.logic.feature.conversation/ConversationRoleData.conversationName|{}conversationName[0]
+        final fun <get-conversationName>(): kotlin/String // com.wire.kalium.logic.feature.conversation/ConversationRoleData.conversationName.<get-conversationName>|<get-conversationName>(){}[0]
+    final val selfRole // com.wire.kalium.logic.feature.conversation/ConversationRoleData.selfRole|{}selfRole[0]
+        final fun <get-selfRole>(): com.wire.kalium.logic.data.conversation/Conversation.Member.Role? // com.wire.kalium.logic.feature.conversation/ConversationRoleData.selfRole.<get-selfRole>|<get-selfRole>(){}[0]
+    final val userRole // com.wire.kalium.logic.feature.conversation/ConversationRoleData.userRole|{}userRole[0]
+        final fun <get-userRole>(): com.wire.kalium.logic.data.conversation/Conversation.Member.Role? // com.wire.kalium.logic.feature.conversation/ConversationRoleData.userRole.<get-userRole>|<get-userRole>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.feature.conversation/ConversationRoleData.component1|component1(){}[0]
+    final fun component2(): com.wire.kalium.logic.data.conversation/Conversation.Member.Role? // com.wire.kalium.logic.feature.conversation/ConversationRoleData.component2|component2(){}[0]
+    final fun component3(): com.wire.kalium.logic.data.conversation/Conversation.Member.Role? // com.wire.kalium.logic.feature.conversation/ConversationRoleData.component3|component3(){}[0]
+    final fun component4(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.conversation/ConversationRoleData.component4|component4(){}[0]
+    final fun copy(kotlin/String = ..., com.wire.kalium.logic.data.conversation/Conversation.Member.Role? = ..., com.wire.kalium.logic.data.conversation/Conversation.Member.Role? = ..., com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.logic.feature.conversation/ConversationRoleData // com.wire.kalium.logic.feature.conversation/ConversationRoleData.copy|copy(kotlin.String;com.wire.kalium.logic.data.conversation.Conversation.Member.Role?;com.wire.kalium.logic.data.conversation.Conversation.Member.Role?;com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/ConversationRoleData.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/ConversationRoleData.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/ConversationRoleData.toString|toString(){}[0]
+}
+
 final class com.wire.kalium.logic.feature.conversation/ConversationScope { // com.wire.kalium.logic.feature.conversation/ConversationScope|null[0]
     final val addConversationToFavorites // com.wire.kalium.logic.feature.conversation/ConversationScope.addConversationToFavorites|{}addConversationToFavorites[0]
         final fun <get-addConversationToFavorites>(): com.wire.kalium.logic.feature.conversation.folder/AddConversationToFavoritesUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.addConversationToFavorites.<get-addConversationToFavorites>|<get-addConversationToFavorites>(){}[0]
@@ -4065,6 +4087,8 @@ final class com.wire.kalium.logic.feature.conversation/ConversationScope { // co
         final fun <get-observeConversationListDetailsWithEvents>(): com.wire.kalium.logic.feature.conversation/ObserveConversationListDetailsWithEventsUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeConversationListDetailsWithEvents.<get-observeConversationListDetailsWithEvents>|<get-observeConversationListDetailsWithEvents>(){}[0]
     final val observeConversationMembers // com.wire.kalium.logic.feature.conversation/ConversationScope.observeConversationMembers|{}observeConversationMembers[0]
         final fun <get-observeConversationMembers>(): com.wire.kalium.logic.feature.conversation/ObserveConversationMembersUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeConversationMembers.<get-observeConversationMembers>|<get-observeConversationMembers>(){}[0]
+    final val observeConversationRoleForUser // com.wire.kalium.logic.feature.conversation/ConversationScope.observeConversationRoleForUser|{}observeConversationRoleForUser[0]
+        final fun <get-observeConversationRoleForUser>(): com.wire.kalium.logic.feature.conversation/ObserveConversationRoleForUserUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeConversationRoleForUser.<get-observeConversationRoleForUser>|<get-observeConversationRoleForUser>(){}[0]
     final val observeConversationUnderLegalHoldNotified // com.wire.kalium.logic.feature.conversation/ConversationScope.observeConversationUnderLegalHoldNotified|{}observeConversationUnderLegalHoldNotified[0]
         final fun <get-observeConversationUnderLegalHoldNotified>(): com.wire.kalium.logic.feature.conversation/ObserveConversationUnderLegalHoldNotifiedUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.observeConversationUnderLegalHoldNotified.<get-observeConversationUnderLegalHoldNotified>|<get-observeConversationUnderLegalHoldNotified>(){}[0]
     final val observeConversationsFromFolder // com.wire.kalium.logic.feature.conversation/ConversationScope.observeConversationsFromFolder|{}observeConversationsFromFolder[0]
@@ -4286,6 +4310,10 @@ final class com.wire.kalium.logic.feature.conversation/ObserveConversationDetail
 
 final class com.wire.kalium.logic.feature.conversation/ObserveConversationInteractionAvailabilityUseCase { // com.wire.kalium.logic.feature.conversation/ObserveConversationInteractionAvailabilityUseCase|null[0]
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.feature.conversation/IsInteractionAvailableResult> // com.wire.kalium.logic.feature.conversation/ObserveConversationInteractionAvailabilityUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+}
+
+final class com.wire.kalium.logic.feature.conversation/ObserveConversationRoleForUserUseCase { // com.wire.kalium.logic.feature.conversation/ObserveConversationRoleForUserUseCase|null[0]
+    final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.feature.conversation/ConversationRoleData> // com.wire.kalium.logic.feature.conversation/ObserveConversationRoleForUserUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
 final class com.wire.kalium.logic.feature.conversation/ObserveUserListByIdUseCase { // com.wire.kalium.logic.feature.conversation/ObserveUserListByIdUseCase|null[0]
