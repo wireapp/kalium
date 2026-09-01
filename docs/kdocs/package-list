@@ -523,7 +523,6 @@ module:persistence
 com.wire.kalium.persistence
 com.wire.kalium.persistence.adapter
 com.wire.kalium.persistence.backup
-com.wire.kalium.persistence.cache
 com.wire.kalium.persistence.client
 com.wire.kalium.persistence.config
 com.wire.kalium.persistence.dao
