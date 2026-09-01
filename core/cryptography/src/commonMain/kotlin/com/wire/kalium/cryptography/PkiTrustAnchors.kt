@@ -29,9 +29,13 @@ internal data class PkiTrustAnchors(
 /**
  * Plans a complete trust-anchor replacement without mutating the PKI environment.
  *
- * Core Crypto identifies a trust anchor by the SHA-256 fingerprint of the certificate's
- * DER-encoded SubjectPublicKeyInfo. Calculating the same key here lets reconciliation avoid
- * re-adding unchanged roots and remove roots that are no longer present in the backend bundle.
+ * Core Crypto 10.4 adds trust anchors to the existing set and rejects duplicate additions.
+ * It does not replace the complete set. This planner calculates every required addition and
+ * removal before the caller changes the PKI environment.
+ *
+ * Core Crypto identifies each trust anchor by the SHA-256 fingerprint of the certificate's
+ * DER-encoded SubjectPublicKeyInfo. The planner uses the same fingerprint to keep unchanged
+ * roots and remove roots that are no longer present in the backend bundle.
  */
 internal fun planPkiTrustAnchorReconciliation(
     currentAnchors: List<CertificateChain>,
