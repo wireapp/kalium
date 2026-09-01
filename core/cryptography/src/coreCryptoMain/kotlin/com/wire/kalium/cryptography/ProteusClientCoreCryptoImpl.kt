@@ -35,18 +35,14 @@ import com.wire.crypto.ProteusException as ProteusExceptionNative
 @Suppress("TooManyFunctions")
 class ProteusClientCoreCryptoImpl private constructor(
     private val coreCrypto: CoreCrypto,
-    private val onClose: () -> Unit
+    private val onClose: suspend () -> Unit
 ) : ProteusClient {
 
     private val mutex = Mutex()
     private val existingSessionsCache = mutableSetOf<CryptoSessionId>()
 
     override suspend fun close() {
-        try {
-            coreCrypto.close()
-        } finally {
-            onClose()
-        }
+        onClose()
     }
 
     override suspend fun <R> transaction(
@@ -233,7 +229,7 @@ class ProteusClientCoreCryptoImpl private constructor(
         suspend operator fun invoke(
             coreCrypto: CoreCrypto,
             rootDir: String,
-            onClose: () -> Unit = {}
+            onClose: suspend () -> Unit = {}
         ): ProteusClientCoreCryptoImpl {
             try {
                 deleteCryptoBoxIfNecessary(rootDir)

@@ -22,25 +22,59 @@ import com.wire.crypto.CredentialRef
 import com.wire.kalium.cryptography.utils.toCryptography
 
 internal class CryptoCredentialImpl(
-    internal val native: Credential
+    credential: Credential
 ) : CryptoCredential {
-    override fun exportPem(): String = native.exportPem()
+    private var native: Credential? = credential
+
+    override fun exportPem(): String = borrow().exportPem()
+
+    override fun close() {
+        native?.close()
+        native = null
+    }
+
+    internal fun borrow(): Credential = checkNotNull(native) {
+        "CryptoCredential has already been closed"
+    }
 }
 
 internal class CryptoCredentialRefImpl(
-    internal val native: CredentialRef
+    credentialRef: CredentialRef
 ) : CryptoCredentialRef {
-    override fun credentialType(): CredentialType = native.type().toCryptography()
+    private var native: CredentialRef? = credentialRef
+    private var ownsNative = true
 
-    override fun publicKeyHash(): ByteArray = native.publicKeyHash()
+    override fun credentialType(): CredentialType = borrow().type().toCryptography()
+
+    override fun publicKeyHash(): ByteArray = borrow().publicKeyHash()
+
+    override fun close() {
+        if (ownsNative) native?.close()
+        native = null
+        ownsNative = false
+    }
+
+    internal fun borrow(): CredentialRef = checkNotNull(native) {
+        "CryptoCredentialRef has already been closed"
+    }
+
+    internal fun transferOwnership() {
+        ownsNative = false
+    }
 }
 
 internal fun CryptoCredential.unwrap(): Credential =
     requireNotNull(this as? CryptoCredentialImpl) {
         "Unsupported CryptoCredential implementation"
-    }.native
+    }.borrow()
 
 internal fun CryptoCredentialRef.unwrap(): CredentialRef =
     requireNotNull(this as? CryptoCredentialRefImpl) {
         "Unsupported CryptoCredentialRef implementation"
-    }.native
+    }.borrow()
+
+internal fun CryptoCredentialRef.transferNativeOwnership() {
+    requireNotNull(this as? CryptoCredentialRefImpl) {
+        "Unsupported CryptoCredentialRef implementation"
+    }.transferOwnership()
+}

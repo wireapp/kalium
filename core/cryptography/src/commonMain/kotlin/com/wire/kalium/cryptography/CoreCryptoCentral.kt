@@ -51,13 +51,16 @@ interface CoreCryptoCentral {
 
     suspend fun addPkiIntermediateCertificate(pem: CertificateChain)
 
-    /** Starts an X509 acquisition and keeps it alive while [PkiEnvironmentHooks.authenticate] performs authentication. */
+    /**
+     * Starts an X509 acquisition and keeps it alive while [PkiEnvironmentHooks.authenticate] performs authentication.
+     * Consumes [existingCredentialRef].
+     */
     suspend fun startX509CredentialAcquisition(
         config: X509CredentialAcquisitionConfig,
         existingCredentialRef: CryptoCredentialRef? = null
     ): CryptoCredential
 
-    /** Persists [credential]. */
+    /** Persists and consumes [credential]. */
     suspend fun installCredential(credential: CryptoCredential): CryptoCredentialRef
 
     /** Check all installed X509 credentials for expiration and revocation. */

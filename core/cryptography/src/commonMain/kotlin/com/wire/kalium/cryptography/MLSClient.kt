@@ -170,10 +170,10 @@ interface MLSClient {
      */
     suspend fun getPublicKey(): Pair<ByteArray, MLSCiphersuite>
 
-    /** Return the newest installed credential of the requested type. */
+    /** Return an owned reference to the newest installed credential of the requested type. */
     suspend fun getCredentialRef(credentialType: CredentialType): CryptoCredentialRef?
 
-    /** Return all installed credentials of the requested type, newest first. */
+    /** Return owned references to all installed credentials of the requested type, newest first. */
     suspend fun getCredentialRefs(credentialType: CredentialType): List<CryptoCredentialRef>
 
     /**

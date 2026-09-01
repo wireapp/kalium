@@ -47,7 +47,7 @@ class MLSClientImpl private constructor(
     private val clientId: ClientId,
     private val defaultCipherSuite: CipherSuite,
     private var activeCredentialRef: CredentialRef?,
-    private val onClose: () -> Unit
+    private val onClose: suspend () -> Unit
 ) : MLSClient {
 
     private var isClosed = false
@@ -57,10 +57,11 @@ class MLSClientImpl private constructor(
         if (isClosed) return
         isClosed = true
         try {
-            clientId.close()
+            activeCredentialRef?.close()
+            activeCredentialRef = null
         } finally {
             try {
-                coreCrypto.close()
+                clientId.close()
             } finally {
                 onClose()
             }
@@ -103,7 +104,12 @@ class MLSClientImpl private constructor(
             cipherSuite = defaultCipherSuite,
             credentialType = credentialType.toCrypto()
         )
-        return credentialRefs.sortedByDescending { it.earliestValidity() }.map(::CryptoCredentialRefImpl)
+        return try {
+            credentialRefs.sortedByDescending { it.earliestValidity() }.map(::CryptoCredentialRefImpl)
+        } catch (throwable: Throwable) {
+            credentialRefs.forEach { it.close() }
+            throw throwable
+        }
     }
 
     override suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState = groupId.toCrypto().useNative {
@@ -124,17 +130,24 @@ class MLSClientImpl private constructor(
         block: suspend (context: MlsCoreCryptoContext) -> R
     ): R = transactionMutex.withLock {
         var transactionCredential = activeCredentialRef
+        var selectedCredentialRef: CryptoCredentialRef? = null
         val result = coreCrypto.transaction(name) { context ->
             block(
                 mlsCoreCryptoContext(
                     context = context,
                     selectedCredential = { transactionCredential },
-                    onCredentialSelected = { transactionCredential = it }
+                    onCredentialSelected = {
+                        transactionCredential = it.unwrap()
+                        selectedCredentialRef = it
+                    }
                 )
             )
         }
 
+        selectedCredentialRef?.transferNativeOwnership()
+        val previousCredentialRef = activeCredentialRef
         activeCredentialRef = transactionCredential
+        if (previousCredentialRef !== transactionCredential) previousCredentialRef?.close()
         result
     }
 
@@ -145,7 +158,7 @@ class MLSClientImpl private constructor(
     private fun mlsCoreCryptoContext(
         context: CoreCryptoContext,
         selectedCredential: () -> CredentialRef?,
-        onCredentialSelected: (CredentialRef) -> Unit
+        onCredentialSelected: (CryptoCredentialRef) -> Unit
     ) = object : MlsCoreCryptoContext {
         private fun requireSelectedCredential(): CredentialRef = checkNotNull(selectedCredential()) {
             NO_ACTIVE_CREDENTIAL_MESSAGE
@@ -313,7 +326,7 @@ class MLSClientImpl private constructor(
         override fun selectCredential(credentialRef: CryptoCredentialRef) {
             val credential = credentialRef.unwrap()
             if (selectedCredential()?.let(credential::matches) == true) return
-            onCredentialSelected(credential)
+            onCredentialSelected(credentialRef)
         }
 
         override suspend fun setConversationCredential(groupId: MLSGroupId, credentialRef: CryptoCredentialRef) {
@@ -390,7 +403,7 @@ class MLSClientImpl private constructor(
             coreCrypto: CoreCrypto,
             clientId: ClientId,
             defaultCipherSuite: CipherSuite,
-            onClose: () -> Unit = {}
+            onClose: suspend () -> Unit = {}
         ): MLSClientImpl {
             val x509Credential = coreCrypto.findCredentials(
                 clientId = clientId,
@@ -458,7 +471,16 @@ private fun Map<Uuid, List<com.wire.crypto.WireIdentity>>.toCryptographyAndClose
     }
 }
 
-private fun List<CredentialRef>.takeNewest(): CredentialRef? = maxByOrNull { it.earliestValidity() }
+private fun List<CredentialRef>.takeNewest(): CredentialRef? {
+    val newest = try {
+        maxByOrNull { it.earliestValidity() }
+    } catch (throwable: Throwable) {
+        forEach { it.close() }
+        throw throwable
+    }
+    forEach { if (it !== newest) it.close() }
+    return newest
+}
 
 private fun List<KeyPackageRef>.countMatching(credentialRef: CredentialRef): Int = try {
     count { keyPackageRef ->

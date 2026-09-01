@@ -136,6 +136,7 @@ class MLSClientCredentialTest {
             testClient.client.transaction("selectCredential") {
                 it.selectCredential(newCredentialRef)
             }
+            newCredentialRef.close()
 
             assertFalse(initialPublicKey.contentEquals(testClient.client.getPublicKey().first))
             assertTrue(testClient.client.transaction { it.generateKeyPackages(1) }.isNotEmpty())
@@ -154,6 +155,7 @@ class MLSClientCredentialTest {
                     throw ExpectedTransactionFailure()
                 }
             }
+            newCredentialRef.close()
 
             assertContentEquals(initialPublicKey, testClient.client.getPublicKey().first)
         }
