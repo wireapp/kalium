@@ -95,6 +95,7 @@ class GetNextUnfinishedMeetingOccurrenceUseCaseTest {
             title = "Meeting 1",
             startTime = Instant.parse("2026-06-01T10:30:00Z"),
             endTime = Instant.parse("2026-06-01T11:30:00Z"),
+            tzid = "Europe/Berlin",
             recurrence = null,
         )
         val MEETING_OCCURRENCE: MeetingOccurrence = MeetingOccurrence(

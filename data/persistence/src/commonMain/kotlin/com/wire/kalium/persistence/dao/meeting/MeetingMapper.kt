@@ -32,7 +32,7 @@ data object MeetingMapper {
         title: String,
         startDate: Instant,
         endDate: Instant,
-        trial: Boolean,
+        tzid: String,
         recurrenceFrequency: MeetingEntity.RecurrenceEntity.Frequency?,
         recurrenceInterval: Long?,
         recurrenceEndDate: Instant?,
@@ -45,7 +45,7 @@ data object MeetingMapper {
         title = title,
         startTime = startDate,
         endTime = endDate,
-        trial = trial.normalized(),
+        tzid = tzid,
         recurrence = when {
             recurrenceFrequency != null -> MeetingEntity.RecurrenceEntity(
                 frequency = recurrenceFrequency,
@@ -70,7 +70,7 @@ data object MeetingMapper {
         meetingTitle: String,
         startDate: Instant,
         endDate: Instant,
-        trial: Boolean,
+        tzid: String,
         recurrenceFrequency: MeetingEntity.RecurrenceEntity.Frequency?,
         recurrenceInterval: Long?,
         recurrenceEndDate: Instant?,
@@ -95,7 +95,7 @@ data object MeetingMapper {
             title = meetingTitle,
             startDate = startDate,
             endDate = endDate,
-            trial = trial,
+            tzid = tzid,
             recurrenceFrequency = recurrenceFrequency,
             recurrenceInterval = recurrenceInterval,
             recurrenceEndDate = recurrenceEndDate,
@@ -106,8 +106,4 @@ data object MeetingMapper {
         channelAccess = channelAccess,
         selfUserId = selfUserId,
     )
-
-    // SQLDelight's JS driver can return SQLite booleans as 0/1 behind a Boolean unsafeCast.
-    // Rebuilding the value through a branch canonicalizes it back to true/false.
-    private fun Boolean.normalized(): Boolean = if (this) true else false
 }

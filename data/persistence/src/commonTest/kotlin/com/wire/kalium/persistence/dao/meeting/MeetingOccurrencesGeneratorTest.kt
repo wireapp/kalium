@@ -105,6 +105,33 @@ class MeetingOccurrencesGeneratorTest {
         )
     }
 
+    @Test
+    fun givenMeetingTimezone_whenGeneratingOccurrencesAcrossDaylightSavingChange_thenKeepsTheSameLocalStartAndEndTimes() {
+        val meeting = newMeeting(
+            tzid = "Europe/Berlin",
+            startTime = Instant.parse("2026-03-28T10:00:00+01:00"), // Before DST change: local Berlin's timezone is +1
+            endTime = Instant.parse("2026-03-28T11:00:00+01:00"),
+            recurrence = MeetingEntity.RecurrenceEntity(MeetingEntity.RecurrenceEntity.Frequency.DAILY, 1, null),
+        )
+
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 2), meeting = meeting)
+
+        // Local times stay at 10:00-11:00 in Europe/Berlin; only the offset changes to +2 after DST starts
+        assertContentEquals(
+            expected = listOf(
+                // Before DST change: timezone is +1, local start-end times are 10:00-11:00
+                "2026-03-28T10:00:00+01:00" to "2026-03-28T11:00:00+01:00",
+                // After DST change: local timezone is now +2, local start times are still 10:00-11:00
+                "2026-03-29T10:00:00+02:00" to "2026-03-29T11:00:00+02:00",
+            ).parseToInstants(),
+            actual = occurrences.map { it.occurrenceStart to it.occurrenceEnd }
+        )
+    }
+
+    private fun List<Pair<String, String>>.parseToInstants(): List<Pair<Instant, Instant>> = map {
+        Instant.parse(it.first) to Instant.parse(it.second)
+    }
+
     private fun generateOccurrences(
         limit: MeetingOccurrencesGenerator.GenerationLimit,
         lastGeneratedStarts: Map<QualifiedIDEntity, Instant> = emptyMap(),

@@ -107,7 +107,7 @@ object MeetingOccurrencesGenerator {
     private fun MeetingGeneratorState.nextState(): MeetingGeneratorState? {
         val recurrence = meeting.recurrence ?: return null
         val interval = recurrence.interval?.toInt() ?: 1
-        val nextStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval)
+        val nextStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval, TimeZone.of(meeting.tzid))
         return if (nextStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(nextStart)) {
             copy(nextCandidateStart = nextStart)
         } else {
@@ -121,7 +121,7 @@ object MeetingOccurrencesGenerator {
     private fun MeetingEntity.firstCandidateStart(lastStart: Instant?, interval: Int): Instant? {
         val recurrence = this.recurrence
         return when {
-            lastStart != null && recurrence != null -> lastStart.plusPeriod(recurrence.frequency, interval)
+            lastStart != null && recurrence != null -> lastStart.plusPeriod(recurrence.frequency, interval, TimeZone.of(tzid))
             lastStart != null -> null
             else -> startTime
         }
@@ -133,7 +133,7 @@ object MeetingOccurrencesGenerator {
         var nextCandidateStart: Instant? = candidateStart
         while (minDateLimit != null && nextCandidateStart != null && nextCandidateStart + duration <= minDateLimit) {
             nextCandidateStart = if (recurrence != null) {
-                val advancedStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval)
+                val advancedStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval, TimeZone.of(tzid))
                 if (advancedStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(advancedStart)) {
                     advancedStart
                 } else {
@@ -149,8 +149,7 @@ object MeetingOccurrencesGenerator {
     private fun MeetingEntity.isBeyondSeriesEnd(candidateStart: Instant): Boolean =
         recurrence?.until?.let { candidateStart > it } ?: false
 
-    private fun Instant.plusPeriod(frequency: MeetingEntity.RecurrenceEntity.Frequency, interval: Int): Instant {
-        val timeZone = TimeZone.currentSystemDefault()
+    private fun Instant.plusPeriod(frequency: MeetingEntity.RecurrenceEntity.Frequency, interval: Int, timeZone: TimeZone): Instant {
         val period = when (frequency) {
             MeetingEntity.RecurrenceEntity.Frequency.DAILY -> DateTimePeriod(days = interval)
             MeetingEntity.RecurrenceEntity.Frequency.WEEKLY -> DateTimePeriod(days = interval * 7)
