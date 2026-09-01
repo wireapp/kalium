@@ -21,8 +21,8 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.call.CallModerationAction
 import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -39,7 +39,6 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.Test
@@ -104,6 +103,41 @@ class CallingMessageHandlerTest {
         }
     }
 
+    @Test
+    fun givenSelfRemoteMuteWithTargetConversation_whenHandling_thenContentConversationIsUsed() = runTest {
+        val targetConversationId = ConversationId("target-conversation", "wire.com")
+        val content = REMOTE_MUTE_CONTENT.copy(conversationId = targetConversationId)
+        val message = CALLING_MESSAGE.copy(content = content, isSelfMessage = true)
+        val (arrangement, callingMessageHandler) = Arrangement()
+            .withShouldRemoteMuteCheckerReturning(true)
+            .arrange()
+
+        callingMessageHandler.handle(message, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.muteCallUseCase.invoke(targetConversationId, true)
+            arrangement.callModerationActionsRepository.addAction(
+                targetConversationId,
+                CallModerationAction(message.id, message.senderUserId, CallModerationAction.Type.MUTED)
+            )
+        }
+    }
+
+    @Test
+    fun givenSelfRemoteMuteWithoutTargetConversation_whenHandling_thenMessageConversationIsUsed() = runTest {
+        val content = REMOTE_MUTE_CONTENT.copy(conversationId = null)
+        val message = CALLING_MESSAGE.copy(content = content, isSelfMessage = true)
+        val (arrangement, callingMessageHandler) = Arrangement()
+            .withShouldRemoteMuteCheckerReturning(true)
+            .arrange()
+
+        callingMessageHandler.handle(message, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.muteCallUseCase.invoke(message.conversationId, true)
+        }
+    }
+
     private inner class Arrangement {
 
         val currentClientIdProvider: CurrentClientIdProvider = mock(MockMode.autoUnit)
@@ -115,7 +149,7 @@ class CallingMessageHandlerTest {
 
         fun withShouldRemoteMuteCheckerReturning(shouldRemoteMute: Boolean) = apply {
             everySuspend {
-                shouldRemoteMuteChecker.check(any(), any(), any(), any(), any())
+                shouldRemoteMuteChecker.check(any(), any(), any(), any())
             } returns shouldRemoteMute
         }
 
@@ -125,15 +159,15 @@ class CallingMessageHandlerTest {
             } returns clientId.right()
         }
 
-        fun withObserveConversationMembersReturning(members: List<Conversation.Member>) = apply {
+        fun withIsConversationMemberAdminReturning(isAdmin: Boolean) = apply {
             everySuspend {
-                conversationRepository.observeConversationMembers(any())
-            } returns flowOf(members)
+                conversationRepository.isConversationMemberAdmin(any(), any())
+            } returns isAdmin.right()
         }
 
         init {
             withCurrentClientIdProviderReturning(TestClient.CLIENT_ID)
-            withObserveConversationMembersReturning(emptyList())
+            withIsConversationMemberAdminReturning(false)
         }
 
         fun arrange() = this to CallingMessageHandlerImpl(

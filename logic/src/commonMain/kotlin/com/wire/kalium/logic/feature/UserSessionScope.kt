@@ -564,6 +564,10 @@ import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingCreateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingDeleteEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -609,7 +613,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -757,10 +760,10 @@ public class UserSessionScope internal constructor(
         // this can depend directly on DAO it will make it easier to user
         // and remove any circular dependency when using this inside user repository
         wrapStorageNullableRequest {
-            userStorage.database.userDAO.observeUserDetailsByQualifiedID(userId.toDao()).firstOrNull()
-        }.map { userDetailsEntity ->
-            _teamId = Either.Right(userDetailsEntity?.team?.let { TeamId(it) })
-            userDetailsEntity?.team?.let { TeamId(it) }
+            userStorage.database.userDAO.getTeamIdByQualifiedID(userId.toDao())
+        }.map { teamId ->
+            _teamId = Either.Right(teamId?.let { TeamId(it) })
+            teamId?.let { TeamId(it) }
         }
     }
 
@@ -2010,7 +2013,8 @@ public class UserSessionScope internal constructor(
             legalHoldHandler = legalHoldHandler,
             newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
             selfUserId = userId,
-            fetchConversationUseCase
+            fetchConversation = fetchConversationUseCase,
+            kaliumConfigs = kaliumConfigs
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
@@ -2022,6 +2026,7 @@ public class UserSessionScope internal constructor(
             legalHoldHandler = legalHoldHandler,
             selfTeamIdProvider = selfTeamId,
             mlsConversationRepository = mlsConversationRepository,
+            meetingRepository = meetingRepository,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
@@ -2305,10 +2310,22 @@ public class UserSessionScope internal constructor(
             meetingRepository = meetingRepository,
         )
 
+    private val meetingUpdateEventHandler: MeetingUpdateEventHandler
+        get() = MeetingUpdateEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
+    private val meetingMemberAddEventHandler: MeetingMemberAddEventHandler
+        get() = MeetingMemberAddEventHandlerImpl(
+            meetingRepository = meetingRepository,
+        )
+
     private val meetingEventReceiver: MeetingEventReceiver
         get() = MeetingEventReceiverImpl(
             meetingCreateEventHandler = meetingCreateEventHandler,
             meetingDeleteEventHandler = meetingDeleteEventHandler,
+            meetingUpdateEventHandler = meetingUpdateEventHandler,
+            meetingMemberAddEventHandler = meetingMemberAddEventHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2882,7 +2899,7 @@ public class UserSessionScope internal constructor(
     private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
         get() = CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
             callRepository = callRepository,
-            observeConversationMembers = conversations.observeConversationMembers,
+            conversationRepository = conversationRepository,
             selfTeamIdProvider = selfTeamId
         )
 

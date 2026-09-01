@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.network.api.authenticated.conversation.cellEnabled
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 
@@ -135,6 +136,12 @@ internal class NewConversationEventHandlerImpl(
                 hasAppsAccessEnabled = event.conversation.hasAppsAccessEnabled(),
                 creatorId = event.senderUserId,
                 type = event.conversation.toConversationType(selfUserTeamId)
+            )
+            newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
+                conversationId = event.conversationId,
+                conversationTeamId = event.conversation.teamId,
+                isCellEnabled = event.conversation.cellEnabled(),
+                instant = event.dateTime,
             )
         }
     }

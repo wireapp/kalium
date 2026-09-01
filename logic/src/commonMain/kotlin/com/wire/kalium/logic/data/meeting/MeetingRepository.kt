@@ -99,6 +99,8 @@ internal interface MeetingRepository {
 
     suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit>
 
+    suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit>
+
     suspend fun createNewMeeting(
         meeting: UpsertMeeting,
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
@@ -114,7 +116,7 @@ internal interface MeetingRepository {
         transactionContext: CryptoTransactionContext,
     ): Either<CoreFailure, MLSAdditionResult>
 
-    suspend fun getNextMeetingOccurrence(
+    suspend fun getNextUnfinishedMeetingOccurrence(
         meetingId: MeetingId,
         from: Instant = currentInstant()
     ): Either<StorageFailure, MeetingOccurrence>
@@ -220,11 +222,18 @@ internal class MeetingDataSource(
         meetingDAO.deleteMeeting(meetingId.toDao())
     }
 
-    override suspend fun getNextMeetingOccurrence(
+    override suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit> =
+        withContext(NonCancellable) {
+            wrapStorageRequest {
+                meetingDAO.deleteMeetingsByConversationId(conversationId.toDao())
+            }
+        }
+
+    override suspend fun getNextUnfinishedMeetingOccurrence(
         meetingId: MeetingId,
         from: Instant
     ): Either<StorageFailure, MeetingOccurrence> = wrapStorageRequest {
-        meetingDAO.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from)?.let { occurrenceId ->
+        meetingDAO.getNextUnfinishedMeetingOccurrenceDetailsId(meetingId.toDao(), from)?.let { occurrenceId ->
             meetingDAO.getMeetingOccurrenceDetailsFlow(occurrenceId).firstOrNull()?.let(meetingMapper::fromDaoToModel)
         }
     }

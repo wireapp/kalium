@@ -284,6 +284,18 @@ internal object TestEvent {
         dateTime = Instant.UNIX_FIRST_DATE
     )
 
+    fun meetingUpdateEvent() = Event.Meeting.Update(
+        id = "eventId",
+        meetingId = MeetingId("meetingId", "domain"),
+        dateTime = Instant.UNIX_FIRST_DATE
+    )
+
+    fun meetingMemberAddEvent() = Event.Meeting.MemberAdd(
+        id = "eventId",
+        meetingId = MeetingId("meetingId", "domain"),
+        dateTime = Instant.UNIX_FIRST_DATE
+    )
+
     fun Event.wrapInEnvelope(
         source: EventSource = EventSource.LIVE
     ): EventEnvelope = EventEnvelope(this, EventDeliveryInfo(source))

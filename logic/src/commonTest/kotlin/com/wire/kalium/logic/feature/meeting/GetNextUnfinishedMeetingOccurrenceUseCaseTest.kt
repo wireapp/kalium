@@ -41,42 +41,46 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class GetNextMeetingOccurrenceUseCaseTest {
+class GetNextUnfinishedMeetingOccurrenceUseCaseTest {
 
     @Test
     fun givenRepositoryReturnsOccurrence_whenInvoking_thenReturnsOccurrence() = runTest {
         val (arrangement, useCase) = Arrangement(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
-            .withNextMeetingOccurrenceReturning(MEETING.meetingId, FROM, MEETING_OCCURRENCE.right())
+            .withNextUnfinishedMeetingOccurrenceReturning(MEETING.meetingId, FROM, MEETING_OCCURRENCE.right())
             .arrange()
 
         val result = useCase(MEETING.meetingId, FROM)
 
         assertEquals(MEETING_OCCURRENCE, result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.getNextMeetingOccurrence(MEETING.meetingId, FROM)
+            arrangement.meetingRepository.getNextUnfinishedMeetingOccurrence(MEETING.meetingId, FROM)
         }
     }
 
     @Test
     fun givenRepositoryReturnsNull_whenInvoking_thenReturnsNull() = runTest {
         val (arrangement, useCase) = Arrangement(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
-            .withNextMeetingOccurrenceReturning(MEETING.meetingId, FROM, StorageFailure.DataNotFound.left())
+            .withNextUnfinishedMeetingOccurrenceReturning(MEETING.meetingId, FROM, StorageFailure.DataNotFound.left())
             .arrange()
 
         val result = useCase(MEETING.meetingId, FROM)
 
         assertEquals(null, result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.getNextMeetingOccurrence(MEETING.meetingId, FROM)
+            arrangement.meetingRepository.getNextUnfinishedMeetingOccurrence(MEETING.meetingId, FROM)
         }
     }
 
     private class Arrangement(private val dispatcher: KaliumDispatcher) {
         val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
-        fun withNextMeetingOccurrenceReturning(id: MeetingId, from: Instant, result: Either<StorageFailure, MeetingOccurrence>) = apply {
-            everySuspend { meetingRepository.getNextMeetingOccurrence(id, from) } returns result
+        fun withNextUnfinishedMeetingOccurrenceReturning(
+            id: MeetingId,
+            from: Instant,
+            result: Either<StorageFailure, MeetingOccurrence>
+        ) = apply {
+            everySuspend { meetingRepository.getNextUnfinishedMeetingOccurrence(id, from) } returns result
         }
-        fun arrange() = this to GetNextMeetingOccurrenceUseCaseImpl(
+        fun arrange() = this to GetNextUnfinishedMeetingOccurrenceUseCaseImpl(
             dispatcher = dispatcher,
             meetingRepository = meetingRepository,
         )

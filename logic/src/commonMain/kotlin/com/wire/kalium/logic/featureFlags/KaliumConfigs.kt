@@ -72,6 +72,7 @@ public data class KaliumConfigs(
      * Should NOT be set in production mobile/web clients.
      */
     val callConfigTransformer: ((String) -> String)? = null,
+    val drivePermissionsEnabled: Boolean = false
 )
 
 public sealed interface BuildFileRestrictionState {
