@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.feature.conversation.LeaveConversationUseCase
 import com.wire.kalium.logic.feature.conversation.RemoveMemberFromConversationUseCase
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 /**
  * Use case for deleting a meeting only for the self user.
@@ -40,7 +42,7 @@ internal class DeleteMeetingForMeUseCaseImpl(
     private val meetingRepository: MeetingRepository,
     private val leaveConversation: LeaveConversationUseCase,
 ) : DeleteMeetingForMeUseCase {
-    override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingForMeUseCase.Result =
+    override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingForMeUseCase.Result = withContext(NonCancellable) {
         meetingRepository.getMeeting(meetingId).fold(
             {
                 DeleteMeetingForMeUseCase.Result.Failure(it)
@@ -53,4 +55,5 @@ internal class DeleteMeetingForMeUseCaseImpl(
                 }
             }
         )
+    }
 }
