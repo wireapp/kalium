@@ -60,7 +60,6 @@ import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
-import dev.mokkery.verify
 import dev.mokkery.verifySuspend
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -99,7 +98,6 @@ class E2EIRepositoryTest {
         val checkpoint = acquisition.value
 
         assertTrue(checkpoint.preExistingCredentialIds.isEmpty())
-        assertEquals(null, checkpoint.previousCredentialId)
         assertEquals(NEW_CREDENTIAL_ID, checkpoint.newCredentialId)
         repository.rotateKeysAndMigrateConversations(arrangement.transactionProvider, checkpoint).shouldSucceed()
 
@@ -107,8 +105,8 @@ class E2EIRepositoryTest {
             arrangement.coreCrypto.startX509CredentialAcquisition(eq(ACQUISITION_CONFIG), eq(null))
             arrangement.coreCrypto.installCredential(eq(arrangement.credential))
         }
-        verify(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.selectCredential(arrangement.newCredentialRef)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsClient.selectCredential(arrangement.newCredentialRef)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.mlsClient.initializeBasicCredential()
@@ -131,7 +129,7 @@ class E2EIRepositoryTest {
 
         result.shouldSucceed { checkpoint ->
             assertEquals(CERTIFICATE_CHAIN, checkpoint.certificateChain)
-            assertEquals(PREVIOUS_CREDENTIAL_ID, checkpoint.previousCredentialId)
+            assertEquals(listOf(PREVIOUS_CREDENTIAL_ID), checkpoint.preExistingCredentialIds)
             assertEquals(NEW_CREDENTIAL_ID, checkpoint.newCredentialId)
             assertEquals(listOf("group-1"), checkpoint.groupIds)
             assertEquals(E2EIRotationPhase.CREDENTIAL_INSTALLED, checkpoint.phase)
@@ -172,7 +170,6 @@ class E2EIRepositoryTest {
             isNewClient = false
         ).shouldSucceed { checkpoint ->
             assertTrue(checkpoint.preExistingCredentialIds.isEmpty())
-            assertEquals(null, checkpoint.previousCredentialId)
             assertEquals(NEW_CREDENTIAL_ID, checkpoint.newCredentialId)
         }
 
@@ -353,28 +350,6 @@ class E2EIRepositoryTest {
     }
 
     @Test
-    fun givenAbandonedPreInstallCheckpoint_whenStartingAnotherAcquisition_thenClearsItAndStartsAgain() = runTest {
-        val checkpoint = installedCheckpoint().copy(
-            certificateChain = null,
-            newCredentialId = null,
-            phase = E2EIRotationPhase.INTENT
-        )
-        val (arrangement, repository) = Arrangement().arrange {
-            persistedRotationCheckpoint = Json.encodeToString(
-                E2EIRotationCheckpoint.serializer(),
-                checkpoint
-            ).encodeToByteArray()
-        }
-
-        repository.acquireCredential({ ID_TOKEN }, { emptyList() }, isNewClient = false).shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.deleteE2EIRotationCheckpoint()
-            arrangement.coreCrypto.startX509CredentialAcquisition(any(), any())
-        }
-    }
-
-    @Test
     fun givenCredentialInstalledWithPreInstallCheckpoint_whenStartingAgain_thenRecoversAndPreservesCheckpoint() = runTest {
         val checkpoint = installedCheckpoint().copy(
             newCredentialId = null,
@@ -408,7 +383,7 @@ class E2EIRepositoryTest {
     }
 
     @Test
-    fun givenOneGroupAlreadyCheckpointed_whenRotating_thenMigratesOnlyRemainingGroupAndCompletesPhases() = runTest {
+    fun givenInstalledCheckpoint_whenRotating_thenMigratesEveryGroupAndCompletesPhases() = runTest {
         val groupOne = GroupID("group-1")
         val groupTwo = GroupID("group-2")
         val prepared = PreparedX509KeyPackages(
@@ -416,8 +391,7 @@ class E2EIRepositoryTest {
             cipherSuite = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
         )
         val checkpoint = installedCheckpoint().copy(
-            groupIds = listOf(groupOne.value, groupTwo.value),
-            migratedGroupIds = listOf(groupOne.value)
+            groupIds = listOf(groupOne.value, groupTwo.value)
         )
         val (arrangement, repository) = Arrangement().arrange {
             everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns
@@ -431,14 +405,16 @@ class E2EIRepositoryTest {
             everySuspend {
                 mlsConversationRepository.replaceX509KeyPackages(any(), any())
             } returns Unit.right()
-            everySuspend {
-                mlsConversationRepository.removePreviousX509Credential(any(), any(), any())
-            } returns Unit
         }
 
         repository.rotateKeysAndMigrateConversations(arrangement.transactionProvider, checkpoint).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.migrateConversationCredential(
+                eq(arrangement.mlsContext),
+                eq(arrangement.newCredentialRef),
+                eq(groupOne)
+            )
             arrangement.mlsConversationRepository.migrateConversationCredential(
                 eq(arrangement.mlsContext),
                 eq(arrangement.newCredentialRef),
@@ -452,11 +428,7 @@ class E2EIRepositoryTest {
                 eq(TestClient.CLIENT_ID),
                 eq(prepared)
             )
-            arrangement.mlsConversationRepository.removePreviousX509Credential(
-                eq(arrangement.mlsContext),
-                eq(arrangement.newCredentialRef),
-                eq(arrangement.previousCredentialRef)
-            )
+            arrangement.mlsContext.removeCredential(eq(arrangement.previousCredentialRef))
             arrangement.userConfigRepository.deleteE2EIRotationCheckpoint()
         }
     }
@@ -466,7 +438,6 @@ class E2EIRepositoryTest {
         val backendFailure = E2EIFailure.Generic(IllegalStateException("backend failed"))
         val keyPackage = "key-package".encodeToByteArray()
         val checkpoint = installedCheckpoint().copy(
-            migratedGroupIds = listOf("group-1"),
             phase = E2EIRotationPhase.KEY_PACKAGES_PREPARED,
             keyPackages = listOf(kotlin.io.encoding.Base64.encode(keyPackage)),
             cipherSuiteTag = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256.tag
@@ -485,7 +456,7 @@ class E2EIRepositoryTest {
         verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.migrateConversationCredential(any(), any(), any())
             arrangement.mlsConversationRepository.prepareX509KeyPackages(any(), any())
-            arrangement.mlsConversationRepository.removePreviousX509Credential(any(), any(), any())
+            arrangement.mlsContext.removeCredential(any())
             arrangement.userConfigRepository.deleteE2EIRotationCheckpoint()
         }
     }
@@ -563,6 +534,7 @@ class E2EIRepositoryTest {
             everySuspend { currentClientIdProvider() } returns TestClient.CLIENT_ID.right()
             everySuspend { mlsClientProvider.getCoreCrypto(any()) } returns coreCrypto.right()
             everySuspend { mlsClientProvider.getMLSClient(any()) } returns mlsClient.right()
+            everySuspend { mlsClient.selectCredential(any()) } returns Unit
             everySuspend { mlsClient.getCredentialRef(CredentialType.X509) } returns previousCredentialRef
             everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns listOf(previousCredentialRef)
             every { previousCredentialRef.publicKeyHash() } returns PREVIOUS_CREDENTIAL_HASH
@@ -655,7 +627,6 @@ class E2EIRepositoryTest {
         fun installedCheckpoint() = E2EIRotationCheckpoint(
             certificateChain = CERTIFICATE_CHAIN,
             preExistingCredentialIds = listOf(PREVIOUS_CREDENTIAL_ID),
-            previousCredentialId = PREVIOUS_CREDENTIAL_ID,
             newCredentialId = NEW_CREDENTIAL_ID,
             groupIds = listOf("group-1"),
             isNewClient = false,

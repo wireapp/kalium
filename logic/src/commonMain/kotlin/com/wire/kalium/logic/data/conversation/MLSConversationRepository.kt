@@ -244,12 +244,7 @@ internal interface MLSConversationRepository : MLSMemberAdder {
     suspend fun clearProposalTimer(groupID: GroupID)
     fun observeProposalTimers(): Flow<ProposalTimer>
 
-    /**
-     * Select [credentialRef] and migrate [groupID] when it still uses another credential.
-     *
-     * This deliberately throws Core Crypto failures so the caller can let the surrounding
-     * transaction roll back instead of committing a normal Either.Left.
-     */
+    /** Migrate [groupID] when it still uses another credential. */
     suspend fun migrateConversationCredential(
         mlsContext: MlsCoreCryptoContext,
         credentialRef: CryptoCredentialRef,
@@ -267,13 +262,6 @@ internal interface MLSConversationRepository : MLSMemberAdder {
         clientId: ClientId,
         preparedKeyPackages: PreparedX509KeyPackages
     ): Either<E2EIFailure, Unit>
-
-    /** Remove the previous credential only after its backend key packages were replaced. */
-    suspend fun removePreviousX509Credential(
-        mlsContext: MlsCoreCryptoContext,
-        newCredentialRef: CryptoCredentialRef,
-        previousCredentialRef: CryptoCredentialRef?
-    )
 
     suspend fun getClientIdentity(
         mlsContext: MlsCoreCryptoContext,
@@ -776,7 +764,6 @@ internal class MLSConversationDataSource(
         credentialRef: CryptoCredentialRef,
         groupID: GroupID
     ) {
-        mlsContext.selectCredential(credentialRef)
         val cryptoGroupID = groupID.toCrypto()
         if (!mlsContext.conversationExists(cryptoGroupID)) return
 
@@ -796,7 +783,6 @@ internal class MLSConversationDataSource(
         mlsContext: MlsCoreCryptoContext,
         credentialRef: CryptoCredentialRef
     ): PreparedX509KeyPackages {
-        mlsContext.selectCredential(credentialRef)
         // A crash after generation but before checkpointing can leave an unreferenced batch.
         // Removing it here makes preparation idempotent before the backend phase starts.
         mlsContext.removeKeyPackages(credentialRef)
@@ -823,18 +809,6 @@ internal class MLSConversationDataSource(
                 E2EIFailure.RotationAndMigration(failure).left()
             }
         }, { Either.Right(Unit) })
-
-    override suspend fun removePreviousX509Credential(
-        mlsContext: MlsCoreCryptoContext,
-        newCredentialRef: CryptoCredentialRef,
-        previousCredentialRef: CryptoCredentialRef?
-    ) {
-        mlsContext.selectCredential(newCredentialRef)
-        previousCredentialRef?.let { previousCredential ->
-            mlsContext.removeKeyPackages(previousCredential)
-            mlsContext.removeCredential(previousCredential)
-        }
-    }
 
     override suspend fun getClientIdentity(mlsContext: MlsCoreCryptoContext, clientId: ClientId) =
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }

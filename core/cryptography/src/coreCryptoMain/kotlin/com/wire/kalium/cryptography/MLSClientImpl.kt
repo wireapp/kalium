@@ -112,6 +112,16 @@ class MLSClientImpl private constructor(
         }
     }
 
+    override suspend fun selectCredential(credentialRef: CryptoCredentialRef) = transactionMutex.withLock {
+        val selectedCredential = credentialRef.unwrap()
+        if (activeCredentialRef?.let(selectedCredential::matches) == true) return@withLock
+
+        credentialRef.transferNativeOwnership()
+        val previousCredential = activeCredentialRef
+        activeCredentialRef = selectedCredential
+        previousCredential?.close()
+    }
+
     override suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState = groupId.toCrypto().useNative {
         coreCrypto.e2eiConversationState(it).toCryptography()
     }
@@ -129,40 +139,17 @@ class MLSClientImpl private constructor(
         name: String,
         block: suspend (context: MlsCoreCryptoContext) -> R
     ): R = transactionMutex.withLock {
-        var transactionCredential = activeCredentialRef
-        var selectedCredentialRef: CryptoCredentialRef? = null
-        val result = coreCrypto.transaction(name) { context ->
-            block(
-                mlsCoreCryptoContext(
-                    context = context,
-                    selectedCredential = { transactionCredential },
-                    onCredentialSelected = {
-                        transactionCredential = it.unwrap()
-                        selectedCredentialRef = it
-                    }
-                )
-            )
+        coreCrypto.transaction(name) { context ->
+            block(mlsCoreCryptoContext(context))
         }
-
-        selectedCredentialRef?.transferNativeOwnership()
-        val previousCredentialRef = activeCredentialRef
-        activeCredentialRef = transactionCredential
-        if (previousCredentialRef !== transactionCredential) previousCredentialRef?.close()
-        result
     }
 
     private fun requireActiveCredential(): CredentialRef = checkNotNull(activeCredentialRef) {
         NO_ACTIVE_CREDENTIAL_MESSAGE
     }
 
-    private fun mlsCoreCryptoContext(
-        context: CoreCryptoContext,
-        selectedCredential: () -> CredentialRef?,
-        onCredentialSelected: (CryptoCredentialRef) -> Unit
-    ) = object : MlsCoreCryptoContext {
-        private fun requireSelectedCredential(): CredentialRef = checkNotNull(selectedCredential()) {
-            NO_ACTIVE_CREDENTIAL_MESSAGE
-        }
+    private fun mlsCoreCryptoContext(context: CoreCryptoContext) = object : MlsCoreCryptoContext {
+        private fun requireSelectedCredential(): CredentialRef = requireActiveCredential()
 
         override fun getDefaultCipherSuite(): MLSCiphersuite = defaultCipherSuite.toCryptography()
 
@@ -323,12 +310,6 @@ class MLSClientImpl private constructor(
             }
         }
 
-        override fun selectCredential(credentialRef: CryptoCredentialRef) {
-            val credential = credentialRef.unwrap()
-            if (selectedCredential()?.let(credential::matches) == true) return
-            onCredentialSelected(credentialRef)
-        }
-
         override suspend fun setConversationCredential(groupId: MLSGroupId, credentialRef: CryptoCredentialRef) {
             groupId.toCrypto().useNative {
                 context.setConversationCredential(it, credentialRef.unwrap())
@@ -345,7 +326,7 @@ class MLSClientImpl private constructor(
 
         override suspend fun removeCredential(credentialRef: CryptoCredentialRef) {
             val credential = credentialRef.unwrap()
-            require(selectedCredential()?.let(credential::matches) != true) {
+            require(activeCredentialRef?.let(credential::matches) != true) {
                 "Select a replacement credential before removing the active credential"
             }
             context.removeCredential(credential)

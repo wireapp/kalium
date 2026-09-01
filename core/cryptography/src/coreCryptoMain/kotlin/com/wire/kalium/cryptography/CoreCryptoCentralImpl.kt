@@ -145,16 +145,8 @@ class CoreCryptoCentralImpl(
         Unit
     }
 
-    override suspend fun addPkiTrustAnchor(pem: CertificateChain) = pkiEnvironmentMutex.withLock {
-        requirePkiEnvironment().addTrustAnchor(pem)
-    }
-
     override suspend fun getPkiTrustAnchors(): List<CertificateChain> = pkiEnvironmentMutex.withLock {
         requirePkiEnvironment().getTrustAnchors()
-    }
-
-    override suspend fun removePkiTrustAnchor(fingerprint: ByteArray) = pkiEnvironmentMutex.withLock {
-        requirePkiEnvironment().removeTrustAnchor(fingerprint)
     }
 
     override suspend fun reconcilePkiTrustAnchors(pemBundle: CertificateChain) = pkiEnvironmentMutex.withLock {
@@ -361,6 +353,7 @@ private fun PkiEnvironmentHooks.toCoreCrypto(): CoreCryptoPkiEnvironmentHooks = 
         idp: String,
         keyAuth: String,
         acmeAud: String,
+        // Only Web needs this to resume after leaving and returning to the page.
         @Suppress("UNUSED_PARAMETER") acquisitionSnapshot: ByteArray
     ): String = mapPkiHookException {
         this@toCoreCrypto.authenticate(idp, keyAuth, acmeAud)

@@ -80,9 +80,6 @@ public data class E2EIAuthenticationRequest(
 
 @Serializable
 internal enum class E2EIRotationPhase {
-    @SerialName("INTENT")
-    INTENT,
-
     @SerialName("ACQUIRED")
     ACQUIRED,
 
@@ -102,18 +99,14 @@ internal data class E2EIRotationCheckpoint(
     val certificateChain: String? = null,
     @SerialName("preExistingCredentialIds")
     val preExistingCredentialIds: List<String>,
-    @SerialName("previousCredentialId")
-    val previousCredentialId: String?,
     @SerialName("newCredentialId")
     val newCredentialId: String? = null,
     @SerialName("groupIds")
     val groupIds: List<String>,
-    @SerialName("migratedGroupIds")
-    val migratedGroupIds: List<String> = emptyList(),
     @SerialName("isNewClient")
     val isNewClient: Boolean,
     @SerialName("phase")
-    val phase: E2EIRotationPhase = E2EIRotationPhase.INTENT,
+    val phase: E2EIRotationPhase = E2EIRotationPhase.ACQUIRED,
     @SerialName("keyPackages")
     val keyPackages: List<String> = emptyList(),
     @SerialName("cipherSuiteTag")
@@ -452,10 +445,8 @@ private class E2EICredentialAcquisitionWorkflow(
         val checkpoint = E2EIRotationCheckpoint(
             certificateChain = certificateChain,
             preExistingCredentialIds = existingCredentialIds,
-            previousCredentialId = if (isNewClient) null else existingCredentialIds.firstOrNull(),
             groupIds = groupIdList.map(GroupID::value).distinct(),
             isNewClient = isNewClient,
-            phase = E2EIRotationPhase.ACQUIRED
         )
         checkpointStore.persist(checkpoint).map { checkpoint }
     }
@@ -518,7 +509,6 @@ private class E2EICredentialAcquisitionWorkflow(
         E2EIRotationPhase.CREDENTIAL_INSTALLED,
         E2EIRotationPhase.KEY_PACKAGES_PREPARED,
         E2EIRotationPhase.BACKEND_REPLACED -> checkpoint.right()
-        E2EIRotationPhase.INTENT,
         E2EIRotationPhase.ACQUIRED -> recoverInstalledCredential(mlsClient, checkpoint)
     }
 
@@ -581,7 +571,11 @@ private class E2EICredentialRotationWorkflow(
                 .flatMap { mlsClient ->
                     resolveCredentialRefs(mlsClient, checkpoint).flatMap { credentialRefs ->
                         try {
-                            runRotationPhases(transactionProvider, clientId, checkpoint, credentialRefs)
+                            wrapMLSRequest { mlsClient.selectCredential(credentialRefs.new) }
+                                .mapLeft(E2EIFailure::RotationAndMigration)
+                                .flatMap {
+                                    runRotationPhases(transactionProvider, clientId, checkpoint, credentialRefs)
+                                }
                         } finally {
                             credentialRefs.all.forEach(CryptoCredentialRef::close)
                         }
@@ -607,7 +601,7 @@ private class E2EICredentialRotationWorkflow(
                 RotationCredentialRefs(
                     all = refs,
                     new = newCredentialRef,
-                    previous = checkpoint.previousCredentialId?.let { previousId ->
+                    previous = checkpoint.preExistingCredentialIds.firstOrNull()?.let { previousId ->
                         refs.firstOrNull { it.rotationCredentialId() == previousId }
                     }
                 ).right()
@@ -621,9 +615,7 @@ private class E2EICredentialRotationWorkflow(
         checkpoint: E2EIRotationCheckpoint,
         credentialRefs: RotationCredentialRefs
     ): Either<E2EIFailure, Unit> = if (checkpoint.isNewClient) {
-        runRotationTransaction<Unit>(transactionProvider, "E2EISelectNewClientCredential") { mlsContext ->
-            mlsContext.selectCredential(credentialRefs.new)
-        }.flatMap { checkpointStore.delete() }
+        checkpointStore.delete()
     } else {
         migrateConversations(transactionProvider, checkpoint, credentialRefs.new).flatMap { migratedCheckpoint ->
             prepareKeyPackages(transactionProvider, migratedCheckpoint, credentialRefs.new).flatMap { preparedCheckpoint ->
@@ -638,22 +630,19 @@ private class E2EICredentialRotationWorkflow(
         transactionProvider: CryptoTransactionProvider,
         checkpoint: E2EIRotationCheckpoint,
         newCredentialRef: CryptoCredentialRef
-    ): Either<E2EIFailure, E2EIRotationCheckpoint> = checkpoint.groupIds
-        .filterNot(checkpoint.migratedGroupIds::contains)
-        .foldToEitherWhileRight(checkpoint) { groupIdValue, currentCheckpoint ->
-            runRotationTransaction<Unit>(transactionProvider, "E2EIMigrateConversation") { mlsContext ->
-                dependencies.mlsConversationRepository.migrateConversationCredential(
-                    mlsContext,
-                    newCredentialRef,
-                    GroupID(groupIdValue)
-                )
-            }.flatMap {
-                currentCheckpoint.copy(
-                    migratedGroupIds = (currentCheckpoint.migratedGroupIds + groupIdValue).distinct()
-                ).let { updatedCheckpoint ->
-                    checkpointStore.persist(updatedCheckpoint).map { updatedCheckpoint }
+    ): Either<E2EIFailure, E2EIRotationCheckpoint> =
+        if (checkpoint.phase != E2EIRotationPhase.CREDENTIAL_INSTALLED) {
+            checkpoint.right()
+        } else {
+            checkpoint.groupIds.foldToEitherWhileRight(Unit) { groupIdValue, _ ->
+                runRotationTransaction<Unit>(transactionProvider, "E2EIMigrateConversation") { mlsContext ->
+                    dependencies.mlsConversationRepository.migrateConversationCredential(
+                        mlsContext,
+                        newCredentialRef,
+                        GroupID(groupIdValue)
+                    )
                 }
-            }
+            }.map { checkpoint }
         }
 
     private suspend fun prepareKeyPackages(
@@ -706,11 +695,10 @@ private class E2EICredentialRotationWorkflow(
         credentialRefs: RotationCredentialRefs
     ): Either<E2EIFailure, Unit> = if (checkpoint.phase == E2EIRotationPhase.BACKEND_REPLACED) {
         runRotationTransaction<Unit>(transactionProvider, "E2EICleanupPreviousCredential") { mlsContext ->
-            dependencies.mlsConversationRepository.removePreviousX509Credential(
-                mlsContext,
-                credentialRefs.new,
-                credentialRefs.previous
-            )
+            credentialRefs.previous?.let {
+                mlsContext.removeCredential(it)
+                dependencies.cryptoStateChangeHookNotifier.onCryptoStateChanged(dependencies.selfUserId)
+            }
         }.flatMap { checkpointStore.delete() }
     } else {
         Unit.right()

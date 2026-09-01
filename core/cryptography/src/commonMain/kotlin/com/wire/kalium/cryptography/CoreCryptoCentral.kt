@@ -37,11 +37,7 @@ interface CoreCryptoCentral {
      */
     suspend fun configurePkiEnvironment(hooks: PkiEnvironmentHooks)
 
-    suspend fun addPkiTrustAnchor(pem: CertificateChain)
-
     suspend fun getPkiTrustAnchors(): List<CertificateChain>
-
-    suspend fun removePkiTrustAnchor(fingerprint: ByteArray)
 
     /**
      * Replaces the configured trust-anchor set with the complete PEM bundle.

@@ -184,15 +184,6 @@ internal class ObservableMLSConversationRepository(
         preparedKeyPackages: PreparedX509KeyPackages
     ): Either<E2EIFailure, Unit> = delegate.replaceX509KeyPackages(clientId, preparedKeyPackages)
 
-    override suspend fun removePreviousX509Credential(
-        mlsContext: MlsCoreCryptoContext,
-        newCredentialRef: CryptoCredentialRef,
-        previousCredentialRef: CryptoCredentialRef?
-    ) {
-        delegate.removePreviousX509Credential(mlsContext, newCredentialRef, previousCredentialRef)
-        hookNotifier.onCryptoStateChanged(userId)
-    }
-
     override suspend fun getClientIdentity(
         mlsContext: MlsCoreCryptoContext,
         clientId: ClientId

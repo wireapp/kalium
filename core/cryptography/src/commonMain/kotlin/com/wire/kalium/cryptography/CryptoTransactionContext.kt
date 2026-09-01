@@ -202,9 +202,6 @@ interface MlsCoreCryptoContext {
      */
     suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 
-    /** Select an already installed credential for new conversations and key packages. */
-    fun selectCredential(credentialRef: CryptoCredentialRef)
-
     /** Change an existing conversation to use the supplied credential. */
     suspend fun setConversationCredential(groupId: MLSGroupId, credentialRef: CryptoCredentialRef)
 

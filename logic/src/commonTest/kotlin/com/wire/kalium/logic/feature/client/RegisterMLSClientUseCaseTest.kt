@@ -49,7 +49,6 @@ import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
-import dev.mokkery.verify
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -89,8 +88,8 @@ class RegisterMLSClientUseCaseTest {
             verifySuspend {
                 arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
             }
-            verify(VerifyMode.exactly(1)) {
-                arrangement.mlsContext.selectCredential(arrangement.x509CredentialRef)
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.mlsClient.selectCredential(arrangement.x509CredentialRef)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.mlsClient.initializeBasicCredential()

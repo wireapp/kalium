@@ -20,11 +20,8 @@ package com.wire.kalium.cryptography
 
 import com.wire.crypto.Credential
 import com.wire.kalium.cryptography.utils.toCrypto
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -68,96 +65,16 @@ class MLSClientCredentialTest {
     }
 
     @Test
-    fun givenNoActiveCredential_whenSelectingTheFirstInstalledCredential_thenItBecomesActive() = runTest {
-        withCredentialTestClient(this, initializeBasicCredential = false) { testClient ->
-            val credentialRef = testClient.addBasicCredential()
-
-            testClient.client.transaction("selectFirstCredential") {
-                it.selectCredential(credentialRef)
-            }
-
-            assertTrue(testClient.client.getPublicKey().first.isNotEmpty())
-            assertTrue(testClient.client.transaction { it.generateKeyPackages(1) }.isNotEmpty())
-        }
-    }
-
-    @Test
-    fun givenNoActiveCredential_whenFirstSelectionRollsBack_thenTheClientStillHasNoActiveCredential() = runTest {
-        withCredentialTestClient(this, initializeBasicCredential = false) { testClient ->
-            val credentialRef = testClient.addBasicCredential()
-
-            assertFailsWith<ExpectedTransactionFailure> {
-                testClient.client.transaction("failedFirstCredentialSelection") {
-                    it.selectCredential(credentialRef)
-                    throw ExpectedTransactionFailure()
-                }
-            }
-
-            val failure = assertFailsWith<IllegalStateException> { testClient.client.getPublicKey() }
-            assertEquals(NO_ACTIVE_CREDENTIAL_MESSAGE, failure.message)
-        }
-    }
-
-    @Test
-    fun givenAQueuedTransaction_whenCredentialSelectionSucceeds_thenTheSelectionIsNotLost() = runTest {
-        withCredentialTestClient(this) { testClient ->
-            val initialPublicKey = testClient.client.getPublicKey().first
-            val newCredentialRef = testClient.addBasicCredential()
-            val selectionTransactionStarted = CompletableDeferred<Unit>()
-            val allowSelection = CompletableDeferred<Unit>()
-
-            val selection = async {
-                testClient.client.transaction("selectCredential") {
-                    selectionTransactionStarted.complete(Unit)
-                    allowSelection.await()
-                    it.selectCredential(newCredentialRef)
-                }
-            }
-            selectionTransactionStarted.await()
-
-            val queuedTransaction = async(start = CoroutineStart.UNDISPATCHED) {
-                testClient.client.transaction("queuedTransaction") { Unit }
-            }
-            allowSelection.complete(Unit)
-
-            selection.await()
-            queuedTransaction.await()
-
-            assertFalse(initialPublicKey.contentEquals(testClient.client.getPublicKey().first))
-        }
-    }
-
-    @Test
-    fun givenCredentialSelectionSucceeds_whenUsingDefaultOperations_thenTheSelectedCredentialIsUsed() = runTest {
+    fun givenInstalledCredential_whenSelected_thenDefaultOperationsUseIt() = runTest {
         withCredentialTestClient(this) { testClient ->
             val initialPublicKey = testClient.client.getPublicKey().first
             val newCredentialRef = testClient.addBasicCredential()
 
-            testClient.client.transaction("selectCredential") {
-                it.selectCredential(newCredentialRef)
-            }
+            testClient.client.selectCredential(newCredentialRef)
             newCredentialRef.close()
 
             assertFalse(initialPublicKey.contentEquals(testClient.client.getPublicKey().first))
             assertTrue(testClient.client.transaction { it.generateKeyPackages(1) }.isNotEmpty())
-        }
-    }
-
-    @Test
-    fun givenCredentialSelectionTransactionFails_whenUsingDefaultOperations_thenThePreviousCredentialIsStillUsed() = runTest {
-        withCredentialTestClient(this) { testClient ->
-            val initialPublicKey = testClient.client.getPublicKey().first
-            val newCredentialRef = testClient.addBasicCredential()
-
-            assertFailsWith<ExpectedTransactionFailure> {
-                testClient.client.transaction("failedCredentialSelection") {
-                    it.selectCredential(newCredentialRef)
-                    throw ExpectedTransactionFailure()
-                }
-            }
-            newCredentialRef.close()
-
-            assertContentEquals(initialPublicKey, testClient.client.getPublicKey().first)
         }
     }
 
@@ -260,8 +177,6 @@ class MLSClientCredentialTest {
             }
         }
     }
-
-    private class ExpectedTransactionFailure : Exception()
 
     private companion object {
         const val NO_ACTIVE_CREDENTIAL_MESSAGE =

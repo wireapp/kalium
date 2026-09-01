@@ -1013,7 +1013,6 @@ class MLSConversationRepositoryTest {
         )
 
         verifySuspend(VerifyMode.order) {
-            arrangement.mlsContext.selectCredential(eq(arrangement.newCredentialRef))
             arrangement.mlsContext.conversationExists(any())
             arrangement.mlsContext.getConversationCredentialRef(any())
             arrangement.mlsContext.setConversationCredential(any(), eq(arrangement.newCredentialRef))
@@ -1045,7 +1044,7 @@ class MLSConversationRepositoryTest {
             .withGetDefaultCipherSuiteSuccessful()
             .withKeyPackageLimits(10)
             .withGenerateKeyPackageSuccessful(keyPackages)
-            .withRemovePreviousCredentialSuccessful()
+            .withRemoveKeyPackagesSuccessful()
             .arrange()
 
         val result = mlsConversationRepository.prepareX509KeyPackages(
@@ -1056,7 +1055,6 @@ class MLSConversationRepositoryTest {
         assertEquals(keyPackages, result.keyPackages)
         assertEquals(Arrangement.CIPHER_SUITE, result.cipherSuite)
         verifySuspend(VerifyMode.order) {
-            arrangement.mlsContext.selectCredential(eq(arrangement.newCredentialRef))
             arrangement.mlsContext.removeKeyPackages(eq(arrangement.newCredentialRef))
             arrangement.mlsContext.generateKeyPackages(eq(10), eq(arrangement.newCredentialRef))
         }
@@ -1075,25 +1073,6 @@ class MLSConversationRepositoryTest {
         )
 
         assertEquals(E2EIFailure.RotationAndMigration(TEST_FAILURE.value).left(), result)
-    }
-
-    @Test
-    fun givenBackendReplacementSucceeded_whenCleaningUp_thenSelectsNewBeforeRemovingPrevious() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withRemovePreviousCredentialSuccessful()
-            .arrange()
-
-        mlsConversationRepository.removePreviousX509Credential(
-            arrangement.mlsContext,
-            arrangement.newCredentialRef,
-            arrangement.previousCredentialRef
-        )
-
-        verifySuspend(VerifyMode.order) {
-            arrangement.mlsContext.selectCredential(eq(arrangement.newCredentialRef))
-            arrangement.mlsContext.removeKeyPackages(eq(arrangement.previousCredentialRef))
-            arrangement.mlsContext.removeCredential(eq(arrangement.previousCredentialRef))
-        }
     }
 
     @Test
@@ -1511,9 +1490,8 @@ class MLSConversationRepositoryTest {
             everySuspend { mlsContext.setConversationCredential(any(), any()) } throws exception
         }
 
-        fun withRemovePreviousCredentialSuccessful() = apply {
+        fun withRemoveKeyPackagesSuccessful() = apply {
             everySuspend { mlsContext.removeKeyPackages(any()) } returns Unit
-            everySuspend { mlsContext.removeCredential(any()) } returns Unit
         }
 
         fun withGetDeviceIdentitiesReturn(identities: List<WireIdentity>) = apply {

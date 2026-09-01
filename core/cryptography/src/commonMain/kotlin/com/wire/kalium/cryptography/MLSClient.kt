@@ -176,6 +176,9 @@ interface MLSClient {
     /** Return owned references to all installed credentials of the requested type, newest first. */
     suspend fun getCredentialRefs(credentialType: CredentialType): List<CryptoCredentialRef>
 
+    /** Select an installed credential for operations that do not receive an explicit credential. */
+    suspend fun selectCredential(credentialRef: CryptoCredentialRef)
+
     /**
      * Conversation E2EI verification status.
      *

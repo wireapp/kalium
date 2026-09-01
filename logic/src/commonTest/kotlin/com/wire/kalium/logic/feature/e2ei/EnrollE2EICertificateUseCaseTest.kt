@@ -176,7 +176,6 @@ internal class EnrollE2EICertificateUseCaseTest {
         val CHECKPOINT = E2EIRotationCheckpoint(
             certificateChain = CERTIFICATE_CHAIN,
             preExistingCredentialIds = listOf("previous"),
-            previousCredentialId = "previous",
             newCredentialId = "new",
             groupIds = emptyList(),
             isNewClient = false,
