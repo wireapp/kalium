@@ -41,8 +41,8 @@ import com.wire.kalium.cryptography.PkiHttpMethod
 import com.wire.kalium.cryptography.PkiHttpResponse
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.PreparedX509KeyPackages
@@ -136,7 +136,7 @@ internal class E2EIRepositoryImpl(
     private val e2EIApi: E2EIApi,
     private val acmeApi: ACMEApi,
     private val pkiHttpClient: HttpClient,
-    private val e2EIClientProvider: E2EIClientProvider,
+    private val x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsConversationRepository: MLSConversationRepository,
@@ -151,7 +151,7 @@ internal class E2EIRepositoryImpl(
         e2EIApi = e2EIApi,
         acmeApi = acmeApi,
         pkiHttpClient = pkiHttpClient,
-        e2EIClientProvider = e2EIClientProvider,
+        x509CredentialAcquisitionConfigProvider = x509CredentialAcquisitionConfigProvider,
         mlsClientProvider = mlsClientProvider,
         currentClientIdProvider = currentClientIdProvider,
         mlsConversationRepository = mlsConversationRepository,
@@ -255,7 +255,7 @@ private data class E2EIRepositoryDependencies(
     val e2EIApi: E2EIApi,
     val acmeApi: ACMEApi,
     val pkiHttpClient: HttpClient,
-    val e2EIClientProvider: E2EIClientProvider,
+    val x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider,
     val mlsClientProvider: MLSClientProvider,
     val currentClientIdProvider: CurrentClientIdProvider,
     val mlsConversationRepository: MLSConversationRepository,
@@ -408,19 +408,21 @@ private class E2EICredentialAcquisitionWorkflow(
         groupIdListProvider: suspend () -> List<GroupID>
     ): Either<E2EIFailure, E2EIRotationCheckpoint> = fetchTrustAnchors(context.coreCrypto, context.discoveryUrl).flatMap {
         fetchFederationCertificates(context.coreCrypto, context.discoveryUrl).flatMap {
-            dependencies.e2EIClientProvider.getX509CredentialAcquisitionConfig(context.discoveryUrl, context.clientId)
-                .flatMap { config ->
-                    existingCredentialRef(context.mlsClient, context.isNewClient).flatMap { existingCredentialRef ->
-                        val credential = context.coreCrypto.startX509CredentialAcquisition(config, existingCredentialRef)
-                        installCredential(
-                            coreCrypto = context.coreCrypto,
-                            mlsClient = context.mlsClient,
-                            credential = credential,
-                            groupIdListProvider = groupIdListProvider,
-                            isNewClient = context.isNewClient
-                        )
-                    }
+            dependencies.x509CredentialAcquisitionConfigProvider.getX509CredentialAcquisitionConfig(
+                context.discoveryUrl,
+                context.clientId
+            ).flatMap { config ->
+                existingCredentialRef(context.mlsClient, context.isNewClient).flatMap { existingCredentialRef ->
+                    val credential = context.coreCrypto.startX509CredentialAcquisition(config, existingCredentialRef)
+                    installCredential(
+                        coreCrypto = context.coreCrypto,
+                        mlsClient = context.mlsClient,
+                        credential = credential,
+                        groupIdListProvider = groupIdListProvider,
+                        isNewClient = context.isNewClient
+                    )
                 }
+            }
         }
     }
 

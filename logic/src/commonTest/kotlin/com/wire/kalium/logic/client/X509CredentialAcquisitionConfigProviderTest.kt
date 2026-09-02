@@ -22,16 +22,16 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.MLSCiphersuite
-import com.wire.kalium.logic.data.client.E2EIClientProvider
-import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
+import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
+import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProviderImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.X509CredentialAcquisitionConfigProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.X509CredentialAcquisitionConfigProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.verify.VerifyMode
@@ -42,7 +42,7 @@ import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
-class E2EIClientProviderTest {
+class X509CredentialAcquisitionConfigProviderTest {
 
     @Test
     fun givenUserAndMlsConfig_whenCreatingAcquisitionConfig_thenMapsAllCoreCryptoInputs() = runTest {
@@ -112,15 +112,16 @@ class E2EIClientProviderTest {
         provider.getX509CredentialAcquisitionConfig(DISCOVERY_URL).shouldFail()
     }
 
-    private class Arrangement : E2EIClientProviderArrangement by E2EIClientProviderArrangementImpl() {
+    private class Arrangement : X509CredentialAcquisitionConfigProviderArrangement
+        by X509CredentialAcquisitionConfigProviderArrangementImpl() {
         suspend fun arrange(
             configure: suspend Arrangement.() -> Unit = {}
-        ): Pair<Arrangement, E2EIClientProvider> {
+        ): Pair<Arrangement, X509CredentialAcquisitionConfigProvider> {
             withCurrentClientId(TestClient.CLIENT_ID.right())
             withSelfUser(TestUser.SELF.right())
             withGetOrFetchMLSConfig(SUPPORTED_CIPHER_SUITES)
             configure()
-            return this to EI2EIClientProviderImpl(
+            return this to X509CredentialAcquisitionConfigProviderImpl(
                 currentClientIdProvider = currentClientIdProvider,
                 mlsClientProvider = mlsClientProvider,
                 userRepository = userRepository

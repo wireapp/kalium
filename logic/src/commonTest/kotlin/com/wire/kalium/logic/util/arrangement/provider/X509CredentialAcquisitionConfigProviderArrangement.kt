@@ -31,7 +31,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
 
-internal interface E2EIClientProviderArrangement {
+internal interface X509CredentialAcquisitionConfigProviderArrangement {
     val mlsClientProvider: MLSClientProvider
     val userRepository: UserRepository
     val currentClientIdProvider: CurrentClientIdProvider
@@ -41,7 +41,8 @@ internal interface E2EIClientProviderArrangement {
     suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite)
 }
 
-internal open class E2EIClientProviderArrangementMokkeryImpl : E2EIClientProviderArrangement {
+internal open class X509CredentialAcquisitionConfigProviderArrangementMokkeryImpl :
+    X509CredentialAcquisitionConfigProviderArrangement {
     override val mlsClientProvider: MLSClientProvider = mock()
     override val userRepository: UserRepository = mock()
     override val currentClientIdProvider: CurrentClientIdProvider = mock()
@@ -59,4 +60,5 @@ internal open class E2EIClientProviderArrangementMokkeryImpl : E2EIClientProvide
     }
 }
 
-internal class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangementMokkeryImpl()
+internal class X509CredentialAcquisitionConfigProviderArrangementImpl :
+    X509CredentialAcquisitionConfigProviderArrangementMokkeryImpl()

@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.logic.data.client.E2EIClientProvider
+import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
 import com.wire.kalium.util.DebugKaliumApi
 import kotlin.time.Duration.Companion.days
 
@@ -43,19 +43,19 @@ public interface SetDebugE2EICertificateExpirationUseCase {
 }
 
 internal class GetDebugE2EICertificateExpirationUseCaseImpl(
-    private val e2EIClientProvider: E2EIClientProvider
+    private val x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider
 ) : GetDebugE2EICertificateExpirationUseCase {
     override suspend fun invoke(): Long =
-        e2EIClientProvider.getDebugCertificateExpirationOverride()
+        x509CredentialAcquisitionConfigProvider.getDebugCertificateExpirationOverride()
             ?.coerceAtLeast(MIN_DEBUG_E2EI_CERTIFICATE_EXPIRATION_SECONDS)
             ?: DEFAULT_E2EI_CERTIFICATE_EXPIRATION_SECONDS
 }
 
 internal class SetDebugE2EICertificateExpirationUseCaseImpl(
-    private val e2EIClientProvider: E2EIClientProvider
+    private val x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider
 ) : SetDebugE2EICertificateExpirationUseCase {
     override suspend fun invoke(seconds: Long) {
-        e2EIClientProvider.setDebugCertificateExpirationOverride(
+        x509CredentialAcquisitionConfigProvider.setDebugCertificateExpirationOverride(
             seconds.coerceAtLeast(MIN_DEBUG_E2EI_CERTIFICATE_EXPIRATION_SECONDS)
         )
     }

@@ -234,7 +234,7 @@ interface MlsCoreCryptoContext {
     /**
      * Get the identity of given clients in the given conversation
      *
-     * @param clients a list of E2EIClientId of the requested clients
+     * @param clients a list of [CryptoQualifiedClientId] values for the requested clients
      * @param groupId MLS group ID for an existing conversation
      *
      * @return the exist identities for requested clients

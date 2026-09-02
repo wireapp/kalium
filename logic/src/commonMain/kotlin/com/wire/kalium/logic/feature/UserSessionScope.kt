@@ -66,8 +66,6 @@ import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
-import com.wire.kalium.logic.data.client.E2EIClientProvider
-import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -77,6 +75,8 @@ import com.wire.kalium.logic.data.client.MLSTransportProviderImpl
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProviderImpl
 import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
+import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
+import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
@@ -927,7 +927,7 @@ public class UserSessionScope internal constructor(
             authenticatedNetworkContainer.e2eiApi,
             globalScope.unboundNetworkContainer.acmeApi,
             globalScope.unboundNetworkContainer.cellsClient,
-            e2EIClientProvider,
+            x509CredentialAcquisitionConfigProvider,
             mlsClientProvider,
             clientIdProvider,
             mlsConversationRepository,
@@ -936,8 +936,8 @@ public class UserSessionScope internal constructor(
             currentCryptoStateChangeHookNotifier
         )
 
-    private val e2EIClientProvider: E2EIClientProvider by lazy {
-        EI2EIClientProviderImpl(
+    private val x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider by lazy {
+        X509CredentialAcquisitionConfigProviderImpl(
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
             userRepository = userRepository
@@ -2534,7 +2534,7 @@ public class UserSessionScope internal constructor(
             this,
             userStorage,
             mlsMissingUsersRejectionHandlerProvider,
-            e2EIClientProvider,
+            x509CredentialAcquisitionConfigProvider,
             fetchConversationUseCase,
             resetMlsConversation,
             cryptoTransactionProvider,

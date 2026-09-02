@@ -36,8 +36,8 @@ import com.wire.kalium.cryptography.X509CredentialAcquisitionConfig
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.PreparedX509KeyPackages
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -645,7 +645,7 @@ class E2EIRepositoryTest {
     private class Arrangement {
         val e2eiApi = mock<E2EIApi>()
         val acmeApi = mock<ACMEApi>()
-        val e2eiClientProvider = mock<E2EIClientProvider>()
+        val x509CredentialAcquisitionConfigProvider = mock<X509CredentialAcquisitionConfigProvider>()
         val mlsClientProvider = mock<MLSClientProvider>()
         val currentClientIdProvider = mock<CurrentClientIdProvider>()
         val mlsConversationRepository = mock<MLSConversationRepository>()
@@ -693,7 +693,9 @@ class E2EIRepositoryTest {
             everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns listOf(previousCredentialRef)
             every { previousCredentialRef.publicKeyHash() } returns PREVIOUS_CREDENTIAL_HASH
             every { newCredentialRef.publicKeyHash() } returns NEW_CREDENTIAL_HASH
-            everySuspend { e2eiClientProvider.getX509CredentialAcquisitionConfig(any(), any()) } returns ACQUISITION_CONFIG.right()
+            everySuspend {
+                x509CredentialAcquisitionConfigProvider.getX509CredentialAcquisitionConfig(any(), any())
+            } returns ACQUISITION_CONFIG.right()
             every { credential.exportPem() } returns CERTIFICATE_CHAIN
             everySuspend { coreCrypto.installCredential(any()) } calls {
                 checkpointEvents += "install"
@@ -729,7 +731,7 @@ class E2EIRepositoryTest {
                 e2EIApi = e2eiApi,
                 acmeApi = acmeApi,
                 pkiHttpClient = HttpClient(MockEngine { respondOk() }),
-                e2EIClientProvider = e2eiClientProvider,
+                x509CredentialAcquisitionConfigProvider = x509CredentialAcquisitionConfigProvider,
                 mlsClientProvider = mlsClientProvider,
                 currentClientIdProvider = currentClientIdProvider,
                 mlsConversationRepository = mlsConversationRepository,

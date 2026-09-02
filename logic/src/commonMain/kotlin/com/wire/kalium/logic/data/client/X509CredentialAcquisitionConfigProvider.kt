@@ -39,8 +39,8 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
-/** Builds the immutable input for Core Crypto v10's X.509 acquisition state machine. */
-internal interface E2EIClientProvider {
+/** Provides the immutable input for Core Crypto's X.509 credential acquisition. */
+internal interface X509CredentialAcquisitionConfigProvider {
     suspend fun getX509CredentialAcquisitionConfig(
         acmeDirectoryUrl: String,
         clientId: ClientId? = null
@@ -50,11 +50,11 @@ internal interface E2EIClientProvider {
     suspend fun getDebugCertificateExpirationOverride(): Long?
 }
 
-internal class EI2EIClientProviderImpl(
+internal class X509CredentialAcquisitionConfigProviderImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val userRepository: UserRepository,
-) : E2EIClientProvider {
+) : X509CredentialAcquisitionConfigProvider {
 
     private val defaultE2EIExpiry = 90.days
     private var debugE2EIExpiryOverride: Duration? = null
