@@ -102,6 +102,7 @@ kotlin {
             dependencies {
                 implementation(libs.sqldelight.jsDriver)
                 implementation(npm("@cashapp/sqldelight-sqljs-worker", libs.versions.sqldelightSqljsWorker.get()))
+                implementation(npm("@js-joda/timezone", libs.versions.jsJodaTimezone.get()))
                 implementation(npm("sql.js", libs.versions.sqlJs.get()))
                 implementation(devNpm("webpack", libs.versions.webpack.get()))
                 implementation(devNpm("copy-webpack-plugin", libs.versions.copyWebpackPlugin.get()))
