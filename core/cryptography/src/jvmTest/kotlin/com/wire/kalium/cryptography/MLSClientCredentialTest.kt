@@ -44,12 +44,12 @@ class MLSClientCredentialTest {
             val publicKeyFailure = assertFailsWith<IllegalStateException> {
                 testClient.client.getPublicKey()
             }
-            assertEquals(NO_ACTIVE_CREDENTIAL_MESSAGE, publicKeyFailure.message)
+            assertEquals(NO_DEFAULT_CREDENTIAL_MESSAGE, publicKeyFailure.message)
 
             val keyPackageFailure = assertFailsWith<IllegalStateException> {
                 testClient.client.transaction { it.generateKeyPackages(1) }
             }
-            assertEquals(NO_ACTIVE_CREDENTIAL_MESSAGE, keyPackageFailure.message)
+            assertEquals(NO_DEFAULT_CREDENTIAL_MESSAGE, keyPackageFailure.message)
         }
     }
 
@@ -65,16 +65,31 @@ class MLSClientCredentialTest {
     }
 
     @Test
-    fun givenInstalledCredential_whenSelected_thenDefaultOperationsUseIt() = runTest {
+    fun givenNewerBasicCredential_whenInstalled_thenDefaultOperationsUseIt() = runTest {
         withCredentialTestClient(this) { testClient ->
             val initialPublicKey = testClient.client.getPublicKey().first
             val newCredentialRef = testClient.addBasicCredential()
 
-            testClient.client.selectCredential(newCredentialRef)
             newCredentialRef.close()
 
             assertFalse(initialPublicKey.contentEquals(testClient.client.getPublicKey().first))
             assertTrue(testClient.client.transaction { it.generateKeyPackages(1) }.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun givenNewerBasicCredential_whenRemoved_thenDefaultOperationsUsePreviousCredential() = runTest {
+        withCredentialTestClient(this) { testClient ->
+            val initialPublicKey = testClient.client.getPublicKey().first
+            val newCredentialRef = testClient.addBasicCredential()
+
+            try {
+                assertFalse(initialPublicKey.contentEquals(testClient.client.getPublicKey().first))
+                testClient.client.transaction { it.removeCredential(newCredentialRef) }
+                assertContentEquals(initialPublicKey, testClient.client.getPublicKey().first)
+            } finally {
+                newCredentialRef.close()
+            }
         }
     }
 
@@ -179,8 +194,8 @@ class MLSClientCredentialTest {
     }
 
     private companion object {
-        const val NO_ACTIVE_CREDENTIAL_MESSAGE =
-            "MLS client has no active credential. Initialize Basic or select an installed credential first."
+        const val NO_DEFAULT_CREDENTIAL_MESSAGE =
+            "MLS client has no default credential. Initialize Basic or install an X.509 credential first."
         val PASSPHRASE = ByteArray(32)
         val CIPHER_SUITE = MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         val CLIENT_ID = CryptoQualifiedClientId(

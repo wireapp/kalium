@@ -46,36 +46,33 @@ class MLSClientImpl private constructor(
     private val coreCrypto: CoreCrypto,
     private val clientId: ClientId,
     private val defaultCipherSuite: CipherSuite,
-    private var activeCredentialRef: CredentialRef?,
     private val onClose: suspend () -> Unit
 ) : MLSClient {
 
     private var isClosed = false
-    private val transactionMutex = Mutex()
+    private val credentialInitializationMutex = Mutex()
 
     override suspend fun close() {
         if (isClosed) return
         isClosed = true
-        try {
-            activeCredentialRef?.close()
-            activeCredentialRef = null
-        } finally {
-            onClose()
-        }
+        onClose()
     }
 
-    override suspend fun initializeBasicCredential() = transactionMutex.withLock {
-        if (activeCredentialRef != null) return@withLock
-
-        val existingCredential = coreCrypto.findCredentials(
+    override suspend fun initializeBasicCredential() = credentialInitializationMutex.withLock {
+        val existingCredentials = coreCrypto.findCredentials(
             clientId = clientId,
-            cipherSuite = defaultCipherSuite,
-            credentialType = CoreCredentialType.BASIC
-        ).takeNewest()
-        activeCredentialRef = existingCredential ?: coreCrypto.transaction("initializeBasicCredential") { context ->
+            cipherSuite = defaultCipherSuite
+        )
+        try {
+            if (existingCredentials.isNotEmpty()) return@withLock
+        } finally {
+            existingCredentials.forEach { it.close() }
+        }
+
+        coreCrypto.transaction("initializeBasicCredential") { context ->
             val credential = Credential.basic(defaultCipherSuite, clientId)
             try {
-                context.addCredential(credential)
+                context.addCredential(credential).close()
             } finally {
                 credential.close()
             }
@@ -85,7 +82,7 @@ class MLSClientImpl private constructor(
     override fun getDefaultCipherSuite(): MLSCiphersuite = defaultCipherSuite.toCryptography()
 
     override suspend fun getPublicKey(): Pair<ByteArray, MLSCiphersuite> =
-        coreCrypto.publicKey(requireActiveCredential()) to defaultCipherSuite.toCryptography()
+        withDefaultCredential { coreCrypto.publicKey(it) } to defaultCipherSuite.toCryptography()
 
     override suspend fun getCredentialRef(credentialType: CredentialType): CryptoCredentialRef? =
         coreCrypto.findCredentials(
@@ -108,16 +105,6 @@ class MLSClientImpl private constructor(
         }
     }
 
-    override suspend fun selectCredential(credentialRef: CryptoCredentialRef) = transactionMutex.withLock {
-        val selectedCredential = credentialRef.unwrap()
-        if (activeCredentialRef?.let(selectedCredential::matches) == true) return@withLock
-
-        credentialRef.transferNativeOwnership()
-        val previousCredential = activeCredentialRef
-        activeCredentialRef = selectedCredential
-        previousCredential?.close()
-    }
-
     override suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState = groupId.toCrypto().useNative {
         coreCrypto.e2eiConversationState(it).toCryptography()
     }
@@ -134,19 +121,24 @@ class MLSClientImpl private constructor(
     override suspend fun <R> transaction(
         name: String,
         block: suspend (context: MlsCoreCryptoContext) -> R
-    ): R = transactionMutex.withLock {
+    ): R =
         coreCrypto.transaction(name) { context ->
             block(mlsCoreCryptoContext(context))
         }
-    }
 
-    private fun requireActiveCredential(): CredentialRef = checkNotNull(activeCredentialRef) {
-        NO_ACTIVE_CREDENTIAL_MESSAGE
+    private suspend fun <R> withDefaultCredential(block: suspend (CredentialRef) -> R): R {
+        val credential = coreCrypto.findCredentials(
+            clientId = clientId,
+            cipherSuite = defaultCipherSuite
+        ).takeDefault() ?: error(NO_DEFAULT_CREDENTIAL_MESSAGE)
+        return try {
+            block(credential)
+        } finally {
+            credential.close()
+        }
     }
 
     private fun mlsCoreCryptoContext(context: CoreCryptoContext) = object : MlsCoreCryptoContext {
-        private fun requireSelectedCredential(): CredentialRef = requireActiveCredential()
-
         override fun getDefaultCipherSuite(): MLSCiphersuite = defaultCipherSuite.toCryptography()
 
         override suspend fun generateKeyPackages(
@@ -154,22 +146,21 @@ class MLSClientImpl private constructor(
             credentialRef: CryptoCredentialRef?
         ): List<ByteArray> {
             require(amount >= 0) { "Key package amount must not be negative" }
-            val effectiveCredential = credentialRef?.unwrap() ?: requireSelectedCredential()
-            return List(amount) {
-                context.generateKeyPackage(effectiveCredential).let { keyPackage ->
-                    try {
-                        keyPackage.serialize()
-                    } finally {
-                        keyPackage.close()
+            suspend fun generate(credential: CredentialRef): List<ByteArray> =
+                List(amount) {
+                    context.generateKeyPackage(credential).let { keyPackage ->
+                        try {
+                            keyPackage.serialize()
+                        } finally {
+                            keyPackage.close()
+                        }
                     }
                 }
-            }
+            return credentialRef?.let { generate(it.unwrap()) } ?: withDefaultCredential(::generate)
         }
 
-        override suspend fun validKeyPackageCount(): ULong {
-            return context.getKeyPackages()
-                .countMatching(requireSelectedCredential())
-                .toULong()
+        override suspend fun validKeyPackageCount(): ULong = withDefaultCredential { credential ->
+            context.getKeyPackages().countMatching(credential).toULong()
         }
 
         override suspend fun updateKeyingMaterial(groupId: MLSGroupId) {
@@ -179,7 +170,9 @@ class MLSClientImpl private constructor(
         override suspend fun joinByExternalCommit(publicGroupState: ByteArray): MLSGroupId {
             val groupInfo = publicGroupState.toGroupInfo()
             return try {
-                context.joinByExternalCommit(groupInfo, requireSelectedCredential()).useNative { it.toCryptography() }
+                withDefaultCredential { credential ->
+                    context.joinByExternalCommit(groupInfo, credential).useNative { it.toCryptography() }
+                }
             } finally {
                 groupInfo.close()
             }
@@ -195,18 +188,19 @@ class MLSClientImpl private constructor(
 
         override suspend fun createConversation(groupId: MLSGroupId, externalSenders: ByteArray) {
             kaliumLogger.d("createConversation: using defaultCipherSuite=$defaultCipherSuite")
-            val credentialRef = requireSelectedCredential()
-            val externalSender = ExternalSender.parse(externalSenders, credentialRef.signatureScheme())
-            try {
-                groupId.toCrypto().useNative {
-                    context.createConversation(
-                        conversationId = it,
-                        credentialRef = credentialRef,
-                        externalSender = externalSender
-                    )
+            withDefaultCredential { credential ->
+                val externalSender = ExternalSender.parse(externalSenders, credential.signatureScheme())
+                try {
+                    groupId.toCrypto().useNative {
+                        context.createConversation(
+                            conversationId = it,
+                            credentialRef = credential,
+                            externalSender = externalSender
+                        )
+                    }
+                } finally {
+                    externalSender.close()
                 }
-            } finally {
-                externalSender.close()
             }
         }
 
@@ -321,11 +315,7 @@ class MLSClientImpl private constructor(
         }
 
         override suspend fun removeCredential(credentialRef: CryptoCredentialRef) {
-            val credential = credentialRef.unwrap()
-            require(activeCredentialRef?.let(credential::matches) != true) {
-                "Select a replacement credential before removing the active credential"
-            }
-            context.removeCredential(credential)
+            context.removeCredential(credentialRef.unwrap())
         }
 
         override suspend fun checkCredentials() {
@@ -369,40 +359,15 @@ class MLSClientImpl private constructor(
     }
 
     companion object {
-        /**
-         * Creates the Kalium facade and restores the credential used for new MLS operations.
-         *
-         * Existing X509 credentials are preferred so an upgraded E2EI client does not silently
-         * fall back to Basic. A new client remains without an active credential until registration
-         * initializes Basic or E2EI enrollment installs and selects X509.
-         */
         suspend fun create(
             coreCrypto: CoreCrypto,
             clientId: ClientId,
             defaultCipherSuite: CipherSuite,
             onClose: suspend () -> Unit = {}
-        ): MLSClientImpl {
-            val x509Credential = coreCrypto.findCredentials(
-                clientId = clientId,
-                cipherSuite = defaultCipherSuite,
-                credentialType = CoreCredentialType.X509
-            ).takeNewest()
-            val basicCredential = if (x509Credential == null) {
-                coreCrypto.findCredentials(
-                    clientId = clientId,
-                    cipherSuite = defaultCipherSuite,
-                    credentialType = CoreCredentialType.BASIC
-                ).takeNewest()
-            } else {
-                null
-            }
-            val activeCredential = x509Credential ?: basicCredential
+        ): MLSClientImpl = MLSClientImpl(coreCrypto, clientId, defaultCipherSuite, onClose)
 
-            return MLSClientImpl(coreCrypto, clientId, defaultCipherSuite, activeCredential, onClose)
-        }
-
-        private const val NO_ACTIVE_CREDENTIAL_MESSAGE =
-            "MLS client has no active credential. Initialize Basic or select an installed credential first."
+        private const val NO_DEFAULT_CREDENTIAL_MESSAGE =
+            "MLS client has no default credential. Initialize Basic or install an X.509 credential first."
     }
 }
 
@@ -459,6 +424,24 @@ private fun List<CredentialRef>.takeNewest(): CredentialRef? {
     return newest
 }
 
+private fun List<CredentialRef>.takeDefault(): CredentialRef? {
+    // Core Crypto enables E2EI for a cipher suite as soon as it has an X.509 credential.
+    val defaultType = try {
+        if (any { it.type() == CoreCredentialType.X509 }) CoreCredentialType.X509 else CoreCredentialType.BASIC
+    } catch (throwable: Throwable) {
+        forEach { it.close() }
+        throw throwable
+    }
+    val defaultCredential = try {
+        filter { it.type() == defaultType }.maxByOrNull { it.earliestValidity() }
+    } catch (throwable: Throwable) {
+        forEach { it.close() }
+        throw throwable
+    }
+    forEach { if (it !== defaultCredential) it.close() }
+    return defaultCredential
+}
+
 private fun List<KeyPackageRef>.countMatching(credentialRef: CredentialRef): Int = try {
     count { keyPackageRef ->
         keyPackageRef.isValid() &&
@@ -469,8 +452,3 @@ private fun List<KeyPackageRef>.countMatching(credentialRef: CredentialRef): Int
 } finally {
     forEach { it.close() }
 }
-
-private fun CredentialRef.matches(other: CredentialRef): Boolean =
-    cipherSuite() == other.cipherSuite() &&
-            type() == other.type() &&
-            publicKeyHash().contentEquals(other.publicKeyHash())

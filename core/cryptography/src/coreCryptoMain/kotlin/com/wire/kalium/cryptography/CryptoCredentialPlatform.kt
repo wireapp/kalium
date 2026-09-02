@@ -40,16 +40,14 @@ internal class CryptoCredentialRefImpl(
 ) : CryptoCredentialRef {
     internal var native: CredentialRef? = credentialRef
         private set
-    internal var ownsNative = true
 
     override fun credentialType(): CredentialType = unwrap().type().toCryptography()
 
     override fun publicKeyHash(): ByteArray = unwrap().publicKeyHash()
 
     override fun close() {
-        if (ownsNative) native?.close()
+        native?.close()
         native = null
-        ownsNative = false
     }
 }
 
@@ -62,9 +60,3 @@ internal fun CryptoCredentialRef.unwrap(): CredentialRef =
     checkNotNull((this as? CryptoCredentialRefImpl)?.native) {
         "Unsupported or closed CryptoCredentialRef"
     }
-
-internal fun CryptoCredentialRef.transferNativeOwnership() {
-    requireNotNull(this as? CryptoCredentialRefImpl) {
-        "Unsupported CryptoCredentialRef implementation"
-    }.ownsNative = false
-}

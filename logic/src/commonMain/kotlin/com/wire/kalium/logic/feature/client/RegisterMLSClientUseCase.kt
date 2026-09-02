@@ -74,7 +74,6 @@ internal class RegisterMLSClientUseCaseImpl(
                     wrapMLSRequest {
                         mlsClient.getCredentialRef(CredentialType.X509)?.let { credentialRef ->
                             try {
-                                mlsClient.selectCredential(credentialRef)
                                 true
                             } finally {
                                 credentialRef.close()

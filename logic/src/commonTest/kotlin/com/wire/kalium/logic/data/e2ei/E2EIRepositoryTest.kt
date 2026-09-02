@@ -76,7 +76,7 @@ import kotlin.time.Duration.Companion.days
 class E2EIRepositoryTest {
 
     @Test
-    fun givenANewClient_whenEnrolling_thenInstallsAndSelectsX509WithoutInitializingBasic() = runTest {
+    fun givenANewClient_whenEnrolling_thenInstallsX509WithoutInitializingBasic() = runTest {
         var credentialInstalled = false
         val (arrangement, repository) = Arrangement().arrange {
             everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } calls {
@@ -106,9 +106,6 @@ class E2EIRepositoryTest {
             arrangement.coreCrypto.addPkiTrustAnchors(eq(TRUST_ANCHOR))
             arrangement.coreCrypto.startX509CredentialAcquisition(eq(ACQUISITION_CONFIG), eq(null))
             arrangement.coreCrypto.installCredential(eq(arrangement.credential))
-        }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsClient.selectCredential(arrangement.newCredentialRef)
         }
         verifySuspend(VerifyMode.not) {
             arrangement.mlsClient.initializeBasicCredential()
@@ -460,9 +457,6 @@ class E2EIRepositoryTest {
                 credentialInstalled = true
                 newCredentialRef
             }
-            everySuspend { mlsClient.selectCredential(eq(newCredentialRef)) } calls {
-                operations += "select-credential"
-            }
             everySuspend {
                 mlsConversationRepository.migrateConversationCredential(any(), any(), eq(groupOne))
             } calls {
@@ -510,7 +504,6 @@ class E2EIRepositoryTest {
         assertEquals(
             listOf(
                 "install-credential",
-                "select-credential",
                 "migrate-group-1",
                 "migrate-group-2",
                 "prepare-local-key-packages",
@@ -534,9 +527,6 @@ class E2EIRepositoryTest {
         val (arrangement, repository) = Arrangement().arrange {
             everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns
                     listOf(newCredentialRef, previousCredentialRef)
-            everySuspend { mlsClient.selectCredential(eq(newCredentialRef)) } calls {
-                operations += "select-credential"
-            }
             everySuspend {
                 mlsConversationRepository.migrateConversationCredential(any(), any(), any())
             } calls {
@@ -572,7 +562,6 @@ class E2EIRepositoryTest {
         kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(failedRotation)
         assertEquals(
             listOf(
-                "select-credential",
                 "migrate-conversation",
                 "prepare-local-key-packages",
                 "replace-backend-key-packages"
@@ -591,7 +580,6 @@ class E2EIRepositoryTest {
 
         assertEquals(
             listOf(
-                "select-credential",
                 "replace-backend-key-packages",
                 "remove-previous-credential",
                 "delete-checkpoint"
@@ -701,7 +689,6 @@ class E2EIRepositoryTest {
             everySuspend { currentClientIdProvider() } returns TestClient.CLIENT_ID.right()
             everySuspend { mlsClientProvider.getCoreCrypto(any()) } returns coreCrypto.right()
             everySuspend { mlsClientProvider.getMLSClient(any()) } returns mlsClient.right()
-            everySuspend { mlsClient.selectCredential(any()) } returns Unit
             everySuspend { mlsClient.getCredentialRef(CredentialType.X509) } returns previousCredentialRef
             everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns listOf(previousCredentialRef)
             every { previousCredentialRef.publicKeyHash() } returns PREVIOUS_CREDENTIAL_HASH

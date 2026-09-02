@@ -571,11 +571,7 @@ private class E2EICredentialRotationWorkflow(
                 .flatMap { mlsClient ->
                     resolveCredentialRefs(mlsClient, checkpoint).flatMap { credentialRefs ->
                         try {
-                            wrapMLSRequest { mlsClient.selectCredential(credentialRefs.new) }
-                                .mapLeft(E2EIFailure::RotationAndMigration)
-                                .flatMap {
-                                    runRotationPhases(transactionProvider, clientId, checkpoint, credentialRefs)
-                                }
+                            runRotationPhases(transactionProvider, clientId, checkpoint, credentialRefs)
                         } finally {
                             credentialRefs.all.forEach(CryptoCredentialRef::close)
                         }

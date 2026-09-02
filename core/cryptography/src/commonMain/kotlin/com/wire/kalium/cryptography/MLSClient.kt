@@ -156,9 +156,9 @@ interface MLSClient {
     suspend fun close()
 
     /**
-     * Adds and selects a Basic credential when this client has no active credential.
+     * Adds a Basic credential when this client has no credential for its default cipher suite.
      *
-     * Calling this more than once does not add another credential or replace an active credential.
+     * Calling this more than once does not add another credential or replace an installed credential.
      */
     suspend fun initializeBasicCredential()
 
@@ -175,9 +175,6 @@ interface MLSClient {
 
     /** Return owned references to all installed credentials of the requested type, newest first. */
     suspend fun getCredentialRefs(credentialType: CredentialType): List<CryptoCredentialRef>
-
-    /** Select an installed credential for operations that do not receive an explicit credential. */
-    suspend fun selectCredential(credentialRef: CryptoCredentialRef)
 
     /**
      * Conversation E2EI verification status.

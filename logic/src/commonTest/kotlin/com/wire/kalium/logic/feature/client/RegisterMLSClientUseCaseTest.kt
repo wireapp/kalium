@@ -56,7 +56,7 @@ import kotlin.test.assertIs
 
 class RegisterMLSClientUseCaseTest {
     @Test
-    fun givenBasicClientWithX509InstalledAndE2EIRequired_whenInvoked_thenSelectX509AndRegisterMLSClient() =
+    fun givenBasicClientWithX509InstalledAndE2EIRequired_whenInvoked_thenRegisterMLSClientWithX509() =
         runTest {
             val e2eiIsRequired = true
             val (arrangement, registerMLSClient) = Arrangement()
@@ -87,9 +87,6 @@ class RegisterMLSClientUseCaseTest {
 
             verifySuspend {
                 arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
-            }
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.mlsClient.selectCredential(arrangement.x509CredentialRef)
             }
             verifySuspend(VerifyMode.not) {
                 arrangement.mlsClient.initializeBasicCredential()

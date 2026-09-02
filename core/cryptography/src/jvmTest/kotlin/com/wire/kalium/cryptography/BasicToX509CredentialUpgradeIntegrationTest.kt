@@ -111,6 +111,28 @@ class BasicToX509CredentialUpgradeIntegrationTest {
         }
     }
 
+    @Test
+    fun givenX509CredentialWithoutBasic_whenInstalled_thenDefaultOperationsUseX509() = runTest {
+        withTestEnvironment(this) {
+            central.installCredential(
+                central.startX509CredentialAcquisition(ACQUISITION_CONFIG, existingCredentialRef = null)
+            ).use { installedCredential ->
+                assertEquals(CredentialType.X509, installedCredential.credentialType())
+            }
+
+            val publicKey = client.getPublicKey().first
+            certificateAuthority.assertIssuedCertificateUses(publicKey)
+            client.transaction("useDefaultX509Credential") {
+                it.createConversation(CONVERSATION_ID, certificateAuthority.externalSenderKey)
+                it.generateKeyPackages(1)
+            }
+
+            client.assertCredentialCounts(basic = 0, x509 = 1)
+            assertEquals(CredentialType.X509, client.conversationCredentialType())
+            assertEquals(1, central.countKeyPackages(CredentialType.X509))
+        }
+    }
+
     @Ignore("WPB-26599: Core Crypto 10.4.0 addCredential fails with SQLite error 2067")
     @Test
     fun givenBasicCredential_whenUpgradingToX509_thenCompletesMigrationAndSurvivesRestart() = runTest {
@@ -132,7 +154,6 @@ class BasicToX509CredentialUpgradeIntegrationTest {
                 assertEquals(CredentialType.X509, installedX509Credential.credentialType())
                 assertContentEquals(basicCredentialHash, installedX509Credential.publicKeyHash())
 
-                initialClient.selectCredential(installedX509Credential)
                 initialClient.transaction("migrateConversationAndReplaceKeyPackages") {
                     it.setConversationCredential(CONVERSATION_ID, installedX509Credential)
                     it.removeKeyPackages(installedX509Credential)
