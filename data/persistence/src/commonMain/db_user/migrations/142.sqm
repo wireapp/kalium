@@ -1,0 +1,1 @@
+DELETE FROM Metadata WHERE key = 'should_fetch_e2ei_trust_anchors';

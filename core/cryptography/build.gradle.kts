@@ -17,6 +17,7 @@
  */
 
 import com.wire.kalium.plugins.appleTargets
+import org.gradle.api.tasks.Sync
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -27,12 +28,29 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
+        enableJsTests.set(false)
         includeNativeInterop.set(true)
     }
 }
 
-val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
-    ?: error("USE_UNIFIED_CORE_CRYPTO not set")
+val coreCryptoJvmNativeArtifacts by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+}
+
+dependencies {
+    coreCryptoJvmNativeArtifacts(libs.coreCryptoJvm)
+}
+
+val coreCryptoJvmNativeResources = layout.buildDirectory.dir("generated/coreCryptoJvmNativeResources")
+val extractCoreCryptoJvmNativeResources by tasks.registering(Sync::class) {
+    from({ coreCryptoJvmNativeArtifacts.map(::zipTree) }) {
+        include("darwin-aarch64/**")
+        include("linux-x86-64/**")
+    }
+    into(coreCryptoJvmNativeResources)
+}
 
 kotlin {
     iosArm64 {
@@ -66,9 +84,6 @@ kotlin {
                 // Okio
                 implementation(libs.okio.core)
 
-                if (useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoKmp)
-                }
             }
         }
         val commonTest by getting {
@@ -81,34 +96,43 @@ kotlin {
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
+        val nonJsMain by creating {
+            dependsOn(commonMain)
+            kotlin.srcDir("src/coreCryptoMain/kotlin")
+        }
         val jvmMain by getting {
+            dependsOn(nonJsMain)
             addCommonKotlinJvmSourceDir()
             dependencies {
-                if (!useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoJvm)
-                }
+                implementation(libs.coreCryptoJvm)
             }
+            // Embed the native libraries carried by the JVM artifact as runtime resources.
+            resources.srcDir(coreCryptoJvmNativeResources)
         }
 
-        val jvmTest by getting
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.bouncycastle.pkix)
+                implementation(libs.ktxSerialization)
+            }
+        }
         val androidMain by getting {
+            dependsOn(nonJsMain)
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.androidCrypto)
-                if (!useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                        exclude("androidx.core")
-                        exclude("androidx.appcompat")
-                    }
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
                 }
             }
         }
         val appleMain by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.coreCryptoKmp)
             }
         }
-
         val jsMain by getting
         val jsTest by getting {
             dependencies {
@@ -116,6 +140,10 @@ kotlin {
             }
         }
     }
+}
+
+tasks.named("jvmProcessResources") {
+    dependsOn(extractCoreCryptoJvmNativeResources)
 }
 
 project.appleTargets().forEach {

@@ -37,7 +37,7 @@ jobs:
 
       - name: Download Kotlin/Native toolchain
         if: steps.konan-cache.outputs.cache-hit != 'true'
-        run: ./gradlew :logic:compileKotlinIosSimulatorArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+        run: ./gradlew :logic:compileKotlinIosSimulatorArm64
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

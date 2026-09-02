@@ -219,7 +219,6 @@
     <ID>EmptyDefaultConstructor:CreatePublicLinkPasswordUseCaseTest.kt$CreatePublicLinkPasswordUseCaseTest.Arrangement$()</ID>
     <ID>EmptyDefaultConstructor:DeletePublicLinkUseCaseTest.kt$DeletePublicLinkUseCaseTest.Arrangement$()</ID>
     <ID>EmptyDefaultConstructor:UpdatePublicLinkPasswordUseCaseTest.kt$UpdatePublicLinkPasswordUseCaseTest.Arrangement$()</ID>
-    <ID>EmptyFunctionBlock:E2EIClientTest.kt$E2EIClientTest.&lt;no name provided>${ }</ID>
     <ID>EmptyFunctionBlock:FileTestHelper.kt$FileTestHelper${ }</ID>
     <ID>EmptyFunctionBlock:NodeUploadManagerTest.kt$TestRepository${}</ID>
     <ID>EmptyKtFile:FetchApiVersionUseCaseTest.kt$.FetchApiVersionUseCaseTest.kt</ID>
@@ -346,7 +345,6 @@
     <ID>MaxLineLength:ConversationExtensionsTest.kt$ConversationExtensionsTest$private</ID>
     <ID>MaxLineLength:ConversationExtensionsTest.kt$ConversationExtensionsTest$queryConfig = ConversationExtensions.QueryConfig(searchQuery = searchQuery, fromArchive = fromArchive, conversationFilter = filter)</ID>
     <ID>MaxLineLength:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest.Arrangement$suspend</ID>
-    <ID>MaxLineLength:E2EIClientTest.kt$E2EIClientTest.Companion$"eyJhbGciOiJSUzI1NiIsImtpZCI6ImM5YWZkYTM2ODJlYmYwOWViMzA1NWMxYzRiZDM5Yjc1MWZiZjgxOTUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTU0OTM2MTQ1MjMzNjgyNjc2OTAiLCJoZCI6IndpcmUuY29tIiwiZW1haWwiOiJtb2p0YWJhLmNoZW5hbmlAd2lyZS5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiYXRfaGFzaCI6IkRtZDhJQXdnWmVKX1QtUjBpRlpseGciLCJub25jZSI6IjEta2FZb1hRODdadEVlRGpVYTVQSVEiLCJuYW1lIjoiTW9qdGFiYSBDaGVuYW5pIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FHTm15eGFhaWFKa1Y4VDNmMW91d0RWVjNQck52UFBaVUpIZGdnMlJ4N0s0PXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6Ik1vanRhYmEiLCJmYW1pbHlfbmFtZSI6IkNoZW5hbmkiLCJsb2NhbGUiOiJlbiIsImlhdCI6MTY4MzQ4MjIyOSwiZXhwIjoxNjgzNDg1ODI5fQ.r0hh1CtVUXncdWHoXsfAvhf0VuWGDooSRQnNqq0GrzAbYVENGwg0dm8P10Cq_UmCjjh56nC5laMQUcBu-sKW9mRbdKnHwdXXregTSgelQJFoIlusb_3VyHcWDY8Yf9xyuyZbu3wcduL8IndTvy8Sq7mIzGKhsHnLIy1UgHbCGMrzfY2LYCi9Df1ADqA8romigo8fdEAVUi9TAIC8SgHOcqLJt8mxlhKSPPwkJw5yZ3CRvF2NMNsVkYpE9hVYbHcZd6EAmJnljKPJ-NQLXUdjaU3ail80YQko4rcgF2QMZ3LBSMGJpI5LM2UhDxnktqBTpE2nLdwCFg64INS48DPDXQ"</ID>
     <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), (eq(threeSecondsEphemeralMessage.id)))</ID>
     <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(fourSecondsEphemeralMessage.id))</ID>
     <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(oneSecondEphemeralMessage.id))</ID>
@@ -392,7 +390,6 @@
     <ID>MaximumLineLength:ConnectionRepositoryTest.kt$ConnectionRepositoryTest$ </ID>
     <ID>MaximumLineLength:ConversationExtensionsTest.kt$ConversationExtensionsTest$ </ID>
     <ID>MaximumLineLength:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest.Arrangement$ </ID>
-    <ID>MaximumLineLength:E2EIClientTest.kt$E2EIClientTest.Companion$ </ID>
     <ID>MaximumLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$ </ID>
     <ID>MaximumLineLength:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$ </ID>
     <ID>MaximumLineLength:GroupConversationCreatorTest.kt$GroupConversationCreatorTest$ </ID>
@@ -419,12 +416,6 @@
     <ID>MayBeConst:ConversationDAOTest.kt$ConversationDAOTest.Companion$val messageTimer = 5000L</ID>
     <ID>MayBeConst:CustomServerConfigRepositoryTest.kt$CustomServerConfigRepositoryTest.Companion$val SERVER_CONFIG_URL = "https://test.test/test.json"</ID>
     <ID>MayBeConst:DeleteNodeAssetUseCaseTest.kt$DeleteNodeAssetUseCaseTest.Companion$private val localPath: String = "localPath"</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val ACCESS_TOKEN_RESPONSE = """ { "expires_in":"300", "token":"eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6ImdxTk8wZ1FzRndfUUNQNm5xeV9BUWxNVDFQSTAtZ3lRMWZTMGhJZklyTWcifX0.eyJpYXQiOjE2ODM0NjgwODIsImV4cCI6MTY5MTI0NDA4MiwibmJmIjoxNjgzNDY4MDgyLCJpc3MiOiJodHRwczovL3N0YWdpbmcuemluZnJhLmlvL2NsaWVudHMvNGVlZGJmZTE2ZDI1YmJmMy9hY2Nlc3MtdG9rZW4iLCJzdWIiOiJpbTp3aXJlYXBwPVpURTFNamMwTXpFeU5EUTBOR0poWTJFMU5XWm1OakEyWlRrMU1qSXlNek0vNGVlZGJmZTE2ZDI1YmJmM0BzdGFnaW5nLnppbmZyYS5pbyIsImF1ZCI6Imh0dHBzOi8vc3RhZ2luZy56aW5mcmEuaW8vY2xpZW50cy80ZWVkYmZlMTZkMjViYmYzL2FjY2Vzcy10b2tlbiIsImp0aSI6ImM3ZjRhODAxLTVhZTUtNDNlOC04ZGJiLWRiYjE1ZmEwODM1ZSIsIm5vbmNlIjoiaEJWWTdjRjNSWC1lSnF0cW9nbVl0dyIsImNoYWwiOiJMeGpJNVBUeVZ2UU56ZW9yUWNPUm44OURtR1BaZEc3SyIsImNuZiI6eyJraWQiOiI3YXR6MldkcGxwSzNhbmtKVmp6cm1telVEZmdhNkFTMjRCRm1VbEJ2V1lFIn0sInByb29mIjoiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWs5TFVDSXNJbU55ZGlJNklrVmtNalUxTVRraUxDSjRJam9pVVZkUldrTklRemxSVFhOaVFtWk5SbmRrTmpONlZtNTFVbFZNVVVKSU1sVnNaRGh5WDBWTFNtSXlTU0o5ZlEuZXlKcFlYUWlPakUyT0RNME5qZ3dOemtzSW1WNGNDSTZNVFk0TXpRMk9ERXdPU3dpYm1KbUlqb3hOamd6TkRZNE1EYzVMQ0p6ZFdJaU9pSnBiVHAzYVhKbFlYQndQVnBVUlRGTmFtTXdUWHBGZVU1RVVUQk9SMHBvV1RKRk1VNVhXbTFPYWtFeVdsUnJNVTFxU1hsTmVrMHZOR1ZsWkdKbVpURTJaREkxWW1KbU0wQnpkR0ZuYVc1bkxucHBibVp5WVM1cGJ5SXNJbXAwYVNJNkltSmlOek5qTVdJekxUZ3dNMlF0TkRVMFlTMDROakl5TFdNellqUXlORFpoTTJZME9TSXNJbTV2Ym1ObElqb2lhRUpXV1RkalJqTlNXQzFsU25GMGNXOW5iVmwwZHlJc0ltaDBiU0k2SWxCUFUxUWlMQ0pvZEhVaU9pSm9kSFJ3Y3pvdkwzTjBZV2RwYm1jdWVtbHVabkpoTG1sdkwyTnNhV1Z1ZEhNdk5HVmxaR0ptWlRFMlpESTFZbUptTXk5aFkyTmxjM010ZEc5clpXNGlMQ0pqYUdGc0lqb2lUSGhxU1RWUVZIbFdkbEZPZW1WdmNsRmpUMUp1T0RsRWJVZFFXbVJITjBzaWZRLkl1YjJqTkRXY1lKdTZ0V1liX181UlNSSEhQQWV1ZmwwRkRPQzc3STY4UDZtcG96QjMxeGtmUEZUb2p3ckJtSEhLZHFLOWdJTTQ5YWcxb2pTclNlZkNnIiwiY2xpZW50X2lkIjoiaW06d2lyZWFwcD1aVEUxTWpjME16RXlORFEwTkdKaFkyRTFOV1ptTmpBMlpUazFNakl5TXpNLzRlZWRiZmUxNmQyNWJiZjNAc3RhZ2luZy56aW5mcmEuaW8iLCJhcGlfdmVyc2lvbiI6Mywic2NvcGUiOiJ3aXJlX2NsaWVudF9pZCJ9.kFoRHJotAJQTgLXXrH4m9ySutFJb2cc4Raa1nbOyRxNTFZyQuwbJT1jGAlIbziQmVEIZ5vneOg0TqBAyEtw3BQ", "type":"DPoP" }"""</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val AUTHZ_URL1 = "https://acme.elna.wire.link/acme/keycloakteams/authz/1gpp07FUGPh6bFhnAZTuhhPIoGAx2xpw"</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val AUTHZ_URL2 = "https://acme.elna.wire.link/acme/keycloakteams/authz/mGCAn2FaKAVlO7n2MXdCaRjRsSwEHrel"</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val FINALIZE_ORDER_URL = "https://acme.elna.wire.link/acme/keycloakteams/order/c9mGRDNE7YRVRbk6jokwXNXPgU1n37iS/finalize"</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val NONCE = "TGR6Rk45RlR2WDlzanMxWEpYd21YaFR0SkZBYTNzUWk"</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val OAUTH_ID_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImM5YWZkYTM2ODJlYmYwOWViMzA1NWMxYzRiZDM5Yjc1MWZiZjgxOTUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTU0OTM2MTQ1MjMzNjgyNjc2OTAiLCJoZCI6IndpcmUuY29tIiwiZW1haWwiOiJtb2p0YWJhLmNoZW5hbmlAd2lyZS5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiYXRfaGFzaCI6IkRtZDhJQXdnWmVKX1QtUjBpRlpseGciLCJub25jZSI6IjEta2FZb1hRODdadEVlRGpVYTVQSVEiLCJuYW1lIjoiTW9qdGFiYSBDaGVuYW5pIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FHTm15eGFhaWFKa1Y4VDNmMW91d0RWVjNQck52UFBaVUpIZGdnMlJ4N0s0PXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6Ik1vanRhYmEiLCJmYW1pbHlfbmFtZSI6IkNoZW5hbmkiLCJsb2NhbGUiOiJlbiIsImlhdCI6MTY4MzQ4MjIyOSwiZXhwIjoxNjgzNDg1ODI5fQ.r0hh1CtVUXncdWHoXsfAvhf0VuWGDooSRQnNqq0GrzAbYVENGwg0dm8P10Cq_UmCjjh56nC5laMQUcBu-sKW9mRbdKnHwdXXregTSgelQJFoIlusb_3VyHcWDY8Yf9xyuyZbu3wcduL8IndTvy8Sq7mIzGKhsHnLIy1UgHbCGMrzfY2LYCi9Df1ADqA8romigo8fdEAVUi9TAIC8SgHOcqLJt8mxlhKSPPwkJw5yZ3CRvF2NMNsVkYpE9hVYbHcZd6EAmJnljKPJ-NQLXUdjaU3ail80YQko4rcgF2QMZ3LBSMGJpI5LM2UhDxnktqBTpE2nLdwCFg64INS48DPDXQ"</ID>
     <ID>MayBeConst:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement.Companion$val ACME_BASE_URL = "https://balderdash.hogwash.work:9000"</ID>
     <ID>MayBeConst:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement.Companion$val RANDOM_ACCESS_TOKEN = "xxxxx"</ID>
     <ID>MayBeConst:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement.Companion$val RANDOM_ID_TOKEN = "xxxxx"</ID>
@@ -489,7 +480,6 @@
     <ID>NoConsecutiveBlankLines:CurrentClientIdProviderArrangement.kt$ </ID>
     <ID>NoConsecutiveBlankLines:DatabaseImporterTest.kt$DatabaseImporterTest$ </ID>
     <ID>NoConsecutiveBlankLines:DomainUserTypeDTOMapperTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:E2EIClientProviderArrangement.kt$ </ID>
     <ID>NoConsecutiveBlankLines:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement$ </ID>
     <ID>NoConsecutiveBlankLines:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$ </ID>
     <ID>NoConsecutiveBlankLines:EventGathererTest.kt$EventGathererTest$ </ID>
@@ -595,7 +585,6 @@
     <ID>NoUnusedImports:ConversionDAOArrangement.kt$com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangement.kt</ID>
     <ID>NoUnusedImports:CreateMPBackupUseCaseTest.kt$com.wire.kalium.logic.feature.backup.CreateMPBackupUseCaseTest.kt</ID>
     <ID>NoUnusedImports:CryptoTransactionProviderArrangement.kt$com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement.kt</ID>
-    <ID>NoUnusedImports:E2EIClientProviderTest.kt$com.wire.kalium.logic.client.E2EIClientProviderTest.kt</ID>
     <ID>NoUnusedImports:FederatedSearchParserTest.kt$com.wire.kalium.logic.feature.search.FederatedSearchParserTest.kt</ID>
     <ID>NoUnusedImports:GlobalDBBaseTest.kt$com.wire.kalium.persistence.GlobalDBBaseTest.kt</ID>
     <ID>NoUnusedImports:IncrementalSyncRepositoryTest.kt$com.wire.kalium.logic.data.sync.IncrementalSyncRepositoryTest.kt</ID>
@@ -638,7 +627,6 @@
     <ID>PackageName:TimeUtils.kt$package com.wire.kalium.logic.test_util</ID>
     <ID>ParameterListWrapping:BaseDatabaseTest.kt$BaseDatabaseTest$( userId: UserIDEntity, passphrase: UserDBSecret?, enableWAL: Boolean)</ID>
     <ID>ParameterListWrapping:ConversationExtensionsTest.kt$ConversationExtensionsTest$(searchQuery: String = "", fromArchive: Boolean = false, filter: ConversationFilterEntity = ConversationFilterEntity.ALL)</ID>
-    <ID>ParameterListWrapping:E2EIClientTest.kt$E2EIClientTest.SampleUser$( val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String, val handle: String, val teamId: String? = "" )</ID>
     <ID>ParameterListWrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement$( exception: Exception, times: Int = Int.MAX_VALUE, crlNewDistributionPoints: List&lt;String>? = null )</ID>
     <ID>ParameterListWrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement$( exception: Exception, times: Int = Int.MAX_VALUE, welcomeBundle: WelcomeBundle = WELCOME_BUNDLE, )</ID>
     <ID>ParameterListWrapping:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest.Arrangement$(expected: Map&lt;CryptoSessionId, ByteArray>, message: Matcher&lt;ByteArray> = AnyMatcher(valueOf()) )</ID>

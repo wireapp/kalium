@@ -28,15 +28,15 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
+import com.wire.kalium.cryptography.CryptoCredential
+import com.wire.kalium.cryptography.CryptoCredentialRef
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
-import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MLSDecryptResult
 import com.wire.kalium.cryptography.RatchetTreeType
-import com.wire.kalium.cryptography.RotateBundle
-import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.MockProtocolInfo
@@ -49,11 +49,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arr
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.MLS_PUBLIC_KEY
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_CAUSE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_FAILURE
-import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WELCOME_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
@@ -71,7 +68,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.provider.DummyMLSClient
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
@@ -113,27 +109,7 @@ import kotlin.uuid.Uuid
 
 class MLSConversationRepositoryTest {
 
-    @Test
-    fun givenCommitMessageWithNewDistributionPoints_whenDecryptingMessage_thenCheckRevocationList() =
-        runTest(TestKaliumDispatcher.default) {
-            val messageWithNewDistributionPoints = Arrangement.DECRYPTED_MESSAGE_BUNDLE.copy(
-                crlNewDistributionPoints = listOf("url")
-            )
-            val (arrangement, mlsConversationRepository) = Arrangement()
-                .withDecryptMLSMessageSuccessful(messageWithNewDistributionPoints)
-                .withCheckRevocationListResult()
-                .arrange()
-
-            mlsConversationRepository.decryptMessage(arrangement.mlsContext, Arrangement.COMMIT, Arrangement.GROUP_ID)
-
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.checkRevocationList.check(any(), any())
-            }
-
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
-            }
-        }
+    private enum class CredentialChoice { PREVIOUS, NEW }
 
     @Test
     fun givenBufferedFutureMessage_whenDecryptingMessage_thenReturnBufferedFutureMessageFailure() = runTest {
@@ -321,57 +297,6 @@ class MLSConversationRepositoryTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsPublicKeysRepository.getKeyForCipherSuite(any())
-        }
-    }
-
-    @Test
-    fun givenNewCrlDistributionPoints_whenEstablishingMLSGroup_thenCheckRevocationList() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withCommitPendingProposalsReturningNothing()
-            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
-            .withClaimKeyPackagesSuccessful()
-            .withKeyForCipherSuite()
-            .withAddMLSMemberSuccessful(listOf("url"))
-            .withCheckRevocationListResult()
-            .arrange()
-
-        val result =
-            mlsConversationRepository.establishMLSGroup(
-                arrangement.mlsContext,
-                Arrangement.GROUP_ID,
-                listOf(TestConversation.USER_1),
-                publicKeys = MLS_PUBLIC_KEY
-            )
-        result.shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.checkRevocationList.check(any(), any())
-        }
-    }
-
-    @Test
-    fun givenNewCrlDistributionPoints_whenAddingMemberToMLSGroup_thenCheckRevocationList() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withCommitPendingProposalsReturningNothing()
-            .withClaimKeyPackagesSuccessful()
-            .withKeyForCipherSuite()
-            .withAddMLSMemberSuccessful(crlNewDistributionPoints = listOf("url"))
-            .withCheckRevocationListResult()
-            .arrange()
-
-        mlsConversationRepository.addMemberToMLSGroup(
-            arrangement.mlsContext,
-            Arrangement.GROUP_ID,
-            listOf(TestConversation.USER_ID1),
-            CIPHER_SUITE
-        )
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.checkRevocationList.check(any(), any())
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
         }
     }
 
@@ -663,9 +588,6 @@ class MLSConversationRepositoryTest {
             arrangement.conversationDAO.updateConversationGroupState(any(), any())
         }
 
-        verifySuspend(VerifyMode.not) {
-            arrangement.checkRevocationList.check(any(), any())
-        }
     }
 
     @Test
@@ -687,25 +609,6 @@ class MLSConversationRepositoryTest {
 
         verifySuspend(VerifyMode.not) {
             arrangement.conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
-        }
-    }
-
-    @Test
-    fun givenMlsClientReturnsNewCrlDistributionPoints_whenJoiningGroupByExternalCommit_thenCheckRevocationList() = runTest {
-        val welcomeBundleWithDistributionPoints = WELCOME_BUNDLE.copy(crlNewDistributionPoints = listOf("url"))
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withCheckRevocationListResult()
-            .withJoinByExternalCommitSuccessful(welcomeBundleWithDistributionPoints)
-            .arrange()
-
-        mlsConversationRepository.joinGroupByExternalCommit(arrangement.mlsContext, Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.checkRevocationList.check(any(), any())
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
         }
     }
 
@@ -1090,159 +993,86 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenSuccessResponse_whenRotatingKeysAndMigratingConversation_thenReturnsSuccess() = runTest {
+    fun givenConversationUsesBasicCredentialWithSameSigningKey_whenMigrating_thenUpdatesToX509() = runTest {
+        val signingKeyHash = byteArrayOf(1)
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetDefaultCipherSuiteSuccessful()
-            .withRotateGroupsSuccessful()
-            .withSaveX509CredentialsSuccessful(listOf())
-            .withKeyPackageLimits(10)
-            .withGenerateKeyPackageSuccessful(listOf())
-            .withReplaceKeyPackagesReturning(Either.Right(Unit))
-            .withRemoveStaleKeyPackages()
-            .arrange()
-        val invocationOrder = mutableListOf<String>()
-
-        everySuspend { arrangement.mlsContext.removeStaleKeyPackages() }
-            .calls {
-                invocationOrder += "removeStaleKeyPackages"
-                Unit
-            }
-
-        everySuspend { arrangement.mlsContext.generateKeyPackages(any()) }
-            .calls {
-                invocationOrder += "generateKeyPackages"
-                emptyList()
-            }
-
-        everySuspend { arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any()) }
-            .calls {
-                invocationOrder += "replaceKeyPackages"
-                Either.Right(Unit)
-            }
-
-        assertEquals(
-            Either.Right(Unit),
-            mlsConversationRepository.rotateKeysAndMigrateConversations(
-                arrangement.mlsContext,
-                TestClient.CLIENT_ID,
-                arrangement.e2eiClient,
-                "",
-                listOf(Arrangement.GROUP_ID)
+            .withConversationExists(true)
+            .withConversationCredential(
+                arrangementCredential = CredentialChoice.PREVIOUS,
+                previousCredentialType = CredentialType.Basic,
+                previousPublicKeyHash = signingKeyHash,
+                newPublicKeyHash = signingKeyHash
             )
+            .withSetConversationCredentialSuccessful()
+            .arrange()
+
+        mlsConversationRepository.migrateConversationCredential(
+            arrangement.mlsContext,
+            arrangement.newCredentialRef,
+            Arrangement.GROUP_ID
         )
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.e2eiRotateGroups(any())
+        verifySuspend(VerifyMode.order) {
+            arrangement.mlsContext.conversationExists(any())
+            arrangement.mlsContext.getConversationCredentialRef(any())
+            arrangement.mlsContext.setConversationCredential(any(), eq(arrangement.newCredentialRef))
         }
+    }
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any())
-        }
+    @Test
+    fun givenConversationAlreadyUsesNewCredential_whenMigrating_thenDoesNotPublishAnotherCommit() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withConversationExists(true)
+            .withConversationCredential(arrangementCredential = CredentialChoice.NEW)
+            .arrange()
+
+        mlsConversationRepository.migrateConversationCredential(
+            arrangement.mlsContext,
+            arrangement.newCredentialRef,
+            Arrangement.GROUP_ID
+        )
 
         verifySuspend(VerifyMode.not) {
-            arrangement.checkRevocationList.check(any(), any())
+            arrangement.mlsContext.setConversationCredential(any(), any())
         }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.removeStaleKeyPackages()
-        }
-
-        assertEquals(
-            listOf("removeStaleKeyPackages", "generateKeyPackages", "replaceKeyPackages"),
-            invocationOrder
-        )
     }
 
     @Test
-    fun givenNewDistributionsCRL_whenRotatingKeys_thenCheckRevocationList() = runTest {
+    fun givenInstalledCredential_whenPreparingKeyPackages_thenReplacesAnyUncheckpointedLocalBatchFirst() = runTest {
+        val keyPackages = listOf("key-package".encodeToByteArray())
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuiteSuccessful()
-            .withRotateGroupsSuccessful()
-            .withSaveX509CredentialsSuccessful(listOf("url"))
             .withKeyPackageLimits(10)
-            .withGenerateKeyPackageSuccessful(listOf())
-            .withReplaceKeyPackagesReturning(Either.Right(Unit))
-            .withCheckRevocationListResult()
-            .withRemoveStaleKeyPackages()
+            .withGenerateKeyPackageSuccessful(keyPackages)
+            .withRemoveKeyPackagesSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.rotateKeysAndMigrateConversations(
-            mlsContext = arrangement.mlsContext,
-            clientId = TestClient.CLIENT_ID,
-            e2eiClient = arrangement.e2eiClient,
-            certificateChain = "",
-            groupIdList = listOf(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.prepareX509KeyPackages(
+            arrangement.mlsContext,
+            arrangement.newCredentialRef
         )
 
-        result.shouldSucceed()
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.checkRevocationList.check(any(), any())
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
+        assertEquals(keyPackages, result.keyPackages)
+        assertEquals(Arrangement.CIPHER_SUITE, result.cipherSuite)
+        verifySuspend(VerifyMode.order) {
+            arrangement.mlsContext.removeKeyPackages(eq(arrangement.newCredentialRef))
+            arrangement.mlsContext.generateKeyPackages(eq(10), eq(arrangement.newCredentialRef))
         }
     }
 
     @Test
-    fun givenReplacingKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
+    fun givenReplacingKeyPackagesFails_whenCallingBackendPhase_thenMapsRotationFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetDefaultCipherSuiteSuccessful()
-            .withRotateGroupsSuccessful()
-            .withKeyPackageLimits(10)
-            .withGenerateKeyPackageSuccessful(listOf())
-            .withSaveX509CredentialsSuccessful(listOf())
             .withReplaceKeyPackagesReturning(TEST_FAILURE)
             .arrange()
+        val prepared = PreparedX509KeyPackages(emptyList(), Arrangement.CIPHER_SUITE)
 
-        assertEquals(
-            E2EIFailure.RotationAndMigration(TEST_FAILURE.value).left(),
-            mlsConversationRepository.rotateKeysAndMigrateConversations(
-                arrangement.mlsContext,
-                TestClient.CLIENT_ID,
-                arrangement.e2eiClient,
-                "",
-                listOf(Arrangement.GROUP_ID)
-            )
-        )
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.e2eiRotateGroups(any())
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any())
-        }
-    }
-
-    @Test
-    fun givenSendingCommitBundlesFails_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetDefaultCipherSuiteSuccessful()
-            .withRotateGroupsThrowing(MLS_CLIENT_MISMATCH_ERROR)
-            .withSaveX509CredentialsSuccessful(listOf())
-            .withKeyPackageLimits(10)
-            .withReplaceKeyPackagesReturning(Either.Right(Unit))
-            .arrange()
-
-
-        val result = mlsConversationRepository.rotateKeysAndMigrateConversations(
-            arrangement.mlsContext,
+        val result = mlsConversationRepository.replaceX509KeyPackages(
             TestClient.CLIENT_ID,
-            arrangement.e2eiClient,
-            "",
-            listOf()
+            prepared
         )
-        result.shouldFail()
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.e2eiRotateGroups(any())
-        }
-
-        verifySuspend(VerifyMode.not) {
-            arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any())
-        }
+        assertEquals(E2EIFailure.RotationAndMigration(TEST_FAILURE.value).left(), result)
     }
 
     @Test
@@ -1386,7 +1216,7 @@ class MLSConversationRepositoryTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsContext.getUserIdentities(eq(groupId), any())
+            arrangement.mlsClient.getUserIdentities(eq(groupId), any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -1551,12 +1381,12 @@ class MLSConversationRepositoryTest {
         val mlsPublicKeysRepository: MLSPublicKeysRepository = mock(mode = MockMode.autoUnit)
         val conversationDAO: ConversationDAO = mock(mode = MockMode.autoUnit)
         val clientApi: ClientApi = mock(mode = MockMode.autoUnit)
-        val e2eiClient: E2EIClient = mock(mode = MockMode.autoUnit)
+        val credential: CryptoCredential = mock(mode = MockMode.autoUnit)
+        val previousCredentialRef: CryptoCredentialRef = mock(mode = MockMode.autoUnit)
+        val newCredentialRef: CryptoCredentialRef = mock(mode = MockMode.autoUnit)
         val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock(mode = MockMode.autoUnit)
-        val checkRevocationList: RevocationListChecker = mock(mode = MockMode.autoUnit)
-        val certificateRevocationListRepository: CertificateRevocationListRepository = mock(mode = MockMode.autoUnit)
         val epochChangesObserver: EpochChangesObserver = mock(mode = MockMode.autoUnit)
-        val mlsClient = DummyMLSClient(mlsContext)
+        val mlsClient: MLSClient = mock(mode = MockMode.autoUnit)
         val epochsFlow = MutableSharedFlow<GroupID>()
 
         val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
@@ -1569,8 +1399,6 @@ class MLSConversationRepositoryTest {
             mlsPublicKeysRepository,
             proposalTimersFlow,
             keyPackageLimitsProvider,
-            checkRevocationList,
-            certificateRevocationListRepository,
             mutex = Mutex()
         )
 
@@ -1627,41 +1455,43 @@ class MLSConversationRepositoryTest {
             } returns EXTERNAL_SENDER_KEY
         }
 
-        fun withRotateGroupsSuccessful() = apply {
-            everySuspend {
-                mlsContext.e2eiRotateGroups(any())
-            } returns Unit
-        }
-
-        fun withRotateGroupsThrowing(exception: Exception, times: Int = Int.MAX_VALUE) = apply {
-            var invocationCounter = 0
-            everySuspend { mlsContext.e2eiRotateGroups(any()) }
-                .calls {
-                    if (invocationCounter < times) {
-                        invocationCounter++
-                        throw exception
-                    } else {
-                        Unit
-                    }
-                }
-        }
-
-        fun withSaveX509CredentialsSuccessful(distributionPoints: List<String>?) = apply {
-            everySuspend {
-                mlsContext.saveX509Credential(any(), any())
-            } returns distributionPoints
-        }
-
-        suspend fun removeStaleKeyPackages() = apply {
-            everySuspend {
-                mlsContext.removeStaleKeyPackages()
-            } returns Unit
-        }
-
         fun withGenerateKeyPackageSuccessful(keyPackages: List<ByteArray>) = apply {
             everySuspend {
-                mlsContext.generateKeyPackages(any())
+                mlsContext.generateKeyPackages(any(), any())
             } returns keyPackages
+        }
+
+        fun withConversationExists(exists: Boolean) = apply {
+            everySuspend { mlsContext.conversationExists(any()) } returns exists
+        }
+
+        fun withConversationCredential(
+            arrangementCredential: CredentialChoice,
+            previousCredentialType: CredentialType = CredentialType.X509,
+            previousPublicKeyHash: ByteArray = byteArrayOf(1),
+            newPublicKeyHash: ByteArray = byteArrayOf(2)
+        ) = apply {
+            val selectedCredential = when (arrangementCredential) {
+                CredentialChoice.PREVIOUS -> previousCredentialRef
+                CredentialChoice.NEW -> newCredentialRef
+            }
+            everySuspend { mlsContext.getConversationCredentialRef(any()) } returns selectedCredential
+            every { previousCredentialRef.credentialType() } returns previousCredentialType
+            every { previousCredentialRef.publicKeyHash() } returns previousPublicKeyHash
+            every { newCredentialRef.credentialType() } returns CredentialType.X509
+            every { newCredentialRef.publicKeyHash() } returns newPublicKeyHash
+        }
+
+        fun withSetConversationCredentialSuccessful() = apply {
+            everySuspend { mlsContext.setConversationCredential(any(), any()) } returns Unit
+        }
+
+        fun withSetConversationCredentialThrowing(exception: Exception) = apply {
+            everySuspend { mlsContext.setConversationCredential(any(), any()) } throws exception
+        }
+
+        fun withRemoveKeyPackagesSuccessful() = apply {
+            everySuspend { mlsContext.removeKeyPackages(any()) } returns Unit
         }
 
         fun withGetDeviceIdentitiesReturn(identities: List<WireIdentity>) = apply {
@@ -1682,15 +1512,15 @@ class MLSConversationRepositoryTest {
             } returns id
         }
 
-        fun withAddMLSMemberSuccessful(crlNewDistributionPoints: List<String>? = null) = apply {
+        fun withAddMLSMemberSuccessful() = apply {
             everySuspend {
                 mlsContext.addMember(any(), any())
-            } returns crlNewDistributionPoints
+            } returns Unit
         }
 
         fun withAddMLSMemberThrowing(
-            exception: Exception, times: Int = Int.MAX_VALUE,
-            crlNewDistributionPoints: List<String>? = null
+            exception: Exception,
+            times: Int = Int.MAX_VALUE,
         ) = apply {
             var invocationCounter = 0
             everySuspend { mlsContext.addMember(any(), any()) }
@@ -1699,7 +1529,7 @@ class MLSConversationRepositoryTest {
                         invocationCounter++
                         throw exception
                     } else {
-                        crlNewDistributionPoints
+                        Unit
                     }
                 }
         }
@@ -1711,15 +1541,15 @@ class MLSConversationRepositoryTest {
         }
 
 
-        fun withJoinByExternalCommitSuccessful(welcomeBundle: WelcomeBundle = WELCOME_BUNDLE) = apply {
+        fun withJoinByExternalCommitSuccessful(groupId: String = MLS_GROUP_ID) = apply {
             everySuspend {
                 mlsContext.joinByExternalCommit(any())
-            } returns welcomeBundle
+            } returns groupId
         }
 
         fun withJoinByExternalCommitThrowing(
             exception: Exception, times: Int = Int.MAX_VALUE,
-            welcomeBundle: WelcomeBundle = WELCOME_BUNDLE,
+            groupId: String = MLS_GROUP_ID,
         ) = apply {
             var invocationCounter = 0
             everySuspend { mlsContext.joinByExternalCommit(any()) }
@@ -1728,7 +1558,7 @@ class MLSConversationRepositoryTest {
                         invocationCounter++
                         throw exception
                     } else {
-                        welcomeBundle
+                        groupId
                     }
                 }
         }
@@ -1777,18 +1607,6 @@ class MLSConversationRepositoryTest {
                         Unit
                     }
                 }
-        }
-
-        fun withCheckRevocationListResult() = apply {
-            everySuspend {
-                checkRevocationList.check(any(), any())
-            } returns Either.Right(1uL)
-        }
-
-        fun withRemoveStaleKeyPackages() = apply {
-            everySuspend {
-                mlsContext.removeStaleKeyPackages()
-            } returns Unit
         }
 
         fun withDecryptMLSMessageSuccessful(decryptedMessage: com.wire.kalium.cryptography.DecryptedMessageBundle) = apply {
@@ -1842,6 +1660,9 @@ class MLSConversationRepositoryTest {
         fun withGetUserIdentitiesReturn(identitiesMap: Map<String, List<WireIdentity>>) = apply {
             everySuspend {
                 mlsContext.getUserIdentities(any(), any())
+            } returns identitiesMap
+            everySuspend {
+                mlsClient.getUserIdentities(any(), any())
             } returns identitiesMap
         }
 
@@ -1917,8 +1738,6 @@ class MLSConversationRepositoryTest {
                 RatchetTreeType.FULL,
                 PUBLIC_GROUP_STATE
             )
-            val WELCOME_BUNDLE = WelcomeBundle(MLS_GROUP_ID, null)
-            val ROTATE_BUNDLE = RotateBundle(emptyList(), emptyList())
             val CRYPTO_CLIENT_ID = CryptoQualifiedClientId("clientId", TestConversation.USER_1.toCrypto())
             val WIRE_IDENTITY =
                 WireIdentity(
@@ -1942,13 +1761,9 @@ class MLSConversationRepositoryTest {
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(Uuid.random().toString(), "domain.com"), "clientId", "groupId")
-            val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
-                message = null,
-                commitDelay = null,
-                senderClientId = null,
-                hasEpochChanged = true,
-                identity = null,
-                crlNewDistributionPoints = null
+            val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle.Commit(
+                isActive = true,
+                identity = null
             )
             val MEMBER_LEAVE_EVENT = EventContentDTO.Conversation.MemberLeaveDTO(
                 TestConversation.NETWORK_ID,

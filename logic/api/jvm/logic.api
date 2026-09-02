@@ -644,18 +644,19 @@ public abstract interface class com/wire/kalium/logic/data/conversation/ResetMLS
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class com/wire/kalium/logic/data/e2ei/Nonce {
-	public static final synthetic fun box-impl (Ljava/lang/String;)Lcom/wire/kalium/logic/data/e2ei/Nonce;
-	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
+public final class com/wire/kalium/logic/data/e2ei/E2EIAuthenticationRequest {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/data/e2ei/E2EIAuthenticationRequest;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/e2ei/E2EIAuthenticationRequest;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/e2ei/E2EIAuthenticationRequest;
 	public fun equals (Ljava/lang/Object;)Z
-	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
-	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
-	public final fun getValue ()Ljava/lang/String;
+	public final fun getAcmeAudience ()Ljava/lang/String;
+	public final fun getKeyAuth ()Ljava/lang/String;
+	public final fun getTarget ()Ljava/lang/String;
 	public fun hashCode ()I
-	public static fun hashCode-impl (Ljava/lang/String;)I
 	public fun toString ()Ljava/lang/String;
-	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
-	public final synthetic fun unbox-impl ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/logic/data/event/EventExtentionKt {
@@ -4846,96 +4847,59 @@ public final class com/wire/kalium/logic/feature/e2ei/X509Identity$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult {
+public abstract class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult {
 }
 
-public final class com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Finalized : com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult {
-	public fun <init> (Ljava/lang/String;)V
-	public final fun getCertificate ()Ljava/lang/String;
+public abstract class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure : com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult {
 }
 
-public final class com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized : com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult {
-	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun component3-2K2h68k ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun component6 ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun component7 ()Z
-	public final fun copy-sYlRG1Y (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Z)Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
-	public static synthetic fun copy-sYlRG1Y$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;ZILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
+public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$E2EIDisabled : com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$E2EIDisabled;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getDPopAuthorizations ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun getLastNonce-2K2h68k ()Ljava/lang/String;
-	public final fun getOAuthClaims ()Lkotlinx/serialization/json/JsonObject;
-	public final fun getOidcAuthorizations ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun getOrderLocation ()Ljava/lang/String;
-	public final fun getTarget ()Ljava/lang/String;
 	public fun hashCode ()I
-	public final fun isNewClientRegistration ()Z
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase {
-	public abstract fun finalizeEnrollment (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public abstract fun initialEnrollment (ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun initialEnrollment$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase$DefaultImpls {
-	public static synthetic fun initialEnrollment$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
-}
-
-public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/FetchConversationMLSVerificationStatusUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public abstract class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult {
-}
-
-public abstract class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure : com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult {
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$Generic : com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure {
+public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$Generic : com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure {
 	public fun <init> (Lcom/wire/kalium/common/error/E2EIFailure;)V
 	public final fun component1 ()Lcom/wire/kalium/common/error/E2EIFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/E2EIFailure;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$Generic;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$Generic;Lcom/wire/kalium/common/error/E2EIFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$Generic;
+	public final fun copy (Lcom/wire/kalium/common/error/E2EIFailure;)Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$Generic;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$Generic;Lcom/wire/kalium/common/error/E2EIFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$Generic;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getE2EIFailure ()Lcom/wire/kalium/common/error/E2EIFailure;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$InvalidChallenge : com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$InvalidChallenge;
+public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$MissingTeamSettings : com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$MissingTeamSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$OAuthError : com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure {
+public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Success : com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult {
 	public fun <init> (Ljava/lang/String;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$OAuthError;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$OAuthError;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$OAuthError;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getReason ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Success : com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult {
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Success;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Success;
+	public final fun copy (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Success;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Success;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCertificate ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase {
+	public abstract fun invoke (ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase$DefaultImpls {
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/FetchConversationMLSVerificationStatusUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/e2ei/usecase/GetMLSClientIdentityResult {
@@ -4990,48 +4954,6 @@ public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/GetMe
 
 public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/GetUserMlsClientIdentitiesUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public abstract class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult {
-}
-
-public abstract class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure : com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult {
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$E2EIDisabled : com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$E2EIDisabled;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$Generic : com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure {
-	public fun <init> (Lcom/wire/kalium/common/error/E2EIFailure;)V
-	public final fun component1 ()Lcom/wire/kalium/common/error/E2EIFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/E2EIFailure;)Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$Generic;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$Generic;Lcom/wire/kalium/common/error/E2EIFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$Generic;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getE2EIFailure ()Lcom/wire/kalium/common/error/E2EIFailure;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$MissingTeamSettings : com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$MissingTeamSettings;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Success : com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult {
-	public fun <init> (Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;)V
-	public final fun component1 ()Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
-	public final fun copy (Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;)Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Success;Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Success;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getInitializationResult ()Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/IsOtherUserE2EIVerifiedUseCase {

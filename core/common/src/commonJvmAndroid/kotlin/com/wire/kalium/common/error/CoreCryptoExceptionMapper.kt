@@ -57,7 +57,13 @@ actual fun commonizeMLSException(exception: Exception): CommonizedMLSException {
 }
 
 private fun mapMessageRejected(mlsError: MlsException.MessageRejected): MLSFailure {
-    return MLSTransportFailureSerialization.parseString(mlsError.reason)
+    return try {
+        MLSTransportFailureSerialization.parseString(mlsError.reason)
+    } catch (_: Exception) {
+        // Core Crypto also wraps unexpected transport callback exceptions as MessageRejected.
+        // Those reasons are plain text, not Kalium's serialized transport-failure envelope.
+        MLSFailure.Other(mlsError.reason)
+    }
 }
 
 private const val COMMIT_FOR_MISSING_PROPOSAL = "Incoming message is a commit for which we have not yet received all the proposals"
