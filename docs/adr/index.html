@@ -1371,7 +1371,7 @@ build file should opt in to <code>org.jetbrains.kotlin.gradle.dsl.abi.Experiment
 <pre><code class="language-bash">./gradlew checkKotlinAbi
 </code></pre>
 <p>For the initial <code>:logic</code>-only rollout, CI runs the scoped task:</p>
-<pre><code class="language-bash">./gradlew :logic:checkKotlinAbi -PUSE_UNIFIED_CORE_CRYPTO=true
+<pre><code class="language-bash">./gradlew :logic:checkKotlinAbi
 </code></pre>
 <p>The unqualified root task should be used once additional KMP modules have been classified and
 their ABI tasks can run without compiling unsupported or unpublished targets.</p>
@@ -1380,7 +1380,7 @@ intentional and accepted, update the checked-in ABI dumps with:</p>
 <pre><code class="language-bash">./gradlew updateKotlinAbi
 </code></pre>
 <p>For the initial <code>:logic</code>-only rollout, update the checked-in ABI dumps with:</p>
-<pre><code class="language-bash">./gradlew :logic:updateKotlinAbi -PUSE_UNIFIED_CORE_CRYPTO=true
+<pre><code class="language-bash">./gradlew :logic:updateKotlinAbi
 </code></pre>
 <p>ABI dump updates are reviewable API changes. Reviewers should treat them like source changes, not
 generated noise.</p>
