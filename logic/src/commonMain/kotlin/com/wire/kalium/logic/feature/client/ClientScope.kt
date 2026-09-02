@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.keypackage.MLSMembershipAuditRepository
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
@@ -78,6 +79,7 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val userConfigRepository: UserConfigRepository,
     private val transactionProvider: CryptoTransactionProvider,
     private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
+    private val mlsMembershipAuditRepository: MLSMembershipAuditRepository,
 ) {
 
     @OptIn(DelicateKaliumApi::class)
@@ -127,6 +129,7 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             currentClientIdProvider = clientIdProvider,
             selfUserId = selfUserId,
             cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier,
+            mlsMembershipAuditRepository = mlsMembershipAuditRepository,
         )
 
     public val observeCurrentClientId: ObserveCurrentClientIdUseCase
