@@ -95,6 +95,8 @@ internal interface MeetingRepository {
         from: Instant = currentInstant().asStartOfDay(),
     ): Flow<PagingData<MeetingOccurrence>>
 
+    suspend fun getMeeting(meetingId: MeetingId): Either<StorageFailure, Meeting>
+
     suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit>
 
     suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit>
@@ -209,6 +211,10 @@ internal class MeetingDataSource(
         startingOffset = startingOffset,
         from = from,
     ).pagingDataFlow.map { pagingData -> pagingData.map(meetingMapper::fromDaoToModel) }
+
+    override suspend fun getMeeting(meetingId: MeetingId): Either<StorageFailure, Meeting> = wrapStorageRequest {
+        meetingDAO.getMeeting(meetingId.toDao())?.let(meetingMapper::fromDaoToModel)
+    }
 
     override suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit> = withContext(NonCancellable) {
         wrapApiRequest {
