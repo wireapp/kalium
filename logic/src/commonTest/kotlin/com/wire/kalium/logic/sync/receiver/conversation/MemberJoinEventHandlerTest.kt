@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
@@ -350,6 +351,8 @@ class MemberJoinEventHandlerTest {
             withSetConversationDeletedLocallySucceeding()
             withHandleConversationMembersChanged(Unit.right())
             withPersistUnverifiedWarningMessageSuccess()
+            withPersistCellAccessMessageSuccess()
+            withIsCellEnabledReturning(false.right())
 
             this to MemberJoinEventHandlerImpl(
                 conversationRepository = conversationRepository,
@@ -358,7 +361,8 @@ class MemberJoinEventHandlerTest {
                 legalHoldHandler = legalHoldHandler,
                 newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
                 selfUserId = TEST_SELF_USER_ID,
-                fetchConversation
+                fetchConversation = fetchConversation,
+                kaliumConfigs = KaliumConfigs()
             )
         }
 

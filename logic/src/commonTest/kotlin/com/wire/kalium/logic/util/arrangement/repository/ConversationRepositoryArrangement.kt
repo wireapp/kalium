@@ -67,6 +67,7 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withDeletingConversationLocallySucceeding(conversationId: (ConversationId) -> Boolean = { true })
     suspend fun withDeletingConversationLocallyFailing(conversationId: (ConversationId) -> Boolean = { true })
     suspend fun withGetConversationByIdReturning(conversation: Conversation? = TestConversation.CONVERSATION)
+    suspend fun withIsCellEnabledReturning(result: Either<StorageFailure, Boolean> = Either.Right(false))
     suspend fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit> = Either.Right(Unit))
     suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangement
     suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangement
@@ -247,6 +248,12 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override suspend fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) {
         everySuspend {
             conversationRepository.getConversationProtocolInfo(any())
+        }.returns(result)
+    }
+
+    override suspend fun withIsCellEnabledReturning(result: Either<StorageFailure, Boolean>) {
+        everySuspend {
+            conversationRepository.isCellEnabled(any())
         }.returns(result)
     }
 

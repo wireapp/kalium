@@ -126,7 +126,7 @@ internal class EventMapper(
             is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
             is EventContentDTO.Unknown -> unknown(id, eventContentDTO)
             is EventContentDTO.Conversation.AccessUpdate -> conversationAccessUpdate(id, eventContentDTO)
-            is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO)
+            is EventContentDTO.Conversation.DeletedConversationDTO -> deletedConversation(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO)
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO)
@@ -143,6 +143,10 @@ internal class EventMapper(
             is EventContentDTO.Conversation.MlsResetConversationDTO -> mlsConversationReset(id, eventContentDTO)
             is EventContentDTO.Conversation.NewMeetingConversationDTO -> newMeetingConversation(id, eventContentDTO)
             is EventContentDTO.Meeting.MeetingCreateDTO -> meetingCreate(id, eventContentDTO)
+            is EventContentDTO.Conversation.DeletedMeetingConversationDTO -> deletedMeetingConversation(id, eventContentDTO)
+            is EventContentDTO.Meeting.MeetingDeleteDTO -> meetingDelete(id, eventContentDTO)
+            is EventContentDTO.Meeting.MeetingUpdateDTO -> meetingUpdate(id, eventContentDTO)
+            is EventContentDTO.Meeting.MeetingMemberAddDTO -> meetingMemberAdd(id, eventContentDTO)
         }
 
     private fun conversationTyping(
@@ -616,9 +620,19 @@ internal class EventMapper(
         is FeatureConfigData.ValidateSAMLEmails -> Event.FeatureConfig.UnknownFeatureUpdated(id)
     }
 
-    private fun conversationDeleted(
+    private fun deletedConversation(
         id: String,
         deletedConversationDTO: EventContentDTO.Conversation.DeletedConversationDTO,
+    ) = Event.Conversation.DeletedConversation(
+        id = id,
+        conversationId = deletedConversationDTO.qualifiedConversation.toModel(),
+        senderUserId = deletedConversationDTO.qualifiedFrom.toModel(),
+        dateTime = Instant.parse(deletedConversationDTO.time)
+    )
+
+    private fun deletedMeetingConversation(
+        id: String,
+        deletedConversationDTO: EventContentDTO.Conversation.DeletedMeetingConversationDTO,
     ) = Event.Conversation.DeletedConversation(
         id = id,
         conversationId = deletedConversationDTO.qualifiedConversation.toModel(),
@@ -678,6 +692,33 @@ internal class EventMapper(
         id: String,
         event: EventContentDTO.Meeting.MeetingCreateDTO,
     ) = Event.Meeting.Create(
+        id = id,
+        meetingId = event.qualifiedMeetingId.toModel(),
+        dateTime = event.time
+    )
+
+    private fun meetingDelete(
+        id: String,
+        event: EventContentDTO.Meeting.MeetingDeleteDTO,
+    ) = Event.Meeting.Delete(
+        id = id,
+        meetingId = event.qualifiedMeetingId.toModel(),
+        dateTime = event.time
+    )
+
+    private fun meetingUpdate(
+        id: String,
+        event: EventContentDTO.Meeting.MeetingUpdateDTO,
+    ) = Event.Meeting.Update(
+        id = id,
+        meetingId = event.qualifiedMeetingId.toModel(),
+        dateTime = event.time
+    )
+
+    private fun meetingMemberAdd(
+        id: String,
+        event: EventContentDTO.Meeting.MeetingMemberAddDTO,
+    ) = Event.Meeting.MemberAdd(
         id = id,
         meetingId = event.qualifiedMeetingId.toModel(),
         dateTime = event.time

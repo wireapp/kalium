@@ -30,6 +30,7 @@ import com.wire.kalium.logic.framework.TestMessage.TEST_DATE
 import com.wire.kalium.logic.framework.TestMessage.TEXT_CONTENT
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
+import com.wire.kalium.logic.framework.TestMessage.multipartMessage
 import com.wire.kalium.logic.framework.TestUser.USER_ID
 import com.wire.kalium.messaging.sending.MessageSender
 import dev.mokkery.MockMode
@@ -114,6 +115,38 @@ class SendPendingMessagesUseCaseTest {
         }
         verifySuspend(VerifyMode.not) {
             arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenPendingLocationMessage_whenInvoked_thenSendsItAsPendingMessage() = runTest {
+        val message = TEXT_MESSAGE.copy(content = MessageContent.Location(1F, 2F))
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(message)))
+            .withPendingMessageResult(Either.Right(Unit))
+            .arrange()
+
+        val result = useCase()
+
+        assertIs<SendPendingMessagesUseCase.Result.Success>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendPendingMessage(message.conversationId, message.id)
+        }
+    }
+
+    @Test
+    fun givenPendingMultipartMessage_whenInvoked_thenSendsItAsPendingMessage() = runTest {
+        val message = multipartMessage()
+        val (arrangement, useCase) = Arrangement()
+            .withPendingMessages(Either.Right(listOf(message)))
+            .withPendingMessageResult(Either.Right(Unit))
+            .arrange()
+
+        val result = useCase()
+
+        assertIs<SendPendingMessagesUseCase.Result.Success>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendPendingMessage(message.conversationId, message.id)
         }
     }
 
