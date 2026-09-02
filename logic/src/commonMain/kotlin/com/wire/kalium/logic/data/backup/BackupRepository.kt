@@ -40,6 +40,8 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.reaction.MessageReactionUserEntity
+import com.wire.kalium.persistence.dao.reaction.MessageReactionsEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
@@ -158,19 +160,23 @@ internal class BackupDataSource(
     }
 
     override suspend fun insertReactions(reactions: List<MessageReactions>) = wrapStorageRequest {
-        reactions.forEach { (messageId, conversationId, reactionUsers) ->
-            reactionUsers.forEach { (emoji, users) ->
-                users.forEach { userId ->
-                    reactionDAO.insertReaction(
-                        originalMessageId = messageId,
-                        conversationId = conversationId.toDao(),
-                        senderUserId = idMapper.fromDomainToDao(userId),
-                        instant = Clock.System.now(),
-                        emoji = emoji,
-                    )
-                }
-            }
-        }
+        reactionDAO.insertOrIgnoreReactions(
+            reactions = reactions.map { (messageId, conversationId, reactionUsers) ->
+                MessageReactionsEntity(
+                    messageId = messageId,
+                    conversationId = conversationId.toDao(),
+                    reactions = reactionUsers.flatMap { (emoji, users) ->
+                        users.map { userId ->
+                            MessageReactionUserEntity(
+                                emoji = emoji,
+                                userId = idMapper.fromDomainToDao(userId),
+                            )
+                        }
+                    }
+                )
+            },
+            instant = Clock.System.now(),
+        )
     }
 }
 

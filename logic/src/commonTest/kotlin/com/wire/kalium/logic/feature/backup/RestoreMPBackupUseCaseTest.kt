@@ -24,6 +24,8 @@ import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -51,19 +53,24 @@ import dev.mokkery.answering.returns
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
+import dev.mokkery.verify
 import dev.mokkery.verifySuspend
 import dev.mokkery.every
 import dev.mokkery.mock
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import okio.buffer
 import okio.Path.Companion.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -87,14 +94,19 @@ class RestoreMPBackupUseCaseTest {
 
         val (arrangement, useCase) = Arrangement()
             .withSuccessImport()
+            .withImporterWorkFile()
             .arrange()
+        val progress = mutableListOf<Float>()
 
-        useCase(arrangement.storedPath, null) {}
+        useCase(arrangement.storedPath, null, progress::add)
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+        verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
+        assertEquals(listOf(0.25f, 0.5f, 0.75f, 1f), progress)
+        assertFalse(arrangement.fileSystem.exists(arrangement.importerWorkFile))
     }
 
     @Test
@@ -130,12 +142,14 @@ class RestoreMPBackupUseCaseTest {
 
         val (arrangement, useCase) = Arrangement()
             .withParsingFailure()
+            .withImporterWorkFile()
             .arrange()
 
         val result = useCase(arrangement.storedPath, "invalid_password") {}
 
         assertTrue(result is RestoreBackupResult.Failure)
         assertEquals(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Parsing failure"), result.failure)
+        assertFalse(arrangement.fileSystem.exists(arrangement.importerWorkFile))
     }
 
     @Test
@@ -162,6 +176,141 @@ class RestoreMPBackupUseCaseTest {
 
         assertTrue(result is RestoreBackupResult.Failure)
         assertEquals(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unknown error"), result.failure)
+    }
+
+    @Test
+    fun givenPersistenceFailure_whenRestoring_thenFailureIsReturnedAndRemainingDataIsNotPersisted() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessImport()
+            .withUsersInsertFailure()
+            .arrange()
+        val progress = mutableListOf<Float>()
+
+        val result = useCase(arrangement.storedPath, null, progress::add)
+
+        assertEquals(
+            RestoreBackupResult.Failure(
+                RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Failed to persist backup data")
+            ),
+            result,
+        )
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertConversations(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
+        assertTrue(progress.isEmpty())
+    }
+
+    @Test
+    fun givenCancellationDuringPagePersistence_whenPageFinishes_thenNoNextPageIsPersisted() = runTest {
+        val pageStarted = CompletableDeferred<Unit>()
+        val finishPage = CompletableDeferred<Unit>()
+        var insertedPageCount = 0
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessImport()
+            .withImporterWorkFile()
+            .withUsersPages(
+                arrayOf(testUser.toBackupUser()),
+                arrayOf(testUser.toBackupUser()),
+            )
+            .withUsersInsertAction {
+                insertedPageCount++
+                pageStarted.complete(Unit)
+                finishPage.await()
+            }
+            .arrange()
+
+        val restoreJob = launch {
+            useCase(arrangement.storedPath, null) {}
+        }
+        pageStarted.await()
+
+        restoreJob.cancel()
+        assertFalse(restoreJob.isCompleted)
+        finishPage.complete(Unit)
+        restoreJob.join()
+
+        assertTrue(restoreJob.isCancelled)
+        assertEquals(1, insertedPageCount)
+        verify(VerifyMode.exactly(1)) { arrangement.usersPager.nextPage() }
+        verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertConversations(any()) }
+        assertFalse(arrangement.fileSystem.exists(arrangement.importerWorkFile))
+    }
+
+    @Test
+    fun givenCancellationDuringFinalPagePersistence_whenPageFinishes_thenCancellationWinsOverSuccess() = runTest {
+        val pageStarted = CompletableDeferred<Unit>()
+        val finishPage = CompletableDeferred<Unit>()
+        val progress = mutableListOf<Float>()
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessImport()
+            .withReactionsInsertAction {
+                pageStarted.complete(Unit)
+                finishPage.await()
+            }
+            .arrange()
+
+        val restoreJob = launch {
+            useCase(arrangement.storedPath, null, progress::add)
+        }
+        pageStarted.await()
+
+        restoreJob.cancel()
+        finishPage.complete(Unit)
+        restoreJob.join()
+
+        assertTrue(restoreJob.isCancelled)
+        assertEquals(listOf(0.25f, 0.5f, 0.75f), progress)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+    }
+
+    @Test
+    fun givenCancellationDuringConversationPersistence_whenPageFinishes_thenMessagesDoNotStart() = runTest {
+        val pageStarted = CompletableDeferred<Unit>()
+        val finishPage = CompletableDeferred<Unit>()
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessImport()
+            .withConversationsInsertAction {
+                pageStarted.complete(Unit)
+                finishPage.await()
+            }
+            .arrange()
+
+        val restoreJob = launch { useCase(arrangement.storedPath, null) {} }
+        pageStarted.await()
+
+        restoreJob.cancel()
+        finishPage.complete(Unit)
+        restoreJob.join()
+
+        assertTrue(restoreJob.isCancelled)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any()) }
+    }
+
+    @Test
+    fun givenCancellationDuringMessagePersistence_whenPageFinishes_thenReactionsDoNotStart() = runTest {
+        val pageStarted = CompletableDeferred<Unit>()
+        val finishPage = CompletableDeferred<Unit>()
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessImport()
+            .withMessagesInsertAction {
+                pageStarted.complete(Unit)
+                finishPage.await()
+            }
+            .arrange()
+
+        val restoreJob = launch { useCase(arrangement.storedPath, null) {} }
+        pageStarted.await()
+
+        restoreJob.cancel()
+        finishPage.complete(Unit)
+        restoreJob.join()
+
+        assertTrue(restoreJob.isCancelled)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
     }
 
     @Test
@@ -222,17 +371,27 @@ class RestoreMPBackupUseCaseTest {
         val messagesPager = mock<ImportDataPagerForMocking<BackupMessage>>(mode = MockMode.autoUnit)
         val reactionsPager = mock<ImportDataPagerForMocking<BackupReaction>>(mode = MockMode.autoUnit)
         val importer = mock<BackupImporter>(mode = MockMode.autoUnit)
+        val fileSystem = FakeKaliumFileSystem()
         var usersPages: List<Array<BackupUser>> = listOf(arrayOf(testUser.toBackupUser()))
         var usersInsertStubConfigured = false
+        var usersInsertFailure: CoreFailure? = null
+        var usersInsertAction: suspend () -> Unit = {}
         var conversationsInsertStubConfigured = false
+        var conversationsInsertAction: suspend () -> Unit = {}
         var messagesInsertStubConfigured = false
+        var messagesInsertAction: suspend () -> Unit = {}
+        var reactionsInsertAction: suspend () -> Unit = {}
+        var importerAction: suspend () -> Unit = {}
 
         val storedPath = "testPath/backupFile.zip".toPath()
+        val importerWorkDir = fileSystem.tempFilePath("${storedPath.name}-restore-workdir")
+        val importerWorkFile = "$importerWorkDir/importer.tmp".toPath()
 
         suspend fun withSuccessImport() = apply {
-            everySuspend { importer.importFromFile(any(), any()) } returns (
+            everySuspend { importer.importFromFile(any(), any()) } calls {
+                importerAction()
                 ImportResult.Success(resultPager)
-            )
+            }
         }
 
         suspend fun withInvalidPassword() = apply {
@@ -242,9 +401,10 @@ class RestoreMPBackupUseCaseTest {
         }
 
         suspend fun withParsingFailure() = apply {
-            everySuspend { importer.importFromFile(any(), any()) } returns (
+            everySuspend { importer.importFromFile(any(), any()) } calls {
+                importerAction()
                 ImportResult.Failure.ParsingFailure
-            )
+            }
         }
 
         suspend fun withUnzipFailure() = apply {
@@ -264,6 +424,13 @@ class RestoreMPBackupUseCaseTest {
             usersPages = pages.toList()
         }
 
+        fun withImporterWorkFile() = apply {
+            importerAction = {
+                fileSystem.createDirectories(importerWorkDir)
+                fileSystem.sink(importerWorkFile).buffer().use { it.writeUtf8("restore work") }
+            }
+        }
+
         suspend fun captureInsertedUsers(captured: MutableList<List<OtherUser>>) = apply {
             usersInsertStubConfigured = true
             everySuspend { backupRepository.insertUsers(any()) } calls { invocation ->
@@ -272,6 +439,26 @@ class RestoreMPBackupUseCaseTest {
                 captured.add(insertedUsers)
                 Unit.right()
             }
+        }
+
+        fun withUsersInsertFailure() = apply {
+            usersInsertFailure = CoreFailure.Unknown(IllegalStateException("persistence failure"))
+        }
+
+        fun withUsersInsertAction(action: suspend () -> Unit) = apply {
+            usersInsertAction = action
+        }
+
+        fun withReactionsInsertAction(action: suspend () -> Unit) = apply {
+            reactionsInsertAction = action
+        }
+
+        fun withConversationsInsertAction(action: suspend () -> Unit) = apply {
+            conversationsInsertAction = action
+        }
+
+        fun withMessagesInsertAction(action: suspend () -> Unit) = apply {
+            messagesInsertAction = action
         }
 
         suspend fun captureInsertedConversations(captured: MutableList<List<Conversation>>) = apply {
@@ -300,15 +487,27 @@ class RestoreMPBackupUseCaseTest {
             every { importerProvider.provideImporter(any(), any()) } returns (importer)
 
             if (!usersInsertStubConfigured) {
-                everySuspend { backupRepository.insertUsers(any()) } returns (Unit.right())
+                everySuspend { backupRepository.insertUsers(any()) } calls {
+                    usersInsertAction()
+                    usersInsertFailure?.left() ?: Unit.right()
+                }
             }
             if (!conversationsInsertStubConfigured) {
-                everySuspend { backupRepository.insertConversations(any()) } returns (Unit.right())
+                everySuspend { backupRepository.insertConversations(any()) } calls {
+                    conversationsInsertAction()
+                    Unit.right()
+                }
             }
             if (!messagesInsertStubConfigured) {
-                everySuspend { backupRepository.insertMessages(any()) } returns (Unit.right())
+                everySuspend { backupRepository.insertMessages(any()) } calls {
+                    messagesInsertAction()
+                    Unit.right()
+                }
             }
-            everySuspend { backupRepository.insertReactions(any()) } returns (Unit.right())
+            everySuspend { backupRepository.insertReactions(any()) } calls {
+                reactionsInsertAction()
+                Unit.right()
+            }
 
             val usersHasMorePagesValues = MutableList(usersPages.size) { true } + false
             var usersHasMorePagesIndex = 0
@@ -332,12 +531,12 @@ class RestoreMPBackupUseCaseTest {
             every { resultPager.conversationsPager } returns (conversationsPager)
             every { resultPager.messagesPager } returns (messagesPager)
             every { resultPager.reactionsPager } returns (reactionsPager)
-            every { resultPager.totalPagesCount } returns (1)
+            every { resultPager.totalPagesCount } returns (usersPages.size + 3)
 
             return this to RestoreMPBackupUseCaseImpl(
                 selfUserId = selfUserId,
                 backupRepository = backupRepository,
-                kaliumFileSystem = FakeKaliumFileSystem(),
+                kaliumFileSystem = fileSystem,
                 backupImporterProvider = importerProvider,
                 dispatchers = dispatchers
             )
