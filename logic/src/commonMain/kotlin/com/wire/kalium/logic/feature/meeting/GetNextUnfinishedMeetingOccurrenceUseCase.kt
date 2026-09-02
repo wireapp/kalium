@@ -27,17 +27,20 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
 /**
- * Use case for getting the next soonest occurrence of a meeting after a given point in time.
+ * Use case for finding the next soonest unfinished occurrence of a meeting at the given point in time.
+ * Unfinished occurrences are those that have not yet ended at the given point in time.
+ * If there is a currently ongoing occurrence, it will be returned, otherwise the next upcoming occurrence will be returned.
+ * If there are no unfinished occurrences, null will be returned.
  */
-public interface GetNextMeetingOccurrenceUseCase {
+public interface GetNextUnfinishedMeetingOccurrenceUseCase {
     public suspend operator fun invoke(meetingId: MeetingId, from: Instant = currentInstant()): MeetingOccurrence?
 }
 
-internal class GetNextMeetingOccurrenceUseCaseImpl(
+internal class GetNextUnfinishedMeetingOccurrenceUseCaseImpl(
     private val dispatcher: KaliumDispatcher,
     private val meetingRepository: MeetingRepository,
-) : GetNextMeetingOccurrenceUseCase {
+) : GetNextUnfinishedMeetingOccurrenceUseCase {
     override suspend operator fun invoke(meetingId: MeetingId, from: Instant): MeetingOccurrence? = withContext(dispatcher.io) {
-        meetingRepository.getNextMeetingOccurrence(meetingId, from).getOrNull()
+        meetingRepository.getNextUnfinishedMeetingOccurrence(meetingId, from).getOrNull()
     }
 }
