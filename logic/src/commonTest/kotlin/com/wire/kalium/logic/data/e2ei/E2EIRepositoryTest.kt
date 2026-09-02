@@ -438,6 +438,169 @@ class E2EIRepositoryTest {
     }
 
     @Test
+    fun givenExistingCredential_whenMigrationSucceeds_thenRunsCredentialAndBackendOperationsInOrder() = runTest {
+        val groupOne = GroupID("group-1")
+        val groupTwo = GroupID("group-2")
+        val prepared = PreparedX509KeyPackages(
+            keyPackages = listOf("x509-key-package".encodeToByteArray()),
+            cipherSuite = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+        )
+        val operations = mutableListOf<String>()
+        var credentialInstalled = false
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } calls {
+                if (credentialInstalled) {
+                    listOf(newCredentialRef, previousCredentialRef)
+                } else {
+                    listOf(previousCredentialRef)
+                }
+            }
+            everySuspend { coreCrypto.installCredential(any()) } calls {
+                operations += "install-credential"
+                credentialInstalled = true
+                newCredentialRef
+            }
+            everySuspend { mlsClient.selectCredential(eq(newCredentialRef)) } calls {
+                operations += "select-credential"
+            }
+            everySuspend {
+                mlsConversationRepository.migrateConversationCredential(any(), any(), eq(groupOne))
+            } calls {
+                operations += "migrate-group-1"
+            }
+            everySuspend {
+                mlsConversationRepository.migrateConversationCredential(any(), any(), eq(groupTwo))
+            } calls {
+                operations += "migrate-group-2"
+            }
+            everySuspend {
+                mlsConversationRepository.prepareX509KeyPackages(any(), eq(newCredentialRef))
+            } calls {
+                operations += "prepare-local-key-packages"
+                prepared
+            }
+            everySuspend {
+                mlsConversationRepository.replaceX509KeyPackages(eq(TestClient.CLIENT_ID), eq(prepared))
+            } calls {
+                operations += "replace-backend-key-packages"
+                Unit.right()
+            }
+            everySuspend { mlsContext.removeCredential(eq(previousCredentialRef)) } calls {
+                operations += "remove-previous-credential"
+            }
+            everySuspend { userConfigRepository.deleteE2EIRotationCheckpoint() } calls {
+                operations += "delete-checkpoint"
+                persistedRotationCheckpoint = null
+                Unit.right()
+            }
+        }
+
+        val acquisition = repository.acquireCredential(
+            authenticate = { ID_TOKEN },
+            groupIdListProvider = { listOf(groupOne, groupTwo) },
+            isNewClient = false
+        )
+        acquisition.shouldSucceed()
+
+        repository.rotateKeysAndMigrateConversations(
+            arrangement.transactionProvider,
+            acquisition.value
+        ).shouldSucceed()
+
+        assertEquals(
+            listOf(
+                "install-credential",
+                "select-credential",
+                "migrate-group-1",
+                "migrate-group-2",
+                "prepare-local-key-packages",
+                "replace-backend-key-packages",
+                "remove-previous-credential",
+                "delete-checkpoint"
+            ),
+            operations
+        )
+    }
+
+    @Test
+    fun givenBackendReplacementFails_whenRetried_thenDefersCleanupAndResumesFromBackendPhase() = runTest {
+        val backendFailure = E2EIFailure.Generic(IllegalStateException("backend failed"))
+        val prepared = PreparedX509KeyPackages(
+            keyPackages = listOf("x509-key-package".encodeToByteArray()),
+            cipherSuite = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+        )
+        val operations = mutableListOf<String>()
+        var backendReplacementFails = true
+        val (arrangement, repository) = Arrangement().arrange {
+            everySuspend { mlsClient.getCredentialRefs(CredentialType.X509) } returns
+                    listOf(newCredentialRef, previousCredentialRef)
+            everySuspend { mlsClient.selectCredential(eq(newCredentialRef)) } calls {
+                operations += "select-credential"
+            }
+            everySuspend {
+                mlsConversationRepository.migrateConversationCredential(any(), any(), any())
+            } calls {
+                operations += "migrate-conversation"
+            }
+            everySuspend {
+                mlsConversationRepository.prepareX509KeyPackages(any(), eq(newCredentialRef))
+            } calls {
+                operations += "prepare-local-key-packages"
+                prepared
+            }
+            everySuspend {
+                mlsConversationRepository.replaceX509KeyPackages(eq(TestClient.CLIENT_ID), eq(prepared))
+            } calls {
+                operations += "replace-backend-key-packages"
+                if (backendReplacementFails) backendFailure.left() else Unit.right()
+            }
+            everySuspend { mlsContext.removeCredential(eq(previousCredentialRef)) } calls {
+                operations += "remove-previous-credential"
+            }
+            everySuspend { userConfigRepository.deleteE2EIRotationCheckpoint() } calls {
+                operations += "delete-checkpoint"
+                persistedRotationCheckpoint = null
+                Unit.right()
+            }
+        }
+
+        val failedRotation = repository.rotateKeysAndMigrateConversations(
+            arrangement.transactionProvider,
+            installedCheckpoint()
+        )
+
+        kotlin.test.assertIs<com.wire.kalium.common.functional.Either.Left<E2EIFailure>>(failedRotation)
+        assertEquals(
+            listOf(
+                "select-credential",
+                "migrate-conversation",
+                "prepare-local-key-packages",
+                "replace-backend-key-packages"
+            ),
+            operations
+        )
+        val retryCheckpoint = Json.decodeFromString(
+            E2EIRotationCheckpoint.serializer(),
+            requireNotNull(arrangement.persistedRotationCheckpoint).decodeToString()
+        )
+        assertEquals(E2EIRotationPhase.KEY_PACKAGES_PREPARED, retryCheckpoint.phase)
+
+        backendReplacementFails = false
+        operations.clear()
+        repository.rotateKeysAndMigrateConversations(arrangement.transactionProvider, retryCheckpoint).shouldSucceed()
+
+        assertEquals(
+            listOf(
+                "select-credential",
+                "replace-backend-key-packages",
+                "remove-previous-credential",
+                "delete-checkpoint"
+            ),
+            operations
+        )
+    }
+
+    @Test
     fun givenBackendReplacementFails_whenRetriedFromPreparedCheckpoint_thenKeepsCleanupPending() = runTest {
         val backendFailure = E2EIFailure.Generic(IllegalStateException("backend failed"))
         val keyPackage = "key-package".encodeToByteArray()

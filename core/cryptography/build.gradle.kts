@@ -110,7 +110,12 @@ kotlin {
             resources.srcDir(coreCryptoJvmNativeResources)
         }
 
-        val jvmTest by getting
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.bouncycastle.pkix)
+                implementation(libs.ktxSerialization)
+            }
+        }
         val androidMain by getting {
             dependsOn(nonJsMain)
             addCommonKotlinJvmSourceDir()

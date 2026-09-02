@@ -78,6 +78,7 @@ kotlinx-io = "0.9.0"
 cells-sdk = "0.1.1-alpha17.02"
 difference = "1.1.1"
 ksoup = "0.2.6"
+bouncycastle = "1.79"
 
 [plugins]
 # Home-made convention plugins
@@ -163,6 +164,7 @@ coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypt
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
 coreCryptoKmp = { module = "com.wire:core-crypto-kmp", version.ref = "core-crypto" }
 libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodiumBindings" }
+bouncycastle-pkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
 
 # Compose Desktop / Multiplatform
 compose-fileKit-core = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "fileKit" }
