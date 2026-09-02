@@ -68,9 +68,7 @@ class MLSClientCredentialTest {
     fun givenNewerBasicCredential_whenInstalled_thenDefaultOperationsUseIt() = runTest {
         withCredentialTestClient(this) { testClient ->
             val initialPublicKey = testClient.client.getPublicKey().first
-            val newCredentialRef = testClient.addBasicCredential()
-
-            newCredentialRef.close()
+            testClient.addBasicCredential()
 
             assertFalse(initialPublicKey.contentEquals(testClient.client.getPublicKey().first))
             assertTrue(testClient.client.transaction { it.generateKeyPackages(1) }.isNotEmpty())
@@ -83,13 +81,9 @@ class MLSClientCredentialTest {
             val initialPublicKey = testClient.client.getPublicKey().first
             val newCredentialRef = testClient.addBasicCredential()
 
-            try {
-                assertFalse(initialPublicKey.contentEquals(testClient.client.getPublicKey().first))
-                testClient.client.transaction { it.removeCredential(newCredentialRef) }
-                assertContentEquals(initialPublicKey, testClient.client.getPublicKey().first)
-            } finally {
-                newCredentialRef.close()
-            }
+            assertFalse(initialPublicKey.contentEquals(testClient.client.getPublicKey().first))
+            testClient.client.transaction { it.removeCredential(newCredentialRef) }
+            assertContentEquals(initialPublicKey, testClient.client.getPublicKey().first)
         }
     }
 
@@ -170,16 +164,8 @@ class MLSClientCredentialTest {
             withContext(Dispatchers.Default) { delay(1_100) }
 
             val nativeClientId = CLIENT_ID.toCoreCryptoClientId()
-            val credential = try {
-                Credential.basic(CIPHER_SUITE.toCrypto(), nativeClientId)
-            } finally {
-                nativeClientId.close()
-            }
-            return try {
-                CryptoCredentialRefImpl(central.transaction("addTestCredential") { it.addCredential(credential) })
-            } finally {
-                credential.close()
-            }
+            val credential = Credential.basic(CIPHER_SUITE.toCrypto(), nativeClientId)
+            return CryptoCredentialRefImpl(central.transaction("addTestCredential") { it.addCredential(credential) })
         }
 
         suspend fun useAndGetBasicCredentialHash(): ByteArray {

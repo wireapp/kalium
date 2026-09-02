@@ -93,37 +93,30 @@ class CoreCryptoCentralImpl(
     ): MLSClient {
         val coreCryptoClientId = clientId.toCoreCryptoClientId()
         val coreCryptoTransport = mlsTransporter.toCoreCryptoTransport()
-        var clientIdOwnershipTransferred = false
 
-        return try {
-            cc.transaction("mlsInit") { context ->
-                context.mlsInit(coreCryptoClientId, coreCryptoTransport)
-            }
+        cc.transaction("mlsInit") { context ->
+            context.mlsInit(coreCryptoClientId, coreCryptoTransport)
+        }
 
-            cc.registerEpochObserver(
-                coroutineScope,
-                epochObserver = object : EpochObserver {
-                    override suspend fun epochChanged(conversationId: ConversationId, epoch: ULong) {
-                        try {
-                            epochObserver.onEpochChange(Base64.encode(conversationId.copyBytes()), epoch)
-                        } finally {
-                            conversationId.close()
-                        }
+        cc.registerEpochObserver(
+            coroutineScope,
+            epochObserver = object : EpochObserver {
+                override suspend fun epochChanged(conversationId: ConversationId, epoch: ULong) {
+                    try {
+                        epochObserver.onEpochChange(Base64.encode(conversationId.copyBytes()), epoch)
+                    } finally {
+                        conversationId.close()
                     }
                 }
-            )
-
-            MLSClientImpl.create(
-                coreCrypto = cc,
-                clientId = coreCryptoClientId,
-                defaultCipherSuite = defaultCipherSuite.toCrypto(),
-                onClose = ::close
-            ).also {
-                clientIdOwnershipTransferred = true
             }
-        } finally {
-            if (!clientIdOwnershipTransferred) coreCryptoClientId.close()
-        }
+        )
+
+        return MLSClientImpl.create(
+            coreCrypto = cc,
+            clientId = coreCryptoClientId,
+            defaultCipherSuite = defaultCipherSuite.toCrypto(),
+            onClose = ::close
+        )
     }
 
     override suspend fun proteusClient(): ProteusClient {
@@ -167,48 +160,32 @@ class CoreCryptoCentralImpl(
         config: X509CredentialAcquisitionConfig,
         existingCredentialRef: CryptoCredentialRef?
     ): CryptoCredential = pkiEnvironmentMutex.withLock {
-        try {
-            val validityPeriodSeconds = config.validity.inWholeSeconds
-            require(validityPeriodSeconds > 0) { "X509 credential validity must be positive" }
-            val nativeClientId = config.clientId.toCoreCryptoClientId()
-            val nativeConfig = try {
-                X509CredentialAcquisitionConfiguration(
-                    acmeDirectoryUrl = config.acmeDirectoryUrl,
-                    cipherSuite = config.cipherSuite.toCrypto(),
-                    displayName = config.displayName,
-                    clientId = nativeClientId,
-                    handle = config.handle,
-                    domain = config.clientId.userId.domain,
-                    team = config.teamId,
-                    validityPeriodSecs = validityPeriodSeconds.toULong()
-                )
-            } catch (throwable: Throwable) {
-                nativeClientId.close()
-                throw throwable
-            }
-            val acquisition = existingCredentialRef?.let {
-                X509CredentialAcquisition.newFromCredentialRef(
-                    pkiEnvironment = requirePkiEnvironment(),
-                    config = nativeConfig,
-                    credentialRef = it.unwrap()
-                )
-            } ?: X509CredentialAcquisition(requirePkiEnvironment(), nativeConfig)
-            acquisition.finalizeCredential()
-        } finally {
-            existingCredentialRef?.close()
-        }
+        val validityPeriodSeconds = config.validity.inWholeSeconds
+        require(validityPeriodSeconds > 0) { "X509 credential validity must be positive" }
+        val nativeConfig = X509CredentialAcquisitionConfiguration(
+            acmeDirectoryUrl = config.acmeDirectoryUrl,
+            cipherSuite = config.cipherSuite.toCrypto(),
+            displayName = config.displayName,
+            clientId = config.clientId.toCoreCryptoClientId(),
+            handle = config.handle,
+            domain = config.clientId.userId.domain,
+            team = config.teamId,
+            validityPeriodSecs = validityPeriodSeconds.toULong()
+        )
+        val acquisition = existingCredentialRef?.let {
+            X509CredentialAcquisition.newFromCredentialRef(
+                pkiEnvironment = requirePkiEnvironment(),
+                config = nativeConfig,
+                credentialRef = it.unwrap()
+            )
+        } ?: X509CredentialAcquisition(requirePkiEnvironment(), nativeConfig)
+        acquisition.finalizeCredential()
     }
 
-    override suspend fun installCredential(credential: CryptoCredential): CryptoCredentialRef {
-        try {
-            val nativeCredential = credential.unwrap()
-            return cc.transaction("installCredential") {
-                CryptoCredentialRefImpl(it.addCredential(nativeCredential))
-            }
-        } finally {
-            credential.close()
+    override suspend fun installCredential(credential: CryptoCredential): CryptoCredentialRef =
+        cc.transaction("installCredential") {
+            CryptoCredentialRefImpl(it.addCredential(credential.unwrap()))
         }
-    }
 
     override suspend fun checkCredentials() = pkiEnvironmentMutex.withLock {
         cc.transaction("checkCredentials") {

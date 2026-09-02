@@ -41,10 +41,9 @@ class BasicToX509CredentialUpgradeIntegrationTest {
             mlsClient.initializeBasicCredential()
 
             val basicSigningKey = mlsClient.getPublicKey().first
-            acquireX509UsingBasicCredential().use { acquiredCredential ->
-                acquiredCredential.assertContainsCertificate()
-                certificateAuthority.assertIssuedCertificateUses(basicSigningKey)
-            }
+            val acquiredCredential = acquireX509UsingBasicCredential()
+            acquiredCredential.assertContainsCertificate()
+            certificateAuthority.assertIssuedCertificateUses(basicSigningKey)
         }
     }
 
@@ -55,14 +54,13 @@ class BasicToX509CredentialUpgradeIntegrationTest {
             mlsClient.initializeBasicCredential()
 
             val basicSigningKey = mlsClient.getPublicKey().first
-            mlsClient.requireBasicCredential().use { basicCredential ->
-                mlsClient.transaction("prepareBasicStateBeforeAcquisition") {
-                    it.createConversation(CONVERSATION_ID, certificateAuthority.externalSenderKey)
-                    it.generateKeyPackages(KEY_PACKAGE_COUNT, basicCredential)
-                }
+            val basicCredential = mlsClient.requireBasicCredential()
+            mlsClient.transaction("prepareBasicStateBeforeAcquisition") {
+                it.createConversation(CONVERSATION_ID, certificateAuthority.externalSenderKey)
+                it.generateKeyPackages(KEY_PACKAGE_COUNT, basicCredential)
             }
 
-            acquireX509UsingBasicCredential().close()
+            acquireX509UsingBasicCredential()
 
             assertContentEquals(basicSigningKey, mlsClient.getPublicKey().first)
             mlsClient.assertCredentialCounts(basic = 1, x509 = 0)
@@ -80,11 +78,10 @@ class BasicToX509CredentialUpgradeIntegrationTest {
             val basicSigningKey = initialClient.getPublicKey().first
 
             val restartedClient = restartClient()
-            acquireX509UsingBasicCredential().use {
-                assertContentEquals(basicSigningKey, restartedClient.getPublicKey().first)
-                certificateAuthority.assertIssuedCertificateUses(basicSigningKey)
-                restartedClient.assertCredentialCounts(basic = 1, x509 = 0)
-            }
+            acquireX509UsingBasicCredential()
+            assertContentEquals(basicSigningKey, restartedClient.getPublicKey().first)
+            certificateAuthority.assertIssuedCertificateUses(basicSigningKey)
+            restartedClient.assertCredentialCounts(basic = 1, x509 = 0)
         }
     }
 
@@ -96,29 +93,27 @@ class BasicToX509CredentialUpgradeIntegrationTest {
             val basicSigningKey = mlsClient.getPublicKey().first
 
             assertFails {
-                acquireX509UsingBasicCredential().close()
+                acquireX509UsingBasicCredential()
             }
 
             assertContentEquals(basicSigningKey, mlsClient.getPublicKey().first)
             mlsClient.assertCredentialCounts(basic = 1, x509 = 0)
 
             central.addPkiTrustAnchors(certificateAuthority.rootPem)
-            acquireX509UsingBasicCredential().use { acquiredCredential ->
-                acquiredCredential.assertContainsCertificate()
-                certificateAuthority.assertIssuedCertificateUses(basicSigningKey)
-                mlsClient.assertCredentialCounts(basic = 1, x509 = 0)
-            }
+            val acquiredCredential = acquireX509UsingBasicCredential()
+            acquiredCredential.assertContainsCertificate()
+            certificateAuthority.assertIssuedCertificateUses(basicSigningKey)
+            mlsClient.assertCredentialCounts(basic = 1, x509 = 0)
         }
     }
 
     @Test
     fun givenX509CredentialWithoutBasic_whenInstalled_thenDefaultOperationsUseX509() = runTest {
         withTestEnvironment(this) {
-            central.installCredential(
+            val installedCredential = central.installCredential(
                 central.startX509CredentialAcquisition(ACQUISITION_CONFIG, existingCredentialRef = null)
-            ).use { installedCredential ->
-                assertEquals(CredentialType.X509, installedCredential.credentialType())
-            }
+            )
+            assertEquals(CredentialType.X509, installedCredential.credentialType())
 
             val publicKey = client.getPublicKey().first
             certificateAuthority.assertIssuedCertificateUses(publicKey)
@@ -140,25 +135,23 @@ class BasicToX509CredentialUpgradeIntegrationTest {
             val initialClient = client
             initialClient.initializeBasicCredential()
 
-            val basicCredentialHash = initialClient.requireBasicCredential().use { basicCredential ->
-                initialClient.transaction("prepareBasicState") {
-                    it.createConversation(CONVERSATION_ID, certificateAuthority.externalSenderKey)
-                    it.generateKeyPackages(KEY_PACKAGE_COUNT, basicCredential)
-                }
-                basicCredential.publicKeyHash()
+            val basicCredential = initialClient.requireBasicCredential()
+            initialClient.transaction("prepareBasicState") {
+                it.createConversation(CONVERSATION_ID, certificateAuthority.externalSenderKey)
+                it.generateKeyPackages(KEY_PACKAGE_COUNT, basicCredential)
             }
+            val basicCredentialHash = basicCredential.publicKeyHash()
             assertEquals(CredentialType.Basic, initialClient.conversationCredentialType())
             assertEquals(KEY_PACKAGE_COUNT, central.countKeyPackages(CredentialType.Basic))
 
-            central.installCredential(acquireX509UsingBasicCredential()).use { installedX509Credential ->
-                assertEquals(CredentialType.X509, installedX509Credential.credentialType())
-                assertContentEquals(basicCredentialHash, installedX509Credential.publicKeyHash())
+            val installedX509Credential = central.installCredential(acquireX509UsingBasicCredential())
+            assertEquals(CredentialType.X509, installedX509Credential.credentialType())
+            assertContentEquals(basicCredentialHash, installedX509Credential.publicKeyHash())
 
-                initialClient.transaction("migrateConversationAndReplaceKeyPackages") {
-                    it.setConversationCredential(CONVERSATION_ID, installedX509Credential)
-                    it.removeKeyPackages(installedX509Credential)
-                    it.generateKeyPackages(KEY_PACKAGE_COUNT, installedX509Credential)
-                }
+            initialClient.transaction("migrateConversationAndReplaceKeyPackages") {
+                it.setConversationCredential(CONVERSATION_ID, installedX509Credential)
+                it.removeKeyPackages(installedX509Credential)
+                it.generateKeyPackages(KEY_PACKAGE_COUNT, installedX509Credential)
             }
             assertEquals(CredentialType.X509, initialClient.conversationCredentialType())
             assertEquals(0, central.countKeyPackages(CredentialType.Basic))
@@ -170,10 +163,9 @@ class BasicToX509CredentialUpgradeIntegrationTest {
             assertEquals(CredentialType.X509, restartedClient.conversationCredentialType())
             assertEquals(KEY_PACKAGE_COUNT, central.countKeyPackages(CredentialType.X509))
 
-            restartedClient.getCredentialRefs(CredentialType.Basic).useCredentialRefs { remainingBasicCredentials ->
-                restartedClient.transaction("cleanupBasicCredential") { context ->
-                    remainingBasicCredentials.forEach { context.removeCredential(it) }
-                }
+            val remainingBasicCredentials = restartedClient.getCredentialRefs(CredentialType.Basic)
+            restartedClient.transaction("cleanupBasicCredential") { context ->
+                remainingBasicCredentials.forEach { context.removeCredential(it) }
             }
 
             restartedClient.assertCredentialCounts(basic = 0, x509 = 1)
@@ -275,11 +267,11 @@ class BasicToX509CredentialUpgradeIntegrationTest {
     }
 
     private suspend fun MLSClient.conversationCredentialType(): CredentialType = transaction("conversationCredentialType") {
-        it.getConversationCredentialRef(CONVERSATION_ID).use(CryptoCredentialRef::credentialType)
+        it.getConversationCredentialRef(CONVERSATION_ID).credentialType()
     }
 
     private suspend fun MLSClient.credentialCount(type: CredentialType): Int =
-        getCredentialRefs(type).useCredentialRefs(List<CryptoCredentialRef>::size)
+        getCredentialRefs(type).size
 
     private suspend fun CoreCryptoCentralImpl.countKeyPackages(type: CredentialType): Int =
         transaction("countKeyPackages") { context ->
@@ -287,26 +279,6 @@ class BasicToX509CredentialUpgradeIntegrationTest {
                 refs.count { it.credentialType().name.equals(type.name, ignoreCase = true) }
             }
         }
-
-    private inline fun <T> CryptoCredential.use(block: (CryptoCredential) -> T): T = try {
-        block(this)
-    } finally {
-        close()
-    }
-
-    private inline fun <T> CryptoCredentialRef.use(block: (CryptoCredentialRef) -> T): T = try {
-        block(this)
-    } finally {
-        close()
-    }
-
-    private inline fun <T> List<CryptoCredentialRef>.useCredentialRefs(
-        block: (List<CryptoCredentialRef>) -> T
-    ): T = try {
-        block(this)
-    } finally {
-        forEach(CryptoCredentialRef::close)
-    }
 
     private inline fun <T> List<KeyPackageRef>.useKeyPackageRefs(block: (List<KeyPackageRef>) -> T): T = try {
         block(this)

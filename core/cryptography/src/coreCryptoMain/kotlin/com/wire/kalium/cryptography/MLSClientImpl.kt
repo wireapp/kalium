@@ -63,20 +63,13 @@ class MLSClientImpl private constructor(
             clientId = clientId,
             cipherSuite = defaultCipherSuite
         )
-        try {
-            if (existingCredentials.isNotEmpty()) return@withLock
-        } finally {
-            existingCredentials.forEach { it.close() }
-        }
+        if (existingCredentials.isNotEmpty()) return@withLock
 
         coreCrypto.transaction("initializeBasicCredential") { context ->
             val credential = Credential.basic(defaultCipherSuite, clientId)
-            try {
-                context.addCredential(credential).close()
-            } finally {
-                credential.close()
-            }
+            context.addCredential(credential)
         }
+        Unit
     }
 
     override fun getDefaultCipherSuite(): MLSCiphersuite = defaultCipherSuite.toCryptography()
@@ -97,12 +90,7 @@ class MLSClientImpl private constructor(
             cipherSuite = defaultCipherSuite,
             credentialType = credentialType.toCrypto()
         )
-        return try {
-            credentialRefs.sortedByDescending { it.earliestValidity() }.map(::CryptoCredentialRefImpl)
-        } catch (throwable: Throwable) {
-            credentialRefs.forEach { it.close() }
-            throw throwable
-        }
+        return credentialRefs.sortedByDescending { it.earliestValidity() }.map(::CryptoCredentialRefImpl)
     }
 
     override suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState = groupId.toCrypto().useNative {
@@ -131,11 +119,7 @@ class MLSClientImpl private constructor(
             clientId = clientId,
             cipherSuite = defaultCipherSuite
         ).takeDefault() ?: error(NO_DEFAULT_CREDENTIAL_MESSAGE)
-        return try {
-            block(credential)
-        } finally {
-            credential.close()
-        }
+        return block(credential)
     }
 
     private fun mlsCoreCryptoContext(context: CoreCryptoContext) = object : MlsCoreCryptoContext {
@@ -413,33 +397,16 @@ private fun Map<Uuid, List<com.wire.crypto.WireIdentity>>.toCryptographyAndClose
     }
 }
 
-private fun List<CredentialRef>.takeNewest(): CredentialRef? {
-    val newest = try {
-        maxByOrNull { it.earliestValidity() }
-    } catch (throwable: Throwable) {
-        forEach { it.close() }
-        throw throwable
-    }
-    forEach { if (it !== newest) it.close() }
-    return newest
-}
+private fun List<CredentialRef>.takeNewest(): CredentialRef? = maxByOrNull { it.earliestValidity() }
 
 private fun List<CredentialRef>.takeDefault(): CredentialRef? {
     // Core Crypto enables E2EI for a cipher suite as soon as it has an X.509 credential.
-    val defaultType = try {
-        if (any { it.type() == CoreCredentialType.X509 }) CoreCredentialType.X509 else CoreCredentialType.BASIC
-    } catch (throwable: Throwable) {
-        forEach { it.close() }
-        throw throwable
+    val defaultType = if (any { it.type() == CoreCredentialType.X509 }) {
+        CoreCredentialType.X509
+    } else {
+        CoreCredentialType.BASIC
     }
-    val defaultCredential = try {
-        filter { it.type() == defaultType }.maxByOrNull { it.earliestValidity() }
-    } catch (throwable: Throwable) {
-        forEach { it.close() }
-        throw throwable
-    }
-    forEach { if (it !== defaultCredential) it.close() }
-    return defaultCredential
+    return filter { it.type() == defaultType }.maxByOrNull { it.earliestValidity() }
 }
 
 private fun List<KeyPackageRef>.countMatching(credentialRef: CredentialRef): Int = try {

@@ -205,7 +205,7 @@ interface MlsCoreCryptoContext {
     /** Change an existing conversation to use the supplied credential. */
     suspend fun setConversationCredential(groupId: MLSGroupId, credentialRef: CryptoCredentialRef)
 
-    /** Return an owned reference to the credential currently used by an existing conversation. */
+    /** Return a reference to the credential currently used by an existing conversation. */
     suspend fun getConversationCredentialRef(groupId: MLSGroupId): CryptoCredentialRef
 
     /** Remove all key packages associated with a credential. */

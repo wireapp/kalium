@@ -65,17 +65,13 @@ class CoreCryptoCentralTest {
         )
 
         val nativeClientId = clientId.toCoreCryptoClientId()
+        val converted = nativeClientId.deserialize()
         try {
-            val converted = nativeClientId.deserialize()
-            try {
-                assertEquals("0000fb4b58152e20", converted.deviceId.toHexString())
-                assertEquals(clientId.userId.value, converted.userId.toString())
-                assertEquals(clientId.userId.domain, converted.domain)
-            } finally {
-                converted.destroy()
-            }
+            assertEquals("0000fb4b58152e20", converted.deviceId.toHexString())
+            assertEquals(clientId.userId.value, converted.userId.toString())
+            assertEquals(clientId.userId.domain, converted.domain)
         } finally {
-            nativeClientId.close()
+            converted.destroy()
         }
     }
 

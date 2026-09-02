@@ -27,19 +27,13 @@ package com.wire.kalium.cryptography
 interface CryptoCredential {
     /** Export the public credential as PEM; X509 credentials return their full certificate chain. */
     fun exportPem(): String
-
-    /** Release the native credential. Safe to call more than once. */
-    fun close()
 }
 
-/** An owned reference to a credential stored by Core Crypto. */
+/** A reference to a credential stored by Core Crypto. */
 interface CryptoCredentialRef {
     /** Credential kind stored behind this reference. */
     fun credentialType(): CredentialType
 
     /** Stable identifier used to recover this installed credential after a process restart. */
     fun publicKeyHash(): ByteArray
-
-    /** Release the native reference. Safe to call more than once. */
-    fun close()
 }

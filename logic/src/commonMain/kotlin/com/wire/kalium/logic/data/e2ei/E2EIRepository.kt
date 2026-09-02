@@ -458,27 +458,19 @@ private class E2EICredentialAcquisitionWorkflow(
         groupIdListProvider: suspend () -> List<GroupID>,
         isNewClient: Boolean
     ): Either<E2EIFailure, E2EIRotationCheckpoint> {
-        try {
-            val certificateChain = credential.exportPem()
-            return wrapCoreCryptoInterop { groupIdListProvider() }.flatMap { groupIdList ->
-                createAcquiredCheckpoint(mlsClient, groupIdList, isNewClient, certificateChain).flatMap { checkpoint ->
-                    val newCredentialRef = coreCrypto.installCredential(credential)
-                    val installedCheckpoint = try {
-                        checkpoint.copy(
-                            newCredentialId = newCredentialRef.rotationCredentialId(),
-                            phase = E2EIRotationPhase.CREDENTIAL_INSTALLED
-                        )
-                    } finally {
-                        newCredentialRef.close()
-                    }
-                    checkpointStore.persist(installedCheckpoint).map {
-                        dependencies.cryptoStateChangeHookNotifier.onCryptoStateChanged(dependencies.selfUserId)
-                        installedCheckpoint
-                    }
+        val certificateChain = credential.exportPem()
+        return wrapCoreCryptoInterop { groupIdListProvider() }.flatMap { groupIdList ->
+            createAcquiredCheckpoint(mlsClient, groupIdList, isNewClient, certificateChain).flatMap { checkpoint ->
+                val newCredentialRef = coreCrypto.installCredential(credential)
+                val installedCheckpoint = checkpoint.copy(
+                    newCredentialId = newCredentialRef.rotationCredentialId(),
+                    phase = E2EIRotationPhase.CREDENTIAL_INSTALLED
+                )
+                checkpointStore.persist(installedCheckpoint).map {
+                    dependencies.cryptoStateChangeHookNotifier.onCryptoStateChanged(dependencies.selfUserId)
+                    installedCheckpoint
                 }
             }
-        } finally {
-            credential.close()
         }
     }
 
@@ -540,11 +532,7 @@ private class E2EICredentialAcquisitionWorkflow(
 
     private suspend fun getX509CredentialIds(mlsClient: MLSClient): Either<E2EIFailure, List<String>> =
         wrapCoreCryptoInterop { mlsClient.getCredentialRefs(CredentialType.X509) }.flatMap { refs ->
-            try {
-                refs.map { it.rotationCredentialId() }.right()
-            } finally {
-                refs.forEach(CryptoCredentialRef::close)
-            }
+            refs.map { it.rotationCredentialId() }.right()
         }
 }
 
@@ -570,11 +558,7 @@ private class E2EICredentialRotationWorkflow(
                 .mapLeft(E2EIFailure::MissingMLSClient)
                 .flatMap { mlsClient ->
                     resolveCredentialRefs(mlsClient, checkpoint).flatMap { credentialRefs ->
-                        try {
-                            runRotationPhases(transactionProvider, clientId, checkpoint, credentialRefs)
-                        } finally {
-                            credentialRefs.all.forEach(CryptoCredentialRef::close)
-                        }
+                        runRotationPhases(transactionProvider, clientId, checkpoint, credentialRefs)
                     }
                 }
         }
@@ -589,13 +573,11 @@ private class E2EICredentialRotationWorkflow(
         return wrapCoreCryptoInterop { mlsClient.getCredentialRefs(CredentialType.X509) }.flatMap { refs ->
             val newCredentialRef = refs.firstOrNull { it.rotationCredentialId() == newCredentialId }
             if (newCredentialRef == null) {
-                refs.forEach(CryptoCredentialRef::close)
                 E2EIFailure.Generic(
                     IllegalStateException("The installed X.509 credential is no longer available")
                 ).left()
             } else {
                 RotationCredentialRefs(
-                    all = refs,
                     new = newCredentialRef,
                     previous = checkpoint.preExistingCredentialIds.firstOrNull()?.let { previousId ->
                         refs.firstOrNull { it.rotationCredentialId() == previousId }
@@ -722,7 +704,6 @@ private class E2EICredentialRotationWorkflow(
 }
 
 private data class RotationCredentialRefs(
-    val all: List<CryptoCredentialRef>,
     val new: CryptoCredentialRef,
     val previous: CryptoCredentialRef?
 )

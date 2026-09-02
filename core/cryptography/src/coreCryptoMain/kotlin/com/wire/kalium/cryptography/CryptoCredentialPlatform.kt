@@ -22,41 +22,25 @@ import com.wire.crypto.CredentialRef
 import com.wire.kalium.cryptography.utils.toCryptography
 
 internal class CryptoCredentialImpl(
-    credential: Credential
+    internal val native: Credential
 ) : CryptoCredential {
-    internal var native: Credential? = credential
-        private set
-
-    override fun exportPem(): String = unwrap().exportPem()
-
-    override fun close() {
-        native?.close()
-        native = null
-    }
+    override fun exportPem(): String = native.exportPem()
 }
 
 internal class CryptoCredentialRefImpl(
-    credentialRef: CredentialRef
+    internal val native: CredentialRef
 ) : CryptoCredentialRef {
-    internal var native: CredentialRef? = credentialRef
-        private set
+    override fun credentialType(): CredentialType = native.type().toCryptography()
 
-    override fun credentialType(): CredentialType = unwrap().type().toCryptography()
-
-    override fun publicKeyHash(): ByteArray = unwrap().publicKeyHash()
-
-    override fun close() {
-        native?.close()
-        native = null
-    }
+    override fun publicKeyHash(): ByteArray = native.publicKeyHash()
 }
 
 internal fun CryptoCredential.unwrap(): Credential =
-    checkNotNull((this as? CryptoCredentialImpl)?.native) {
-        "Unsupported or closed CryptoCredential"
+    requireNotNull((this as? CryptoCredentialImpl)?.native) {
+        "Unsupported CryptoCredential"
     }
 
 internal fun CryptoCredentialRef.unwrap(): CredentialRef =
-    checkNotNull((this as? CryptoCredentialRefImpl)?.native) {
-        "Unsupported or closed CryptoCredentialRef"
+    requireNotNull((this as? CryptoCredentialRefImpl)?.native) {
+        "Unsupported CryptoCredentialRef"
     }
