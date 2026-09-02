@@ -43,7 +43,7 @@ interface MlsCoreCryptoContext {
     /**
      * Generate a fresh set of key packages.
      *
-     * @return list of generated key packages. NOTE: can be more than the requested amount.
+     * @return list containing the requested number of generated key packages.
      */
     suspend fun generateKeyPackages(
         amount: Int,

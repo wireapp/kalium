@@ -189,17 +189,13 @@ class CoreCryptoCentralImpl(
                 nativeClientId.close()
                 throw throwable
             }
-            val acquisition = try {
-                existingCredentialRef?.let {
-                    X509CredentialAcquisition.newFromCredentialRef(
-                        pkiEnvironment = requirePkiEnvironment(),
-                        config = nativeConfig,
-                        credentialRef = it.unwrap()
-                    )
-                } ?: X509CredentialAcquisition(requirePkiEnvironment(), nativeConfig)
-            } finally {
-                nativeConfig.destroy()
-            }
+            val acquisition = existingCredentialRef?.let {
+                X509CredentialAcquisition.newFromCredentialRef(
+                    pkiEnvironment = requirePkiEnvironment(),
+                    config = nativeConfig,
+                    credentialRef = it.unwrap()
+                )
+            } ?: X509CredentialAcquisition(requirePkiEnvironment(), nativeConfig)
             acquisition.finalizeCredential()
         } finally {
             existingCredentialRef?.close()

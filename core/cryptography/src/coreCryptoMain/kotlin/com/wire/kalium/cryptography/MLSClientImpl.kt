@@ -60,11 +60,7 @@ class MLSClientImpl private constructor(
             activeCredentialRef?.close()
             activeCredentialRef = null
         } finally {
-            try {
-                clientId.close()
-            } finally {
-                onClose()
-            }
+            onClose()
         }
     }
 
