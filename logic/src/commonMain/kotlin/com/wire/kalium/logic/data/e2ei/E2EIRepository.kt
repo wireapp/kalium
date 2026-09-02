@@ -119,7 +119,7 @@ internal interface E2EIRepository {
         groupIdListProvider: suspend () -> List<GroupID>,
         isNewClient: Boolean
     ): Either<E2EIFailure, E2EIRotationCheckpoint>
-    suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit>
+    suspend fun fetchAndAddTrustAnchors(): Either<E2EIFailure, Unit>
     suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit>
     suspend fun checkCredentials(): Either<E2EIFailure, Unit>
 
@@ -164,7 +164,7 @@ internal class E2EIRepositoryImpl(
         dependencies = dependencies,
         checkpointStore = checkpointStore,
         pkiEnvironmentMutex = pkiEnvironmentMutex,
-        fetchTrustAnchors = ::fetchAndSetTrustAnchors,
+        fetchTrustAnchors = ::fetchAndAddTrustAnchors,
         fetchFederationCertificates = ::fetchFederationCertificates
     )
     private val rotationWorkflow = E2EICredentialRotationWorkflow(dependencies, checkpointStore)
@@ -179,21 +179,21 @@ internal class E2EIRepositoryImpl(
         isNewClient = isNewClient
     )
 
-    override suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit> = withConfiguredCoreCrypto { coreCrypto ->
+    override suspend fun fetchAndAddTrustAnchors(): Either<E2EIFailure, Unit> = withConfiguredCoreCrypto { coreCrypto ->
         discoveryUrl().fold(
             { it.left() },
-            { fetchAndSetTrustAnchors(coreCrypto, it) }
+            { fetchAndAddTrustAnchors(coreCrypto, it) }
         )
     }
 
-    private suspend fun fetchAndSetTrustAnchors(
+    private suspend fun fetchAndAddTrustAnchors(
         coreCrypto: CoreCryptoCentral,
         discoveryUrl: String
     ): Either<E2EIFailure, Unit> = wrapApiRequest { acmeApi.getTrustAnchors(discoveryUrl) }.fold(
         { E2EIFailure.TrustAnchors(it).left() },
         { trustAnchors ->
             wrapCoreCryptoInterop {
-                coreCrypto.reconcilePkiTrustAnchors(trustAnchors.decodeToString())
+                coreCrypto.addPkiTrustAnchors(trustAnchors.decodeToString())
                 cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
             }
         }

@@ -19,68 +19,62 @@
 package com.wire.kalium.cryptography
 
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class PkiTrustAnchorsTest {
 
     @Test
-    fun givenCertificate_whenCalculatingFingerprint_thenHashesDerEncodedSpki() {
-        val expected = EXPECTED_FIRST_SPKI_SHA256.hexToByteArray()
-
-        val actual = pkiTrustAnchorFingerprint(FIRST_TRUST_ANCHOR)
-
-        assertContentEquals(expected, actual)
-    }
-
-    @Test
-    fun givenRotatedBundle_whenPlanningReconciliation_thenAddsNewBeforeRemovingOld() {
-        val plan = planPkiTrustAnchorReconciliation(
-            currentAnchors = listOf(FIRST_TRUST_ANCHOR),
-            desiredPemBundle = SECOND_TRUST_ANCHOR
+    fun givenDifferentInstalledRoot_whenFindingAnchorsToAdd_thenReturnsBundledRoot() {
+        val anchorsToAdd = findPkiTrustAnchorsToAdd(
+            installedAnchors = listOf(FIRST_TRUST_ANCHOR),
+            pemBundle = SECOND_TRUST_ANCHOR
         )
 
-        assertEquals(listOf(SECOND_TRUST_ANCHOR), plan.anchorsToAdd)
-        assertEquals(1, plan.fingerprintsToRemove.size)
-        assertContentEquals(EXPECTED_FIRST_SPKI_SHA256.hexToByteArray(), plan.fingerprintsToRemove.single())
+        assertEquals(listOf(SECOND_TRUST_ANCHOR), anchorsToAdd)
     }
 
     @Test
-    fun givenBundleContainingCurrentAndNewRoot_whenPlanningReconciliation_thenOnlyAddsNewRoot() {
-        val plan = planPkiTrustAnchorReconciliation(
-            currentAnchors = listOf(FIRST_TRUST_ANCHOR),
-            desiredPemBundle = "$FIRST_TRUST_ANCHOR\n$SECOND_TRUST_ANCHOR"
+    fun givenBundleContainingInstalledAndNewRoot_whenFindingAnchorsToAdd_thenOnlyReturnsNewRoot() {
+        val anchorsToAdd = findPkiTrustAnchorsToAdd(
+            installedAnchors = listOf(FIRST_TRUST_ANCHOR),
+            pemBundle = "$FIRST_TRUST_ANCHOR\n$SECOND_TRUST_ANCHOR"
         )
 
-        assertEquals(listOf(SECOND_TRUST_ANCHOR), plan.anchorsToAdd)
-        assertEquals(emptyList(), plan.fingerprintsToRemove)
+        assertEquals(listOf(SECOND_TRUST_ANCHOR), anchorsToAdd)
     }
 
     @Test
-    fun givenSameRootWithDifferentPemLineEndings_whenPlanningReconciliation_thenDoesNothing() {
-        val plan = planPkiTrustAnchorReconciliation(
-            currentAnchors = listOf(FIRST_TRUST_ANCHOR),
-            desiredPemBundle = FIRST_TRUST_ANCHOR.replace("\n", "\r\n")
+    fun givenInstalledRootWithDifferentPemLineEndings_whenFindingAnchorsToAdd_thenReturnsNothing() {
+        val anchorsToAdd = findPkiTrustAnchorsToAdd(
+            installedAnchors = listOf(FIRST_TRUST_ANCHOR),
+            pemBundle = FIRST_TRUST_ANCHOR.replace("\n", "\r\n")
         )
 
-        assertEquals(emptyList(), plan.anchorsToAdd)
-        assertEquals(emptyList(), plan.fingerprintsToRemove)
+        assertEquals(emptyList(), anchorsToAdd)
     }
 
     @Test
-    fun givenEmptyAuthoritativeBundle_whenPlanningReconciliation_thenFailsClosed() {
+    fun givenEmptyBundle_whenFindingAnchorsToAdd_thenRejectsBundle() {
         assertFailsWith<IllegalArgumentException> {
-            planPkiTrustAnchorReconciliation(
-                currentAnchors = listOf(FIRST_TRUST_ANCHOR),
-                desiredPemBundle = " \n\t"
+            findPkiTrustAnchorsToAdd(
+                installedAnchors = listOf(FIRST_TRUST_ANCHOR),
+                pemBundle = " \n\t"
+            )
+        }
+    }
+
+    @Test
+    fun givenBundleContainingMalformedCertificate_whenFindingAnchorsToAdd_thenRejectsBundle() {
+        assertFailsWith<IllegalArgumentException> {
+            findPkiTrustAnchorsToAdd(
+                installedAnchors = emptyList(),
+                pemBundle = "$FIRST_TRUST_ANCHOR\n$MALFORMED_TRUST_ANCHOR"
             )
         }
     }
 
     private companion object {
-        // From Core Crypto v10.4's PKI environment tests. The expected digest was independently
-        // calculated with: openssl x509 -pubkey | openssl pkey -pubin -outform DER | openssl sha256
         const val FIRST_TRUST_ANCHOR = """-----BEGIN CERTIFICATE-----
 MIIBkzCCAUWgAwIBAgIUHFYIFRkm33GKIOb4xLeNtkjl3TIwBQYDK2VwMDcxFTAT
 BgNVBAMMDFRlc3QgUm9vdCBDQTERMA8GA1UECgwIVGVzdCBPcmcxCzAJBgNVBAYT
@@ -105,6 +99,8 @@ byPUXy7sb/MOs+XT97KoIuAsaQorurP2z7DMBVT8Dy4QN1A5GHIPTfdKLVoNJt7k
 Bw==
 -----END CERTIFICATE-----"""
 
-        const val EXPECTED_FIRST_SPKI_SHA256 = "0efc9faa274dd0e6db3665a391c8fca77ec71b5095377e3831e9e9b7b6f40bf4"
+        const val MALFORMED_TRUST_ANCHOR = """-----BEGIN CERTIFICATE-----
+%%%
+-----END CERTIFICATE-----"""
     }
 }

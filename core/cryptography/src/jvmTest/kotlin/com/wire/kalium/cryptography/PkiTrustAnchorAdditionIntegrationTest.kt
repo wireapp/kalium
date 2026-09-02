@@ -21,29 +21,30 @@ package com.wire.kalium.cryptography
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
-class PkiTrustAnchorReconciliationIntegrationTest {
+class PkiTrustAnchorAdditionIntegrationTest {
 
     @Test
-    fun givenRotatedAuthoritativeRoot_whenReconciling_thenCoreCryptoRemovesObsoleteRoot() = runTest {
-        val root = Files.createTempDirectory("cc-pki-reconciliation-test").toFile()
+    fun givenInstalledRoot_whenAddingExistingAndNewRoots_thenCoreCryptoKeepsBothRoots() = runTest {
+        val root = Files.createTempDirectory("cc-pki-addition-test").toFile()
         val central = coreCryptoCentral(root.absolutePath, ByteArray(32))
 
         try {
             central.configurePkiEnvironment(UnexpectedPkiHooks)
-            central.reconcilePkiTrustAnchors(FIRST_TRUST_ANCHOR)
+            central.addPkiTrustAnchors(FIRST_TRUST_ANCHOR)
+            central.addPkiTrustAnchors(FIRST_TRUST_ANCHOR)
+            central.addPkiTrustAnchors(SECOND_TRUST_ANCHOR)
 
-            val initialRoots = central.getPkiTrustAnchors()
-            assertEquals(1, initialRoots.size)
-            assertContentEquals(FIRST_SPKI_SHA256.hexToByteArray(), pkiTrustAnchorFingerprint(initialRoots.single()))
-
-            central.reconcilePkiTrustAnchors(SECOND_TRUST_ANCHOR)
-
-            val rotatedRoots = central.getPkiTrustAnchors()
-            assertEquals(1, rotatedRoots.size)
-            assertContentEquals(SECOND_SPKI_SHA256.hexToByteArray(), pkiTrustAnchorFingerprint(rotatedRoots.single()))
+            val installedRoots = central.getPkiTrustAnchors()
+            assertEquals(2, installedRoots.size)
+            assertEquals(
+                emptyList(),
+                findPkiTrustAnchorsToAdd(
+                    installedAnchors = installedRoots,
+                    pemBundle = "$FIRST_TRUST_ANCHOR\n$SECOND_TRUST_ANCHOR"
+                )
+            )
         } finally {
             central.close()
             root.deleteRecursively()
@@ -56,19 +57,19 @@ class PkiTrustAnchorReconciliationIntegrationTest {
             url: String,
             headers: List<PkiHttpHeader>,
             body: ByteArray
-        ): PkiHttpResponse = error("No HTTP request is expected while reconciling roots")
+        ): PkiHttpResponse = error("No HTTP request is expected while adding roots")
 
         override suspend fun authenticate(
             idp: String,
             keyAuth: String,
             acmeAud: String
-        ): String = error("No authentication is expected while reconciling roots")
+        ): String = error("No authentication is expected while adding roots")
 
         override suspend fun getBackendNonce(): String =
-            error("No backend nonce is expected while reconciling roots")
+            error("No backend nonce is expected while adding roots")
 
         override suspend fun fetchBackendAccessToken(dpop: String): String =
-            error("No backend access token is expected while reconciling roots")
+            error("No backend access token is expected while adding roots")
     }
 
     private companion object {
@@ -95,8 +96,5 @@ FJH7SBnNlMEGneJxpITt9mpGrrHnMB8GA1UdIwQYMBaAFJH7SBnNlMEGneJxpITt
 byPUXy7sb/MOs+XT97KoIuAsaQorurP2z7DMBVT8Dy4QN1A5GHIPTfdKLVoNJt7k
 Bw==
 -----END CERTIFICATE-----"""
-
-        const val FIRST_SPKI_SHA256 = "0efc9faa274dd0e6db3665a391c8fca77ec71b5095377e3831e9e9b7b6f40bf4"
-        const val SECOND_SPKI_SHA256 = "dcc644fa5b5f885634c3d047776f74aed978118fec8936a2a1cab50ba7700972"
     }
 }

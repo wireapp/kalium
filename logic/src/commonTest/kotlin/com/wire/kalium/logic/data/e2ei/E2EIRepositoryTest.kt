@@ -102,6 +102,8 @@ class E2EIRepositoryTest {
         repository.rotateKeysAndMigrateConversations(arrangement.transactionProvider, checkpoint).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.acmeApi.getTrustAnchors(eq(DISCOVERY_URL))
+            arrangement.coreCrypto.addPkiTrustAnchors(eq(TRUST_ANCHOR))
             arrangement.coreCrypto.startX509CredentialAcquisition(eq(ACQUISITION_CONFIG), eq(null))
             arrangement.coreCrypto.installCredential(eq(arrangement.credential))
         }
@@ -137,6 +139,8 @@ class E2EIRepositoryTest {
         assertEquals(E2EIAuthenticationRequest(IDP_URL, KEY_AUTH, ACME_AUDIENCE), authenticationRequest)
         assertEquals(ID_TOKEN, arrangement.returnedIdToken)
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.acmeApi.getTrustAnchors(eq(DISCOVERY_URL))
+            arrangement.coreCrypto.addPkiTrustAnchors(eq(TRUST_ANCHOR))
             arrangement.coreCrypto.startX509CredentialAcquisition(
                 eq(ACQUISITION_CONFIG),
                 eq(arrangement.previousCredentialRef)
@@ -474,16 +478,16 @@ class E2EIRepositoryTest {
     }
 
     @Test
-    fun whenRefreshingTrustAnchors_thenReconcilesAuthoritativeBundle() = runTest {
+    fun whenRefreshingTrustAnchors_thenAddsFetchedBundle() = runTest {
         val (arrangement, repository) = Arrangement().arrange()
 
-        repository.fetchAndSetTrustAnchors().shouldSucceed()
+        repository.fetchAndAddTrustAnchors().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.acmeApi.getTrustAnchors(eq(DISCOVERY_URL))
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.coreCrypto.reconcilePkiTrustAnchors(eq(TRUST_ANCHOR))
+            arrangement.coreCrypto.addPkiTrustAnchors(eq(TRUST_ANCHOR))
         }
     }
 

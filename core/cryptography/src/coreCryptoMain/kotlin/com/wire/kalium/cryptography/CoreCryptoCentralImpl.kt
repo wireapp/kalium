@@ -149,17 +149,14 @@ class CoreCryptoCentralImpl(
         requirePkiEnvironment().getTrustAnchors()
     }
 
-    override suspend fun reconcilePkiTrustAnchors(pemBundle: CertificateChain) = pkiEnvironmentMutex.withLock {
+    override suspend fun addPkiTrustAnchors(pemBundle: CertificateChain) = pkiEnvironmentMutex.withLock {
         val environment = requirePkiEnvironment()
-        val plan = planPkiTrustAnchorReconciliation(
-            currentAnchors = environment.getTrustAnchors(),
-            desiredPemBundle = pemBundle
+        val anchorsToAdd = findPkiTrustAnchorsToAdd(
+            installedAnchors = environment.getTrustAnchors(),
+            pemBundle = pemBundle
         )
 
-        // Keep the update retry-safe: every desired root must exist before an obsolete one is
-        // removed. If any addition fails, the previously usable set is left intact.
-        plan.anchorsToAdd.forEach { environment.addTrustAnchor(it) }
-        plan.fingerprintsToRemove.forEach { environment.removeTrustAnchor(it) }
+        anchorsToAdd.forEach { environment.addTrustAnchor(it) }
     }
 
     override suspend fun addPkiIntermediateCertificate(pem: CertificateChain) = pkiEnvironmentMutex.withLock {

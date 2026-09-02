@@ -40,10 +40,10 @@ interface CoreCryptoCentral {
     suspend fun getPkiTrustAnchors(): List<CertificateChain>
 
     /**
-     * Replaces the configured trust-anchor set with the complete PEM bundle.
-     * Missing roots are added before obsolete roots are removed.
+     * Adds every certificate from [pemBundle] that is not already installed.
+     * Existing trust anchors are never removed.
      */
-    suspend fun reconcilePkiTrustAnchors(pemBundle: CertificateChain)
+    suspend fun addPkiTrustAnchors(pemBundle: CertificateChain)
 
     suspend fun addPkiIntermediateCertificate(pem: CertificateChain)
 

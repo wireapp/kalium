@@ -35,7 +35,6 @@ internal class E2EIRepositoryArrangementImpl : E2EIRepositoryArrangement {
     override val e2eiRepository: E2EIRepository = mock<E2EIRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withPkiRefreshSuccessful() {
-        everySuspend { e2eiRepository.fetchAndSetTrustAnchors() }.returns(Either.Right(Unit))
         everySuspend { e2eiRepository.fetchFederationCertificates() }.returns(Either.Right(Unit))
         everySuspend { e2eiRepository.checkCredentials() }.returns(Either.Right(Unit))
     }

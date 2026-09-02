@@ -21,61 +21,48 @@ package com.wire.kalium.cryptography
 import com.wire.kalium.cryptography.utils.calcSHA256
 import kotlin.io.encoding.Base64
 
-internal data class PkiTrustAnchors(
-    val anchorsToAdd: List<CertificateChain>,
-    val fingerprintsToRemove: List<ByteArray>
-)
-
 /**
- * Plans a complete trust-anchor replacement without mutating the PKI environment.
+ * Returns the certificates from [pemBundle] that are not in [installedAnchors].
  *
- * Core Crypto 10.4 adds trust anchors to the existing set and rejects duplicate additions.
- * It does not replace the complete set. This planner calculates every required addition and
- * removal before the caller changes the PKI environment.
+ * Core Crypto 10.4 rejects duplicate additions, but its Kotlin bindings do not expose a typed
+ * error for that case. Comparing fingerprints before calling Core Crypto keeps retries safe.
+ * Installed trust anchors are never removed.
  *
  * Core Crypto identifies each trust anchor by the SHA-256 fingerprint of the certificate's
- * DER-encoded SubjectPublicKeyInfo. The planner uses the same fingerprint to keep unchanged
- * roots and remove roots that are no longer present in the backend bundle.
+ * DER-encoded SubjectPublicKeyInfo. This function parses and fingerprints the complete bundle
+ * before returning, so malformed input fails before the caller adds any certificate.
  */
-internal fun planPkiTrustAnchorReconciliation(
-    currentAnchors: List<CertificateChain>,
-    desiredPemBundle: String
-): PkiTrustAnchors {
-    val desiredAnchors = splitPemCertificateBundle(desiredPemBundle)
-    require(desiredAnchors.isNotEmpty()) { "The trust-anchor bundle does not contain a certificate" }
+internal fun findPkiTrustAnchorsToAdd(
+    installedAnchors: List<CertificateChain>,
+    pemBundle: String
+): List<CertificateChain> {
+    val bundledAnchors = splitPemCertificateBundle(pemBundle)
+    require(bundledAnchors.isNotEmpty()) { "The trust-anchor bundle does not contain a certificate" }
 
-    // Calculate every fingerprint before returning a mutation plan. A malformed certificate must
-    // fail without leaving the PKI environment partially updated.
-    val currentByFingerprint = currentAnchors.associateBy { TrustAnchorFingerprint.fromPem(it) }
-    val desiredByFingerprint = desiredAnchors.associateBy { TrustAnchorFingerprint.fromPem(it) }
+    val installedFingerprints = installedAnchors
+        .mapTo(mutableSetOf()) { TrustAnchorFingerprint.fromPem(it) }
+    val bundledByFingerprint = bundledAnchors.associateBy { TrustAnchorFingerprint.fromPem(it) }
 
-    return PkiTrustAnchors(
-        anchorsToAdd = desiredByFingerprint
-            .filterKeys { it !in currentByFingerprint }
-            .values
-            .toList(),
-        fingerprintsToRemove = currentByFingerprint
-            .filterKeys { it !in desiredByFingerprint }
-            .keys
-            .map { it.bytes.copyOf() }
-    )
+    return bundledByFingerprint
+        .filterKeys { it !in installedFingerprints }
+        .values
+        .toList()
 }
 
-internal fun pkiTrustAnchorFingerprint(pem: CertificateChain): ByteArray {
-    val certificates = splitPemCertificateBundle(pem)
-    require(certificates.size == 1) { "Expected exactly one PEM-encoded certificate" }
-    return calcSHA256(extractSubjectPublicKeyInfoDer(decodeCertificatePem(certificates.single())))
-}
-
-private class TrustAnchorFingerprint private constructor(val bytes: ByteArray) {
+private class TrustAnchorFingerprint private constructor(private val bytes: ByteArray) {
     override fun equals(other: Any?): Boolean =
         other is TrustAnchorFingerprint && bytes.contentEquals(other.bytes)
 
     override fun hashCode(): Int = bytes.contentHashCode()
 
     companion object {
-        fun fromPem(pem: CertificateChain): TrustAnchorFingerprint =
-            TrustAnchorFingerprint(pkiTrustAnchorFingerprint(pem))
+        fun fromPem(pem: CertificateChain): TrustAnchorFingerprint {
+            val certificates = splitPemCertificateBundle(pem)
+            require(certificates.size == 1) { "Expected exactly one PEM-encoded certificate" }
+            val certificateDer = decodeCertificatePem(certificates.single())
+            val subjectPublicKeyInfoDer = extractSubjectPublicKeyInfoDer(certificateDer)
+            return TrustAnchorFingerprint(calcSHA256(subjectPublicKeyInfoDer))
+        }
     }
 }
 

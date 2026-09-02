@@ -40,7 +40,7 @@ import kotlin.test.assertEquals
 class ACMECertificatesSyncUseCaseTest {
 
     @Test
-    fun givenDailyWorkerRuns_whenE2EIIsEnabled_thenRefreshesAllPkiState() = runTest {
+    fun givenDailyWorkerRuns_whenE2EIIsEnabled_thenRefreshesFederationCertificatesAndChecksCredentials() = runTest {
         // given
         val (arrangement, useCase) = arrange {
             withE2EIEnabledAndMLSEnabled(true)
@@ -51,8 +51,8 @@ class ACMECertificatesSyncUseCaseTest {
         useCase()
 
         // then
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.e2eiRepository.fetchAndSetTrustAnchors()
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2eiRepository.fetchAndAddTrustAnchors()
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2eiRepository.fetchFederationCertificates()
@@ -74,7 +74,7 @@ class ACMECertificatesSyncUseCaseTest {
 
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.e2eiRepository.fetchAndSetTrustAnchors()
+            arrangement.e2eiRepository.fetchAndAddTrustAnchors()
         }
         verifySuspend(VerifyMode.not) {
             arrangement.e2eiRepository.fetchFederationCertificates()
@@ -97,10 +97,9 @@ class ACMECertificatesSyncUseCaseTest {
         val warningMessages = logWriter.entries
             .filter { it.severity == Severity.Warn }
             .map { it.message }
-        assertEquals(3, warningMessages.size)
-        assertContains(warningMessages[0], "Refreshing PKI trust anchors failed")
-        assertContains(warningMessages[1], "Refreshing PKI federation certificates failed")
-        assertContains(warningMessages[2], "Checking installed X.509 credentials failed")
+        assertEquals(2, warningMessages.size)
+        assertContains(warningMessages[0], "Refreshing PKI federation certificates failed")
+        assertContains(warningMessages[1], "Checking installed X.509 credentials failed")
     }
 
     private class Arrangement(
@@ -124,7 +123,6 @@ class ACMECertificatesSyncUseCaseTest {
         }
 
         suspend fun withPkiRefreshSuccessful() {
-            everySuspend { e2eiRepository.fetchAndSetTrustAnchors() } returns Either.Right(Unit)
             everySuspend { e2eiRepository.fetchFederationCertificates() } returns Either.Right(Unit)
             everySuspend { e2eiRepository.checkCredentials() } returns Either.Right(Unit)
         }
@@ -133,7 +131,6 @@ class ACMECertificatesSyncUseCaseTest {
             val failure: Either<E2EIFailure, Unit> = Either.Left(
                 E2EIFailure.Generic(IllegalStateException("refresh failed"))
             )
-            everySuspend { e2eiRepository.fetchAndSetTrustAnchors() } returns failure
             everySuspend { e2eiRepository.fetchFederationCertificates() } returns failure
             everySuspend { e2eiRepository.checkCredentials() } returns failure
         }
