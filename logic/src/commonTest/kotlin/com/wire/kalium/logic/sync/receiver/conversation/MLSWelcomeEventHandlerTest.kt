@@ -247,6 +247,40 @@ class MLSWelcomeEventHandlerTest {
     }
 
     @Test
+    fun givenRefillFailsWithUnknownFailure_whenHandlingEvent_thenWelcomeStillSucceeds() = runTest {
+        val (arrangement, mlsWelcomeEventHandler) = arrange {
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Failure(CoreFailure.Unknown(IllegalStateException("refill"))))
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
+            withFetchConversationIfUnknownSucceeding()
+            withUpdateGroupStateReturning(Either.Right(Unit))
+            withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
+        }
+
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.refillKeyPackagesUseCase.invoke(any())
+        }
+    }
+
+    @Test
+    fun givenRefillFailsWithNonUnknownFailure_whenHandlingEvent_thenWelcomeStillSucceeds() = runTest {
+        val (arrangement, mlsWelcomeEventHandler) = arrange {
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Failure(StorageFailure.DataNotFound))
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
+            withFetchConversationIfUnknownSucceeding()
+            withUpdateGroupStateReturning(Either.Right(Unit))
+            withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
+        }
+
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.refillKeyPackagesUseCase.invoke(any())
+        }
+    }
+
+    @Test
     fun givenWelcomeBundleWithNewDistributionsCRL_whenHandlingEvent_then_CheckRevocationList() = runTest {
         val failure = Either.Left(StorageFailure.DataNotFound)
         val (arrangement, mlsWelcomeEventHandler) = arrange {

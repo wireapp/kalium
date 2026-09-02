@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -101,6 +102,41 @@ class CallingMessageHandlerTest {
         }
         verifySuspend(VerifyMode.exactly(0)) {
             arrangement.callManager.onCallingMessageReceived(message, content)
+        }
+    }
+
+    @Test
+    fun givenSelfRemoteMuteWithTargetConversation_whenHandling_thenContentConversationIsUsed() = runTest {
+        val targetConversationId = ConversationId("target-conversation", "wire.com")
+        val content = REMOTE_MUTE_CONTENT.copy(conversationId = targetConversationId)
+        val message = CALLING_MESSAGE.copy(content = content, isSelfMessage = true)
+        val (arrangement, callingMessageHandler) = Arrangement()
+            .withShouldRemoteMuteCheckerReturning(true)
+            .arrange()
+
+        callingMessageHandler.handle(message, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.muteCallUseCase.invoke(targetConversationId, true)
+            arrangement.callModerationActionsRepository.addAction(
+                targetConversationId,
+                CallModerationAction(message.id, message.senderUserId, CallModerationAction.Type.MUTED)
+            )
+        }
+    }
+
+    @Test
+    fun givenSelfRemoteMuteWithoutTargetConversation_whenHandling_thenMessageConversationIsUsed() = runTest {
+        val content = REMOTE_MUTE_CONTENT.copy(conversationId = null)
+        val message = CALLING_MESSAGE.copy(content = content, isSelfMessage = true)
+        val (arrangement, callingMessageHandler) = Arrangement()
+            .withShouldRemoteMuteCheckerReturning(true)
+            .arrange()
+
+        callingMessageHandler.handle(message, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.muteCallUseCase.invoke(message.conversationId, true)
         }
     }
 
