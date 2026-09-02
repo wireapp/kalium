@@ -621,6 +621,7 @@ abstract interface com.wire.kalium.logic.feature.conversation.channel/UpdateChan
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase { // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase|null[0]
+    abstract suspend fun discardPendingMLSGroupCreation(com.wire.kalium.logic.data.id/QualifiedID): kotlin/Boolean // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase.discardPendingMLSGroupCreation|discardPendingMLSGroupCreation(com.wire.kalium.logic.data.id.QualifiedID){}[0]
     abstract suspend fun invoke(kotlin/String, kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID>, com.wire.kalium.logic.data.conversation/CreateConversationParam): com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase.invoke|invoke(kotlin.String;kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>;com.wire.kalium.logic.data.conversation.CreateConversationParam){}[0]
     abstract suspend fun retryPendingMLSGroupCreation(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase.retryPendingMLSGroupCreation|retryPendingMLSGroupCreation(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
@@ -2377,8 +2378,10 @@ sealed interface com.wire.kalium.logic.feature.client/Result { // com.wire.kaliu
 
 sealed interface com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult { // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult|null[0]
     final class BackendConflictFailure : com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult { // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure|null[0]
-        constructor <init>(kotlin.collections/List<kotlin/String>) // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.<init>|<init>(kotlin.collections.List<kotlin.String>){}[0]
+        constructor <init>(kotlin.collections/List<kotlin/String>, com.wire.kalium.logic.data.id/QualifiedID? = ...) // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.<init>|<init>(kotlin.collections.List<kotlin.String>;com.wire.kalium.logic.data.id.QualifiedID?){}[0]
 
+        final val conversationId // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.conversationId|{}conversationId[0]
+            final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID? // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
         final val domains // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.domains|{}domains[0]
             final fun <get-domains>(): kotlin.collections/List<kotlin/String> // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.domains.<get-domains>|<get-domains>(){}[0]
     }

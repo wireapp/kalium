@@ -18,98 +18,71 @@
 package com.wire.kalium.api.v13
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.json.model.QualifiedIDSamples
-import com.wire.kalium.mocks.responses.ListUsersResponseJson
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.model.UserTypeDTO
-import com.wire.kalium.network.api.v12.authenticated.UserDetailsApiV12
-import com.wire.kalium.network.api.v13.authenticated.UserDetailsApiV13
-import com.wire.kalium.network.utils.isSuccessful
+import com.wire.kalium.mocks.responses.ErrorResponseJson
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.api.model.MLSErrorResponse
+import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.api.v13.authenticated.MLSMessageApiV13
+import com.wire.kalium.network.exceptions.FederationError
+import com.wire.kalium.network.exceptions.MLSError
+import com.wire.kalium.network.serialization.Mls
+import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.network.utils.NetworkResponse
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.assertIs
 
-@ExperimentalCoroutinesApi
 internal class MLSMessageApiV13Test : ApiTest() {
 
     @Test
-    fun givenAUserId_whenInvokingUserInfo_thenShouldConfigureTheRequestOkAndReturnAResultWithData() = runTest {
-        val httpClient = mockAuthenticatedNetworkClient(
-            SUCCESS_RESPONSE.invoke(UserTypeDTO.REGULAR).rawJson,
-            statusCode = HttpStatusCode.OK,
+    fun givenCommitBundleFailsWithNonFederatingBackends_whenSending_thenPreservesConflictDomains() = runTest {
+        val expected = FederationErrorResponse.Conflict(listOf("backend-a.example", "backend-b.example"))
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = ErrorResponseJson.validFederationConflictingBackends(expected).rawJson,
+            statusCode = HttpStatusCode.Conflict,
             assertion = {
-                assertGet()
-                assertJson()
-                assertPathEqual("${PATH_USERS}/${QualifiedIDSamples.one.domain}/${QualifiedIDSamples.one.value}")
-            }
+                assertPost()
+                assertContentType(ContentType.Message.Mls)
+                assertPathEqual(PATH_COMMIT_BUNDLES)
+            },
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiV13(httpClient)
-        val result = userDetailsApi.getUserInfo(QualifiedIDSamples.one)
-        assertTrue(result.isSuccessful())
-        assertNotNull(result.value.type)
-        assertEquals(UserTypeDTO.REGULAR, result.value.type)
+
+        val result = MLSMessageApiV13(networkClient).sendCommitBundle(COMMIT_BUNDLE)
+
+        val error = assertIs<NetworkResponse.Error>(result)
+        val federationError = assertIs<FederationError>(error.kException)
+        assertEquals(expected, federationError.errorResponse)
     }
 
     @Test
-    fun givenAUserId_whenInvokingUserInfoAndApp_thenShouldConfigureTheRequestOkAndReturnAResultWithData() = runTest {
-        val httpClient = mockAuthenticatedNetworkClient(
-            SUCCESS_RESPONSE.invoke(UserTypeDTO.APP).rawJson,
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertJson()
-                assertPathEqual("${PATH_USERS}/${QualifiedIDSamples.one.domain}/${QualifiedIDSamples.one.value}")
-            }
+    fun givenCommitBundleFailsWithGroupOutOfSync_whenSending_thenPreservesMlsError() = runTest {
+        val expected = MLSErrorResponse.GroupOutOfSync(
+            missingUsers = listOf(UserId("user-id", "backend.example")),
+            message = "Group is out of sync",
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiV12(httpClient)
-        val result = userDetailsApi.getUserInfo(QualifiedIDSamples.one)
-        assertTrue(result.isSuccessful())
-        assertNotNull(result.value.type)
-        assertEquals(UserTypeDTO.APP, result.value.type)
-    }
-
-    @Test
-    fun givenAUserId_whenInvokingUserInfoAndBot_thenShouldConfigureTheRequestOkAndReturnAResultWithData() = runTest {
-        val httpClient = mockAuthenticatedNetworkClient(
-            SUCCESS_RESPONSE.invoke(UserTypeDTO.BOT).rawJson,
-            statusCode = HttpStatusCode.OK,
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = KtxSerializer.json.encodeToString(MLSErrorResponse.serializer(), expected),
+            statusCode = HttpStatusCode.Conflict,
             assertion = {
-                assertGet()
-                assertJson()
-                assertPathEqual("${PATH_USERS}/${QualifiedIDSamples.one.domain}/${QualifiedIDSamples.one.value}")
-            }
+                assertPost()
+                assertContentType(ContentType.Message.Mls)
+                assertPathEqual(PATH_COMMIT_BUNDLES)
+            },
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiV12(httpClient)
-        val result = userDetailsApi.getUserInfo(QualifiedIDSamples.one)
-        assertTrue(result.isSuccessful())
-        assertNotNull(result.value.type)
-        assertEquals(UserTypeDTO.BOT, result.value.type)
-    }
 
+        val result = MLSMessageApiV13(networkClient).sendCommitBundle(COMMIT_BUNDLE)
 
-    @Test
-    fun givenAUserId_whenInvokingUserInfoNull_thenShouldConfigureTheRequestOkAndReturnAResultWithData() = runTest {
-        val httpClient = mockAuthenticatedNetworkClient(
-            SUCCESS_RESPONSE.invoke(null).rawJson,
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertJson()
-                assertPathEqual("${PATH_USERS}/${QualifiedIDSamples.one.domain}/${QualifiedIDSamples.one.value}")
-            }
-        )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiV12(httpClient)
-        val result = userDetailsApi.getUserInfo(QualifiedIDSamples.one)
-        assertTrue(result.isSuccessful())
+        val error = assertIs<NetworkResponse.Error>(result)
+        val mlsError = assertIs<MLSError>(error.kException)
+        assertEquals(expected, mlsError.errorBody)
     }
 
     private companion object {
-        const val PATH_USERS = "/users"
-        val SUCCESS_RESPONSE = ListUsersResponseJson.v13
+        const val PATH_COMMIT_BUNDLES = "mls/commit-bundles"
+        val COMMIT_BUNDLE = MLSMessageApi.CommitBundle("CommitBundle".encodeToByteArray())
     }
 }
-
