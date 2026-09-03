@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
+import kotlin.io.encoding.Base64
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -150,8 +151,9 @@ internal interface UserConfigRepository {
     suspend fun deletePreviousTrackingIdentifier()
     suspend fun updateNextTimeForCallFeedback(valueMs: Long)
     suspend fun getNextTimeForCallFeedback(): Either<StorageFailure, Long>
-    suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
-    suspend fun getShouldFetchE2EITrustAnchor(): Boolean
+    suspend fun setE2EIRotationCheckpoint(checkpoint: ByteArray): Either<StorageFailure, Unit>
+    suspend fun getE2EIRotationCheckpoint(): Either<StorageFailure, ByteArray?>
+    suspend fun deleteE2EIRotationCheckpoint(): Either<StorageFailure, Unit>
     suspend fun setMlsConversationsResetEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isMlsConversationsResetEnabled(): Boolean
     suspend fun setAsyncNotificationsEnabled(isAsyncNotificationsEnabled: Boolean): Either<StorageFailure, Unit>
@@ -283,6 +285,7 @@ internal class UserConfigDataSource internal constructor(
         wrapStorageRequest {
             userConfigStorage.setE2EISettings(null)
             userConfigStorage.updateE2EINotificationTime(0)
+            userConfigDAO.deleteE2EIRotationCheckpoint()
         }
     }
 
@@ -307,6 +310,15 @@ internal class UserConfigDataSource internal constructor(
             default = CipherSuite.fromTag(it.default)
         )
     }
+
+    override suspend fun setE2EIRotationCheckpoint(checkpoint: ByteArray): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.setE2EIRotationCheckpoint(Base64.encode(checkpoint)) }
+
+    override suspend fun getE2EIRotationCheckpoint(): Either<StorageFailure, ByteArray?> =
+        wrapStorageRequest { userConfigDAO.getE2EIRotationCheckpoint()?.let(Base64::decode) }
+
+    override suspend fun deleteE2EIRotationCheckpoint(): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.deleteE2EIRotationCheckpoint() }
 
     override suspend fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol> =
         wrapStorageRequest { userConfigStorage.defaultProtocol().toModel() }
@@ -540,10 +552,6 @@ internal class UserConfigDataSource internal constructor(
     override fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeShouldNotifyForRevokedCertificate().wrapStorageRequest()
 
-    override suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
-        userConfigDAO.setShouldFetchE2EITrustAnchors(shouldFetch = shouldFetch)
-    }
-
     override suspend fun setCurrentTrackingIdentifier(newIdentifier: String) {
         wrapStorageRequest {
             userConfigDAO.setTrackingIdentifier(identifier = newIdentifier)
@@ -577,7 +585,6 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun getNextTimeForCallFeedback() = wrapStorageRequest { userConfigDAO.getNextTimeForCallFeedback() }
 
-    override suspend fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigDAO.getShouldFetchE2EITrustAnchorHasRun()
     override suspend fun setMlsConversationsResetEnabled(enabled: Boolean) =
         wrapStorageRequest {
             userConfigDAO.setMlsConversationsResetEnabled(enabled)

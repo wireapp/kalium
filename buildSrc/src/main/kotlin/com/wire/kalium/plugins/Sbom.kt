@@ -48,6 +48,7 @@ private val SBOM_EXCLUDED_PROJECT_PATHS = setOf("data/persistence-test")
 // version bump doesn't silently drop the Android bucket.
 private val SBOM_TARGET_CONFIG_NAMES = listOf(
     "jvmRuntimeClasspath",
+    "coreCryptoJvmNativeArtifacts",
     "androidRuntimeClasspath",
     "androidReleaseRuntimeClasspath",
     "androidMainRuntimeClasspath",
@@ -66,6 +67,7 @@ private fun Project.isInSbomScope(): Boolean {
 
 private fun bucketFor(configName: String): String = when {
     configName.startsWith("jvm") -> "jvm"
+    configName.startsWith("coreCryptoJvm") -> "jvm"
     configName.startsWith("android") -> "android"
     configName.startsWith("iosArm64") -> "native/iosArm64"
     configName.startsWith("iosSimulatorArm64") -> "native/iosSimulatorArm64"
@@ -204,11 +206,11 @@ fun Project.registerSbomCollectionTasks() {
                 packagesRoot.walkTopDown()
                     .onEnter { it.name != "node_modules" }
                     .filter { it.isFile && it.name == "package.json" }
-                    .forEach { pj ->
-                        val rel = pj.relativeTo(packagesRoot).path
+                    .forEach { packageJson ->
+                        val rel = packageJson.relativeTo(packagesRoot).path
                         val dest = java.io.File(manifestsDir, rel)
                         dest.parentFile.mkdirs()
-                        pj.copyTo(dest, overwrite = true)
+                        packageJson.copyTo(dest, overwrite = true)
                     }
             }
 

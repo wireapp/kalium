@@ -66,8 +66,6 @@ import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
-import com.wire.kalium.logic.data.client.E2EIClientProvider
-import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -77,6 +75,8 @@ import com.wire.kalium.logic.data.client.MLSTransportProviderImpl
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProviderImpl
 import com.wire.kalium.logic.data.client.ProteusMigrationRecoveryHandler
+import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
+import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
@@ -132,8 +132,6 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
-import com.wire.kalium.logic.data.e2ei.RevocationListCheckerImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -613,7 +611,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -761,10 +758,10 @@ public class UserSessionScope internal constructor(
         // this can depend directly on DAO it will make it easier to user
         // and remove any circular dependency when using this inside user repository
         wrapStorageNullableRequest {
-            userStorage.database.userDAO.observeUserDetailsByQualifiedID(userId.toDao()).firstOrNull()
-        }.map { userDetailsEntity ->
-            _teamId = Either.Right(userDetailsEntity?.team?.let { TeamId(it) })
-            userDetailsEntity?.team?.let { TeamId(it) }
+            userStorage.database.userDAO.getTeamIdByQualifiedID(userId.toDao())
+        }.map { teamId ->
+            _teamId = Either.Right(teamId?.let { TeamId(it) })
+            teamId?.let { TeamId(it) }
         }
     }
 
@@ -899,13 +896,6 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    private val checkRevocationList: RevocationListChecker
-        get() = RevocationListCheckerImpl(
-            certificateRevocationListRepository = certificateRevocationListRepository,
-            featureSupport = featureSupport,
-            userConfigRepository = userConfigRepository
-        )
-
     private val mlsMutex: Mutex = Mutex()
 
     private val mlsConversationRepository: MLSConversationRepository
@@ -918,8 +908,6 @@ public class UserSessionScope internal constructor(
                 mlsPublicKeysRepository,
                 proposalTimersFlow,
                 keyPackageLimitsProvider,
-                checkRevocationList,
-                certificateRevocationListRepository,
                 mutex = mlsMutex
             ),
             userId = userId,
@@ -938,7 +926,8 @@ public class UserSessionScope internal constructor(
         get() = E2EIRepositoryImpl(
             authenticatedNetworkContainer.e2eiApi,
             globalScope.unboundNetworkContainer.acmeApi,
-            e2EIClientProvider,
+            globalScope.unboundNetworkContainer.cellsClient,
+            x509CredentialAcquisitionConfigProvider,
             mlsClientProvider,
             clientIdProvider,
             mlsConversationRepository,
@@ -947,13 +936,11 @@ public class UserSessionScope internal constructor(
             currentCryptoStateChangeHookNotifier
         )
 
-    private val e2EIClientProvider: E2EIClientProvider by lazy {
-        EI2EIClientProviderImpl(
+    private val x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider by lazy {
+        X509CredentialAcquisitionConfigProviderImpl(
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            userRepository = userRepository,
-            selfUserId = userId,
-            cryptoStateChangeHookNotifier = currentCryptoStateChangeHookNotifier
+            userRepository = userRepository
         )
     }
 
@@ -2042,8 +2029,6 @@ public class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             oneOnOneResolver = oneOnOneResolver,
             refillKeyPackages = client.refillKeyPackages,
-            revocationListChecker = checkRevocationList,
-            certificateRevocationListRepository = certificateRevocationListRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             fetchConversationIfUnknown = fetchConversationIfUnknownUseCase
         )
@@ -2549,7 +2534,7 @@ public class UserSessionScope internal constructor(
             this,
             userStorage,
             mlsMissingUsersRejectionHandlerProvider,
-            e2EIClientProvider,
+            x509CredentialAcquisitionConfigProvider,
             fetchConversationUseCase,
             resetMlsConversation,
             cryptoTransactionProvider,
@@ -2634,12 +2619,10 @@ public class UserSessionScope internal constructor(
             clientRepository,
             refreshUsersWithoutMetadata,
             isE2EIEnabled,
-            certificateRevocationListRepository,
             incrementalSyncRepository,
             slowSyncRepository,
             sessionManager,
             selfTeamId,
-            checkRevocationList,
             userScopedLogger,
             getTeamUrlUseCase,
             isMLSEnabled,
@@ -2891,16 +2874,15 @@ public class UserSessionScope internal constructor(
 
     public val checkCrlRevocationList: CheckCrlRevocationListUseCase
         get() = CheckCrlRevocationListUseCase(
-            certificateRevocationListRepository,
-            checkRevocationList,
-            cryptoTransactionProvider,
-            userScopedLogger
+            e2eiRepository = e2eiRepository,
+            isE2EIEnabledUseCase = isE2EIEnabled,
+            kaliumLogger = userScopedLogger
         )
 
     private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
         get() = CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
             callRepository = callRepository,
-            observeConversationMembers = conversations.observeConversationMembers,
+            conversationRepository = conversationRepository,
             selfTeamIdProvider = selfTeamId
         )
 
@@ -3030,6 +3012,7 @@ public class UserSessionScope internal constructor(
             resetMLSConversation = resetMlsConversation,
             refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            leaveConversation = conversations.leaveConversation,
             transactionProvider = cryptoTransactionProvider
         )
     }

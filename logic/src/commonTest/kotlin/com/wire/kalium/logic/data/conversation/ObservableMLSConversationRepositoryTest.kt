@@ -19,10 +19,9 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
-import com.wire.kalium.cryptography.E2EIClient
+import com.wire.kalium.cryptography.CryptoCredentialRef
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.GroupID
@@ -30,12 +29,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class ObservableMLSConversationRepositoryTest {
 
@@ -94,33 +95,29 @@ class ObservableMLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenDelegateSucceeds_whenRotatingKeys_thenHookIsNotified() = runTest {
-        val arrangement = Arrangement().withRotateSuccess().arrange()
+    fun givenDelegateSucceeds_whenMigratingConversationCredential_thenHookIsNotified() = runTest {
+        val arrangement = Arrangement().withCredentialMigrationSuccess().arrange()
 
-        arrangement.repository.rotateKeysAndMigrateConversations(
+        arrangement.repository.migrateConversationCredential(
             arrangement.context,
-            ClientId("client"),
-            arrangement.e2eiClient,
-            "cert",
-            listOf(GROUP_ID),
-            false
+            arrangement.credentialRef,
+            GROUP_ID
         )
 
         assertEquals(listOf(USER_ID), arrangement.hook.calls)
     }
 
     @Test
-    fun givenDelegateFails_whenRotatingKeys_thenHookNotNotified() = runTest {
-        val arrangement = Arrangement().withRotateFailure().arrange()
+    fun givenDelegateThrows_whenMigratingConversationCredential_thenHookNotNotified() = runTest {
+        val arrangement = Arrangement().withCredentialMigrationFailure().arrange()
 
-        arrangement.repository.rotateKeysAndMigrateConversations(
-            arrangement.context,
-            ClientId("client"),
-            arrangement.e2eiClient,
-            "cert",
-            listOf(GROUP_ID),
-            false
-        )
+        assertFailsWith<IllegalStateException> {
+            arrangement.repository.migrateConversationCredential(
+                arrangement.context,
+                arrangement.credentialRef,
+                GROUP_ID
+            )
+        }
 
         assertEquals(emptyList(), arrangement.hook.calls)
     }
@@ -148,7 +145,7 @@ class ObservableMLSConversationRepositoryTest {
         private val hook = RecordingHookNotifier()
         private val repository = ObservableMLSConversationRepository(delegate, USER_ID, hook)
         private val context: MlsCoreCryptoContext = mock(mode = MockMode.autoUnit)
-        private val e2eiClient: E2EIClient = mock(mode = MockMode.autoUnit)
+        private val credentialRef: CryptoCredentialRef = mock(mode = MockMode.autoUnit)
 
         suspend fun withEstablishSuccess() = apply {
             everySuspend {
@@ -170,16 +167,16 @@ class ObservableMLSConversationRepositoryTest {
             everySuspend { delegate.commitPendingProposals(any(), any()) } returns Either.Left(CoreFailure.Unknown(null))
         }
 
-        suspend fun withRotateSuccess() = apply {
+        suspend fun withCredentialMigrationSuccess() = apply {
             everySuspend {
-                delegate.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
-            } returns Either.Right(Unit)
+                delegate.migrateConversationCredential(any(), any(), any())
+            } returns Unit
         }
 
-        suspend fun withRotateFailure() = apply {
+        suspend fun withCredentialMigrationFailure() = apply {
             everySuspend {
-                delegate.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
-            } returns Either.Left(E2EIFailure.Generic(Exception("boom")))
+                delegate.migrateConversationCredential(any(), any(), any())
+            } throws IllegalStateException("boom")
         }
 
         suspend fun withDecryptMessageSuccess() = apply {
@@ -206,14 +203,14 @@ class ObservableMLSConversationRepositoryTest {
             } returns CoreFailure.Unknown(null).left()
         }
 
-        fun arrange(): ArrangementResult = ArrangementResult(repository, hook, context, e2eiClient)
+        fun arrange(): ArrangementResult = ArrangementResult(repository, hook, context, credentialRef)
     }
 
     private data class ArrangementResult(
         val repository: MLSConversationRepository,
         val hook: RecordingHookNotifier,
         val context: MlsCoreCryptoContext,
-        val e2eiClient: E2EIClient,
+        val credentialRef: CryptoCredentialRef,
     )
 
     private class RecordingHookNotifier : CryptoStateChangeHookNotifier {

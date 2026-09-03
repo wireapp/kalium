@@ -341,6 +341,7 @@ interface UserDAO {
     suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity?
     suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized>
     suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity?
+    suspend fun getTeamIdByQualifiedID(qualifiedID: QualifiedIDEntity): String?
     suspend fun updateTeamId(userId: UserIDEntity, teamId: String)
     suspend fun countContactsAmount(selfUserId: QualifiedIDEntity): Int
     suspend fun countTeamMembersAmount(teamId: String): Int

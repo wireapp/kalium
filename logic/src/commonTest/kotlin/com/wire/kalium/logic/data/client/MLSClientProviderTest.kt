@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
@@ -179,6 +180,20 @@ class MLSClientProviderTest {
         }
     }
 
+    @Test
+    fun givenCoreCryptoWasOnlyCreatedForCredentialAcquisition_whenClearingLocalFiles_thenCoreCryptoIsClosed() =
+        runTest(testDispatchers.io) {
+            val (arrangement, mlsClientProvider) = Arrangement(this).arrange {
+                withPassphraseStorage()
+            }
+
+            mlsClientProvider.getCoreCrypto(TestClient.CLIENT_ID).shouldSucceed()
+
+            mlsClientProvider.clearLocalFiles()
+
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.coreCryptoCentral.close() }
+        }
+
     private inner class Arrangement(
         val processingScope: CoroutineScope
     ) {
@@ -191,6 +206,7 @@ class MLSClientProviderTest {
         val passphraseStorage = mock<PassphraseStorage>(mode = MockMode.autoUnit)
         val mlsTransportProvider = mock<MLSTransportProvider>(mode = MockMode.autoUnit)
         val epochChangesObserver = mock<EpochChangesObserver>(mode = MockMode.autoUnit)
+        val coreCryptoCentral = mock<CoreCryptoCentral>(mode = MockMode.autoUnit)
 
         fun withCoreCryptoDatabaseDoesNotExists() {
             val clientId = TestClient.CLIENT_ID
@@ -248,6 +264,7 @@ class MLSClientProviderTest {
                 epochObserver = epochChangesObserver,
                 dispatchers = testDispatchers,
                 processingScope = processingScope,
+                coreCryptoCentralFactory = { _, _ -> coreCryptoCentral },
             )
         }
     }

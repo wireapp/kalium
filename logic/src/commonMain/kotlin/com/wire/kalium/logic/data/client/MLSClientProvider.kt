@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -32,11 +31,9 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
-import com.wire.kalium.cryptography.CertificateChain
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MLSEpochObserver
 import com.wire.kalium.cryptography.MLSTransporter
@@ -67,12 +64,6 @@ internal interface MLSClientProvider : CryptoBackupExporter {
     suspend fun getCoreCrypto(clientId: ClientId? = null): Either<CoreFailure, CoreCryptoCentral>
 
     suspend fun clearLocalFiles()
-    suspend fun initMLSClientWithCertificate(
-        enrollment: E2EIClient,
-        certificateChain: CertificateChain,
-        clientId: ClientId?
-    ): Either<E2EIFailure, Unit>
-
     suspend fun getOrFetchMLSConfig(): Either<CoreFailure, SupportedCipherSuite>
 }
 
@@ -88,6 +79,9 @@ internal class MLSClientProviderImpl(
     private val epochObserver: MLSEpochObserver,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val processingScope: CoroutineScope,
+    private val coreCryptoCentralFactory: suspend (String, ByteArray) -> CoreCryptoCentral = { rootDir, passphrase ->
+        coreCryptoCentral(rootDir = rootDir, passphrase = passphrase)
+    },
 ) : MLSClientProvider, CryptoBackupExporter {
 
     private var mlsClient: MLSClient? = null
@@ -116,26 +110,6 @@ internal class MLSClientProviderImpl(
         }
     }
 
-    override suspend fun initMLSClientWithCertificate(
-        enrollment: E2EIClient,
-        certificateChain: CertificateChain,
-        clientId: ClientId?
-    ): Either<E2EIFailure, Unit> = mlsClientMutex.withLock {
-        val currentClientId =
-            clientId ?: currentClientIdProvider().fold({ return E2EIFailure.GettingE2EIClient(it).left() }, { it })
-        return mlsClient?.let {
-            Unit.right()
-        } ?: run {
-            e2eiMLSClient(
-                enrollment,
-                certificateChain,
-                currentClientId
-            ).map {
-                mlsClient = it
-            }
-        }
-    }
-
     override suspend fun getOrFetchMLSConfig(): Either<CoreFailure, SupportedCipherSuite> {
         if (!userConfigRepository.isMLSEnabled().getOrElse(true)) {
             kaliumLogger.w("$TAG: Cannot fetch MLS config, MLS is disabled.")
@@ -153,10 +127,19 @@ internal class MLSClientProviderImpl(
     override suspend fun clearLocalFiles() {
         mlsClientMutex.withLock {
             coreCryptoCentralMutex.withLock {
-                mlsClient?.close()
-                mlsClient = null
-                coreCryptoCentral = null
-                FileUtil.deleteDirectory(rootKeyStorePath)
+                val currentMLSClient = mlsClient
+                val currentCoreCrypto = coreCryptoCentral
+                try {
+                    if (currentMLSClient != null) {
+                        currentMLSClient.close()
+                    } else {
+                        currentCoreCrypto?.close()
+                    }
+                } finally {
+                    mlsClient = null
+                    coreCryptoCentral = null
+                    FileUtil.deleteDirectory(rootKeyStorePath)
+                }
             }
         }
     }
@@ -176,10 +159,7 @@ internal class MLSClientProviderImpl(
                 Either.Right(it)
             } ?: run {
                 val cc = try {
-                    coreCryptoCentral(
-                        rootDir = rootDir,
-                        passphrase = dbSecret.passphrase,
-                    )
+                    coreCryptoCentralFactory(rootDir, dbSecret.passphrase)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -203,12 +183,10 @@ internal class MLSClientProviderImpl(
         mlsTransporter: MLSTransporter,
         epochObserver: MLSEpochObserver,
     ): Either<CoreFailure, MLSClient> {
-        // TODO KBX should we switch to first get mls config instead of getting core crypto?
-        return getCoreCrypto(clientId).flatMap { cc ->
-            getOrFetchMLSConfig().map { (supportedCipherSuite, defaultCipherSuite) ->
+        return getOrFetchMLSConfig().flatMap { (_, defaultCipherSuite) ->
+            getCoreCrypto(clientId).map { cc ->
                 cc.mlsClient(
                     clientId = CryptoQualifiedClientId(clientId.value, userId),
-                    allowedCipherSuites = supportedCipherSuite.map { it.toCrypto() },
                     defaultCipherSuite = defaultCipherSuite.toCrypto(),
                     mlsTransporter = mlsTransporter,
                     epochObserver = epochObserver,
@@ -216,31 +194,6 @@ internal class MLSClientProviderImpl(
                 )
             }
         }
-    }
-
-    private suspend fun e2eiMLSClient(
-        enrollment: E2EIClient,
-        certificateChain: CertificateChain,
-        clientId: ClientId,
-    ): Either<E2EIFailure, MLSClient> {
-        val (_, defaultCipherSuite) = getOrFetchMLSConfig().getOrElse {
-            return E2EIFailure.GettingE2EIClient(it).left()
-        }
-        return getCoreCrypto(clientId).fold({
-            E2EIFailure.GettingE2EIClient(it).left()
-        }, {
-            // MLS Keypackages taken care somewhere else, here we don't need to generate any
-            it.mlsClient(
-                enrollment = enrollment,
-                certificateChain = certificateChain,
-                newMLSKeyPackageCount = 0U,
-                defaultCipherSuite = defaultCipherSuite.toCrypto(),
-                mlsTransportProvider,
-                epochObserver,
-                coroutineScope = processingScope
-            ).right()
-
-        })
     }
 
     @Suppress("TooGenericExceptionCaught")

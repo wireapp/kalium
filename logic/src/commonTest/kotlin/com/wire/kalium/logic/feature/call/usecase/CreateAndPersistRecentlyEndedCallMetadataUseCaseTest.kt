@@ -24,12 +24,12 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.MemberDetails
+import com.wire.kalium.logic.data.conversation.ConversationMemberCounts
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
 import com.wire.kalium.logic.framework.TestCall.CALLER_ID
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_MINIMIZED
@@ -41,7 +41,6 @@ import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
 import dev.mokkery.every
 import dev.mokkery.mock
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -53,7 +52,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withOutgoingCall()
             .withSelfTeamIdPresent()
-            .withConversationMembers()
+            .withConversationMemberCounts()
             .arrange()
 
         // when
@@ -74,7 +73,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withOutgoingCall()
             .withSelfTeamIdPresent()
-            .withConversationGuests()
+            .withConversationMemberCounts(guestsCount = 1)
             .arrange()
 
         // when
@@ -101,7 +100,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withOutgoingCall()
             .withSelfTeamIdPresent()
-            .withConversationGuestsPro()
+            .withConversationMemberCounts(guestsCount = 1, guestsProCount = 1)
             .arrange()
 
         // when
@@ -129,7 +128,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withIncomingCall()
             .withSelfTeamIdPresent()
-            .withConversationMembers()
+            .withConversationMemberCounts()
             .arrange()
 
         // when
@@ -152,7 +151,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
 
     private class Arrangement {
 
-        val observeConversationMembers = mock<ObserveConversationMembersUseCase>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
         val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
@@ -168,37 +167,19 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
             )
         }
 
-        suspend fun withConversationMembers() = apply {
-            everySuspend { observeConversationMembers(any()) } returns (
-                flowOf(
-                    listOf(
-                        MemberDetails(TestUser.SELF, Conversation.Member.Role.Admin),
-                        MemberDetails(TestUser.OTHER, Conversation.Member.Role.Member)
-                    )
-                )
-            )
-        }
-
-        suspend fun withConversationGuests() = apply {
-            everySuspend { observeConversationMembers(any()) } returns (
-                flowOf(
-                    listOf(
-                        MemberDetails(TestUser.SELF, Conversation.Member.Role.Admin),
-                        MemberDetails(
-                            TestUser.OTHER.copy(userType = UserTypeInfo.Regular(UserType.GUEST), teamId = null),
-                            Conversation.Member.Role.Member
-                        )
-                    )
-                )
-            )
-        }
-
-        suspend fun withConversationGuestsPro() = apply {
-            everySuspend { observeConversationMembers(any()) } returns (
-                flowOf(
-                    listOf(
-                        MemberDetails(TestUser.SELF, Conversation.Member.Role.Admin),
-                        MemberDetails(TestUser.OTHER.copy(userType = UserTypeInfo.Regular(UserType.GUEST)), Conversation.Member.Role.Member)
+        suspend fun withConversationMemberCounts(
+            conversationSize: Int = 2,
+            servicesCount: Int = 0,
+            guestsCount: Int = 0,
+            guestsProCount: Int = 0
+        ) = apply {
+            everySuspend { conversationRepository.getConversationMemberCounts(any()) } returns (
+                Either.Right(
+                    ConversationMemberCounts(
+                        conversationSize = conversationSize,
+                        servicesCount = servicesCount,
+                        guestsCount = guestsCount,
+                        guestsProCount = guestsProCount
                     )
                 )
             )
@@ -211,7 +192,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         fun arrange(): Pair<Arrangement, CreateAndPersistRecentlyEndedCallMetadataUseCase> =
             this to CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
                 callRepository = callRepository,
-                observeConversationMembers = observeConversationMembers,
+                conversationRepository = conversationRepository,
                 selfTeamIdProvider = selfTeamIdProvider
             )
 
