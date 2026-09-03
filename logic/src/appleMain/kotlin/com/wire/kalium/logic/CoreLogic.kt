@@ -77,7 +77,8 @@ public actual class CoreLogic(
             }
         ),
         queriesContext = KaliumDispatcherImpl.io,
-        passphrase = null
+        passphrase = null,
+        enableWAL = true
     )
 
     public actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
