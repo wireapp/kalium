@@ -1,0 +1,6 @@
+interface:
+  display_name: "Upstream commit migrator"
+  short_description: "Adapt the next upstream Kalium commit"
+  default_prompt: "Use $upstream-commit-migrator to migrate the next wireapp/kalium develop commit into Super Kalium."
+policy:
+  allow_implicit_invocation: false

@@ -116,3 +116,8 @@ generated/
 __pycache__/
 AGENTS.md
 CLAUDE.md
+/.agents/*
+!/.agents/skills/
+/.agents/skills/*
+!/.agents/skills/upstream-commit-migrator/
+!/.agents/skills/upstream-commit-migrator/**
