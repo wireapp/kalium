@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated
 
+import com.wire.kalium.network.api.authenticated.teams.TeamCollaboratorDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListNonPaginated
@@ -28,6 +29,7 @@ import com.wire.kalium.network.api.model.NonQualifiedUserId
 import com.wire.kalium.network.api.model.ServiceDetailResponse
 import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.model.TeamId
+import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface TeamsApi {
@@ -38,6 +40,8 @@ interface TeamsApi {
     suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO>
     suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>
     suspend fun whiteListedServices(teamId: TeamId, size: Int = DEFAULT_SERVICES_SIZE): NetworkResponse<ServiceDetailResponse>
+    suspend fun getTeamApps(teamId: TeamId): NetworkResponse<List<UserProfileDTO>>
+    suspend fun getTeamCollaborators(teamId: TeamId): NetworkResponse<List<TeamCollaboratorDTO>>
     suspend fun approveLegalHoldRequest(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit>
     suspend fun fetchLegalHoldStatus(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<LegalHoldStatusResponse>
 
