@@ -381,11 +381,9 @@ internal class UserDataSource internal constructor(
                     selfTeamId = selfTeamId
                 )
             }
-        val appTeamMembers = listUserProfileDTO
-            .filter { userProfileDTO ->
-                mapTeamMemberDTO.containsKey(userProfileDTO.id.value)
-                        && userProfileDTO.type == UserTypeDTO.APP
-            }
+
+        val apps = listUserProfileDTO
+            .filter { userProfileDTO -> userProfileDTO.type == UserTypeDTO.APP }
             .map(appMapper::fromUserProfileToAppEntity)
 
         return listUserProfileDTO
@@ -402,8 +400,8 @@ internal class UserDataSource internal constructor(
                     if (otherUsers.isNotEmpty()) {
                         userDAO.upsertUsers(otherUsers)
                     }
-                    if (appTeamMembers.isNotEmpty()) {
-                        appDAO.upsertApps(appTeamMembers)
+                    if (apps.isNotEmpty()) {
+                        appDAO.upsertApps(apps)
                     }
                 }
             }

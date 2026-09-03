@@ -65,6 +65,22 @@ data class PasswordRequest(
     @SerialName("password") val password: String?
 )
 
+@Serializable
+data class TeamCollaboratorDTO(
+    @SerialName("user") val nonQualifiedUserId: NonQualifiedUserId,
+    @SerialName("team") val teamId: TeamId,
+    @SerialName("permissions") val permissions: List<CollaboratorPermissionDTO>
+)
+
+@Serializable
+enum class CollaboratorPermissionDTO {
+    @SerialName("create_team_conversation")
+    CREATE_TEAM_CONVERSATION,
+
+    @SerialName("implicit_connection")
+    IMPLICIT_CONNECTION
+}
+
 sealed interface GetTeamsOptionsInterface
 
 /**

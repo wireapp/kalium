@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.v0.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.authenticated.teams.PasswordRequest
+import com.wire.kalium.network.api.authenticated.teams.TeamCollaboratorDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListNonPaginated
@@ -31,6 +32,7 @@ import com.wire.kalium.network.api.model.NonQualifiedUserId
 import com.wire.kalium.network.api.model.ServiceDetailResponse
 import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.model.TeamId
+import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.delete
@@ -88,6 +90,16 @@ internal open class TeamsApiV0 internal constructor(
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS/$userId")
         }
 
+    override suspend fun getTeamApps(teamId: TeamId): NetworkResponse<List<UserProfileDTO>> =
+        wrapRequest {
+            httpClient.get("$PATH_TEAMS/$teamId/$PATH_APPS")
+        }
+
+    override suspend fun getTeamCollaborators(teamId: TeamId): NetworkResponse<List<TeamCollaboratorDTO>> =
+        wrapRequest {
+            httpClient.get("$PATH_TEAMS/$teamId/$PATH_COLLABORATORS")
+        }
+
     override suspend fun approveLegalHoldRequest(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit> =
         wrapRequest {
             httpClient.put("$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId/$PATH_APPROVE") {
@@ -109,5 +121,7 @@ internal open class TeamsApiV0 internal constructor(
         const val PATH_WHITELISTED = "whitelisted"
         const val PATH_LEGAL_HOLD = "legalhold"
         const val PATH_APPROVE = "approve"
+        const val PATH_APPS = "apps"
+        const val PATH_COLLABORATORS = "collaborators"
     }
 }
