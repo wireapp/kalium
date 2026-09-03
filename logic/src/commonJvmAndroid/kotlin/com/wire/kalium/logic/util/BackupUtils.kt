@@ -34,6 +34,7 @@ import okio.Path.Companion.toPath
 import okio.Sink
 import okio.Source
 import okio.buffer
+import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -149,11 +150,46 @@ private fun readCompressedEntry(
 ): Long {
     var totalExtractedFilesSize = 0L
     val entryPathName = "$outputRootPath/${entry.name}"
-    val outputSink = fileSystem.sink(entryPathName.toPath().normalized())
+    val entryPath = entryPathName.toPath().normalized()
+    val sourceDigest = MessageDigest.getInstance(SHA_256)
+    val copyBuffer = ByteArray(BUFFER_SIZE.toInt())
+    val outputSink = fileSystem.sink(entryPath)
     outputSink.buffer().outputStream().use { output ->
-        totalExtractedFilesSize = zipInputStream.copyTo(output, BUFFER_SIZE.toInt())
+        var bytesRead: Int
+        while (zipInputStream.read(copyBuffer).also { bytesRead = it } != -1) {
+            sourceDigest.update(copyBuffer, 0, bytesRead)
+            output.write(copyBuffer, 0, bytesRead)
+            totalExtractedFilesSize += bytesRead
+        }
     }
+
+    val sourceHash = sourceDigest.digest().toHexString()
+    val (persistedFileSize, persistedFileHash) = fileSystem.source(entryPath).sha256()
+    val hashesMatch = totalExtractedFilesSize == persistedFileSize && sourceHash == persistedFileHash
+    kaliumLogger.w(
+        "Backup restore extracted entry '${entry.name}': " +
+            "sourceSize=$totalExtractedFilesSize, sourceSha256=$sourceHash, " +
+            "persistedSize=$persistedFileSize, persistedSha256=$persistedFileHash, matches=$hashesMatch"
+    )
     return totalExtractedFilesSize
+}
+
+private fun Source.sha256(): Pair<Long, String> {
+    val digest = MessageDigest.getInstance(SHA_256)
+    val readBuffer = ByteArray(BUFFER_SIZE.toInt())
+    var totalBytesRead = 0L
+    buffer().use { source ->
+        var bytesRead: Int
+        while (source.read(readBuffer).also { bytesRead = it } != -1) {
+            digest.update(readBuffer, 0, bytesRead)
+            totalBytesRead += bytesRead
+        }
+    }
+    return totalBytesRead to digest.digest().toHexString()
+}
+
+private fun ByteArray.toHexString(): String = joinToString(separator = "") {
+    (it.toInt() and BYTE_MASK).toString(radix = 16).padStart(length = 2, padChar = '0')
 }
 
 /**
@@ -162,3 +198,5 @@ private fun readCompressedEntry(
 internal fun isInvalidEntryPathDestination(entryName: String) = entryName.contains("../")
 
 private const val BUFFER_SIZE = 8192L
+private const val BYTE_MASK = 0xff
+private const val SHA_256 = "SHA-256"
