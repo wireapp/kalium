@@ -26,9 +26,9 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.X509CredentialAcquisitionConfigProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -117,7 +117,7 @@ public class DebugScope internal constructor(
     private val scope: CoroutineScope,
     private val userStorage: UserStorage,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
-    private val e2EIClientProvider: E2EIClientProvider,
+    private val x509CredentialAcquisitionConfigProvider: X509CredentialAcquisitionConfigProvider,
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
@@ -294,10 +294,10 @@ public class DebugScope internal constructor(
         get() = GetCryptoServiceReportUseCaseImpl(dispatcher)
 
     public val getDebugE2EICertificateExpiration: GetDebugE2EICertificateExpirationUseCase
-        get() = GetDebugE2EICertificateExpirationUseCaseImpl(e2EIClientProvider)
+        get() = GetDebugE2EICertificateExpirationUseCaseImpl(x509CredentialAcquisitionConfigProvider)
 
     public val setDebugE2EICertificateExpiration: SetDebugE2EICertificateExpirationUseCase
-        get() = SetDebugE2EICertificateExpirationUseCaseImpl(e2EIClientProvider)
+        get() = SetDebugE2EICertificateExpirationUseCaseImpl(x509CredentialAcquisitionConfigProvider)
 
     public val observeDebugCRLExpirationAfterOneMinute: ObserveDebugCRLExpirationAfterOneMinuteUseCase
         get() = ObserveDebugCRLExpirationAfterOneMinuteUseCaseImpl(certificateRevocationListRepository)

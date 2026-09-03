@@ -35,7 +35,6 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.first
 
 /**
  * Internal: Handles the send of delivery confirmation of messages.
@@ -81,7 +80,7 @@ internal class ConfirmationDeliveryHandlerImpl(
             kaliumLogger.d("Started collecting pending messages for delivery confirmation")
             val messagesToSend = pendingConfirmationMessages.block { it.toMap() }
             messagesToSend.forEach { (conversationId, messages) ->
-                conversationRepository.observeConversationById(conversationId).first().flatMap { conversation ->
+                conversationRepository.getConversationById(conversationId).flatMap { conversation ->
                     if (conversation.type == Conversation.Type.OneOnOne) {
                         sendDeliverSignalUseCase(
                             conversation = conversation,

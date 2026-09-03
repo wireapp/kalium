@@ -17,8 +17,6 @@
  */
 package com.wire.kalium.cryptography
 
-import kotlin.time.Duration
-
 /**
  * Provides a composite context that can be used inside a crypto transaction.
  *
@@ -45,9 +43,12 @@ interface MlsCoreCryptoContext {
     /**
      * Generate a fresh set of key packages.
      *
-     * @return list of generated key packages. NOTE: can be more than the requested amount.
+     * @return list containing the requested number of generated key packages.
      */
-    suspend fun generateKeyPackages(amount: Int): List<ByteArray>
+    suspend fun generateKeyPackages(
+        amount: Int,
+        credentialRef: CryptoCredentialRef? = null
+    ): List<ByteArray>
 
     /**
      * Number of valid key packages which haven't been consumed
@@ -70,11 +71,11 @@ interface MlsCoreCryptoContext {
      *
      * @param publicGroupState MLS group state for an existing conversation
      *
-     * @return welcome bundle, which needs to be sent to the distribution service.
+     * @return the joined MLS group ID.
      */
     suspend fun joinByExternalCommit(
         publicGroupState: ByteArray
-    ): WelcomeBundle
+    ): MLSGroupId
 
     /**
      * Query if a conversation exists
@@ -119,7 +120,7 @@ interface MlsCoreCryptoContext {
      * @param message the incoming welcome message
      * @return MLS group ID
      */
-    suspend fun processWelcomeMessage(message: WelcomeMessage): WelcomeBundle
+    suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId
 
     /**
      * Create a commit for any pending proposals
@@ -151,10 +152,10 @@ interface MlsCoreCryptoContext {
      *
      * @return the decrypted messages or the reason the message was buffered.
      */
-   suspend fun decryptMessage(
-       groupId: String,
-       message: ByteArray
-   ): MLSDecryptResult
+    suspend fun decryptMessage(
+        groupId: String,
+        message: ByteArray
+    ): MLSDecryptResult
 
     /**
      * Current members of the group.
@@ -171,12 +172,12 @@ interface MlsCoreCryptoContext {
      * @param groupId MLS group
      * @param membersKeyPackages list of claimed key package for each member.
      *
-     * @return potentially newly discovered certificate revocation list distribution points
+     * @return nothing, because the commit is handled by [MLSTransporter]
      */
     suspend fun addMember(
         groupId: MLSGroupId,
         membersKeyPackages: List<MLSKeyPackage>
-    ): List<String>?
+    )
 
     /**
      * Remove a user/client from an existing MLS group
@@ -201,34 +202,20 @@ interface MlsCoreCryptoContext {
      */
     suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 
-    /**
-     * Enroll Wire E2EIdentity Client for E2EI when MLSClient already initialized
-     *
-     * @return wire end to end identity client
-     */
-    suspend fun e2eiNewActivationEnrollment(
-        displayName: String,
-        handle: String,
-        teamId: String?,
-        expiry: Duration
-    ): E2EIClient
+    /** Change an existing conversation to use the supplied credential. */
+    suspend fun setConversationCredential(groupId: MLSGroupId, credentialRef: CryptoCredentialRef)
 
-    /**
-     * Enroll Wire E2EI Enrollment Client for renewing certificate
-     *
-     * @return wire end to end identity client
-     */
-    suspend fun e2eiNewRotateEnrollment(
-        displayName: String?,
-        handle: String?,
-        teamId: String?,
-        expiry: Duration
-    ): E2EIClient
+    /** Return a reference to the credential currently used by an existing conversation. */
+    suspend fun getConversationCredentialRef(groupId: MLSGroupId): CryptoCredentialRef
 
-    /**
-     * Init MLSClient after enrollment
-     */
-    suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>?
+    /** Remove all key packages associated with a credential. */
+    suspend fun removeKeyPackages(credentialRef: CryptoCredentialRef)
+
+    /** Remove a credential from this client. */
+    suspend fun removeCredential(credentialRef: CryptoCredentialRef)
+
+    /** Refresh expiration and revocation information for all installed credentials. */
+    suspend fun checkCredentials()
 
     /**
      * The E2EI State for the current MLS Client
@@ -247,7 +234,7 @@ interface MlsCoreCryptoContext {
     /**
      * Get the identity of given clients in the given conversation
      *
-     * @param clients a list of E2EIClientId of the requested clients
+     * @param clients a list of [CryptoQualifiedClientId] values for the requested clients
      * @param groupId MLS group ID for an existing conversation
      *
      * @return the exist identities for requested clients
@@ -275,27 +262,6 @@ interface MlsCoreCryptoContext {
      */
     suspend fun removeStaleKeyPackages()
 
-    /**
-     * Save the X509 Credential for the given enrollment
-     *
-     * @param enrollment the enrollment for which the credential is saved
-     * @param certificateChain the certificate chain to be saved
-     *
-     * @return potentially newly discovered certificate revocation list distribution points
-     */
-    suspend fun saveX509Credential(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>?
-
-    /**
-     * Rotates credentials for each conversation
-     */
-    suspend fun e2eiRotateGroups(groupList: List<MLSGroupId>)
-
-    /**
-     * Register Certificate Revocations List for an url for E2EI
-     * @param url that the CRL downloaded from
-     * @param crl fetched crl from the url
-     */
-    suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration
 }
 
 interface ProteusCoreCryptoContext {

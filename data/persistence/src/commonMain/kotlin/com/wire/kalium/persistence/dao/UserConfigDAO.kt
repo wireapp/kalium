@@ -65,8 +65,9 @@ interface UserConfigDAO {
     suspend fun deletePreviousTrackingIdentifier()
     suspend fun getNextTimeForCallFeedback(): Long?
     suspend fun setNextTimeForCallFeedback(timestamp: Long)
-    suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
-    suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
+    suspend fun setE2EIRotationCheckpoint(checkpoint: String)
+    suspend fun getE2EIRotationCheckpoint(): String?
+    suspend fun deleteE2EIRotationCheckpoint()
     suspend fun setMlsConversationsResetEnabled(enabled: Boolean)
     suspend fun getMlsConversationsResetEnabled(): Boolean
     suspend fun setAsyncNotificationsEnabled(isAsyncNotificationsEnabled: Boolean)
@@ -242,12 +243,16 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun setNextTimeForCallFeedback(timestamp: Long) =
         metadataDAO.insertValue(timestamp.toString(), NEXT_TIME_TO_ASK_CALL_FEEDBACK)
 
-    override suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
-        metadataDAO.insertValue(value = shouldFetch.toString(), key = SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)
+    override suspend fun setE2EIRotationCheckpoint(checkpoint: String) {
+        metadataDAO.insertValue(value = checkpoint, key = E2EI_ROTATION_CHECKPOINT)
     }
 
-    override suspend fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
-        metadataDAO.valueByKey(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS)?.toBoolean() ?: true
+    override suspend fun getE2EIRotationCheckpoint(): String? =
+        metadataDAO.valueByKey(E2EI_ROTATION_CHECKPOINT)
+
+    override suspend fun deleteE2EIRotationCheckpoint() {
+        metadataDAO.deleteValue(E2EI_ROTATION_CHECKPOINT)
+    }
 
     override suspend fun setMlsConversationsResetEnabled(enabled: Boolean) {
         metadataDAO.insertValue(enabled.toString(), MLS_CONVERSATIONS_RESET)
@@ -343,7 +348,7 @@ internal class UserConfigDAOImpl internal constructor(
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
         private const val ANALYTICS_TRACKING_IDENTIFIER_PREVIOUS_KEY = "analytics_tracking_identifier_previous"
         private const val ANALYTICS_TRACKING_IDENTIFIER_KEY = "analytics_tracking_identifier"
-        const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
+        private const val E2EI_ROTATION_CHECKPOINT = "e2ei_rotation_checkpoint"
         const val MLS_CONVERSATIONS_RESET = "mls_conversations_reset"
         const val ASYNC_NOTIFICATIONS_ENABLED = "async_notifications_enabled"
         const val CELLS_ENABLED = "wire_cells"

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCas
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.conversation.LeaveConversationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.util.KaliumDispatcher
 
@@ -36,6 +37,7 @@ public class MeetingScope internal constructor(
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val resetMLSConversation: ResetMLSConversationUseCase,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val leaveConversation: LeaveConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
 ) {
     public val getPaginatedMeetingOccurrenceDetails: GetPaginatedMeetingOccurrencesUseCase
@@ -50,9 +52,15 @@ public class MeetingScope internal constructor(
             meetingRepository = meetingRepository,
         )
 
-    public val deleteMeeting: DeleteMeetingUseCase
-        get() = DeleteMeetingUseCaseImpl(
+    public val deleteMeetingForEveryone: DeleteMeetingForEveryoneUseCase
+        get() = DeleteMeetingForEveryoneUseCaseImpl(
             meetingRepository = meetingRepository,
+        )
+
+    public val deleteMeetingForMe: DeleteMeetingForMeUseCase
+        get() = DeleteMeetingForMeUseCaseImpl(
+            meetingRepository = meetingRepository,
+            leaveConversation = leaveConversation,
         )
 
     public val getNextUnfinishedMeetingOccurrence: GetNextUnfinishedMeetingOccurrenceUseCase

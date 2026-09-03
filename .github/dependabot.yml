@@ -14,8 +14,7 @@ updates:
     allow:
       - dependency-name: "com.wire:avs"
       - dependency-name: "com.wire:avs-kmp"
-      - dependency-name: "com.wire:core-crypto-android"
+      - dependency-name: "com.wire:core-crypto-kmp"
       - dependency-name: "com.wire:core-crypto-jvm"
-      - dependency-name: "io.github.mohamadjaara:core-crypto-kmp"
     commit-message:
       prefix: "chore(deps): [WPB-9777] "

@@ -17,13 +17,12 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 
-/**
- * Use case that syncs ACME Certificates.
- */
+/** Refreshes federation certificates and checks installed X.509 credentials. */
 internal interface ACMECertificatesSyncUseCase {
     suspend operator fun invoke()
 }
@@ -38,8 +37,13 @@ internal class ACMECertificatesSyncUseCaseImpl(
 
     override suspend operator fun invoke() {
         if (isE2EIEnabledUseCase()) {
-            logger.i("Fetching federation certificates")
-            e2eiRepository.fetchFederationCertificates()
+            logger.i("Refreshing PKI federation certificates and checking installed credentials")
+            e2eiRepository.fetchFederationCertificates().onFailure { failure ->
+                logger.w("Refreshing PKI federation certificates failed: $failure")
+            }
+            e2eiRepository.checkCredentials().onFailure { failure ->
+                logger.w("Checking installed X.509 credentials failed: $failure")
+            }
         }
     }
 }
