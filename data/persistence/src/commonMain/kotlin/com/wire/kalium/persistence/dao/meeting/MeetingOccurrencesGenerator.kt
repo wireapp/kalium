@@ -18,10 +18,8 @@
 package com.wire.kalium.persistence.dao.meeting
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.datetime.DateTimePeriod
+import com.wire.kalium.util.TzidUtil
 import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
 import kotlin.uuid.Uuid
 
 object MeetingOccurrencesGenerator {
@@ -63,6 +61,11 @@ object MeetingOccurrencesGenerator {
         }.toMutableList()
 
     private fun MeetingEntity.toGeneratorState(lastStart: Instant?, minDateLimit: Instant?): MeetingGeneratorState? {
+        // If the meeting has a recurrence, check if the tzid is supported. If not, return null to skip this meeting.
+        // This is a safeguard to prevent generating occurrences for meeting with unsupported tzid.
+        // After updating the app to support the given tzid, the next generation will correctly generate occurrences for this meeting.
+        if (recurrence != null && !TzidUtil.isTimeZoneSupported(tzid)) return null
+
         val interval = recurrence?.interval?.toInt() ?: 1
         val firstCandidateStart = firstCandidateStart(lastStart, interval)?.let {
             advanceUntilAfter(candidateStart = it, minDateLimit = minDateLimit, interval = interval)
@@ -107,11 +110,10 @@ object MeetingOccurrencesGenerator {
     private fun MeetingGeneratorState.nextState(): MeetingGeneratorState? {
         val recurrence = meeting.recurrence ?: return null
         val interval = recurrence.interval?.toInt() ?: 1
-        val nextStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval, TimeZone.of(meeting.tzid))
-        return if (nextStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(nextStart)) {
-            copy(nextCandidateStart = nextStart)
-        } else {
-            null
+        return nextCandidateStart.plusPeriod(recurrence.frequency, interval, meeting.tzid)?.takeIf { nextStart ->
+            nextStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(nextStart)
+        }?.let {
+            copy(nextCandidateStart = it)
         }
     }
 
@@ -121,7 +123,7 @@ object MeetingOccurrencesGenerator {
     private fun MeetingEntity.firstCandidateStart(lastStart: Instant?, interval: Int): Instant? {
         val recurrence = this.recurrence
         return when {
-            lastStart != null && recurrence != null -> lastStart.plusPeriod(recurrence.frequency, interval, TimeZone.of(tzid))
+            lastStart != null && recurrence != null -> lastStart.plusPeriod(recurrence.frequency, interval, tzid)
             lastStart != null -> null
             else -> startTime
         }
@@ -133,11 +135,8 @@ object MeetingOccurrencesGenerator {
         var nextCandidateStart: Instant? = candidateStart
         while (minDateLimit != null && nextCandidateStart != null && nextCandidateStart + duration <= minDateLimit) {
             nextCandidateStart = if (recurrence != null) {
-                val advancedStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval, TimeZone.of(tzid))
-                if (advancedStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(advancedStart)) {
-                    advancedStart
-                } else {
-                    null
+                nextCandidateStart.plusPeriod(recurrence.frequency, interval, tzid)?.takeIf { advancedStart ->
+                    advancedStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(advancedStart)
                 }
             } else {
                 null
@@ -149,12 +148,13 @@ object MeetingOccurrencesGenerator {
     private fun MeetingEntity.isBeyondSeriesEnd(candidateStart: Instant): Boolean =
         recurrence?.until?.let { candidateStart > it } ?: false
 
-    private fun Instant.plusPeriod(frequency: MeetingEntity.RecurrenceEntity.Frequency, interval: Int, timeZone: TimeZone): Instant {
-        val period = when (frequency) {
-            MeetingEntity.RecurrenceEntity.Frequency.DAILY -> DateTimePeriod(days = interval)
-            MeetingEntity.RecurrenceEntity.Frequency.WEEKLY -> DateTimePeriod(days = interval * 7)
+    @Suppress("MagicNumber")
+    private fun Instant.plusPeriod(frequency: MeetingEntity.RecurrenceEntity.Frequency, interval: Int, tzid: String): Instant? {
+        val daysToAdd = when (frequency) {
+            MeetingEntity.RecurrenceEntity.Frequency.DAILY -> interval
+            MeetingEntity.RecurrenceEntity.Frequency.WEEKLY -> interval * 7
         }
-        return this.plus(period, timeZone)
+        return TzidUtil.plusDaysOrNull(this, daysToAdd, tzid)
     }
 
     private data class MeetingGeneratorState(

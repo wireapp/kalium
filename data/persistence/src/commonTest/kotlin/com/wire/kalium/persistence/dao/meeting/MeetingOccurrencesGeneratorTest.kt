@@ -128,6 +128,61 @@ class MeetingOccurrencesGeneratorTest {
         )
     }
 
+    @Test
+    fun givenRecurringMeetingWithUnsupportedTimezone_whenGeneratingOccurrences_thenReturnsNoOccurrences() {
+        val meeting = newMeeting(
+            tzid = "Unsupported/TZID",
+            recurrence = MeetingEntity.RecurrenceEntity(MeetingEntity.RecurrenceEntity.Frequency.DAILY, 1, null),
+        )
+
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 2), meeting = meeting)
+
+        assertEquals(0, occurrences.size)
+    }
+
+    @Test
+    fun givenNonRecurringMeetingWithUnsupportedTimezone_whenGeneratingOccurrences_thenReturnsOriginalOccurrence() {
+        val meeting = newMeeting(tzid = "Unsupported/TZID", recurrence = null)
+
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 2), meeting = meeting)
+
+        assertContentEquals(listOf(meeting.startTime), occurrences.map { it.occurrenceStart })
+    }
+
+    @Test
+    fun givenRecurringMeetingWithUnsupportedTimezoneAndLastGeneratedStart_whenGeneratingOccurrences_thenReturnsNoOccurrences() {
+        val meeting = newMeeting(
+            tzid = "Unsupported/TZID",
+            recurrence = MeetingEntity.RecurrenceEntity(MeetingEntity.RecurrenceEntity.Frequency.DAILY, 1, null),
+        )
+
+        val occurrences = generateOccurrences(
+            limit = MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 2),
+            lastGeneratedStarts = mapOf(meeting.meetingId to meeting.startTime),
+            meeting = meeting
+        )
+
+        assertEquals(0, occurrences.size)
+    }
+
+    @Test
+    fun givenRecurringMeetingWithUnsupportedTimezoneOutsideWindow_whenGeneratingOccurrences_thenReturnsNoOccurrences() {
+        val meeting = newMeeting(
+            tzid = "Unsupported/TZID",
+            recurrence = MeetingEntity.RecurrenceEntity(MeetingEntity.RecurrenceEntity.Frequency.DAILY, 1, null),
+        )
+
+        val occurrences = generateOccurrences(
+            limit = MeetingOccurrencesGenerator.GenerationLimit.Window(
+                from = meeting.endTime,
+                until = meeting.startTime.plus(2.days)
+            ),
+            meeting = meeting
+        )
+
+        assertEquals(0, occurrences.size)
+    }
+
     private fun List<Pair<String, String>>.parseToInstants(): List<Pair<Instant, Instant>> = map {
         Instant.parse(it.first) to Instant.parse(it.second)
     }

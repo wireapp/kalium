@@ -18,11 +18,11 @@
 
 @file:Suppress("unused")
 
-package com.wire.kalium.persistence
+package com.wire.kalium.util
 
 @JsModule("@js-joda/timezone")
 @JsNonModule
 private external val jsJodaTimezone: dynamic
 
-// Load js-joda's IANA TZID data when the JS persistence artifact is initialized.
+// Load js-joda's IANA TZID data when the JS util artifact is initialized.
 private val jsJodaTimezoneBootstrap = jsJodaTimezone
