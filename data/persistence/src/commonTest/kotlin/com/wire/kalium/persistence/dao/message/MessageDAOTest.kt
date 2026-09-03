@@ -108,7 +108,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
                 status = MessageEntity.Status.PENDING,
-                senderName = userInQuestion.name!!,
+                senderName = userInQuestion.name,
                 sender = userInQuestion
             )
         )
@@ -120,7 +120,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userInQuestion.id,
                 // Different status
                 status = MessageEntity.Status.READ,
-                senderName = userInQuestion.name!!,
+                senderName = userInQuestion.name,
                 sender = userInQuestion
             ),
             newRegularMessageEntity(
@@ -366,7 +366,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 visibility = visibilityInQuestion,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 date = baseInstant + 5.seconds,
                 sender = userDetailsEntity1
             )
@@ -380,7 +380,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.READ,
                 visibility = visibilityInQuestion,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 sender = userDetailsEntity1
             ),
             newRegularMessageEntity(
@@ -390,7 +390,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 visibility = visibilityInQuestion,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 sender = userDetailsEntity1
             ),
             newRegularMessageEntity(
@@ -400,7 +400,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 visibility = otherVisibility,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 sender = userDetailsEntity1
             )
         )
@@ -443,7 +443,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 // date before
                 date = Instant.parse("2022-03-30T15:35:00.000Z"),
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 sender = userDetailsEntity1
             )
         )
@@ -899,7 +899,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 // date matching end
                 date = finalDate,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 expectsReadConfirmation = true
             ),
             newRegularMessageEntity(
@@ -909,7 +909,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 // date beforeEnd
                 date = finalDate - 1.seconds,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 expectsReadConfirmation = true
             )
         )
@@ -922,7 +922,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 // date equal start
                 date = initialDate,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 expectsReadConfirmation = true
             ),
             newRegularMessageEntity(
@@ -932,7 +932,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 // date before start
                 date = initialDate - 1.seconds,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 expectsReadConfirmation = false
             ),
             newRegularMessageEntity(
@@ -942,7 +942,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 // date after end
                 date = finalDate + 1.seconds,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 expectsReadConfirmation = true
             )
         )
@@ -987,7 +987,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 // date after
                 date = initialDate + 1.seconds,
-                senderName = userEntity1.name!!,
+                senderName = userEntity1.name,
                 expectsReadConfirmation = false
             )
         )
@@ -1957,7 +1957,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationEntity1.id,
             status = MessageEntity.Status.SENT,
             senderUserId = otherUser.id,
-            senderName = otherUser.name!!,
+            senderName = otherUser.name,
             content = MessageEntityContent.Text("message2"),
             date = Instant.parse("2022-03-30T15:36:01.000Z")
         )
@@ -1966,7 +1966,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationEntity1.id,
             status = MessageEntity.Status.SENT,
             senderUserId = otherUser.id,
-            senderName = otherUser.name!!,
+            senderName = otherUser.name,
             content = MessageEntityContent.Text("message3"),
             date = Instant.parse("2022-03-30T15:36:02.000Z")
         )
@@ -2177,7 +2177,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationEntity1.id,
             senderUserId = userEntity1.id,
             status = MessageEntity.Status.SENT,
-            senderName = userEntity1.name!!,
+            senderName = userEntity1.name,
             selfDeletionEndDate = Instant.DISTANT_FUTURE,
             expireAfterMs = 1.seconds.inWholeSeconds
         )
@@ -2186,14 +2186,14 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationEntity1.id,
             senderUserId = userEntity1.id,
             status = MessageEntity.Status.SENT,
-            senderName = userEntity1.name!!,
+            senderName = userEntity1.name,
         )
         val notYetStartedEphemeralMessage = newRegularMessageEntity(
             "4",
             conversationId = conversationEntity1.id,
             senderUserId = userEntity1.id,
             status = MessageEntity.Status.SENT,
-            senderName = userEntity1.name!!,
+            senderName = userEntity1.name,
             selfDeletionEndDate = null,
             expireAfterMs = 1.seconds.inWholeSeconds
         )
@@ -2231,7 +2231,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationEntity1.id,
             senderUserId = userEntity1.id,
             status = MessageEntity.Status.SENT,
-            senderName = userEntity1.name!!,
+            senderName = userEntity1.name,
             selfDeletionEndDate = Instant.DISTANT_FUTURE,
             expireAfterMs = 1.seconds.inWholeSeconds
         )
@@ -2240,7 +2240,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationEntity1.id,
             senderUserId = userEntity1.id,
             status = MessageEntity.Status.SENT,
-            senderName = userEntity1.name!!,
+            senderName = userEntity1.name,
         )
         val expectedMessages = listOf(pendingEphemeralMessage)
         val allMessages = expectedMessages + listOf(alreadyEndedEphemeralMessage, nonEphemeralMessage)

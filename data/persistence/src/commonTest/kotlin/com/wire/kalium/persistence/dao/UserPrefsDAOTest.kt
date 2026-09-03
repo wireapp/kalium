@@ -269,36 +269,36 @@ internal class UserPrefsDAOTest {
     private class Arrangement {
         val metadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
 
-        suspend fun withMetadataInserted() = apply {
+        fun withMetadataInserted() = apply {
             everySuspend { metadataDAO.insertValue(any(), any()) } returns Unit
         }
 
-        suspend fun withMetadataRetrieved(key: String, value: String?) = apply {
-            everySuspend { metadataDAO.valueByKey(eq(key)) } returns value
+        fun withMetadataRetrieved(key: String, value: String?) = apply {
+            everySuspend { metadataDAO.valueByKey(key) } returns value
         }
 
-        suspend fun withNoMetadataRetrieved(key: String) = apply {
-            everySuspend { metadataDAO.valueByKey(eq(key)) } returns null
+        fun withNoMetadataRetrieved(key: String) = apply {
+            everySuspend { metadataDAO.valueByKey(key) } returns null
         }
 
-        suspend fun withSerializablePutSucceeding() = apply {
+        fun withSerializablePutSucceeding() = apply {
             everySuspend { metadataDAO.putSerializable(any<String>(), any<Any>(), any()) } returns Unit
         }
 
-        suspend fun withSerializableGetSucceeding(key: String, value: Any?) = apply {
-            everySuspend { metadataDAO.getSerializable(eq(key), any<kotlinx.serialization.KSerializer<*>>()) } returns value
+        fun withSerializableGetSucceeding(key: String, value: Any?) = apply {
+            everySuspend { metadataDAO.getSerializable(key, any<kotlinx.serialization.KSerializer<*>>()) } returns value
         }
 
         fun withSerializableObserveSucceeding(key: String, value: Any?) = apply {
-            every { metadataDAO.observeSerializable(eq(key), any<kotlinx.serialization.KSerializer<*>>()) } returns flowOf(value)
+            every { metadataDAO.observeSerializable(key, any<kotlinx.serialization.KSerializer<*>>()) } returns flowOf(value)
         }
 
         fun withSerializableObserveReturningNull(key: String) = apply {
-            every { metadataDAO.observeSerializable(eq(key), any<kotlinx.serialization.KSerializer<*>>()) } returns flowOf(null)
+            every { metadataDAO.observeSerializable(key, any<kotlinx.serialization.KSerializer<*>>()) } returns flowOf(null)
         }
 
-        suspend fun withValueByKeyFlowSucceeding(key: String, value: String?) = apply {
-            everySuspend { metadataDAO.valueByKeyFlow(eq(key)) } returns flowOf(value)
+        fun withValueByKeyFlowSucceeding(key: String, value: String?) = apply {
+            everySuspend { metadataDAO.valueByKeyFlow(key) } returns flowOf(value)
         }
 
         fun arrange() = this to UserPrefsDAO(metadataDAO)
