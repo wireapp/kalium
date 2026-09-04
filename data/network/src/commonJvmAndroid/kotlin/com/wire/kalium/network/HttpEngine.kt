@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.unbound.configuration.isProxyRequired
 import com.wire.kalium.network.session.CertificatePinning
+import com.wire.kalium.util.InternalKaliumApi
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.CertificatePinner
@@ -116,6 +117,7 @@ actual fun defaultHttpEngine(
  * unmodified (aside from re-wrapping the response body, which OkHttp requires once its bytes have
  * been read for inspection).
  */
+@OptIn(InternalKaliumApi::class)
 internal fun httpTrafficObserverInterceptor(observer: HttpTrafficObserver): Interceptor = Interceptor { chain ->
     val request = chain.request()
 

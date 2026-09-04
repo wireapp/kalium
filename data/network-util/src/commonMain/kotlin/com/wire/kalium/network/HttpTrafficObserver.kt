@@ -29,8 +29,10 @@ import com.wire.kalium.util.InternalKaliumApi
  * production logs. [HttpTrafficObserver] is for consumers (e.g. a developer debugging tool) that
  * need full visibility and can be trusted with unredacted traffic.
  */
-@InternalKaliumApi
 interface HttpTrafficObserver {
+    @InternalKaliumApi
     fun onRequest(method: String, url: String, headers: Map<String, List<String>>, body: ByteArray?)
+
+    @InternalKaliumApi
     fun onResponse(method: String, url: String, statusCode: Int, headers: Map<String, List<String>>, body: ByteArray?)
 }
