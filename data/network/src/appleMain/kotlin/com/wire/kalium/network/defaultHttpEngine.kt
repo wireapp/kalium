@@ -29,8 +29,11 @@ actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
     ignoreSSLCertificates: Boolean,
-    certificatePinning: CertificatePinning
+    certificatePinning: CertificatePinning,
+    httpTrafficObserver: HttpTrafficObserver?,
 ): HttpClientEngine {
+    // Not implemented on iOS/macOS: the Darwin engine doesn't expose an OkHttp-style interceptor
+    // seam. This hook is currently only wired up on JVM/Android.
     if (serverConfigDTOApiProxy != null) {
         throw IllegalArgumentException("Proxy is not supported on iOS")
     }
