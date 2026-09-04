@@ -70,7 +70,7 @@ jobs:
       - name: Test JS with Gradle
         run: |
           ./gradlew --stop
-          ./gradlew jsTest -PUSE_UNIFIED_CORE_CRYPTO=true --no-daemon -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
+          ./gradlew jsTest --no-daemon -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
 
       - name: Archive Test Reports
         if: always()

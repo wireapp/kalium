@@ -92,7 +92,7 @@ CI must run:
 For the initial `:logic`-only rollout, CI runs the scoped task:
 
 ```bash
-./gradlew :logic:checkKotlinAbi -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew :logic:checkKotlinAbi
 ```
 
 The unqualified root task should be used once additional KMP modules have been classified and
@@ -106,9 +106,8 @@ intentional and accepted, update the checked-in ABI dumps with:
 ```
 
 For the initial `:logic`-only rollout, update the checked-in ABI dumps with:
-
 ```bash
-./gradlew :logic:updateKotlinAbi -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew :logic:updateKotlinAbi
 ```
 
 ABI dump updates are reviewable API changes. Reviewers should treat them like source changes, not

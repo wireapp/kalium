@@ -9,31 +9,9 @@ This guide covers building Kalium for iOS targets using Kotlin Multiplatform.
 - **Xcode** with command-line tools installed
 - **CocoaPods** (optional, for framework integration)
 
-## Build Configuration
+## CoreCrypto
 
-iOS builds require the unified CoreCrypto KMP library. You must ensure the `USE_UNIFIED_CORE_CRYPTO` property is set to `true`.
-
-### Setting the Property
-
-**Option 1: In `gradle.properties`**
-
-Ensure your `gradle.properties` file contains:
-
-```properties
-USE_UNIFIED_CORE_CRYPTO=true
-```
-
-**Option 2: Via command line**
-
-Pass the property when running Gradle commands:
-
-```bash
-./gradlew :logic:linkDebugFrameworkIosArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
-```
-
-### Why This Is Required
-
-The unified CoreCrypto KMP library (`com.wire:core-crypto-kmp`) provides multiplatform support including iOS targets. The legacy non-unified library (`com.wire:core-crypto-android`) only supports Android and will cause iOS builds to fail.
+The official CoreCrypto KMP library (`com.wire:core-crypto-kmp`) is wired into shared source sets and provides the native binaries required by the supported Apple targets. No platform-selection Gradle property is required.
 
 ## Supported iOS Targets
 
