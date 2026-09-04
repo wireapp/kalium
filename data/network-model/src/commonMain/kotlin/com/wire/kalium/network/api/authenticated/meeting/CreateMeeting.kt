@@ -29,6 +29,7 @@ import kotlinx.serialization.Serializable
 data class UpsertMeetingRequest(
     @SerialName("start_time") val startTime: Instant,
     @SerialName("end_time") val endTime: Instant,
+    @SerialName("tzid") val tzid: String,
     @SerialName("title") val title: String,
     @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
 )
@@ -43,7 +44,7 @@ data class UpsertMeetingResponse(
     @SerialName("title") val title: String,
     @SerialName("start_time") val startTime: Instant,
     @SerialName("end_time") val endTime: Instant,
-    @SerialName("trial") val trial: Boolean,
+    @SerialName("tzid") val tzid: String,
     @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?,
     @SerialName("conversation") val conversation: ConversationResponse,
 )
@@ -57,6 +58,6 @@ fun UpsertMeetingResponse.toMeetingDTO(): MeetingDTO = MeetingDTO(
     title = title,
     startTime = startTime,
     endTime = endTime,
-    trial = trial,
+    tzid = tzid,
     recurrence = recurrence
 )

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,8 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.network.api.v16.authenticated
 
-import com.wire.kalium.network.api.v15.authenticated.MeetingApiV15
+@file:Suppress("unused")
 
-internal open class MeetingApiV16 internal constructor() : MeetingApiV15()
+package com.wire.kalium.util
+
+@JsModule("@js-joda/timezone")
+@JsNonModule
+private external val jsJodaTimezone: dynamic
+
+// Load js-joda's IANA TZID data when the JS util artifact is initialized.
+private val jsJodaTimezoneBootstrap = jsJodaTimezone
