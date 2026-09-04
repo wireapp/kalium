@@ -57,6 +57,7 @@ import com.wire.kalium.network.api.v13.authenticated.networkContainer.Authentica
 import com.wire.kalium.network.api.v14.authenticated.networkContainer.AuthenticatedNetworkContainerV14
 import com.wire.kalium.network.api.v15.authenticated.networkContainer.AuthenticatedNetworkContainerV15
 import com.wire.kalium.network.api.v16.authenticated.networkContainer.AuthenticatedNetworkContainerV16
+import com.wire.kalium.network.api.v17.authenticated.networkContainer.AuthenticatedNetworkContainerV17
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
@@ -315,6 +316,16 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 16 -> AuthenticatedNetworkContainerV16(
+                    sessionManager,
+                    nomadServiceUrl,
+                    selfUserId,
+                    certificatePinning,
+                    mockEngine,
+                    mockWebSocketSession,
+                    kaliumLogger
+                )
+
+                17 -> AuthenticatedNetworkContainerV17(
                     sessionManager,
                     nomadServiceUrl,
                     selfUserId,
