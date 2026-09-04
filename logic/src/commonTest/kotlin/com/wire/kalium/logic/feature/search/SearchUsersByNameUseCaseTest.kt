@@ -295,7 +295,7 @@ class SearchUsersByNameUseCaseTest {
             newOtherUser("remoteAndLocalUser1").copy(name = "updatedNewName"),
             newOtherUser("remoteUser2").copy(
                 teamId = TeamId("otherTeamId"),
-                connectionStatus = ConnectionState.PENDING
+                connectionStatus = ConnectionState.SENT
             ),
         )
 
@@ -310,7 +310,7 @@ class SearchUsersByNameUseCaseTest {
                 newUserSearchDetails("localUser2")
             ),
             notConnected = listOf(
-                newUserSearchDetails("remoteUser2").copy(connectionStatus = ConnectionState.PENDING),
+                newUserSearchDetails("remoteUser2").copy(connectionStatus = ConnectionState.SENT),
             )
         )
 
