@@ -30,6 +30,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration
 
@@ -54,6 +55,7 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     private val sft: String? by option("-S", "--sft", help = "sft url to inject into config")
 
+    @OptIn(InternalKaliumApi::class)
     override fun run() = runBlocking {
         currentContext.findOrSetObject {
             coreLogic(
