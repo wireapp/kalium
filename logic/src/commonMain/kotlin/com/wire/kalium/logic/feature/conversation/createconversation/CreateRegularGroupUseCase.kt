@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.UserId
 public interface CreateRegularGroupUseCase {
     public suspend operator fun invoke(name: String, userIdList: List<UserId>, options: CreateConversationParam): ConversationCreationResult
     public suspend fun retryPendingMLSGroupCreation(conversationId: ConversationId): ConversationCreationResult
+    public suspend fun discardPendingMLSGroupCreation(conversationId: ConversationId): Boolean
 }
 
 /**
@@ -46,4 +47,7 @@ internal class CreateRegularGroupUseCaseImpl(
 
     override suspend fun retryPendingMLSGroupCreation(conversationId: ConversationId): ConversationCreationResult =
         createGroupConversation.retryPendingMLSGroupCreation(conversationId)
+
+    override suspend fun discardPendingMLSGroupCreation(conversationId: ConversationId) =
+        createGroupConversation.discardPendingMLSGroupCreation(conversationId)
 }
