@@ -18,11 +18,13 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.feature.backup.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -36,6 +38,7 @@ import io.mockative.eq
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ResetMLSConversationUseCaseTest {
@@ -56,6 +59,8 @@ class ResetMLSConversationUseCaseTest {
         coVerify {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
         }.wasNotInvoked()
+
+        coVerify { arrangement.endCallOnMLSReset(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -72,6 +77,8 @@ class ResetMLSConversationUseCaseTest {
         coVerify {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
         }.wasNotInvoked()
+
+        coVerify { arrangement.endCallOnMLSReset(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -104,6 +111,8 @@ class ResetMLSConversationUseCaseTest {
         coVerify {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
         }.wasNotInvoked()
+
+        coVerify { arrangement.endCallOnMLSReset(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -251,6 +260,42 @@ class ResetMLSConversationUseCaseTest {
         coVerify {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
         }.wasNotInvoked()
+
+        coVerify { arrangement.endCallOnMLSReset(any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenResetIsAccepted_whenUseCaseCalled_thenCallIsEndedBeforeLeavingGroup() = runTest {
+        val (arrangement, useCase) = Arrangement().withFeatureEnabled().arrange()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        assertEquals(listOf("reset", "endCall", "leaveGroup"), arrangement.resetSteps)
+        coVerify { arrangement.endCallOnMLSReset(eq(TEST_CONVERSATION_ID)) }.wasInvoked(exactly = 1)
+    }
+
+    @Test
+    fun givenResetFails_whenUseCaseCalled_thenCallIsNotEnded() = runTest {
+        val (arrangement, useCase) = Arrangement().withFeatureEnabled().arrange()
+        coEvery {
+            arrangement.conversationRepository.resetMlsConversation(any(), any())
+        } returns NetworkFailure.NoNetworkConnection(null).left()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        coVerify { arrangement.endCallOnMLSReset(any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenResetIsAcceptedAndConversationSyncFails_whenUseCaseCalled_thenCallIsStillEnded() = runTest {
+        val (arrangement, useCase) = Arrangement().withFeatureEnabled().arrange()
+        coEvery {
+            arrangement.fetchConversationUseCase(any(), any(), eq(ConversationSyncReason.ConversationReset))
+        } returns NetworkFailure.NoNetworkConnection(null).left()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        coVerify { arrangement.endCallOnMLSReset(eq(TEST_CONVERSATION_ID)) }.wasInvoked(exactly = 1)
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -259,6 +304,8 @@ class ResetMLSConversationUseCaseTest {
 
         val userConfig = mock(UserConfigRepository::class)
         val conversationRepository = mock(ConversationRepository::class)
+        val resetSteps = mutableListOf<String>()
+        val endCallOnMLSReset = mock(EndCallOnMLSResetUseCase::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val fetchConversationUseCase = mock(FetchConversationUseCase::class)
         var kaliumConfigs = KaliumConfigs(isMlsResetEnabled = true)
@@ -303,6 +350,11 @@ class ResetMLSConversationUseCaseTest {
 
         suspend fun arrange(): Pair<Arrangement, ResetMLSConversationUseCaseImpl> {
 
+            coEvery { endCallOnMLSReset(any()) }.invokes {
+                resetSteps.add("endCall")
+                Unit
+            }
+
             withMLSTransactionReturning(Either.Right(Unit))
             withTransactionReturning(Either.Right(Unit))
 
@@ -317,11 +369,17 @@ class ResetMLSConversationUseCaseTest {
 
             coEvery {
                 conversationRepository.resetMlsConversation(any(), any())
-            } returns Unit.right()
+            }.invokes {
+                resetSteps.add("reset")
+                Unit.right()
+            }
 
             coEvery {
                 mlsConversationRepository.leaveGroup(any(), any())
-            } returns Unit.right()
+            }.invokes {
+                resetSteps.add("leaveGroup")
+                Unit.right()
+            }
 
             coEvery {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
@@ -336,6 +394,7 @@ class ResetMLSConversationUseCaseTest {
             } returns listOf(UserId("test", "test@user")).right()
 
             return this to ResetMLSConversationUseCaseImpl(
+                endCallOnMLSReset = endCallOnMLSReset,
                 selfUserId = TEST_USER_ID,
                 userConfig = userConfig,
                 transactionProvider = cryptoTransactionProvider,

@@ -290,7 +290,7 @@ internal class CallDataSource(
             if (lastCallStatus in activeCallStatus) { // LAST CALL ACTIVE
                 callingLogger.i("[CallRepository][createCall] -> Update.1 | callNewStatus: [$callNewStatus]")
                 // Update database
-                updateCallStatusById(
+                updateCallStatusWhileLocked(
                     conversationId = conversationId,
                     status = callNewStatus
                 )
@@ -332,7 +332,16 @@ internal class CallDataSource(
         }
     }
 
-    override suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus) {
+    override suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus) =
+        mutexProvider.withLock(conversationId) {
+            updateCallStatusWhileLocked(conversationId, status)
+        }
+
+    // Caller must hold the conversation mutex, including when updating from createCall.
+    private suspend fun updateCallStatusWhileLocked(conversationId: ConversationId, status: CallStatus) {
+        val currentStatus = getCallMetadata(conversationId)?.callStatus
+        if (currentStatus == CallStatus.CLOSED && status != CallStatus.CLOSED) return
+
         // Update Call in Database
         wrapStorageRequest {
             callDAO.updateLastCallStatusByConversationId(

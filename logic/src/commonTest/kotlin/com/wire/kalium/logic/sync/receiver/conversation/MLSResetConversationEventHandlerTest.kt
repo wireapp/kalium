@@ -21,6 +21,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
@@ -43,12 +44,14 @@ import kotlin.test.Test
 class MLSResetConversationEventHandlerTest {
 
     @Test
-    fun givenMLSContextIsNull_whenHandlingEvent_thenShouldDoNothing() = runTest {
+    fun givenMLSContextIsNull_whenHandlingEvent_thenShouldOnlyEndCall() = runTest {
         val (arrangement, handler) = arrange {
             withMLSContextNull()
         }
 
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
+
+        coVerify { arrangement.endCallOnMLSReset(eq(CONVERSATION_ID)) }.wasInvoked(exactly = once)
 
         coVerify {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
@@ -73,6 +76,8 @@ class MLSResetConversationEventHandlerTest {
         }
 
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
+
+        coVerify { arrangement.endCallOnMLSReset(eq(CONVERSATION_ID)) }.wasInvoked(exactly = once)
 
         coVerify {
             arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
@@ -105,6 +110,8 @@ class MLSResetConversationEventHandlerTest {
 
             handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
+        coVerify { arrangement.endCallOnMLSReset(eq(CONVERSATION_ID)) }.wasInvoked(exactly = once)
+
             coVerify {
                 arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
             }.wasInvoked(exactly = once)
@@ -136,6 +143,8 @@ class MLSResetConversationEventHandlerTest {
             }
 
             handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
+
+        coVerify { arrangement.endCallOnMLSReset(eq(CONVERSATION_ID)) }.wasInvoked(exactly = once)
 
             coVerify {
                 arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
@@ -196,6 +205,8 @@ class MLSResetConversationEventHandlerTest {
 
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
+        coVerify { arrangement.endCallOnMLSReset(eq(CONVERSATION_ID)) }.wasInvoked(exactly = once)
+
         coVerify {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
                 eq(CONVERSATION_ID),
@@ -218,6 +229,8 @@ class MLSResetConversationEventHandlerTest {
 
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
+        coVerify { arrangement.endCallOnMLSReset(eq(CONVERSATION_ID)) }.wasInvoked(exactly = once)
+
         coVerify {
             arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
         }.wasInvoked(exactly = once)
@@ -239,6 +252,7 @@ class MLSResetConversationEventHandlerTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
+        val endCallOnMLSReset = mock(EndCallOnMLSResetUseCase::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         suspend fun withLeaveGroupSucceeding() = apply {
@@ -288,8 +302,11 @@ class MLSResetConversationEventHandlerTest {
         }
 
         suspend fun arrange() = run {
+            coEvery { endCallOnMLSReset(any()) } returns Unit
+
             block()
             this@Arrangement to MLSResetConversationEventHandlerImpl(
+                endCallOnMLSReset = endCallOnMLSReset,
                 mlsConversationRepository = mlsConversationRepository
             )
         }
