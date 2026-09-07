@@ -52,6 +52,7 @@ import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
@@ -176,6 +177,126 @@ class SearchUserRepositoryTest {
 
         // then
         assertIs<Either.Right<UserSearchResult>>(actual)
+    }
+
+    @Test
+    fun givenRemoteUserWithSentConnectionRequest_whenSearchingPublicContacts_thenSentStateIsPreserved() = runTest {
+        val remoteUser = USER_PROFILE_DTO.copy(teamId = "otherTeamId")
+        val localUser = TestUser.DETAILS_ENTITY.copy(
+            team = "otherTeamId",
+            connectionStatus = ConnectionEntity.State.SENT
+        )
+        val (_, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                withGetMultipleUsersResult(
+                    NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(remoteUser)), mapOf(), 200)
+                )
+                withGetUsersDetailsByQualifiedIdListResult(listOf(localUser))
+            }
+
+        searchUserRepository.searchUserRemoteDirectory(
+            TEST_QUERY,
+            TEST_DOMAIN,
+            null,
+            SearchUsersOptions.Default
+        ).shouldSucceed { result ->
+            assertEquals(ConnectionState.SENT, result.result.single().connectionStatus)
+        }
+    }
+
+    @Test
+    fun givenRemoteUserWithPendingConnectionRequest_whenSearchingPublicContacts_thenPendingStateIsPreserved() = runTest {
+        val remoteUser = USER_PROFILE_DTO.copy(teamId = "otherTeamId")
+        val localUser = TestUser.DETAILS_ENTITY.copy(
+            team = "otherTeamId",
+            connectionStatus = ConnectionEntity.State.PENDING
+        )
+        val (_, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                withGetMultipleUsersResult(
+                    NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(remoteUser)), mapOf(), 200)
+                )
+                withGetUsersDetailsByQualifiedIdListResult(listOf(localUser))
+            }
+
+        searchUserRepository.searchUserRemoteDirectory(
+            TEST_QUERY,
+            TEST_DOMAIN,
+            null,
+            SearchUsersOptions.Default
+        ).shouldSucceed { result ->
+            assertEquals(ConnectionState.PENDING, result.result.single().connectionStatus)
+        }
+    }
+
+    @Test
+    fun givenRemoteUserWithoutLocalRecord_whenSearchingPublicContacts_thenUserRemainsNotConnected() = runTest {
+        val remoteUser = USER_PROFILE_DTO.copy(teamId = "otherTeamId")
+        val (_, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                withGetMultipleUsersResult(
+                    NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(remoteUser)), mapOf(), 200)
+                )
+                withGetUsersDetailsByQualifiedIdListResult(emptyList())
+            }
+
+        searchUserRepository.searchUserRemoteDirectory(
+            TEST_QUERY,
+            TEST_DOMAIN,
+            null,
+            SearchUsersOptions.Default
+        ).shouldSucceed { result ->
+            assertEquals(ConnectionState.NOT_CONNECTED, result.result.single().connectionStatus)
+        }
+    }
+
+    @Test
+    fun givenRemoteTeamMemberWithoutLocalRecord_whenSearchingPublicContacts_thenUserRemainsAccepted() = runTest {
+        val (_, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                withGetMultipleUsersResult(NetworkResponse.Success(USER_RESPONSE, mapOf(), 200))
+                withGetUsersDetailsByQualifiedIdListResult(emptyList())
+            }
+
+        searchUserRepository.searchUserRemoteDirectory(
+            TEST_QUERY,
+            TEST_DOMAIN,
+            null,
+            SearchUsersOptions.Default
+        ).shouldSucceed { result ->
+            assertEquals(ConnectionState.ACCEPTED, result.result.single().connectionStatus)
+        }
+    }
+
+    @Test
+    fun givenLocalConnectionLookupFails_whenSearchingPublicContacts_thenRemoteResultsAreStillReturned() = runTest {
+        val remoteUser = USER_PROFILE_DTO.copy(teamId = "otherTeamId")
+        val (_, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                withGetMultipleUsersResult(
+                    NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(remoteUser)), mapOf(), 200)
+                )
+                withGetUsersDetailsByQualifiedIdListFailure(IllegalStateException("database failure"))
+            }
+
+        searchUserRepository.searchUserRemoteDirectory(
+            TEST_QUERY,
+            TEST_DOMAIN,
+            null,
+            SearchUsersOptions.Default
+        ).shouldSucceed { result ->
+            assertEquals(ConnectionState.NOT_CONNECTED, result.result.single().connectionStatus)
+        }
     }
 
     @Test
@@ -516,6 +637,18 @@ class SearchUserRepositoryTest {
             everySuspend {
                 userDetailsApi.getMultipleUsers(any())
             }.returns(result)
+        }
+
+        suspend fun withGetUsersDetailsByQualifiedIdListResult(result: List<UserDetailsEntity>) = apply {
+            everySuspend {
+                userDAO.getUsersDetailsByQualifiedIDList(any())
+            }.returns(result)
+        }
+
+        suspend fun withGetUsersDetailsByQualifiedIdListFailure(exception: Exception) = apply {
+            everySuspend {
+                userDAO.getUsersDetailsByQualifiedIDList(any())
+            }.throws(exception)
         }
 
         suspend fun withObserveUserDetailsByQualifiedIdResult(result: Flow<UserDetailsEntity?>) = apply {
