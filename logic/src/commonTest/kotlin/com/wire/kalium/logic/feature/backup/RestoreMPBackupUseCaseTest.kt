@@ -23,7 +23,10 @@ import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
+import com.wire.backup.ingest.BackupPageDecodingException
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.protobuf.backup.BackupData
+import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -57,10 +60,12 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import okio.Path.Companion.toPath
+import pbandk.InvalidProtocolBufferException
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -162,6 +167,25 @@ class RestoreMPBackupUseCaseTest {
     }
 
     @Test
+    fun givenMalformedProtobufPage_whenRestoring_thenCorruptedOrUnreadableBackupIsReturned() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessImport()
+            .withPageDecodingFailure()
+            .arrange()
+
+        val result = useCase(arrangement.storedPath, null) {}
+
+        assertEquals(
+            RestoreBackupResult.Failure(RestoreBackupResult.BackupRestoreFailure.CorruptedOrUnreadableBackup),
+            result
+        )
+        coVerify { arrangement.backupRepository.insertUsers(any()) }.wasNotInvoked()
+        coVerify { arrangement.backupRepository.insertConversations(any()) }.wasNotInvoked()
+        coVerify { arrangement.backupRepository.insertMessages(any()) }.wasNotInvoked()
+        coVerify { arrangement.backupRepository.insertReactions(any()) }.wasNotInvoked()
+    }
+
+    @Test
     fun givenBackupContainsUsersWithEmptyDomain_whenRestoring_thenMalformedUserIsSkipped() = runTest {
         val malformedBackupUser = testUser.toBackupUser().copy(
             id = BackupQualifiedId("participant-malformed", "")
@@ -223,6 +247,7 @@ class RestoreMPBackupUseCaseTest {
         var usersInsertStubConfigured = false
         var conversationsInsertStubConfigured = false
         var messagesInsertStubConfigured = false
+        var pageDecodingException: BackupPageDecodingException? = null
 
         val storedPath = "testPath/backupFile.zip".toPath()
 
@@ -259,6 +284,16 @@ class RestoreMPBackupUseCaseTest {
 
         fun withUsersPages(vararg pages: Array<BackupUser>) = apply {
             usersPages = pages.toList()
+        }
+
+        fun withPageDecodingFailure() = apply {
+            val decodingCause = assertFailsWith<InvalidProtocolBufferException> {
+                BackupData.decodeFromByteArray(byteArrayOf(0))
+            }
+            pageDecodingException = BackupPageDecodingException(
+                pageName = "users_0.binpb",
+                cause = decodingCause
+            )
         }
 
         suspend fun captureInsertedUsers(captured: MutableList<List<OtherUser>>) = apply {
@@ -309,7 +344,9 @@ class RestoreMPBackupUseCaseTest {
 
             val usersHasMorePagesValues = MutableList(usersPages.size) { true } + false
             every { usersPager.hasMorePages() }.returnsMany(*usersHasMorePagesValues.toTypedArray())
-            every { usersPager.nextPage() }.returnsMany(*usersPages.toTypedArray())
+            pageDecodingException?.let { exception ->
+                every { usersPager.nextPage() }.throws(exception)
+            } ?: every { usersPager.nextPage() }.returnsMany(*usersPages.toTypedArray())
 
             every { conversationsPager.hasMorePages() }.returnsMany(true, false)
             every { conversationsPager.nextPage() }.returnsMany(arrayOf(TestConversation.CONVERSATION.toBackupConversation()))
