@@ -23,9 +23,9 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 
 /**
- * Use case for deleting a meeting by its ID.
+ * Use case for deleting a meeting for every participant by its ID.
  */
-public interface DeleteMeetingUseCase {
+public interface DeleteMeetingForEveryoneUseCase {
     public suspend operator fun invoke(meetingId: MeetingId): Result
 
     public sealed interface Result {
@@ -34,14 +34,13 @@ public interface DeleteMeetingUseCase {
     }
 }
 
-internal class DeleteMeetingUseCaseImpl(
+internal class DeleteMeetingForEveryoneUseCaseImpl(
     private val meetingRepository: MeetingRepository,
-) : DeleteMeetingUseCase {
-    override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingUseCase.Result {
-        return meetingRepository.deleteMeeting(meetingId).fold({
-            DeleteMeetingUseCase.Result.Failure(it)
+) : DeleteMeetingForEveryoneUseCase {
+    override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingForEveryoneUseCase.Result =
+        meetingRepository.deleteMeeting(meetingId).fold({
+            DeleteMeetingForEveryoneUseCase.Result.Failure(it)
         }, {
-            DeleteMeetingUseCase.Result.Success
+            DeleteMeetingForEveryoneUseCase.Result.Success
         })
-    }
 }

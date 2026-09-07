@@ -24,14 +24,11 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MLSGroupId
-import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
@@ -281,33 +278,6 @@ class MLSWelcomeEventHandlerTest {
     }
 
     @Test
-    fun givenWelcomeBundleWithNewDistributionsCRL_whenHandlingEvent_then_CheckRevocationList() = runTest {
-        val failure = Either.Left(StorageFailure.DataNotFound)
-        val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(
-                WELCOME_BUNDLE.copy(crlNewDistributionPoints = listOf("url"))
-            )
-            withFetchConversationIfUnknownSucceeding()
-            withCheckRevocationListResult()
-            withUpdateGroupStateReturning(failure)
-        }
-
-        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.fetchConversationIfUnknown(any(), eq(CONVERSATION_ID), any())
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.checkRevocationList.check(any(), any())
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
-        }
-    }
-
-    @Test
     fun givenOrphanWelcomeAndLocalGroupAlreadyEstablished_whenHandlingWelcome_thenShouldSkipExternalCommitRejoin() = runTest {
         val orphanWelcomeException = CommonizedMLSException(
             MLSFailure.OrphanWelcome,
@@ -370,8 +340,6 @@ class MLSWelcomeEventHandlerTest {
         val fetchConversationIfUnknown = mock<FetchConversationIfUnknownUseCase>()
         val oneOnOneResolver = mock<OneOnOneResolver>()
         val refillKeyPackagesUseCase = mock<RefillKeyPackagesUseCase>()
-        val checkRevocationList = mock<RevocationListChecker>()
-        val certificateRevocationListRepository = mock<CertificateRevocationListRepository>()
         val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>()
 
         suspend fun withMLSClientProcessingOfWelcomeMessageFailsWith(exception: Exception) = apply {
@@ -380,10 +348,10 @@ class MLSWelcomeEventHandlerTest {
             } throws exception
         }
 
-        suspend fun withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(welcomeBundle: WelcomeBundle = WELCOME_BUNDLE) = apply {
+        suspend fun withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(groupId: MLSGroupId = MLS_GROUP_ID) = apply {
             everySuspend {
                 mlsContext.processWelcomeMessage(any())
-            } returns welcomeBundle
+            } returns groupId
         }
 
         suspend fun withMLSConversationExists(exists: Boolean) = apply {
@@ -397,15 +365,6 @@ class MLSWelcomeEventHandlerTest {
                 joinExistingMLSConversation.invoke(any(), any(), any(), eq(true))
             } returns result
         }
-        suspend fun withCheckRevocationListResult() {
-            everySuspend {
-                checkRevocationList.check(any(), any())
-            } returns Either.Right(1uL)
-            everySuspend {
-                certificateRevocationListRepository.addOrUpdateCRL(any(), any())
-            } returns Unit
-        }
-
         suspend fun withRefillKeyPackagesReturning(result: RefillKeyPackagesResult) = apply {
             everySuspend {
                 refillKeyPackagesUseCase.invoke(any())
@@ -442,8 +401,6 @@ class MLSWelcomeEventHandlerTest {
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
                 refillKeyPackages = refillKeyPackagesUseCase,
-                revocationListChecker = checkRevocationList,
-                certificateRevocationListRepository = certificateRevocationListRepository,
                 joinExistingMLSConversation = joinExistingMLSConversation,
                 fetchConversationIfUnknown = fetchConversationIfUnknown
             )
@@ -464,6 +421,5 @@ class MLSWelcomeEventHandlerTest {
             TestUser.USER_ID,
             Base64.encode(WELCOME),
         )
-        val WELCOME_BUNDLE = WelcomeBundle(MLS_GROUP_ID, null)
     }
 }

@@ -88,7 +88,7 @@ internal class MLSMessageUnpackerTest {
 
         val (arrangement, mlsUnpacker) = Arrangement()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MIXED_PROTOCOL_INFO)
-            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))))
+            .withDecryptMessageReturning(Either.Right(listOf(decryptedProposal(commitDelay))))
             .arrange()
 
         val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
@@ -105,7 +105,7 @@ internal class MLSMessageUnpackerTest {
 
         val (arrangement, mlsUnpacker) = Arrangement()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
-            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))))
+            .withDecryptMessageReturning(Either.Right(listOf(decryptedProposal(commitDelay))))
             .arrange()
 
         val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
@@ -122,7 +122,7 @@ internal class MLSMessageUnpackerTest {
 
         val (arrangement, mlsUnpacker) = Arrangement()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
-            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))))
+            .withDecryptMessageReturning(Either.Right(listOf(decryptedProposal(commitDelay))))
             .withScheduleCommitSucceeding()
             .arrange()
 
@@ -139,7 +139,7 @@ internal class MLSMessageUnpackerTest {
         val eventTimestamp = DateTimeUtil.currentInstant()
         val (arrangement, mlsUnpacker) = Arrangement()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
-            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE)))
+            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_COMMIT_BUNDLE)))
             .arrange()
 
         val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
@@ -245,7 +245,7 @@ internal class MLSMessageUnpackerTest {
             .arrange()
 
         val result = mlsUnpacker.unpackMlsBundle(
-            DECRYPTED_MESSAGE_BUNDLE.copy(applicationMessage = applicationMessage),
+            decryptedText(applicationMessage),
             TestConversation.ID,
             DateTimeUtil.currentInstant(),
         )
@@ -270,9 +270,7 @@ internal class MLSMessageUnpackerTest {
 
         assertFailsWith<KaliumSyncException> {
             mlsUnpacker.unpackMlsBundle(
-                DECRYPTED_MESSAGE_BUNDLE.copy(
-                    applicationMessage = ApplicationMessage(byteArrayOf(1), SELF_USER_ID, ClientId("client-id"))
-                ),
+                decryptedText(ApplicationMessage(byteArrayOf(1), SELF_USER_ID, ClientId("client-id"))),
                 TestConversation.ID,
                 DateTimeUtil.currentInstant(),
             )
@@ -340,10 +338,21 @@ internal class MLSMessageUnpackerTest {
 
     companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
-        val DECRYPTED_MESSAGE_BUNDLE = DecryptedMessageBundle(
+        val DECRYPTED_COMMIT_BUNDLE = DecryptedMessageBundle.Commit(
             groupID = TestConversation.GROUP_ID,
-            applicationMessage = null,
-            commitDelay = null,
+            isActive = true,
+            identity = null
+        )
+
+        fun decryptedProposal(commitDelay: Long?) = DecryptedMessageBundle.Proposal(
+            groupID = TestConversation.GROUP_ID,
+            commitDelay = commitDelay,
+            identity = null
+        )
+
+        fun decryptedText(applicationMessage: ApplicationMessage) = DecryptedMessageBundle.Text(
+            groupID = TestConversation.GROUP_ID,
+            applicationMessage = applicationMessage,
             identity = null
         )
     }

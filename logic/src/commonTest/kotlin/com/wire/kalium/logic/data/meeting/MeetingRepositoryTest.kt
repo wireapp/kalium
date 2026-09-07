@@ -287,6 +287,38 @@ class MeetingRepositoryTest {
     }
 
     @Test
+    fun givenDaoReturnsMeeting_whenGetMeeting_thenReturnsMappedMeeting() = runTest {
+        val meetingId = MEETING_ENTITY.meetingId.toModel()
+        val (arrangement, repository) = Arrangement()
+            .withStoredMeeting(MEETING_ENTITY)
+            .arrange()
+
+        val result = repository.getMeeting(meetingId)
+
+        assertIs<Either.Right<Meeting>>(result).also {
+            assertEquals(arrangement.meetingMapper.fromDaoToModel(MEETING_ENTITY), result.value)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.getMeeting(meetingId.toDao())
+        }
+    }
+
+    @Test
+    fun givenDaoReturnsNoMeeting_whenGetMeeting_thenReturnsDataNotFound() = runTest {
+        val meetingId = MeetingId("missing-meeting", "domain")
+        val (arrangement, repository) = Arrangement()
+            .withMissingStoredMeeting(meetingId)
+            .arrange()
+
+        val result = repository.getMeeting(meetingId)
+
+        assertIs<Either.Left<StorageFailure.DataNotFound>>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.getMeeting(meetingId.toDao())
+        }
+    }
+
+    @Test
     fun givenApiDeleteSucceeds_whenDeleteMeeting_thenMeetingIsDeletedLocally() = runTest {
         val meetingId = MeetingId("meeting1", "domain")
         val (arrangement, repository) = Arrangement()
@@ -1178,6 +1210,10 @@ class MeetingRepositoryTest {
 
         internal fun withStoredMeeting(storedMeeting: MeetingEntity) = apply {
             everySuspend { meetingDao.getMeeting(storedMeeting.meetingId) } returns storedMeeting
+        }
+
+        internal fun withMissingStoredMeeting(meetingId: MeetingId) = apply {
+            everySuspend { meetingDao.getMeeting(meetingId.toDao()) } returns null
         }
 
         internal fun withTransactionMlsContext() = apply {

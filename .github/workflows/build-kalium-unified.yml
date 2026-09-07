@@ -79,10 +79,10 @@ jobs:
           while IFS= read -r build_target; do
             case "$build_target" in
               logic-android-aar)
-                BUILD_MATRIX_ENTRY='{"build-target":"logic-android-aar","platform":"android-aar","runner":"ubuntu-latest","gradle-tasks":":logic:bundleAndroidMainAar -PUSE_UNIFIED_CORE_CRYPTO=false","artifact-glob":"logic/build/outputs/aar/*.aar","xcframework-dir":"","artifact-name":"logic-android-aar"}'
+                BUILD_MATRIX_ENTRY='{"build-target":"logic-android-aar","platform":"android-aar","runner":"ubuntu-latest","gradle-tasks":":logic:bundleAndroidMainAar","artifact-glob":"logic/build/outputs/aar/*.aar","xcframework-dir":"","artifact-name":"logic-android-aar"}'
                 ;;
               logic-kmp)
-                BUILD_MATRIX_ENTRY='{"build-target":"logic-kmp","platform":"kmp","runner":"macos-15","gradle-tasks":":logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar :logic:assembleKaliumLogicReleaseXCFramework -PUSE_UNIFIED_CORE_CRYPTO=true","artifact-glob":"logic/build/outputs/aar/*.aar logic/build/libs/*.jar","xcframework-dir":"logic/build/XCFrameworks/release/KaliumLogic.xcframework","artifact-name":"logic-kmp"}'
+                BUILD_MATRIX_ENTRY='{"build-target":"logic-kmp","platform":"kmp","runner":"macos-15","gradle-tasks":":logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar :logic:assembleKaliumLogicReleaseXCFramework","artifact-glob":"logic/build/outputs/aar/*.aar logic/build/libs/*.jar","xcframework-dir":"logic/build/XCFrameworks/release/KaliumLogic.xcframework","artifact-name":"logic-kmp"}'
                 ;;
               *)
                 echo "::error::Unsupported build target: $build_target"
@@ -229,7 +229,7 @@ jobs:
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: ./gradlew iosSimulatorArm64Test -PUSE_UNIFIED_CORE_CRYPTO=true
+        run: ./gradlew iosSimulatorArm64Test
 
   # ── Build Matrix ───────────────────────────────────────────────
   build:

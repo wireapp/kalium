@@ -88,28 +88,33 @@ internal class MLSMessageUnpackerImpl(
         bundle: DecryptedMessageBundle,
         conversationId: ConversationId,
         messageInstant: Instant
-    ): MessageUnpackResult {
-        bundle.commitDelay?.let {
-            handlePendingProposal(
-                timestamp = messageInstant,
-                groupId = bundle.groupID,
-                commitDelay = it
-            )
-        }
-
-        return bundle.applicationMessage?.let {
-            val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(it.message))
+    ): MessageUnpackResult = when (bundle) {
+        is DecryptedMessageBundle.Text -> {
+            val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(bundle.applicationMessage.message))
             if (protoContent !is ProtoContent.Readable) {
                 throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
             }
             MessageUnpackResult.ApplicationMessage(
                 conversationId = conversationId,
                 instant = messageInstant,
-                senderUserId = it.senderID,
-                senderClientId = it.senderClientID,
+                senderUserId = bundle.applicationMessage.senderID,
+                senderClientId = bundle.applicationMessage.senderClientID,
                 content = protoContent
             )
-        } ?: MessageUnpackResult.HandshakeMessage
+        }
+
+        is DecryptedMessageBundle.Proposal -> {
+            bundle.commitDelay?.let {
+                handlePendingProposal(
+                    timestamp = messageInstant,
+                    groupId = bundle.groupID,
+                    commitDelay = it
+                )
+            }
+            MessageUnpackResult.HandshakeMessage
+        }
+
+        is DecryptedMessageBundle.Commit -> MessageUnpackResult.HandshakeMessage
     }
 
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
