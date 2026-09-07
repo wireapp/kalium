@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.backup.ingest.ImportDataPager
 import com.wire.backup.ingest.ImportResultPager
+import com.wire.backup.logger.BackupLogger
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
@@ -87,7 +88,8 @@ internal class RestoreMPBackupUseCaseImpl(
                         { error("Failed to unzip: $it") },
                         { backupWorkDir.toString() }
                     )
-                }
+                },
+                logger = BackupLogger { kaliumLogger.w(it) }
             )
 
             when (val result = importer.importFromFile(backupFilePath.toString(), password)) {

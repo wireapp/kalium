@@ -294,7 +294,7 @@ class RestoreMPBackupUseCaseTest {
         suspend fun arrange(): Pair<Arrangement, RestoreMPBackupUseCase> {
 
             every { importerProvider.providePeekImporter() }.returns(importer)
-            every { importerProvider.provideImporter(any(), any()) }.returns(importer)
+            every { importerProvider.provideImporter(any(), any(), any()) }.returns(importer)
 
             if (!usersInsertStubConfigured) {
                 coEvery { backupRepository.insertUsers(any()) }.returns(Unit.right())

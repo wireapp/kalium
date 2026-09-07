@@ -26,13 +26,16 @@ import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupEmojiReaction
 import com.wire.backup.data.BackupUser
 import com.wire.backup.filesystem.BackupPage
+import com.wire.backup.logger.BackupLogger
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.backup.BackupInfo
 import com.wire.kalium.protobuf.backup.ExportedQualifiedId
 import com.wire.kalium.protobuf.encodeToByteArray
 import okio.Buffer
+import okio.ByteString.Companion.toByteString
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -130,6 +133,52 @@ class BackupImportPagerTest {
         assertFalse { pager.reactionsPager.hasMorePages() }
     }
 
+    @Test
+    fun givenAllPageTypes_whenConsuming_thenShouldLogEachPageBeforeDecoding() {
+        val logs = mutableListOf<String>()
+        val pages = listOf(
+            fakeBackupPage(BackupPage.USERS_PREFIX + "0", user = BackupUser(fakeId(0), "USER 0", "user")),
+            fakeBackupPage(BackupPage.CONVERSATIONS_PREFIX + "0", conversation = fakeConversation(0)),
+            fakeBackupPage(BackupPage.MESSAGES_PREFIX + "0", message = fakeMessage(0)),
+            fakeBackupPage(
+                BackupPage.REACTIONS_PREFIX + "0",
+                reaction = BackupReaction("message0", fakeId(0), listOf())
+            ),
+        )
+        val pager = BackupImportPager(pages, BackupLogger { logs.add(it) })
+
+        pager.usersPager.nextPage()
+        pager.conversationsPager.nextPage()
+        pager.messagesPager.nextPage()
+        pager.reactionsPager.nextPage()
+
+        val expectedEntryNames = pages.map { it.name }
+        assertEquals(expectedEntryNames.size, logs.size)
+        expectedEntryNames.forEach { entryName ->
+            assertTrue(logs.any { it.contains("entry='$entryName'") })
+        }
+        assertTrue(logs.all { it.contains("page=1/1") })
+    }
+
+    @Test
+    fun givenInvalidProtobufData_whenConsuming_thenShouldLogExactBytesBeforeDecodingFails() {
+        val logs = mutableListOf<String>()
+        val invalidBytes = byteArrayOf(0)
+        val entryName = BackupPage.USERS_PREFIX + "0" + BackupPage.PAGE_SUFFIX
+        val page = BackupPage(entryName, Buffer().write(invalidBytes))
+        val pager = BackupImportPager(listOf(page), BackupLogger { logs.add(it) })
+
+        assertFails { pager.usersPager.nextPage() }
+
+        assertEquals(
+            listOf(
+                "Backup restore page before protobuf decode: entry='$entryName', page=1/1, " +
+                    "size=${invalidBytes.size}, sha256=${invalidBytes.toByteString().sha256().hex()}"
+            ),
+            logs
+        )
+    }
+
     private fun fakeConversation(id: Int) = BackupConversation(BackupQualifiedId("conv$id", "domain"), "$id")
 
     private fun fakeMessage(id: Int) = BackupMessage(
@@ -150,6 +199,16 @@ class BackupImportPagerTest {
         user: BackupUser? = null,
         reaction: BackupReaction? = null,
     ): BackupPage {
+        val bytes = encodeBackupPage(conversation, message, user, reaction)
+        return BackupPage(backupPageName + BackupPage.PAGE_SUFFIX, Buffer().write(bytes))
+    }
+
+    private fun encodeBackupPage(
+        conversation: BackupConversation?,
+        message: BackupMessage?,
+        user: BackupUser?,
+        reaction: BackupReaction?,
+    ): ByteArray {
         val mapper = MPBackupMapper()
         val data = BackupData(
             BackupInfo(
@@ -164,8 +223,6 @@ class BackupImportPagerTest {
             messages = message?.let { listOf(mapper.mapMessageToProtobuf(it)) } ?: listOf(),
             reactions = reaction?.let { listOf(mapper.mapReactionToProtobuf(it)) } ?: listOf(),
         )
-        val buffer = Buffer()
-        buffer.write(data.encodeToByteArray())
-        return BackupPage(backupPageName + BackupPage.PAGE_SUFFIX, buffer.copy())
+        return data.encodeToByteArray()
     }
 }

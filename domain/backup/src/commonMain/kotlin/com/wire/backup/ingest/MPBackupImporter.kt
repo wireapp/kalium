@@ -25,6 +25,7 @@ import com.wire.backup.envelope.BackupHeader
 import com.wire.backup.envelope.BackupHeaderSerializer
 import com.wire.backup.envelope.HeaderParseResult
 import com.wire.backup.filesystem.BackupPageStorage
+import com.wire.backup.logger.BackupLogger
 import okio.Buffer
 import okio.Sink
 import okio.Source
@@ -38,7 +39,8 @@ import kotlin.js.JsExport
 @JsExport
 public abstract class CommonMPBackupImporter internal constructor(
     private val encryptedStream: EncryptedStream<XChaChaPoly1305AuthenticationData> = EncryptedStream.XChaCha20Poly1305,
-    private val headerSerializer: BackupHeaderSerializer = BackupHeaderSerializer.Default
+    private val headerSerializer: BackupHeaderSerializer = BackupHeaderSerializer.Default,
+    private val logger: BackupLogger? = null,
 ) {
 
     /**
@@ -111,7 +113,7 @@ public abstract class CommonMPBackupImporter internal constructor(
         }
         sink.close()
         return try {
-            BackupImportResult.Success(BackupImportPager(unzipAllEntries().listEntries()))
+            BackupImportResult.Success(BackupImportPager(unzipAllEntries().listEntries(), logger))
         } catch (t: Throwable) {
             BackupImportResult.Failure.UnzippingError(t.message ?: "Unknown zipping error.")
         }

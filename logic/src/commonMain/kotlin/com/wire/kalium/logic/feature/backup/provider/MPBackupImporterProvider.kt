@@ -23,6 +23,7 @@ import com.wire.backup.ingest.BackupPeekResult
 import com.wire.backup.ingest.ImportDataPager
 import com.wire.backup.ingest.ImportResultPager
 import com.wire.backup.ingest.MPBackupImporter
+import com.wire.backup.logger.BackupLogger
 import io.mockative.Mockable
 import okio.FileSystem
 import okio.SYSTEM
@@ -58,6 +59,7 @@ internal interface MPBackupImporterProvider {
     fun provideImporter(
         pathToWorkDirectory: String,
         backupFileUnzipper: BackupFileUnzipper,
+        logger: BackupLogger? = null,
     ): BackupImporter
 
     fun providePeekImporter(): BackupImporter
@@ -70,10 +72,13 @@ internal class MPBackupImporterProviderImpl(
     override fun provideImporter(
         pathToWorkDirectory: String,
         backupFileUnzipper: BackupFileUnzipper,
+        logger: BackupLogger?,
     ): BackupImporter {
         val importer = MPBackupImporter(
             pathToWorkDirectory = pathToWorkDirectory,
             backupFileUnzipper = backupFileUnzipper,
+            fileSystem = fileSystem,
+            logger = logger,
         )
 
         return object : BackupImporter {

@@ -20,6 +20,7 @@ package com.wire.backup.ingest
 import com.wire.backup.data.BackupData
 import com.wire.backup.filesystem.BackupPageStorage
 import com.wire.backup.filesystem.FileBasedBackupPageStorage
+import com.wire.backup.logger.BackupLogger
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
@@ -47,7 +48,14 @@ public actual class MPBackupImporter : CommonMPBackupImporter {
         pathToWorkDirectory: String,
         backupFileUnzipper: BackupFileUnzipper,
         fileSystem: FileSystem
-    ) : super() {
+    ) : this(pathToWorkDirectory, backupFileUnzipper, fileSystem, null)
+
+    public constructor(
+        pathToWorkDirectory: String,
+        backupFileUnzipper: BackupFileUnzipper,
+        fileSystem: FileSystem,
+        logger: BackupLogger?,
+    ) : super(logger = logger) {
         this.pathToWorkDirectory = pathToWorkDirectory
         this.backupFileUnzipper = backupFileUnzipper
         this.fileSystem = fileSystem

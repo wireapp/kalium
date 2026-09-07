@@ -22,8 +22,10 @@ import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.backup.filesystem.BackupPage
+import com.wire.backup.logger.BackupLogger
 import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.decodeFromByteArray
+import okio.ByteString.Companion.toByteString
 import okio.Closeable
 import okio.buffer
 import kotlin.js.JsExport
@@ -38,24 +40,27 @@ public interface ImportResultPager : Closeable {
 }
 
 @JsExport
-public class BackupImportPager internal constructor(private val entries: List<BackupPage>) : ImportResultPager {
+public class BackupImportPager internal constructor(
+    private val entries: List<BackupPage>,
+    private val logger: BackupLogger? = null,
+) : ImportResultPager {
 
     public override val totalPagesCount: Int = entries.size
 
     public override val conversationsPager: ConversationPager by lazy {
-        ConversationPager(entries.filter { it.name.startsWith(BackupPage.CONVERSATIONS_PREFIX) })
+        ConversationPager(entries.filter { it.name.startsWith(BackupPage.CONVERSATIONS_PREFIX) }, logger)
     }
 
     public override val messagesPager: MessagePager by lazy {
-        MessagePager(entries.filter { it.name.startsWith(BackupPage.MESSAGES_PREFIX) })
+        MessagePager(entries.filter { it.name.startsWith(BackupPage.MESSAGES_PREFIX) }, logger)
     }
 
     public override val usersPager: UserPager by lazy {
-        UserPager(entries.filter { it.name.startsWith(BackupPage.USERS_PREFIX) })
+        UserPager(entries.filter { it.name.startsWith(BackupPage.USERS_PREFIX) }, logger)
     }
 
     public override val reactionsPager: ReactionPager by lazy {
-        ReactionPager(entries.filter { it.name.startsWith(BackupPage.REACTIONS_PREFIX) })
+        ReactionPager(entries.filter { it.name.startsWith(BackupPage.REACTIONS_PREFIX) }, logger)
     }
 
     override fun close() {
@@ -82,7 +87,10 @@ public interface ImportDataPager<T> {
  *                These pages are sorted based on their name, extracting numeric segments for ordering.
  */
 @JsExport
-public abstract class BackupImportDataPager<T> internal constructor(entries: List<BackupPage>) : ImportDataPager<T> {
+public abstract class BackupImportDataPager<T> internal constructor(
+    entries: List<BackupPage>,
+    private val logger: BackupLogger? = null,
+) : ImportDataPager<T> {
     private var nextPageIndex = 0
     private val pages = entries.sortedBy {
         it.name.filter { char -> char.isDigit() }.toInt()
@@ -103,39 +111,57 @@ public abstract class BackupImportDataPager<T> internal constructor(entries: Lis
     public override fun nextPage(): Array<T> {
         val page = pages.removeFirstOrNull()
             ?: throw IllegalStateException("No more pages to consume! Check if there are pages before requesting one")
+        val pageName = page.name
         nextPageIndex++
         val bytes = page.use { it.buffer().readByteArray() }
-        return mapPageData(mapper, bytes)
+        logger?.log(
+            "Backup restore page before protobuf decode: entry='$pageName', " +
+                "page=$nextPageIndex/$totalPages, size=${bytes.size}, sha256=${bytes.toByteString().sha256().hex()}"
+        )
+        val backupData = BackupData.decodeFromByteArray(bytes)
+        return mapPageData(mapper, backupData)
     }
 
-    internal abstract fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<T>
+    internal abstract fun mapPageData(mapper: MPBackupMapper, backupData: BackupData): Array<T>
 }
 
 @JsExport
-public class ConversationPager internal constructor(entries: List<BackupPage>) : BackupImportDataPager<BackupConversation>(entries) {
-    override fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<BackupConversation> {
-        return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).conversations
-    }
-}
-
-@JsExport
-public class UserPager internal constructor(entries: List<BackupPage>) : BackupImportDataPager<BackupUser>(entries) {
-    override fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<BackupUser> {
-        return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).users
-    }
-}
-
-@JsExport
-public class MessagePager internal constructor(entries: List<BackupPage>) : BackupImportDataPager<BackupMessage>(entries) {
-    override fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<BackupMessage> {
-        return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).messages
+public class ConversationPager internal constructor(
+    entries: List<BackupPage>,
+    logger: BackupLogger? = null,
+) : BackupImportDataPager<BackupConversation>(entries, logger) {
+    override fun mapPageData(mapper: MPBackupMapper, backupData: BackupData): Array<BackupConversation> {
+        return mapper.fromProtoToBackupModel(backupData).conversations
     }
 }
 
 @JsExport
-public class ReactionPager internal constructor(entries: List<BackupPage>) : BackupImportDataPager<BackupReaction>(entries) {
-    override fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<BackupReaction> {
-        return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).reactions
+public class UserPager internal constructor(
+    entries: List<BackupPage>,
+    logger: BackupLogger? = null,
+) : BackupImportDataPager<BackupUser>(entries, logger) {
+    override fun mapPageData(mapper: MPBackupMapper, backupData: BackupData): Array<BackupUser> {
+        return mapper.fromProtoToBackupModel(backupData).users
+    }
+}
+
+@JsExport
+public class MessagePager internal constructor(
+    entries: List<BackupPage>,
+    logger: BackupLogger? = null,
+) : BackupImportDataPager<BackupMessage>(entries, logger) {
+    override fun mapPageData(mapper: MPBackupMapper, backupData: BackupData): Array<BackupMessage> {
+        return mapper.fromProtoToBackupModel(backupData).messages
+    }
+}
+
+@JsExport
+public class ReactionPager internal constructor(
+    entries: List<BackupPage>,
+    logger: BackupLogger? = null,
+) : BackupImportDataPager<BackupReaction>(entries, logger) {
+    override fun mapPageData(mapper: MPBackupMapper, backupData: BackupData): Array<BackupReaction> {
+        return mapper.fromProtoToBackupModel(backupData).reactions
     }
 }
 
