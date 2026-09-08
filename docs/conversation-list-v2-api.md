@@ -1,6 +1,6 @@
 # Conversation List V2 API Design
 
-Status: Implemented in Kalium; performance benchmarks deferred to a follow-up PR
+Status: Implemented in Kalium; performance benchmark execution pending
 
 This document defines the public Kalium API and row model for the keyset-paginated conversation list. The architectural decisions and trade-offs are recorded in [ADR 0011](./adr/0011-keyset-paginated-conversation-list.md).
 
@@ -187,10 +187,12 @@ V2 requires SQLite 3.35 or newer for `AS MATERIALIZED`. The SQLDelight dialect i
 guarantee. The unencrypted Android path still uses platform SQLite, so clients must restrict V2 adoption
 to supported runtimes. This change does not bundle a replacement SQLite library.
 
-## Deferred performance work
+## Performance validation
 
-The first implementation includes the global composite recency index and correctness tests. It does not
-claim the performance targets in ADR 0011 have been met. A follow-up PR will add representative message,
-unread, and conversation datasets and compare legacy and V2 first, middle, and deep pages on Android SQLCipher.
-That PR will also measure filtered sources, contains-search, and message-write latency. The optional
-type-prefixed recency index remains deferred until those measurements justify it.
+The implementation includes the global composite recency index and correctness tests. The Android
+[benchmarks and run guide](../test/android-benchmarks/README.md) compare legacy and V2 first,
+middle, and deep loads on deterministic SQLCipher fixtures, including filtered sources and contains-search.
+A separate message-write benchmark evaluates the optional type-prefixed index in the fixture only.
+
+The benchmarks have not been run. The performance targets in ADR 0011 remain unverified, and the
+optional type-prefixed index remains excluded from production until measurements justify it.

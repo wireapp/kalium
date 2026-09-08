@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("MagicNumber")
 
 package com.wire.kalium.benchmarks.android
 
@@ -24,9 +23,8 @@ import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.benchmarks.fixtures.MessageFixture
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
@@ -34,58 +32,43 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Measures `MessageDAO.getMessagesByConversationAndVisibility` against an encrypted (SQLCipher)
- * user database on a real device. Mirrors `MessagesNoPragmaTuneBenchmark.queryMessagesBenchmark`
- * from `:test:benchmarks`.
- *
- * Run with:
- *     ./gradlew :test:android-benchmarks:connectedReleaseAndroidTest
- */
 @RunWith(AndroidJUnit4::class)
-class MessageSelectBenchmark {
-
+class MarkReadBenchmark {
     @get:Rule
     val benchmarkRule = BenchmarkRule()
-
     private val context: Context = ApplicationProvider.getApplicationContext()
-
+    private val fixture = MessageFixture()
     private lateinit var db: UserDatabaseBuilder
 
     @Before
-    fun setUp() {
+    fun setUp() = runBlocking {
         BenchmarkDb.delete(context)
         db = BenchmarkDb.build(context)
-        runBlocking {
-            db.conversationDAO.insertConversations(listOf(BenchmarkEntities.conversation))
-            db.userDAO.upsertUser(BenchmarkEntities.userOne)
-            db.userDAO.upsertUser(BenchmarkEntities.userTwo)
-            val messages = BenchmarkEntities.generateRandomMessages(SEED_MESSAGES)
-            db.messageDAO.insertOrIgnoreMessages(messages)
-        }
+        fixture.seed(db)
     }
 
     @After
     fun tearDown() {
-        BenchmarkDb.delete(context)
+        if (::db.isInitialized) db.nuke()
     }
 
     @Test
-    fun queryFirstPage() {
+    fun markRead() {
+        val message = fixture.incoming
         benchmarkRule.measureRepeated {
-            runBlocking {
-                db.messageDAO.getMessagesByConversationAndVisibility(
-                    conversationId = BenchmarkEntities.conversationId,
-                    limit = PAGE_SIZE,
-                    offset = 0,
-                    visibility = listOf(MessageEntity.Visibility.VISIBLE)
-                ).first()
+            runWithMeasurementDisabled {
+                runBlocking { db.messageDAO.insertOrIgnoreMessage(message) }
+            }
+            val hasUnread = runBlocking {
+                db.conversationDAO.updateReadDateAndGetHasUnreadEvents(message.conversationId, message.date)
+            }
+            runWithMeasurementDisabled {
+                check(!hasUnread)
+                runBlocking {
+                    db.messageDAO.deleteMessage(message.id, message.conversationId)
+                    fixture.restoreDates(db)
+                }
             }
         }
-    }
-
-    private companion object {
-        const val SEED_MESSAGES = 5_000
-        const val PAGE_SIZE = 1_000
     }
 }

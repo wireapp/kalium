@@ -26,13 +26,13 @@ jobs:
         uses: ./.github/actions/setup-java-gradle
 
       - name: Run benchmarks
-        run: ./gradlew benchmark jmhReport
+        run: ./gradlew :test:benchmarks:benchmark
 
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: benchmark-reports-${{ github.run_attempt }}
+          name: benchmark-reports-${{ github.sha }}-${{ github.run_attempt }}
           path: test/benchmarks/build/reports/benchmarks/**
           if-no-files-found: warn
           retention-days: 14

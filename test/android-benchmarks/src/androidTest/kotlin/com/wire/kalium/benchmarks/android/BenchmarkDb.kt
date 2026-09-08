@@ -19,6 +19,7 @@
 package com.wire.kalium.benchmarks.android
 
 import android.content.Context
+import com.wire.kalium.benchmarks.fixtures.BenchmarkEntities
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
@@ -26,6 +27,7 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.Dispatchers
+import net.zetetic.database.sqlcipher.SQLiteDatabase
 
 /**
  * Builds a SQLCipher-encrypted user database matching the production Android path
@@ -34,7 +36,7 @@ import kotlinx.coroutines.Dispatchers
  * The passphrase mirrors the one used by `BaseDatabaseTest` in `:data:persistence`.
  */
 internal object BenchmarkDb {
-    val selfUserId: UserIDEntity = UserIDEntity("benchmark-self", "benchmark.wire.com")
+    val selfUserId: UserIDEntity = BenchmarkEntities.selfUser.id
 
     private val passphrase = UserDBSecret(
         "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'".encodeToByteArray()
@@ -47,6 +49,17 @@ internal object BenchmarkDb {
         dispatcher = Dispatchers.IO,
         enableWAL = true
     )
+
+    /** Setup-only access to this fixture's encrypted database. Never used in timed page loads. */
+    fun <T> withSqlCipher(context: Context, block: (SQLiteDatabase) -> T): T {
+        val path = context.getDatabasePath(FileNameUtil.userDBName(selfUserId)).absolutePath
+        val connection = SQLiteDatabase.openDatabase(path, passphrase.value, null, SQLiteDatabase.OPEN_READWRITE, null)
+        return try {
+            block(connection)
+        } finally {
+            connection.close()
+        }
+    }
 
     fun delete(context: Context) {
         context.deleteDatabase(FileNameUtil.userDBName(selfUserId))

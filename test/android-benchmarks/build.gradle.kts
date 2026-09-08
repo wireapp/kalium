@@ -37,9 +37,6 @@ android {
     testBuildType = "release"
 
     buildTypes {
-        debug {
-            // Keep debug available so the module still builds under the default variant.
-        }
         release {
             isMinifyEnabled = false
             isDefault = true
@@ -57,6 +54,10 @@ android {
         // of the project uses to avoid duplicate .so conflicts.
         jniLibs.pickFirsts.add("**/libsodium.so")
     }
+}
+
+extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+    sourceSets.getByName("androidTest").kotlin.srcDir("../benchmark-fixtures/kotlin")
 }
 
 kotlin {
@@ -78,7 +79,10 @@ dependencies {
     androidTestImplementation(libs.androidtest.runner)
     androidTestImplementation(libs.androidtest.core)
     androidTestImplementation(libs.androidtest.ext.junit)
-    androidTestImplementation(libs.coroutines.test)
+    androidTestImplementation(libs.coroutines.core)
+    androidTestImplementation(libs.paging.common)
+    androidTestImplementation(libs.sql.android.cipher)
+    androidTestImplementation(libs.sqlite.androidx)
     androidTestImplementation(libs.ktxDateTime)
 }
 

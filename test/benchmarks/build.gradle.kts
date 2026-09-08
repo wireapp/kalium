@@ -1,90 +1,41 @@
 import kotlinx.benchmark.gradle.JvmBenchmarkTarget
-import org.gradle.api.tasks.compile.JavaCompile
 
 plugins {
-    kotlin("multiplatform")
+    kotlin("jvm")
     alias(libs.plugins.benchmark)
     alias(libs.plugins.allOpen)
-    alias(libs.plugins.jhmReport)
 }
 
-group = "com.wire.kalium.benchmarks"
-version = "0.0.1"
-
-allOpen {
-    annotation("org.openjdk.jmh.annotations.State")
-}
+allOpen { annotation("org.openjdk.jmh.annotations.State") }
 
 kotlin {
-    jvmToolchain {
-        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_21.majorVersion))
-    }
+    jvmToolchain(21)
+    sourceSets.main { kotlin.srcDir("../benchmark-fixtures/kotlin") }
+    compilerOptions.optIn.add("com.wire.kalium.util.DebugKaliumApi")
+}
 
-    jvm()
-
-    sourceSets {
-        val commonMain by getting {
-            languageSettings.optIn("com.wire.kalium.util.DebugKaliumApi")
-            dependencies {
-                implementation(projects.data.persistence)
-                implementation(projects.logic)
-                implementation(libs.coroutines.core)
-                implementation(libs.ktxDateTime)
-                implementation(libs.kotlinx.benchmark.runtime)
-                implementation(libs.ktor.mock)
-                implementation(libs.sqldelight.androidxPaging)
-                implementation(libs.paging.common)
-            }
-        }
-
-        val jvmMain by getting
-    }
+dependencies {
+    implementation(projects.data.persistence)
+    implementation(libs.coroutines.core)
+    implementation(libs.ktxDateTime)
+    implementation(libs.kotlinx.benchmark.runtime)
+    implementation(libs.paging.common)
 }
 
 benchmark {
     configurations {
-        register("logic") {
-            include("CoreLogic")
+        named("main") {
             iterations = 10
-            warmups = 2
+            warmups = 3
             iterationTime = 1
             iterationTimeUnit = "s"
-        }
-        register("persistence") {
-            include("Messages")
-            include("MessageRead")
-        }
-        register("messageRead") {
-            include("MessageRead")
-            iterations = 10
-            warmups = 2
-            iterationTime = 1
-            iterationTimeUnit = "s"
+            mode = "avgt"
+            outputTimeUnit = "ms"
+            reportFormat = "json"
+            providers.gradleProperty("benchmarkFilter").orNull?.let { include(it) }
         }
     }
     targets {
-        register("jvm") {
-            this as JvmBenchmarkTarget
-            jmhVersion = libs.versions.jmh.get()
-        }
+        register("main") { (this as JvmBenchmarkTarget).jmhVersion = libs.versions.jmh.get() }
     }
-}
-
-jmhReport {
-    val reportsRoot = project.file("build/reports/benchmarks")
-    val latestResultDir = reportsRoot
-        .walkTopDown()
-        .filter { it.isFile && it.name == "jvm.json" }
-        .maxByOrNull { it.lastModified() }
-        ?.parentFile
-
-    val fallbackDir = reportsRoot.resolve("messageRead")
-    val reportDir = latestResultDir ?: fallbackDir
-
-    jmhResultPath = reportDir.resolve("jvm.json").absolutePath
-    jmhReportOutput = reportDir.absolutePath
-}
-
-tasks.withType<JavaCompile>().configureEach {
-    options.release.set(JavaVersion.VERSION_21.majorVersion.toInt())
 }

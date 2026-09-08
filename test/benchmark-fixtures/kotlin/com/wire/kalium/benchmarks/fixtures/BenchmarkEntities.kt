@@ -17,7 +17,7 @@
  */
 @file:Suppress("MagicNumber")
 
-package com.wire.kalium.benchmarks.android
+package com.wire.kalium.benchmarks.fixtures
 
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -29,33 +29,17 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.datetime.Instant
-import kotlin.random.Random
-import kotlin.random.nextInt
 
-/**
- * Fixed entities used across the benchmark scenarios. Mirrors the shape of
- * `test/benchmarks/.../DBTestSetup.kt` so that JVM-JMH numbers and on-device
- * androidx.benchmark numbers can be compared apples-to-apples.
- */
 internal object BenchmarkEntities {
     val conversationId = QualifiedIDEntity("conversationId", "wire.com")
     val conversation: ConversationEntity = newConversationEntity(conversationId.value)
     val userOne: UserEntity = newUserEntity(QualifiedIDEntity("userEntity1", "wire.com"))
     val userTwo: UserEntity = newUserEntity(QualifiedIDEntity("userEntity2", "wire.com"))
 
-    fun generateConversations(count: Int): List<ConversationEntity> = buildList(count) {
-        repeat(count) { index ->
-            add(
-                newConversationEntity("conversation-$index").copy(
-                    name = "conversation $index",
-                    type = ConversationEntity.Type.GROUP,
-                    lastModifiedDate = Instant.fromEpochMilliseconds((count - index).toLong())
-                )
-            )
-        }
-    }
+    val selfUser: UserEntity = newUserEntity(QualifiedIDEntity("benchmark-self", "benchmark.wire.com"))
+    val users: List<UserEntity> = listOf(selfUser, userOne, userTwo)
 
-    fun generateRandomMessages(count: Int, idOffset: Int = 0): List<MessageEntity> {
+    fun messages(count: Int, idOffset: Int = 0): List<MessageEntity.Regular> {
         val users = listOf(userOne, userTwo)
         return buildList(count) {
             repeat(count) { index ->
@@ -64,11 +48,11 @@ internal object BenchmarkEntities {
                         id = (idOffset + index).toString(),
                         conversationId = conversationId,
                         date = Instant.fromEpochMilliseconds((idOffset + index).toLong()),
-                        senderUserId = users.random().id,
-                        status = MessageEntity.Status.entries.toTypedArray().random(),
+                        senderUserId = users[index % users.size].id,
+                        status = MessageEntity.Status.SENT,
                         visibility = MessageEntity.Visibility.VISIBLE,
-                        content = randomContent(),
-                        senderClientId = Random.nextLong(2_000).toString(),
+                        content = content(index),
+                        senderClientId = "benchmark-client",
                         editStatus = MessageEntity.EditStatus.NotEdited,
                         senderName = "senderName",
                         readCount = 0
@@ -78,10 +62,10 @@ internal object BenchmarkEntities {
         }
     }
 
-    private fun randomContent(): MessageEntityContent.Regular = when (Random.nextInt(0..3)) {
-        0 -> MessageEntityContent.Unknown(typeName = null, Random.nextBytes(1000))
-        1 -> MessageEntityContent.Text(Random.nextBytes(100).toString())
-        2 -> MessageEntityContent.Asset(
+    private fun content(index: Int): MessageEntityContent.Regular = when (index % 20) {
+        0 -> MessageEntityContent.Unknown(typeName = null, ByteArray(1000) { 1 })
+        in 1..17 -> MessageEntityContent.Text("Message $index: fixed text for database benchmarks.")
+        18 -> MessageEntityContent.Asset(
             1000,
             assetName = "test name",
             assetMimeType = "MP4",
@@ -96,7 +80,7 @@ internal object BenchmarkEntities {
             assetDurationMs = 10,
             assetNormalizedLoudness = byteArrayOf(1),
         )
-        else -> MessageEntityContent.Knock(Random.nextBoolean())
+        else -> MessageEntityContent.Knock(false)
     }
 
     private fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") = UserEntity(
@@ -124,13 +108,13 @@ internal object BenchmarkEntities {
     private fun newConversationEntity(id: String = "test") = ConversationEntity(
         id = QualifiedIDEntity(id, "wire.com"),
         name = "conversation1",
-        type = ConversationEntity.Type.ONE_ON_ONE,
+        type = ConversationEntity.Type.GROUP,
         teamId = "teamID",
         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
         lastNotificationDate = null,
-        lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
-        lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
+        lastModifiedDate = Instant.fromEpochMilliseconds(0),
+        lastReadDate = Instant.fromEpochMilliseconds(0),
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
