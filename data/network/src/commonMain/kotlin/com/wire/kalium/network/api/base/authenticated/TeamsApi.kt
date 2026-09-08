@@ -32,7 +32,7 @@ import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
-interface TeamsApi {
+interface TeamsApi : BaseApi {
 
     suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
     suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?, pagingState: String? = null): NetworkResponse<TeamMemberListPaginated>

@@ -46,7 +46,7 @@ internal open class TeamsApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : TeamsApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit> =
         wrapRequest {
@@ -91,14 +91,10 @@ internal open class TeamsApiV0 internal constructor(
         }
 
     override suspend fun getTeamApps(teamId: TeamId): NetworkResponse<List<UserProfileDTO>> =
-        wrapRequest {
-            httpClient.get("$PATH_TEAMS/$teamId/$PATH_APPS")
-        }
+        getApiNotSupportedError(::getTeamApps.name, MIN_API_VERSION_APPS)
 
     override suspend fun getTeamCollaborators(teamId: TeamId): NetworkResponse<List<TeamCollaboratorDTO>> =
-        wrapRequest {
-            httpClient.get("$PATH_TEAMS/$teamId/$PATH_COLLABORATORS")
-        }
+        getApiNotSupportedError(::getTeamCollaborators.name, MIN_API_VERSION_COLLABORATORS)
 
     override suspend fun approveLegalHoldRequest(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit> =
         wrapRequest {
@@ -112,7 +108,7 @@ internal open class TeamsApiV0 internal constructor(
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId")
         }
 
-    private companion object {
+    protected companion object {
         const val PATH_TEAMS = "teams"
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_MEMBERS = "members"
@@ -121,7 +117,7 @@ internal open class TeamsApiV0 internal constructor(
         const val PATH_WHITELISTED = "whitelisted"
         const val PATH_LEGAL_HOLD = "legalhold"
         const val PATH_APPROVE = "approve"
-        const val PATH_APPS = "apps"
-        const val PATH_COLLABORATORS = "collaborators"
+        const val MIN_API_VERSION_COLLABORATORS = 10
+        const val MIN_API_VERSION_APPS = 15
     }
 }
