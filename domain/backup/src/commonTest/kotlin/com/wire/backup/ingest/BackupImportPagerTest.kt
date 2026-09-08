@@ -31,9 +31,12 @@ import com.wire.kalium.protobuf.backup.BackupInfo
 import com.wire.kalium.protobuf.backup.ExportedQualifiedId
 import com.wire.kalium.protobuf.encodeToByteArray
 import okio.Buffer
+import pbandk.InvalidProtocolBufferException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class BackupImportPagerTest {
@@ -128,6 +131,19 @@ class BackupImportPagerTest {
         assertEquals(reaction0, pager.reactionsPager.nextPage().first())
         assertEquals(reaction1, pager.reactionsPager.nextPage().first())
         assertFalse { pager.reactionsPager.hasMorePages() }
+    }
+
+    @Test
+    fun givenMalformedProtobufPage_whenConsuming_thenThrowsTypedDecodingException() {
+        val pageName = BackupPage.USERS_PREFIX + "0" + BackupPage.PAGE_SUFFIX
+        val pager = BackupImportPager(listOf(BackupPage(pageName, Buffer().writeByte(0))))
+
+        val exception = assertFailsWith<BackupPageDecodingException> {
+            pager.usersPager.nextPage()
+        }
+
+        assertEquals(pageName, exception.pageName)
+        assertIs<InvalidProtocolBufferException>(exception.cause)
     }
 
     private fun fakeConversation(id: Int) = BackupConversation(BackupQualifiedId("conv$id", "domain"), "$id")
