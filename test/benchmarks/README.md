@@ -17,6 +17,9 @@ checks, and resetting writes happen outside measurement. Paging includes corouti
 presentation, and collection teardown. Cancelled paging sources are invalidated outside measurement
 to detach their database listeners. These are warm database initial/restore loads.
 
+The [message timeline suite](message-timeline.md) compares the existing offset path with keyset page
+assembly and list mapping on JVM and Android. It is opt-in and has not been run yet.
+
 Compile the sources and generated JMH runner without running benchmarks:
 
 ```sh

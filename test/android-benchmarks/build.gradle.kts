@@ -75,6 +75,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>()
 dependencies {
     coreLibraryDesugaring(libs.desugarJdkLibs)
     androidTestImplementation(projects.data.persistence)
+    androidTestImplementation(projects.logic)
     androidTestImplementation(libs.androidx.benchmark.junit4)
     androidTestImplementation(libs.androidtest.runner)
     androidTestImplementation(libs.androidtest.core)

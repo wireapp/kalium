@@ -302,6 +302,11 @@ keyset/list projection. Use text, mixed-media, multipart-heavy, reaction-heavy, 
 fixtures. Add 10,000- and 100,000-message conversations, dense timestamp ties, and sparse eligibility.
 Measure ordinary 20-item and initial 60-item loads plus around-message jumps.
 
+The stacked benchmark change adds [JVM and Android coverage](../../test/benchmarks/message-timeline.md)
+for offset/full entities, keyset page assembly, public list mapping, and around-message loads.
+It includes these fixture shapes and page sizes, remains opt-in, and has not been run. An isolated
+keyset/full-view control and the remaining device measurements below still need coverage.
+
 Reuse `test/benchmarks` for local query comparisons and `test/android-benchmarks` for device
 SQLCipher measurements, as described in [ADR 8](../adr/0008-androidx-benchmark-for-on-device-dao-benchmarks.md).
 Also measure the iOS production driver. Record cold/warm runs, p50/p95 query and end-to-end mapping

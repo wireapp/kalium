@@ -16,6 +16,7 @@ kotlin {
 
 dependencies {
     implementation(projects.data.persistence)
+    implementation(projects.logic)
     implementation(libs.coroutines.core)
     implementation(libs.ktxDateTime)
     implementation(libs.kotlinx.benchmark.runtime)
@@ -25,6 +26,8 @@ dependencies {
 benchmark {
     configurations {
         named("main") {
+            // Timeline measurements require their dedicated opt-in configuration.
+            exclude("MessageTimeline")
             iterations = 10
             warmups = 3
             iterationTime = 1
@@ -33,6 +36,15 @@ benchmark {
             outputTimeUnit = "ms"
             reportFormat = "json"
             providers.gradleProperty("benchmarkFilter").orNull?.let { include(it) }
+        }
+        if (providers.gradleProperty("enableMessageTimelineBenchmarks").orNull == "true") {
+            register("messageTimeline") {
+                include("MessageTimeline")
+                iterations = 10
+                warmups = 3
+                iterationTime = 1
+                iterationTimeUnit = "s"
+            }
         }
     }
     targets {
