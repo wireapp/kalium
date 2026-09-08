@@ -17,14 +17,13 @@
  */
 package com.wire.kalium.logic.feature.search
 
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.map
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
@@ -35,14 +34,14 @@ public interface SearchUsersByNameUseCase {
     /**
      * @param searchQuery The search query.
      * @param excludingMembersOfConversation The conversation to exclude its members from the search.
-     * @param skipRemoteSearch Whether to skip remote search and only search locally, e.g. exclude not connected users from the search.
+     * @param onlySelfTeamAndDomain Only search in the self user team and domain if true.
      * @param customDomain The custom domain to search in if null the search will be on the self user domain.
      */
     public suspend operator fun invoke(
         searchQuery: String,
-        excludingMembersOfConversation: ConversationId?,
-        skipRemoteSearch: Boolean = false,
-        customDomain: String?
+        excludingMembersOfConversation: ConversationId? = null,
+        onlySelfTeamAndDomain: Boolean = false,
+        customDomain: String? = null,
     ): SearchUserResult
 }
 
@@ -54,39 +53,36 @@ internal class SearchUsersByNameUseCaseImpl internal constructor(
     override suspend operator fun invoke(
         searchQuery: String,
         excludingMembersOfConversation: ConversationId?,
-        skipRemoteSearch: Boolean,
+        onlySelfTeamAndDomain: Boolean,
         customDomain: String?
     ): SearchUserResult {
+        val searchUsersOptions = SearchUsersOptions(
+            conversationMembersExcluded = excludingMembersOfConversation,
+            onlySelfTeamAndDomain = onlySelfTeamAndDomain,
+        )
         return if (searchQuery.isBlank()) {
             SearchUserResult(
-                connected = searchUserRepository.getKnownContacts(excludingMembersOfConversation).getOrElse(emptyList()),
+                connected = searchUserRepository.getKnownContacts(searchUsersOptions).getOrElse(emptyList()),
                 notConnected = emptyList()
             )
         } else {
-            handleSearch(searchQuery, excludingMembersOfConversation, skipRemoteSearch, customDomain)
+            handleSearch(searchQuery = searchQuery, customDomain = customDomain, searchUsersOptions = searchUsersOptions)
         }
     }
 
     private suspend fun handleSearch(
         searchQuery: String,
-        excludingConversation: ConversationId?,
-        skipRemoteSearch: Boolean,
-        customDomain: String?
+        customDomain: String?,
+        searchUsersOptions: SearchUsersOptions,
     ): SearchUserResult = coroutineScope {
         val cleanSearchQuery = searchQuery.trim().lowercase()
 
         val remoteResultsDeferred = async {
-            if (skipRemoteSearch) return@async mutableMapOf()
-
             searchUserRepository.searchUserRemoteDirectory(
-                cleanSearchQuery,
-                customDomain ?: selfUserId.domain,
-                maxRemoteSearchResultCount,
-                SearchUsersOptions(
-                    conversationExcluded = excludingConversation?.let { ConversationMemberExcludedOptions.ConversationExcluded(it) }
-                        ?: ConversationMemberExcludedOptions.None,
-                    selfUserIncluded = false
-                )
+                searchQuery = cleanSearchQuery,
+                domain = customDomain ?: selfUserId.domain,
+                maxResultSize = maxRemoteSearchResultCount,
+                searchUsersOptions = searchUsersOptions
             ).map { userSearchResult ->
                 userSearchResult.result.map {
                     UserSearchDetails(
@@ -105,7 +101,7 @@ internal class SearchUsersByNameUseCaseImpl internal constructor(
         }
 
         val localSearchResultDeferred = async {
-            searchUserRepository.searchLocalByName(cleanSearchQuery, excludingConversation)
+            searchUserRepository.searchLocalByName(name = cleanSearchQuery, searchUsersOptions = searchUsersOptions)
                 .getOrElse(emptyList())
                 .associateBy { it.id }
                 .toMutableMap()
