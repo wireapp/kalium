@@ -66,15 +66,32 @@ internal interface PreKeyRepository {
     suspend fun uploadNewPrekeyBatch(batch: List<PreKeyCrypto>): Either<CoreFailure, Unit>
 
     /**
-     * Generate prekeys to be uploaded to the backend and shared with other clients in
-     * order to initialise a new conversation with this client.
+     * Generates prekeys starting with the caller-provided [firstKeyId], to be uploaded to
+     * the backend and shared with other clients in order to initialise a new conversation with this client.
      *
      * As these are consumed, we should keep uploading new prekeys to the backend.
      * For this reason, these can be called "rolling" prekeys, in an attempt to separate them
      * from the "last resort" prekey, which is described in [generateNewLastResortKey].
+     *
+     * @param firstKeyId The ID to use for the first new prekey.
+     * @param keysCount The number of prekeys to generate.
      * @see generateNewLastResortKey
      */
     suspend fun generateNewPreKeys(firstKeyId: Int, keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
+
+    /**
+     * Generates rolling prekeys, with Core Crypto automatically selecting the next available
+     * prekey ID. The generated prekeys can be uploaded to the backend and shared with other
+     * clients in order to initialise a new conversation with this client.
+     *
+     * As these are consumed, we should keep uploading new prekeys to the backend.
+     * For this reason, these can be called "rolling" prekeys, in an attempt to separate them
+     * from the "last resort" prekey, which is described in [generateNewLastResortKey].
+     *
+     * @param keysCount The number of prekeys to generate.
+     * @see generateNewLastResortKey
+     */
+    suspend fun generateNewPreKeysAuto(keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
 
     /**
      * Observes the last pre-key check instant.
@@ -159,11 +176,25 @@ internal class PreKeyDataSource(
     ): Either<ProteusFailure, List<PreKeyCrypto>> =
         wrapProteusRequest { proteusClientProvider.getOrCreate().newPreKeys(firstKeyId, keysCount) }.onSuccess {
             kaliumLogger.i(
-                """Generating PreKeys: {"success":true,"firstKeyId":$firstKeyId,"$keysCount":$keysCount}"""
+                """Generating PreKeys: {"success":true,"firstKeyId":$firstKeyId,"keysCount":$keysCount}"""
             )
         }.onFailure {
             kaliumLogger.i(
-                """Generating PreKeys: {"success":false,"firstKeyId":$firstKeyId, "$keysCount":$keysCount}"""
+                """Generating PreKeys: {"success":false,"firstKeyId":$firstKeyId, "keysCount":$keysCount}"""
+            )
+        }
+
+    override suspend fun generateNewPreKeysAuto(
+        keysCount: Int
+    ): Either<ProteusFailure, List<PreKeyCrypto>> =
+        wrapProteusRequest { proteusClientProvider.getOrCreate().newPreKeysAuto(keysCount) }.onSuccess {
+            val firstKeyId = it.minOfOrNull { it.id }
+            kaliumLogger.i(
+                """Generating PreKeys Auto: {"success":true,"firstKeyId":$firstKeyId,"keysCount":$keysCount}"""
+            )
+        }.onFailure {
+            kaliumLogger.i(
+                """Generating PreKeys Auto: {"success":false, "keysCount":$keysCount}"""
             )
         }
 
