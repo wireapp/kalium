@@ -42,7 +42,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
@@ -104,25 +103,26 @@ internal class MessageDAOImpl internal constructor(
     }
 
     private fun withMultipartAttachments(messages: List<MessageEntity>): List<MessageEntity> {
-        val multipartIds = messages
+        val multipartMessagesByConversation = messages
             .filterIsInstance<MessageEntity.Regular>()
             .filter { it.content is MessageEntityContent.Multipart }
-            .map { it.id }
+            .groupBy { it.conversationId }
 
-        if (multipartIds.isEmpty()) return messages
+        if (multipartMessagesByConversation.isEmpty()) return messages
 
-        val attachmentsByMessageId: Map<String, List<MessageAttachmentEntity>> =
+        val attachmentsByConversation = multipartMessagesByConversation.mapValues { (conversationId, multipartMessages) ->
             attachmentsQueries
-                .getAttachmentsForMessages(multipartIds, MessageAttachmentMapper::toDaoWithMessageId)
+                .getAttachmentsForMessages(conversationId, multipartMessages.map { it.id }, MessageAttachmentMapper::toDaoWithMessageId)
                 .executeAsList()
                 .groupBy(keySelector = { it.first }, valueTransform = { it.second })
+        }
 
         return messages.map { message ->
             val regularMessage = message as? MessageEntity.Regular ?: return@map message
             val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return@map message
             regularMessage.copy(
                 content = multipartContent.copy(
-                    attachments = attachmentsByMessageId[regularMessage.id] ?: emptyList()
+                    attachments = attachmentsByConversation[regularMessage.conversationId]?.get(regularMessage.id).orEmpty()
                 )
             )
         }

@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
@@ -85,6 +86,57 @@ class MessageDAOTest : BaseDatabaseTest() {
         receiptDao = db.receiptDAO
         assetDao = db.assetDAO
         reactionDao = db.reactionDAO
+    }
+
+    @Test
+    fun givenSameMessageIdInDifferentConversations_whenLoadingBatches_thenAttachmentsStayInTheirConversation() = runTest {
+        insertInitialData()
+        val expectedAttachments = mapOf(
+            conversationEntity1.id to listOf("asset-1", "asset-2"),
+            conversationEntity2.id to listOf("asset-3"),
+            conversationEntity3.id to emptyList()
+        )
+        expectedAttachments.forEach { (conversationId, assetIds) ->
+            messageDAO.insertOrIgnoreMessage(
+                newRegularMessageEntity(
+                    id = "shared-message-id",
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    status = MessageEntity.Status.PENDING,
+                    content = MessageEntityContent.Multipart(
+                        messageBody = "multipart",
+                        attachments = assetIds.mapIndexed { index, assetId ->
+                            MessageAttachmentEntity(
+                                assetId = assetId,
+                                cellAsset = true,
+                                mimeType = "image/png",
+                                assetPath = null,
+                                assetSize = 128,
+                                assetWidth = 64,
+                                assetHeight = 64,
+                                assetDuration = null,
+                                assetTransferStatus = "NOT_DOWNLOADED",
+                                assetIndex = index,
+                                isEditSupported = false
+                            )
+                        }
+                    )
+                )
+            )
+        }
+
+        val pendingMessages = messageDAO.getAllPendingMessagesFromUser(userEntity1.id).associateBy { it.conversationId }
+        assertEquals(expectedAttachments.keys, pendingMessages.keys)
+        expectedAttachments.forEach { (conversationId, assetIds) ->
+            val pendingContent = assertIs<MessageEntityContent.Multipart>(pendingMessages.getValue(conversationId).content)
+            assertEquals(assetIds, pendingContent.attachments.map { it.assetId })
+
+            val messages = messageDAO.getMessagesByConversationAndVisibility(
+                conversationId, limit = 20, offset = 0, visibility = listOf(MessageEntity.Visibility.VISIBLE)
+            ).first()
+            val content = assertIs<MessageEntityContent.Multipart>(messages.single().content)
+            assertEquals(assetIds, content.attachments.map { it.assetId })
+        }
     }
 
     @Test

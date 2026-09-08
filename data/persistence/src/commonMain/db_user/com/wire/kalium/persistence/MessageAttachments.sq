@@ -95,7 +95,7 @@ JOIN CellFile cf ON cf.uuid = ma.asset_id
 WHERE ma.message_id = ? AND ma.conversation_id = ?
 ORDER BY ma.asset_index ASC;
 
--- Fetches attachments for a batch of messages in one query to avoid N+1.
+-- Fetches attachments for a batch of messages in one conversation.
 getAttachmentsForMessages:
 SELECT
     ma.asset_id,
@@ -119,7 +119,7 @@ SELECT
     cf.editSupported AS edit_supported
 FROM MessageAttachments ma
 JOIN CellFile cf ON cf.uuid = ma.asset_id
-WHERE ma.message_id IN ?
+WHERE ma.conversation_id = ? AND ma.message_id IN ?
 ORDER BY ma.message_id, ma.asset_index ASC;
 
 getAllAttachments:
