@@ -275,7 +275,7 @@ class SearchUsersByNameUseCaseTest {
 
         val expectedSearchUsersOptions = SearchUsersOptions.Default.copy(onlySelfTeamAndDomain = true)
 
-        verifySuspend(VerifyMode.exactly(0)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(
                 searchQuery = "searchquery", domain = any(), maxResultSize = any(), searchUsersOptions = expectedSearchUsersOptions
             )
