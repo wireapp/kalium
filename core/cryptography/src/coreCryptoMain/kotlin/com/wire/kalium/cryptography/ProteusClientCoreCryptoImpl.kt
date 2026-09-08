@@ -161,6 +161,16 @@ class ProteusClientCoreCryptoImpl private constructor(
         }
     }
 
+    override suspend fun newPreKeysAuto(count: Int): List<PreKeyCrypto> {
+        return wrapException {
+            coreCrypto.transaction("newPreKeysAuto") { crypto ->
+                List(count) {
+                    crypto.proteusNewPrekeyAuto().toCryptography()
+                }
+            }
+        }
+    }
+
     override suspend fun newLastResortPreKey(): PreKeyCrypto {
         return wrapException {
             coreCrypto.transaction("newLastResortPreKey") { context ->
