@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.persistence.dao.message.MessageTimelineDAO
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
@@ -38,6 +39,7 @@ import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.timeline.MessageTimelineRepository
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -173,8 +175,17 @@ public class MessageScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher,
-    private val legalHoldStatusMapper: LegalHoldStatusMapper
+    private val legalHoldStatusMapper: LegalHoldStatusMapper,
+    private val messageTimelineDAO: MessageTimelineDAO,
 ) {
+
+    private val messageTimelineRepository = MessageTimelineRepository(messageTimelineDAO, selfUserId)
+
+    public val openMessageTimeline: OpenMessageTimelineUseCase
+        get() = OpenMessageTimelineUseCase(messageTimelineRepository)
+
+    public val getPaginatedFlowOfMessageListItems: GetPaginatedFlowOfMessageListItemsUseCase
+        get() = GetPaginatedFlowOfMessageListItemsUseCase(messageTimelineRepository)
 
     internal val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandlerImpl(

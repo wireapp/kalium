@@ -2591,7 +2591,8 @@ public class UserSessionScope internal constructor(
             kaliumConfigs,
             userScopedLogger,
             KaliumDispatcherImpl,
-            LegalHoldStatusMapperImpl
+            LegalHoldStatusMapperImpl,
+            userStorage.database.messageTimelineDAO,
         )
     }
 

@@ -1,8 +1,23 @@
-# Conversation List
+# Super Kalium
 
-The conversation-list context defines which locally stored conversations appear in the user's conversation overview and the summary shown for each one.
+Super Kalium provides messaging behavior for Wire clients across platforms.
 
 ## Language
+
+### Message timeline
+
+**Message timeline**:
+The ordered messages and system events inside one conversation, including deleted-message markers where the app displays them.
+_Avoid_: Conversation list, which means the list of conversations.
+
+**Message list item**:
+The information needed to display one message or system event in the message timeline.
+_Avoid_: Message preview, which can mean the last-message summary in a conversation list.
+
+**Message details**:
+The information about an individual message needed to inspect it or perform an action on it, such as downloading its attachment or retrying delivery.
+
+### Conversation list
 
 **Conversation list source**:
 The user-selected subset of conversations: all conversations, groups, channels, or one-to-one conversations, optionally viewed from the archive.

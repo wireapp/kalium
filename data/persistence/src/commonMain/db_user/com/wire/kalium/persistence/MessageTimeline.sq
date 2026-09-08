@@ -1,0 +1,119 @@
+CREATE VIEW MessageTimelineKey AS
+SELECT m.id, m.conversation_id, m.creation_date, m.visibility
+FROM Message m
+WHERE (
+    m.visibility = 'VISIBLE'
+    OR (m.visibility = 'DELETED' AND m.content_type IN
+        ('TEXT', 'ASSET', 'KNOCK', 'RESTRICTED_ASSET', 'UNKNOWN', 'FAILED_DECRYPTION', 'COMPOSITE', 'LOCATION', 'MULTIPART'))
+)
+AND (m.visibility = 'DELETED' OR NOT EXISTS (
+    SELECT 1 FROM MessageAssetContent a
+    WHERE a.message_id = m.id AND a.conversation_id = m.conversation_id
+      AND m.content_type = 'ASSET' AND m.sender_user_id != (SELECT id FROM SelfUser)
+      AND a.asset_mime_type IN ('image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp')
+      AND a.asset_width > 0 AND a.asset_height > 0
+      AND (length(a.asset_id) = 0 OR length(a.asset_otr_key) = 0 OR length(a.asset_sha256) = 0)
+))
+AND NOT EXISTS (
+    SELECT 1 FROM MessageSystemContent s
+    WHERE s.message_id = m.id AND s.conversation_id = m.conversation_id
+      AND m.content_type = 'MEMBER_CHANGE' AND s.enum_1 = 'USER_PROMOTED_TO_ADMIN'
+      AND instr(',' || s.list_1 || ',', ',' || (SELECT id FROM SelfUser) || ',') = 0
+);
+
+timelineLatest:
+SELECT id, creation_date FROM MessageTimelineKey
+WHERE conversation_id = :conversationId AND visibility IN :visibilities
+ORDER BY creation_date DESC, id DESC LIMIT :limit;
+
+timelineOlder:
+SELECT id, creation_date FROM MessageTimelineKey
+WHERE conversation_id = :conversationId AND visibility IN :visibilities
+  AND (creation_date, id) < (:date, :id)
+ORDER BY creation_date DESC, id DESC LIMIT :limit;
+
+timelineNewer:
+SELECT id, creation_date FROM MessageTimelineKey
+WHERE conversation_id = :conversationId AND visibility IN :visibilities
+  AND (creation_date, id) > (:date, :id)
+ORDER BY creation_date ASC, id ASC LIMIT :limit;
+
+timelineAnchor:
+SELECT id, creation_date FROM Message
+WHERE conversation_id = :conversationId AND id = :id;
+
+timelineEligibleAnchor:
+SELECT id, creation_date FROM MessageTimelineKey
+WHERE conversation_id = :conversationId AND id = :id AND visibility IN :visibilities;
+
+timelineFirstUnread:
+SELECT id, creation_date FROM MessageTimelineKey
+WHERE conversation_id = :conversationId AND visibility IN :visibilities AND creation_date > :lastReadDate
+ORDER BY creation_date ASC, id ASC LIMIT 1;
+
+-- Only scalar display data for the retained IDs. Collections are loaded below in batches.
+timelineRows:
+SELECT
+    m.id, m.conversation_id, m.creation_date, m.content_type, m.sender_user_id, m.sender_client_id,
+    m.status, m.last_edit_date, m.visibility, m.expects_read_confirmation, m.expire_after_millis, m.self_deletion_end_date,
+    t.text_body, t.quoted_message_id, t.is_quote_verified, t.is_quoting_self,
+    a.asset_id, a.asset_domain, a.asset_name, a.asset_mime_type, a.asset_size, a.asset_width, a.asset_height, a.asset_duration_ms,
+    (IFNULL(length(a.asset_id), 0) > 0 AND IFNULL(length(a.asset_otr_key), 0) > 0
+        AND IFNULL(length(a.asset_sha256), 0) > 0) AS asset_complete,
+    r.asset_name AS restricted_name, r.asset_mime_type AS restricted_mime_type, r.asset_size AS restricted_size,
+    u.unknown_type_name,
+    s.text_1 AS system_text, s.integer_1 AS system_integer, s.boolean_1 AS system_boolean,
+    s.list_1 AS system_list, s.enum_1 AS system_enum,
+    l.latitude, l.longitude, l.name AS location_name, l.zoom AS location_zoom,
+    q.sender_user_id AS quote_sender_id, q.creation_date AS quote_date, q.last_edit_date AS quote_edit_date,
+    q.visibility AS quote_visibility, q.content_type AS quote_content_type,
+    qt.text_body AS quote_text, qa.asset_mime_type AS quote_asset_mime_type, qa.asset_name AS quote_asset_name,
+    ql.name AS quote_location_name
+FROM Message m
+LEFT JOIN MessageTextContent t ON t.message_id = m.id AND t.conversation_id = m.conversation_id
+LEFT JOIN MessageAssetContent a ON a.message_id = m.id AND a.conversation_id = m.conversation_id
+LEFT JOIN MessageRestrictedAssetContent r ON r.message_id = m.id AND r.conversation_id = m.conversation_id
+LEFT JOIN MessageUnknownContent u ON u.message_id = m.id AND u.conversation_id = m.conversation_id
+LEFT JOIN MessageSystemContent s ON s.message_id = m.id AND s.conversation_id = m.conversation_id
+LEFT JOIN MessageConversationLocationContent l ON l.message_id = m.id AND l.conversation_id = m.conversation_id
+LEFT JOIN Message q ON q.id = t.quoted_message_id AND q.conversation_id = m.conversation_id
+LEFT JOIN MessageTextContent qt ON qt.message_id = q.id AND qt.conversation_id = q.conversation_id
+LEFT JOIN MessageAssetContent qa ON qa.message_id = q.id AND qa.conversation_id = q.conversation_id
+LEFT JOIN MessageConversationLocationContent ql ON ql.message_id = q.id AND ql.conversation_id = q.conversation_id
+WHERE m.conversation_id = :conversationId AND m.id IN :ids;
+
+timelineMentions:
+SELECT * FROM MessageMention WHERE conversation_id = :conversationId AND message_id IN :ids ORDER BY message_id, start;
+
+timelinePreviews:
+SELECT message_id, url, url_offset, permanent_url, title, summary, image_local_path, image_width, image_height, image_mime_type
+FROM MessageLinkPreview WHERE conversation_id = :conversationId AND message_id IN :ids ORDER BY message_id, url_offset;
+
+timelineButtons:
+SELECT * FROM ButtonContent WHERE conversation_id = :conversationId AND message_id IN :ids ORDER BY message_id, rowid;
+
+timelineReactions:
+SELECT message_id, emoji, COUNT(*) AS reaction_count,
+       MAX(CASE WHEN sender_id = (SELECT id FROM SelfUser) THEN 1 ELSE 0 END) AS is_self
+FROM Reaction WHERE conversation_id = :conversationId AND message_id IN :ids GROUP BY message_id, emoji;
+
+timelineReadCounts:
+SELECT message_id, COUNT(*) AS read_count
+FROM Receipt WHERE conversation_id = :conversationId AND message_id IN :ids AND type = 'READ' GROUP BY message_id;
+
+timelineFailures:
+SELECT * FROM MessageRecipientFailure WHERE conversation_id = :conversationId AND message_id IN :ids;
+
+timelineAttachments:
+SELECT ma.message_id, ma.asset_id, ma.asset_index,
+       cf.assetVersionId, cf.cellAsset, cf.localPath, cf.previewUrl, cf.assetMimeType, cf.size, cf.assetPath,
+       cf.assetWidth, cf.assetHeight, cf.assetDurationMs, cf.assetTransferStatus, cf.editSupported
+FROM MessageAttachments ma JOIN CellFile cf ON cf.uuid = ma.asset_id
+WHERE ma.conversation_id = :conversationId AND ma.message_id IN :ids ORDER BY ma.message_id, ma.asset_index, ma.asset_id;
+
+timelineUsers:
+SELECT u.qualified_id, u.name, u.accent_id, u.preview_asset_id, u.user_availability_status, u.user_type,
+       u.connection_status, u.deleted, u.defederated, u.expires_at, u.bot_service,
+       (u.deleted = 0 AND IFNULL(u.name, '') = '') AS unavailable,
+       EXISTS(SELECT 1 FROM Client c WHERE c.user_id = u.qualified_id AND c.device_type = 'LegalHold') AS legal_hold
+FROM User u WHERE u.qualified_id IN :ids;

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
+import com.wire.kalium.persistence.dao.message.MessageTimelineDAO
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
@@ -218,6 +219,10 @@ class UserDatabaseBuilder internal constructor(
 
     val userDAO: UserDAO
         get() = UserDAOImpl(database.usersQueries, readDispatcher, writeDispatcher)
+
+    val messageTimelineDAO: MessageTimelineDAO by lazy {
+        MessageTimelineDAO(database.messageTimelineQueries, sqlDriver, readDispatcher)
+    }
 
     val messageMetaDataDAO: MessageMetadataDAO
         get() = MessageMetadataDAOImpl(database.messageMetadataQueries, readDispatcher)

@@ -55,6 +55,17 @@ final enum class com.wire.kalium.logic.data.conversation/ConversationListSource 
     final fun values(): kotlin/Array<com.wire.kalium.logic.data.conversation/ConversationListSource> // com.wire.kalium.logic.data.conversation/ConversationListSource.values|values#static(){}[0]
 }
 
+final enum class com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy : kotlin/Enum<com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy> { // com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy|null[0]
+    enum entry DEFAULT // com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy.DEFAULT|null[0]
+    enum entry VISIBLE_ONLY // com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy.VISIBLE_ONLY|null[0]
+
+    final val entries // com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy> // com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy // com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy> // com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy.values|values#static(){}[0]
+}
+
 final enum class com.wire.kalium.logic.feature.backup/BackupFileFormat : kotlin/Enum<com.wire.kalium.logic.feature.backup/BackupFileFormat> { // com.wire.kalium.logic.feature.backup/BackupFileFormat|null[0]
     enum entry ANDROID // com.wire.kalium.logic.feature.backup/BackupFileFormat.ANDROID|null[0]
     enum entry MULTIPLATFORM // com.wire.kalium.logic.feature.backup/BackupFileFormat.MULTIPLATFORM|null[0]
@@ -2272,6 +2283,281 @@ sealed interface com.wire.kalium.logic.data.conversation/ConversationSyncReason 
     }
 }
 
+sealed interface com.wire.kalium.logic.data.message.timeline/MessageListContent { // com.wire.kalium.logic.data.message.timeline/MessageListContent|null[0]
+    sealed interface Regular : com.wire.kalium.logic.data.message.timeline/MessageListContent // com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular|null[0]
+
+    final class Asset : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.Asset|null[0]
+        constructor <init>(com.wire.kalium.logic.data.message.timeline/MessageListAsset) // com.wire.kalium.logic.data.message.timeline/MessageListContent.Asset.<init>|<init>(com.wire.kalium.logic.data.message.timeline.MessageListAsset){}[0]
+
+        final val asset // com.wire.kalium.logic.data.message.timeline/MessageListContent.Asset.asset|{}asset[0]
+            final fun <get-asset>(): com.wire.kalium.logic.data.message.timeline/MessageListAsset // com.wire.kalium.logic.data.message.timeline/MessageListContent.Asset.asset.<get-asset>|<get-asset>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.message.timeline/MessageListAsset // com.wire.kalium.logic.data.message.timeline/MessageListContent.Asset.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.message.timeline/MessageListAsset = ...): com.wire.kalium.logic.data.message.timeline/MessageListContent.Asset // com.wire.kalium.logic.data.message.timeline/MessageListContent.Asset.copy|copy(com.wire.kalium.logic.data.message.timeline.MessageListAsset){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.Asset.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.Asset.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.Asset.toString|toString(){}[0]
+    }
+
+    final class Composite : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite|null[0]
+        constructor <init>(com.wire.kalium.logic.data.message.timeline/MessageListText?, kotlin.collections/List<com.wire.kalium.logic.data.message.composite/Button>) // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.<init>|<init>(com.wire.kalium.logic.data.message.timeline.MessageListText?;kotlin.collections.List<com.wire.kalium.logic.data.message.composite.Button>){}[0]
+
+        final val buttons // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.buttons|{}buttons[0]
+            final fun <get-buttons>(): kotlin.collections/List<com.wire.kalium.logic.data.message.composite/Button> // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.buttons.<get-buttons>|<get-buttons>(){}[0]
+        final val text // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.text|{}text[0]
+            final fun <get-text>(): com.wire.kalium.logic.data.message.timeline/MessageListText? // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.text.<get-text>|<get-text>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.message.timeline/MessageListText? // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.component1|component1(){}[0]
+        final fun component2(): kotlin.collections/List<com.wire.kalium.logic.data.message.composite/Button> // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.component2|component2(){}[0]
+        final fun copy(com.wire.kalium.logic.data.message.timeline/MessageListText? = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.composite/Button> = ...): com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.copy|copy(com.wire.kalium.logic.data.message.timeline.MessageListText?;kotlin.collections.List<com.wire.kalium.logic.data.message.composite.Button>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.Composite.toString|toString(){}[0]
+    }
+
+    final class FailedDecryption : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption|null[0]
+        constructor <init>(kotlin/Int?, kotlin/Boolean) // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.<init>|<init>(kotlin.Int?;kotlin.Boolean){}[0]
+
+        final val errorCode // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.errorCode|{}errorCode[0]
+            final fun <get-errorCode>(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.errorCode.<get-errorCode>|<get-errorCode>(){}[0]
+        final val isResolved // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.isResolved|{}isResolved[0]
+            final fun <get-isResolved>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.isResolved.<get-isResolved>|<get-isResolved>(){}[0]
+
+        final fun component1(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.component1|component1(){}[0]
+        final fun component2(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.component2|component2(){}[0]
+        final fun copy(kotlin/Int? = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.copy|copy(kotlin.Int?;kotlin.Boolean){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.FailedDecryption.toString|toString(){}[0]
+    }
+
+    final class Location : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location|null[0]
+        constructor <init>(kotlin/Float, kotlin/Float, kotlin/String?, kotlin/Int?) // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.<init>|<init>(kotlin.Float;kotlin.Float;kotlin.String?;kotlin.Int?){}[0]
+
+        final val latitude // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.latitude|{}latitude[0]
+            final fun <get-latitude>(): kotlin/Float // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.latitude.<get-latitude>|<get-latitude>(){}[0]
+        final val longitude // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.longitude|{}longitude[0]
+            final fun <get-longitude>(): kotlin/Float // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.longitude.<get-longitude>|<get-longitude>(){}[0]
+        final val name // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.name|{}name[0]
+            final fun <get-name>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.name.<get-name>|<get-name>(){}[0]
+        final val zoom // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.zoom|{}zoom[0]
+            final fun <get-zoom>(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.zoom.<get-zoom>|<get-zoom>(){}[0]
+
+        final fun component1(): kotlin/Float // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.component1|component1(){}[0]
+        final fun component2(): kotlin/Float // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.component2|component2(){}[0]
+        final fun component3(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.component3|component3(){}[0]
+        final fun component4(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.component4|component4(){}[0]
+        final fun copy(kotlin/Float = ..., kotlin/Float = ..., kotlin/String? = ..., kotlin/Int? = ...): com.wire.kalium.logic.data.message.timeline/MessageListContent.Location // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.copy|copy(kotlin.Float;kotlin.Float;kotlin.String?;kotlin.Int?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.Location.toString|toString(){}[0]
+    }
+
+    final class Multipart : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart|null[0]
+        constructor <init>(com.wire.kalium.logic.data.message.timeline/MessageListText, kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListAttachment>) // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.<init>|<init>(com.wire.kalium.logic.data.message.timeline.MessageListText;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListAttachment>){}[0]
+
+        final val attachments // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.attachments|{}attachments[0]
+            final fun <get-attachments>(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListAttachment> // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.attachments.<get-attachments>|<get-attachments>(){}[0]
+        final val text // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.text|{}text[0]
+            final fun <get-text>(): com.wire.kalium.logic.data.message.timeline/MessageListText // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.text.<get-text>|<get-text>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.message.timeline/MessageListText // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.component1|component1(){}[0]
+        final fun component2(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListAttachment> // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.component2|component2(){}[0]
+        final fun copy(com.wire.kalium.logic.data.message.timeline/MessageListText = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListAttachment> = ...): com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.copy|copy(com.wire.kalium.logic.data.message.timeline.MessageListText;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListAttachment>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.toString|toString(){}[0]
+    }
+
+    final class RestrictedAsset : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset|null[0]
+        constructor <init>(kotlin/String, kotlin/String, kotlin/Long) // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.<init>|<init>(kotlin.String;kotlin.String;kotlin.Long){}[0]
+
+        final val mimeType // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.mimeType|{}mimeType[0]
+            final fun <get-mimeType>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.mimeType.<get-mimeType>|<get-mimeType>(){}[0]
+        final val name // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.name|{}name[0]
+            final fun <get-name>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.name.<get-name>|<get-name>(){}[0]
+        final val sizeInBytes // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.sizeInBytes|{}sizeInBytes[0]
+            final fun <get-sizeInBytes>(): kotlin/Long // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.sizeInBytes.<get-sizeInBytes>|<get-sizeInBytes>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.component1|component1(){}[0]
+        final fun component2(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.component2|component2(){}[0]
+        final fun component3(): kotlin/Long // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.component3|component3(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/Long = ...): com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.copy|copy(kotlin.String;kotlin.String;kotlin.Long){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.toString|toString(){}[0]
+    }
+
+    final class System : com.wire.kalium.logic.data.message.timeline/MessageListContent { // com.wire.kalium.logic.data.message.timeline/MessageListContent.System|null[0]
+        constructor <init>(com.wire.kalium.logic.data.message/MessageContent.System, kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser>) // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.<init>|<init>(com.wire.kalium.logic.data.message.MessageContent.System;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListUser>){}[0]
+
+        final val event // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.event|{}event[0]
+            final fun <get-event>(): com.wire.kalium.logic.data.message/MessageContent.System // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.event.<get-event>|<get-event>(){}[0]
+        final val members // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.members|{}members[0]
+            final fun <get-members>(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.members.<get-members>|<get-members>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.message/MessageContent.System // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.component1|component1(){}[0]
+        final fun component2(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.component2|component2(){}[0]
+        final fun copy(com.wire.kalium.logic.data.message/MessageContent.System = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> = ...): com.wire.kalium.logic.data.message.timeline/MessageListContent.System // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.copy|copy(com.wire.kalium.logic.data.message.MessageContent.System;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListUser>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.System.toString|toString(){}[0]
+    }
+
+    final class Text : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.Text|null[0]
+        constructor <init>(com.wire.kalium.logic.data.message.timeline/MessageListText) // com.wire.kalium.logic.data.message.timeline/MessageListContent.Text.<init>|<init>(com.wire.kalium.logic.data.message.timeline.MessageListText){}[0]
+
+        final val text // com.wire.kalium.logic.data.message.timeline/MessageListContent.Text.text|{}text[0]
+            final fun <get-text>(): com.wire.kalium.logic.data.message.timeline/MessageListText // com.wire.kalium.logic.data.message.timeline/MessageListContent.Text.text.<get-text>|<get-text>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.message.timeline/MessageListText // com.wire.kalium.logic.data.message.timeline/MessageListContent.Text.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.message.timeline/MessageListText = ...): com.wire.kalium.logic.data.message.timeline/MessageListContent.Text // com.wire.kalium.logic.data.message.timeline/MessageListContent.Text.copy|copy(com.wire.kalium.logic.data.message.timeline.MessageListText){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.Text.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.Text.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.Text.toString|toString(){}[0]
+    }
+
+    final class Unknown : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.Unknown|null[0]
+        constructor <init>(kotlin/String?) // com.wire.kalium.logic.data.message.timeline/MessageListContent.Unknown.<init>|<init>(kotlin.String?){}[0]
+
+        final val typeName // com.wire.kalium.logic.data.message.timeline/MessageListContent.Unknown.typeName|{}typeName[0]
+            final fun <get-typeName>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListContent.Unknown.typeName.<get-typeName>|<get-typeName>(){}[0]
+
+        final fun component1(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListContent.Unknown.component1|component1(){}[0]
+        final fun copy(kotlin/String? = ...): com.wire.kalium.logic.data.message.timeline/MessageListContent.Unknown // com.wire.kalium.logic.data.message.timeline/MessageListContent.Unknown.copy|copy(kotlin.String?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.Unknown.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.Unknown.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.Unknown.toString|toString(){}[0]
+    }
+
+    final object Deleted : com.wire.kalium.logic.data.message.timeline/MessageListContent { // com.wire.kalium.logic.data.message.timeline/MessageListContent.Deleted|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.Deleted.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.Deleted.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.Deleted.toString|toString(){}[0]
+    }
+
+    final object Knock : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.Knock|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.Knock.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.Knock.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.Knock.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest { // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest|null[0]
+    final class AroundMessage : com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest { // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage|null[0]
+        constructor <init>(kotlin/String, com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor? = ...) // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.<init>|<init>(kotlin.String;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor?){}[0]
+
+        final val lastKnownCursor // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.lastKnownCursor|{}lastKnownCursor[0]
+            final fun <get-lastKnownCursor>(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor? // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.lastKnownCursor.<get-lastKnownCursor>|<get-lastKnownCursor>(){}[0]
+        final val messageId // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.messageId|{}messageId[0]
+            final fun <get-messageId>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.messageId.<get-messageId>|<get-messageId>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.component1|component1(){}[0]
+        final fun component2(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor? // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor? = ...): com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.copy|copy(kotlin.String;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AroundMessage.toString|toString(){}[0]
+    }
+
+    final class AtReadBoundary : com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest { // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary|null[0]
+        constructor <init>(kotlinx.datetime/Instant) // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.<init>|<init>(kotlinx.datetime.Instant){}[0]
+
+        final val lastReadDate // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.lastReadDate|{}lastReadDate[0]
+            final fun <get-lastReadDate>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.lastReadDate.<get-lastReadDate>|<get-lastReadDate>(){}[0]
+
+        final fun component1(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.component1|component1(){}[0]
+        final fun copy(kotlinx.datetime/Instant = ...): com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.copy|copy(kotlinx.datetime.Instant){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.toString|toString(){}[0]
+    }
+
+    final class Newer : com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest { // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Newer|null[0]
+        constructor <init>(com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor) // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Newer.<init>|<init>(com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor){}[0]
+
+        final val cursor // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Newer.cursor|{}cursor[0]
+            final fun <get-cursor>(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Newer.cursor.<get-cursor>|<get-cursor>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Newer.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor = ...): com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Newer // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Newer.copy|copy(com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Newer.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Newer.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Newer.toString|toString(){}[0]
+    }
+
+    final class Older : com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest { // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Older|null[0]
+        constructor <init>(com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor) // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Older.<init>|<init>(com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor){}[0]
+
+        final val cursor // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Older.cursor|{}cursor[0]
+            final fun <get-cursor>(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Older.cursor.<get-cursor>|<get-cursor>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Older.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor = ...): com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Older // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Older.copy|copy(com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Older.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Older.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Older.toString|toString(){}[0]
+    }
+
+    final object Latest : com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest { // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Latest|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Latest.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Latest.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.Latest.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.logic.data.message.timeline/MessageTimelineResult { // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult|null[0]
+    final class Failure : com.wire.kalium.logic.data.message.timeline/MessageTimelineResult { // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Failure|null[0]
+        constructor <init>(com.wire.kalium.common.error/StorageFailure) // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Failure.<init>|<init>(com.wire.kalium.common.error.StorageFailure){}[0]
+
+        final val error // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Failure.error|{}error[0]
+            final fun <get-error>(): com.wire.kalium.common.error/StorageFailure // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Failure.error.<get-error>|<get-error>(){}[0]
+
+        final fun component1(): com.wire.kalium.common.error/StorageFailure // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.common.error/StorageFailure = ...): com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Failure // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Failure.copy|copy(com.wire.kalium.common.error.StorageFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Failure.toString|toString(){}[0]
+    }
+
+    final class Success : com.wire.kalium.logic.data.message.timeline/MessageTimelineResult { // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Success|null[0]
+        constructor <init>(com.wire.kalium.logic.data.message.timeline/MessageTimelinePage) // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Success.<init>|<init>(com.wire.kalium.logic.data.message.timeline.MessageTimelinePage){}[0]
+
+        final val page // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Success.page|{}page[0]
+            final fun <get-page>(): com.wire.kalium.logic.data.message.timeline/MessageTimelinePage // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Success.page.<get-page>|<get-page>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.message.timeline/MessageTimelinePage // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Success.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.message.timeline/MessageTimelinePage = ...): com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Success // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Success.copy|copy(com.wire.kalium.logic.data.message.timeline.MessageTimelinePage){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Success.toString|toString(){}[0]
+    }
+
+    final object AnchorNotFound : com.wire.kalium.logic.data.message.timeline/MessageTimelineResult { // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.AnchorNotFound|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.AnchorNotFound.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.AnchorNotFound.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.AnchorNotFound.toString|toString(){}[0]
+    }
+
+    final object InvalidCursor : com.wire.kalium.logic.data.message.timeline/MessageTimelineResult { // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.InvalidCursor|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.InvalidCursor.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.InvalidCursor.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.InvalidCursor.toString|toString(){}[0]
+    }
+
+    final object InvalidLimit : com.wire.kalium.logic.data.message.timeline/MessageTimelineResult { // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.InvalidLimit|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.InvalidLimit.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.InvalidLimit.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.InvalidLimit.toString|toString(){}[0]
+    }
+
+    final object Invalidated : com.wire.kalium.logic.data.message.timeline/MessageTimelineResult { // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Invalidated|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Invalidated.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Invalidated.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineResult.Invalidated.toString|toString(){}[0]
+    }
+}
+
 sealed interface com.wire.kalium.logic.data.mlspublickeys/MLSPublicKeyType { // com.wire.kalium.logic.data.mlspublickeys/MLSPublicKeyType|null[0]
     abstract val value // com.wire.kalium.logic.data.mlspublickeys/MLSPublicKeyType.value|{}value[0]
         abstract fun <get-value>(): kotlin/String? // com.wire.kalium.logic.data.mlspublickeys/MLSPublicKeyType.value.<get-value>|<get-value>(){}[0]
@@ -3347,6 +3633,326 @@ final class com.wire.kalium.logic.data.message.paging/NomadMessagePagingResult {
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.paging/NomadMessagePagingResult.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.paging/NomadMessagePagingResult.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.paging/NomadMessagePagingResult.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageListAsset { // com.wire.kalium.logic.data.message.timeline/MessageListAsset|null[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String?, kotlin/String, kotlin/Long, kotlin/Int?, kotlin/Int?, kotlin/Long?, kotlin/Boolean) // com.wire.kalium.logic.data.message.timeline/MessageListAsset.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.String;kotlin.Long;kotlin.Int?;kotlin.Int?;kotlin.Long?;kotlin.Boolean){}[0]
+
+    final val durationMs // com.wire.kalium.logic.data.message.timeline/MessageListAsset.durationMs|{}durationMs[0]
+        final fun <get-durationMs>(): kotlin/Long? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.durationMs.<get-durationMs>|<get-durationMs>(){}[0]
+    final val hasCompleteRemoteData // com.wire.kalium.logic.data.message.timeline/MessageListAsset.hasCompleteRemoteData|{}hasCompleteRemoteData[0]
+        final fun <get-hasCompleteRemoteData>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListAsset.hasCompleteRemoteData.<get-hasCompleteRemoteData>|<get-hasCompleteRemoteData>(){}[0]
+    final val height // com.wire.kalium.logic.data.message.timeline/MessageListAsset.height|{}height[0]
+        final fun <get-height>(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.height.<get-height>|<get-height>(){}[0]
+    final val id // com.wire.kalium.logic.data.message.timeline/MessageListAsset.id|{}id[0]
+        final fun <get-id>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.message.timeline/MessageListAsset.id.<get-id>|<get-id>(){}[0]
+    final val mimeType // com.wire.kalium.logic.data.message.timeline/MessageListAsset.mimeType|{}mimeType[0]
+        final fun <get-mimeType>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAsset.mimeType.<get-mimeType>|<get-mimeType>(){}[0]
+    final val name // com.wire.kalium.logic.data.message.timeline/MessageListAsset.name|{}name[0]
+        final fun <get-name>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.name.<get-name>|<get-name>(){}[0]
+    final val sizeInBytes // com.wire.kalium.logic.data.message.timeline/MessageListAsset.sizeInBytes|{}sizeInBytes[0]
+        final fun <get-sizeInBytes>(): kotlin/Long // com.wire.kalium.logic.data.message.timeline/MessageListAsset.sizeInBytes.<get-sizeInBytes>|<get-sizeInBytes>(){}[0]
+    final val width // com.wire.kalium.logic.data.message.timeline/MessageListAsset.width|{}width[0]
+        final fun <get-width>(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.width.<get-width>|<get-width>(){}[0]
+
+    final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component2|component2(){}[0]
+    final fun component3(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component3|component3(){}[0]
+    final fun component4(): kotlin/Long // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component4|component4(){}[0]
+    final fun component5(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component5|component5(){}[0]
+    final fun component6(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component6|component6(){}[0]
+    final fun component7(): kotlin/Long? // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component7|component7(){}[0]
+    final fun component8(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListAsset.component8|component8(){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String? = ..., kotlin/String = ..., kotlin/Long = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin/Long? = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.message.timeline/MessageListAsset // com.wire.kalium.logic.data.message.timeline/MessageListAsset.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.String;kotlin.Long;kotlin.Int?;kotlin.Int?;kotlin.Long?;kotlin.Boolean){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListAsset.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListAsset.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAsset.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageListAttachment { // com.wire.kalium.logic.data.message.timeline/MessageListAttachment|null[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/String, kotlin/String?, kotlin/Long?, kotlin/String?, kotlin/String?, kotlin/Int?, kotlin/Int?, kotlin/Long?, com.wire.kalium.logic.data.asset/AssetTransferStatus, kotlin/Boolean) // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.<init>|<init>(kotlin.String;kotlin.String;kotlin.String;kotlin.String?;kotlin.Long?;kotlin.String?;kotlin.String?;kotlin.Int?;kotlin.Int?;kotlin.Long?;com.wire.kalium.logic.data.asset.AssetTransferStatus;kotlin.Boolean){}[0]
+
+    final val durationMs // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.durationMs|{}durationMs[0]
+        final fun <get-durationMs>(): kotlin/Long? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.durationMs.<get-durationMs>|<get-durationMs>(){}[0]
+    final val height // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.height|{}height[0]
+        final fun <get-height>(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.height.<get-height>|<get-height>(){}[0]
+    final val id // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.id|{}id[0]
+        final fun <get-id>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.id.<get-id>|<get-id>(){}[0]
+    final val isEditSupported // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.isEditSupported|{}isEditSupported[0]
+        final fun <get-isEditSupported>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.isEditSupported.<get-isEditSupported>|<get-isEditSupported>(){}[0]
+    final val localPath // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.localPath|{}localPath[0]
+        final fun <get-localPath>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.localPath.<get-localPath>|<get-localPath>(){}[0]
+    final val mimeType // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.mimeType|{}mimeType[0]
+        final fun <get-mimeType>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.mimeType.<get-mimeType>|<get-mimeType>(){}[0]
+    final val path // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.path|{}path[0]
+        final fun <get-path>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.path.<get-path>|<get-path>(){}[0]
+    final val previewUrl // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.previewUrl|{}previewUrl[0]
+        final fun <get-previewUrl>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.previewUrl.<get-previewUrl>|<get-previewUrl>(){}[0]
+    final val sizeInBytes // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.sizeInBytes|{}sizeInBytes[0]
+        final fun <get-sizeInBytes>(): kotlin/Long? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.sizeInBytes.<get-sizeInBytes>|<get-sizeInBytes>(){}[0]
+    final val transferStatus // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.transferStatus|{}transferStatus[0]
+        final fun <get-transferStatus>(): com.wire.kalium.logic.data.asset/AssetTransferStatus // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.transferStatus.<get-transferStatus>|<get-transferStatus>(){}[0]
+    final val versionId // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.versionId|{}versionId[0]
+        final fun <get-versionId>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.versionId.<get-versionId>|<get-versionId>(){}[0]
+    final val width // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.width|{}width[0]
+        final fun <get-width>(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.width.<get-width>|<get-width>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component1|component1(){}[0]
+    final fun component10(): kotlin/Long? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component10|component10(){}[0]
+    final fun component11(): com.wire.kalium.logic.data.asset/AssetTransferStatus // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component11|component11(){}[0]
+    final fun component12(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component12|component12(){}[0]
+    final fun component2(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component2|component2(){}[0]
+    final fun component3(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component3|component3(){}[0]
+    final fun component4(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component4|component4(){}[0]
+    final fun component5(): kotlin/Long? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component5|component5(){}[0]
+    final fun component6(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component6|component6(){}[0]
+    final fun component7(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component7|component7(){}[0]
+    final fun component8(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component8|component8(){}[0]
+    final fun component9(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.component9|component9(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String? = ..., kotlin/Long? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin/Long? = ..., com.wire.kalium.logic.data.asset/AssetTransferStatus = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.message.timeline/MessageListAttachment // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.copy|copy(kotlin.String;kotlin.String;kotlin.String;kotlin.String?;kotlin.Long?;kotlin.String?;kotlin.String?;kotlin.Int?;kotlin.Int?;kotlin.Long?;com.wire.kalium.logic.data.asset.AssetTransferStatus;kotlin.Boolean){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListAttachment.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures { // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures|null[0]
+    constructor <init>(kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser>, kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser>) // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.<init>|<init>(kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListUser>;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListUser>){}[0]
+
+    final val failedDelivery // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.failedDelivery|{}failedDelivery[0]
+        final fun <get-failedDelivery>(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.failedDelivery.<get-failedDelivery>|<get-failedDelivery>(){}[0]
+    final val noClients // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.noClients|{}noClients[0]
+        final fun <get-noClients>(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.noClients.<get-noClients>|<get-noClients>(){}[0]
+
+    final fun component1(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.component1|component1(){}[0]
+    final fun component2(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.component2|component2(){}[0]
+    final fun copy(kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> = ...): com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.copy|copy(kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListUser>;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListUser>){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageListItem { // com.wire.kalium.logic.data.message.timeline/MessageListItem|null[0]
+    constructor <init>(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant, com.wire.kalium.logic.data.message.timeline/MessageListUser, kotlin/String?, com.wire.kalium.logic.data.message/Message.Status, kotlinx.datetime/Instant?, com.wire.kalium.logic.data.message/Message.ExpirationData?, kotlin/Boolean, com.wire.kalium.logic.data.message.timeline/MessageListContent, kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListReaction>, com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures, com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor) // com.wire.kalium.logic.data.message.timeline/MessageListItem.<init>|<init>(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;com.wire.kalium.logic.data.message.timeline.MessageListUser;kotlin.String?;com.wire.kalium.logic.data.message.Message.Status;kotlinx.datetime.Instant?;com.wire.kalium.logic.data.message.Message.ExpirationData?;kotlin.Boolean;com.wire.kalium.logic.data.message.timeline.MessageListContent;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListReaction>;com.wire.kalium.logic.data.message.timeline.MessageListDeliveryFailures;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor){}[0]
+
+    final val content // com.wire.kalium.logic.data.message.timeline/MessageListItem.content|{}content[0]
+        final fun <get-content>(): com.wire.kalium.logic.data.message.timeline/MessageListContent // com.wire.kalium.logic.data.message.timeline/MessageListItem.content.<get-content>|<get-content>(){}[0]
+    final val conversationId // com.wire.kalium.logic.data.message.timeline/MessageListItem.conversationId|{}conversationId[0]
+        final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.message.timeline/MessageListItem.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+    final val cursor // com.wire.kalium.logic.data.message.timeline/MessageListItem.cursor|{}cursor[0]
+        final fun <get-cursor>(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor // com.wire.kalium.logic.data.message.timeline/MessageListItem.cursor.<get-cursor>|<get-cursor>(){}[0]
+    final val date // com.wire.kalium.logic.data.message.timeline/MessageListItem.date|{}date[0]
+        final fun <get-date>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.message.timeline/MessageListItem.date.<get-date>|<get-date>(){}[0]
+    final val deliveryFailures // com.wire.kalium.logic.data.message.timeline/MessageListItem.deliveryFailures|{}deliveryFailures[0]
+        final fun <get-deliveryFailures>(): com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures // com.wire.kalium.logic.data.message.timeline/MessageListItem.deliveryFailures.<get-deliveryFailures>|<get-deliveryFailures>(){}[0]
+    final val editDate // com.wire.kalium.logic.data.message.timeline/MessageListItem.editDate|{}editDate[0]
+        final fun <get-editDate>(): kotlinx.datetime/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListItem.editDate.<get-editDate>|<get-editDate>(){}[0]
+    final val expectsReadConfirmation // com.wire.kalium.logic.data.message.timeline/MessageListItem.expectsReadConfirmation|{}expectsReadConfirmation[0]
+        final fun <get-expectsReadConfirmation>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListItem.expectsReadConfirmation.<get-expectsReadConfirmation>|<get-expectsReadConfirmation>(){}[0]
+    final val expirationData // com.wire.kalium.logic.data.message.timeline/MessageListItem.expirationData|{}expirationData[0]
+        final fun <get-expirationData>(): com.wire.kalium.logic.data.message/Message.ExpirationData? // com.wire.kalium.logic.data.message.timeline/MessageListItem.expirationData.<get-expirationData>|<get-expirationData>(){}[0]
+    final val id // com.wire.kalium.logic.data.message.timeline/MessageListItem.id|{}id[0]
+        final fun <get-id>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListItem.id.<get-id>|<get-id>(){}[0]
+    final val reactions // com.wire.kalium.logic.data.message.timeline/MessageListItem.reactions|{}reactions[0]
+        final fun <get-reactions>(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListReaction> // com.wire.kalium.logic.data.message.timeline/MessageListItem.reactions.<get-reactions>|<get-reactions>(){}[0]
+    final val sender // com.wire.kalium.logic.data.message.timeline/MessageListItem.sender|{}sender[0]
+        final fun <get-sender>(): com.wire.kalium.logic.data.message.timeline/MessageListUser // com.wire.kalium.logic.data.message.timeline/MessageListItem.sender.<get-sender>|<get-sender>(){}[0]
+    final val senderClientId // com.wire.kalium.logic.data.message.timeline/MessageListItem.senderClientId|{}senderClientId[0]
+        final fun <get-senderClientId>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListItem.senderClientId.<get-senderClientId>|<get-senderClientId>(){}[0]
+    final val status // com.wire.kalium.logic.data.message.timeline/MessageListItem.status|{}status[0]
+        final fun <get-status>(): com.wire.kalium.logic.data.message/Message.Status // com.wire.kalium.logic.data.message.timeline/MessageListItem.status.<get-status>|<get-status>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListItem.component1|component1(){}[0]
+    final fun component10(): com.wire.kalium.logic.data.message.timeline/MessageListContent // com.wire.kalium.logic.data.message.timeline/MessageListItem.component10|component10(){}[0]
+    final fun component11(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListReaction> // com.wire.kalium.logic.data.message.timeline/MessageListItem.component11|component11(){}[0]
+    final fun component12(): com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures // com.wire.kalium.logic.data.message.timeline/MessageListItem.component12|component12(){}[0]
+    final fun component13(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor // com.wire.kalium.logic.data.message.timeline/MessageListItem.component13|component13(){}[0]
+    final fun component2(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.message.timeline/MessageListItem.component2|component2(){}[0]
+    final fun component3(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.message.timeline/MessageListItem.component3|component3(){}[0]
+    final fun component4(): com.wire.kalium.logic.data.message.timeline/MessageListUser // com.wire.kalium.logic.data.message.timeline/MessageListItem.component4|component4(){}[0]
+    final fun component5(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListItem.component5|component5(){}[0]
+    final fun component6(): com.wire.kalium.logic.data.message/Message.Status // com.wire.kalium.logic.data.message.timeline/MessageListItem.component6|component6(){}[0]
+    final fun component7(): kotlinx.datetime/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListItem.component7|component7(){}[0]
+    final fun component8(): com.wire.kalium.logic.data.message/Message.ExpirationData? // com.wire.kalium.logic.data.message.timeline/MessageListItem.component8|component8(){}[0]
+    final fun component9(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListItem.component9|component9(){}[0]
+    final fun copy(kotlin/String = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., kotlinx.datetime/Instant = ..., com.wire.kalium.logic.data.message.timeline/MessageListUser = ..., kotlin/String? = ..., com.wire.kalium.logic.data.message/Message.Status = ..., kotlinx.datetime/Instant? = ..., com.wire.kalium.logic.data.message/Message.ExpirationData? = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.message.timeline/MessageListContent = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListReaction> = ..., com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures = ..., com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor = ...): com.wire.kalium.logic.data.message.timeline/MessageListItem // com.wire.kalium.logic.data.message.timeline/MessageListItem.copy|copy(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;com.wire.kalium.logic.data.message.timeline.MessageListUser;kotlin.String?;com.wire.kalium.logic.data.message.Message.Status;kotlinx.datetime.Instant?;com.wire.kalium.logic.data.message.Message.ExpirationData?;kotlin.Boolean;com.wire.kalium.logic.data.message.timeline.MessageListContent;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListReaction>;com.wire.kalium.logic.data.message.timeline.MessageListDeliveryFailures;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListItem.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListItem.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListItem.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview { // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview|null[0]
+    constructor <init>(kotlin/String, kotlin/Int, kotlin/String, kotlin/String, kotlin/String, kotlin/String?, kotlin/Int?, kotlin/Int?, kotlin/String?) // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.<init>|<init>(kotlin.String;kotlin.Int;kotlin.String;kotlin.String;kotlin.String;kotlin.String?;kotlin.Int?;kotlin.Int?;kotlin.String?){}[0]
+
+    final val imageHeight // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.imageHeight|{}imageHeight[0]
+        final fun <get-imageHeight>(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.imageHeight.<get-imageHeight>|<get-imageHeight>(){}[0]
+    final val imageLocalPath // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.imageLocalPath|{}imageLocalPath[0]
+        final fun <get-imageLocalPath>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.imageLocalPath.<get-imageLocalPath>|<get-imageLocalPath>(){}[0]
+    final val imageMimeType // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.imageMimeType|{}imageMimeType[0]
+        final fun <get-imageMimeType>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.imageMimeType.<get-imageMimeType>|<get-imageMimeType>(){}[0]
+    final val imageWidth // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.imageWidth|{}imageWidth[0]
+        final fun <get-imageWidth>(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.imageWidth.<get-imageWidth>|<get-imageWidth>(){}[0]
+    final val permanentUrl // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.permanentUrl|{}permanentUrl[0]
+        final fun <get-permanentUrl>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.permanentUrl.<get-permanentUrl>|<get-permanentUrl>(){}[0]
+    final val summary // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.summary|{}summary[0]
+        final fun <get-summary>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.summary.<get-summary>|<get-summary>(){}[0]
+    final val title // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.title|{}title[0]
+        final fun <get-title>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.title.<get-title>|<get-title>(){}[0]
+    final val url // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.url|{}url[0]
+        final fun <get-url>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.url.<get-url>|<get-url>(){}[0]
+    final val urlOffset // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.urlOffset|{}urlOffset[0]
+        final fun <get-urlOffset>(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.urlOffset.<get-urlOffset>|<get-urlOffset>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.component1|component1(){}[0]
+    final fun component2(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.component2|component2(){}[0]
+    final fun component3(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.component3|component3(){}[0]
+    final fun component4(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.component4|component4(){}[0]
+    final fun component5(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.component5|component5(){}[0]
+    final fun component6(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.component6|component6(){}[0]
+    final fun component7(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.component7|component7(){}[0]
+    final fun component8(): kotlin/Int? // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.component8|component8(){}[0]
+    final fun component9(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.component9|component9(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/Int = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin/String? = ...): com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.copy|copy(kotlin.String;kotlin.Int;kotlin.String;kotlin.String;kotlin.String;kotlin.String?;kotlin.Int?;kotlin.Int?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageListReaction { // com.wire.kalium.logic.data.message.timeline/MessageListReaction|null[0]
+    constructor <init>(kotlin/String, kotlin/Int, kotlin/Boolean) // com.wire.kalium.logic.data.message.timeline/MessageListReaction.<init>|<init>(kotlin.String;kotlin.Int;kotlin.Boolean){}[0]
+
+    final val count // com.wire.kalium.logic.data.message.timeline/MessageListReaction.count|{}count[0]
+        final fun <get-count>(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListReaction.count.<get-count>|<get-count>(){}[0]
+    final val emoji // com.wire.kalium.logic.data.message.timeline/MessageListReaction.emoji|{}emoji[0]
+        final fun <get-emoji>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListReaction.emoji.<get-emoji>|<get-emoji>(){}[0]
+    final val isSelf // com.wire.kalium.logic.data.message.timeline/MessageListReaction.isSelf|{}isSelf[0]
+        final fun <get-isSelf>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListReaction.isSelf.<get-isSelf>|<get-isSelf>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListReaction.component1|component1(){}[0]
+    final fun component2(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListReaction.component2|component2(){}[0]
+    final fun component3(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListReaction.component3|component3(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/Int = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.message.timeline/MessageListReaction // com.wire.kalium.logic.data.message.timeline/MessageListReaction.copy|copy(kotlin.String;kotlin.Int;kotlin.Boolean){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListReaction.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListReaction.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListReaction.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageListText { // com.wire.kalium.logic.data.message.timeline/MessageListText|null[0]
+    constructor <init>(kotlin/String?, kotlin.collections/List<com.wire.kalium.logic.data.message.mention/MessageMention>, kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview>, kotlin/String?, com.wire.kalium.logic.data.message/MessageContent.QuotedMessageDetails?) // com.wire.kalium.logic.data.message.timeline/MessageListText.<init>|<init>(kotlin.String?;kotlin.collections.List<com.wire.kalium.logic.data.message.mention.MessageMention>;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListLinkPreview>;kotlin.String?;com.wire.kalium.logic.data.message.MessageContent.QuotedMessageDetails?){}[0]
+
+    final val body // com.wire.kalium.logic.data.message.timeline/MessageListText.body|{}body[0]
+        final fun <get-body>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListText.body.<get-body>|<get-body>(){}[0]
+    final val linkPreviews // com.wire.kalium.logic.data.message.timeline/MessageListText.linkPreviews|{}linkPreviews[0]
+        final fun <get-linkPreviews>(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview> // com.wire.kalium.logic.data.message.timeline/MessageListText.linkPreviews.<get-linkPreviews>|<get-linkPreviews>(){}[0]
+    final val mentions // com.wire.kalium.logic.data.message.timeline/MessageListText.mentions|{}mentions[0]
+        final fun <get-mentions>(): kotlin.collections/List<com.wire.kalium.logic.data.message.mention/MessageMention> // com.wire.kalium.logic.data.message.timeline/MessageListText.mentions.<get-mentions>|<get-mentions>(){}[0]
+    final val quote // com.wire.kalium.logic.data.message.timeline/MessageListText.quote|{}quote[0]
+        final fun <get-quote>(): com.wire.kalium.logic.data.message/MessageContent.QuotedMessageDetails? // com.wire.kalium.logic.data.message.timeline/MessageListText.quote.<get-quote>|<get-quote>(){}[0]
+    final val quotedMessageId // com.wire.kalium.logic.data.message.timeline/MessageListText.quotedMessageId|{}quotedMessageId[0]
+        final fun <get-quotedMessageId>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListText.quotedMessageId.<get-quotedMessageId>|<get-quotedMessageId>(){}[0]
+
+    final fun component1(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListText.component1|component1(){}[0]
+    final fun component2(): kotlin.collections/List<com.wire.kalium.logic.data.message.mention/MessageMention> // com.wire.kalium.logic.data.message.timeline/MessageListText.component2|component2(){}[0]
+    final fun component3(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview> // com.wire.kalium.logic.data.message.timeline/MessageListText.component3|component3(){}[0]
+    final fun component4(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListText.component4|component4(){}[0]
+    final fun component5(): com.wire.kalium.logic.data.message/MessageContent.QuotedMessageDetails? // com.wire.kalium.logic.data.message.timeline/MessageListText.component5|component5(){}[0]
+    final fun copy(kotlin/String? = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.mention/MessageMention> = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListLinkPreview> = ..., kotlin/String? = ..., com.wire.kalium.logic.data.message/MessageContent.QuotedMessageDetails? = ...): com.wire.kalium.logic.data.message.timeline/MessageListText // com.wire.kalium.logic.data.message.timeline/MessageListText.copy|copy(kotlin.String?;kotlin.collections.List<com.wire.kalium.logic.data.message.mention.MessageMention>;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListLinkPreview>;kotlin.String?;com.wire.kalium.logic.data.message.MessageContent.QuotedMessageDetails?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListText.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListText.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListText.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageListUser { // com.wire.kalium.logic.data.message.timeline/MessageListUser|null[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String?, kotlin/Int, com.wire.kalium.logic.data.id/QualifiedID?, com.wire.kalium.logic.data.user/UserAvailabilityStatus, com.wire.kalium.logic.data.user.type/UserTypeInfo, com.wire.kalium.logic.data.user/ConnectionState, kotlin/Boolean, kotlin/Boolean, kotlin/Boolean, kotlin/Boolean, kotlin/Boolean, kotlinx.datetime/Instant?, com.wire.kalium.logic.data.user/BotService?, kotlin/Boolean) // com.wire.kalium.logic.data.message.timeline/MessageListUser.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.Int;com.wire.kalium.logic.data.id.QualifiedID?;com.wire.kalium.logic.data.user.UserAvailabilityStatus;com.wire.kalium.logic.data.user.type.UserTypeInfo;com.wire.kalium.logic.data.user.ConnectionState;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlinx.datetime.Instant?;com.wire.kalium.logic.data.user.BotService?;kotlin.Boolean){}[0]
+
+    final val accentId // com.wire.kalium.logic.data.message.timeline/MessageListUser.accentId|{}accentId[0]
+        final fun <get-accentId>(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListUser.accentId.<get-accentId>|<get-accentId>(){}[0]
+    final val availability // com.wire.kalium.logic.data.message.timeline/MessageListUser.availability|{}availability[0]
+        final fun <get-availability>(): com.wire.kalium.logic.data.user/UserAvailabilityStatus // com.wire.kalium.logic.data.message.timeline/MessageListUser.availability.<get-availability>|<get-availability>(){}[0]
+    final val botService // com.wire.kalium.logic.data.message.timeline/MessageListUser.botService|{}botService[0]
+        final fun <get-botService>(): com.wire.kalium.logic.data.user/BotService? // com.wire.kalium.logic.data.message.timeline/MessageListUser.botService.<get-botService>|<get-botService>(){}[0]
+    final val connectionState // com.wire.kalium.logic.data.message.timeline/MessageListUser.connectionState|{}connectionState[0]
+        final fun <get-connectionState>(): com.wire.kalium.logic.data.user/ConnectionState // com.wire.kalium.logic.data.message.timeline/MessageListUser.connectionState.<get-connectionState>|<get-connectionState>(){}[0]
+    final val guestExpiresAt // com.wire.kalium.logic.data.message.timeline/MessageListUser.guestExpiresAt|{}guestExpiresAt[0]
+        final fun <get-guestExpiresAt>(): kotlinx.datetime/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListUser.guestExpiresAt.<get-guestExpiresAt>|<get-guestExpiresAt>(){}[0]
+    final val id // com.wire.kalium.logic.data.message.timeline/MessageListUser.id|{}id[0]
+        final fun <get-id>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.message.timeline/MessageListUser.id.<get-id>|<get-id>(){}[0]
+    final val isDefederated // com.wire.kalium.logic.data.message.timeline/MessageListUser.isDefederated|{}isDefederated[0]
+        final fun <get-isDefederated>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.isDefederated.<get-isDefederated>|<get-isDefederated>(){}[0]
+    final val isDeleted // com.wire.kalium.logic.data.message.timeline/MessageListUser.isDeleted|{}isDeleted[0]
+        final fun <get-isDeleted>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.isDeleted.<get-isDeleted>|<get-isDeleted>(){}[0]
+    final val isMissing // com.wire.kalium.logic.data.message.timeline/MessageListUser.isMissing|{}isMissing[0]
+        final fun <get-isMissing>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.isMissing.<get-isMissing>|<get-isMissing>(){}[0]
+    final val isSelf // com.wire.kalium.logic.data.message.timeline/MessageListUser.isSelf|{}isSelf[0]
+        final fun <get-isSelf>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.isSelf.<get-isSelf>|<get-isSelf>(){}[0]
+    final val isUnavailable // com.wire.kalium.logic.data.message.timeline/MessageListUser.isUnavailable|{}isUnavailable[0]
+        final fun <get-isUnavailable>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.isUnavailable.<get-isUnavailable>|<get-isUnavailable>(){}[0]
+    final val isUnderLegalHold // com.wire.kalium.logic.data.message.timeline/MessageListUser.isUnderLegalHold|{}isUnderLegalHold[0]
+        final fun <get-isUnderLegalHold>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.isUnderLegalHold.<get-isUnderLegalHold>|<get-isUnderLegalHold>(){}[0]
+    final val name // com.wire.kalium.logic.data.message.timeline/MessageListUser.name|{}name[0]
+        final fun <get-name>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListUser.name.<get-name>|<get-name>(){}[0]
+    final val previewAvatar // com.wire.kalium.logic.data.message.timeline/MessageListUser.previewAvatar|{}previewAvatar[0]
+        final fun <get-previewAvatar>(): com.wire.kalium.logic.data.id/QualifiedID? // com.wire.kalium.logic.data.message.timeline/MessageListUser.previewAvatar.<get-previewAvatar>|<get-previewAvatar>(){}[0]
+    final val userType // com.wire.kalium.logic.data.message.timeline/MessageListUser.userType|{}userType[0]
+        final fun <get-userType>(): com.wire.kalium.logic.data.user.type/UserTypeInfo // com.wire.kalium.logic.data.message.timeline/MessageListUser.userType.<get-userType>|<get-userType>(){}[0]
+
+    final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.message.timeline/MessageListUser.component1|component1(){}[0]
+    final fun component10(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component10|component10(){}[0]
+    final fun component11(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component11|component11(){}[0]
+    final fun component12(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component12|component12(){}[0]
+    final fun component13(): kotlinx.datetime/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListUser.component13|component13(){}[0]
+    final fun component14(): com.wire.kalium.logic.data.user/BotService? // com.wire.kalium.logic.data.message.timeline/MessageListUser.component14|component14(){}[0]
+    final fun component15(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component15|component15(){}[0]
+    final fun component2(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListUser.component2|component2(){}[0]
+    final fun component3(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListUser.component3|component3(){}[0]
+    final fun component4(): com.wire.kalium.logic.data.id/QualifiedID? // com.wire.kalium.logic.data.message.timeline/MessageListUser.component4|component4(){}[0]
+    final fun component5(): com.wire.kalium.logic.data.user/UserAvailabilityStatus // com.wire.kalium.logic.data.message.timeline/MessageListUser.component5|component5(){}[0]
+    final fun component6(): com.wire.kalium.logic.data.user.type/UserTypeInfo // com.wire.kalium.logic.data.message.timeline/MessageListUser.component6|component6(){}[0]
+    final fun component7(): com.wire.kalium.logic.data.user/ConnectionState // com.wire.kalium.logic.data.message.timeline/MessageListUser.component7|component7(){}[0]
+    final fun component8(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component8|component8(){}[0]
+    final fun component9(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component9|component9(){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String? = ..., kotlin/Int = ..., com.wire.kalium.logic.data.id/QualifiedID? = ..., com.wire.kalium.logic.data.user/UserAvailabilityStatus = ..., com.wire.kalium.logic.data.user.type/UserTypeInfo = ..., com.wire.kalium.logic.data.user/ConnectionState = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlinx.datetime/Instant? = ..., com.wire.kalium.logic.data.user/BotService? = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.message.timeline/MessageListUser // com.wire.kalium.logic.data.message.timeline/MessageListUser.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.Int;com.wire.kalium.logic.data.id.QualifiedID?;com.wire.kalium.logic.data.user.UserAvailabilityStatus;com.wire.kalium.logic.data.user.type.UserTypeInfo;com.wire.kalium.logic.data.user.ConnectionState;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlinx.datetime.Instant?;com.wire.kalium.logic.data.user.BotService?;kotlin.Boolean){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListUser.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListUser.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageTimeline : kotlin/AutoCloseable { // com.wire.kalium.logic.data.message.timeline/MessageTimeline|null[0]
+    final val invalidated // com.wire.kalium.logic.data.message.timeline/MessageTimeline.invalidated|{}invalidated[0]
+        final fun <get-invalidated>(): kotlinx.coroutines.flow/StateFlow<kotlin/Boolean> // com.wire.kalium.logic.data.message.timeline/MessageTimeline.invalidated.<get-invalidated>|<get-invalidated>(){}[0]
+
+    final fun close() // com.wire.kalium.logic.data.message.timeline/MessageTimeline.close|close(){}[0]
+    final suspend fun load(com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest, kotlin/Int = ...): com.wire.kalium.logic.data.message.timeline/MessageTimelineResult // com.wire.kalium.logic.data.message.timeline/MessageTimeline.load|load(com.wire.kalium.logic.data.message.timeline.MessageTimelineRequest;kotlin.Int){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor { // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor|null[0]
+    final val conversationId // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.conversationId|{}conversationId[0]
+        final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+    final val date // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.date|{}date[0]
+        final fun <get-date>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.date.<get-date>|<get-date>(){}[0]
+    final val messageId // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.messageId|{}messageId[0]
+        final fun <get-messageId>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.messageId.<get-messageId>|<get-messageId>(){}[0]
+}
+
+final class com.wire.kalium.logic.data.message.timeline/MessageTimelinePage { // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage|null[0]
+    constructor <init>(kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListItem>, com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor?, com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor?, kotlin/String?) // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.<init>|<init>(kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListItem>;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor?;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor?;kotlin.String?){}[0]
+
+    final val anchorMessageId // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.anchorMessageId|{}anchorMessageId[0]
+        final fun <get-anchorMessageId>(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.anchorMessageId.<get-anchorMessageId>|<get-anchorMessageId>(){}[0]
+    final val items // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.items|{}items[0]
+        final fun <get-items>(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListItem> // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.items.<get-items>|<get-items>(){}[0]
+    final val newerCursor // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.newerCursor|{}newerCursor[0]
+        final fun <get-newerCursor>(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor? // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.newerCursor.<get-newerCursor>|<get-newerCursor>(){}[0]
+    final val olderCursor // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.olderCursor|{}olderCursor[0]
+        final fun <get-olderCursor>(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor? // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.olderCursor.<get-olderCursor>|<get-olderCursor>(){}[0]
+
+    final fun component1(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListItem> // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.component1|component1(){}[0]
+    final fun component2(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor? // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.component2|component2(){}[0]
+    final fun component3(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor? // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.component3|component3(){}[0]
+    final fun component4(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.component4|component4(){}[0]
+    final fun copy(kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListItem> = ..., com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor? = ..., com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor? = ..., kotlin/String? = ...): com.wire.kalium.logic.data.message.timeline/MessageTimelinePage // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.copy|copy(kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListItem>;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor?;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelinePage.toString|toString(){}[0]
 }
 
 final class com.wire.kalium.logic.data.publicuser.model/UserSearchDetails { // com.wire.kalium.logic.data.publicuser.model/UserSearchDetails|null[0]
@@ -4903,6 +5509,10 @@ final class com.wire.kalium.logic.feature.message/GetNextAudioMessageInConversat
     }
 }
 
+final class com.wire.kalium.logic.feature.message/GetPaginatedFlowOfMessageListItemsUseCase { // com.wire.kalium.logic.feature.message/GetPaginatedFlowOfMessageListItemsUseCase|null[0]
+    final fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy = ..., com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest = ..., androidx.paging/PagingConfig = ...): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.message.timeline/MessageListItem>> // com.wire.kalium.logic.feature.message/GetPaginatedFlowOfMessageListItemsUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.message.timeline.MessageTimelinePolicy;com.wire.kalium.logic.data.message.timeline.MessageTimelineRequest;androidx.paging.PagingConfig){}[0]
+}
+
 final class com.wire.kalium.logic.feature.message/GetPaginatedFlowOfMessagesByConversationUseCase { // com.wire.kalium.logic.feature.message/GetPaginatedFlowOfMessagesByConversationUseCase|null[0]
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin.collections/List<com.wire.kalium.logic.data.message/Message.Visibility> = ..., kotlin/Long, androidx.paging/PagingConfig): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.message/Message.Standalone>> // com.wire.kalium.logic.feature.message/GetPaginatedFlowOfMessagesByConversationUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.collections.List<com.wire.kalium.logic.data.message.Message.Visibility>;kotlin.Long;androidx.paging.PagingConfig){}[0]
 }
@@ -4998,6 +5608,8 @@ final class com.wire.kalium.logic.feature.message/MessageScope { // com.wire.kal
         final fun <get-getNextAudioMessageInConversation>(): com.wire.kalium.logic.feature.message/GetNextAudioMessageInConversationUseCase // com.wire.kalium.logic.feature.message/MessageScope.getNextAudioMessageInConversation.<get-getNextAudioMessageInConversation>|<get-getNextAudioMessageInConversation>(){}[0]
     final val getNotifications // com.wire.kalium.logic.feature.message/MessageScope.getNotifications|{}getNotifications[0]
         final fun <get-getNotifications>(): com.wire.kalium.logic.feature.message/GetNotificationsUseCase // com.wire.kalium.logic.feature.message/MessageScope.getNotifications.<get-getNotifications>|<get-getNotifications>(){}[0]
+    final val getPaginatedFlowOfMessageListItems // com.wire.kalium.logic.feature.message/MessageScope.getPaginatedFlowOfMessageListItems|{}getPaginatedFlowOfMessageListItems[0]
+        final fun <get-getPaginatedFlowOfMessageListItems>(): com.wire.kalium.logic.feature.message/GetPaginatedFlowOfMessageListItemsUseCase // com.wire.kalium.logic.feature.message/MessageScope.getPaginatedFlowOfMessageListItems.<get-getPaginatedFlowOfMessageListItems>|<get-getPaginatedFlowOfMessageListItems>(){}[0]
     final val getRecentMessages // com.wire.kalium.logic.feature.message/MessageScope.getRecentMessages|{}getRecentMessages[0]
         final fun <get-getRecentMessages>(): com.wire.kalium.logic.feature.message/GetRecentMessagesUseCase // com.wire.kalium.logic.feature.message/MessageScope.getRecentMessages.<get-getRecentMessages>|<get-getRecentMessages>(){}[0]
     final val getSearchedConversationMessagePosition // com.wire.kalium.logic.feature.message/MessageScope.getSearchedConversationMessagePosition|{}getSearchedConversationMessagePosition[0]
@@ -5016,6 +5628,8 @@ final class com.wire.kalium.logic.feature.message/MessageScope { // com.wire.kal
         final fun <get-observeMessageReactions>(): com.wire.kalium.logic.feature.message/ObserveMessageReactionsUseCase // com.wire.kalium.logic.feature.message/MessageScope.observeMessageReactions.<get-observeMessageReactions>|<get-observeMessageReactions>(){}[0]
     final val observeMessageReceipts // com.wire.kalium.logic.feature.message/MessageScope.observeMessageReceipts|{}observeMessageReceipts[0]
         final fun <get-observeMessageReceipts>(): com.wire.kalium.logic.feature.message/ObserveMessageReceiptsUseCase // com.wire.kalium.logic.feature.message/MessageScope.observeMessageReceipts.<get-observeMessageReceipts>|<get-observeMessageReceipts>(){}[0]
+    final val openMessageTimeline // com.wire.kalium.logic.feature.message/MessageScope.openMessageTimeline|{}openMessageTimeline[0]
+        final fun <get-openMessageTimeline>(): com.wire.kalium.logic.feature.message/OpenMessageTimelineUseCase // com.wire.kalium.logic.feature.message/MessageScope.openMessageTimeline.<get-openMessageTimeline>|<get-openMessageTimeline>(){}[0]
     final val removeMessageDraftUseCase // com.wire.kalium.logic.feature.message/MessageScope.removeMessageDraftUseCase|{}removeMessageDraftUseCase[0]
         final fun <get-removeMessageDraftUseCase>(): com.wire.kalium.logic.feature.message.draft/RemoveMessageDraftUseCase // com.wire.kalium.logic.feature.message/MessageScope.removeMessageDraftUseCase.<get-removeMessageDraftUseCase>|<get-removeMessageDraftUseCase>(){}[0]
     final val resetSession // com.wire.kalium.logic.feature.message/MessageScope.resetSession|{}resetSession[0]
@@ -5088,6 +5702,10 @@ final class com.wire.kalium.logic.feature.message/ObserveMessageByIdUseCase { //
             final fun toString(): kotlin/String // com.wire.kalium.logic.feature.message/ObserveMessageByIdUseCase.Result.Success.toString|toString(){}[0]
         }
     }
+}
+
+final class com.wire.kalium.logic.feature.message/OpenMessageTimelineUseCase { // com.wire.kalium.logic.feature.message/OpenMessageTimelineUseCase|null[0]
+    final fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy = ...): com.wire.kalium.logic.data.message.timeline/MessageTimeline // com.wire.kalium.logic.feature.message/OpenMessageTimelineUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.message.timeline.MessageTimelinePolicy){}[0]
 }
 
 final class com.wire.kalium.logic.feature.message/RetryFailedMessageUseCase { // com.wire.kalium.logic.feature.message/RetryFailedMessageUseCase|null[0]
