@@ -24,3 +24,7 @@ public val ConversationScope.getPaginatedFlowOfConversationDetailsWithEventsBySe
         conversationRepository,
         callRepository
     )
+
+/** Keyset-paginated conversation rows, ordered by stored activity time and conversation ID. */
+public val ConversationScope.observeConversationListItems: ObserveConversationListItemsUseCase
+    get() = ObserveConversationListItemsUseCaseImpl(conversationRepository)

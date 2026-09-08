@@ -20,17 +20,26 @@ package com.wire.kalium.logic.data.conversation
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
+import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationListPositionEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationListQueryEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 internal interface ConversationRepositoryExtensions {
+    fun observeConversationListItems(
+        pagingConfig: PagingConfig,
+        query: ConversationListQuery,
+        initialPosition: ConversationListPosition?,
+    ): Flow<PagingData<ConversationListItem>>
+
     suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,
@@ -45,6 +54,27 @@ internal class ConversationRepositoryExtensionsImpl internal constructor(
     private val conversationDAO: ConversationDAO,
     private val conversationMapper: ConversationMapper
 ) : ConversationRepositoryExtensions {
+    override fun observeConversationListItems(
+        pagingConfig: PagingConfig,
+        query: ConversationListQuery,
+        initialPosition: ConversationListPosition?,
+    ): Flow<PagingData<ConversationListItem>> = conversationDAO.observeConversationListItems(
+        pagingConfig = pagingConfig,
+        query = ConversationListQueryEntity(
+            source = when (query.source) {
+                ConversationListSource.ALL -> ConversationFilterEntity.ALL
+                ConversationListSource.GROUPS -> ConversationFilterEntity.GROUPS
+                ConversationListSource.CHANNELS -> ConversationFilterEntity.CHANNELS
+                ConversationListSource.ONE_ON_ONE -> ConversationFilterEntity.ONE_ON_ONE
+            },
+            searchQuery = query.searchQuery,
+            fromArchive = query.fromArchive,
+            onlyInteractionEnabled = query.onlyInteractionEnabled,
+            strictMlsFilter = query.strictMlsFilter,
+        ),
+        initialPosition = initialPosition?.let { ConversationListPositionEntity(it.activityTime, it.conversationId.toDao()) },
+    ).map { page -> page.map(conversationMapper::fromListItemEntity) }
+
     override suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,

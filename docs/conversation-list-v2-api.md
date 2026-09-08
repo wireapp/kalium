@@ -1,8 +1,8 @@
 # Conversation List V2 API Design
 
-Status: Draft for implementation
+Status: Implemented in Kalium; performance benchmarks deferred to a follow-up PR
 
-This document defines the proposed public Kalium API and row model for the keyset-paginated conversation list. The architectural decisions and trade-offs are recorded in [ADR 0011](./adr/0011-keyset-paginated-conversation-list.md).
+This document defines the public Kalium API and row model for the keyset-paginated conversation list. The architectural decisions and trade-offs are recorded in [ADR 0011](./adr/0011-keyset-paginated-conversation-list.md).
 
 ## Goals
 
@@ -158,7 +158,9 @@ public data class ConversationListPreview(
 
 - Items are ordered by `activityTime DESC, conversationId ASC`.
 - `activityTime` is the stored `Conversation.last_modified_date`; V2 does not calculate it from messages.
-- A saved draft takes precedence over the latest displayable message.
+- A saved nonblank draft takes precedence over the latest displayable message.
+- Archived rows have no draft or last-message preview, matching the legacy list.
+- Draft writes do not invalidate V2. A client can request a refresh when returning from a conversation to display the latest draft.
 - The five unread counters remain distinct so Android can retain its existing badge priority and mute behavior.
 - Joinable-call state, playing audio, selection, search highlighting, and self-user legal-hold state are client-side overlays.
 - The internal Paging source supports append, prepend, and centered refresh without exposing its cursor.
@@ -168,4 +170,27 @@ public data class ConversationListPreview(
 
 All declarations above are additive. The existing paginated use case, `ConversationQueryConfig`, `ConversationDetailsWithEvents`, and their behavior remain unchanged.
 
-Before release, the concrete declarations must be added to the public API dumps and documented in the changelog. Because these data classes become binary API, field names, order, defaults, and nullability must be finalized before merging the implementation.
+The declarations are recorded in the public API dumps and changelog. Field names, order, defaults, and nullability are part of the binary API.
+
+## Client adoption
+
+Import `com.wire.kalium.logic.feature.conversation.observeConversationListItems` and supply a `PagingConfig` with
+`enablePlaceholders = false`. Leave `jumpThreshold` at its default. Pass the saved `ConversationListPosition`
+as `initialPosition` only when the source, archive mode, search, and other filters still match.
+
+Clients adopt this API separately. Android must replace activity-section grouping with recency order,
+retain call and audio indicators as overlays, and save the position together with its scroll offset.
+The narrow row does not contain action-menu details such as folders or member roles; clients can load
+current conversation details when opening that menu. Favorites and custom folders keep their existing flows.
+
+V2 requires SQLite 3.35 or newer for `AS MATERIALIZED`. The SQLDelight dialect is not a runtime version
+guarantee. The unencrypted Android path still uses platform SQLite, so clients must restrict V2 adoption
+to supported runtimes. This change does not bundle a replacement SQLite library.
+
+## Deferred performance work
+
+The first implementation includes the global composite recency index and correctness tests. It does not
+claim the performance targets in ADR 0011 have been met. A follow-up PR will add representative message,
+unread, and conversation datasets and compare legacy and V2 first, middle, and deep pages on Android SQLCipher.
+That PR will also measure filtered sources, contains-search, and message-write latency. The optional
+type-prefixed recency index remains deferred until those measurements justify it.

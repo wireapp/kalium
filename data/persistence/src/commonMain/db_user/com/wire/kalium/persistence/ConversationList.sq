@@ -1,0 +1,213 @@
+-- V2 selects eligible conversations before joining message content or counting unread events.
+-- Keep the two directions' membership rules and row projections identical.
+selectConversationListOlder:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_order
+-- @CustomKey conversation_list_last_message
+-- @CustomKey conversation_list_unread
+WITH pageKeys AS MATERIALIZED (
+    SELECT C.qualified_id, C.last_modified_date, U.qualified_id AS otherUserId, S.id AS selfUserId
+    FROM Conversation C
+    LEFT JOIN SelfUser S
+    LEFT JOIN User U ON U.qualified_id = CASE C.type
+        WHEN 'ONE_ON_ONE' THEN (
+            SELECT M.user FROM Member M JOIN User Other ON Other.qualified_id = M.user
+            WHERE M.conversation = C.qualified_id AND M.user IS NOT S.id
+                AND Other.active_one_on_one_conversation_id = C.qualified_id
+                AND (Other.name IS NOT NULL OR Other.deleted = 1)
+            ORDER BY M.user ASC LIMIT 1
+        )
+        WHEN 'CONNECTION_PENDING' THEN (
+            SELECT qualified_to FROM Connection
+            WHERE qualified_conversation = C.qualified_id AND status IN ('SENT', 'PENDING', 'NOT_CONNECTED')
+        )
+    END
+    WHERE C.deleted_locally = 0 AND C.archived = :fromArchive
+        AND CASE :source
+            WHEN 'ALL' THEN C.type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
+            WHEN 'GROUPS' THEN C.type = 'GROUP'
+            WHEN 'CHANNELS' THEN C.type = 'CHANNEL'
+            WHEN 'ONE_ON_ONE' THEN C.type = 'ONE_ON_ONE'
+            ELSE 0
+        END
+        AND (C.type IN ('GROUP', 'CHANNEL') OR U.qualified_id IS NOT NULL)
+        AND (C.protocol IN ('PROTEUS', 'MIXED') OR
+            (C.protocol = 'MLS' AND (:strictMls = 0 OR C.mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET'))))
+        AND (:onlyInteractionEnabled = 0 OR CASE
+            WHEN C.type IN ('GROUP', 'CHANNEL') THEN EXISTS (
+                SELECT 1 FROM Member WHERE conversation = C.qualified_id AND user = S.id AND role IS NOT NULL
+            )
+            WHEN C.type = 'ONE_ON_ONE' THEN
+                U.defederated IS NOT 1 AND U.deleted IS NOT 1 AND U.connection_status IS NOT 'BLOCKED' AND C.legal_hold_status != 'DEGRADED'
+            ELSE 0
+        END)
+        AND (:searchQuery = '' OR CASE C.type
+            WHEN 'ONE_ON_ONE' THEN U.name
+            WHEN 'CONNECTION_PENDING' THEN U.name
+            ELSE C.name
+        END LIKE ('%' || :searchQuery || '%'))
+        -- An explicit timestamp range lets SQLite seek into the recency index.
+        AND C.last_modified_date <= coalesce(:activityTime, 9223372036854775807)
+        AND (:activityTime IS NULL OR :conversationId IS NULL OR C.last_modified_date < :activityTime
+            OR (C.last_modified_date = :activityTime AND
+                (C.qualified_id > :conversationId OR (:inclusive = 1 AND C.qualified_id = :conversationId))))
+    ORDER BY C.last_modified_date DESC, C.qualified_id ASC
+    LIMIT :pageSize
+)
+SELECT
+    C.qualified_id AS conversationId,
+    C.last_modified_date AS activityTime,
+    C.type,
+    C.name,
+    C.muted_status AS mutedStatus,
+    C.legal_hold_status AS legalHoldStatus,
+    C.channel_access AS channelAccess,
+    EXISTS (SELECT 1 FROM Member WHERE conversation = C.qualified_id AND user = P.selfUserId AND role IS NOT NULL) AS isSelfUserMember,
+    U.qualified_id AS otherUserId,
+    U.name AS userName,
+    U.preview_asset_id AS avatarAssetId,
+    U.accent_id AS accentId,
+    U.user_availability_status AS availabilityStatus,
+    U.user_type AS userType,
+    U.connection_status AS connectionStatus,
+    U.deleted AS userDeleted,
+    U.defederated AS userDefederated,
+    (SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = P.qualified_id AND type = 'MESSAGE') AS unreadMessages,
+    (SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = P.qualified_id AND type = 'MENTION') AS unreadMentions,
+    (SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = P.qualified_id AND type = 'REPLY') AS unreadReplies,
+    (SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = P.qualified_id AND type = 'MISSED_CALL') AS unreadMissedCalls,
+    (SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = P.qualified_id AND type = 'KNOCK') AS unreadKnocks,
+    D.text AS draftText,
+    Message.id AS messageId,
+    Message.content_type AS contentType,
+    Message.visibility,
+    Message.sender_user_id AS senderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
+    Sender.name AS senderName,
+    Sender.connection_status AS senderConnectionStatus,
+    Sender.deleted AS senderIsDeleted,
+    P.selfUserId,
+    (Message.sender_user_id IS NOT NULL AND Message.sender_user_id = P.selfUserId) AS isSelfMessage,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
+    CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS updateConversationName,
+    EXISTS (SELECT 1 FROM MessageMention WHERE message_id = Message.id AND conversation_id = P.qualified_id AND user_id = P.selfUserId) AS isMentioningSelfUser,
+    TextContent.is_quoting_self AS isQuotingSelfUser,
+    TextContent.text_body AS messageText,
+    AssetContent.asset_mime_type AS assetMimeType
+FROM pageKeys P
+JOIN Conversation C ON C.qualified_id = P.qualified_id
+LEFT JOIN User U ON U.qualified_id = P.otherUserId
+LEFT JOIN MessageDraft D ON D.conversation_id = P.qualified_id AND C.archived = 0
+LEFT JOIN LastMessage L ON L.conversation_id = P.qualified_id AND C.archived = 0
+LEFT JOIN Message ON Message.id = L.message_id AND Message.conversation_id = P.qualified_id
+LEFT JOIN User Sender ON Sender.qualified_id = Message.sender_user_id
+LEFT JOIN MessageSystemContent SystemContent ON SystemContent.message_id = Message.id AND SystemContent.conversation_id = P.qualified_id
+LEFT JOIN MessageTextContent TextContent ON TextContent.message_id = Message.id AND TextContent.conversation_id = P.qualified_id
+LEFT JOIN MessageAssetContent AssetContent ON AssetContent.message_id = Message.id AND AssetContent.conversation_id = P.qualified_id
+ORDER BY C.last_modified_date DESC, C.qualified_id ASC;
+
+selectConversationListNewer:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_order
+-- @CustomKey conversation_list_last_message
+-- @CustomKey conversation_list_unread
+WITH pageKeys AS MATERIALIZED (
+    SELECT C.qualified_id, C.last_modified_date, U.qualified_id AS otherUserId, S.id AS selfUserId
+    FROM Conversation C
+    LEFT JOIN SelfUser S
+    LEFT JOIN User U ON U.qualified_id = CASE C.type
+        WHEN 'ONE_ON_ONE' THEN (
+            SELECT M.user FROM Member M JOIN User Other ON Other.qualified_id = M.user
+            WHERE M.conversation = C.qualified_id AND M.user IS NOT S.id
+                AND Other.active_one_on_one_conversation_id = C.qualified_id
+                AND (Other.name IS NOT NULL OR Other.deleted = 1)
+            ORDER BY M.user ASC LIMIT 1
+        )
+        WHEN 'CONNECTION_PENDING' THEN (
+            SELECT qualified_to FROM Connection
+            WHERE qualified_conversation = C.qualified_id AND status IN ('SENT', 'PENDING', 'NOT_CONNECTED')
+        )
+    END
+    WHERE C.deleted_locally = 0 AND C.archived = :fromArchive
+        AND CASE :source
+            WHEN 'ALL' THEN C.type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
+            WHEN 'GROUPS' THEN C.type = 'GROUP'
+            WHEN 'CHANNELS' THEN C.type = 'CHANNEL'
+            WHEN 'ONE_ON_ONE' THEN C.type = 'ONE_ON_ONE'
+            ELSE 0
+        END
+        AND (C.type IN ('GROUP', 'CHANNEL') OR U.qualified_id IS NOT NULL)
+        AND (C.protocol IN ('PROTEUS', 'MIXED') OR
+            (C.protocol = 'MLS' AND (:strictMls = 0 OR C.mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET'))))
+        AND (:onlyInteractionEnabled = 0 OR CASE
+            WHEN C.type IN ('GROUP', 'CHANNEL') THEN EXISTS (
+                SELECT 1 FROM Member WHERE conversation = C.qualified_id AND user = S.id AND role IS NOT NULL
+            )
+            WHEN C.type = 'ONE_ON_ONE' THEN
+                U.defederated IS NOT 1 AND U.deleted IS NOT 1 AND U.connection_status IS NOT 'BLOCKED' AND C.legal_hold_status != 'DEGRADED'
+            ELSE 0
+        END)
+        AND (:searchQuery = '' OR CASE C.type
+            WHEN 'ONE_ON_ONE' THEN U.name
+            WHEN 'CONNECTION_PENDING' THEN U.name
+            ELSE C.name
+        END LIKE ('%' || :searchQuery || '%'))
+        AND C.last_modified_date >= :activityTime
+        AND (C.last_modified_date > :activityTime
+            OR (C.last_modified_date = :activityTime AND C.qualified_id < :conversationId))
+    ORDER BY C.last_modified_date ASC, C.qualified_id DESC
+    LIMIT :pageSize
+)
+SELECT
+    C.qualified_id AS conversationId,
+    C.last_modified_date AS activityTime,
+    C.type,
+    C.name,
+    C.muted_status AS mutedStatus,
+    C.legal_hold_status AS legalHoldStatus,
+    C.channel_access AS channelAccess,
+    EXISTS (SELECT 1 FROM Member WHERE conversation = C.qualified_id AND user = P.selfUserId AND role IS NOT NULL) AS isSelfUserMember,
+    U.qualified_id AS otherUserId,
+    U.name AS userName,
+    U.preview_asset_id AS avatarAssetId,
+    U.accent_id AS accentId,
+    U.user_availability_status AS availabilityStatus,
+    U.user_type AS userType,
+    U.connection_status AS connectionStatus,
+    U.deleted AS userDeleted,
+    U.defederated AS userDefederated,
+    (SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = P.qualified_id AND type = 'MESSAGE') AS unreadMessages,
+    (SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = P.qualified_id AND type = 'MENTION') AS unreadMentions,
+    (SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = P.qualified_id AND type = 'REPLY') AS unreadReplies,
+    (SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = P.qualified_id AND type = 'MISSED_CALL') AS unreadMissedCalls,
+    (SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = P.qualified_id AND type = 'KNOCK') AS unreadKnocks,
+    D.text AS draftText,
+    Message.id AS messageId,
+    Message.content_type AS contentType,
+    Message.visibility,
+    Message.sender_user_id AS senderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
+    Sender.name AS senderName,
+    Sender.connection_status AS senderConnectionStatus,
+    Sender.deleted AS senderIsDeleted,
+    P.selfUserId,
+    (Message.sender_user_id IS NOT NULL AND Message.sender_user_id = P.selfUserId) AS isSelfMessage,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
+    CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS updateConversationName,
+    EXISTS (SELECT 1 FROM MessageMention WHERE message_id = Message.id AND conversation_id = P.qualified_id AND user_id = P.selfUserId) AS isMentioningSelfUser,
+    TextContent.is_quoting_self AS isQuotingSelfUser,
+    TextContent.text_body AS messageText,
+    AssetContent.asset_mime_type AS assetMimeType
+FROM pageKeys P
+JOIN Conversation C ON C.qualified_id = P.qualified_id
+LEFT JOIN User U ON U.qualified_id = P.otherUserId
+LEFT JOIN MessageDraft D ON D.conversation_id = P.qualified_id AND C.archived = 0
+LEFT JOIN LastMessage L ON L.conversation_id = P.qualified_id AND C.archived = 0
+LEFT JOIN Message ON Message.id = L.message_id AND Message.conversation_id = P.qualified_id
+LEFT JOIN User Sender ON Sender.qualified_id = Message.sender_user_id
+LEFT JOIN MessageSystemContent SystemContent ON SystemContent.message_id = Message.id AND SystemContent.conversation_id = P.qualified_id
+LEFT JOIN MessageTextContent TextContent ON TextContent.message_id = Message.id AND TextContent.conversation_id = P.qualified_id
+LEFT JOIN MessageAssetContent AssetContent ON AssetContent.message_id = Message.id AND AssetContent.conversation_id = P.qualified_id
+ORDER BY C.last_modified_date ASC, C.qualified_id DESC;

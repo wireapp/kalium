@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao.conversation
 
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.util.DebugKaliumApi
@@ -33,6 +35,12 @@ data class ProposalTimerEntity(
 @Suppress("TooManyFunctions")
 interface ConversationDAO {
     val platformExtensions: ConversationExtensions
+    fun observeConversationListItems(
+        pagingConfig: PagingConfig,
+        query: ConversationListQueryEntity,
+        initialPosition: ConversationListPositionEntity? = null,
+    ): Flow<PagingData<ConversationListItemEntity>>
+
     // region Get/Observe by ID
 
     suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>

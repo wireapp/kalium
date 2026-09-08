@@ -18,12 +18,16 @@
 
 package com.wire.kalium.persistence.dao.conversation
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationDetailsQueries
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
+import com.wire.kalium.persistence.ConversationListQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
@@ -37,12 +41,12 @@ import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DebugKaliumApi
+import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlin.time.Duration
 
 internal const val MLS_DEFAULT_EPOCH = 0L
 internal const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI = 0L
@@ -56,6 +60,7 @@ internal class ConversationDAOImpl internal constructor(
     private val conversationQueries: ConversationsQueries,
     private val conversationDetailsQueries: ConversationDetailsQueries,
     private val conversationDetailsWithEventsQueries: ConversationDetailsWithEventsQueries,
+    private val conversationListQueries: ConversationListQueries,
     private val memberQueries: MembersQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val readDispatcher: ReadDispatcher,
@@ -65,6 +70,14 @@ internal class ConversationDAOImpl internal constructor(
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
     override val platformExtensions: ConversationExtensions =
         ConversationExtensionsImpl(conversationDetailsWithEventsQueries, conversationDetailsWithEventsMapper, readDispatcher)
+
+    override fun observeConversationListItems(
+        pagingConfig: PagingConfig,
+        query: ConversationListQueryEntity,
+        initialPosition: ConversationListPositionEntity?,
+    ): Flow<PagingData<ConversationListItemEntity>> = Pager(pagingConfig, initialKey = initialPosition) {
+        ConversationListPagingSource(conversationListQueries, query, readDispatcher)
+    }.flow
 
     // region Get/Observe by ID
 

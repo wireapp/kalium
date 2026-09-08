@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.MessagePreviewContent
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
@@ -59,16 +60,17 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Type.Unknown
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationListItemEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.util.requireField
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
+import kotlinx.datetime.Instant
 
 internal interface ConversationMapper {
     fun fromApiModelToDaoModel(
@@ -81,6 +83,7 @@ internal interface ConversationMapper {
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(daoModel: ConversationViewEntity): ConversationDetails
+    fun fromListItemEntity(entity: ConversationListItemEntity): ConversationListItem
     fun fromDaoModelToDetailsWithEvents(daoModel: ConversationDetailsWithEventsEntity): ConversationDetailsWithEvents
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
@@ -368,6 +371,50 @@ internal class ConversationMapperImpl(
                 )
             }
         }
+
+    override fun fromListItemEntity(entity: ConversationListItemEntity): ConversationListItem = with(entity) {
+        val id = position.conversationId.toModel()
+        val time = position.activityTime
+        val user = otherUser?.let {
+            ConversationListUser(
+                id = it.id.toModel(),
+                name = it.name,
+                avatarAssetId = it.avatarAssetId?.toModel(),
+                accentId = it.accentId,
+                availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(it.availabilityStatus),
+                userType = domainUserTypeMapper.fromUserTypeEntity(it.userType),
+                connectionStatus = connectionStatusMapper.fromDaoModel(it.connectionStatus),
+                deleted = it.deleted,
+                defederated = it.defederated,
+            )
+        }
+        val muted = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus)
+        val legalHold = legalHoldStatusFromEntity(legalHoldStatus)
+        val unread = ConversationListUnreadState(unreadMessages, unreadMentions, unreadReplies, unreadMissedCalls, unreadKnocks)
+        val draftText = draftText
+        val lastMessage = lastMessage
+        val preview = when {
+            draftText != null -> ConversationListPreview(MessagePreviewContent.Draft(draftText), isSelfMessage = true)
+            lastMessage != null -> messageMapper.fromEntityToMessagePreview(lastMessage).let {
+                ConversationListPreview(it.content, it.isSelfMessage)
+            }
+            else -> null
+        }
+        when (type) {
+            ConversationEntity.Type.GROUP ->
+                ConversationListItem.RegularGroup(id, time, name, isSelfUserMember, muted, legalHold, unread, preview)
+            ConversationEntity.Type.CHANNEL -> ConversationListItem.Channel(
+                id, time, name, isSelfUserMember,
+                if (channelAccess == ConversationEntity.ChannelAccess.PUBLIC) ConversationListChannelAccess.PUBLIC
+                else ConversationListChannelAccess.PRIVATE,
+                muted, legalHold, unread, preview,
+            )
+            ConversationEntity.Type.ONE_ON_ONE ->
+                ConversationListItem.OneOnOne(id, time, requireNotNull(user), muted, legalHold, unread, preview)
+            ConversationEntity.Type.CONNECTION_PENDING -> ConversationListItem.PendingConnection(id, time, requireNotNull(user))
+            else -> error("Unsupported conversation list type: $type")
+        }
+    }
 
     override fun fromDaoModelToDetailsWithEvents(daoModel: ConversationDetailsWithEventsEntity): ConversationDetailsWithEvents =
         ConversationDetailsWithEvents(
