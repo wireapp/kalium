@@ -33,6 +33,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import io.mockative.Mockable
@@ -79,7 +80,7 @@ internal class OneOnOneMigratorImpl(
             }
         }.fold({ failure ->
             if (failure is StorageFailure.DataNotFound && user.userType.isTeammate()) {
-                conversationGroupRepository.createGroupConversation(usersList = listOf(user.id)).map { it.id }
+                conversationGroupRepository.createGroupConversation(usersList = listOf(user.id)).mapLeft { it.cause }.map { it.id }
             } else {
                 Either.Left(failure)
             }
