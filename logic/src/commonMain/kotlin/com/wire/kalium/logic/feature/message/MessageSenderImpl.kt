@@ -187,7 +187,15 @@ internal class MessageSenderImpl internal constructor(
             .flatMap { protocolInfo ->
                 when (protocolInfo) {
                     is Conversation.ProtocolInfo.MLS -> {
-                        attemptToSendWithMLS(transactionContext, protocolInfo, message)
+                        if (
+                            message.content is MessageContent.Calling &&
+                            protocolInfo.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET
+                        ) {
+                            logger.i("Skipping calling message while MLS reset is pending")
+                            Either.Right(message.date)
+                        } else {
+                            attemptToSendWithMLS(transactionContext, protocolInfo, message)
+                        }
                     }
 
                     is Conversation.ProtocolInfo.Proteus, is Conversation.ProtocolInfo.Mixed -> {

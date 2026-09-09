@@ -372,6 +372,40 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenCallingMessageWhileMLSResetIsPending_whenSending_thenSkipMLSMessageCreationAndSending() {
+        val pendingResetProtocolInfo = Arrangement.MLS_PROTOCOL_INFO.copy(
+            groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET
+        )
+        val message = Message.Signaling(
+            id = Arrangement.TEST_MESSAGE_UUID,
+            content = MessageContent.Calling("calling-message"),
+            conversationId = Arrangement.TEST_CONVERSATION_ID,
+            date = TestMessage.TEST_DATE,
+            senderUserId = TestUser.SELF.id,
+            senderClientId = ClientId("clientId"),
+            status = Message.Status.Pending,
+            isSelfMessage = true,
+            expirationData = null
+        )
+        val (arrangement, messageSender) = arrange {
+            withGetProtocolInfo(pendingResetProtocolInfo)
+            withPromoteMessageToSentUpdatingServerTime()
+        }
+
+        arrangement.testScope.runTest {
+            val result = messageSender.sendMessage(message)
+
+            result.shouldSucceed()
+            coVerify {
+                arrangement.mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(any(), any(), any())
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.messageRepository.sendMLSMessage(any())
+            }.wasNotInvoked()
+        }
+    }
+
+    @Test
     fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenRetryAfterSyncIsLive() {
         // given
         val (arrangement, messageSender) = arrange {

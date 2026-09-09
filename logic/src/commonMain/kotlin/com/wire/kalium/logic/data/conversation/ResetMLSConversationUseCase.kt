@@ -32,6 +32,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toCrypto
@@ -73,6 +74,7 @@ internal class ResetMLSConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val fetchConversationUseCase: FetchConversationUseCase,
+    private val endCallOnMLSReset: EndCallOnMLSResetUseCase,
     private val kaliumConfigs: KaliumConfigs,
 ) : ResetMLSConversationUseCase {
 
@@ -134,6 +136,7 @@ internal class ResetMLSConversationUseCaseImpl(
             .flatMap { (epoch, groupId) ->
                 conversationRepository.resetMlsConversation(groupId, epoch)
                     .onSuccess {
+                        endCallOnMLSReset(conversationId)
                         // the result of the leave can be ignored
                         mlsConversationRepository.leaveGroup(mlsContext, groupId)
                     }

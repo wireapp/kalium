@@ -50,6 +50,7 @@ import com.wire.kalium.logic.data.backup.BackupDataSource
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.EndCallOnMLSResetUseCase
 import com.wire.kalium.logic.data.call.InCallReactionsDataSource
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
@@ -229,6 +230,7 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.EndCallOnMLSResetUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
@@ -1567,6 +1569,13 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    private val endCallOnMLSReset: EndCallOnMLSResetUseCase by lazy {
+        EndCallOnMLSResetUseCaseImpl(
+            callManager = callManager,
+            callRepository = callRepository,
+        )
+    }
+
     internal val callBackgroundManager: CallBackgroundManager = CallBackgroundManagerImpl(
         callManager = callManager,
         syncStateObserver = syncStateObserver,
@@ -1858,6 +1867,7 @@ public class UserSessionScope internal constructor(
 
     private val mlsResetConversationEventHandler: MLSResetConversationEventHandler
         get() = MLSResetConversationEventHandlerImpl(
+            endCallOnMLSReset = endCallOnMLSReset,
             mlsConversationRepository = mlsConversationRepository,
         )
 
@@ -2692,6 +2702,7 @@ public class UserSessionScope internal constructor(
 
     public val resetMlsConversation: ResetMLSConversationUseCase
         get() = ResetMLSConversationUseCaseImpl(
+            endCallOnMLSReset = endCallOnMLSReset,
             selfUserId = userId,
             userConfig = userConfigRepository,
             transactionProvider = cryptoTransactionProvider,
