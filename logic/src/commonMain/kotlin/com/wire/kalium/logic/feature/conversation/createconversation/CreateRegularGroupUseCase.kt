@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.conversation.createconversation
 
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 
 /**
@@ -25,6 +26,9 @@ import com.wire.kalium.logic.data.user.UserId
  * This is a wrapper around [GroupConversationCreator] that sets the group type to [CreateConversationParam.GroupType.REGULAR_GROUP].
  */
 public interface CreateRegularGroupUseCase {
+    /** Retries local cleanup after a federation conflict. Returns true when cleanup succeeds. */
+    public suspend fun discardPendingMLSGroupCreation(conversationId: ConversationId): Boolean
+
     public suspend operator fun invoke(name: String, userIdList: List<UserId>, options: CreateConversationParam): ConversationCreationResult
 }
 
@@ -35,6 +39,9 @@ public interface CreateRegularGroupUseCase {
 internal class CreateRegularGroupUseCaseImpl(
     private val createGroupConversation: GroupConversationCreator
 ) : CreateRegularGroupUseCase {
+    override suspend fun discardPendingMLSGroupCreation(conversationId: ConversationId): Boolean =
+        createGroupConversation.discardPendingMLSGroupCreation(conversationId)
+
     override suspend fun invoke(
         name: String,
         userIdList: List<UserId>,

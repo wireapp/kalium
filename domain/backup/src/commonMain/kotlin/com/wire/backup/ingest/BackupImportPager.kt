@@ -26,6 +26,7 @@ import com.wire.kalium.protobuf.backup.BackupData
 import com.wire.kalium.protobuf.decodeFromByteArray
 import okio.Closeable
 import okio.buffer
+import pbandk.InvalidProtocolBufferException
 import kotlin.js.JsExport
 
 @JsExport
@@ -69,6 +70,14 @@ public interface ImportDataPager<T> {
     public fun nextPage(): Array<T>
 }
 
+/**
+ * Indicates that a backup page could not be decoded as protobuf data.
+ */
+public class BackupPageDecodingException(
+    public val pageName: String,
+    cause: InvalidProtocolBufferException,
+) : RuntimeException("Failed to decode backup page '$pageName'", cause)
+
 // The abstract / implementation are done this way to avoid having GenericClass<Data>, which can be lost on ObjC/Swift interop.
 // Otherwise, it could have been just a single class.
 /**
@@ -98,6 +107,7 @@ public abstract class BackupImportDataPager<T> internal constructor(entries: Lis
     /**
      * Gets the data stored in the next page, **consuming** it in the process.
      * @throws IllegalStateException if there are no further available pages.
+     * @throws BackupPageDecodingException if the page does not contain valid protobuf data.
      * @see hasMorePages
      */
     public override fun nextPage(): Array<T> {
@@ -105,7 +115,11 @@ public abstract class BackupImportDataPager<T> internal constructor(entries: Lis
             ?: throw IllegalStateException("No more pages to consume! Check if there are pages before requesting one")
         nextPageIndex++
         val bytes = page.use { it.buffer().readByteArray() }
-        return mapPageData(mapper, bytes)
+        return try {
+            mapPageData(mapper, bytes)
+        } catch (exception: InvalidProtocolBufferException) {
+            throw BackupPageDecodingException(page.name, exception)
+        }
     }
 
     internal abstract fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<T>

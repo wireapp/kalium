@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.backup.ingest.BackupPageDecodingException
 import com.wire.backup.ingest.ImportDataPager
 import com.wire.backup.ingest.ImportResultPager
 import com.wire.kalium.common.functional.fold
@@ -92,10 +93,17 @@ internal class RestoreMPBackupUseCaseImpl(
 
             when (val result = importer.importFromFile(backupFilePath.toString(), password)) {
                 is ImportResult.Success -> {
-                    persistBackupData(result.pager) { currentPage, totalPages ->
-                        onProgress(currentPage.toFloat() / totalPages)
+                    try {
+                        persistBackupData(result.pager) { currentPage, totalPages ->
+                            onProgress(currentPage.toFloat() / totalPages)
+                        }
+                        RestoreBackupResult.Success
+                    } catch (exception: BackupPageDecodingException) {
+                        kaliumLogger.e("Invalid protobuf data during backup restore", exception)
+                        RestoreBackupResult.Failure(
+                            RestoreBackupResult.BackupRestoreFailure.CorruptedOrUnreadableBackup
+                        )
                     }
-                    RestoreBackupResult.Success
                 }
 
                 ImportResult.Failure.MissingOrWrongPassphrase -> RestoreBackupResult.Failure(

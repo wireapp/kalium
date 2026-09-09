@@ -24,6 +24,7 @@ public sealed class RestoreBackupResult {
     public sealed class BackupRestoreFailure(public open val cause: String) {
         public data object InvalidPassword : BackupRestoreFailure("The provided password is invalid")
         public data object InvalidUserId : BackupRestoreFailure("User id in the backup file does not match the current user id")
+        public data object CorruptedOrUnreadableBackup : BackupRestoreFailure("The backup is corrupted or unreadable")
         public data class IncompatibleBackup(override val cause: String) : BackupRestoreFailure(cause)
         public data class BackupIOFailure(override val cause: String) : BackupRestoreFailure(cause)
         public data class DecryptionFailure(override val cause: String) : BackupRestoreFailure(cause)

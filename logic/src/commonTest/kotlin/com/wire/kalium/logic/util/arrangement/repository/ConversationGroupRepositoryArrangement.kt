@@ -19,10 +19,12 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.conversation.CreateGroupConversationFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import io.mockative.any
 import io.mockative.coEvery
@@ -47,7 +49,7 @@ internal interface ConversationGroupRepositoryArrangement {
     suspend fun withCreateGroupConversationReturning(result: Either<CoreFailure, Conversation>) {
         coEvery {
             conversationGroupRepository.createGroupConversation(any(), any(), any())
-        }.returns(result)
+        }.returns(result.mapLeft { CreateGroupConversationFailure(it) })
     }
 }
 

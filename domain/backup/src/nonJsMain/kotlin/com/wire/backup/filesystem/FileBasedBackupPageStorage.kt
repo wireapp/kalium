@@ -19,8 +19,6 @@ package com.wire.backup.filesystem
 
 import okio.FileSystem
 import okio.Path
-import okio.Source
-import okio.use
 
 internal class FileBasedBackupPageStorage(
     private val fileSystem: FileSystem,
@@ -54,9 +52,7 @@ internal class FileBasedBackupPageStorage(
     override operator fun get(entryName: String): BackupPage? {
         val entryFile = workDirectory / entryName
         return if (fileSystem.exists(entryFile)) {
-            withReadonlySource(entryFile) { source ->
-                BackupPage(entryName, source)
-            }
+            BackupPage(entryName, fileSystem.source(entryFile))
         } else {
             null
         }
@@ -64,14 +60,7 @@ internal class FileBasedBackupPageStorage(
 
     override fun listEntries(): List<BackupPage> =
         fileSystem.list(workDirectory).map { dir ->
-            withReadonlySource(dir) { source ->
-                BackupPage(dir.name, source)
-            }
-        }
-
-    private inline fun <T> withReadonlySource(path: Path, block: (Source) -> T): T =
-        fileSystem.openReadOnly(path).use { file ->
-            block(file.source())
+            BackupPage(dir.name, fileSystem.source(dir))
         }
 
     override fun clear() {
