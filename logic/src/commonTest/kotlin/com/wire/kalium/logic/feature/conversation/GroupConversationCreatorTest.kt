@@ -230,7 +230,7 @@ class GroupConversationCreatorTest {
         assertIs<ConversationCreationResult.BackendConflictFailure>(result)
         assertEquals(domains, result.domains)
         assertNull(result.conversationId)
-        coVerify { arrangement.conversationRepository.markConversationAsDeletedLocally(any()) }.wasNotInvoked()
+        coVerify { arrangement.conversationRepository.setConversationDeletedLocally(any(), eq(true)) }.wasNotInvoked()
     }
 
     @Test
@@ -240,7 +240,7 @@ class GroupConversationCreatorTest {
             .withWaitingForSyncSucceeding()
             .withCurrentClientIdReturning(ClientId("client"))
             .withCreateGroupConversationFailingWith(MLSFailure.FederatedBackendConflict(domains), TestConversation.ID)
-            .withDiscardResult(Either.Right(true))
+            .withDiscardResult(Either.Right(Unit))
             .arrange()
 
         val result = creator("group", emptyList(), CreateConversationParam())
@@ -248,7 +248,7 @@ class GroupConversationCreatorTest {
         assertIs<ConversationCreationResult.BackendConflictFailure>(result)
         assertEquals(domains, result.domains)
         assertNull(result.conversationId)
-        coVerify { arrangement.conversationRepository.markConversationAsDeletedLocally(eq(TestConversation.ID)) }.wasInvoked(once)
+        coVerify { arrangement.conversationRepository.setConversationDeletedLocally(eq(TestConversation.ID), eq(true)) }.wasInvoked(once)
     }
 
     @Test
@@ -281,16 +281,14 @@ class GroupConversationCreatorTest {
 
         assertIs<ConversationCreationResult.UnknownFailure>(result)
         assertEquals(failure, result.cause)
-        coVerify { arrangement.conversationRepository.markConversationAsDeletedLocally(any()) }.wasNotInvoked()
+        coVerify { arrangement.conversationRepository.setConversationDeletedLocally(any(), eq(true)) }.wasNotInvoked()
     }
 
     @Test
     fun givenCleanupFails_whenDiscardRetried_thenReportsActualCleanupResult() = runTest {
         val (arrangement, creator) = Arrangement().withDiscardResult(Either.Left(StorageFailure.DataNotFound)).arrange()
         assertFalse(creator.discardPendingMLSGroupCreation(TestConversation.ID))
-        arrangement.withDiscardResult(Either.Right(false))
-        assertTrue(creator.discardPendingMLSGroupCreation(TestConversation.ID))
-        arrangement.withDiscardResult(Either.Right(true))
+        arrangement.withDiscardResult(Either.Right(Unit))
         assertTrue(creator.discardPendingMLSGroupCreation(TestConversation.ID))
     }
 
@@ -338,8 +336,8 @@ class GroupConversationCreatorTest {
         suspend fun withCreateGroupConversationFailingWith(coreFailure: CoreFailure, conversationId: ConversationId? = null) =
             withCreateGroupConversationReturning(Either.Left(CreateGroupConversationFailure(coreFailure, conversationId)))
 
-        suspend fun withDiscardResult(result: Either<CoreFailure, Boolean>) = apply {
-            coEvery { conversationRepository.markConversationAsDeletedLocally(any()) }.returns(result)
+        suspend fun withDiscardResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery { conversationRepository.setConversationDeletedLocally(any(), eq(true)) }.returns(result)
         }
 
         suspend fun withCreateGroupConversationReturning(conversation: Conversation) =

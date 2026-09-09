@@ -2534,22 +2534,32 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_whenMarkedAsDeletedLocally_thenDoNotReturnConversationDetails() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity1)
-        val markResult = conversationDAO.markConversationAsDeletedLocally(conversationEntity1.id)
+        conversationDAO.setConversationDeletedLocally(conversationEntity1.id, true)
         val getResult = try {
             conversationDAO.getConversationDetailsById(conversationEntity1.id)
         } catch (npe: NullPointerException) {
             null
         }
-        assertTrue(markResult)
         assertNull(getResult)
+    }
+
+    @Test
+    fun givenLocallyDeletedConversation_whenDeletionFlagCleared_thenReturnConversationDetails() = runTest(dispatcher) {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.setConversationDeletedLocally(conversationEntity1.id, true)
+
+        conversationDAO.setConversationDeletedLocally(conversationEntity1.id, false)
+
+        val result = conversationDAO.getConversationDetailsById(conversationEntity1.id)
+        assertNotNull(result)
+        assertEquals(conversationEntity1.id, result.id)
     }
 
     @Test
     fun givenExistingConversation_whenMarkedAsDeletedLocally_thenConversationCanStillBeDeleted() = runTest(dispatcher) {
         conversationDAO.insertConversation(conversationEntity1)
-        val markResult = conversationDAO.markConversationAsDeletedLocally(conversationEntity1.id)
+        conversationDAO.setConversationDeletedLocally(conversationEntity1.id, true)
         val deleteResult = conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
-        assertTrue(markResult)
         assertTrue(deleteResult)
     }
 
