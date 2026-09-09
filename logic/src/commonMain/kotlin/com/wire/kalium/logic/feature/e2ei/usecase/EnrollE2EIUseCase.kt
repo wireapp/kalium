@@ -35,7 +35,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 /**
- * Issue an E2EI certificate and re-initiate the MLSClient
+ * Issue an E2EI certificate and update the MLS client's X.509 credential.
  */
 public interface EnrollE2EIUseCase {
     public suspend fun initialEnrollment(isNewClientRegistration: Boolean = false): InitialEnrollmentResult
@@ -232,38 +232,37 @@ internal class EnrollE2EIUseCaseImpl internal constructor(
                 return it.toFinalizeEnrollmentFailure()
             }
 
-        if (isNewClientRegistration) {
-            e2EIRepository.initiateMLSClient(certificateRequest.response.decodeToString()).onFailure {
-                return it.toFinalizeEnrollmentFailure()
+        val certificate = certificateRequest.response.decodeToString()
+        val groupIdList = conversationRepository.observeConversationList().first().mapNotNull {
+            when (val protocol = it.protocol) {
+                is Conversation.ProtocolInfo.MLS -> protocol.groupId
+                is Conversation.ProtocolInfo.Mixed -> protocol.groupId
+                Conversation.ProtocolInfo.Proteus -> null
             }
-        } else {
-            val groupIdList = conversationRepository.observeConversationList().first().mapNotNull {
-                when (val protocol = it.protocol) {
-                    is Conversation.ProtocolInfo.MLS -> protocol.groupId
-                    is Conversation.ProtocolInfo.Mixed -> protocol.groupId
-                    Conversation.ProtocolInfo.Proteus -> null
-                }
-            }
-
-            transactionProvider.mlsTransaction("E2EIEnrollment") { mlsContext ->
-                e2EIRepository.rotateKeysAndMigrateConversations(
-                    mlsContext,
-                    certificateRequest.response.decodeToString(),
-                    groupIdList,
-                    initializationResult.isNewClientRegistration,
-                )
-            }
-                .onFailure {
-                    return if (it is E2EIFailure) {
-                        it.toFinalizeEnrollmentFailure()
-                    } else {
-                        FinalizeEnrollmentResult.Failure.Generic(E2EIFailure.RotationAndMigration(it))
-                    }
-                }
         }
 
+        val transactionName = when (isNewClientRegistration) {
+            true -> "E2EIEnrollmentNewClient"
+            false -> "E2EIEnrollment"
+        }
+        transactionProvider.mlsTransaction(transactionName) { mlsContext ->
+            e2EIRepository.rotateKeysAndMigrateConversations(
+                mlsContext,
+                certificate,
+                groupIdList,
+                initializationResult.isNewClientRegistration,
+            )
+        }
+            .onFailure {
+                return if (it is E2EIFailure) {
+                    it.toFinalizeEnrollmentFailure()
+                } else {
+                    FinalizeEnrollmentResult.Failure.Generic(E2EIFailure.RotationAndMigration(it))
+                }
+            }
+
         @Suppress("TooGenericExceptionCaught")
-        val e2eiCert = certificateRequest.response.decodeToString().let { theDoubleCert ->
+        val e2eiCert = certificate.let { theDoubleCert ->
             try {
                 val firstCertEndIndex = theDoubleCert.indexOf(CERT_END) + CERT_END_LENGTH
                 theDoubleCert.substring(0, firstCertEndIndex)
