@@ -43,7 +43,6 @@ class ProteusPreKeyRefillerTest {
         val (arrangement, proteusPreKeyRefiller) = arrange {
             lowOnPreKeysThreshold = 10
             remotePreKeyTargetCount = 100
-            maxPreKeyId = 100
 
             // have 1 more in the backend
             val prekeys = Array(lowOnPreKeysThreshold + 1) { it }.toList()
@@ -53,7 +52,7 @@ class ProteusPreKeyRefillerTest {
         proteusPreKeyRefiller.refillIfNeeded()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.preKeyRepository.generateNewPreKeys(any(), any())
+            arrangement.preKeyRepository.generateNewPreKeysAuto(any())
         }
 
         verifySuspend(VerifyMode.not) {
@@ -63,12 +62,9 @@ class ProteusPreKeyRefillerTest {
     }
 
     @Test
-    fun givenPrekeysAreNeeded_andGeneratingWillCauseOverflow_thenShouldGenerateFromZero() = runTest {
+    fun givenPrekeysAreNeeded_thenShouldGenerateWithAutomaticIds() = runTest {
         val remoteTarget = 100
         val (arrangement, proteusPreKeyRefiller) = arrange {
-            // Last 10 possible prekeys before hitting limit
-            withMostRecentPreKeyId(Either.Right(maxPreKeyId - 10))
-
             remotePreKeyTargetCount = remoteTarget
 
             lowOnPreKeysThreshold = 20
@@ -80,20 +76,16 @@ class ProteusPreKeyRefillerTest {
         proteusPreKeyRefiller.refillIfNeeded()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.preKeyRepository.generateNewPreKeys(eq(0), eq(remoteTarget))
+            arrangement.preKeyRepository.generateNewPreKeysAuto(eq(remoteTarget))
         }
     }
 
     @Test
-    fun givenPrekeysAreNeeded_andGeneratingWontCauseOverflow_thenShouldGenerateFromMostRecentKey() = runTest {
+    fun givenPrekeysAreNeeded_thenShouldNotReadMostRecentKey() = runTest {
         val remoteTarget = 100
-        val mostRecentKey = 50
         val (arrangement, proteusPreKeyRefiller) = arrange {
-            withMostRecentPreKeyId(Either.Right(mostRecentKey))
-
             lowOnPreKeysThreshold = 20
             remotePreKeyTargetCount = remoteTarget
-            maxPreKeyId = 1000
 
             val prekeys = fakePreKeys(1..10)
             withRemotelyAvailablePreKeysReturning(Either.Right(prekeys))
@@ -103,7 +95,10 @@ class ProteusPreKeyRefillerTest {
         proteusPreKeyRefiller.refillIfNeeded()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.preKeyRepository.generateNewPreKeys(eq(mostRecentKey + 1), any())
+            arrangement.preKeyRepository.generateNewPreKeysAuto(eq(remoteTarget))
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.preKeyRepository.mostRecentPreKeyId()
         }
     }
 
@@ -111,8 +106,6 @@ class ProteusPreKeyRefillerTest {
     fun givenGeneratingFails_thenShouldPropagateFailureAndDontPerformOtherActions() = runTest {
         val failure = CoreFailure.NotSupportedByProteus
         val (arrangement, proteusPreKeyRefiller) = arrange {
-            withMostRecentPreKeyId(Either.Right(50))
-
             lowOnPreKeysThreshold = 20
 
             val prekeys = fakePreKeys(1..10)
@@ -137,7 +130,6 @@ class ProteusPreKeyRefillerTest {
     fun givenUploadingFails_thenShouldPropagateFailure() = runTest {
         val failure = CoreFailure.NotSupportedByProteus
         val (_, proteusPreKeyRefiller) = arrange {
-            withMostRecentPreKeyId(Either.Right(50))
             lowOnPreKeysThreshold = 20
 
             val prekeys = fakePreKeys(1..10)
@@ -161,8 +153,6 @@ class ProteusPreKeyRefillerTest {
             PreKeyCrypto(mostRecentPreKeyId, "1")
         )
         val (arrangement, proteusPreKeyRefiller) = arrange {
-            withMostRecentPreKeyId(Either.Right(50))
-
             lowOnPreKeysThreshold = 20
 
             val prekeys = fakePreKeys(1..10)
@@ -186,8 +176,6 @@ class ProteusPreKeyRefillerTest {
     @Test
     fun givenEverythingSucceeds_thenShouldPropagateSuccess() = runTest {
         val (_, proteusPreKeyRefiller) = arrange {
-            withMostRecentPreKeyId(Either.Right(50))
-
             lowOnPreKeysThreshold = 20
             val generatedPreKeys = listOf(
                 PreKeyCrypto(10, "1")
@@ -212,7 +200,6 @@ class ProteusPreKeyRefillerTest {
 
         var lowOnPreKeysThreshold: Int = ProteusPreKeyRefiller.MINIMUM_PREKEYS_COUNT
         var remotePreKeyTargetCount: Int = ProteusPreKeyRefiller.REMOTE_PREKEYS_TARGET_COUNT
-        var maxPreKeyId: Int = ProteusPreKeyRefiller.MAX_PREKEY_ID
 
         fun arrange() = run {
             kotlinx.coroutines.runBlocking { configure() }
@@ -220,7 +207,6 @@ class ProteusPreKeyRefillerTest {
                 preKeyRepository = preKeyRepository,
                 lowOnPrekeysTreshold = lowOnPreKeysThreshold,
                 remotePreKeyTargetCount = remotePreKeyTargetCount,
-                maxPreKeyId = maxPreKeyId
             )
         }
 
@@ -233,11 +219,7 @@ class ProteusPreKeyRefillerTest {
         }
 
         suspend fun withGenerateNewPreKeysReturning(result: Either<CoreFailure, List<PreKeyCrypto>>) {
-            everySuspend { preKeyRepository.generateNewPreKeys(any(), any()) } returns result
-        }
-
-        suspend fun withMostRecentPreKeyId(result: Either<StorageFailure, Int>) {
-            everySuspend { preKeyRepository.mostRecentPreKeyId() } returns result
+            everySuspend { preKeyRepository.generateNewPreKeysAuto(any()) } returns result
         }
 
         suspend fun withUpdatingMostRecentPrekeyReturning(result: Either<StorageFailure, Unit>) {

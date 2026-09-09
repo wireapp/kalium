@@ -103,19 +103,20 @@ class PreKeyRepositoryTest {
     }
 
     @Test
-    fun givenValidCrypto_whenGeneratingNewPreyKeys_thenSuccess() = runTest {
-        val expected = listOf(PreKeyCrypto(44, "key"))
+    fun givenValidCrypto_whenGeneratingNewPreKeysAuto_thenSuccess() = runTest {
+        val keysCount = 2
+        val expected = listOf(PreKeyCrypto(44, "key"), PreKeyCrypto(45, "key_2"))
         val (arrange, preKeyRepository) = Arrangement()
-            .withGenerateNewPreKeysSuccess(1, 1, expected)
+            .withGenerateNewPreKeysAutoSuccess(keysCount, expected)
             .arrange {}
 
-        preKeyRepository.generateNewPreKeys(1, 1).also {
+        preKeyRepository.generateNewPreKeysAuto(keysCount).also {
             assertIs<Either.Right<List<PreKeyCrypto>>>(it)
             assertEquals(expected, it.value)
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.proteusClient.newPreKeys(any(), any())
+            arrange.proteusClient.newPreKeysAuto(keysCount)
         }
     }
 
@@ -385,9 +386,9 @@ class PreKeyRepositoryTest {
             }
         }
 
-        fun withGenerateNewPreKeysSuccess(from: Int, count: Int, expected: List<PreKeyCrypto>) = apply {
+        fun withGenerateNewPreKeysAutoSuccess(count: Int, expected: List<PreKeyCrypto>) = apply {
             everySuspend {
-                proteusClient.newPreKeys(from, count)
+                proteusClient.newPreKeysAuto(count)
             } returns expected
         }
 
