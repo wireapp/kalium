@@ -19,14 +19,19 @@
 package com.wire.kalium.logic.feature.conversation.createconversation
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.normalizeFederatedBackendConflict
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
+import com.wire.kalium.logic.data.conversation.CreateGroupConversationFailure
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
@@ -45,6 +50,8 @@ import io.mockative.Mockable
 @Suppress("LongParameterList")
 @Mockable
 internal interface GroupConversationCreator {
+
+    suspend fun discardPendingMLSGroupCreation(conversationId: ConversationId): Boolean
 
     /**
      * @param name the name of the conversation
@@ -77,40 +84,53 @@ internal class GroupConversationCreatorImpl(
     ): ConversationCreationResult =
         syncManager.waitUntilLiveOrFailure().flatMap {
             currentClientIdProvider()
-        }.flatMap { clientId ->
+        }.mapLeft { CreateGroupConversationFailure(it) }.flatMap { clientId ->
             conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId))
         }.onSuccess {
             refreshUsersWithoutMetadata()
         }.flatMap { conversation ->
             // TODO(qol): this can be done in one query, e.g. pass current time when inserting
             conversationRepository.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentInstant())
+                .mapLeft { CreateGroupConversationFailure(it) }
                 .map { conversation }
-        }.fold({
-            when (it) {
+        }.fold({ creationFailure ->
+            when (val failure = creationFailure.cause.normalizeFederatedBackendConflict()) {
                 is NetworkFailure.NoNetworkConnection -> {
                     ConversationCreationResult.SyncFailure
                 }
 
                 is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
-                    ConversationCreationResult.BackendConflictFailure(it.domains)
+                    val conversationId = creationFailure.conversationId
+                    val fallbackId = conversationId?.takeUnless { discardPendingMLSGroupCreation(it) }
+                    ConversationCreationResult.BackendConflictFailure(failure.domains, fallbackId)
                 }
 
                 is NetworkFailure.ServerMiscommunication -> {
-                    val exception = it.kaliumException
+                    val exception = failure.kaliumException
                     if (exception is KaliumException.InvalidRequestError && exception.isOperationDenied()
                     ) {
                         ConversationCreationResult.Forbidden
                     } else {
-                        ConversationCreationResult.UnknownFailure(it)
+                        ConversationCreationResult.UnknownFailure(failure)
                     }
                 }
 
                 else -> {
-                    ConversationCreationResult.UnknownFailure(it)
+                    ConversationCreationResult.UnknownFailure(failure)
                 }
             }
         }, {
             newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(it)
             ConversationCreationResult.Success(it)
         })
+
+    override suspend fun discardPendingMLSGroupCreation(conversationId: ConversationId): Boolean =
+        conversationRepository.markConversationAsDeletedLocally(conversationId).fold(
+            { failure ->
+                kaliumLogger.w("Failed to discard pending MLS conversation: $failure")
+                false
+            },
+            // A successful no-op means the local conversation is already absent.
+            { true }
+        )
 }

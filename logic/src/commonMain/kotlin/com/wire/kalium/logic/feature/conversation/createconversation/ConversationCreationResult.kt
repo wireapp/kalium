@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.conversation.createconversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 
 public sealed interface ConversationCreationResult {
     /**
@@ -48,6 +49,8 @@ public sealed interface ConversationCreationResult {
     ) : ConversationCreationResult
 
     public class BackendConflictFailure(
-        public val domains: List<String>
+        public val domains: List<String>,
+        /** Local conversation to discard when automatic cleanup failed; null when no cleanup remains. */
+        public val conversationId: ConversationId? = null
     ) : ConversationCreationResult
 }
