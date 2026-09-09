@@ -150,17 +150,6 @@ class ProteusClientCoreCryptoImpl private constructor(
         }
     }
 
-    override suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto> {
-        return wrapException {
-            coreCrypto.transaction("newPreKeys") { crypto ->
-                from.until(from + count).map {
-                    val pkb = crypto.proteusNewPrekey(it.toUShort())
-                    ProteusAutoPrekeyBundle(it.toUShort(), pkb).toCryptography()
-                }
-            }
-        }
-    }
-
     override suspend fun newPreKeysAuto(count: Int): List<PreKeyCrypto> {
         return wrapException {
             coreCrypto.transaction("newPreKeysAuto") { crypto ->

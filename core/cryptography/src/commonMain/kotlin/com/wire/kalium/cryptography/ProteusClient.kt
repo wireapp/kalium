@@ -57,7 +57,6 @@ interface ProteusClient {
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun close()
 
-    suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto>
     suspend fun newPreKeysAuto(count: Int): List<PreKeyCrypto>
 
     @Throws(ProteusException::class, CancellationException::class)

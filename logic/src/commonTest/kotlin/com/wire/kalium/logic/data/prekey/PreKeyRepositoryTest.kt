@@ -103,25 +103,6 @@ class PreKeyRepositoryTest {
     }
 
     @Test
-    fun givenValidCrypto_whenGeneratingNewPreKeysWithFirstKeyId_thenSuccess() = runTest {
-        val firstKeyId = 44
-        val keysCount = 2
-        val expected = listOf(PreKeyCrypto(firstKeyId, "key"), PreKeyCrypto(firstKeyId + 1, "key_2"))
-        val (arrange, preKeyRepository) = Arrangement()
-            .withGenerateNewPreKeysSuccess(firstKeyId, keysCount, expected)
-            .arrange {}
-
-        preKeyRepository.generateNewPreKeys(firstKeyId, keysCount).also {
-            assertIs<Either.Right<List<PreKeyCrypto>>>(it)
-            assertEquals(expected, it.value)
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrange.proteusClient.newPreKeys(firstKeyId, keysCount)
-        }
-    }
-
-    @Test
     fun givenValidCrypto_whenGeneratingNewPreKeysAuto_thenSuccess() = runTest {
         val keysCount = 2
         val expected = listOf(PreKeyCrypto(44, "key"), PreKeyCrypto(45, "key_2"))
@@ -403,12 +384,6 @@ class PreKeyRepositoryTest {
                     preKeyApi.getUsersPreKey(any())
                 } returns error
             }
-        }
-
-        fun withGenerateNewPreKeysSuccess(from: Int, count: Int, expected: List<PreKeyCrypto>) = apply {
-            everySuspend {
-                proteusClient.newPreKeys(from, count)
-            } returns expected
         }
 
         fun withGenerateNewPreKeysAutoSuccess(count: Int, expected: List<PreKeyCrypto>) = apply {
