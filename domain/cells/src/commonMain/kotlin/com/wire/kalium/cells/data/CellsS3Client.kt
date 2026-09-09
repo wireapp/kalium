@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
+import com.wire.kalium.common.logger.kaliumLogger
 import io.ktor.client.HttpClient
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
@@ -145,6 +146,7 @@ internal class CellsS3Client(
         )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun uploadMultipart(
         path: Path,
         length: Long,
@@ -152,6 +154,22 @@ internal class CellsS3Client(
         onProgressUpdate: (Long) -> Unit,
     ) {
         val uploadId = createMultipartUpload(node)
+        try {
+            val completedParts = uploadParts(path, length, node.path, uploadId, onProgressUpdate)
+            completeMultipartUpload(node.path, uploadId, completedParts)
+        } catch (cause: Throwable) {
+            abortMultipartUpload(node.path, uploadId)
+            throw cause
+        }
+    }
+
+    private suspend fun uploadParts(
+        path: Path,
+        length: Long,
+        objectKey: String,
+        uploadId: String,
+        onProgressUpdate: (Long) -> Unit,
+    ): List<CompletedS3Part> {
         val completedParts = mutableListOf<CompletedS3Part>()
         var uploaded = 0L
         var partNumber = 1
@@ -160,7 +178,7 @@ internal class CellsS3Client(
             while (uploaded < length) {
                 val partSize = minOf(config.multipartChunkSize, length - uploaded)
                 val partData = source.readPart(partSize)
-                val eTag = uploadPart(node.path, uploadId, partNumber, partData)
+                val eTag = uploadPart(objectKey, uploadId, partNumber, partData)
                 uploaded += partData.size
                 onProgressUpdate(uploaded)
                 completedParts += CompletedS3Part(partNumber, eTag)
@@ -168,7 +186,7 @@ internal class CellsS3Client(
             }
         }
 
-        completeMultipartUpload(node.path, uploadId, completedParts)
+        return completedParts
     }
 
     private suspend fun createMultipartUpload(node: CellNodeDTO): String {
@@ -254,6 +272,34 @@ internal class CellsS3Client(
             },
             transform = { response -> validateCompleteMultipartUploadResponse(response.bodyAsText()) },
         )
+    }
+
+    /**
+     * Releases the parts already stored on the server for a failed upload.
+     * Failures are ignored so that the original upload failure is the one reported to the caller.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun abortMultipartUpload(objectKey: String, uploadId: String) {
+        try {
+            requestWithRetry(
+                operation = "Abort multipart upload",
+                request = { credentials ->
+                    val signedRequest = signedRequest(
+                        method = HttpMethod.Delete,
+                        objectKey = objectKey,
+                        credentials = credentials,
+                        queryParameters = listOf(S3QueryParameter("uploadId", uploadId)),
+                    )
+                    httpClient.prepareRequest(signedRequest.url) {
+                        method = HttpMethod.Delete
+                        signedRequest.headers.forEach { (name, value) -> header(name, value) }
+                    }
+                },
+                transform = { response -> response.discardBody() },
+            )
+        } catch (cause: Exception) {
+            kaliumLogger.w("Abort multipart upload failed after an upload failure: $cause")
+        }
     }
 
     /**

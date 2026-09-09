@@ -463,6 +463,7 @@ class CellsS3ClientTest {
     fun givenEmbeddedValidationError_whenCompletingMultipartUpload_thenDoesNotRetry() = runTest {
         val (fileSystem, uploadPath) = createUploadFile("multipart".encodeToByteArray())
         var completionCount = 0
+        var abortCount = 0
         val httpClient = HttpClient(
             MockEngine { request ->
                 when {
@@ -477,6 +478,11 @@ class CellsS3ClientTest {
                         status = HttpStatusCode.OK,
                         headers = headersOf(HttpHeaders.ETag, "etag-1"),
                     )
+
+                    request.method == HttpMethod.Delete -> {
+                        abortCount++
+                        respond(content = "", status = HttpStatusCode.NoContent)
+                    }
 
                     request.method == HttpMethod.Post && request.url.parameters["uploadId"] != null -> {
                         completionCount++
@@ -506,6 +512,7 @@ class CellsS3ClientTest {
 
         assertContains(exception.message.orEmpty(), "InvalidPart")
         assertEquals(1, completionCount)
+        assertEquals(1, abortCount)
     }
 
     @Test
