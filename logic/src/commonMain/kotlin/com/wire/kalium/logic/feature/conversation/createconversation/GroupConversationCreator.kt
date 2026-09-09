@@ -125,7 +125,7 @@ internal class GroupConversationCreatorImpl(
         })
 
     override suspend fun discardPendingMLSGroupCreation(conversationId: ConversationId): Boolean =
-        conversationRepository.markConversationAsDeletedLocally(conversationId).fold(
+        conversationRepository.setConversationDeletedLocally(conversationId, true).fold(
             { failure ->
                 kaliumLogger.w("Failed to discard pending MLS conversation: $failure")
                 false
