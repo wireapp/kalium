@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
@@ -33,6 +34,7 @@ import com.wire.kalium.logic.data.user.toDao
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
@@ -121,9 +123,14 @@ internal class SearchUserRepositoryImpl(
                 }.onSuccess { userProfileDTOList ->
                     updateLocalUsers(userProfileDTOList.usersFound)
                 }.map { userProfileDTOList ->
+                    val localConnectionStates = getLocalConnectionStates(userProfileDTOList.usersFound)
                     UserSearchResult(
                         userProfileDTOList.usersFound.map { userProfileDTO ->
-                            userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUserId, selfTeamId)
+                            userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUserId, selfTeamId).let { remoteUser ->
+                                remoteUser.copy(
+                                    connectionStatus = localConnectionStates[remoteUser.id] ?: remoteUser.connectionStatus
+                                )
+                            }
                         }
                     )
                 }
@@ -189,5 +196,19 @@ internal class SearchUserRepositoryImpl(
                     userDAO.updateUser(it)
                 }
             }
+    }
+
+    private suspend fun getLocalConnectionStates(
+        userProfileDTOList: List<UserProfileDTO>
+    ): Map<UserId, ConnectionState> {
+        if (userProfileDTOList.isEmpty()) return emptyMap()
+
+        return wrapStorageRequest {
+            userDAO.getUsersDetailsByQualifiedIDList(userProfileDTOList.map { it.id.toDao() })
+        }.map { userDetails ->
+            userDetails.associate { userDetail ->
+                userMapper.fromUserDetailsEntityToOtherUser(userDetail).let { it.id to it.connectionStatus }
+            }
+        }.getOrElse(emptyMap())
     }
 }
