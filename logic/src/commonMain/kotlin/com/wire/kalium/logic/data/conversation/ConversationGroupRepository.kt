@@ -28,6 +28,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
@@ -68,13 +69,18 @@ import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+internal data class CreateGroupConversationFailure(
+    val cause: CoreFailure,
+    val conversationId: ConversationId? = null,
+)
+
 @Mockable
 internal interface ConversationGroupRepository {
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
         options: CreateConversationParam = CreateConversationParam(),
-    ): Either<CoreFailure, Conversation>
+    ): Either<CreateGroupConversationFailure, Conversation>
 
     suspend fun addMembers(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun addService(serviceId: ServiceId, conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -122,15 +128,15 @@ internal class ConversationGroupRepositoryImpl(
         name: String?,
         usersList: List<UserId>,
         options: CreateConversationParam,
-    ): Either<CoreFailure, Conversation> = createGroupConversation(name, usersList, options, LastUsersAttempt.None)
+    ): Either<CreateGroupConversationFailure, Conversation> = createGroupConversation(name, usersList, options, LastUsersAttempt.None)
 
     private suspend fun createGroupConversation(
         name: String?,
         usersList: List<UserId>,
         options: CreateConversationParam,
         lastUsersAttempt: LastUsersAttempt,
-    ): Either<CoreFailure, Conversation> =
-        teamIdProvider().flatMap { selfTeamId ->
+    ): Either<CreateGroupConversationFailure, Conversation> =
+        teamIdProvider().mapLeft { CreateGroupConversationFailure(it) }.flatMap { selfTeamId ->
             val apiResult = wrapApiRequest {
                 conversationApi.createNewConversation(
                     conversationMapper.toApiModel(name, usersList, selfTeamId?.value, options)
@@ -161,7 +167,7 @@ internal class ConversationGroupRepositoryImpl(
         selfTeamId: TeamId?,
         usersList: List<UserId>,
         lastUsersAttempt: LastUsersAttempt,
-    ): Either<CoreFailure, Conversation> {
+    ): Either<CreateGroupConversationFailure, Conversation> {
         val conversationEntity = conversationMapper.fromApiModelToDaoModel(
             apiModel = conversationResponse,
             mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION,
@@ -170,8 +176,11 @@ internal class ConversationGroupRepositoryImpl(
         val mlsPublicKeys = conversationMapper.fromApiModel(conversationResponse.publicKeys)
         val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
 
+        var insertedConversationId: ConversationId? = null
         return wrapStorageRequest {
             conversationDAO.insertConversation(conversationEntity)
+        }.onSuccess {
+            insertedConversationId = conversationEntity.id.toModel()
         }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(conversationEntity.id.toModel())
         }.flatMap {
@@ -241,7 +250,7 @@ internal class ConversationGroupRepositoryImpl(
                     conversationMapper.fromDaoModel(it)
                 }
             }
-        }
+        }.mapLeft { CreateGroupConversationFailure(it, insertedConversationId) }
     }
 
     private suspend fun handleCreateConversationFailure(
@@ -250,7 +259,7 @@ internal class ConversationGroupRepositoryImpl(
         name: String?,
         options: CreateConversationParam,
         lastUsersAttempt: LastUsersAttempt
-    ): Either<CoreFailure, Conversation> {
+    ): Either<CreateGroupConversationFailure, Conversation> {
         val canRetryOnce = apiResult.value.isRetryable
                 && lastUsersAttempt is LastUsersAttempt.None
                 && apiResult.value !is NetworkFailure.FederatedBackendFailure.ConflictingBackends
@@ -259,14 +268,15 @@ internal class ConversationGroupRepositoryImpl(
 
         return if (canRetryOnce) {
             extractValidUsersForRetryableError(apiResult.value, usersList)
+                .mapLeft { CreateGroupConversationFailure(it) }
                 .flatMap { (validUsers, failedUsers, failType) ->
                     // edge case, in case backend goes 🍌 and returns non-matching domains
-                    if (failedUsers.isEmpty()) Either.Left(apiResult.value)
+                    if (failedUsers.isEmpty()) Either.Left(CreateGroupConversationFailure(apiResult.value))
 
                     createGroupConversation(name, validUsers, options, LastUsersAttempt.Failed(failedUsers, failType))
                 }
         } else {
-            Either.Left(apiResult.value)
+            Either.Left(CreateGroupConversationFailure(apiResult.value))
         }
     }
 

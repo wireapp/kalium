@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
@@ -27,7 +28,9 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
+import com.wire.kalium.logic.data.conversation.CreateGroupConversationFailure
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.createconversation.ConversationCreationResult
 import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreatorImpl
@@ -48,7 +51,10 @@ import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class GroupConversationCreatorTest {
 
@@ -210,6 +216,84 @@ class GroupConversationCreatorTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenConflictBeforeInsertion_whenCreating_thenReturnsDomainsWithoutCleanup() = runTest {
+        val domains = listOf("a.example", "b.example")
+        val (arrangement, creator) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withCurrentClientIdReturning(ClientId("client"))
+            .withCreateGroupConversationFailingWith(NetworkFailure.FederatedBackendFailure.ConflictingBackends(domains))
+            .arrange()
+
+        val result = creator("group", emptyList(), CreateConversationParam())
+
+        assertIs<ConversationCreationResult.BackendConflictFailure>(result)
+        assertEquals(domains, result.domains)
+        assertNull(result.conversationId)
+        coVerify { arrangement.conversationRepository.markConversationAsDeletedLocally(any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenTransportConflictAfterInsertion_whenCreating_thenTombstonesConversation() = runTest {
+        val domains = listOf("a.example", "b.example")
+        val (arrangement, creator) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withCurrentClientIdReturning(ClientId("client"))
+            .withCreateGroupConversationFailingWith(MLSFailure.FederatedBackendConflict(domains), TestConversation.ID)
+            .withDiscardResult(Either.Right(true))
+            .arrange()
+
+        val result = creator("group", emptyList(), CreateConversationParam())
+
+        assertIs<ConversationCreationResult.BackendConflictFailure>(result)
+        assertEquals(domains, result.domains)
+        assertNull(result.conversationId)
+        coVerify { arrangement.conversationRepository.markConversationAsDeletedLocally(eq(TestConversation.ID)) }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenConflictAndFailedCleanup_whenCreating_thenReturnsFallbackId() = runTest {
+        val domains = listOf("a.example")
+        val (_, creator) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withCurrentClientIdReturning(ClientId("client"))
+            .withCreateGroupConversationFailingWith(MLSFailure.FederatedBackendConflict(domains), TestConversation.ID)
+            .withDiscardResult(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        val result = creator("group", emptyList(), CreateConversationParam())
+
+        assertIs<ConversationCreationResult.BackendConflictFailure>(result)
+        assertEquals(domains, result.domains)
+        assertEquals(TestConversation.ID, result.conversationId)
+    }
+
+    @Test
+    fun givenNonConflictAfterInsertion_whenCreating_thenPreservesFailureWithoutCleanup() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (arrangement, creator) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withCurrentClientIdReturning(ClientId("client"))
+            .withCreateGroupConversationFailingWith(failure, TestConversation.ID)
+            .arrange()
+
+        val result = creator("group", emptyList(), CreateConversationParam())
+
+        assertIs<ConversationCreationResult.UnknownFailure>(result)
+        assertEquals(failure, result.cause)
+        coVerify { arrangement.conversationRepository.markConversationAsDeletedLocally(any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenCleanupFails_whenDiscardRetried_thenReportsActualCleanupResult() = runTest {
+        val (arrangement, creator) = Arrangement().withDiscardResult(Either.Left(StorageFailure.DataNotFound)).arrange()
+        assertFalse(creator.discardPendingMLSGroupCreation(TestConversation.ID))
+        arrangement.withDiscardResult(Either.Right(false))
+        assertTrue(creator.discardPendingMLSGroupCreation(TestConversation.ID))
+        arrangement.withDiscardResult(Either.Right(true))
+        assertTrue(creator.discardPendingMLSGroupCreation(TestConversation.ID))
+    }
+
     private class Arrangement {
 
         val conversationRepository = mock(ConversationRepository::class)
@@ -251,13 +335,17 @@ class GroupConversationCreatorTest {
             }.returns(result)
         }
 
-        suspend fun withCreateGroupConversationFailingWith(coreFailure: CoreFailure) =
-            withCreateGroupConversationReturning(Either.Left(coreFailure))
+        suspend fun withCreateGroupConversationFailingWith(coreFailure: CoreFailure, conversationId: ConversationId? = null) =
+            withCreateGroupConversationReturning(Either.Left(CreateGroupConversationFailure(coreFailure, conversationId)))
+
+        suspend fun withDiscardResult(result: Either<CoreFailure, Boolean>) = apply {
+            coEvery { conversationRepository.markConversationAsDeletedLocally(any()) }.returns(result)
+        }
 
         suspend fun withCreateGroupConversationReturning(conversation: Conversation) =
             withCreateGroupConversationReturning(Either.Right(conversation))
 
-        private suspend fun withCreateGroupConversationReturning(result: Either<CoreFailure, Conversation>) = apply {
+        private suspend fun withCreateGroupConversationReturning(result: Either<CreateGroupConversationFailure, Conversation>) = apply {
             coEvery {
                 conversationGroupRepository.createGroupConversation(any(), any(), any())
             }.returns(result)
