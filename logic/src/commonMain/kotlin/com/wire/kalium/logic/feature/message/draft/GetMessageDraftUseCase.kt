@@ -36,6 +36,9 @@ import kotlinx.coroutines.withContext
  */
 public interface GetMessageDraftUseCase {
     public suspend operator fun invoke(conversationId: ConversationId): MessageDraft?
+
+    /** Captures the current plain draft for consumption after durable message acceptance. */
+    public suspend fun plainTextRevision(conversationId: ConversationId, text: String): Long?
 }
 
 internal class GetMessageDraftUseCaseImpl internal constructor(
@@ -49,6 +52,10 @@ internal class GetMessageDraftUseCaseImpl internal constructor(
                 isMultipartEdit = draft.isMultipartEdit()
             )
         }
+    }
+
+    override suspend fun plainTextRevision(conversationId: ConversationId, text: String): Long? = withContext(dispatcher.io) {
+        messageDraftRepository.plainTextRevision(conversationId, text)
     }
 
     private suspend fun MessageDraft.isMultipartEdit() =

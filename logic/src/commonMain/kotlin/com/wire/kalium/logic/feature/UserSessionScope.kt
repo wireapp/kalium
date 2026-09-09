@@ -1024,10 +1024,9 @@ public class UserSessionScope internal constructor(
     private val compositeMessageRepository: CompositeMessageRepository
         get() = CompositeMessageDataSource(compositeMessageDAO = userStorage.database.compositeMessageDAO)
 
-    private val messageDraftRepository: MessageDraftRepository
-        get() = MessageDraftDataSource(
-            messageDraftDAO = userStorage.database.messageDraftDAO,
-        )
+    private val messageDraftRepository: MessageDraftRepository by lazy {
+        MessageDraftDataSource(messageDraftDAO = userStorage.database.messageDraftDAO)
+    }
 
     private val slowSyncRepository: SlowSyncRepository by lazy {
         SlowSyncRepositoryImpl(userStorage.database.metadataDAO, userScopedLogger)

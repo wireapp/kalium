@@ -36,7 +36,11 @@ public sealed class MessageOperationResult {
      * Indicates the message operation failed.
      * @param error The error that occurred during the operation.
      */
-    public data class Failure(val error: CoreFailure) : MessageOperationResult()
+    public data class Failure(
+        val error: CoreFailure,
+        /** Present when this operation persisted a message. Retry that identity instead of submitting another message. */
+        val messageId: String? = null,
+    ) : MessageOperationResult()
 
     /**
      * Converts this result to an Either type for internal Kalium use or JVM/Android clients.

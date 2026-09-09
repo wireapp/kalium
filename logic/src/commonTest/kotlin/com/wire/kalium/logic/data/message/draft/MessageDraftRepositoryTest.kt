@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -35,6 +36,33 @@ import kotlin.test.assertEquals
 import kotlinx.coroutines.test.runTest
 
 class MessageDraftRepositoryTest {
+
+    @Test
+    fun givenNewerDraftEvenWithIdenticalText_whenConsumingSubmission_thenNewDraftSurvives() = runTest {
+        var stored: MessageDraftEntity? = TEST_MESSAGE_DRAFT_ENTITY
+        val dao = mock<MessageDraftDAO>(mode = MockMode.autoUnit)
+        everySuspend { dao.getMessageDraft(any()) } calls { stored }
+        everySuspend { dao.upsertMessageDraft(any()) } calls { stored = it.arg(0) }
+        everySuspend { dao.removeMessageDraft(any()) } calls { stored = null }
+        val repository = MessageDraftDataSource(dao)
+        val submitted = kotlin.test.assertNotNull(repository.plainTextRevision(TEST_CONVERSATION_ID, "hello"))
+        repository.saveMessageDraft(TEST_MESSAGE_DRAFT.copy(text = "newer"))
+        repository.saveMessageDraft(TEST_MESSAGE_DRAFT)
+        repository.consumePlainText(TEST_CONVERSATION_ID, submitted)
+        assertEquals(TEST_MESSAGE_DRAFT_ENTITY, stored)
+        kotlin.test.assertTrue(repository.isPlainTextConsumed(TEST_CONVERSATION_ID, submitted))
+        val latest = kotlin.test.assertNotNull(repository.plainTextRevision(TEST_CONVERSATION_ID, "hello"))
+        repository.consumePlainText(TEST_CONVERSATION_ID, latest)
+        kotlin.test.assertNull(stored)
+    }
+
+    @Test
+    fun givenRichDraft_whenPreparingPlainTextSubmission_thenNoRevisionCanBeConsumed() = runTest {
+        val (_, repository) = Arrangement()
+            .withGetMessageDraft(TEST_MESSAGE_DRAFT_ENTITY.copy(quotedMessageId = "quote"))
+            .arrange()
+        kotlin.test.assertNull(repository.plainTextRevision(TEST_CONVERSATION_ID, "hello"))
+    }
 
     @Test
     fun givenAConversationId_whenGettingDraftMessage_thenShouldReturnMessageDraft() = runTest {

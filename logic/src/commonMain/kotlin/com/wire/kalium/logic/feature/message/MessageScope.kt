@@ -284,9 +284,10 @@ public class MessageScope internal constructor(
             persistMessageHookNotifier = persistenceEventHookNotifier
         )
 
-    public val sendTextMessage: SendTextMessageUseCase
-        get() = SendTextMessageUseCase(
+    public val sendTextMessage: SendTextMessageUseCase by lazy {
+        SendTextMessageUseCase(
             persistMessage = persistMessage,
+            messageDraftRepository = messageDraftRepository,
             selfUserId = selfUserId,
             provideClientId = currentClientIdProvider,
             assetDataSource = assetRepository,
@@ -298,6 +299,7 @@ public class MessageScope internal constructor(
             scope = scope,
             pendingMessagesEnabled = kaliumConfigs.pendingMessages
         )
+    }
 
     public val sendMultipartMessage: SendMultipartMessageUseCase
         get() = SendMultipartMessageUseCase(

@@ -1540,6 +1540,7 @@ abstract interface com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase { 
 
 abstract interface com.wire.kalium.logic.feature.message.draft/GetMessageDraftUseCase { // com.wire.kalium.logic.feature.message.draft/GetMessageDraftUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.data.message.draft/MessageDraft? // com.wire.kalium.logic.feature.message.draft/GetMessageDraftUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    abstract suspend fun plainTextRevision(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String): kotlin/Long? // com.wire.kalium.logic.feature.message.draft/GetMessageDraftUseCase.plainTextRevision|plainTextRevision(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.message.draft/RemoveMessageDraftUseCase { // com.wire.kalium.logic.feature.message.draft/RemoveMessageDraftUseCase|null[0]
@@ -5733,7 +5734,7 @@ final class com.wire.kalium.logic.feature.message/SendMultipartMessageUseCase { 
 }
 
 final class com.wire.kalium.logic.feature.message/SendTextMessageUseCase { // com.wire.kalium.logic.feature.message/SendTextMessageUseCase|null[0]
-    final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin.collections/List<com.wire.kalium.logic.data.message.linkpreview/MessageLinkPreview> = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.mention/MessageMention> = ..., kotlin/String? = ...): com.wire.kalium.logic.feature.message/MessageOperationResult // com.wire.kalium.logic.feature.message/SendTextMessageUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.collections.List<com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview>;kotlin.collections.List<com.wire.kalium.logic.data.message.mention.MessageMention>;kotlin.String?){}[0]
+    final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin.collections/List<com.wire.kalium.logic.data.message.linkpreview/MessageLinkPreview> = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.mention/MessageMention> = ..., kotlin/String? = ..., kotlin/Long? = ...): com.wire.kalium.logic.feature.message/MessageOperationResult // com.wire.kalium.logic.feature.message/SendTextMessageUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.collections.List<com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview>;kotlin.collections.List<com.wire.kalium.logic.data.message.mention.MessageMention>;kotlin.String?;kotlin.Long?){}[0]
 }
 
 final class com.wire.kalium.logic.feature.message/ToggleReactionUseCase { // com.wire.kalium.logic.feature.message/ToggleReactionUseCase|null[0]
@@ -8326,13 +8327,16 @@ sealed class com.wire.kalium.logic.feature.message/MessageOperationResult { // c
     final fun toEither(): com.wire.kalium.common.functional/Either<com.wire.kalium.common.error/CoreFailure, kotlin/Unit> // com.wire.kalium.logic.feature.message/MessageOperationResult.toEither|toEither(){}[0]
 
     final class Failure : com.wire.kalium.logic.feature.message/MessageOperationResult { // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure|null[0]
-        constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure, kotlin/String? = ...) // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure;kotlin.String?){}[0]
 
         final val error // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.error|{}error[0]
             final fun <get-error>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.error.<get-error>|<get-error>(){}[0]
+        final val messageId // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.messageId|{}messageId[0]
+            final fun <get-messageId>(): kotlin/String? // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.messageId.<get-messageId>|<get-messageId>(){}[0]
 
         final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.message/MessageOperationResult.Failure // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+        final fun component2(): kotlin/String? // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.component2|component2(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ..., kotlin/String? = ...): com.wire.kalium.logic.feature.message/MessageOperationResult.Failure // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure;kotlin.String?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.message/MessageOperationResult.Failure.toString|toString(){}[0]
