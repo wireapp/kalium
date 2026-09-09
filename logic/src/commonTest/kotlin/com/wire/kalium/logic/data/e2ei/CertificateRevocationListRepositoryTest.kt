@@ -36,7 +36,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verifySuspend
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.serialization.builtins.serializer
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

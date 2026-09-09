@@ -70,7 +70,7 @@ import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal interface ConversationMapper {
     fun fromApiModelToDaoModel(

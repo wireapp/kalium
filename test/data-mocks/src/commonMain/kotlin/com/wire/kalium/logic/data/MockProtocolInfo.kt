@@ -21,7 +21,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 object MockProtocolInfo {
     fun mls(groupID: GroupID = GroupID("testGroupId")) = ProtocolInfo.MLS(

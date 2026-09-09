@@ -20,7 +20,7 @@ package com.wire.kalium.benchmarks.fixtures
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal class MessageFixture(val messageCount: Int = 20_000) {
     val conversation = BenchmarkEntities.conversation.copy(

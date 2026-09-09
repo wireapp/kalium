@@ -41,7 +41,7 @@ import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

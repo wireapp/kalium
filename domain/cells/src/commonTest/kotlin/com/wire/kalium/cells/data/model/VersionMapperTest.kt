@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cells.data.model
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

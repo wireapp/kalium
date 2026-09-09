@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReactionEventData
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal interface PersistReactionUseCase {
     suspend operator fun invoke(

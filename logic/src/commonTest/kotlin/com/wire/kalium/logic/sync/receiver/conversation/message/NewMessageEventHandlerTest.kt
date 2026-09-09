@@ -56,7 +56,7 @@ import dev.mokkery.verify
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 
 class NewMessageEventHandlerTest {

@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Use case to immediately update the conversation read date in the local database

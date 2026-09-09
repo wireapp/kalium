@@ -20,7 +20,7 @@ package com.wire.kalium.persistence.utils.stubs
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 fun newConversationEntity(id: String = "test") = ConversationEntity(
     id = QualifiedIDEntity(id, "wire.com"),

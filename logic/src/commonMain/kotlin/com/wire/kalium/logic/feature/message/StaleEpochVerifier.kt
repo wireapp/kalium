@@ -40,8 +40,8 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.util.ConversationPersistenceApi
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 internal interface StaleEpochVerifier {
     suspend fun verifyEpoch(

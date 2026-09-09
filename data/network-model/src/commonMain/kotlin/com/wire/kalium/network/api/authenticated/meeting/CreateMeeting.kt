@@ -21,7 +21,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.api.model.UserId
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

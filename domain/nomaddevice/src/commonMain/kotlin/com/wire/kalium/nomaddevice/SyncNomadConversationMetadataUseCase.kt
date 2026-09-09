@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.userstorage.di.UserStorageProvider
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 public data class NomadConversationMetadataSyncResult(
     val downloadedConversations: Int,

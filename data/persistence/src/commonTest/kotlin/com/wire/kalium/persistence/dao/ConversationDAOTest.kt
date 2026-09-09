@@ -54,8 +54,8 @@ import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test

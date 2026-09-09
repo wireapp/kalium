@@ -19,7 +19,7 @@
 package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 object SendMLSMessageResponseJson {
 

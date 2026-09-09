@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.util
 
 import com.wire.kalium.common.logger.kaliumLogger
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 internal interface ServerTimeHandler {
     fun computeTimeOffset(serverTime: Long)

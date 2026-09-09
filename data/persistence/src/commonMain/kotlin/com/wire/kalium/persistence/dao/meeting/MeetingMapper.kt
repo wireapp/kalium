@@ -19,7 +19,7 @@ package com.wire.kalium.persistence.dao.meeting
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data object MeetingMapper {
     @Suppress("LongParameterList", "LongMethod")

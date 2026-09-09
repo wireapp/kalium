@@ -35,7 +35,7 @@ import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class NomadMessageStoreResult(
     val storedMessages: Int,

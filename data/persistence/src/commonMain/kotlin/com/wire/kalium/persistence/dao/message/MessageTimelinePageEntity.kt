@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.TimelineUsers
 import com.wire.kalium.persistence.content.ButtonContent
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** A database tuple. Only the issuing account, conversation and display policy may use it. */
 class MessageTimelineCursorEntity internal constructor(

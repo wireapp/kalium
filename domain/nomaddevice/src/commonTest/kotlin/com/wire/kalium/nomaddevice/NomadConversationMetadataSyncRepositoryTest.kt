@@ -31,7 +31,7 @@ import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyn
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import okio.Sink
 import okio.Source
 import kotlin.test.Test

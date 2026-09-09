@@ -970,7 +970,7 @@ class ApplicationMessageHandlerTest {
 
         val HISTORY_CLIENT = HistoryClient(
             id = "history-client-id",
-            creationTime = kotlinx.datetime.Instant.DISTANT_PAST,
+            creationTime = kotlin.time.Instant.DISTANT_PAST,
             secret = HistoryClient.Secret(HISTORY_CLIENT_SECRET_MARKER.encodeToByteArray()),
         )
 

@@ -30,7 +30,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal interface RenamedConversationEventHandler {
     suspend fun handle(event: Event.Conversation.RenamedConversation)

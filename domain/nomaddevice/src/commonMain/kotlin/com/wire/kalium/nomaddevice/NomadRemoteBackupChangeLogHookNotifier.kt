@@ -28,7 +28,7 @@ import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.messaging.hooks.ReactionEventData
 import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import com.wire.kalium.userstorage.di.UserStorageProvider
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Nomad-side [PersistenceEventHookNotifier] that writes syncable events to the remote backup changelog.

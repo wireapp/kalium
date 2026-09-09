@@ -4,7 +4,7 @@ import com.wire.kalium.persistence.dao.client.DeviceTypeEntity;
 import kotlin.Boolean;
 import kotlin.String;
 import kotlin.collections.Map;
-import kotlinx.datetime.Instant;
+import kotlin.time.Instant;
 
 CREATE TABLE Client (
     user_id TEXT AS QualifiedIDEntity NOT NULL,

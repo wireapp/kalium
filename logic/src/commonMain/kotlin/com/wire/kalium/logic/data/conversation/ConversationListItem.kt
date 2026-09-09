@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 public data class ConversationListQuery(
     public val source: ConversationListSource = ConversationListSource.ALL,

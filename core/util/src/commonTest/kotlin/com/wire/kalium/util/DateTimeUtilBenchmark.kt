@@ -20,7 +20,7 @@ package com.wire.kalium.util
 
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.random.Random
 import kotlin.test.Ignore
 import kotlin.test.Test

@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** Rendering data for one timeline bubble. Resolve actions through the existing message/asset APIs. */
 public data class MessageListItem(

@@ -22,7 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.Duration
 
 internal class SelfDeletionEventLogger(private val logger: KaliumLogger) {

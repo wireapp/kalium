@@ -42,7 +42,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 private val MOKKERY_CONVERSATION_ID = ConversationId("mokkery-conversation", "mokkery.test")
 private val MOKKERY_USER_ID = UserId("mokkery-user", "mokkery.test")

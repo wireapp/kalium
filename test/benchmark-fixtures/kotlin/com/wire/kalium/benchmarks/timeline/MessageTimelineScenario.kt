@@ -46,7 +46,7 @@ import com.wire.kalium.persistence.dao.message.MessageTimelineSession
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** Identical fixtures and measured operations for JVM SQLite and Android SQLCipher. */
 @Suppress("TooManyFunctions")

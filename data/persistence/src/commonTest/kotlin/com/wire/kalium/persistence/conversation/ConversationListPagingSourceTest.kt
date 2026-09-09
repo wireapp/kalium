@@ -50,7 +50,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 class ConversationListPagingSourceTest : BaseDatabaseTest() {
     private val self = QualifiedIDEntity("self", "wire.com")

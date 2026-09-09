@@ -28,7 +28,7 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMe
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

@@ -37,7 +37,7 @@ import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.isDebug
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerializationException
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")

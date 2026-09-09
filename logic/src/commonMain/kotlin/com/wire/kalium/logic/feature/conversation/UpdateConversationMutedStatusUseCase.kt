@@ -25,7 +25,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 public interface UpdateConversationMutedStatusUseCase {
     /**

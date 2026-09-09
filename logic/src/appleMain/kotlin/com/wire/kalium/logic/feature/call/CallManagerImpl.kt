@@ -596,7 +596,7 @@ internal class CallManagerImpl internal constructor(
             id = Uuid.random().toString(),
             content = MessageContent.Calling(data, callHostConversationId),
             conversationId = transportConversationId,
-            date = kotlinx.datetime.Clock.System.now(),
+            date = kotlin.time.Clock.System.now(),
             senderUserId = userId,
             senderClientId = clientId,
             status = Message.Status.Sent,

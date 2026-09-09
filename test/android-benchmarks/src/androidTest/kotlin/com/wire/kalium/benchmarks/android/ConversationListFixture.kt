@@ -31,7 +31,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** Deterministic data shared by page and write comparisons. All setup is outside measured blocks. */
 internal class ConversationListFixture {

@@ -40,7 +40,7 @@ import com.wire.kalium.protobuf.backup.ExportedConversation
 import com.wire.kalium.protobuf.backup.ExportedMessage
 import com.wire.kalium.protobuf.backup.ExportedReaction
 import kotlinx.coroutines.Deferred
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import okio.Buffer
 import okio.Sink
 import okio.Source

@@ -51,7 +51,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Suppress("TooManyFunctions")
 internal interface UserMapper {

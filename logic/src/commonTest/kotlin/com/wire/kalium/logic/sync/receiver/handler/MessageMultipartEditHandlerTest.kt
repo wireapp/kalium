@@ -32,7 +32,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes

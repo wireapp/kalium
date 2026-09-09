@@ -1044,7 +1044,7 @@ abstract interface com.wire.kalium.logic.feature.conversation/LeaveConversationU
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation/MarkConversationAsReadLocallyUseCase { // com.wire.kalium.logic.feature.conversation/MarkConversationAsReadLocallyUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant): com.wire.kalium.logic.feature.conversation/MarkConversationAsReadResult // com.wire.kalium.logic.feature.conversation/MarkConversationAsReadLocallyUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant){}[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin.time/Instant): com.wire.kalium.logic.feature.conversation/MarkConversationAsReadResult // com.wire.kalium.logic.feature.conversation/MarkConversationAsReadLocallyUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation/MigrateConversationToMLSUseCase { // com.wire.kalium.logic.feature.conversation/MigrateConversationToMLSUseCase|null[0]
@@ -1222,7 +1222,7 @@ abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversation
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversationArchivedStatusUseCase { // com.wire.kalium.logic.feature.conversation/UpdateConversationArchivedStatusUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Boolean, kotlin/Boolean, kotlinx.datetime/Instant = ...): com.wire.kalium.logic.feature.conversation/ArchiveStatusUpdateResult // com.wire.kalium.logic.feature.conversation/UpdateConversationArchivedStatusUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Boolean;kotlin.Boolean;kotlinx.datetime.Instant){}[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Boolean, kotlin/Boolean, kotlin.time/Instant = ...): com.wire.kalium.logic.feature.conversation/ArchiveStatusUpdateResult // com.wire.kalium.logic.feature.conversation/UpdateConversationArchivedStatusUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Boolean;kotlin.Boolean;kotlin.time.Instant){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversationMemberRoleUseCase { // com.wire.kalium.logic.feature.conversation/UpdateConversationMemberRoleUseCase|null[0]
@@ -1230,7 +1230,7 @@ abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversation
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversationMutedStatusUseCase { // com.wire.kalium.logic.feature.conversation/UpdateConversationMutedStatusUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.conversation/MutedConversationStatus, kotlinx.datetime/Instant = ...): com.wire.kalium.logic.feature.conversation/ConversationUpdateStatusResult // com.wire.kalium.logic.feature.conversation/UpdateConversationMutedStatusUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.conversation.MutedConversationStatus;kotlinx.datetime.Instant){}[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.conversation/MutedConversationStatus, kotlin.time/Instant = ...): com.wire.kalium.logic.feature.conversation/ConversationUpdateStatusResult // com.wire.kalium.logic.feature.conversation/UpdateConversationMutedStatusUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.conversation.MutedConversationStatus;kotlin.time.Instant){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversationReceiptModeUseCase { // com.wire.kalium.logic.feature.conversation/UpdateConversationReceiptModeUseCase|null[0]
@@ -1494,11 +1494,11 @@ abstract interface com.wire.kalium.logic.feature.meeting/EnsureMeetingIsMLSEstab
 }
 
 abstract interface com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase { // com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant = ...): com.wire.kalium.logic.data.meeting/MeetingOccurrence? // com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant){}[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin.time/Instant = ...): com.wire.kalium.logic.data.meeting/MeetingOccurrence? // com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase { // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase|null[0]
-    abstract suspend fun invoke(androidx.paging/PagingConfig, kotlin/Long, kotlinx.datetime/Instant = ...): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.meeting/MeetingOccurrence>> // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase.invoke|invoke(androidx.paging.PagingConfig;kotlin.Long;kotlinx.datetime.Instant){}[0]
+    abstract suspend fun invoke(androidx.paging/PagingConfig, kotlin/Long, kotlin.time/Instant = ...): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.meeting/MeetingOccurrence>> // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase.invoke|invoke(androidx.paging.PagingConfig;kotlin.Long;kotlin.time.Instant){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase { // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase|null[0]
@@ -2112,7 +2112,7 @@ sealed interface com.wire.kalium.logic.configuration.server/CommonApiVersionType
 
 sealed interface com.wire.kalium.logic.data.conversation/ConversationListItem { // com.wire.kalium.logic.data.conversation/ConversationListItem|null[0]
     abstract val activityTime // com.wire.kalium.logic.data.conversation/ConversationListItem.activityTime|{}activityTime[0]
-        abstract fun <get-activityTime>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
+        abstract fun <get-activityTime>(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
     abstract val conversationId // com.wire.kalium.logic.data.conversation/ConversationListItem.conversationId|{}conversationId[0]
         abstract fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListItem.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
     open val position // com.wire.kalium.logic.data.conversation/ConversationListItem.position|{}position[0]
@@ -2137,12 +2137,12 @@ sealed interface com.wire.kalium.logic.data.conversation/ConversationListItem { 
     }
 
     final class Channel : com.wire.kalium.logic.data.conversation/ConversationListItem.Group { // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel|null[0]
-        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant, kotlin/String?, kotlin/Boolean, com.wire.kalium.logic.data.conversation/ConversationListChannelAccess, com.wire.kalium.logic.data.conversation/MutedConversationStatus, com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus, com.wire.kalium.logic.data.conversation/ConversationListUnreadState, com.wire.kalium.logic.data.conversation/ConversationListPreview?) // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;kotlin.String?;kotlin.Boolean;com.wire.kalium.logic.data.conversation.ConversationListChannelAccess;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin.time/Instant, kotlin/String?, kotlin/Boolean, com.wire.kalium.logic.data.conversation/ConversationListChannelAccess, com.wire.kalium.logic.data.conversation/MutedConversationStatus, com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus, com.wire.kalium.logic.data.conversation/ConversationListUnreadState, com.wire.kalium.logic.data.conversation/ConversationListPreview?) // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;kotlin.String?;kotlin.Boolean;com.wire.kalium.logic.data.conversation.ConversationListChannelAccess;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
 
         final val access // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.access|{}access[0]
             final fun <get-access>(): com.wire.kalium.logic.data.conversation/ConversationListChannelAccess // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.access.<get-access>|<get-access>(){}[0]
         final val activityTime // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.activityTime|{}activityTime[0]
-            final fun <get-activityTime>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
+            final fun <get-activityTime>(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
         final val conversationId // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.conversationId|{}conversationId[0]
             final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
         final val isSelfUserMember // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.isSelfUserMember|{}isSelfUserMember[0]
@@ -2159,7 +2159,7 @@ sealed interface com.wire.kalium.logic.data.conversation/ConversationListItem { 
             final fun <get-unreadState>(): com.wire.kalium.logic.data.conversation/ConversationListUnreadState // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.unreadState.<get-unreadState>|<get-unreadState>(){}[0]
 
         final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.component1|component1(){}[0]
-        final fun component2(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.component2|component2(){}[0]
+        final fun component2(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.component2|component2(){}[0]
         final fun component3(): kotlin/String? // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.component3|component3(){}[0]
         final fun component4(): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.component4|component4(){}[0]
         final fun component5(): com.wire.kalium.logic.data.conversation/ConversationListChannelAccess // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.component5|component5(){}[0]
@@ -2167,17 +2167,17 @@ sealed interface com.wire.kalium.logic.data.conversation/ConversationListItem { 
         final fun component7(): com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.component7|component7(){}[0]
         final fun component8(): com.wire.kalium.logic.data.conversation/ConversationListUnreadState // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.component8|component8(){}[0]
         final fun component9(): com.wire.kalium.logic.data.conversation/ConversationListPreview? // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.component9|component9(){}[0]
-        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlinx.datetime/Instant = ..., kotlin/String? = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.conversation/ConversationListChannelAccess = ..., com.wire.kalium.logic.data.conversation/MutedConversationStatus = ..., com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus = ..., com.wire.kalium.logic.data.conversation/ConversationListUnreadState = ..., com.wire.kalium.logic.data.conversation/ConversationListPreview? = ...): com.wire.kalium.logic.data.conversation/ConversationListItem.Channel // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;kotlin.String?;kotlin.Boolean;com.wire.kalium.logic.data.conversation.ConversationListChannelAccess;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
+        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin.time/Instant = ..., kotlin/String? = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.conversation/ConversationListChannelAccess = ..., com.wire.kalium.logic.data.conversation/MutedConversationStatus = ..., com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus = ..., com.wire.kalium.logic.data.conversation/ConversationListUnreadState = ..., com.wire.kalium.logic.data.conversation/ConversationListPreview? = ...): com.wire.kalium.logic.data.conversation/ConversationListItem.Channel // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;kotlin.String?;kotlin.Boolean;com.wire.kalium.logic.data.conversation.ConversationListChannelAccess;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.data.conversation/ConversationListItem.Channel.toString|toString(){}[0]
     }
 
     final class OneOnOne : com.wire.kalium.logic.data.conversation/ConversationListItem.WithMessages { // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne|null[0]
-        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant, com.wire.kalium.logic.data.conversation/ConversationListUser, com.wire.kalium.logic.data.conversation/MutedConversationStatus, com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus, com.wire.kalium.logic.data.conversation/ConversationListUnreadState, com.wire.kalium.logic.data.conversation/ConversationListPreview?) // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;com.wire.kalium.logic.data.conversation.ConversationListUser;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin.time/Instant, com.wire.kalium.logic.data.conversation/ConversationListUser, com.wire.kalium.logic.data.conversation/MutedConversationStatus, com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus, com.wire.kalium.logic.data.conversation/ConversationListUnreadState, com.wire.kalium.logic.data.conversation/ConversationListPreview?) // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;com.wire.kalium.logic.data.conversation.ConversationListUser;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
 
         final val activityTime // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.activityTime|{}activityTime[0]
-            final fun <get-activityTime>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
+            final fun <get-activityTime>(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
         final val conversationId // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.conversationId|{}conversationId[0]
             final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
         final val legalHoldStatus // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.legalHoldStatus|{}legalHoldStatus[0]
@@ -2192,42 +2192,42 @@ sealed interface com.wire.kalium.logic.data.conversation/ConversationListItem { 
             final fun <get-unreadState>(): com.wire.kalium.logic.data.conversation/ConversationListUnreadState // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.unreadState.<get-unreadState>|<get-unreadState>(){}[0]
 
         final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.component1|component1(){}[0]
-        final fun component2(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.component2|component2(){}[0]
+        final fun component2(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.component2|component2(){}[0]
         final fun component3(): com.wire.kalium.logic.data.conversation/ConversationListUser // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.component3|component3(){}[0]
         final fun component4(): com.wire.kalium.logic.data.conversation/MutedConversationStatus // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.component4|component4(){}[0]
         final fun component5(): com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.component5|component5(){}[0]
         final fun component6(): com.wire.kalium.logic.data.conversation/ConversationListUnreadState // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.component6|component6(){}[0]
         final fun component7(): com.wire.kalium.logic.data.conversation/ConversationListPreview? // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.component7|component7(){}[0]
-        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlinx.datetime/Instant = ..., com.wire.kalium.logic.data.conversation/ConversationListUser = ..., com.wire.kalium.logic.data.conversation/MutedConversationStatus = ..., com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus = ..., com.wire.kalium.logic.data.conversation/ConversationListUnreadState = ..., com.wire.kalium.logic.data.conversation/ConversationListPreview? = ...): com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;com.wire.kalium.logic.data.conversation.ConversationListUser;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
+        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin.time/Instant = ..., com.wire.kalium.logic.data.conversation/ConversationListUser = ..., com.wire.kalium.logic.data.conversation/MutedConversationStatus = ..., com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus = ..., com.wire.kalium.logic.data.conversation/ConversationListUnreadState = ..., com.wire.kalium.logic.data.conversation/ConversationListPreview? = ...): com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;com.wire.kalium.logic.data.conversation.ConversationListUser;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.data.conversation/ConversationListItem.OneOnOne.toString|toString(){}[0]
     }
 
     final class PendingConnection : com.wire.kalium.logic.data.conversation/ConversationListItem { // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection|null[0]
-        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant, com.wire.kalium.logic.data.conversation/ConversationListUser) // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;com.wire.kalium.logic.data.conversation.ConversationListUser){}[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin.time/Instant, com.wire.kalium.logic.data.conversation/ConversationListUser) // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;com.wire.kalium.logic.data.conversation.ConversationListUser){}[0]
 
         final val activityTime // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.activityTime|{}activityTime[0]
-            final fun <get-activityTime>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
+            final fun <get-activityTime>(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
         final val conversationId // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.conversationId|{}conversationId[0]
             final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
         final val otherUser // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.otherUser|{}otherUser[0]
             final fun <get-otherUser>(): com.wire.kalium.logic.data.conversation/ConversationListUser // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.otherUser.<get-otherUser>|<get-otherUser>(){}[0]
 
         final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.component1|component1(){}[0]
-        final fun component2(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.component2|component2(){}[0]
+        final fun component2(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.component2|component2(){}[0]
         final fun component3(): com.wire.kalium.logic.data.conversation/ConversationListUser // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.component3|component3(){}[0]
-        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlinx.datetime/Instant = ..., com.wire.kalium.logic.data.conversation/ConversationListUser = ...): com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;com.wire.kalium.logic.data.conversation.ConversationListUser){}[0]
+        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin.time/Instant = ..., com.wire.kalium.logic.data.conversation/ConversationListUser = ...): com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;com.wire.kalium.logic.data.conversation.ConversationListUser){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.data.conversation/ConversationListItem.PendingConnection.toString|toString(){}[0]
     }
 
     final class RegularGroup : com.wire.kalium.logic.data.conversation/ConversationListItem.Group { // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup|null[0]
-        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant, kotlin/String?, kotlin/Boolean, com.wire.kalium.logic.data.conversation/MutedConversationStatus, com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus, com.wire.kalium.logic.data.conversation/ConversationListUnreadState, com.wire.kalium.logic.data.conversation/ConversationListPreview?) // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;kotlin.String?;kotlin.Boolean;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin.time/Instant, kotlin/String?, kotlin/Boolean, com.wire.kalium.logic.data.conversation/MutedConversationStatus, com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus, com.wire.kalium.logic.data.conversation/ConversationListUnreadState, com.wire.kalium.logic.data.conversation/ConversationListPreview?) // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;kotlin.String?;kotlin.Boolean;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
 
         final val activityTime // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.activityTime|{}activityTime[0]
-            final fun <get-activityTime>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
+            final fun <get-activityTime>(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
         final val conversationId // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.conversationId|{}conversationId[0]
             final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
         final val isSelfUserMember // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.isSelfUserMember|{}isSelfUserMember[0]
@@ -2244,14 +2244,14 @@ sealed interface com.wire.kalium.logic.data.conversation/ConversationListItem { 
             final fun <get-unreadState>(): com.wire.kalium.logic.data.conversation/ConversationListUnreadState // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.unreadState.<get-unreadState>|<get-unreadState>(){}[0]
 
         final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.component1|component1(){}[0]
-        final fun component2(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.component2|component2(){}[0]
+        final fun component2(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.component2|component2(){}[0]
         final fun component3(): kotlin/String? // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.component3|component3(){}[0]
         final fun component4(): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.component4|component4(){}[0]
         final fun component5(): com.wire.kalium.logic.data.conversation/MutedConversationStatus // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.component5|component5(){}[0]
         final fun component6(): com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.component6|component6(){}[0]
         final fun component7(): com.wire.kalium.logic.data.conversation/ConversationListUnreadState // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.component7|component7(){}[0]
         final fun component8(): com.wire.kalium.logic.data.conversation/ConversationListPreview? // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.component8|component8(){}[0]
-        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlinx.datetime/Instant = ..., kotlin/String? = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.conversation/MutedConversationStatus = ..., com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus = ..., com.wire.kalium.logic.data.conversation/ConversationListUnreadState = ..., com.wire.kalium.logic.data.conversation/ConversationListPreview? = ...): com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;kotlin.String?;kotlin.Boolean;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
+        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin.time/Instant = ..., kotlin/String? = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.conversation/MutedConversationStatus = ..., com.wire.kalium.logic.data.conversation/Conversation.LegalHoldStatus = ..., com.wire.kalium.logic.data.conversation/ConversationListUnreadState = ..., com.wire.kalium.logic.data.conversation/ConversationListPreview? = ...): com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;kotlin.String?;kotlin.Boolean;com.wire.kalium.logic.data.conversation.MutedConversationStatus;com.wire.kalium.logic.data.conversation.Conversation.LegalHoldStatus;com.wire.kalium.logic.data.conversation.ConversationListUnreadState;com.wire.kalium.logic.data.conversation.ConversationListPreview?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.data.conversation/ConversationListItem.RegularGroup.toString|toString(){}[0]
@@ -2461,13 +2461,13 @@ sealed interface com.wire.kalium.logic.data.message.timeline/MessageTimelineRequ
     }
 
     final class AtReadBoundary : com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest { // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary|null[0]
-        constructor <init>(kotlinx.datetime/Instant) // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.<init>|<init>(kotlinx.datetime.Instant){}[0]
+        constructor <init>(kotlin.time/Instant) // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.<init>|<init>(kotlin.time.Instant){}[0]
 
         final val lastReadDate // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.lastReadDate|{}lastReadDate[0]
-            final fun <get-lastReadDate>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.lastReadDate.<get-lastReadDate>|<get-lastReadDate>(){}[0]
+            final fun <get-lastReadDate>(): kotlin.time/Instant // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.lastReadDate.<get-lastReadDate>|<get-lastReadDate>(){}[0]
 
-        final fun component1(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.component1|component1(){}[0]
-        final fun copy(kotlinx.datetime/Instant = ...): com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.copy|copy(kotlinx.datetime.Instant){}[0]
+        final fun component1(): kotlin.time/Instant // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.component1|component1(){}[0]
+        final fun copy(kotlin.time/Instant = ...): com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.copy|copy(kotlin.time.Instant){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineRequest.AtReadBoundary.toString|toString(){}[0]
@@ -3460,16 +3460,16 @@ final class com.wire.kalium.logic.data.auth/PersistentWebSocketStatus { // com.w
 }
 
 final class com.wire.kalium.logic.data.conversation/ConversationListPosition { // com.wire.kalium.logic.data.conversation/ConversationListPosition|null[0]
-    constructor <init>(kotlinx.datetime/Instant, com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.data.conversation/ConversationListPosition.<init>|<init>(kotlinx.datetime.Instant;com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    constructor <init>(kotlin.time/Instant, com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.data.conversation/ConversationListPosition.<init>|<init>(kotlin.time.Instant;com.wire.kalium.logic.data.id.QualifiedID){}[0]
 
     final val activityTime // com.wire.kalium.logic.data.conversation/ConversationListPosition.activityTime|{}activityTime[0]
-        final fun <get-activityTime>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListPosition.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
+        final fun <get-activityTime>(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListPosition.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
     final val conversationId // com.wire.kalium.logic.data.conversation/ConversationListPosition.conversationId|{}conversationId[0]
         final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListPosition.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
 
-    final fun component1(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.conversation/ConversationListPosition.component1|component1(){}[0]
+    final fun component1(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListPosition.component1|component1(){}[0]
     final fun component2(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.conversation/ConversationListPosition.component2|component2(){}[0]
-    final fun copy(kotlinx.datetime/Instant = ..., com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.logic.data.conversation/ConversationListPosition // com.wire.kalium.logic.data.conversation/ConversationListPosition.copy|copy(kotlinx.datetime.Instant;com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    final fun copy(kotlin.time/Instant = ..., com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.logic.data.conversation/ConversationListPosition // com.wire.kalium.logic.data.conversation/ConversationListPosition.copy|copy(kotlin.time.Instant;com.wire.kalium.logic.data.id.QualifiedID){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationListPosition.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationListPosition.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.conversation/ConversationListPosition.toString|toString(){}[0]
@@ -3732,7 +3732,7 @@ final class com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailu
 }
 
 final class com.wire.kalium.logic.data.message.timeline/MessageListItem { // com.wire.kalium.logic.data.message.timeline/MessageListItem|null[0]
-    constructor <init>(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant, com.wire.kalium.logic.data.message.timeline/MessageListUser, kotlin/String?, com.wire.kalium.logic.data.message/Message.Status, kotlinx.datetime/Instant?, com.wire.kalium.logic.data.message/Message.ExpirationData?, kotlin/Boolean, com.wire.kalium.logic.data.message.timeline/MessageListContent, kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListReaction>, com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures, com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor) // com.wire.kalium.logic.data.message.timeline/MessageListItem.<init>|<init>(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;com.wire.kalium.logic.data.message.timeline.MessageListUser;kotlin.String?;com.wire.kalium.logic.data.message.Message.Status;kotlinx.datetime.Instant?;com.wire.kalium.logic.data.message.Message.ExpirationData?;kotlin.Boolean;com.wire.kalium.logic.data.message.timeline.MessageListContent;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListReaction>;com.wire.kalium.logic.data.message.timeline.MessageListDeliveryFailures;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor){}[0]
+    constructor <init>(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID, kotlin.time/Instant, com.wire.kalium.logic.data.message.timeline/MessageListUser, kotlin/String?, com.wire.kalium.logic.data.message/Message.Status, kotlin.time/Instant?, com.wire.kalium.logic.data.message/Message.ExpirationData?, kotlin/Boolean, com.wire.kalium.logic.data.message.timeline/MessageListContent, kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListReaction>, com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures, com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor) // com.wire.kalium.logic.data.message.timeline/MessageListItem.<init>|<init>(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;com.wire.kalium.logic.data.message.timeline.MessageListUser;kotlin.String?;com.wire.kalium.logic.data.message.Message.Status;kotlin.time.Instant?;com.wire.kalium.logic.data.message.Message.ExpirationData?;kotlin.Boolean;com.wire.kalium.logic.data.message.timeline.MessageListContent;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListReaction>;com.wire.kalium.logic.data.message.timeline.MessageListDeliveryFailures;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor){}[0]
 
     final val content // com.wire.kalium.logic.data.message.timeline/MessageListItem.content|{}content[0]
         final fun <get-content>(): com.wire.kalium.logic.data.message.timeline/MessageListContent // com.wire.kalium.logic.data.message.timeline/MessageListItem.content.<get-content>|<get-content>(){}[0]
@@ -3741,11 +3741,11 @@ final class com.wire.kalium.logic.data.message.timeline/MessageListItem { // com
     final val cursor // com.wire.kalium.logic.data.message.timeline/MessageListItem.cursor|{}cursor[0]
         final fun <get-cursor>(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor // com.wire.kalium.logic.data.message.timeline/MessageListItem.cursor.<get-cursor>|<get-cursor>(){}[0]
     final val date // com.wire.kalium.logic.data.message.timeline/MessageListItem.date|{}date[0]
-        final fun <get-date>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.message.timeline/MessageListItem.date.<get-date>|<get-date>(){}[0]
+        final fun <get-date>(): kotlin.time/Instant // com.wire.kalium.logic.data.message.timeline/MessageListItem.date.<get-date>|<get-date>(){}[0]
     final val deliveryFailures // com.wire.kalium.logic.data.message.timeline/MessageListItem.deliveryFailures|{}deliveryFailures[0]
         final fun <get-deliveryFailures>(): com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures // com.wire.kalium.logic.data.message.timeline/MessageListItem.deliveryFailures.<get-deliveryFailures>|<get-deliveryFailures>(){}[0]
     final val editDate // com.wire.kalium.logic.data.message.timeline/MessageListItem.editDate|{}editDate[0]
-        final fun <get-editDate>(): kotlinx.datetime/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListItem.editDate.<get-editDate>|<get-editDate>(){}[0]
+        final fun <get-editDate>(): kotlin.time/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListItem.editDate.<get-editDate>|<get-editDate>(){}[0]
     final val expectsReadConfirmation // com.wire.kalium.logic.data.message.timeline/MessageListItem.expectsReadConfirmation|{}expectsReadConfirmation[0]
         final fun <get-expectsReadConfirmation>(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListItem.expectsReadConfirmation.<get-expectsReadConfirmation>|<get-expectsReadConfirmation>(){}[0]
     final val expirationData // com.wire.kalium.logic.data.message.timeline/MessageListItem.expirationData|{}expirationData[0]
@@ -3767,14 +3767,14 @@ final class com.wire.kalium.logic.data.message.timeline/MessageListItem { // com
     final fun component12(): com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures // com.wire.kalium.logic.data.message.timeline/MessageListItem.component12|component12(){}[0]
     final fun component13(): com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor // com.wire.kalium.logic.data.message.timeline/MessageListItem.component13|component13(){}[0]
     final fun component2(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.message.timeline/MessageListItem.component2|component2(){}[0]
-    final fun component3(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.message.timeline/MessageListItem.component3|component3(){}[0]
+    final fun component3(): kotlin.time/Instant // com.wire.kalium.logic.data.message.timeline/MessageListItem.component3|component3(){}[0]
     final fun component4(): com.wire.kalium.logic.data.message.timeline/MessageListUser // com.wire.kalium.logic.data.message.timeline/MessageListItem.component4|component4(){}[0]
     final fun component5(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListItem.component5|component5(){}[0]
     final fun component6(): com.wire.kalium.logic.data.message/Message.Status // com.wire.kalium.logic.data.message.timeline/MessageListItem.component6|component6(){}[0]
-    final fun component7(): kotlinx.datetime/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListItem.component7|component7(){}[0]
+    final fun component7(): kotlin.time/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListItem.component7|component7(){}[0]
     final fun component8(): com.wire.kalium.logic.data.message/Message.ExpirationData? // com.wire.kalium.logic.data.message.timeline/MessageListItem.component8|component8(){}[0]
     final fun component9(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListItem.component9|component9(){}[0]
-    final fun copy(kotlin/String = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., kotlinx.datetime/Instant = ..., com.wire.kalium.logic.data.message.timeline/MessageListUser = ..., kotlin/String? = ..., com.wire.kalium.logic.data.message/Message.Status = ..., kotlinx.datetime/Instant? = ..., com.wire.kalium.logic.data.message/Message.ExpirationData? = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.message.timeline/MessageListContent = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListReaction> = ..., com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures = ..., com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor = ...): com.wire.kalium.logic.data.message.timeline/MessageListItem // com.wire.kalium.logic.data.message.timeline/MessageListItem.copy|copy(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;com.wire.kalium.logic.data.message.timeline.MessageListUser;kotlin.String?;com.wire.kalium.logic.data.message.Message.Status;kotlinx.datetime.Instant?;com.wire.kalium.logic.data.message.Message.ExpirationData?;kotlin.Boolean;com.wire.kalium.logic.data.message.timeline.MessageListContent;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListReaction>;com.wire.kalium.logic.data.message.timeline.MessageListDeliveryFailures;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor){}[0]
+    final fun copy(kotlin/String = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin.time/Instant = ..., com.wire.kalium.logic.data.message.timeline/MessageListUser = ..., kotlin/String? = ..., com.wire.kalium.logic.data.message/Message.Status = ..., kotlin.time/Instant? = ..., com.wire.kalium.logic.data.message/Message.ExpirationData? = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.message.timeline/MessageListContent = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListReaction> = ..., com.wire.kalium.logic.data.message.timeline/MessageListDeliveryFailures = ..., com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor = ...): com.wire.kalium.logic.data.message.timeline/MessageListItem // com.wire.kalium.logic.data.message.timeline/MessageListItem.copy|copy(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;com.wire.kalium.logic.data.message.timeline.MessageListUser;kotlin.String?;com.wire.kalium.logic.data.message.Message.Status;kotlin.time.Instant?;com.wire.kalium.logic.data.message.Message.ExpirationData?;kotlin.Boolean;com.wire.kalium.logic.data.message.timeline.MessageListContent;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListReaction>;com.wire.kalium.logic.data.message.timeline.MessageListDeliveryFailures;com.wire.kalium.logic.data.message.timeline.MessageTimelineCursor){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListItem.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListItem.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListItem.toString|toString(){}[0]
@@ -3862,7 +3862,7 @@ final class com.wire.kalium.logic.data.message.timeline/MessageListText { // com
 }
 
 final class com.wire.kalium.logic.data.message.timeline/MessageListUser { // com.wire.kalium.logic.data.message.timeline/MessageListUser|null[0]
-    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String?, kotlin/Int, com.wire.kalium.logic.data.id/QualifiedID?, com.wire.kalium.logic.data.user/UserAvailabilityStatus, com.wire.kalium.logic.data.user.type/UserTypeInfo, com.wire.kalium.logic.data.user/ConnectionState, kotlin/Boolean, kotlin/Boolean, kotlin/Boolean, kotlin/Boolean, kotlin/Boolean, kotlinx.datetime/Instant?, com.wire.kalium.logic.data.user/BotService?, kotlin/Boolean) // com.wire.kalium.logic.data.message.timeline/MessageListUser.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.Int;com.wire.kalium.logic.data.id.QualifiedID?;com.wire.kalium.logic.data.user.UserAvailabilityStatus;com.wire.kalium.logic.data.user.type.UserTypeInfo;com.wire.kalium.logic.data.user.ConnectionState;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlinx.datetime.Instant?;com.wire.kalium.logic.data.user.BotService?;kotlin.Boolean){}[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String?, kotlin/Int, com.wire.kalium.logic.data.id/QualifiedID?, com.wire.kalium.logic.data.user/UserAvailabilityStatus, com.wire.kalium.logic.data.user.type/UserTypeInfo, com.wire.kalium.logic.data.user/ConnectionState, kotlin/Boolean, kotlin/Boolean, kotlin/Boolean, kotlin/Boolean, kotlin/Boolean, kotlin.time/Instant?, com.wire.kalium.logic.data.user/BotService?, kotlin/Boolean) // com.wire.kalium.logic.data.message.timeline/MessageListUser.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.Int;com.wire.kalium.logic.data.id.QualifiedID?;com.wire.kalium.logic.data.user.UserAvailabilityStatus;com.wire.kalium.logic.data.user.type.UserTypeInfo;com.wire.kalium.logic.data.user.ConnectionState;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.time.Instant?;com.wire.kalium.logic.data.user.BotService?;kotlin.Boolean){}[0]
 
     final val accentId // com.wire.kalium.logic.data.message.timeline/MessageListUser.accentId|{}accentId[0]
         final fun <get-accentId>(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListUser.accentId.<get-accentId>|<get-accentId>(){}[0]
@@ -3873,7 +3873,7 @@ final class com.wire.kalium.logic.data.message.timeline/MessageListUser { // com
     final val connectionState // com.wire.kalium.logic.data.message.timeline/MessageListUser.connectionState|{}connectionState[0]
         final fun <get-connectionState>(): com.wire.kalium.logic.data.user/ConnectionState // com.wire.kalium.logic.data.message.timeline/MessageListUser.connectionState.<get-connectionState>|<get-connectionState>(){}[0]
     final val guestExpiresAt // com.wire.kalium.logic.data.message.timeline/MessageListUser.guestExpiresAt|{}guestExpiresAt[0]
-        final fun <get-guestExpiresAt>(): kotlinx.datetime/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListUser.guestExpiresAt.<get-guestExpiresAt>|<get-guestExpiresAt>(){}[0]
+        final fun <get-guestExpiresAt>(): kotlin.time/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListUser.guestExpiresAt.<get-guestExpiresAt>|<get-guestExpiresAt>(){}[0]
     final val id // com.wire.kalium.logic.data.message.timeline/MessageListUser.id|{}id[0]
         final fun <get-id>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.message.timeline/MessageListUser.id.<get-id>|<get-id>(){}[0]
     final val isDefederated // com.wire.kalium.logic.data.message.timeline/MessageListUser.isDefederated|{}isDefederated[0]
@@ -3899,7 +3899,7 @@ final class com.wire.kalium.logic.data.message.timeline/MessageListUser { // com
     final fun component10(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component10|component10(){}[0]
     final fun component11(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component11|component11(){}[0]
     final fun component12(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component12|component12(){}[0]
-    final fun component13(): kotlinx.datetime/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListUser.component13|component13(){}[0]
+    final fun component13(): kotlin.time/Instant? // com.wire.kalium.logic.data.message.timeline/MessageListUser.component13|component13(){}[0]
     final fun component14(): com.wire.kalium.logic.data.user/BotService? // com.wire.kalium.logic.data.message.timeline/MessageListUser.component14|component14(){}[0]
     final fun component15(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component15|component15(){}[0]
     final fun component2(): kotlin/String? // com.wire.kalium.logic.data.message.timeline/MessageListUser.component2|component2(){}[0]
@@ -3910,7 +3910,7 @@ final class com.wire.kalium.logic.data.message.timeline/MessageListUser { // com
     final fun component7(): com.wire.kalium.logic.data.user/ConnectionState // com.wire.kalium.logic.data.message.timeline/MessageListUser.component7|component7(){}[0]
     final fun component8(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component8|component8(){}[0]
     final fun component9(): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.component9|component9(){}[0]
-    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String? = ..., kotlin/Int = ..., com.wire.kalium.logic.data.id/QualifiedID? = ..., com.wire.kalium.logic.data.user/UserAvailabilityStatus = ..., com.wire.kalium.logic.data.user.type/UserTypeInfo = ..., com.wire.kalium.logic.data.user/ConnectionState = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlinx.datetime/Instant? = ..., com.wire.kalium.logic.data.user/BotService? = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.message.timeline/MessageListUser // com.wire.kalium.logic.data.message.timeline/MessageListUser.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.Int;com.wire.kalium.logic.data.id.QualifiedID?;com.wire.kalium.logic.data.user.UserAvailabilityStatus;com.wire.kalium.logic.data.user.type.UserTypeInfo;com.wire.kalium.logic.data.user.ConnectionState;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlinx.datetime.Instant?;com.wire.kalium.logic.data.user.BotService?;kotlin.Boolean){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String? = ..., kotlin/Int = ..., com.wire.kalium.logic.data.id/QualifiedID? = ..., com.wire.kalium.logic.data.user/UserAvailabilityStatus = ..., com.wire.kalium.logic.data.user.type/UserTypeInfo = ..., com.wire.kalium.logic.data.user/ConnectionState = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.time/Instant? = ..., com.wire.kalium.logic.data.user/BotService? = ..., kotlin/Boolean = ...): com.wire.kalium.logic.data.message.timeline/MessageListUser // com.wire.kalium.logic.data.message.timeline/MessageListUser.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.Int;com.wire.kalium.logic.data.id.QualifiedID?;com.wire.kalium.logic.data.user.UserAvailabilityStatus;com.wire.kalium.logic.data.user.type.UserTypeInfo;com.wire.kalium.logic.data.user.ConnectionState;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.time.Instant?;com.wire.kalium.logic.data.user.BotService?;kotlin.Boolean){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListUser.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListUser.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListUser.toString|toString(){}[0]
@@ -3928,7 +3928,7 @@ final class com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor { 
     final val conversationId // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.conversationId|{}conversationId[0]
         final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
     final val date // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.date|{}date[0]
-        final fun <get-date>(): kotlinx.datetime/Instant // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.date.<get-date>|<get-date>(){}[0]
+        final fun <get-date>(): kotlin.time/Instant // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.date.<get-date>|<get-date>(){}[0]
     final val messageId // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.messageId|{}messageId[0]
         final fun <get-messageId>(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageTimelineCursor.messageId.<get-messageId>|<get-messageId>(){}[0]
 }
@@ -4091,7 +4091,7 @@ final class com.wire.kalium.logic.feature.analytics/AnalyticsContactsData { // c
 }
 
 final class com.wire.kalium.logic.feature.analytics/GetAnalyticsContactsDataUseCase { // com.wire.kalium.logic.feature.analytics/GetAnalyticsContactsDataUseCase|null[0]
-    final suspend fun invoke(kotlinx.datetime/Instant = ...): com.wire.kalium.logic.feature.analytics/AnalyticsContactsData // com.wire.kalium.logic.feature.analytics/GetAnalyticsContactsDataUseCase.invoke|invoke(kotlinx.datetime.Instant){}[0]
+    final suspend fun invoke(kotlin.time/Instant = ...): com.wire.kalium.logic.feature.analytics/AnalyticsContactsData // com.wire.kalium.logic.feature.analytics/GetAnalyticsContactsDataUseCase.invoke|invoke(kotlin.time.Instant){}[0]
 }
 
 final class com.wire.kalium.logic.feature.app/AppScope { // com.wire.kalium.logic.feature.app/AppScope|null[0]
@@ -5229,7 +5229,7 @@ final class com.wire.kalium.logic.feature.conversation/SyncConversationCodeUseCa
 }
 
 final class com.wire.kalium.logic.feature.conversation/UpdateConversationReadDateUseCase { // com.wire.kalium.logic.feature.conversation/UpdateConversationReadDateUseCase|null[0]
-    final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant, kotlin/Boolean = ...) // com.wire.kalium.logic.feature.conversation/UpdateConversationReadDateUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant;kotlin.Boolean){}[0]
+    final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin.time/Instant, kotlin/Boolean = ...) // com.wire.kalium.logic.feature.conversation/UpdateConversationReadDateUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant;kotlin.Boolean){}[0]
 }
 
 final class com.wire.kalium.logic.feature.e2ei/CheckCrlRevocationListUseCase { // com.wire.kalium.logic.feature.e2ei/CheckCrlRevocationListUseCase|null[0]
@@ -5306,7 +5306,7 @@ final class com.wire.kalium.logic.feature.e2ei/MLSClientIdentity { // com.wire.k
 }
 
 final class com.wire.kalium.logic.feature.e2ei/X509Identity { // com.wire.kalium.logic.feature.e2ei/X509Identity|null[0]
-    constructor <init>(com.wire.kalium.logic.feature.e2ei/Handle, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlinx.datetime/Instant, kotlinx.datetime/Instant) // com.wire.kalium.logic.feature.e2ei/X509Identity.<init>|<init>(com.wire.kalium.logic.feature.e2ei.Handle;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlinx.datetime.Instant;kotlinx.datetime.Instant){}[0]
+    constructor <init>(com.wire.kalium.logic.feature.e2ei/Handle, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin.time/Instant, kotlin.time/Instant) // com.wire.kalium.logic.feature.e2ei/X509Identity.<init>|<init>(com.wire.kalium.logic.feature.e2ei.Handle;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.time.Instant;kotlin.time.Instant){}[0]
 
     final val certificate // com.wire.kalium.logic.feature.e2ei/X509Identity.certificate|{}certificate[0]
         final fun <get-certificate>(): kotlin/String // com.wire.kalium.logic.feature.e2ei/X509Identity.certificate.<get-certificate>|<get-certificate>(){}[0]
@@ -5317,9 +5317,9 @@ final class com.wire.kalium.logic.feature.e2ei/X509Identity { // com.wire.kalium
     final val handle // com.wire.kalium.logic.feature.e2ei/X509Identity.handle|{}handle[0]
         final fun <get-handle>(): com.wire.kalium.logic.feature.e2ei/Handle // com.wire.kalium.logic.feature.e2ei/X509Identity.handle.<get-handle>|<get-handle>(){}[0]
     final val notAfter // com.wire.kalium.logic.feature.e2ei/X509Identity.notAfter|{}notAfter[0]
-        final fun <get-notAfter>(): kotlinx.datetime/Instant // com.wire.kalium.logic.feature.e2ei/X509Identity.notAfter.<get-notAfter>|<get-notAfter>(){}[0]
+        final fun <get-notAfter>(): kotlin.time/Instant // com.wire.kalium.logic.feature.e2ei/X509Identity.notAfter.<get-notAfter>|<get-notAfter>(){}[0]
     final val notBefore // com.wire.kalium.logic.feature.e2ei/X509Identity.notBefore|{}notBefore[0]
-        final fun <get-notBefore>(): kotlinx.datetime/Instant // com.wire.kalium.logic.feature.e2ei/X509Identity.notBefore.<get-notBefore>|<get-notBefore>(){}[0]
+        final fun <get-notBefore>(): kotlin.time/Instant // com.wire.kalium.logic.feature.e2ei/X509Identity.notBefore.<get-notBefore>|<get-notBefore>(){}[0]
     final val serialNumber // com.wire.kalium.logic.feature.e2ei/X509Identity.serialNumber|{}serialNumber[0]
         final fun <get-serialNumber>(): kotlin/String // com.wire.kalium.logic.feature.e2ei/X509Identity.serialNumber.<get-serialNumber>|<get-serialNumber>(){}[0]
 
@@ -5328,9 +5328,9 @@ final class com.wire.kalium.logic.feature.e2ei/X509Identity { // com.wire.kalium
     final fun component3(): kotlin/String // com.wire.kalium.logic.feature.e2ei/X509Identity.component3|component3(){}[0]
     final fun component4(): kotlin/String // com.wire.kalium.logic.feature.e2ei/X509Identity.component4|component4(){}[0]
     final fun component5(): kotlin/String // com.wire.kalium.logic.feature.e2ei/X509Identity.component5|component5(){}[0]
-    final fun component6(): kotlinx.datetime/Instant // com.wire.kalium.logic.feature.e2ei/X509Identity.component6|component6(){}[0]
-    final fun component7(): kotlinx.datetime/Instant // com.wire.kalium.logic.feature.e2ei/X509Identity.component7|component7(){}[0]
-    final fun copy(com.wire.kalium.logic.feature.e2ei/Handle = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlinx.datetime/Instant = ..., kotlinx.datetime/Instant = ...): com.wire.kalium.logic.feature.e2ei/X509Identity // com.wire.kalium.logic.feature.e2ei/X509Identity.copy|copy(com.wire.kalium.logic.feature.e2ei.Handle;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlinx.datetime.Instant;kotlinx.datetime.Instant){}[0]
+    final fun component6(): kotlin.time/Instant // com.wire.kalium.logic.feature.e2ei/X509Identity.component6|component6(){}[0]
+    final fun component7(): kotlin.time/Instant // com.wire.kalium.logic.feature.e2ei/X509Identity.component7|component7(){}[0]
+    final fun copy(com.wire.kalium.logic.feature.e2ei/Handle = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin.time/Instant = ..., kotlin.time/Instant = ...): com.wire.kalium.logic.feature.e2ei/X509Identity // com.wire.kalium.logic.feature.e2ei/X509Identity.copy|copy(com.wire.kalium.logic.feature.e2ei.Handle;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.time.Instant;kotlin.time.Instant){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei/X509Identity.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei/X509Identity.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei/X509Identity.toString|toString(){}[0]
@@ -5562,16 +5562,16 @@ final class com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase 
 
     sealed interface UpdateTarget { // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget|null[0]
         final class SingleConversation : com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget { // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation|null[0]
-            constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant? = ...) // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant?){}[0]
+            constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin.time/Instant? = ...) // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant?){}[0]
 
             final val conversationId // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.conversationId|{}conversationId[0]
                 final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
             final val notifiedDate // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.notifiedDate|{}notifiedDate[0]
-                final fun <get-notifiedDate>(): kotlinx.datetime/Instant? // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.notifiedDate.<get-notifiedDate>|<get-notifiedDate>(){}[0]
+                final fun <get-notifiedDate>(): kotlin.time/Instant? // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.notifiedDate.<get-notifiedDate>|<get-notifiedDate>(){}[0]
 
             final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.component1|component1(){}[0]
-            final fun component2(): kotlinx.datetime/Instant? // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.component2|component2(){}[0]
-            final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlinx.datetime/Instant? = ...): com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant?){}[0]
+            final fun component2(): kotlin.time/Instant? // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.component2|component2(){}[0]
+            final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin.time/Instant? = ...): com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.time.Instant?){}[0]
             final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.equals|equals(kotlin.Any?){}[0]
             final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.hashCode|hashCode(){}[0]
             final fun toString(): kotlin/String // com.wire.kalium.logic.feature.message/MarkMessagesAsNotifiedUseCase.UpdateTarget.SingleConversation.toString|toString(){}[0]

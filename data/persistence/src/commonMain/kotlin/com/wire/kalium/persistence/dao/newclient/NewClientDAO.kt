@@ -20,7 +20,7 @@ package com.wire.kalium.persistence.dao.newclient
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class NewClientEntity(
     val id: String,

@@ -58,7 +58,7 @@ import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 

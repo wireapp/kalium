@@ -21,7 +21,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserId
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class MeetingOccurrence(
     val meeting: Meeting,

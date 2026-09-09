@@ -19,7 +19,7 @@
 package com.wire.kalium.network.api.authenticated.featureConfigs
 
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

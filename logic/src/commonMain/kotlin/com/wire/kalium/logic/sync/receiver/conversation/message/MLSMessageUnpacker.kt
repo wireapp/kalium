@@ -44,7 +44,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.seconds
 

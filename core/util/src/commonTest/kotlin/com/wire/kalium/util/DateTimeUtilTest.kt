@@ -20,8 +20,8 @@ package com.wire.kalium.util
 
 import com.wire.kalium.util.string.IgnoreIOS
 import com.wire.kalium.util.string.IgnoreJS
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

@@ -38,7 +38,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 class ConversationListItemMapperTest {
     private val mapper = MapperProvider.conversationMapper(QualifiedID("self", "wire.com"))

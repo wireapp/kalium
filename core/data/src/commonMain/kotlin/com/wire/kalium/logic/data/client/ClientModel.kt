@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.data.conversation.ClientId
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.time.Duration.Companion.days
 
 data class DeleteClientParam(

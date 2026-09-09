@@ -20,7 +20,7 @@ package com.wire.kalium.conversation.history.data.dao
 import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.ExperimentalTime
 
 /**

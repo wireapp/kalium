@@ -40,7 +40,7 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.sync.SyncManager
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * When the self user is receiver of the self deletion message,

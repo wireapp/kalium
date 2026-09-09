@@ -26,7 +26,7 @@ import com.wire.kalium.network.api.authenticated.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal interface ConversationStatusMapper {
     fun toMutedStatusApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Instant): MemberUpdateDTO

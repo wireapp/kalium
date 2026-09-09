@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.notification
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserAssetId
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Kalium local data classes that contains all the necessary data for displaying Message Notifications,

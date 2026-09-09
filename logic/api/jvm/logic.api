@@ -565,15 +565,15 @@ public final class com/wire/kalium/logic/data/conversation/ConversationListChann
 }
 
 public abstract interface class com/wire/kalium/logic/data/conversation/ConversationListItem {
-	public abstract fun getActivityTime ()Lkotlinx/datetime/Instant;
+	public abstract fun getActivityTime ()Lkotlin/time/Instant;
 	public abstract fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun getPosition ()Lcom/wire/kalium/logic/data/conversation/ConversationListPosition;
 }
 
 public final class com/wire/kalium/logic/data/conversation/ConversationListItem$Channel : com/wire/kalium/logic/data/conversation/ConversationListItem$Group {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/ConversationListChannelAccess;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/ConversationListChannelAccess;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun component2 ()Lkotlinx/datetime/Instant;
+	public final fun component2 ()Lkotlin/time/Instant;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Z
 	public final fun component5 ()Lcom/wire/kalium/logic/data/conversation/ConversationListChannelAccess;
@@ -581,11 +581,11 @@ public final class com/wire/kalium/logic/data/conversation/ConversationListItem$
 	public final fun component7 ()Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;
 	public final fun component8 ()Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;
 	public final fun component9 ()Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/ConversationListChannelAccess;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$Channel;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListItem$Channel;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/ConversationListChannelAccess;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$Channel;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/ConversationListChannelAccess;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$Channel;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListItem$Channel;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/ConversationListChannelAccess;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$Channel;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccess ()Lcom/wire/kalium/logic/data/conversation/ConversationListChannelAccess;
-	public fun getActivityTime ()Lkotlinx/datetime/Instant;
+	public fun getActivityTime ()Lkotlin/time/Instant;
 	public fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun getLegalHoldStatus ()Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;
 	public fun getMutedStatus ()Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;
@@ -612,18 +612,18 @@ public final class com/wire/kalium/logic/data/conversation/ConversationListItem$
 }
 
 public final class com/wire/kalium/logic/data/conversation/ConversationListItem$OneOnOne : com/wire/kalium/logic/data/conversation/ConversationListItem$WithMessages {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun component2 ()Lkotlinx/datetime/Instant;
+	public final fun component2 ()Lkotlin/time/Instant;
 	public final fun component3 ()Lcom/wire/kalium/logic/data/conversation/ConversationListUser;
 	public final fun component4 ()Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;
 	public final fun component5 ()Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;
 	public final fun component6 ()Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;
 	public final fun component7 ()Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$OneOnOne;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListItem$OneOnOne;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$OneOnOne;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$OneOnOne;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListItem$OneOnOne;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$OneOnOne;
 	public fun equals (Ljava/lang/Object;)Z
-	public fun getActivityTime ()Lkotlinx/datetime/Instant;
+	public fun getActivityTime ()Lkotlin/time/Instant;
 	public fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun getLegalHoldStatus ()Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;
 	public fun getMutedStatus ()Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;
@@ -636,14 +636,14 @@ public final class com/wire/kalium/logic/data/conversation/ConversationListItem$
 }
 
 public final class com/wire/kalium/logic/data/conversation/ConversationListItem$PendingConnection : com/wire/kalium/logic/data/conversation/ConversationListItem {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun component2 ()Lkotlinx/datetime/Instant;
+	public final fun component2 ()Lkotlin/time/Instant;
 	public final fun component3 ()Lcom/wire/kalium/logic/data/conversation/ConversationListUser;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$PendingConnection;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListItem$PendingConnection;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$PendingConnection;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$PendingConnection;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListItem$PendingConnection;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/conversation/ConversationListUser;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$PendingConnection;
 	public fun equals (Ljava/lang/Object;)Z
-	public fun getActivityTime ()Lkotlinx/datetime/Instant;
+	public fun getActivityTime ()Lkotlin/time/Instant;
 	public fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun getOtherUser ()Lcom/wire/kalium/logic/data/conversation/ConversationListUser;
 	public fun getPosition ()Lcom/wire/kalium/logic/data/conversation/ConversationListPosition;
@@ -652,19 +652,19 @@ public final class com/wire/kalium/logic/data/conversation/ConversationListItem$
 }
 
 public final class com/wire/kalium/logic/data/conversation/ConversationListItem$RegularGroup : com/wire/kalium/logic/data/conversation/ConversationListItem$Group {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun component2 ()Lkotlinx/datetime/Instant;
+	public final fun component2 ()Lkotlin/time/Instant;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Z
 	public final fun component5 ()Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;
 	public final fun component6 ()Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;
 	public final fun component7 ()Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;
 	public final fun component8 ()Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$RegularGroup;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListItem$RegularGroup;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$RegularGroup;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$RegularGroup;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListItem$RegularGroup;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Ljava/lang/String;ZLcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;Lcom/wire/kalium/logic/data/conversation/ConversationListUnreadState;Lcom/wire/kalium/logic/data/conversation/ConversationListPreview;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListItem$RegularGroup;
 	public fun equals (Ljava/lang/Object;)Z
-	public fun getActivityTime ()Lkotlinx/datetime/Instant;
+	public fun getActivityTime ()Lkotlin/time/Instant;
 	public fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun getLegalHoldStatus ()Lcom/wire/kalium/logic/data/conversation/Conversation$LegalHoldStatus;
 	public fun getMutedStatus ()Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;
@@ -689,13 +689,13 @@ public final class com/wire/kalium/logic/data/conversation/ConversationListItem$
 }
 
 public final class com/wire/kalium/logic/data/conversation/ConversationListPosition {
-	public fun <init> (Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/id/QualifiedID;)V
-	public final fun component1 ()Lkotlinx/datetime/Instant;
+	public fun <init> (Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public final fun component1 ()Lkotlin/time/Instant;
 	public final fun component2 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun copy (Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/data/conversation/ConversationListPosition;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListPosition;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListPosition;
+	public final fun copy (Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/data/conversation/ConversationListPosition;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationListPosition;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationListPosition;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getActivityTime ()Lkotlinx/datetime/Instant;
+	public final fun getActivityTime ()Lkotlin/time/Instant;
 	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -1134,29 +1134,29 @@ public final class com/wire/kalium/logic/data/message/timeline/MessageListDelive
 }
 
 public final class com/wire/kalium/logic/data/message/timeline/MessageListItem {
-	public fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;Ljava/lang/String;Lcom/wire/kalium/logic/data/message/Message$Status;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/message/Message$ExpirationData;ZLcom/wire/kalium/logic/data/message/timeline/MessageListContent;Ljava/util/List;Lcom/wire/kalium/logic/data/message/timeline/MessageListDeliveryFailures;Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineCursor;)V
+	public fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;Ljava/lang/String;Lcom/wire/kalium/logic/data/message/Message$Status;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/message/Message$ExpirationData;ZLcom/wire/kalium/logic/data/message/timeline/MessageListContent;Ljava/util/List;Lcom/wire/kalium/logic/data/message/timeline/MessageListDeliveryFailures;Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineCursor;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component10 ()Lcom/wire/kalium/logic/data/message/timeline/MessageListContent;
 	public final fun component11 ()Ljava/util/List;
 	public final fun component12 ()Lcom/wire/kalium/logic/data/message/timeline/MessageListDeliveryFailures;
 	public final fun component13 ()Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineCursor;
 	public final fun component2 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun component3 ()Lkotlinx/datetime/Instant;
+	public final fun component3 ()Lkotlin/time/Instant;
 	public final fun component4 ()Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;
 	public final fun component5 ()Ljava/lang/String;
 	public final fun component6 ()Lcom/wire/kalium/logic/data/message/Message$Status;
-	public final fun component7 ()Lkotlinx/datetime/Instant;
+	public final fun component7 ()Lkotlin/time/Instant;
 	public final fun component8 ()Lcom/wire/kalium/logic/data/message/Message$ExpirationData;
 	public final fun component9 ()Z
-	public final fun copy (Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;Ljava/lang/String;Lcom/wire/kalium/logic/data/message/Message$Status;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/message/Message$ExpirationData;ZLcom/wire/kalium/logic/data/message/timeline/MessageListContent;Ljava/util/List;Lcom/wire/kalium/logic/data/message/timeline/MessageListDeliveryFailures;Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineCursor;)Lcom/wire/kalium/logic/data/message/timeline/MessageListItem;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/message/timeline/MessageListItem;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;Ljava/lang/String;Lcom/wire/kalium/logic/data/message/Message$Status;Lkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/message/Message$ExpirationData;ZLcom/wire/kalium/logic/data/message/timeline/MessageListContent;Ljava/util/List;Lcom/wire/kalium/logic/data/message/timeline/MessageListDeliveryFailures;Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineCursor;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/message/timeline/MessageListItem;
+	public final fun copy (Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;Ljava/lang/String;Lcom/wire/kalium/logic/data/message/Message$Status;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/message/Message$ExpirationData;ZLcom/wire/kalium/logic/data/message/timeline/MessageListContent;Ljava/util/List;Lcom/wire/kalium/logic/data/message/timeline/MessageListDeliveryFailures;Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineCursor;)Lcom/wire/kalium/logic/data/message/timeline/MessageListItem;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/message/timeline/MessageListItem;Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;Ljava/lang/String;Lcom/wire/kalium/logic/data/message/Message$Status;Lkotlin/time/Instant;Lcom/wire/kalium/logic/data/message/Message$ExpirationData;ZLcom/wire/kalium/logic/data/message/timeline/MessageListContent;Ljava/util/List;Lcom/wire/kalium/logic/data/message/timeline/MessageListDeliveryFailures;Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineCursor;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/message/timeline/MessageListItem;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getContent ()Lcom/wire/kalium/logic/data/message/timeline/MessageListContent;
 	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun getCursor ()Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineCursor;
-	public final fun getDate ()Lkotlinx/datetime/Instant;
+	public final fun getDate ()Lkotlin/time/Instant;
 	public final fun getDeliveryFailures ()Lcom/wire/kalium/logic/data/message/timeline/MessageListDeliveryFailures;
-	public final fun getEditDate ()Lkotlinx/datetime/Instant;
+	public final fun getEditDate ()Lkotlin/time/Instant;
 	public final fun getExpectsReadConfirmation ()Z
 	public final fun getExpirationData ()Lcom/wire/kalium/logic/data/message/Message$ExpirationData;
 	public final fun getId ()Ljava/lang/String;
@@ -1230,12 +1230,12 @@ public final class com/wire/kalium/logic/data/message/timeline/MessageListText {
 }
 
 public final class com/wire/kalium/logic/data/message/timeline/MessageListUser {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ILcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/UserAvailabilityStatus;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;ZZZZZLkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/user/BotService;Z)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ILcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/UserAvailabilityStatus;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;ZZZZZLkotlin/time/Instant;Lcom/wire/kalium/logic/data/user/BotService;Z)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun component10 ()Z
 	public final fun component11 ()Z
 	public final fun component12 ()Z
-	public final fun component13 ()Lkotlinx/datetime/Instant;
+	public final fun component13 ()Lkotlin/time/Instant;
 	public final fun component14 ()Lcom/wire/kalium/logic/data/user/BotService;
 	public final fun component15 ()Z
 	public final fun component2 ()Ljava/lang/String;
@@ -1246,14 +1246,14 @@ public final class com/wire/kalium/logic/data/message/timeline/MessageListUser {
 	public final fun component7 ()Lcom/wire/kalium/logic/data/user/ConnectionState;
 	public final fun component8 ()Z
 	public final fun component9 ()Z
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ILcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/UserAvailabilityStatus;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;ZZZZZLkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/user/BotService;Z)Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ILcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/UserAvailabilityStatus;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;ZZZZZLkotlinx/datetime/Instant;Lcom/wire/kalium/logic/data/user/BotService;ZILjava/lang/Object;)Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ILcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/UserAvailabilityStatus;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;ZZZZZLkotlin/time/Instant;Lcom/wire/kalium/logic/data/user/BotService;Z)Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ILcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/user/UserAvailabilityStatus;Lcom/wire/kalium/logic/data/user/type/UserTypeInfo;Lcom/wire/kalium/logic/data/user/ConnectionState;ZZZZZLkotlin/time/Instant;Lcom/wire/kalium/logic/data/user/BotService;ZILjava/lang/Object;)Lcom/wire/kalium/logic/data/message/timeline/MessageListUser;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccentId ()I
 	public final fun getAvailability ()Lcom/wire/kalium/logic/data/user/UserAvailabilityStatus;
 	public final fun getBotService ()Lcom/wire/kalium/logic/data/user/BotService;
 	public final fun getConnectionState ()Lcom/wire/kalium/logic/data/user/ConnectionState;
-	public final fun getGuestExpiresAt ()Lkotlinx/datetime/Instant;
+	public final fun getGuestExpiresAt ()Lkotlin/time/Instant;
 	public final fun getId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun getName ()Ljava/lang/String;
 	public final fun getPreviewAvatar ()Lcom/wire/kalium/logic/data/id/QualifiedID;
@@ -1277,7 +1277,7 @@ public final class com/wire/kalium/logic/data/message/timeline/MessageTimeline :
 
 public final class com/wire/kalium/logic/data/message/timeline/MessageTimelineCursor {
 	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun getDate ()Lkotlinx/datetime/Instant;
+	public final fun getDate ()Lkotlin/time/Instant;
 	public final fun getMessageId ()Ljava/lang/String;
 }
 
@@ -1324,12 +1324,12 @@ public final class com/wire/kalium/logic/data/message/timeline/MessageTimelineRe
 }
 
 public final class com/wire/kalium/logic/data/message/timeline/MessageTimelineRequest$AtReadBoundary : com/wire/kalium/logic/data/message/timeline/MessageTimelineRequest {
-	public fun <init> (Lkotlinx/datetime/Instant;)V
-	public final fun component1 ()Lkotlinx/datetime/Instant;
-	public final fun copy (Lkotlinx/datetime/Instant;)Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineRequest$AtReadBoundary;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineRequest$AtReadBoundary;Lkotlinx/datetime/Instant;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineRequest$AtReadBoundary;
+	public fun <init> (Lkotlin/time/Instant;)V
+	public final fun component1 ()Lkotlin/time/Instant;
+	public final fun copy (Lkotlin/time/Instant;)Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineRequest$AtReadBoundary;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineRequest$AtReadBoundary;Lkotlin/time/Instant;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/message/timeline/MessageTimelineRequest$AtReadBoundary;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getLastReadDate ()Lkotlinx/datetime/Instant;
+	public final fun getLastReadDate ()Lkotlin/time/Instant;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -1736,8 +1736,8 @@ public abstract interface class com/wire/kalium/logic/feature/analytics/Analytic
 }
 
 public final class com/wire/kalium/logic/feature/analytics/GetAnalyticsContactsDataUseCase {
-	public final fun invoke (Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/analytics/GetAnalyticsContactsDataUseCase;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun invoke (Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/analytics/GetAnalyticsContactsDataUseCase;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/analytics/GetCurrentAnalyticsTrackingIdentifierUseCase {
@@ -4716,7 +4716,7 @@ public abstract interface class com/wire/kalium/logic/feature/conversation/Leave
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/MarkConversationAsReadLocallyUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/conversation/MarkConversationAsReadResult {
@@ -5065,12 +5065,12 @@ public final class com/wire/kalium/logic/feature/conversation/UpdateConversation
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ZZLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZZLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ZZLkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZZLkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase$DefaultImpls {
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZZLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationArchivedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZZLkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/conversation/UpdateConversationMemberRoleResult {
@@ -5095,17 +5095,17 @@ public abstract interface class com/wire/kalium/logic/feature/conversation/Updat
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase$DefaultImpls {
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationMutedStatusUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/conversation/MutedConversationStatus;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/conversation/UpdateConversationReadDateUseCase {
-	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationReadDateUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/UpdateConversationReadDateUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/UpdateConversationReceiptModeUseCase {
@@ -5570,23 +5570,23 @@ public final class com/wire/kalium/logic/feature/e2ei/MLSCredentialsType : java/
 
 public final class com/wire/kalium/logic/feature/e2ei/X509Identity {
 	public static final field Companion Lcom/wire/kalium/logic/feature/e2ei/X509Identity$Companion;
-	public fun <init> (Lcom/wire/kalium/logic/feature/e2ei/Handle;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/datetime/Instant;Lkotlinx/datetime/Instant;)V
+	public fun <init> (Lcom/wire/kalium/logic/feature/e2ei/Handle;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;Lkotlin/time/Instant;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/feature/e2ei/Handle;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Lkotlinx/datetime/Instant;
-	public final fun component7 ()Lkotlinx/datetime/Instant;
-	public final fun copy (Lcom/wire/kalium/logic/feature/e2ei/Handle;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/datetime/Instant;Lkotlinx/datetime/Instant;)Lcom/wire/kalium/logic/feature/e2ei/X509Identity;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/X509Identity;Lcom/wire/kalium/logic/feature/e2ei/Handle;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/datetime/Instant;Lkotlinx/datetime/Instant;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/X509Identity;
+	public final fun component6 ()Lkotlin/time/Instant;
+	public final fun component7 ()Lkotlin/time/Instant;
+	public final fun copy (Lcom/wire/kalium/logic/feature/e2ei/Handle;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;Lkotlin/time/Instant;)Lcom/wire/kalium/logic/feature/e2ei/X509Identity;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/X509Identity;Lcom/wire/kalium/logic/feature/e2ei/Handle;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;Lkotlin/time/Instant;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/X509Identity;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCertificate ()Ljava/lang/String;
 	public final fun getDisplayName ()Ljava/lang/String;
 	public final fun getDomain ()Ljava/lang/String;
 	public final fun getHandle ()Lcom/wire/kalium/logic/feature/e2ei/Handle;
-	public final fun getNotAfter ()Lkotlinx/datetime/Instant;
-	public final fun getNotBefore ()Lkotlinx/datetime/Instant;
+	public final fun getNotAfter ()Lkotlin/time/Instant;
+	public final fun getNotBefore ()Lkotlin/time/Instant;
 	public final fun getSerialNumber ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -6103,21 +6103,21 @@ public abstract interface class com/wire/kalium/logic/feature/meeting/EnsureMeet
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase$DefaultImpls {
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase {
-	public abstract fun invoke (Landroidx/paging/PagingConfig;JLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;Landroidx/paging/PagingConfig;JLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun invoke (Landroidx/paging/PagingConfig;JLkotlin/time/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;Landroidx/paging/PagingConfig;JLkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase$DefaultImpls {
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;Landroidx/paging/PagingConfig;JLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;Landroidx/paging/PagingConfig;JLkotlin/time/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
@@ -6340,15 +6340,15 @@ public final class com/wire/kalium/logic/feature/message/MarkMessagesAsNotifiedU
 }
 
 public final class com/wire/kalium/logic/feature/message/MarkMessagesAsNotifiedUseCase$UpdateTarget$SingleConversation : com/wire/kalium/logic/feature/message/MarkMessagesAsNotifiedUseCase$UpdateTarget {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;)V
-	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun component2 ()Lkotlinx/datetime/Instant;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;)Lcom/wire/kalium/logic/feature/message/MarkMessagesAsNotifiedUseCase$UpdateTarget$SingleConversation;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/message/MarkMessagesAsNotifiedUseCase$UpdateTarget$SingleConversation;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/message/MarkMessagesAsNotifiedUseCase$UpdateTarget$SingleConversation;
+	public final fun component2 ()Lkotlin/time/Instant;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;)Lcom/wire/kalium/logic/feature/message/MarkMessagesAsNotifiedUseCase$UpdateTarget$SingleConversation;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/message/MarkMessagesAsNotifiedUseCase$UpdateTarget$SingleConversation;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/time/Instant;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/message/MarkMessagesAsNotifiedUseCase$UpdateTarget$SingleConversation;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun getNotifiedDate ()Lkotlinx/datetime/Instant;
+	public final fun getNotifiedDate ()Lkotlin/time/Instant;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

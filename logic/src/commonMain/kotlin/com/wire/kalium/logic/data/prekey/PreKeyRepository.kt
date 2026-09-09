@@ -48,7 +48,7 @@ import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Suppress("TooManyFunctions")
 internal interface PreKeyRepository {

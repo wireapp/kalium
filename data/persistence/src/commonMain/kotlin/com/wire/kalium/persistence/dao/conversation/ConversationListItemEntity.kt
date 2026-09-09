@@ -24,7 +24,7 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.message.MessageMapper
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class ConversationListPositionEntity(val activityTime: Instant, val conversationId: QualifiedIDEntity)
 

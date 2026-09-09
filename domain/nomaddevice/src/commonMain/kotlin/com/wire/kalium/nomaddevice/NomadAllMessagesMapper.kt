@@ -38,7 +38,7 @@ import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceReactions
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceReadReceipts
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.io.encoding.Base64
 
 public data class NomadMappedMessages(

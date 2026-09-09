@@ -40,7 +40,7 @@ import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
 import com.wire.kalium.userstorage.di.UserStorageProvider
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.coroutines.cancellation.CancellationException
 
 /**

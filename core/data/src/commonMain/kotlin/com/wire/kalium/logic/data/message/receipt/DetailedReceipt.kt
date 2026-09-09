@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.message.receipt
 
 import com.wire.kalium.logic.data.message.UserSummary
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class DetailedReceipt(
     val type: ReceiptType,

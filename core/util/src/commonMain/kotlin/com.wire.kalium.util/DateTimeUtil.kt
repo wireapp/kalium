@@ -18,9 +18,9 @@
 
 package com.wire.kalium.util
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
@@ -30,17 +30,17 @@ import kotlinx.datetime.until
 expect open class PlatformDateTimeUtil() {
 
     /**
-     * Parse [kotlinx.datetime.Instant] into date-time string in ISO-8601 format.
+     * Parse [kotlin.time.Instant] into date-time string in ISO-8601 format.
      * Regular `.toString()` can return different results on different platforms, for instance jvm uses [java.time.Instant]
      * which can ignore milliseconds when equal to 0 (.000) and change the result from YYYY-MM-DDTHH:mm:ss.SSSZ format
      * to YYYY-MM-DDTHH:mm:ssZ.
-     * @param instant date-time as [kotlinx.datetime.Instant]
+     * @param instant date-time as [kotlin.time.Instant]
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     fun fromInstantToIsoDateTimeString(instant: Instant): String
 
     /**
-     * Parse [kotlinx.datetime.Instant] into date-time string in simplified format with up to seconds precision.
+     * Parse [kotlin.time.Instant] into date-time string in simplified format with up to seconds precision.
      * @return date in simplified format (YYYY-MM-DD_HH:mm:ss)
      */
     fun fromInstantToSimpleDateTimeString(instant: Instant): String
@@ -95,8 +95,8 @@ object DateTimeUtil : PlatformDateTimeUtil() {
     fun currentSimpleDateTimeString(): String = fromInstantToSimpleDateTimeString(Clock.System.now())
 
     /**
-     * Return the current date-time as [kotlinx.datetime.Instant], truncated to millisecond precision.
-     * @return current date-time as [kotlinx.datetime.Instant] with millisecond precision
+     * Return the current date-time as [kotlin.time.Instant], truncated to millisecond precision.
+     * @return current date-time as [kotlin.time.Instant] with millisecond precision
      */
     fun currentInstant(): Instant =
         currentInstant(Clock.System)
@@ -129,16 +129,16 @@ object DateTimeUtil : PlatformDateTimeUtil() {
 
     /**
      * Parse instant date-time into string date-time in ISO-8601 format
-     * @receiver instant date-time as [kotlinx.datetime.Instant]
+     * @receiver instant date-time as [kotlin.time.Instant]
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     fun Instant.toIsoDateTimeString(): String = fromInstantToIsoDateTimeString(this)
 
     /**
-     * Return the start of the given day as [kotlinx.datetime.Instant].
-     * @receiver date-time as [kotlinx.datetime.Instant]
+     * Return the start of the given day as [kotlin.time.Instant].
+     * @receiver date-time as [kotlin.time.Instant]
      * @param timeZone time zone to use, default is the current system
-     * @return start of the current day as [kotlinx.datetime.Instant], i.e. 00:00:00.000 in the given time zone
+     * @return start of the current day as [kotlin.time.Instant], i.e. 00:00:00.000 in the given time zone
      */
     fun Instant.asStartOfDay(timeZone: TimeZone = TimeZone.currentSystemDefault()) =
         this.toLocalDateTime(timeZone).date.atStartOfDayIn(timeZone)

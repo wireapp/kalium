@@ -33,7 +33,7 @@ import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 internal interface PersistNewAssetMessageUseCase {

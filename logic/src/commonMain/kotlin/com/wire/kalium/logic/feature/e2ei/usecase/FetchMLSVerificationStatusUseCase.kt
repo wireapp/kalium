@@ -46,7 +46,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 internal typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
 

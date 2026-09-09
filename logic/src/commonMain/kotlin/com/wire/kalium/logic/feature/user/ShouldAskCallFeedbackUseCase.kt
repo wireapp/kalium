@@ -22,7 +22,7 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Use case to determine if the call feedback should be asked.

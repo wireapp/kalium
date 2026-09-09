@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.history
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.ExperimentalTime
 
 data class HistoryClient @OptIn(ExperimentalTime::class) constructor(

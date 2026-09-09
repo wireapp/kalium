@@ -35,7 +35,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * This use case will clear all messages from a conversation and notify other clients, using the self conversation.

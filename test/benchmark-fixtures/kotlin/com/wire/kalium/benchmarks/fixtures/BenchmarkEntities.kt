@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal object BenchmarkEntities {
     val conversationId = QualifiedIDEntity("conversationId", "wire.com")

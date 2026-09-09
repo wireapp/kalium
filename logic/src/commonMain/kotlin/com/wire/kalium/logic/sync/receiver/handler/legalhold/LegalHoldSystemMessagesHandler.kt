@@ -28,8 +28,8 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 internal interface LegalHoldSystemMessagesHandler {
     suspend fun handleEnabledForUser(userId: UserId, systemMessageInstant: Instant)

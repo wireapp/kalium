@@ -57,7 +57,7 @@ import dev.mokkery.verifySuspend
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 
 internal class MemberLeaveEventHandlerTest {

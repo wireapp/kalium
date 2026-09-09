@@ -73,7 +73,7 @@ import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.TrackingIdentifier
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import pbandk.ByteArr
 import com.wire.kalium.protobuf.messages.HistoryClient as ProtoHistoryClient
 
