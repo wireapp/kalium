@@ -35,7 +35,7 @@ data class MeetingDTO(
     @SerialName("title") val title: String,
     @SerialName("start_time") val startTime: Instant,
     @SerialName("end_time") val endTime: Instant,
-    @SerialName("trial") val trial: Boolean,
+    @SerialName("tzid") val tzid: String,
     @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?
 )
 
