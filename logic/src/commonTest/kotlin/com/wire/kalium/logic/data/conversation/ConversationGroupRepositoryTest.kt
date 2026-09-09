@@ -337,7 +337,10 @@ class ConversationGroupRepositoryTest {
             CreateConversationParam(protocol = CreateConversationParam.Protocol.PROTEUS)
         )
 
-        result.shouldFail()
+        result.shouldFail { failure ->
+            assertIs<NetworkFailure.FederatedBackendFailure.ConflictingBackends>(failure.cause)
+            assertEquals(null, failure.conversationId)
+        }
 
         with(arrangement) {
             coVerify {
@@ -464,6 +467,36 @@ class ConversationGroupRepositoryTest {
                 newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(any(), any(), any())
             }.wasNotInvoked()
         }
+    }
+
+    @Test
+    fun givenMLSConflictAfterInsertion_whenCreating_thenFailureRetainsConversationIdAndDomains() = runTest {
+        val failure = MLSFailure.FederatedBackendConflict(listOf("a.example", "b.example"))
+        val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
+        val (arrangement, repository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(conversationResponse, emptyMap(), 201)))
+            .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
+            .withInsertConversationSuccess()
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withConversationAppsAccessIfEnabled()
+            .arrange()
+        coEvery {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+        }.returns(Either.Left(failure))
+
+        val result = repository.createGroupConversation(
+            GROUP_NAME, listOf(TestUser.USER_ID), CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
+        )
+
+        result.shouldFail {
+            assertEquals(failure, it.cause)
+            assertEquals(ConversationId(conversationResponse.id.value, conversationResponse.id.domain), it.conversationId)
+        }
+        coVerify { arrangement.conversationDAO.insertConversation(any()) }.wasInvoked(once)
+        coVerify {
+            arrangement.newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
