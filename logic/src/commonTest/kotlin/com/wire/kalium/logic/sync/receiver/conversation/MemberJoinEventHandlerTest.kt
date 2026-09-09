@@ -271,6 +271,40 @@ class MemberJoinEventHandlerTest {
     }
 
     @Test
+    fun givenSelfUserReAddedToConversation_whenHandlingMemberJoinEvent_thenShouldClearDeletedLocallyFlag() = runTest {
+        val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
+        val event = TestEvent.memberJoin(members = newMembers)
+
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        coVerify {
+            arrangement.conversationRepository.setConversationDeletedLocally(eq(event.conversationId), eq(false))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenOtherUserAddedToConversation_whenHandlingMemberJoinEvent_thenShouldNotClearDeletedLocallyFlag() = runTest {
+        val newMembers = listOf(Member(TestUser.OTHER_USER_ID, Member.Role.Member))
+        val event = TestEvent.memberJoin(members = newMembers)
+
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        coVerify {
+            arrangement.conversationRepository.setConversationDeletedLocally(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
     fun givenMemberJoinEvent_whenHandlingIt_thenShouldUpdateConversationLegalHoldIfNeeded() = runTest {
         // given
         val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
@@ -311,6 +345,7 @@ class MemberJoinEventHandlerTest {
             withPersistingMessage(Unit.right())
             withFetchUsersIfUnknownByIdsReturning(Unit.right())
             withPersistMembers(Unit.right())
+            withSetConversationDeletedLocallySucceeding()
             withHandleConversationMembersChanged(Unit.right())
             withPersistUnverifiedWarningMessageSuccess()
 
