@@ -130,7 +130,7 @@ internal class EventMapper(
             is EventContentDTO.Unknown -> unknown(id, eventContentDTO)
             is EventContentDTO.Conversation.AccessUpdate -> conversationAccessUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.DeletedConversationDTO -> deletedConversation(id, eventContentDTO)
-            is EventContentDTO.Conversation.SystemDeletedConversationDTO -> conversationDeleted(id, eventContentDTO)
+            is EventContentDTO.Conversation.SystemDeletedConversationDTO -> deletedConversation(id, eventContentDTO)
             is EventContentDTO.Conversation.AdminlessDeleteReminderDTO -> adminlessDeleteReminder(id, eventContentDTO)
             is EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO -> adminlessDeleteReminder(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO)
@@ -654,24 +654,24 @@ internal class EventMapper(
     private fun deletedConversation(
         id: String,
         deletedConversationDTO: EventContentDTO.Conversation.DeletedConversationDTO,
-    ) = conversationDeleted(
+    ) = deletedConversation(
         id = id,
         conversationId = deletedConversationDTO.qualifiedConversation.toModel(),
         senderUserId = deletedConversationDTO.qualifiedFrom.toModel(),
         dateTime = Instant.parse(deletedConversationDTO.time),
     )
 
-    private fun conversationDeleted(
+    private fun deletedConversation(
         id: String,
         deletedConversationDTO: EventContentDTO.Conversation.SystemDeletedConversationDTO,
-    ) = conversationDeleted(
+    ) = deletedConversation(
         id = id,
         conversationId = deletedConversationDTO.qualifiedConversation.toModel(),
         senderUserId = deletedConversationDTO.qualifiedFrom?.toModel(),
         dateTime = Instant.parse(deletedConversationDTO.time),
     )
 
-    private fun conversationDeleted(
+    private fun deletedConversation(
         id: String,
         conversationId: ConversationId,
         senderUserId: UserId?,
