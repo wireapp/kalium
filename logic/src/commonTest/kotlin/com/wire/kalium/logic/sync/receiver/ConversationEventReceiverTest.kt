@@ -580,7 +580,7 @@ class ConversationEventReceiverTest {
             everySuspend { deleteConversationReminderEventHandler.handle(any()) } returns Unit
             everySuspend { memberJoinEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { memberLeaveEventHandler.handle(any(), any()) } returns Either.Right(Unit)
-            everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Unit
+            everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { mlsWelcomeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { renamedConversationEventHandler.handle(any()) } returns Unit
             everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Unit
