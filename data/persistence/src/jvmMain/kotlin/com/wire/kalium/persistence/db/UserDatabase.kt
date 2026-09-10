@@ -28,8 +28,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.CoroutineDispatcher
 import java.io.File
 
-private const val DATABASE_NAME = "main.db"
-
 @Suppress("LongParameterList")
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
@@ -46,17 +44,17 @@ actual fun userDatabaseBuilder(
     if (storageData !is StorageData.FileBacked) {
         throw IllegalStateException("Unsupported storage data type: $storageData")
     }
-    if (passphrase != null) {
+    // An empty passphrase asks for a plain database, which is what the backup export creates.
+    if (passphrase != null && passphrase.value.isNotEmpty()) {
         throw NotImplementedError("Encrypted DB is not supported on JVM")
     }
 
     val schema = UserDatabase.Schema.synchronous()
-    val databasePath = storageData.file.resolve(DATABASE_NAME)
+    val databaseFile = userDatabaseFile(storageData.file, userId)
 
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
-    val url = "jdbc:sqlite:${databasePath.absolutePath}"
-    val rawDriver: SqlDriver = databaseDriver(uri = url, schema = schema) {
+    val rawDriver: SqlDriver = databaseDriver(uri = jdbcUrl(databaseFile), schema = schema) {
         isWALEnabled = enableWAL
         areForeignKeyConstraintsEnforced = true
     }
@@ -76,7 +74,7 @@ actual fun userDatabaseBuilder(
         sqlDriver = driver,
         dispatcher = dispatcher,
         platformDatabaseData = platformDatabaseData,
-        isEncrypted = !passphrase.isNullOrBlank(),
+        isEncrypted = passphrase != null && passphrase.value.isNotEmpty(),
         dbInvalidationController = invalidationController
     )
 }
@@ -86,7 +84,7 @@ actual fun userDatabaseDriverByPath(
     path: String,
     passphrase: UserDBSecret?,
     enableWAL: Boolean
-): SqlDriver = databaseDriver(path) {
+): SqlDriver = databaseDriver(uri = jdbcUrl(File(path))) {
     isWALEnabled = enableWAL
     areForeignKeyConstraintsEnforced = true
 }
@@ -99,14 +97,18 @@ internal actual fun getDatabaseAbsoluteFileLocation(
     if (storageData !is StorageData.FileBacked) {
         return null
     }
-    val dbFile = storageData.file.resolve(DATABASE_NAME)
+    val dbFile = userDatabaseFile(storageData.file, userId)
     return if (dbFile.exists()) dbFile.absolutePath else null
 }
 
+/**
+ * The obfuscated copy needs SQLCipher's `sqlcipher_export()`, which the JVM SQLite driver doesn't
+ * provide, so there is no copy to create on JVM.
+ */
 internal actual fun createEmptyDatabaseFile(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
-): String? = TODO()
+): String? = null
 
 /**
  * Creates an in-memory user database,
@@ -148,5 +150,5 @@ internal actual fun nuke(
     platformDatabaseData: PlatformDatabaseData
 ): Boolean = when (val storageData = platformDatabaseData.storageData) {
     StorageData.InMemory -> clearInMemoryDatabase(userId)
-    is StorageData.FileBacked -> storageData.file.resolve(DATABASE_NAME).delete()
+    is StorageData.FileBacked -> deleteDatabaseFiles(userDatabaseFile(storageData.file, userId))
 }

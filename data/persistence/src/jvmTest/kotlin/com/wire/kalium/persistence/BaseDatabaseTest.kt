@@ -23,14 +23,15 @@ import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.deleteDatabaseFiles
 import com.wire.kalium.persistence.db.userDatabaseBuilder
+import com.wire.kalium.persistence.db.userDatabaseFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import java.io.File
 import java.nio.file.Files
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -41,10 +42,12 @@ actual open class BaseDatabaseTest actual constructor() {
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
     actual val encryptedDBSecret = UserDBSecret("db_secret".toByteArray())
 
+    // One folder for all users, like Android's databases folder: the backup export creates its database
+    // next to the user's, and the tests open it again by user id.
     private val storageDirectory = Files.createTempDirectory("test-storage").toFile()
 
     private val UserIDEntity.databaseFile
-        get() = storageDirectory.resolve("test-$domain-$value.db")
+        get() = userDatabaseFile(storageDirectory, this)
 
     @BeforeTest
     fun setMainDispatcher() {
@@ -63,11 +66,11 @@ actual open class BaseDatabaseTest actual constructor() {
     }
 
     actual fun deleteDatabase(userId: UserIDEntity) {
-        userId.databaseFile.delete()
+        deleteDatabaseFiles(userId.databaseFile)
     }
 
     actual fun doesDatabaseExist(userId: UserIDEntity): Boolean {
-        return databasePath(userId).let { File(it).exists() }
+        return userId.databaseFile.exists()
     }
 
     actual fun createDatabase(
@@ -87,6 +90,6 @@ actual open class BaseDatabaseTest actual constructor() {
     }
 
     actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData = PlatformDatabaseData(
-        StorageData.FileBacked(userId.databaseFile)
+        StorageData.FileBacked(storageDirectory)
     )
 }
