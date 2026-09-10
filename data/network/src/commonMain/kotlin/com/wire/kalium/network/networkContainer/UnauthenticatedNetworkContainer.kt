@@ -41,6 +41,7 @@ import com.wire.kalium.network.api.v14.unauthenticated.networkContainer.Unauthen
 import com.wire.kalium.network.api.v15.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV15
 import com.wire.kalium.network.api.v16.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV16
 import com.wire.kalium.network.api.v17.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV17
+import com.wire.kalium.network.api.v18.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV18
 import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v4.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV5
@@ -252,6 +253,15 @@ interface UnauthenticatedNetworkContainer {
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
                     developmentApiEnabled = developmentApiEnabled
+                )
+
+                18 -> UnauthenticatedNetworkContainerV18(
+                    backendLinks = serverConfigDTO,
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
+                    mockEngine = mockEngine,
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 // You can use scripts/generate_new_api_version.sh or gradle task network:generateNewApiVersion to

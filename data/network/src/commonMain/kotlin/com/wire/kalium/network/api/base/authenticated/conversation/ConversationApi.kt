@@ -77,6 +77,16 @@ interface ConversationApi : BaseApi {
         createConversationRequest: CreateConversationRequest
     ): NetworkResponse<ConversationResponse>
 
+    /**
+     * Replaces direct membership, retaining members associated through user groups.
+     * The requested role applies only to newly added members; existing roles are preserved.
+     * Available in Kalium from API v18.
+     */
+    suspend fun replaceMembers(
+        conversationId: ConversationId,
+        request: AddConversationMembersRequest
+    ): NetworkResponse<Unit> = getApiNotSupportedError("replaceMembers", MIN_API_VERSION_REPLACE_MEMBERS)
+
     suspend fun addMember(
         addParticipantRequest: AddConversationMembersRequest,
         conversationId: ConversationId
@@ -196,6 +206,8 @@ interface ConversationApi : BaseApi {
     ): NetworkResponse<Unit>
 
     companion object {
+        const val MIN_API_VERSION_REPLACE_MEMBERS = 18
+
         fun getApiNotSupportError(apiName: String, apiVersion: String = "4") = NetworkResponse.Error(
             APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
         )
