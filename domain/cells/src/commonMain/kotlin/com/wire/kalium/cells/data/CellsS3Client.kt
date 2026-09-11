@@ -54,7 +54,7 @@ import kotlin.random.Random
 internal class CellsS3Client(
     private val httpClient: HttpClient,
     private val endpointProvider: suspend () -> String,
-    private val credentialsProvider: suspend () -> S3Credentials,
+    private val credentialsProvider: S3CredentialsProvider,
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
     private val config: CellsS3ClientConfig = CellsS3ClientConfig(),
 ) : CellsAwsClient {
@@ -67,10 +67,11 @@ internal class CellsS3Client(
     ) {
         requestWithRetry(
             operation = "Download object",
-            request = {
+            request = { credentials ->
                 val signedRequest = signedRequest(
                     method = HttpMethod.Get,
                     objectKey = objectKey,
+                    credentials = credentials,
                 )
                 httpClient.prepareRequest(signedRequest.url) {
                     method = HttpMethod.Get
@@ -124,10 +125,11 @@ internal class CellsS3Client(
         val progressReporter = MonotonicProgressReporter(onProgressUpdate)
         requestWithRetry(
             operation = "Upload object",
-            request = {
+            request = { credentials ->
                 val signedRequest = signedRequest(
                     method = HttpMethod.Put,
                     objectKey = node.path,
+                    credentials = credentials,
                     signedHeaders = node.createDraftNodeHeaders(),
                 )
                 httpClient.prepareRequest(signedRequest.url) {
@@ -172,10 +174,11 @@ internal class CellsS3Client(
     private suspend fun createMultipartUpload(node: CellNodeDTO): String {
         val responseBody = requestWithRetry(
             operation = "Create multipart upload",
-            request = {
+            request = { credentials ->
                 val signedRequest = signedRequest(
                     method = HttpMethod.Post,
                     objectKey = node.path,
+                    credentials = credentials,
                     queryParameters = listOf(S3QueryParameter(UPLOADS_QUERY_PARAMETER, "")),
                     signedHeaders = node.createDraftNodeHeaders(),
                 )
@@ -202,10 +205,11 @@ internal class CellsS3Client(
     ): String {
         val eTag = requestWithRetry(
             operation = "Upload multipart part",
-            request = {
+            request = { credentials ->
                 val signedRequest = signedRequest(
                     method = HttpMethod.Put,
                     objectKey = objectKey,
+                    credentials = credentials,
                     queryParameters = listOf(
                         S3QueryParameter("partNumber", partNumber.toString()),
                         S3QueryParameter("uploadId", uploadId),
@@ -235,10 +239,11 @@ internal class CellsS3Client(
         val body = completedParts.toCompleteMultipartUploadXml()
         requestWithRetry(
             operation = "Complete multipart upload",
-            request = {
+            request = { credentials ->
                 val signedRequest = signedRequest(
                     method = HttpMethod.Post,
                     objectKey = objectKey,
+                    credentials = credentials,
                     queryParameters = listOf(S3QueryParameter("uploadId", uploadId)),
                 )
                 httpClient.prepareRequest(signedRequest.url) {
@@ -251,14 +256,33 @@ internal class CellsS3Client(
         )
     }
 
+    /**
+     * Signs and performs [request] with the access token of the current session, refreshing it only
+     * when the gateway rejects it with 401. The rejected request is then replayed once with the new token.
+     */
     private suspend fun <T> requestWithRetry(
         operation: String,
-        request: suspend () -> HttpStatement,
+        request: suspend (S3Credentials) -> HttpStatement,
+        transform: suspend (HttpResponse) -> T,
+    ): T {
+        val credentials = credentialsProvider.credentials()
+        return try {
+            requestWithStatusRetry(operation, credentials, request, transform)
+        } catch (unauthorized: UnauthorizedS3Exception) {
+            val refreshedCredentials = credentialsProvider.refreshedCredentials(credentials.accessKeyId)
+            requestWithStatusRetry(operation, refreshedCredentials, request, transform)
+        }
+    }
+
+    private suspend fun <T> requestWithStatusRetry(
+        operation: String,
+        credentials: S3Credentials,
+        request: suspend (S3Credentials) -> HttpStatement,
         transform: suspend (HttpResponse) -> T,
     ): T {
         var lastRetryableFailure: Exception? = null
         repeat(S3_MAX_ATTEMPTS) { attemptIndex ->
-            when (val attempt = performRequestAttempt(operation, request, transform)) {
+            when (val attempt = performRequestAttempt(operation, { request(credentials) }, transform)) {
                 is S3Attempt.Success -> return attempt.value
                 is S3Attempt.TerminalFailure -> throw attempt.cause
                 is S3Attempt.RetryableFailure -> {
@@ -301,11 +325,11 @@ internal class CellsS3Client(
     private suspend fun signedRequest(
         method: HttpMethod,
         objectKey: String,
+        credentials: S3Credentials,
         queryParameters: List<S3QueryParameter> = emptyList(),
         signedHeaders: Map<String, String> = emptyMap(),
     ): SignedS3Request {
         val endpoint = endpointProvider()
-        val credentials = credentialsProvider()
         val date = config.dateProvider()
         val s3Url = S3UrlBuilder.build(endpoint, DEFAULT_BUCKET_NAME, objectKey, queryParameters)
         val headers = linkedMapOf(
@@ -482,17 +506,24 @@ private suspend fun HttpResponse.discardBody() = bodyAsChannel().cancel(null)
 private suspend fun HttpResponse.toS3Failure(operation: String): S3Attempt<Nothing> {
     val embeddedError = bodyAsText().embeddedS3Error()
     val errorCode = embeddedError?.code?.let { ": $it" }.orEmpty()
-    val exception = S3RequestException("$operation failed: ${status.value} ${status.description}$errorCode")
-    return if (status.isRetryableS3Status() || embeddedError?.isRetryable() == true) {
-        S3Attempt.RetryableFailure(exception)
-    } else {
-        S3Attempt.TerminalFailure(exception)
+    val message = "$operation failed: ${status.value} ${status.description}$errorCode"
+    return when {
+        status == HttpStatusCode.Unauthorized -> S3Attempt.TerminalFailure(UnauthorizedS3Exception(message))
+        status.isRetryableS3Status() || embeddedError?.isRetryable() == true ->
+            S3Attempt.RetryableFailure(S3RequestException(message))
+
+        else -> S3Attempt.TerminalFailure(S3RequestException(message))
     }
 }
 
 private open class S3RequestException(message: String, cause: Throwable? = null) : IOException(message, cause)
 
 private class RetryableS3Exception(message: String) : S3RequestException(message)
+
+/**
+ * The gateway rejected the access token used to sign the request.
+ */
+private class UnauthorizedS3Exception(message: String) : S3RequestException(message)
 
 private class UploadSourceException(message: String) : S3RequestException(message)
 
