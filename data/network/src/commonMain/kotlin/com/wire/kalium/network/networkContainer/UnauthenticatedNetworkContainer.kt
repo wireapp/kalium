@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.networkContainer
 
+import com.wire.kalium.network.HttpTrafficObserver
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
@@ -39,6 +40,7 @@ import com.wire.kalium.network.api.v13.unauthenticated.networkContainer.Unauthen
 import com.wire.kalium.network.api.v14.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV14
 import com.wire.kalium.network.api.v15.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV15
 import com.wire.kalium.network.api.v16.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV16
+import com.wire.kalium.network.api.v17.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV17
 import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v4.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV5
@@ -46,6 +48,7 @@ import com.wire.kalium.network.api.v6.unauthenticated.networkContainer.Unauthent
 import com.wire.kalium.network.api.v7.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV7
 import com.wire.kalium.network.api.v8.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV8
 import com.wire.kalium.network.api.v9.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV9
+import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 
@@ -64,16 +67,28 @@ interface UnauthenticatedNetworkContainer {
 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     companion object {
+        @Suppress("LongParameterList")
         fun create(
             serverConfigDTO: ServerConfigDTO,
             proxyCredentials: ProxyCredentialsDTO?,
             userAgent: String,
             developmentApiEnabled: Boolean,
             certificatePinning: CertificatePinning,
-            mockEngine: HttpClientEngine?
+            mockEngine: HttpClientEngine?,
+            httpTrafficObserver: HttpTrafficObserver? = null,
         ): UnauthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
+
+            // Precomputed once here (rather than left to each version's own default) so that
+            // [httpTrafficObserver], when provided, is installed regardless of API version -
+            // without needing to touch every per-version container class below.
+            val engine = mockEngine ?: defaultHttpEngine(
+                serverConfigDTOApiProxy = serverConfigDTO.links.apiProxy,
+                proxyCredentials = proxyCredentials,
+                certificatePinning = certificatePinning,
+                httpTrafficObserver = httpTrafficObserver,
+            )
 
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
@@ -81,7 +96,8 @@ interface UnauthenticatedNetworkContainer {
                     backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
+                    mockEngine,
+                    engine = engine,
                 )
 
                 1 -> UnauthenticatedNetworkContainerV0(
@@ -89,7 +105,8 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
+                    mockEngine,
+                    engine = engine,
                 )
 
                 2 -> UnauthenticatedNetworkContainerV2(
@@ -97,7 +114,8 @@ interface UnauthenticatedNetworkContainer {
                     backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine = mockEngine
+                    mockEngine = mockEngine,
+                    engine = engine,
                 )
 
                 // this is intentional since we should drop support for api v3
@@ -108,6 +126,7 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
+                    engine = engine,
                 )
 
                 4 -> UnauthenticatedNetworkContainerV4(
@@ -116,6 +135,7 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
+                    engine = engine,
                 )
 
                 5 -> UnauthenticatedNetworkContainerV5(
@@ -124,6 +144,7 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
+                    engine = engine,
                 )
 
                 6 -> UnauthenticatedNetworkContainerV6(
@@ -131,7 +152,8 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 7 -> UnauthenticatedNetworkContainerV7(
@@ -139,7 +161,8 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 8 -> UnauthenticatedNetworkContainerV8(
@@ -147,7 +170,8 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 9 -> UnauthenticatedNetworkContainerV9(
@@ -155,7 +179,8 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 10 -> UnauthenticatedNetworkContainerV10(
@@ -163,7 +188,8 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 11 -> UnauthenticatedNetworkContainerV11(
@@ -171,7 +197,8 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 12 -> UnauthenticatedNetworkContainerV12(
@@ -179,7 +206,8 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 13 -> UnauthenticatedNetworkContainerV13(
@@ -187,7 +215,8 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 14 -> UnauthenticatedNetworkContainerV14(
@@ -195,7 +224,8 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 15 -> UnauthenticatedNetworkContainerV15(
@@ -203,10 +233,20 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 16 -> UnauthenticatedNetworkContainerV16(
+                    backendLinks = serverConfigDTO,
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
+                    mockEngine = mockEngine,
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
+                )
+
+                17 -> UnauthenticatedNetworkContainerV17(
                     backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,

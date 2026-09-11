@@ -273,6 +273,16 @@ private fun systemContent(message: Message.System) =
             null,
             "New conversation created with cell self-delete disabled"
         )
+
+        MessageContent.CellEditorAccessMessage -> systemMessage(
+            null,
+            "You have editor access to the Shared Drive"
+        )
+
+        MessageContent.CellViewerAccessMessage -> systemMessage(
+            null,
+            "You have viewer access to the Shared Drive"
+        )
     }
 
 @Suppress("MagicNumber")

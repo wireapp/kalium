@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
+    id(libs.plugins.kalium.mutation.testing.get().pluginId)
     id("com.wire.kalium.apple-avs-runtime")
     alias(libs.plugins.ksp)
     alias(libs.plugins.mokkery)
@@ -33,8 +34,10 @@ kaliumLibrary {
     }
 }
 
-val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
-    ?: error("USE_UNIFIED_CORE_CRYPTO not set")
+mutationTesting {
+    targetClasses.set(listOf("com.wire.kalium.logic.sync.receiver.*"))
+    targetTests.set(listOf("com.wire.kalium.logic.sync.receiver.*"))
+}
 
 kotlin {
     explicitApi()
@@ -108,9 +111,6 @@ kotlin {
                 configurations.all {
                     exclude(group = "co.touchlab", module = "stately-strict-jvm")
                 }
-                if (useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoKmp)
-                }
             }
         }
         val commonTest by getting {
@@ -134,6 +134,9 @@ kotlin {
 
         val appleMain by getting {
             kotlin.exclude("com/wire/kalium/logic/feature/call/**")
+            dependencies {
+                implementation(libs.coreCryptoKmp)
+            }
         }
         val appleCallSourceDir = "src/appleMain/kotlin/com/wire/kalium/logic/feature/call"
         listOf(
@@ -151,9 +154,7 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
-                if (!useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoJvm)
-                }
+                implementation(libs.coreCryptoJvm)
             }
         }
         val jvmTest by getting {
@@ -165,11 +166,9 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.work)
-                if (!useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                        exclude("androidx.core")
-                        exclude("androidx.appcompat")
-                    }
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
                 }
             }
         }

@@ -47,5 +47,9 @@ gradlePlugin {
             id = libraryId
             implementationClass = "com.wire.kalium.plugins.LibraryPlugin"
         }
+        register("mutationTesting") {
+            id = libs.plugins.kalium.mutation.testing.get().pluginId
+            implementationClass = "com.wire.kalium.plugins.MutationTestingPlugin"
+        }
     }
 }

@@ -295,6 +295,32 @@ class DeleteMessageHandlerTest {
         assertEquals(SELF_USER_ID, selfUserId)
     }
 
+    @Test
+    fun givenDeletedMessageHasRemoteAsset_whenHandled_thenLocalAssetIsDeleted() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val originalMessage = TestMessage.TEXT_MESSAGE.copy(
+            content = TestMessage.ASSET_CONTENT,
+            conversationId = conversationId,
+            expirationData = null,
+        )
+        val assetId = TestMessage.ASSET_CONTENT.value.remoteData.assetId
+        val (arrangement, handler) = arrange {
+            withGetMessageById(Either.Right(originalMessage))
+            withMarkAsDeleted(Either.Right(Unit))
+            withDeleteAssetLocally(Either.Right(Unit))
+        }
+
+        handler(
+            content = MessageContent.DeleteMessage(originalMessage.id),
+            conversationId = conversationId,
+            senderUserId = originalMessage.senderUserId,
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.assetRepository.deleteAssetLocally(eq(assetId))
+        }
+    }
+
     private companion object {
         val SELF_USER_ID = UserId("selfID", "selfDomain")
     }
@@ -340,6 +366,12 @@ class DeleteMessageHandlerTest {
         suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>) = apply {
             everySuspend {
                 messageRepository.markMessageAsDeleted(any(), any())
+            } returns result
+        }
+
+        suspend fun withDeleteAssetLocally(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
+            everySuspend {
+                assetRepository.deleteAssetLocally(any())
             } returns result
         }
     }

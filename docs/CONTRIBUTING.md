@@ -42,12 +42,12 @@ Always pass the native library path when running JVM tests or the CLI:
 ./gradlew :logic:jvmTest --tests "com.wire.kalium.logic.feature.auth.LoginUseCaseTest.givenEmailHasLeadingOrTrailingSpaces*" -Djava.library.path=./native/libs
 
 # iOS tests
-./gradlew iosSimulatorArm64Test -PUSE_UNIFIED_CORE_CRYPTO=true
-./gradlew :core:cryptography:iosSimulatorArm64Test -PUSE_UNIFIED_CORE_CRYPTO=true
-./gradlew iOSOnlyAffectedTest -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew iosSimulatorArm64Test
+./gradlew :core:cryptography:iosSimulatorArm64Test
+./gradlew iOSOnlyAffectedTest
 
 # JavaScript tests
-./gradlew jsTest -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew jsTest
 
 # Lint
 ./gradlew detekt
@@ -65,19 +65,6 @@ Always pass the native library path when running JVM tests or the CLI:
 ```
 
 ## Build Configuration
-
-### `USE_UNIFIED_CORE_CRYPTO`
-
-Controls which CoreCrypto dependency is used:
-
-- `false`: platform-specific crypto artifacts
-- `true`: unified `core-crypto-kmp` artifact
-
-Apple and JavaScript builds require the unified artifact:
-
-```bash
-./gradlew <task> -PUSE_UNIFIED_CORE_CRYPTO=true
-```
 
 ### `kalium.providerCacheScope`
 

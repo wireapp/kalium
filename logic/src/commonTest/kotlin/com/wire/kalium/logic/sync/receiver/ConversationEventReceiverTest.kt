@@ -21,6 +21,8 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
@@ -443,6 +445,63 @@ class ConversationEventReceiverTest {
         }
     }
 
+    @Test
+    fun givenProtocolUpdateEvent_whenOnEventInvoked_thenProtocolHandlerResultIsPropagated() = runTest {
+        val event = TestEvent.newConversationProtocolEvent()
+        val (arrangement, handler) = Arrangement().arrange()
+
+        val result = handler.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        result.shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.protocolUpdateEventHandler.handle(any(), eq(event))
+        }
+    }
+
+    @Test
+    fun givenChannelAddPermissionEvent_whenOnEventInvoked_thenChannelHandlerResultIsPropagated() = runTest {
+        val event = TestEvent.newConversationChannelAddPermissionEvent()
+        val (arrangement, handler) = Arrangement().arrange()
+
+        val result = handler.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        result.shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.channelAddPermissionUpdateEventHandler.handle(eq(event))
+        }
+    }
+
+    @Test
+    fun givenMlsResetEvent_whenOnEventInvoked_thenMlsResetHandlerIsCalled() = runTest {
+        val event = Event.Conversation.MLSReset(
+            id = "event-id",
+            conversationId = TestEvent.newConversationProtocolEvent().conversationId,
+            from = TestUser.SELF.id,
+            groupID = GroupID("old-group"),
+            newGroupID = GroupID("new-group"),
+        )
+        val (arrangement, handler) = Arrangement().arrange()
+
+        val result = handler.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        result.shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsResetConversationEventHandler.handle(any(), eq(event))
+        }
+    }
+
+    @Test
+    fun givenPendingMessageSideEffects_whenFlushing_thenNewMessageHandlerIsFlushed() = runTest {
+        val (arrangement, handler) = Arrangement().arrange()
+
+        val result = handler.flushPendingSideEffects()
+
+        result.shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.newMessageEventHandler.flushPendingSideEffects()
+        }
+    }
+
     private class Arrangement :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
@@ -495,6 +554,7 @@ class ConversationEventReceiverTest {
         private suspend fun withDefaultSuccessfulHandlers() {
             everySuspend { newMessageEventHandler.handleNewProteusMessage(any(), any(), any()) } returns Unit
             everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), any(), any()) } returns Unit
+            everySuspend { newMessageEventHandler.flushPendingSideEffects() } returns Unit
             everySuspend { newConversationEventHandler.handle(any(), any()) } returns Unit
             everySuspend { deletedConversationEventHandler.handle(any(), any()) } returns Unit
             everySuspend { memberJoinEventHandler.handle(any(), any()) } returns Either.Right(Unit)

@@ -17,19 +17,13 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.persistence.config.CRLUrlExpirationList
-import com.wire.kalium.persistence.config.CRLWithExpiration
+import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -39,89 +33,61 @@ import kotlin.test.Test
 class CheckCrlRevocationListUseCaseTest {
 
     @Test
-    fun givenExpiredCRL_whenTimeElapses_thenCheckRevocationList() = runTest {
+    fun givenE2EIIsEnabled_whenInvokedWithoutForce_thenCheckCredentialsOnce() = runTest {
         val (arrangement, checkCrlWorker) = Arrangement()
-            .withExpiredCRL()
-            .withCheckRevocationListResult()
+            .withE2EIEnabled(true)
+            .withCheckCredentialsResult()
             .arrange()
 
         checkCrlWorker(false)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.certificateRevocationListRepository.getCRLs()
+            arrangement.e2eiRepository.checkCredentials()
         }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.checkRevocationList.check(any(), eq(DUMMY_URL))
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.certificateRevocationListRepository.addOrUpdateCRL(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
-        }
-
     }
 
     @Test
-    fun givenForceIsTrue_thenCheckRevicationEvenIfTimeDidnotElapse() = runTest {
+    fun givenE2EIIsDisabled_whenForceIsTrue_thenCheckCredentialsOnce() = runTest {
         val (arrangement, checkCrlWorker) = Arrangement()
-            .withNonExpiredCRL()
-            .withCheckRevocationListResult()
+            .withE2EIEnabled(false)
+            .withCheckCredentialsResult()
             .arrange()
 
         checkCrlWorker(true)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.certificateRevocationListRepository.getCRLs()
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.checkRevocationList.check(any(), eq(DUMMY_URL))
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.certificateRevocationListRepository.addOrUpdateCRL(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
+            arrangement.e2eiRepository.checkCredentials()
         }
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    @Test
+    fun givenE2EIIsDisabled_whenInvokedWithoutForce_thenDoNotCheckCredentials() = runTest {
+        val (arrangement, checkCrlWorker) = Arrangement()
+            .withE2EIEnabled(false)
+            .arrange()
 
-        val certificateRevocationListRepository: CertificateRevocationListRepository = mock(mode = MockMode.autoUnit)
-        val checkRevocationList: RevocationListChecker = mock(mode = MockMode.autoUnit)
+        checkCrlWorker(false)
 
-        suspend fun arrange() = this to CheckCrlRevocationListUseCase(
-            certificateRevocationListRepository, checkRevocationList, cryptoTransactionProvider, kaliumLogger
+        verifySuspend(VerifyMode.not) { arrangement.e2eiRepository.checkCredentials() }
+    }
+
+    private class Arrangement {
+
+        val e2eiRepository: E2EIRepository = mock(mode = MockMode.autoUnit)
+        val isE2EIEnabledUseCase: IsE2EIEnabledUseCase = mock(mode = MockMode.autoUnit)
+
+        fun arrange() = this to CheckCrlRevocationListUseCase(
+            e2eiRepository,
+            isE2EIEnabledUseCase,
+            kaliumLogger
         )
-            .also {
-                withMLSTransactionReturning(Either.Right(Unit))
-            }
 
-        suspend fun withNoCRL() = apply {
-            everySuspend {
-                certificateRevocationListRepository.getCRLs()
-            } returns null
+        suspend fun withE2EIEnabled(enabled: Boolean) = apply {
+            everySuspend { isE2EIEnabledUseCase() } returns enabled
         }
 
-        suspend fun withNonExpiredCRL() = apply {
-            everySuspend {
-                certificateRevocationListRepository.getCRLs()
-            } returns CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, FUTURE_TIMESTAMP)))
+        suspend fun withCheckCredentialsResult() = apply {
+            everySuspend { e2eiRepository.checkCredentials() } returns Either.Right(Unit)
         }
-
-        suspend fun withExpiredCRL() = apply {
-            everySuspend {
-                certificateRevocationListRepository.getCRLs()
-            } returns CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP)))
-        }
-        suspend fun withCheckRevocationListResult() = apply {
-            everySuspend {
-                checkRevocationList.check(any(), any())
-            } returns Either.Right(FUTURE_TIMESTAMP)
-        }
-    }
-
-    companion object {
-        const val DUMMY_URL = "https://dummy.url"
-        val TIMESTAMP = 633218892.toULong()
-        val FUTURE_TIMESTAMP = 4104511692.toULong()
     }
 }

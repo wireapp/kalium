@@ -18,10 +18,12 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.CryptoUserID
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
@@ -35,6 +37,7 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
@@ -137,6 +140,30 @@ class ProteusMessageUnpackerTest {
         }
     }
 
+    @Test
+    fun givenProteusFailure_whenUnpacking_thenEveryFailureResolutionIsPropagated() = runTest {
+        val codes = listOf(
+            ProteusException.Code.DUPLICATE_MESSAGE,
+            ProteusException.Code.SESSION_NOT_FOUND,
+            ProteusException.Code.INVALID_SIGNATURE,
+        )
+
+        codes.forEach { code ->
+            val exception = ProteusException("proteus failure", code, 1)
+            val (arrangement, proteusUnpacker) = Arrangement()
+                .withProteusClientThrowing(exception)
+                .arrange()
+            val event = TestEvent.newMessageEvent(Base64.encode("message".encodeToByteArray()))
+
+            val result = proteusUnpacker.unpackProteusMessage(arrangement.proteusContext, event) { it }
+
+            result.shouldFail {
+                assertIs<ProteusFailure>(it)
+                assertEquals(code, it.proteusException.code)
+            }
+        }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
         val protoContentMapper = mock<ProtoContentMapper>()
 
@@ -146,6 +173,14 @@ class ProteusMessageUnpackerTest {
             } calls {
                 val lambda = it.args[2] as suspend (ByteArray) -> Either<*, *>
                 lambda.invoke(decryptedData)
+            }
+        }
+
+        suspend fun withProteusClientThrowing(exception: ProteusException) = apply {
+            everySuspend {
+                proteusContext.decryptMessage<Either<*, *>>(any(), any(), any())
+            } calls {
+                throw exception
             }
         }
 

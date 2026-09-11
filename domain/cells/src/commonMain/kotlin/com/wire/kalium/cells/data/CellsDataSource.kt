@@ -174,17 +174,24 @@ internal class CellsDataSource internal constructor(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit) =
-        try {
-            fileSystem.sink(out, true).use { sink ->
+    override suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit> {
+        val partPath = out.parent?.let { it / "${out.name}.part" }
+            ?: return Either.Left(NetworkFailure.ServerMiscommunication(Exception("Cannot derive .part path for: $out")))
+
+        return try {
+            fileSystem.sink(partPath).use { sink ->
                 awsClient.download(cellPath, sink, onProgressUpdate)
-                Either.Right(Unit)
             }
+            fileSystem.atomicMove(partPath, out)
+            Either.Right(Unit)
         } catch (e: CancellationException) {
+            fileSystem.delete(partPath, mustExist = false)
             throw e
         } catch (e: Exception) {
+            fileSystem.delete(partPath, mustExist = false)
             Either.Left(NetworkFailure.ServerMiscommunication(e))
         }
+    }
 
     override suspend fun getPreviews(nodeUuid: String) = withContext(dispatchers.io) {
         wrapApiRequest {

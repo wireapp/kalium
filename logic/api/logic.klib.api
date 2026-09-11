@@ -621,6 +621,7 @@ abstract interface com.wire.kalium.logic.feature.conversation.channel/UpdateChan
 }
 
 abstract interface com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase { // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase|null[0]
+    abstract suspend fun discardPendingMLSGroupCreation(com.wire.kalium.logic.data.id/QualifiedID): kotlin/Boolean // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase.discardPendingMLSGroupCreation|discardPendingMLSGroupCreation(com.wire.kalium.logic.data.id.QualifiedID){}[0]
     abstract suspend fun invoke(kotlin/String, kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID>, com.wire.kalium.logic.data.conversation/CreateConversationParam): com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase.invoke|invoke(kotlin.String;kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>;com.wire.kalium.logic.data.conversation.CreateConversationParam){}[0]
     abstract suspend fun retryPendingMLSGroupCreation(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult // com.wire.kalium.logic.feature.conversation.createconversation/CreateRegularGroupUseCase.retryPendingMLSGroupCreation|retryPendingMLSGroupCreation(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
@@ -1199,8 +1200,7 @@ abstract interface com.wire.kalium.logic.feature.conversation/UpdateConversation
 }
 
 abstract interface com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIUseCase { // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIUseCase|null[0]
-    abstract suspend fun finalizeEnrollment(kotlin/String, kotlin/String, com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized): com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIUseCase.finalizeEnrollment|finalizeEnrollment(kotlin.String;kotlin.String;com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult.Initialized){}[0]
-    abstract suspend fun initialEnrollment(kotlin/Boolean = ...): com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIUseCase.initialEnrollment|initialEnrollment(kotlin.Boolean){}[0]
+    abstract suspend fun invoke(kotlin/Boolean = ..., kotlin.coroutines/SuspendFunction1<com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest, kotlin/String>): com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIUseCase.invoke|invoke(kotlin.Boolean;kotlin.coroutines.SuspendFunction1<com.wire.kalium.logic.data.e2ei.E2EIAuthenticationRequest,kotlin.String>){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.e2ei.usecase/FetchConversationMLSVerificationStatusUseCase { // com.wire.kalium.logic.feature.e2ei.usecase/FetchConversationMLSVerificationStatusUseCase|null[0]
@@ -1401,27 +1401,52 @@ abstract interface com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase
     }
 }
 
-abstract interface com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase { // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+abstract interface com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 
-    sealed interface Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result|null[0]
-        final class Failure : com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure|null[0]
-            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+    sealed interface Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
 
-            final val coreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.coreFailure|{}coreFailure[0]
-                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+            final val coreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
 
-            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.component1|component1(){}[0]
-            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Failure.toString|toString(){}[0]
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Failure.toString|toString(){}[0]
         }
 
-        final object Success : com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Success|null[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Success.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase.Result.Success.toString|toString(){}[0]
+        final object Success : com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
+abstract interface com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result { // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase.Result.Success.toString|toString(){}[0]
         }
     }
 }
@@ -1430,8 +1455,8 @@ abstract interface com.wire.kalium.logic.feature.meeting/EnsureMeetingIsMLSEstab
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/EnsureMeetingIsMLSEstablishedUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
-abstract interface com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase { // com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase|null[0]
-    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant = ...): com.wire.kalium.logic.data.meeting/MeetingOccurrence? // com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant){}[0]
+abstract interface com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase { // com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase|null[0]
+    abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlinx.datetime/Instant = ...): com.wire.kalium.logic.data.meeting/MeetingOccurrence? // com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlinx.datetime.Instant){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase { // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase|null[0]
@@ -2353,8 +2378,10 @@ sealed interface com.wire.kalium.logic.feature.client/Result { // com.wire.kaliu
 
 sealed interface com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult { // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult|null[0]
     final class BackendConflictFailure : com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult { // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure|null[0]
-        constructor <init>(kotlin.collections/List<kotlin/String>) // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.<init>|<init>(kotlin.collections.List<kotlin.String>){}[0]
+        constructor <init>(kotlin.collections/List<kotlin/String>, com.wire.kalium.logic.data.id/QualifiedID? = ...) // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.<init>|<init>(kotlin.collections.List<kotlin.String>;com.wire.kalium.logic.data.id.QualifiedID?){}[0]
 
+        final val conversationId // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.conversationId|{}conversationId[0]
+            final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID? // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
         final val domains // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.domains|{}domains[0]
             final fun <get-domains>(): kotlin.collections/List<kotlin/String> // com.wire.kalium.logic.feature.conversation.createconversation/ConversationCreationResult.BackendConflictFailure.domains.<get-domains>|<get-domains>(){}[0]
     }
@@ -2476,46 +2503,6 @@ sealed interface com.wire.kalium.logic.feature.conversation/RecoverMLSConversati
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Success.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Success.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Success.toString|toString(){}[0]
-    }
-}
-
-sealed interface com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult { // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult|null[0]
-    final class Finalized : com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult { // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Finalized|null[0]
-        constructor <init>(kotlin/String) // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Finalized.<init>|<init>(kotlin.String){}[0]
-
-        final val certificate // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Finalized.certificate|{}certificate[0]
-            final fun <get-certificate>(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Finalized.certificate.<get-certificate>|<get-certificate>(){}[0]
-    }
-
-    final class Initialized : com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult { // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized|null[0]
-        constructor <init>(kotlin/String, kotlinx.serialization.json/JsonObject, com.wire.kalium.logic.data.e2ei/Nonce, kotlin/String, com.wire.kalium.cryptography/NewAcmeAuthz, com.wire.kalium.cryptography/NewAcmeAuthz, kotlin/Boolean = ...) // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.<init>|<init>(kotlin.String;kotlinx.serialization.json.JsonObject;com.wire.kalium.logic.data.e2ei.Nonce;kotlin.String;com.wire.kalium.cryptography.NewAcmeAuthz;com.wire.kalium.cryptography.NewAcmeAuthz;kotlin.Boolean){}[0]
-
-        final val dPopAuthorizations // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.dPopAuthorizations|{}dPopAuthorizations[0]
-            final fun <get-dPopAuthorizations>(): com.wire.kalium.cryptography/NewAcmeAuthz // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.dPopAuthorizations.<get-dPopAuthorizations>|<get-dPopAuthorizations>(){}[0]
-        final val isNewClientRegistration // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.isNewClientRegistration|{}isNewClientRegistration[0]
-            final fun <get-isNewClientRegistration>(): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.isNewClientRegistration.<get-isNewClientRegistration>|<get-isNewClientRegistration>(){}[0]
-        final val lastNonce // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.lastNonce|{}lastNonce[0]
-            final fun <get-lastNonce>(): com.wire.kalium.logic.data.e2ei/Nonce // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.lastNonce.<get-lastNonce>|<get-lastNonce>(){}[0]
-        final val oAuthClaims // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.oAuthClaims|{}oAuthClaims[0]
-            final fun <get-oAuthClaims>(): kotlinx.serialization.json/JsonObject // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.oAuthClaims.<get-oAuthClaims>|<get-oAuthClaims>(){}[0]
-        final val oidcAuthorizations // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.oidcAuthorizations|{}oidcAuthorizations[0]
-            final fun <get-oidcAuthorizations>(): com.wire.kalium.cryptography/NewAcmeAuthz // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.oidcAuthorizations.<get-oidcAuthorizations>|<get-oidcAuthorizations>(){}[0]
-        final val orderLocation // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.orderLocation|{}orderLocation[0]
-            final fun <get-orderLocation>(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.orderLocation.<get-orderLocation>|<get-orderLocation>(){}[0]
-        final val target // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.target|{}target[0]
-            final fun <get-target>(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.target.<get-target>|<get-target>(){}[0]
-
-        final fun component1(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component1|component1(){}[0]
-        final fun component2(): kotlinx.serialization.json/JsonObject // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component2|component2(){}[0]
-        final fun component3(): com.wire.kalium.logic.data.e2ei/Nonce // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component3|component3(){}[0]
-        final fun component4(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component4|component4(){}[0]
-        final fun component5(): com.wire.kalium.cryptography/NewAcmeAuthz // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component5|component5(){}[0]
-        final fun component6(): com.wire.kalium.cryptography/NewAcmeAuthz // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component6|component6(){}[0]
-        final fun component7(): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.component7|component7(){}[0]
-        final fun copy(kotlin/String = ..., kotlinx.serialization.json/JsonObject = ..., com.wire.kalium.logic.data.e2ei/Nonce = ..., kotlin/String = ..., com.wire.kalium.cryptography/NewAcmeAuthz = ..., com.wire.kalium.cryptography/NewAcmeAuthz = ..., kotlin/Boolean = ...): com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.copy|copy(kotlin.String;kotlinx.serialization.json.JsonObject;com.wire.kalium.logic.data.e2ei.Nonce;kotlin.String;com.wire.kalium.cryptography.NewAcmeAuthz;com.wire.kalium.cryptography.NewAcmeAuthz;kotlin.Boolean){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized.toString|toString(){}[0]
     }
 }
 
@@ -3036,6 +3023,25 @@ final class com.wire.kalium.logic.data.conversation/ConversationQueryConfig { //
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationQueryConfig.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationQueryConfig.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.conversation/ConversationQueryConfig.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest { // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest|null[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/String) // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.<init>|<init>(kotlin.String;kotlin.String;kotlin.String){}[0]
+
+    final val acmeAudience // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.acmeAudience|{}acmeAudience[0]
+        final fun <get-acmeAudience>(): kotlin/String // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.acmeAudience.<get-acmeAudience>|<get-acmeAudience>(){}[0]
+    final val keyAuth // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.keyAuth|{}keyAuth[0]
+        final fun <get-keyAuth>(): kotlin/String // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.keyAuth.<get-keyAuth>|<get-keyAuth>(){}[0]
+    final val target // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.target|{}target[0]
+        final fun <get-target>(): kotlin/String // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.target.<get-target>|<get-target>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.component1|component1(){}[0]
+    final fun component2(): kotlin/String // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.component2|component2(){}[0]
+    final fun component3(): kotlin/String // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.component3|component3(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ...): com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.copy|copy(kotlin.String;kotlin.String;kotlin.String){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.e2ei/E2EIAuthenticationRequest.toString|toString(){}[0]
 }
 
 final class com.wire.kalium.logic.data.message.paging/NomadMessagePagingResult { // com.wire.kalium.logic.data.message.paging/NomadMessagePagingResult|null[0]
@@ -4424,12 +4430,14 @@ final class com.wire.kalium.logic.feature.incallreaction/SendInCallReactionUseCa
 final class com.wire.kalium.logic.feature.meeting/MeetingScope { // com.wire.kalium.logic.feature.meeting/MeetingScope|null[0]
     final val createNewMeeting // com.wire.kalium.logic.feature.meeting/MeetingScope.createNewMeeting|{}createNewMeeting[0]
         final fun <get-createNewMeeting>(): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.createNewMeeting.<get-createNewMeeting>|<get-createNewMeeting>(){}[0]
-    final val deleteMeeting // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeeting|{}deleteMeeting[0]
-        final fun <get-deleteMeeting>(): com.wire.kalium.logic.feature.meeting/DeleteMeetingUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeeting.<get-deleteMeeting>|<get-deleteMeeting>(){}[0]
+    final val deleteMeetingForEveryone // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeetingForEveryone|{}deleteMeetingForEveryone[0]
+        final fun <get-deleteMeetingForEveryone>(): com.wire.kalium.logic.feature.meeting/DeleteMeetingForEveryoneUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeetingForEveryone.<get-deleteMeetingForEveryone>|<get-deleteMeetingForEveryone>(){}[0]
+    final val deleteMeetingForMe // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeetingForMe|{}deleteMeetingForMe[0]
+        final fun <get-deleteMeetingForMe>(): com.wire.kalium.logic.feature.meeting/DeleteMeetingForMeUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.deleteMeetingForMe.<get-deleteMeetingForMe>|<get-deleteMeetingForMe>(){}[0]
     final val ensureMeetingIsMLSEstablished // com.wire.kalium.logic.feature.meeting/MeetingScope.ensureMeetingIsMLSEstablished|{}ensureMeetingIsMLSEstablished[0]
         final fun <get-ensureMeetingIsMLSEstablished>(): com.wire.kalium.logic.feature.meeting/EnsureMeetingIsMLSEstablishedUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.ensureMeetingIsMLSEstablished.<get-ensureMeetingIsMLSEstablished>|<get-ensureMeetingIsMLSEstablished>(){}[0]
-    final val getNextMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextMeetingOccurrence|{}getNextMeetingOccurrence[0]
-        final fun <get-getNextMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/GetNextMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextMeetingOccurrence.<get-getNextMeetingOccurrence>|<get-getNextMeetingOccurrence>(){}[0]
+    final val getNextUnfinishedMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextUnfinishedMeetingOccurrence|{}getNextUnfinishedMeetingOccurrence[0]
+        final fun <get-getNextUnfinishedMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextUnfinishedMeetingOccurrence.<get-getNextUnfinishedMeetingOccurrence>|<get-getNextUnfinishedMeetingOccurrence>(){}[0]
     final val getPaginatedMeetingOccurrenceDetails // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails|{}getPaginatedMeetingOccurrenceDetails[0]
         final fun <get-getPaginatedMeetingOccurrenceDetails>(): com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails.<get-getPaginatedMeetingOccurrenceDetails>|<get-getPaginatedMeetingOccurrenceDetails>(){}[0]
     final val observeMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence|{}observeMeetingOccurrence[0]
@@ -5447,7 +5455,7 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
 }
 
 final class com.wire.kalium.logic.featureFlags/KaliumConfigs { // com.wire.kalium.logic.featureFlags/KaliumConfigs|null[0]
-    constructor <init>(kotlin/Boolean = ..., kotlin/Lazy<com.wire.kalium.logic.featureFlags/BuildFileRestrictionState> = ..., kotlin/Function0<kotlin/Boolean> = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ..., kotlin.collections/List<com.wire.kalium.network.utils/TestRequestHandler>? = ..., com.wire.kalium.network/NetworkStateObserver? = ..., com.wire.kalium.logic.util/KaliumMockWebsocket? = ..., kotlin.time/Duration = ..., kotlin/Int? = ..., kotlin/Int = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Function1<kotlin/String, kotlin/String>? = ...) // com.wire.kalium.logic.featureFlags/KaliumConfigs.<init>|<init>(kotlin.Boolean;kotlin.Lazy<com.wire.kalium.logic.featureFlags.BuildFileRestrictionState>;kotlin.Function0<kotlin.Boolean>;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.collections.List<com.wire.kalium.network.utils.TestRequestHandler>?;com.wire.kalium.network.NetworkStateObserver?;com.wire.kalium.logic.util.KaliumMockWebsocket?;kotlin.time.Duration;kotlin.Int?;kotlin.Int;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.Boolean;kotlin.Boolean;kotlin.Function1<kotlin.String,kotlin.String>?){}[0]
+    constructor <init>(kotlin/Boolean = ..., kotlin/Lazy<com.wire.kalium.logic.featureFlags/BuildFileRestrictionState> = ..., kotlin/Function0<kotlin/Boolean> = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ..., kotlin.collections/List<com.wire.kalium.network.utils/TestRequestHandler>? = ..., com.wire.kalium.network/NetworkStateObserver? = ..., com.wire.kalium.logic.util/KaliumMockWebsocket? = ..., com.wire.kalium.network/HttpTrafficObserver? = ..., kotlin.time/Duration = ..., kotlin/Int? = ..., kotlin/Int = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Function1<kotlin/String, kotlin/String>? = ..., kotlin/Boolean = ...) // com.wire.kalium.logic.featureFlags/KaliumConfigs.<init>|<init>(kotlin.Boolean;kotlin.Lazy<com.wire.kalium.logic.featureFlags.BuildFileRestrictionState>;kotlin.Function0<kotlin.Boolean>;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.collections.List<com.wire.kalium.network.utils.TestRequestHandler>?;com.wire.kalium.network.NetworkStateObserver?;com.wire.kalium.logic.util.KaliumMockWebsocket?;com.wire.kalium.network.HttpTrafficObserver?;kotlin.time.Duration;kotlin.Int?;kotlin.Int;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.Boolean;kotlin.Boolean;kotlin.Function1<kotlin.String,kotlin.String>?;kotlin.Boolean){}[0]
 
     final val blockCrossBackendLogin // com.wire.kalium.logic.featureFlags/KaliumConfigs.blockCrossBackendLogin|{}blockCrossBackendLogin[0]
         final fun <get-blockCrossBackendLogin>(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.blockCrossBackendLogin.<get-blockCrossBackendLogin>|<get-blockCrossBackendLogin>(){}[0]
@@ -5463,6 +5471,8 @@ final class com.wire.kalium.logic.featureFlags/KaliumConfigs { // com.wire.kaliu
         final fun <get-developmentApiEnabled>(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.developmentApiEnabled.<get-developmentApiEnabled>|<get-developmentApiEnabled>(){}[0]
     final val domainWithFaultyKeysMap // com.wire.kalium.logic.featureFlags/KaliumConfigs.domainWithFaultyKeysMap|{}domainWithFaultyKeysMap[0]
         final fun <get-domainWithFaultyKeysMap>(): kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> // com.wire.kalium.logic.featureFlags/KaliumConfigs.domainWithFaultyKeysMap.<get-domainWithFaultyKeysMap>|<get-domainWithFaultyKeysMap>(){}[0]
+    final val drivePermissionsEnabled // com.wire.kalium.logic.featureFlags/KaliumConfigs.drivePermissionsEnabled|{}drivePermissionsEnabled[0]
+        final fun <get-drivePermissionsEnabled>(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.drivePermissionsEnabled.<get-drivePermissionsEnabled>|<get-drivePermissionsEnabled>(){}[0]
     final val enableCalling // com.wire.kalium.logic.featureFlags/KaliumConfigs.enableCalling|{}enableCalling[0]
         final fun <get-enableCalling>(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.enableCalling.<get-enableCalling>|<get-enableCalling>(){}[0]
     final val encryptProteusStorage // com.wire.kalium.logic.featureFlags/KaliumConfigs.encryptProteusStorage|{}encryptProteusStorage[0]
@@ -5473,6 +5483,8 @@ final class com.wire.kalium.logic.featureFlags/KaliumConfigs { // com.wire.kaliu
         final fun <get-forceConstantBitrateCalls>(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.forceConstantBitrateCalls.<get-forceConstantBitrateCalls>|<get-forceConstantBitrateCalls>(){}[0]
     final val guestRoomLink // com.wire.kalium.logic.featureFlags/KaliumConfigs.guestRoomLink|{}guestRoomLink[0]
         final fun <get-guestRoomLink>(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.guestRoomLink.<get-guestRoomLink>|<get-guestRoomLink>(){}[0]
+    final val httpTrafficObserver // com.wire.kalium.logic.featureFlags/KaliumConfigs.httpTrafficObserver|{}httpTrafficObserver[0]
+        final fun <get-httpTrafficObserver>(): com.wire.kalium.network/HttpTrafficObserver? // com.wire.kalium.logic.featureFlags/KaliumConfigs.httpTrafficObserver.<get-httpTrafficObserver>|<get-httpTrafficObserver>(){}[0]
     final val ignoreSSLCertificatesForUnboundCalls // com.wire.kalium.logic.featureFlags/KaliumConfigs.ignoreSSLCertificatesForUnboundCalls|{}ignoreSSLCertificatesForUnboundCalls[0]
         final fun <get-ignoreSSLCertificatesForUnboundCalls>(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.ignoreSSLCertificatesForUnboundCalls.<get-ignoreSSLCertificatesForUnboundCalls>|<get-ignoreSSLCertificatesForUnboundCalls>(){}[0]
     final val isDebug // com.wire.kalium.logic.featureFlags/KaliumConfigs.isDebug|{}isDebug[0]
@@ -5518,29 +5530,31 @@ final class com.wire.kalium.logic.featureFlags/KaliumConfigs { // com.wire.kaliu
     final fun component14(): kotlin.collections/List<com.wire.kalium.network.utils/TestRequestHandler>? // com.wire.kalium.logic.featureFlags/KaliumConfigs.component14|component14(){}[0]
     final fun component15(): com.wire.kalium.network/NetworkStateObserver? // com.wire.kalium.logic.featureFlags/KaliumConfigs.component15|component15(){}[0]
     final fun component16(): com.wire.kalium.logic.util/KaliumMockWebsocket? // com.wire.kalium.logic.featureFlags/KaliumConfigs.component16|component16(){}[0]
-    final fun component17(): kotlin.time/Duration // com.wire.kalium.logic.featureFlags/KaliumConfigs.component17|component17(){}[0]
-    final fun component18(): kotlin/Int? // com.wire.kalium.logic.featureFlags/KaliumConfigs.component18|component18(){}[0]
-    final fun component19(): kotlin/Int // com.wire.kalium.logic.featureFlags/KaliumConfigs.component19|component19(){}[0]
+    final fun component17(): com.wire.kalium.network/HttpTrafficObserver? // com.wire.kalium.logic.featureFlags/KaliumConfigs.component17|component17(){}[0]
+    final fun component18(): kotlin.time/Duration // com.wire.kalium.logic.featureFlags/KaliumConfigs.component18|component18(){}[0]
+    final fun component19(): kotlin/Int? // com.wire.kalium.logic.featureFlags/KaliumConfigs.component19|component19(){}[0]
     final fun component2(): kotlin/Lazy<com.wire.kalium.logic.featureFlags/BuildFileRestrictionState> // com.wire.kalium.logic.featureFlags/KaliumConfigs.component2|component2(){}[0]
-    final fun component20(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component20|component20(){}[0]
+    final fun component20(): kotlin/Int // com.wire.kalium.logic.featureFlags/KaliumConfigs.component20|component20(){}[0]
     final fun component21(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component21|component21(){}[0]
     final fun component22(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component22|component22(){}[0]
     final fun component23(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component23|component23(){}[0]
     final fun component24(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component24|component24(){}[0]
     final fun component25(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component25|component25(){}[0]
     final fun component26(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component26|component26(){}[0]
-    final fun component27(): kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> // com.wire.kalium.logic.featureFlags/KaliumConfigs.component27|component27(){}[0]
-    final fun component28(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component28|component28(){}[0]
+    final fun component27(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component27|component27(){}[0]
+    final fun component28(): kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> // com.wire.kalium.logic.featureFlags/KaliumConfigs.component28|component28(){}[0]
     final fun component29(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component29|component29(){}[0]
     final fun component3(): kotlin/Function0<kotlin/Boolean> // com.wire.kalium.logic.featureFlags/KaliumConfigs.component3|component3(){}[0]
-    final fun component30(): kotlin/Function1<kotlin/String, kotlin/String>? // com.wire.kalium.logic.featureFlags/KaliumConfigs.component30|component30(){}[0]
+    final fun component30(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component30|component30(){}[0]
+    final fun component31(): kotlin/Function1<kotlin/String, kotlin/String>? // com.wire.kalium.logic.featureFlags/KaliumConfigs.component31|component31(){}[0]
+    final fun component32(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component32|component32(){}[0]
     final fun component4(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component4|component4(){}[0]
     final fun component5(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component5|component5(){}[0]
     final fun component6(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component6|component6(){}[0]
     final fun component7(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component7|component7(){}[0]
     final fun component8(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component8|component8(){}[0]
     final fun component9(): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.component9|component9(){}[0]
-    final fun copy(kotlin/Boolean = ..., kotlin/Lazy<com.wire.kalium.logic.featureFlags/BuildFileRestrictionState> = ..., kotlin/Function0<kotlin/Boolean> = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ..., kotlin.collections/List<com.wire.kalium.network.utils/TestRequestHandler>? = ..., com.wire.kalium.network/NetworkStateObserver? = ..., com.wire.kalium.logic.util/KaliumMockWebsocket? = ..., kotlin.time/Duration = ..., kotlin/Int? = ..., kotlin/Int = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Function1<kotlin/String, kotlin/String>? = ...): com.wire.kalium.logic.featureFlags/KaliumConfigs // com.wire.kalium.logic.featureFlags/KaliumConfigs.copy|copy(kotlin.Boolean;kotlin.Lazy<com.wire.kalium.logic.featureFlags.BuildFileRestrictionState>;kotlin.Function0<kotlin.Boolean>;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.collections.List<com.wire.kalium.network.utils.TestRequestHandler>?;com.wire.kalium.network.NetworkStateObserver?;com.wire.kalium.logic.util.KaliumMockWebsocket?;kotlin.time.Duration;kotlin.Int?;kotlin.Int;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.Boolean;kotlin.Boolean;kotlin.Function1<kotlin.String,kotlin.String>?){}[0]
+    final fun copy(kotlin/Boolean = ..., kotlin/Lazy<com.wire.kalium.logic.featureFlags/BuildFileRestrictionState> = ..., kotlin/Function0<kotlin/Boolean> = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ..., kotlin.collections/List<com.wire.kalium.network.utils/TestRequestHandler>? = ..., com.wire.kalium.network/NetworkStateObserver? = ..., com.wire.kalium.logic.util/KaliumMockWebsocket? = ..., com.wire.kalium.network/HttpTrafficObserver? = ..., kotlin.time/Duration = ..., kotlin/Int? = ..., kotlin/Int = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Function1<kotlin/String, kotlin/String>? = ..., kotlin/Boolean = ...): com.wire.kalium.logic.featureFlags/KaliumConfigs // com.wire.kalium.logic.featureFlags/KaliumConfigs.copy|copy(kotlin.Boolean;kotlin.Lazy<com.wire.kalium.logic.featureFlags.BuildFileRestrictionState>;kotlin.Function0<kotlin.Boolean>;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.collections.List<com.wire.kalium.network.utils.TestRequestHandler>?;com.wire.kalium.network.NetworkStateObserver?;com.wire.kalium.logic.util.KaliumMockWebsocket?;com.wire.kalium.network.HttpTrafficObserver?;kotlin.time.Duration;kotlin.Int?;kotlin.Int;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.Boolean;kotlin.Boolean;kotlin.Function1<kotlin.String,kotlin.String>?;kotlin.Boolean){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.featureFlags/KaliumConfigs.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.featureFlags/KaliumConfigs.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.featureFlags/KaliumConfigs.toString|toString(){}[0]
@@ -5687,17 +5701,6 @@ final value class com.wire.kalium.logic.data.asset/DBFolder { // com.wire.kalium
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.asset/DBFolder.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.asset/DBFolder.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.asset/DBFolder.toString|toString(){}[0]
-}
-
-final value class com.wire.kalium.logic.data.e2ei/Nonce { // com.wire.kalium.logic.data.e2ei/Nonce|null[0]
-    constructor <init>(kotlin/String) // com.wire.kalium.logic.data.e2ei/Nonce.<init>|<init>(kotlin.String){}[0]
-
-    final val value // com.wire.kalium.logic.data.e2ei/Nonce.value|{}value[0]
-        final fun <get-value>(): kotlin/String // com.wire.kalium.logic.data.e2ei/Nonce.value.<get-value>|<get-value>(){}[0]
-
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.e2ei/Nonce.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.e2ei/Nonce.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.data.e2ei/Nonce.toString|toString(){}[0]
 }
 
 final value class com.wire.kalium.logic.data.publicuser.model/UserSearchResult { // com.wire.kalium.logic.data.publicuser.model/UserSearchResult|null[0]
@@ -7210,51 +7213,44 @@ sealed class com.wire.kalium.logic.feature.conversation/UpdateConversationMember
     }
 }
 
-sealed class com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult { // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult|null[0]
-    final class Success : com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult { // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Success|null[0]
-        constructor <init>(kotlin/String) // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Success.<init>|<init>(kotlin.String){}[0]
+sealed class com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult { // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult|null[0]
+    final class Success : com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult { // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Success|null[0]
+        constructor <init>(kotlin/String) // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Success.<init>|<init>(kotlin.String){}[0]
 
-        final val certificate // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Success.certificate|{}certificate[0]
-            final fun <get-certificate>(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Success.certificate.<get-certificate>|<get-certificate>(){}[0]
+        final val certificate // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Success.certificate|{}certificate[0]
+            final fun <get-certificate>(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Success.certificate.<get-certificate>|<get-certificate>(){}[0]
 
-        final fun component1(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Success.component1|component1(){}[0]
-        final fun copy(kotlin/String = ...): com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Success // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Success.copy|copy(kotlin.String){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Success.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Success.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Success.toString|toString(){}[0]
+        final fun component1(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Success.component1|component1(){}[0]
+        final fun copy(kotlin/String = ...): com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Success // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Success.copy|copy(kotlin.String){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Success.toString|toString(){}[0]
     }
 
-    sealed class Failure : com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult { // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure|null[0]
-        final class Generic : com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure { // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.Generic|null[0]
-            constructor <init>(com.wire.kalium.common.error/E2EIFailure) // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.Generic.<init>|<init>(com.wire.kalium.common.error.E2EIFailure){}[0]
+    sealed class Failure : com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult { // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure|null[0]
+        final class Generic : com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure { // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.Generic|null[0]
+            constructor <init>(com.wire.kalium.common.error/E2EIFailure) // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.Generic.<init>|<init>(com.wire.kalium.common.error.E2EIFailure){}[0]
 
-            final val e2EIFailure // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.Generic.e2EIFailure|{}e2EIFailure[0]
-                final fun <get-e2EIFailure>(): com.wire.kalium.common.error/E2EIFailure // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.Generic.e2EIFailure.<get-e2EIFailure>|<get-e2EIFailure>(){}[0]
+            final val e2EIFailure // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.Generic.e2EIFailure|{}e2EIFailure[0]
+                final fun <get-e2EIFailure>(): com.wire.kalium.common.error/E2EIFailure // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.Generic.e2EIFailure.<get-e2EIFailure>|<get-e2EIFailure>(){}[0]
 
-            final fun component1(): com.wire.kalium.common.error/E2EIFailure // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.Generic.component1|component1(){}[0]
-            final fun copy(com.wire.kalium.common.error/E2EIFailure = ...): com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.Generic // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.Generic.copy|copy(com.wire.kalium.common.error.E2EIFailure){}[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.Generic.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.Generic.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.Generic.toString|toString(){}[0]
+            final fun component1(): com.wire.kalium.common.error/E2EIFailure // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.Generic.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/E2EIFailure = ...): com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.Generic // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.Generic.copy|copy(com.wire.kalium.common.error.E2EIFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.Generic.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.Generic.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.Generic.toString|toString(){}[0]
         }
 
-        final class OAuthError : com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure { // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.OAuthError|null[0]
-            constructor <init>(kotlin/String) // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.OAuthError.<init>|<init>(kotlin.String){}[0]
-
-            final val reason // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.OAuthError.reason|{}reason[0]
-                final fun <get-reason>(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.OAuthError.reason.<get-reason>|<get-reason>(){}[0]
-
-            final fun component1(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.OAuthError.component1|component1(){}[0]
-            final fun copy(kotlin/String = ...): com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.OAuthError // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.OAuthError.copy|copy(kotlin.String){}[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.OAuthError.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.OAuthError.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.OAuthError.toString|toString(){}[0]
+        final object E2EIDisabled : com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure { // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.E2EIDisabled|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.E2EIDisabled.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.E2EIDisabled.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.E2EIDisabled.toString|toString(){}[0]
         }
 
-        final object InvalidChallenge : com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure { // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.InvalidChallenge|null[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.InvalidChallenge.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.InvalidChallenge.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/FinalizeEnrollmentResult.Failure.InvalidChallenge.toString|toString(){}[0]
+        final object MissingTeamSettings : com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure { // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.MissingTeamSettings|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.MissingTeamSettings.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.MissingTeamSettings.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/EnrollE2EIResult.Failure.MissingTeamSettings.toString|toString(){}[0]
         }
     }
 }
@@ -7297,48 +7293,6 @@ sealed class com.wire.kalium.logic.feature.e2ei.usecase/GetMLSClientIdentityResu
             final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/GetMLSClientIdentityResult.Failure.IdentityNotFound.equals|equals(kotlin.Any?){}[0]
             final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/GetMLSClientIdentityResult.Failure.IdentityNotFound.hashCode|hashCode(){}[0]
             final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/GetMLSClientIdentityResult.Failure.IdentityNotFound.toString|toString(){}[0]
-        }
-    }
-}
-
-sealed class com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult { // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult|null[0]
-    final class Success : com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult { // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Success|null[0]
-        constructor <init>(com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized) // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Success.<init>|<init>(com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult.Initialized){}[0]
-
-        final val initializationResult // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Success.initializationResult|{}initializationResult[0]
-            final fun <get-initializationResult>(): com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Success.initializationResult.<get-initializationResult>|<get-initializationResult>(){}[0]
-
-        final fun component1(): com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Success.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.logic.feature.e2ei.usecase/E2EIEnrollmentResult.Initialized = ...): com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Success // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Success.copy|copy(com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult.Initialized){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Success.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Success.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Success.toString|toString(){}[0]
-    }
-
-    sealed class Failure : com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult { // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure|null[0]
-        final class Generic : com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure { // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.Generic|null[0]
-            constructor <init>(com.wire.kalium.common.error/E2EIFailure) // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.Generic.<init>|<init>(com.wire.kalium.common.error.E2EIFailure){}[0]
-
-            final val e2EIFailure // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.Generic.e2EIFailure|{}e2EIFailure[0]
-                final fun <get-e2EIFailure>(): com.wire.kalium.common.error/E2EIFailure // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.Generic.e2EIFailure.<get-e2EIFailure>|<get-e2EIFailure>(){}[0]
-
-            final fun component1(): com.wire.kalium.common.error/E2EIFailure // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.Generic.component1|component1(){}[0]
-            final fun copy(com.wire.kalium.common.error/E2EIFailure = ...): com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.Generic // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.Generic.copy|copy(com.wire.kalium.common.error.E2EIFailure){}[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.Generic.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.Generic.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.Generic.toString|toString(){}[0]
-        }
-
-        final object E2EIDisabled : com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure { // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.E2EIDisabled|null[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.E2EIDisabled.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.E2EIDisabled.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.E2EIDisabled.toString|toString(){}[0]
-        }
-
-        final object MissingTeamSettings : com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure { // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.MissingTeamSettings|null[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.MissingTeamSettings.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.MissingTeamSettings.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.e2ei.usecase/InitialEnrollmentResult.Failure.MissingTeamSettings.toString|toString(){}[0]
         }
     }
 }

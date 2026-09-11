@@ -148,7 +148,8 @@ sealed interface MessageEntity {
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
         CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_PROTOCOL_CHANGED_DURING_CALL,
         CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD, MULTIPART,
-        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED, CONVERSATION_APPS_ENABLED_CHANGED
+        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED, CONVERSATION_APPS_ENABLED_CHANGED,
+        CELL_EDITOR_ACCESS, CELL_VIEWER_ACCESS
     }
 
     enum class MemberChangeType {
@@ -398,6 +399,8 @@ sealed class MessageEntityContent {
 
     data object NewConversationWithCellMessage : System()
     data object NewConversationWithCellSelfDeleteDisabledMessage : System()
+    data object CellEditorAccessMessage : System()
+    data object CellViewerAccessMessage : System()
 }
 
 /**

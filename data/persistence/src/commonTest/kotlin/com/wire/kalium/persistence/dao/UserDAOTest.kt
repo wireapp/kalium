@@ -965,6 +965,15 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenUserBelongsToTeam_whenGettingTeamIdByQualifiedId_thenReturnsOnlyTeamId() = runTest {
+        val teamId = "teamId"
+        val user = newUserEntity().copy(team = teamId, id = UserIDEntity("1", "wire.com"))
+        db.userDAO.upsertUser(user)
+
+        assertEquals(teamId, db.userDAO.getTeamIdByQualifiedID(user.id))
+    }
+
+    @Test
     fun givenListOfUsers_whenNoneBelongsToTheTeam_thenReturnFalse() = runTest {
         val teamId = "teamId"
         val users = listOf(

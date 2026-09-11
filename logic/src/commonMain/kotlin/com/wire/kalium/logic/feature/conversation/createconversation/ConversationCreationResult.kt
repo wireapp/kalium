@@ -56,7 +56,11 @@ public sealed interface ConversationCreationResult {
         public val cause: CoreFailure
     ) : ConversationCreationResult
 
+    /**
+     * @property conversationId local pending conversation that still needs cleanup, or `null` when no cleanup is needed.
+     */
     public class BackendConflictFailure(
-        public val domains: List<String>
+        public val domains: List<String>,
+        public val conversationId: ConversationId? = null,
     ) : ConversationCreationResult
 }

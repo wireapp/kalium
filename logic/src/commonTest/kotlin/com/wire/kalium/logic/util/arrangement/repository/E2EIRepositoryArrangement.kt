@@ -27,16 +27,15 @@ import dev.mokkery.mock
 internal interface E2EIRepositoryArrangement {
     val e2eiRepository: E2EIRepository
 
-    suspend fun withFetchACMECertificates()
+    suspend fun withPkiRefreshSuccessful()
 }
 
 internal class E2EIRepositoryArrangementImpl : E2EIRepositoryArrangement {
 
     override val e2eiRepository: E2EIRepository = mock<E2EIRepository>(mode = MockMode.autoUnit)
 
-    override suspend fun withFetchACMECertificates() {
-        everySuspend {
-            e2eiRepository.fetchFederationCertificates()
-        }.returns(Either.Right(Unit))
+    override suspend fun withPkiRefreshSuccessful() {
+        everySuspend { e2eiRepository.fetchFederationCertificates() }.returns(Either.Right(Unit))
+        everySuspend { e2eiRepository.checkCredentials() }.returns(Either.Right(Unit))
     }
 }

@@ -30,6 +30,7 @@ internal interface NewGroupConversationSystemMessageCreatorArrangement {
     val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
 
     suspend fun withPersistUnverifiedWarningMessageSuccess(): NewGroupConversationSystemMessageCreatorArrangement
+    suspend fun withPersistCellAccessMessageSuccess(): NewGroupConversationSystemMessageCreatorArrangement
 }
 
 internal class NewGroupConversationSystemMessageCreatorArrangementImpl : NewGroupConversationSystemMessageCreatorArrangement {
@@ -41,6 +42,12 @@ internal class NewGroupConversationSystemMessageCreatorArrangementImpl : NewGrou
     override suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
         everySuspend {
             newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
+        }.returns(Either.Right(Unit))
+    }
+
+    override suspend fun withPersistCellAccessMessageSuccess() = apply {
+        everySuspend {
+            newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(any(), any(), any(), any())
         }.returns(Either.Right(Unit))
     }
 

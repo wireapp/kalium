@@ -48,7 +48,6 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -68,9 +67,7 @@ class UpdateConversationReadDateUseCaseTest {
         val persistedLastRead = Clock.System.now()
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withObserveByIdReturning(
-                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
-            )
+            withLastReadDateReturning(conversationId, persistedLastRead)
         }
 
         updateConversationReadDateUseCase(conversationId, persistedLastRead - 1.seconds)
@@ -91,9 +88,7 @@ class UpdateConversationReadDateUseCaseTest {
         val lastRead = Clock.System.now()
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withObserveByIdReturning(
-                TestConversation.CONVERSATION.copy(lastReadDate = lastRead)
-            )
+            withLastReadDateReturning(conversationId, lastRead)
         }
 
         updateConversationReadDateUseCase(conversationId, lastRead)
@@ -124,9 +119,7 @@ class UpdateConversationReadDateUseCaseTest {
         val newLastRead = persistedLastRead + 1.seconds
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withObserveByIdReturning(
-                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
-            )
+            withLastReadDateReturning(conversationId, persistedLastRead)
         }
 
         updateConversationReadDateUseCase(conversationId, newLastRead)
@@ -142,9 +135,7 @@ class UpdateConversationReadDateUseCaseTest {
         val newLastRead = persistedLastRead + 1.seconds
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withObserveByIdReturning(
-                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
-            )
+            withLastReadDateReturning(conversationId, persistedLastRead)
         }
 
         updateConversationReadDateUseCase(conversationId, newLastRead)
@@ -160,9 +151,7 @@ class UpdateConversationReadDateUseCaseTest {
         val newLastRead = persistedLastRead + 1.seconds
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withObserveByIdReturning(
-                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
-            )
+            withLastReadDateReturning(conversationId, persistedLastRead)
         }
 
         updateConversationReadDateUseCase(conversationId, newLastRead)
@@ -176,9 +165,7 @@ class UpdateConversationReadDateUseCaseTest {
         val newLastRead = persistedLastRead + 1.seconds
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withObserveByIdReturning(
-                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
-            )
+            withLastReadDateReturning(conversationId, persistedLastRead)
         }
 
         updateConversationReadDateUseCase(conversationId, newLastRead)
@@ -210,7 +197,7 @@ class UpdateConversationReadDateUseCaseTest {
             lastReadDate = persistedLastRead
         )
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withObserveByIdReturning(conversation)
+            withLastReadDateReturning(conversation.id, persistedLastRead)
             withRealSendConfirmation(conversation)
         }
 
@@ -247,9 +234,7 @@ class UpdateConversationReadDateUseCaseTest {
         val newLastRead = persistedLastRead + 1.seconds
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withObserveByIdReturning(
-                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
-            )
+            withLastReadDateReturning(conversationId, persistedLastRead)
         }
 
         updateConversationReadDateUseCase(conversationId, newLastRead, invokeImmediately = true)
@@ -264,9 +249,7 @@ class UpdateConversationReadDateUseCaseTest {
         val persistedLastRead = Clock.System.now()
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withObserveByIdReturning(
-                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
-            )
+            withLastReadDateReturning(conversationId, persistedLastRead)
         }
 
         updateConversationReadDateUseCase(conversationId, persistedLastRead - 1.seconds, invokeImmediately = true)
@@ -307,9 +290,7 @@ class UpdateConversationReadDateUseCaseTest {
         val conversationId = TestConversation.CONVERSATION.id
         val workQueue = ParallelConversationWorkQueue(backgroundScope, kaliumLogger, StandardTestDispatcher(testScheduler))
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withObserveByIdReturning(
-                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
-            )
+            withLastReadDateReturning(conversationId, persistedLastRead)
             this.workQueue = workQueue
         }
 
@@ -370,10 +351,10 @@ class UpdateConversationReadDateUseCaseTest {
             )
         }
 
-        suspend fun withObserveByIdReturning(conversation: Conversation) {
+        suspend fun withLastReadDateReturning(conversationId: ConversationId, lastReadDate: Instant) {
             everySuspend {
-                conversationRepository.observeConversationById(eq(conversation.id))
-            } returns flowOf(Either.Right(conversation))
+                conversationRepository.getConversationLastReadDate(eq(conversationId))
+            } returns Either.Right(lastReadDate)
         }
 
         suspend fun withRealSendConfirmation(conversation: Conversation) {
