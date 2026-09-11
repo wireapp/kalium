@@ -1094,6 +1094,7 @@ public class UserSessionScope internal constructor(
             authenticatedNetworkContainer.teamsApi,
             userId,
             userStorage.database.serviceDAO,
+            userStorage.database.appDAO,
             legalHoldHandler,
             legalHoldRequestHandler,
         )
