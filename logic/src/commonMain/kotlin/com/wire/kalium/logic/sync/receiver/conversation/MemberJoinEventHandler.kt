@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -36,9 +36,11 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlin.uuid.Uuid
 
 internal interface MemberJoinEventHandler {
     suspend fun handle(
@@ -55,7 +57,8 @@ internal class MemberJoinEventHandlerImpl(
     private val legalHoldHandler: LegalHoldHandler,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val selfUserId: UserId,
-    private val fetchConversation: FetchConversationUseCase
+    private val fetchConversation: FetchConversationUseCase,
+    private val kaliumConfigs: KaliumConfigs
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
@@ -103,8 +106,11 @@ internal class MemberJoinEventHandlerImpl(
                         }
 
                         is Conversation.Type.Group -> {
-                            addUnverifiedWarningSystemMessageIfNeeded(event)
+                            if (kaliumConfigs.drivePermissionsEnabled) {
+                                addCellAccessSystemMessageIfNeeded(event, conversation)
+                            }
                             addMemberAddedSystemMessage(event)
+                            addUnverifiedWarningSystemMessageIfNeeded(event)
                         }
 
                         Conversation.Type.Self,
@@ -126,6 +132,21 @@ internal class MemberJoinEventHandlerImpl(
             newGroupConversationSystemMessagesCreator
                 .conversationStartedUnverifiedWarning(event.conversationId, event.dateTime)
         }
+    }
+
+    /**
+     * Tells the self user which access they have to the Shared Drive of the group they just joined.
+     */
+    private suspend fun addCellAccessSystemMessageIfNeeded(event: Event.Conversation.MemberJoin, conversation: Conversation) {
+        if (event.members.none { it.id == selfUserId }) {
+            return
+        }
+        newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
+            conversationId = event.conversationId,
+            conversationTeamId = conversation.teamId?.value,
+            isCellEnabled = conversationRepository.isCellEnabled(event.conversationId).getOrElse(false),
+            instant = event.dateTime,
+        )
     }
 
     private suspend fun addMemberAddedSystemMessage(event: Event.Conversation.MemberJoin) {

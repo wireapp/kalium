@@ -342,6 +342,8 @@ internal class MessageMapperImpl(
             MessageEntity.ContentType.LEGAL_HOLD -> null
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> null
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> null
+            MessageEntity.ContentType.CELL_EDITOR_ACCESS -> null
+            MessageEntity.ContentType.CELL_VIEWER_ACCESS -> null
             MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> null
 
             MessageEntity.ContentType.MULTIPART -> LocalNotificationMessage.Text(
@@ -516,6 +518,9 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
     is MessageEntityContent.NewConversationWithCellMessage -> MessageContent.NewConversationWithCellMessage
     is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage ->
         MessageContent.NewConversationWithCellSelfDeleteDisabledMessage
+
+    is MessageEntityContent.CellEditorAccessMessage -> MessageContent.CellEditorAccessMessage
+    is MessageEntityContent.CellViewerAccessMessage -> MessageContent.CellViewerAccessMessage
 
     is MessageEntityContent.ConversationAppsAccessChanged -> MessageContent.ConversationAppsEnabledChanged(isEnabled)
 }
@@ -847,6 +852,8 @@ internal fun MessageContent.System.toMessageEntityContent(): MessageEntityConten
 
     MessageContent.NewConversationWithCellMessage -> MessageEntityContent.NewConversationWithCellMessage
     MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage
+    MessageContent.CellEditorAccessMessage -> MessageEntityContent.CellEditorAccessMessage
+    MessageContent.CellViewerAccessMessage -> MessageEntityContent.CellViewerAccessMessage
     is MessageContent.ConversationAppsEnabledChanged -> MessageEntityContent.ConversationAppsAccessChanged(isEnabled)
 }
 

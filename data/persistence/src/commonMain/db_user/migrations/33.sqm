@@ -1,4 +1,6 @@
-PRAGMA foreign_keys=0;
+-- Foreign keys remain enabled for the migration connection. Defer constraint checks until
+-- all references are repaired by the statements below.
+PRAGMA defer_foreign_keys=1;
 
 -- get self domain
 -- update qualified_id for conversations corrupt conversations
@@ -27,6 +29,45 @@ UPDATE OR IGNORE Message
 SET
 sender_user_id = CASE WHEN sender_user_id LIKE '%@' THEN (sender_user_id || (SELECT self_domain FROM self_domain_cte)) ELSE sender_user_id END,
 conversation_id = CASE WHEN conversation_id LIKE '%@' THEN (conversation_id || (SELECT self_domain FROM self_domain_cte)) ELSE conversation_id END;
+
+-- update all remaining foreign keys that point to the qualified user or conversation IDs
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE OR IGNORE Member
+SET
+user = CASE WHEN user LIKE '%@' THEN (user || (SELECT self_domain FROM self_domain_cte)) ELSE user END,
+conversation = CASE WHEN conversation LIKE '%@' THEN (conversation || (SELECT self_domain FROM self_domain_cte)) ELSE conversation END;
+
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE OR IGNORE Client
+SET user_id = (user_id || (SELECT self_domain FROM self_domain_cte))
+WHERE user_id LIKE '%@';
+
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE OR IGNORE Receipt
+SET
+conversation_id = CASE WHEN conversation_id LIKE '%@' THEN (conversation_id || (SELECT self_domain FROM self_domain_cte)) ELSE conversation_id END,
+user_id = CASE WHEN user_id LIKE '%@' THEN (user_id || (SELECT self_domain FROM self_domain_cte)) ELSE user_id END;
+
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE OR IGNORE Reaction
+SET
+conversation_id = CASE WHEN conversation_id LIKE '%@' THEN (conversation_id || (SELECT self_domain FROM self_domain_cte)) ELSE conversation_id END,
+sender_id = CASE WHEN sender_id LIKE '%@' THEN (sender_id || (SELECT self_domain FROM self_domain_cte)) ELSE sender_id END;
+
+WITH self_domain_cte AS (
+SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
+)
+UPDATE OR IGNORE UnreadEvent
+SET conversation_id = (conversation_id || (SELECT self_domain FROM self_domain_cte))
+WHERE conversation_id LIKE '%@';
 
 -- get self domain
 WITH self_domain_cte AS (
@@ -120,24 +161,24 @@ WITH self_domain_cte AS (
     SELECT substr(id, instr(id, '@') + 1) AS self_domain FROM SelfUser
 )
 -- update corrupt conversations read dates
-UPDATE Conversation AS c1
+UPDATE Conversation
 SET last_read_date =
-    CASE WHEN c1.last_read_date > c2.last_read_date
-        THEN c1.last_read_date
+    CASE WHEN Conversation.last_read_date > c2.last_read_date
+        THEN Conversation.last_read_date
         ELSE c2.last_read_date
     END,
     last_modified_date =
-    CASE WHEN c1.last_modified_date > c2.last_modified_date
-        THEN c1.last_modified_date
+    CASE WHEN Conversation.last_modified_date > c2.last_modified_date
+        THEN Conversation.last_modified_date
         ELSE c2.last_modified_date
     END,
     last_notified_date =
-    CASE WHEN c1.last_notified_date > c2.last_notified_date
-        THEN c1.last_notified_date
+    CASE WHEN Conversation.last_notified_date > c2.last_notified_date
+        THEN Conversation.last_notified_date
         ELSE c2.last_notified_date
     END
 FROM Conversation AS c2
-WHERE c1.qualified_id = (c2.qualified_id || (SELECT self_domain FROM self_domain_cte))
+WHERE Conversation.qualified_id = (c2.qualified_id || (SELECT self_domain FROM self_domain_cte))
   AND c2.qualified_id LIKE '%@';
 
 -- mention then text since they are nested
@@ -153,11 +194,18 @@ DELETE FROM MessageMissedCallContent WHERE conversation_id LIKE '%@';
 DELETE FROM MessageConversationChangedContent WHERE conversation_id LIKE '%@';
 DELETE FROM MessageNewConversationReceiptModeContent WHERE conversation_id LIKE '%@';
 DELETE FROM MessageConversationReceiptModeChangedContent WHERE conversation_id LIKE '%@';
+DELETE FROM Receipt WHERE conversation_id LIKE '%@' OR user_id LIKE '%@';
+DELETE FROM Reaction WHERE conversation_id LIKE '%@' OR sender_id LIKE '%@';
+DELETE FROM UnreadEvent WHERE conversation_id LIKE '%@';
 DELETE FROM Message WHERE conversation_id LIKE '%@' OR sender_user_id LIKE '%@';
 
+DELETE FROM Client WHERE user_id LIKE '%@';
+DELETE FROM Member WHERE user LIKE '%@' OR conversation LIKE '%@';
 -- delete corrupt conversations that remain after the fix
 DELETE FROM User WHERE qualified_id LIKE '%@';
 -- delete corrupt conversations that remain after the fix
 DELETE FROM Conversation WHERE qualified_id LIKE '%@';
 
-PRAGMA foreign_keys = 1;
+-- The generated migration chain may continue in the same transaction. Restore immediate
+-- constraint checking so migrations 34 and later do not inherit this migration's deferral.
+PRAGMA defer_foreign_keys=0;

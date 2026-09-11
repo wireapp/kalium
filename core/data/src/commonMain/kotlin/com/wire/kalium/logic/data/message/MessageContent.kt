@@ -423,6 +423,13 @@ sealed interface MessageContent {
     data object NewConversationWithCellMessage : System
     data object NewConversationWithCellSelfDeleteDisabledMessage : System
 
+    /**
+     * Tells the self user which access they have to the Shared Drive of a conversation:
+     * viewer access for people outside the team owning the conversation, editor access for everyone else.
+     */
+    data object CellEditorAccessMessage : System
+    data object CellViewerAccessMessage : System
+
     data class InCallEmoji(
         val emojis: Map<String, Int>
     ) : Signaling
@@ -517,6 +524,8 @@ fun MessageContent?.getType() = when (this) {
     null -> "null"
     MessageContent.NewConversationWithCellMessage -> "NewConversationWithCell"
     MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> "NewConversationWithCellSelfDeleteDisabled"
+    MessageContent.CellEditorAccessMessage -> "CellEditorAccess"
+    MessageContent.CellViewerAccessMessage -> "CellViewerAccess"
     is MessageContent.ConversationAppsEnabledChanged -> "ConversationAppsEnabledChanged"
     is MessageContent.MultipartEdited -> "MultipartEdited"
 }

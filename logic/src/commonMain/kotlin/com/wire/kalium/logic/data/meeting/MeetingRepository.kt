@@ -68,7 +68,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
-import kotlin.collections.map
 import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
@@ -96,7 +95,13 @@ internal interface MeetingRepository {
         from: Instant = currentInstant().asStartOfDay(),
     ): Flow<PagingData<MeetingOccurrence>>
 
+    suspend fun getMeeting(meetingId: MeetingId): Either<StorageFailure, Meeting>
+
     suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit>
+
+    suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit>
+
+    suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit>
 
     suspend fun createNewMeeting(
         meeting: UpsertMeeting,
@@ -113,7 +118,7 @@ internal interface MeetingRepository {
         transactionContext: CryptoTransactionContext,
     ): Either<CoreFailure, MLSAdditionResult>
 
-    suspend fun getNextMeetingOccurrence(
+    suspend fun getNextUnfinishedMeetingOccurrence(
         meetingId: MeetingId,
         from: Instant = currentInstant()
     ): Either<StorageFailure, MeetingOccurrence>
@@ -144,9 +149,16 @@ internal class MeetingDataSource(
                 meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
                     .also { meetingsToPersist ->
                         if (meetingsToPersist.isNotEmpty()) {
+                            val creatorIds = meetingsToPersist.map { it.creatorId.toModel() }.toSet()
+                            // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
+                            // foreign key constraint violation and try to fetch the user details from the server if possible
+                            userRepository.insertOrIgnoreIncompleteUsers(creatorIds.toList())
+                            userRepository.fetchUsersIfUnknownByIds(creatorIds)
+
                             meetingDAO.upsertMeetings(
                                 meetings = meetingsToPersist,
-                                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+                                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
+                                removeMeetingsAbsentFromUpsertList = true,
                             )
                         }
                     }
@@ -200,21 +212,34 @@ internal class MeetingDataSource(
         from = from,
     ).pagingDataFlow.map { pagingData -> pagingData.map(meetingMapper::fromDaoToModel) }
 
+    override suspend fun getMeeting(meetingId: MeetingId): Either<StorageFailure, Meeting> = wrapStorageRequest {
+        meetingDAO.getMeeting(meetingId.toDao())?.let(meetingMapper::fromDaoToModel)
+    }
+
     override suspend fun deleteMeeting(meetingId: MeetingId): Either<CoreFailure, Unit> = withContext(NonCancellable) {
         wrapApiRequest {
             meetingApi.deleteMeeting(meetingId.toApi())
         }.flatMap {
-            wrapStorageRequest {
-                meetingDAO.deleteMeeting(meetingId.toDao())
-            }
+            deleteMeetingLocally(meetingId)
         }
     }
 
-    override suspend fun getNextMeetingOccurrence(
+    override suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit> = wrapStorageRequest {
+        meetingDAO.deleteMeeting(meetingId.toDao())
+    }
+
+    override suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit> =
+        withContext(NonCancellable) {
+            wrapStorageRequest {
+                meetingDAO.deleteMeetingsByConversationId(conversationId.toDao())
+            }
+        }
+
+    override suspend fun getNextUnfinishedMeetingOccurrence(
         meetingId: MeetingId,
         from: Instant
     ): Either<StorageFailure, MeetingOccurrence> = wrapStorageRequest {
-        meetingDAO.getNextMeetingOccurrenceDetailsId(meetingId.toDao(), from)?.let { occurrenceId ->
+        meetingDAO.getNextUnfinishedMeetingOccurrenceDetailsId(meetingId.toDao(), from)?.let { occurrenceId ->
             meetingDAO.getMeetingOccurrenceDetailsFlow(occurrenceId).firstOrNull()?.let(meetingMapper::fromDaoToModel)
         }
     }

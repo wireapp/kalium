@@ -184,6 +184,13 @@ tasks.register("runAllUnitTests") {
     }
 }
 
+tasks.register("runMutationTests") {
+    group = "verification"
+    description = "Runs mutation tests for KMP code on the JVM target."
+    dependsOn(":core:util:mutationTest")
+    dependsOn(":logic:mutationTest")
+}
+
 tasks.register("aggregateTestResults") {
     description = "Aggregates all Unit Test results into a single report."
 

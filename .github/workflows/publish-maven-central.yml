@@ -81,7 +81,6 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
         run: |
           ./gradlew publishAllPublicationsToMavenCentralStagingRepository \
-            -PUSE_UNIFIED_CORE_CRYPTO=true \
             -Pkalium.publish.version="$KALIUM_PUBLISH_VERSION" \
             -Pkalium.mavenCentral.signingRequired=true
 

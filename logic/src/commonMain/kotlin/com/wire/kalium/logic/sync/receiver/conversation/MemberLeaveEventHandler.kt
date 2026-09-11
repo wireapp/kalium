@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -65,6 +66,7 @@ internal class MemberLeaveEventHandlerImpl(
     private val legalHoldHandler: LegalHoldHandler,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val mlsConversationRepository: MLSConversationRepository,
+    private val meetingRepository: MeetingRepository,
     private val selfUserId: UserId,
 ) : MemberLeaveEventHandler {
 
@@ -109,7 +111,11 @@ internal class MemberLeaveEventHandlerImpl(
                     }
                 }
                 legalHoldHandler.handleConversationMembersChanged(event.conversationId)
-            }.onSuccess {
+            }
+            .flatMap {
+                deleteMeetingsIfNeeded(event)
+            }
+            .onSuccess {
                 eventLogger.logSuccess()
             }.onFailure {
                 eventLogger.logFailure(it)
@@ -164,5 +170,11 @@ internal class MemberLeaveEventHandlerImpl(
                 userIDList.map { it.toDao() },
                 conversationID.toDao()
             )
+        }
+
+    private suspend fun deleteMeetingsIfNeeded(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> =
+        when (selfUserId in event.removedList) {
+            true -> meetingRepository.deleteMeetingsByConversationId(event.conversationId)
+            false -> Either.Right(Unit)
         }
 }

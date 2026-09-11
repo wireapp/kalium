@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
@@ -156,6 +157,42 @@ class MemberJoinEventHandlerTest {
                 userId = any(),
                 conversationId = any()
             )
+        }
+    }
+
+    @Test
+    fun givenMemberJoinEventInSelfConversation_whenHandling_thenNoSystemMessageIsPersisted() = runTest {
+        val conversation = TestConversation.SELF()
+        val event = TestEvent.memberJoin(members = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member)))
+            .copy(conversationId = conversation.id)
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(conversation.right())
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.not) { arrangement.persistMessageUseCase.invoke(any()) }
+        verifySuspend(VerifyMode.not) {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
+        }
+    }
+
+    @Test
+    fun givenMemberJoinEventInConnectionPendingConversation_whenHandling_thenNoSystemMessageIsPersisted() = runTest {
+        val conversation = TEST_GROUP_CONVERSATION.copy(type = Conversation.Type.ConnectionPending)
+        val event = TestEvent.memberJoin(members = listOf(Member(TestUser.OTHER_USER_ID, Member.Role.Member)))
+            .copy(conversationId = conversation.id)
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(conversation.right())
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.not) { arrangement.persistMessageUseCase.invoke(any()) }
+        verifySuspend(VerifyMode.not) {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
         }
     }
 
@@ -308,6 +345,69 @@ class MemberJoinEventHandlerTest {
     }
 
     @Test
+    fun givenDrivePermissionsEnabledAndSelfJoinsGroup_whenHandlingEvent_thenShouldPersistCellAccessStatus() = runTest {
+        val conversation = TEST_GROUP_CONVERSATION
+        val event = TestEvent.memberJoin(
+            members = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
+        ).copy(conversationId = conversation.id)
+        val (arrangement, eventHandler) = arrange {
+            withDrivePermissionsEnabled(true)
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(conversation.right())
+            withIsCellEnabledReturning(true.right())
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
+                conversationId = eq(conversation.id),
+                conversationTeamId = eq(conversation.teamId?.value),
+                isCellEnabled = eq(true),
+                instant = eq(event.dateTime),
+            )
+        }
+    }
+
+    @Test
+    fun givenDrivePermissionsDisabledAndSelfJoinsGroup_whenHandlingEvent_thenShouldNotPersistCellAccessStatus() = runTest {
+        val conversation = TEST_GROUP_CONVERSATION
+        val event = TestEvent.memberJoin(
+            members = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
+        ).copy(conversationId = conversation.id)
+        val (arrangement, eventHandler) = arrange {
+            withDrivePermissionsEnabled(false)
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(conversation.right())
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenDrivePermissionsEnabledAndOtherUserJoinsGroup_whenHandlingEvent_thenShouldNotPersistCellAccessStatus() = runTest {
+        val conversation = TEST_GROUP_CONVERSATION
+        val event = TestEvent.memberJoin(
+            members = listOf(Member(TestUser.OTHER_USER_ID, Member.Role.Member))
+        ).copy(conversationId = conversation.id)
+        val (arrangement, eventHandler) = arrange {
+            withDrivePermissionsEnabled(true)
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(conversation.right())
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(any(), any(), any(), any())
+        }
+    }
+
+    @Test
     fun givenMemberJoinEvent_whenHandlingIt_thenShouldUpdateConversationLegalHoldIfNeeded() = runTest {
         // given
         val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
@@ -341,7 +441,10 @@ class MemberJoinEventHandlerTest {
         FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
         NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
 
+        private var kaliumConfigs = KaliumConfigs()
+
         suspend fun arrange() = run {
+            withIsCellEnabledReturning(false.right())
             block()
 
             withPersistingMessage(Unit.right())
@@ -350,6 +453,7 @@ class MemberJoinEventHandlerTest {
             withSetConversationDeletedLocallySucceeding()
             withHandleConversationMembersChanged(Unit.right())
             withPersistUnverifiedWarningMessageSuccess()
+            withPersistCellAccessMessageSuccess()
 
             this to MemberJoinEventHandlerImpl(
                 conversationRepository = conversationRepository,
@@ -358,8 +462,13 @@ class MemberJoinEventHandlerTest {
                 legalHoldHandler = legalHoldHandler,
                 newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
                 selfUserId = TEST_SELF_USER_ID,
-                fetchConversation
+                fetchConversation = fetchConversation,
+                kaliumConfigs = kaliumConfigs
             )
+        }
+
+        fun withDrivePermissionsEnabled(enabled: Boolean) = apply {
+            kaliumConfigs = kaliumConfigs.copy(drivePermissionsEnabled = enabled)
         }
 
         suspend fun withFetchConversationIfUnknownFailingWith(coreFailure: com.wire.kalium.common.error.CoreFailure) = apply {

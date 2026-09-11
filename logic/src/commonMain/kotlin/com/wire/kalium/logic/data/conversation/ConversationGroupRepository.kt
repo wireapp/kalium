@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.normalizeFederatedBackendConflict
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapNullableFlowStorageRequest
 import com.wire.kalium.common.error.wrapStorageRequest
@@ -105,7 +106,10 @@ internal interface ConversationGroupRepository {
 
 internal sealed interface CreateGroupConversationResult {
     data class Success(val conversation: Conversation) : CreateGroupConversationResult
-    data class Failure(val cause: CoreFailure) : CreateGroupConversationResult
+    data class Failure(
+        val cause: CoreFailure,
+        val conversationId: ConversationId? = null,
+    ) : CreateGroupConversationResult
     data class PendingMLSGroupCreation(
         val conversationId: ConversationId,
         val cause: CoreFailure,
@@ -239,8 +243,11 @@ internal class ConversationGroupRepositoryImpl(
                     }
             }
 
-            establishResult.fold({ failure ->
-                if (protocol is Conversation.ProtocolInfo.MLSCapable) {
+            establishResult.fold({ transportFailure ->
+                val failure = transportFailure.normalizeFederatedBackendConflict()
+                if (failure is NetworkFailure.FederatedBackendFailure.ConflictingBackends) {
+                    CreateGroupConversationResult.Failure(failure, conversationEntity.id.toModel())
+                } else if (protocol is Conversation.ProtocolInfo.MLSCapable) {
                     val conversationId = conversationEntity.id.toModel()
                     pendingActionsRepository.enqueuePendingMLSGroupJoin(conversationId)
                     CreateGroupConversationResult.PendingMLSGroupCreation(conversationId, failure)

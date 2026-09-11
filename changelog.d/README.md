@@ -37,6 +37,5 @@ API-impacting label such as `api-impacting`, `public-api`, or the existing
 `🚨 Potential breaking changes` label.
 
 Use the `no-changelog-needed` label only when reviewers agree the change has no
-consumer-facing release note. Use `internal-only` only when the ABI gate confirms
-the published consumer surface did not change; it does not skip changelog
-requirements when ABI dumps changed.
+consumer-facing release note. The `internal-only` label documents scope but does
+not skip this changelog gate when public API/ABI release notes are required.

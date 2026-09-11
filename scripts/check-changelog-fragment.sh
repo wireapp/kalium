@@ -12,7 +12,8 @@ Requires a changelog fragment when ABI dump files changed or the pull request ha
 an API-impacting label. The labels are read from GITHUB_EVENT_PATH when available.
 Skip labels:
   - no-changelog-needed
-  - internal-only
+Scope labels:
+  - internal-only (does not skip this gate)
 API labels:
   - api-impacting
   - api-impacting change
@@ -111,18 +112,8 @@ if event_has_label "no-changelog-needed"; then
   no_changelog_needed=true
 fi
 
-internal_only=false
-if event_has_label "internal-only"; then
-  internal_only=true
-fi
-
 if [[ "$has_changelog_fragment" == true || "$no_changelog_needed" == true ]]; then
   echo "Changelog gate passed."
-  exit 0
-fi
-
-if [[ "$internal_only" == true && "$abi_changed" == false ]]; then
-  echo "Changelog gate passed for internal-only change with no ABI dump changes."
   exit 0
 fi
 
@@ -130,10 +121,19 @@ if [[ "$abi_changed" == true || "$api_label" == true ]]; then
   cat >&2 <<'ERROR'
 This change appears to affect public API/ABI but does not include a changelog fragment.
 
-Add a consumer-facing Markdown fragment under changelog.d/, or apply one of these
-reviewer-accepted labels when appropriate:
+Choose one of these reviewer-visible resolutions:
+
+1. Add a consumer-facing Towncrier fragment under changelog.d/, for example:
+  changelog.d/<short-change-description>.added.md
+  changelog.d/<short-change-description>.changed.md
+  changelog.d/<short-change-description>.removed.md
+
+2. If reviewers agree this public API/ABI change does not need release notes, apply:
   - no-changelog-needed
-  - internal-only
+
+3. If the PR is internal-only, keep the internal-only label for scope clarity,
+   but still add a fragment or apply no-changelog-needed. The internal-only
+   label does not skip this gate.
 ERROR
   exit 1
 fi

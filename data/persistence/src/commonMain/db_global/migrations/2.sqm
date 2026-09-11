@@ -1,5 +1,3 @@
-PRAGMA foreign_keys=off;
-
 ALTER TABLE ServerConfiguration RENAME COLUMN proxyApi TO apiProxyHost;
 ALTER TABLE ServerConfiguration RENAME COLUMN proxyNeedsAuthentication TO apiProxyNeedsAuthentication;
 ALTER TABLE ServerConfiguration RENAME COLUMN proxyPort TO apiProxyPort;
@@ -25,7 +23,39 @@ CREATE TABLE ServerConfiguration (
     CONSTRAINT server_config_unique UNIQUE (title, apiBaseUrl, webSocketBaseUrl, domain, apiProxyHost, apiProxyPort)
 );
 
-INSERT INTO ServerConfiguration SELECT * FROM oldServerConfiguration;
+INSERT INTO ServerConfiguration (
+    id,
+    title,
+    apiBaseUrl,
+    accountBaseUrl,
+    webSocketBaseUrl,
+    blackListUrl,
+    teamsUrl,
+    websiteUrl,
+    isOnPremises,
+    domain,
+    commonApiVersion,
+    federation,
+    apiProxyHost,
+    apiProxyNeedsAuthentication,
+    apiProxyPort
+)
+SELECT
+    id,
+    title,
+    apiBaseUrl,
+    accountBaseUrl,
+    webSocketBaseUrl,
+    blackListUrl,
+    teamsUrl,
+    websiteUrl,
+    isOnPremises,
+    domain,
+    commonApiVersion,
+    federation,
+    apiProxyHost,
+    apiProxyNeedsAuthentication,
+    apiProxyPort
+FROM oldServerConfiguration;
 
-PRAGMA foreign_keys=on;
 DROP TABLE oldServerConfiguration;

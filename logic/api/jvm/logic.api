@@ -644,18 +644,19 @@ public abstract interface class com/wire/kalium/logic/data/conversation/ResetMLS
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class com/wire/kalium/logic/data/e2ei/Nonce {
-	public static final synthetic fun box-impl (Ljava/lang/String;)Lcom/wire/kalium/logic/data/e2ei/Nonce;
-	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
+public final class com/wire/kalium/logic/data/e2ei/E2EIAuthenticationRequest {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/data/e2ei/E2EIAuthenticationRequest;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/e2ei/E2EIAuthenticationRequest;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/e2ei/E2EIAuthenticationRequest;
 	public fun equals (Ljava/lang/Object;)Z
-	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
-	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
-	public final fun getValue ()Ljava/lang/String;
+	public final fun getAcmeAudience ()Ljava/lang/String;
+	public final fun getKeyAuth ()Ljava/lang/String;
+	public final fun getTarget ()Ljava/lang/String;
 	public fun hashCode ()I
-	public static fun hashCode-impl (Ljava/lang/String;)I
 	public fun toString ()Ljava/lang/String;
-	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
-	public final synthetic fun unbox-impl ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/logic/data/event/EventExtentionKt {
@@ -3522,6 +3523,42 @@ public final class com/wire/kalium/logic/feature/conversation/CheckConversationL
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Failure : com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$NotReady : com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$NotReady;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Ready : com/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/logic/data/conversation/Conversation;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/conversation/Conversation;
+	public final fun copy (Lcom/wire/kalium/logic/data/conversation/Conversation;)Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Ready;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Ready;Lcom/wire/kalium/logic/data/conversation/Conversation;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase$Result$Ready;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversation ()Lcom/wire/kalium/logic/data/conversation/Conversation;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/conversation/ClearConversationContentUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/ClearConversationContentUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
@@ -3564,6 +3601,7 @@ public final class com/wire/kalium/logic/feature/conversation/ConversationScope 
 	public final fun getChangeAccessForAppsInConversation ()Lcom/wire/kalium/logic/feature/conversation/apps/ChangeAccessForAppsInConversationUseCase;
 	public final fun getCheckConversationLeaveConditions ()Lcom/wire/kalium/logic/feature/conversation/CheckConversationLeaveConditionsUseCase;
 	public final fun getCheckIConversationInviteCode ()Lcom/wire/kalium/logic/feature/conversation/CheckConversationInviteCodeUseCase;
+	public final fun getCheckOneToOneConversationIsReadyUseCase ()Lcom/wire/kalium/logic/feature/conversation/CheckOneToOneConversationIsReadyUseCase;
 	public final fun getClearConversationContent ()Lcom/wire/kalium/logic/feature/conversation/ClearConversationContentUseCase;
 	public final fun getClearUsersTypingEvents ()Lcom/wire/kalium/logic/feature/conversation/ClearUsersTypingEventsUseCase;
 	public final fun getCreateChannel ()Lcom/wire/kalium/logic/feature/conversation/createconversation/CreateChannelUseCase;
@@ -4343,7 +4381,9 @@ public abstract interface class com/wire/kalium/logic/feature/conversation/creat
 }
 
 public final class com/wire/kalium/logic/feature/conversation/createconversation/ConversationCreationResult$BackendConflictFailure : com/wire/kalium/logic/feature/conversation/createconversation/ConversationCreationResult {
-	public fun <init> (Ljava/util/List;)V
+	public fun <init> (Ljava/util/List;Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public synthetic fun <init> (Ljava/util/List;Lcom/wire/kalium/logic/data/id/QualifiedID;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun getDomains ()Ljava/util/List;
 }
 
@@ -4382,6 +4422,7 @@ public final class com/wire/kalium/logic/feature/conversation/createconversation
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/createconversation/CreateRegularGroupUseCase {
+	public abstract fun discardPendingMLSGroupCreation (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun invoke (Ljava/lang/String;Ljava/util/List;Lcom/wire/kalium/logic/data/conversation/CreateConversationParam;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun retryPendingMLSGroupCreation (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -4809,96 +4850,59 @@ public final class com/wire/kalium/logic/feature/e2ei/X509Identity$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult {
+public abstract class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult {
 }
 
-public final class com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Finalized : com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult {
-	public fun <init> (Ljava/lang/String;)V
-	public final fun getCertificate ()Ljava/lang/String;
+public abstract class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure : com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult {
 }
 
-public final class com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized : com/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult {
-	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun component3-2K2h68k ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun component6 ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun component7 ()Z
-	public final fun copy-sYlRG1Y (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Z)Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
-	public static synthetic fun copy-sYlRG1Y$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/cryptography/NewAcmeAuthz;Lcom/wire/kalium/cryptography/NewAcmeAuthz;ZILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
+public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$E2EIDisabled : com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$E2EIDisabled;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getDPopAuthorizations ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun getLastNonce-2K2h68k ()Ljava/lang/String;
-	public final fun getOAuthClaims ()Lkotlinx/serialization/json/JsonObject;
-	public final fun getOidcAuthorizations ()Lcom/wire/kalium/cryptography/NewAcmeAuthz;
-	public final fun getOrderLocation ()Ljava/lang/String;
-	public final fun getTarget ()Ljava/lang/String;
 	public fun hashCode ()I
-	public final fun isNewClientRegistration ()Z
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase {
-	public abstract fun finalizeEnrollment (Ljava/lang/String;Ljava/lang/String;Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public abstract fun initialEnrollment (ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun initialEnrollment$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase$DefaultImpls {
-	public static synthetic fun initialEnrollment$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
-}
-
-public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/FetchConversationMLSVerificationStatusUseCase {
-	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public abstract class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult {
-}
-
-public abstract class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure : com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult {
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$Generic : com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure {
+public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$Generic : com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure {
 	public fun <init> (Lcom/wire/kalium/common/error/E2EIFailure;)V
 	public final fun component1 ()Lcom/wire/kalium/common/error/E2EIFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/E2EIFailure;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$Generic;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$Generic;Lcom/wire/kalium/common/error/E2EIFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$Generic;
+	public final fun copy (Lcom/wire/kalium/common/error/E2EIFailure;)Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$Generic;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$Generic;Lcom/wire/kalium/common/error/E2EIFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$Generic;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getE2EIFailure ()Lcom/wire/kalium/common/error/E2EIFailure;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$InvalidChallenge : com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$InvalidChallenge;
+public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$MissingTeamSettings : com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Failure$MissingTeamSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$OAuthError : com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure {
+public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Success : com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult {
 	public fun <init> (Ljava/lang/String;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$OAuthError;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$OAuthError;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Failure$OAuthError;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getReason ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Success : com/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult {
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Success;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/FinalizeEnrollmentResult$Success;
+	public final fun copy (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Success;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIResult$Success;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCertificate ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase {
+	public abstract fun invoke (ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase$DefaultImpls {
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/EnrollE2EIUseCase;ZLkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/FetchConversationMLSVerificationStatusUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/e2ei/usecase/GetMLSClientIdentityResult {
@@ -4953,48 +4957,6 @@ public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/GetMe
 
 public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/GetUserMlsClientIdentitiesUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public abstract class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult {
-}
-
-public abstract class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure : com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult {
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$E2EIDisabled : com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$E2EIDisabled;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$Generic : com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure {
-	public fun <init> (Lcom/wire/kalium/common/error/E2EIFailure;)V
-	public final fun component1 ()Lcom/wire/kalium/common/error/E2EIFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/E2EIFailure;)Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$Generic;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$Generic;Lcom/wire/kalium/common/error/E2EIFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$Generic;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getE2EIFailure ()Lcom/wire/kalium/common/error/E2EIFailure;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$MissingTeamSettings : com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Failure$MissingTeamSettings;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Success : com/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult {
-	public fun <init> (Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;)V
-	public final fun component1 ()Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
-	public final fun copy (Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;)Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Success;Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/e2ei/usecase/InitialEnrollmentResult$Success;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getInitializationResult ()Lcom/wire/kalium/logic/feature/e2ei/usecase/E2EIEnrollmentResult$Initialized;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/e2ei/usecase/IsOtherUserE2EIVerifiedUseCase {
@@ -5329,26 +5291,51 @@ public final class com/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase {
+public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase$Result {
+public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result {
 }
 
-public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase$Result {
+public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result {
 	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
 	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
-	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase$Result$Failure;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase$Result$Failure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Failure;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase$Result {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase$Result$Success;
+public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase {
+	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase$Result$Success;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -5358,13 +5345,13 @@ public abstract interface class com/wire/kalium/logic/feature/meeting/EnsureMeet
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase {
+public abstract interface class com/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
-public final class com/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase$DefaultImpls {
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+public final class com/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase$DefaultImpls {
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase {
@@ -5378,9 +5365,10 @@ public final class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccu
 
 public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getCreateNewMeeting ()Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase;
-	public final fun getDeleteMeeting ()Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingUseCase;
+	public final fun getDeleteMeetingForEveryone ()Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase;
+	public final fun getDeleteMeetingForMe ()Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForMeUseCase;
 	public final fun getEnsureMeetingIsMLSEstablished ()Lcom/wire/kalium/logic/feature/meeting/EnsureMeetingIsMLSEstablishedUseCase;
-	public final fun getGetNextMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/GetNextMeetingOccurrenceUseCase;
+	public final fun getGetNextUnfinishedMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
 	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
 	public final fun getUpdateMeeting ()Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase;
@@ -7597,8 +7585,8 @@ public final class com/wire/kalium/logic/featureFlags/BuildFileRestrictionState$
 }
 
 public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
-	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;Lcom/wire/kalium/network/HttpTrafficObserver;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;Lcom/wire/kalium/network/HttpTrafficObserver;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Z
 	public final fun component10 ()Z
 	public final fun component11 ()Z
@@ -7607,30 +7595,32 @@ public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
 	public final fun component14 ()Ljava/util/List;
 	public final fun component15 ()Lcom/wire/kalium/network/NetworkStateObserver;
 	public final fun component16 ()Lcom/wire/kalium/logic/util/KaliumMockWebsocket;
-	public final fun component17-UwyO8pc ()J
-	public final fun component18 ()Ljava/lang/Integer;
-	public final fun component19 ()I
+	public final fun component17 ()Lcom/wire/kalium/network/HttpTrafficObserver;
+	public final fun component18-UwyO8pc ()J
+	public final fun component19 ()Ljava/lang/Integer;
 	public final fun component2 ()Lkotlin/Lazy;
-	public final fun component20 ()Z
+	public final fun component20 ()I
 	public final fun component21 ()Z
 	public final fun component22 ()Z
 	public final fun component23 ()Z
 	public final fun component24 ()Z
 	public final fun component25 ()Z
 	public final fun component26 ()Z
-	public final fun component27 ()Ljava/util/Map;
-	public final fun component28 ()Z
+	public final fun component27 ()Z
+	public final fun component28 ()Ljava/util/Map;
 	public final fun component29 ()Z
 	public final fun component3 ()Lkotlin/jvm/functions/Function0;
-	public final fun component30 ()Lkotlin/jvm/functions/Function1;
+	public final fun component30 ()Z
+	public final fun component31 ()Lkotlin/jvm/functions/Function1;
+	public final fun component32 ()Z
 	public final fun component4 ()Z
 	public final fun component5 ()Z
 	public final fun component6 ()Z
 	public final fun component7 ()Z
 	public final fun component8 ()Z
 	public final fun component9 ()Z
-	public final fun copy-LrVJBms (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
-	public static synthetic fun copy-LrVJBms$default (Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
+	public final fun copy-mcWmYmY (ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;Lcom/wire/kalium/network/HttpTrafficObserver;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;Z)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
+	public static synthetic fun copy-mcWmYmY$default (Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;ZLkotlin/Lazy;Lkotlin/jvm/functions/Function0;ZZZZZZZZZLjava/util/Map;Ljava/util/List;Lcom/wire/kalium/network/NetworkStateObserver;Lcom/wire/kalium/logic/util/KaliumMockWebsocket;Lcom/wire/kalium/network/HttpTrafficObserver;JLjava/lang/Integer;IZZZZZZZLjava/util/Map;ZZLkotlin/jvm/functions/Function1;ZILjava/lang/Object;)Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBlockCrossBackendLogin ()Z
 	public final fun getCallConfigTransformer ()Lkotlin/jvm/functions/Function1;
@@ -7639,11 +7629,13 @@ public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {
 	public final fun getDbInvalidationControlEnabled ()Z
 	public final fun getDevelopmentApiEnabled ()Z
 	public final fun getDomainWithFaultyKeysMap ()Ljava/util/Map;
+	public final fun getDrivePermissionsEnabled ()Z
 	public final fun getEnableCalling ()Z
 	public final fun getEncryptProteusStorage ()Z
 	public final fun getFileRestrictionState ()Lkotlin/Lazy;
 	public final fun getForceConstantBitrateCalls ()Z
 	public final fun getGuestRoomLink ()Z
+	public final fun getHttpTrafficObserver ()Lcom/wire/kalium/network/HttpTrafficObserver;
 	public final fun getIgnoreSSLCertificatesForUnboundCalls ()Z
 	public final fun getLimitTeamMembersFetchDuringSlowSync ()Ljava/lang/Integer;
 	public final fun getLinkPreviewEnabled ()Z

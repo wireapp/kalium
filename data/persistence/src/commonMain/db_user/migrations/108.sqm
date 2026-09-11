@@ -9,9 +9,6 @@ import kotlin.Boolean;
 -- * Update insertOrIgnoreEvent query to include transient parameter
 --
 
--- Turn off foreign key constraints during migration
-PRAGMA foreign_keys = 0;
-
 -- Create new Events table with the updated schema
 CREATE TABLE Events_temp (
     id INTEGER NOT NULL PRIMARY KEY,
@@ -32,6 +29,3 @@ DROP TABLE Events;
 
 -- Rename new table to original name
 ALTER TABLE Events_temp RENAME TO Events;
-
--- Re-enable foreign key constraints
-PRAGMA foreign_keys = 1;

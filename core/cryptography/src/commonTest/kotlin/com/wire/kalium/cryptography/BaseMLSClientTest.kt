@@ -24,7 +24,6 @@ expect open class BaseMLSClientTest() {
 
     suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<MLSCiphersuite>,
         defaultCipherSuite: MLSCiphersuite,
         mlsTransporter: MLSTransporter,
         epochObserver: MLSEpochObserver,

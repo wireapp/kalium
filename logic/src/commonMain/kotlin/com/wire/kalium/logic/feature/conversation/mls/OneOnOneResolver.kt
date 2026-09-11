@@ -90,12 +90,16 @@ internal interface OneOnOneResolver {
      * @param user The other user in the conversation.
      * @param invalidateCurrentKnownProtocols Flag indicating whether to whether it should attempt refreshing the other user's list of
      * supported protocols by fetching from remote. In case of failure, the local result will be used as a fallback.
+     * @param fallbackToMLS Whether a missing common protocol should attempt to establish the canonical MLS conversation instead of
+     * falling back to an existing Proteus conversation. This is used for explicit start-conversation actions so Core Crypto can report
+     * missing key packages for users without clients.
      * @return Either a [CoreFailure] if there is an error or a [ConversationId] if the resolution is successful.
      */
     suspend fun resolveOneOnOneConversationWithUser(
         transactionContext: CryptoTransactionContext,
         user: OtherUser,
         invalidateCurrentKnownProtocols: Boolean,
+        fallbackToMLS: Boolean = false,
     ): Either<CoreFailure, ConversationId>
 }
 
@@ -278,12 +282,14 @@ internal class OneOnOneResolverImpl(
         transactionContext: CryptoTransactionContext,
         user: OtherUser,
         invalidateCurrentKnownProtocols: Boolean,
+        fallbackToMLS: Boolean,
     ): Either<CoreFailure, ConversationId> =
         resolveOneOnOneConversationWithUserInternal(
             transactionContext = transactionContext,
             user = user,
             invalidateCurrentKnownProtocols = invalidateCurrentKnownProtocols,
-            allowJoinByExternalCommit = true
+            allowJoinByExternalCommit = true,
+            fallbackToMLS = fallbackToMLS,
         )
 
     private suspend fun resolveOneOnOneConversationWithUserInternal(
@@ -291,6 +297,7 @@ internal class OneOnOneResolverImpl(
         user: OtherUser,
         invalidateCurrentKnownProtocols: Boolean,
         allowJoinByExternalCommit: Boolean,
+        fallbackToMLS: Boolean = false,
     ): Either<CoreFailure, ConversationId> {
         if (user.deleted) {
             return cleanupDeletedPeerMlsGroup(transactionContext, user.id)
@@ -300,7 +307,14 @@ internal class OneOnOneResolverImpl(
             userRepository.fetchUsersByIds(setOf(user.id))
         }
         return oneOnOneProtocolSelector.getProtocolForUser(user.id).fold({ coreFailure ->
-            if (coreFailure is CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate) {
+            if (coreFailure is CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate && fallbackToMLS) {
+                kaliumLogger.i("No common protocol found; attempting MLS 1:1 for explicit start with: ${user.id.toLogString()}")
+                oneOnOneMigrator.migrateToMLS(
+                    transactionContext = transactionContext,
+                    user = user,
+                    allowJoinByExternalCommit = allowJoinByExternalCommit
+                )
+            } else if (coreFailure is CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate) {
                 kaliumLogger.i("Resolving existing proteus 1:1 as not matching protocol found with: ${user.id.toLogString()}")
                 oneOnOneMigrator.migrateExistingProteus(user)
             } else {

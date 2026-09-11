@@ -57,6 +57,7 @@ import com.wire.kalium.network.api.v13.authenticated.networkContainer.Authentica
 import com.wire.kalium.network.api.v14.authenticated.networkContainer.AuthenticatedNetworkContainerV14
 import com.wire.kalium.network.api.v15.authenticated.networkContainer.AuthenticatedNetworkContainerV15
 import com.wire.kalium.network.api.v16.authenticated.networkContainer.AuthenticatedNetworkContainerV16
+import com.wire.kalium.network.api.v17.authenticated.networkContainer.AuthenticatedNetworkContainerV17
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
@@ -64,6 +65,8 @@ import com.wire.kalium.network.api.v6.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v7.authenticated.networkContainer.AuthenticatedNetworkContainerV7
 import com.wire.kalium.network.api.v8.authenticated.networkContainer.AuthenticatedNetworkContainerV8
 import com.wire.kalium.network.api.v9.authenticated.networkContainer.AuthenticatedNetworkContainerV9
+import com.wire.kalium.network.HttpTrafficObserver
+import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.HttpClient
@@ -149,9 +152,20 @@ interface AuthenticatedNetworkContainer {
             mockEngine: HttpClientEngine?,
             mockWebSocketSession: WebSocketSession?,
             kaliumLogger: KaliumLogger,
+            httpTrafficObserver: HttpTrafficObserver? = null,
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
+
+            // Precomputed once here (rather than left to each version's own default) so that
+            // [httpTrafficObserver], when provided, is installed regardless of API version -
+            // without needing to touch every per-version container class below.
+            val engine = mockEngine ?: defaultHttpEngine(
+                serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
+                proxyCredentials = sessionManager.proxyCredentials(),
+                certificatePinning = certificatePinning,
+                httpTrafficObserver = httpTrafficObserver,
+            )
 
             return when (val version = sessionManager.serverConfig().metaData.commonApiVersion.version) {
                 0 -> AuthenticatedNetworkContainerV0(
@@ -160,7 +174,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
@@ -169,7 +184,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
@@ -179,7 +195,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 // this is intentional since we should drop support for api v3
@@ -191,7 +208,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
@@ -201,7 +219,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 5 -> AuthenticatedNetworkContainerV5(
@@ -211,7 +230,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 6 -> AuthenticatedNetworkContainerV6(
@@ -221,7 +241,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 7 -> AuthenticatedNetworkContainerV7(
@@ -231,7 +252,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 8 -> AuthenticatedNetworkContainerV8(
@@ -241,7 +263,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 9 -> AuthenticatedNetworkContainerV9(
@@ -251,7 +274,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 10 -> AuthenticatedNetworkContainerV10(
@@ -261,7 +285,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 11 -> AuthenticatedNetworkContainerV11(
@@ -271,7 +296,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 12 -> AuthenticatedNetworkContainerV12(
@@ -281,7 +307,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 13 -> AuthenticatedNetworkContainerV13(
@@ -291,7 +318,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 14 -> AuthenticatedNetworkContainerV14(
@@ -301,7 +329,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 15 -> AuthenticatedNetworkContainerV15(
@@ -311,10 +340,22 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 16 -> AuthenticatedNetworkContainerV16(
+                    sessionManager,
+                    nomadServiceUrl,
+                    selfUserId,
+                    certificatePinning,
+                    mockEngine,
+                    mockWebSocketSession,
+                    kaliumLogger,
+                    engine = engine,
+                )
+
+                17 -> AuthenticatedNetworkContainerV17(
                     sessionManager,
                     nomadServiceUrl,
                     selfUserId,

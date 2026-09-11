@@ -31,6 +31,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertFails
 import kotlin.test.assertTrue
 
 class ReactionDAOTest : BaseDatabaseTest() {
@@ -65,6 +66,66 @@ class ReactionDAOTest : BaseDatabaseTest() {
 
         // Then
         assertContentEquals(setOf(expectedReaction), result.sorted())
+    }
+
+    @Test
+    fun givenExistingReaction_whenInsertingBackupPage_thenDuplicateIsIgnoredAndRemainingReactionsAreInserted() = runTest {
+        insertTestUsers()
+        conversationDAO.insertConversation(TEST_CONVERSATION)
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
+        reactionDAO.insertReaction(
+            TEST_MESSAGE.id,
+            TEST_MESSAGE.conversationId,
+            SELF_USER_ID,
+            Instant.UNIX_FIRST_DATE,
+            "existing",
+        )
+
+        reactionDAO.insertOrIgnoreReactions(
+            reactions = listOf(
+                MessageReactionsEntity(
+                    messageId = TEST_MESSAGE.id,
+                    conversationId = TEST_MESSAGE.conversationId,
+                    reactions = listOf(
+                        MessageReactionUserEntity("existing", SELF_USER_ID),
+                        MessageReactionUserEntity("new", SELF_USER_ID),
+                    ),
+                )
+            ),
+            instant = Instant.UNIX_FIRST_DATE,
+        )
+
+        val result = reactionDAO.getReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID)
+
+        assertContentEquals(setOf("existing", "new").sorted(), result.sorted())
+    }
+
+    @Test
+    fun givenInvalidReactionLateInBackupPage_whenInserting_thenWholePageIsRolledBack() = runTest {
+        insertTestUsers()
+        conversationDAO.insertConversation(TEST_CONVERSATION)
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
+        val missingUserId = newUserEntity("missingUser").id
+
+        assertFails {
+            reactionDAO.insertOrIgnoreReactions(
+                reactions = listOf(
+                    MessageReactionsEntity(
+                        messageId = TEST_MESSAGE.id,
+                        conversationId = TEST_MESSAGE.conversationId,
+                        reactions = listOf(
+                            MessageReactionUserEntity("valid", SELF_USER_ID),
+                            MessageReactionUserEntity("invalid", missingUserId),
+                        ),
+                    )
+                ),
+                instant = Instant.UNIX_FIRST_DATE,
+            )
+        }
+
+        val result = reactionDAO.getReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID)
+
+        assertTrue(result.isEmpty())
     }
 
     @Test

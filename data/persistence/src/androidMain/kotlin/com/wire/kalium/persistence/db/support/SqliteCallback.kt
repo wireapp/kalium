@@ -26,7 +26,8 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 
 internal class SqliteCallback(
     schema: SqlSchema<QueryResult.Value<Unit>>,
-    private val enableWAL: Boolean
+    private val enableWAL: Boolean,
+    private val enforceForeignKeys: Boolean,
 ) : SupportSQLiteOpenHelper.Callback(schema.version.toInt()) {
     private val baseCallback = AndroidSqliteDriver.Callback(schema)
     override fun onCreate(db: SupportSQLiteDatabase) = baseCallback.onCreate(db)
@@ -40,6 +41,7 @@ internal class SqliteCallback(
 
     override fun onConfigure(db: SupportSQLiteDatabase) {
         super.onConfigure(db)
+        db.setForeignKeyConstraintsEnabled(enforceForeignKeys)
         if (enableWAL) {
             db.enableWriteAheadLogging()
         }

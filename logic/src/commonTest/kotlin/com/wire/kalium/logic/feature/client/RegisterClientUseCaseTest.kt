@@ -55,9 +55,9 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.io.IOException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -88,7 +88,7 @@ class RegisterClientUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.preKeyRepository.generateNewPreKeys(any(), any())
+            arrangement.preKeyRepository.generateNewPreKeysAuto(any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -191,7 +191,7 @@ class RegisterClientUseCaseTest {
         assertIs<RegisterClientResult.Failure.PasswordAuthRequired>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.preKeyRepository.generateNewPreKeys(any(), any())
+            arrangement.preKeyRepository.generateNewPreKeysAuto(any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -213,7 +213,7 @@ class RegisterClientUseCaseTest {
         assertIs<RegisterClientResult.Failure.InvalidCredentials.InvalidPassword>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.preKeyRepository.generateNewPreKeys(any(), any())
+            arrangement.preKeyRepository.generateNewPreKeysAuto(any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -332,7 +332,7 @@ class RegisterClientUseCaseTest {
         val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
 
         val (arrangement, registerClient) = Arrangement(testKaliumDispatcher)
-            .withGenerateNewPreKeys(Either.Left(failure))
+            .withGenerateNewPreKeysAuto(Either.Left(failure))
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
 
@@ -371,7 +371,7 @@ class RegisterClientUseCaseTest {
         assertIs<RegisterClientResult.Failure.InvalidCredentials.InvalidPassword>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.preKeyRepository.generateNewPreKeys(any(), any())
+            arrangement.preKeyRepository.generateNewPreKeysAuto(any())
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -446,7 +446,7 @@ class RegisterClientUseCaseTest {
                 } returns KEY_PACKAGE_LIMIT
 
                 everySuspend {
-                    preKeyRepository.generateNewPreKeys(any(), any())
+                    preKeyRepository.generateNewPreKeysAuto(any())
                 } returns Either.Right(PRE_KEYS)
 
                 everySuspend {
@@ -477,9 +477,9 @@ class RegisterClientUseCaseTest {
             } returns result
         }
 
-        fun withGenerateNewPreKeys(result: Either<CoreFailure, List<PreKeyCrypto>>) = apply {
+        fun withGenerateNewPreKeysAuto(result: Either<CoreFailure, List<PreKeyCrypto>>) = apply {
             everySuspend {
-                preKeyRepository.generateNewPreKeys(any(), any())
+                preKeyRepository.generateNewPreKeysAuto(any())
             } returns result
         }
 

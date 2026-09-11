@@ -27,6 +27,7 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.support.SqliteCallback
 import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
@@ -103,7 +104,13 @@ fun inMemoryDatabase(
         schema = UserDatabase.Schema.synchronous(),
         context = context,
         name = null,
-        factory = SupportOpenHelperFactory(passphrase)
+        factory = SupportOpenHelperFactory(passphrase),
+        callback = SqliteCallback(
+            schema = UserDatabase.Schema.synchronous(),
+            // WAL is intentionally disabled for the test-only in-memory database.
+            enableWAL = false,
+            enforceForeignKeys = true,
+        )
     )
 
     val invalidationController = DbInvalidationController(

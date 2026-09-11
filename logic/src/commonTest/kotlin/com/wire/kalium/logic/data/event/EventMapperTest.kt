@@ -22,11 +22,12 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.model.QualifiedID
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import com.wire.kalium.logic.data.id.QualifiedID as ModelQualifiedID
+import com.wire.kalium.network.api.model.QualifiedID as NetworkQualifiedID
 
 class EventMapperTest {
 
@@ -46,7 +47,7 @@ class EventMapperTest {
         val timestamp = Instant.parse("2026-07-24T12:00:00.000Z")
         val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
         val dto = EventContentDTO.Conversation.DeletedConversationDTO(
-            qualifiedConversation = QualifiedID("conversation-id", "domain"),
+            qualifiedConversation = NetworkQualifiedID("conversation-id", "domain"),
             qualifiedFrom = TestUser.NETWORK_ID,
             time = timestamp.toString()
         )
@@ -58,11 +59,52 @@ class EventMapperTest {
     }
 
     @Test
+    fun givenDeletedMeetingConversationDTO_whenMapping_thenDeletedConversationEventIsReturned() {
+        val eventId = "event-id"
+        val conversationId = NetworkQualifiedID("conversation-id", "domain")
+        val senderId = NetworkQualifiedID("sender-id", "domain")
+        val timestamp = Instant.parse("2026-07-24T12:00:00.000Z")
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val dto = EventContentDTO.Conversation.DeletedMeetingConversationDTO(
+            qualifiedConversation = conversationId,
+            qualifiedFrom = senderId,
+            time = timestamp.toString()
+        )
+
+        val result = mapper.fromEventContentDTO(eventId, dto)
+
+        val event = assertIs<Event.Conversation.DeletedConversation>(result)
+        assertEquals(eventId, event.id)
+        assertEquals(ModelQualifiedID(conversationId.value, conversationId.domain), event.conversationId)
+        assertEquals(ModelQualifiedID(senderId.value, senderId.domain), event.senderUserId)
+        assertEquals(timestamp, event.dateTime)
+    }
+
+    @Test
+    fun givenMeetingDeleteDTO_whenMapping_thenMeetingDeleteEventIsReturned() {
+        val eventId = "event-id"
+        val meetingId = NetworkQualifiedID("meeting-id", "domain")
+        val timestamp = Instant.parse("2026-07-24T12:00:00.000Z")
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val dto = EventContentDTO.Meeting.MeetingDeleteDTO(
+            qualifiedMeetingId = meetingId,
+            time = timestamp
+        )
+
+        val result = mapper.fromEventContentDTO(eventId, dto)
+
+        val event = assertIs<Event.Meeting.Delete>(result)
+        assertEquals(eventId, event.id)
+        assertEquals(ModelQualifiedID(meetingId.value, meetingId.domain), event.meetingId)
+        assertEquals(timestamp, event.dateTime)
+    }
+
+    @Test
     fun givenMemberRoleUpdateDTO_whenMapping_thenTimestampIsMappedToInstant() {
         val timestamp = Instant.parse("2026-07-24T12:00:00.000Z")
         val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
         val dto = EventContentDTO.Conversation.MemberUpdateDTO(
-            qualifiedConversation = QualifiedID("conversation-id", "domain"),
+            qualifiedConversation = NetworkQualifiedID("conversation-id", "domain"),
             qualifiedFrom = TestUser.NETWORK_ID,
             time = timestamp.toString(),
             from = TestUser.NETWORK_ID.value,
@@ -89,7 +131,7 @@ class EventMapperTest {
         val mutedReference = Instant.parse("2026-07-24T12:01:00.000Z")
         val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
         val dto = EventContentDTO.Conversation.MemberUpdateDTO(
-            qualifiedConversation = QualifiedID("conversation-id", "domain"),
+            qualifiedConversation = NetworkQualifiedID("conversation-id", "domain"),
             qualifiedFrom = TestUser.NETWORK_ID,
             time = eventTimestamp.toString(),
             from = TestUser.NETWORK_ID.value,
@@ -115,7 +157,7 @@ class EventMapperTest {
         val eventTimestamp = Instant.parse("2026-07-24T12:00:00.000Z")
         val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
         val dto = EventContentDTO.Conversation.MemberUpdateDTO(
-            qualifiedConversation = QualifiedID("conversation-id", "domain"),
+            qualifiedConversation = NetworkQualifiedID("conversation-id", "domain"),
             qualifiedFrom = TestUser.NETWORK_ID,
             time = eventTimestamp.toString(),
             from = TestUser.NETWORK_ID.value,

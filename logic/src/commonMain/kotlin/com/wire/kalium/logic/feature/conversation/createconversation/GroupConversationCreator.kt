@@ -21,11 +21,13 @@ package com.wire.kalium.logic.feature.conversation.createconversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.normalizeFederatedBackendConflict
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -65,6 +67,8 @@ internal interface GroupConversationCreator {
     ): ConversationCreationResult
 
     suspend fun retryPendingMLSGroupCreation(conversationId: ConversationId): ConversationCreationResult
+
+    suspend fun discardPendingMLSGroupCreation(conversationId: ConversationId): Boolean
 }
 
 /**
@@ -102,7 +106,7 @@ internal class GroupConversationCreatorImpl(
                 options.copy(creatorClientId = clientId)
             )
         ) {
-            is CreateGroupConversationResult.Failure -> result.cause.toCreationFailure()
+            is CreateGroupConversationResult.Failure -> result.cause.toCreationFailureWithTerminalCleanup(result.conversationId)
             is CreateGroupConversationResult.PendingMLSGroupCreation ->
                 ConversationCreationResult.PendingMLSGroupCreation(result.conversationId, result.cause)
             is CreateGroupConversationResult.Success -> finishSuccessfulCreation(result.conversation)
@@ -130,7 +134,7 @@ internal class GroupConversationCreatorImpl(
                 }
             }
         }.fold(
-            { failure -> failure.toCreationFailure() },
+            { failure -> failure.toCreationFailureWithTerminalCleanup(conversationId) },
             { conversation ->
                 val result = finishSuccessfulCreation(conversation)
                 if (result is ConversationCreationResult.Success) {
@@ -139,6 +143,18 @@ internal class GroupConversationCreatorImpl(
                 result
             }
         )
+
+    override suspend fun discardPendingMLSGroupCreation(conversationId: ConversationId): Boolean {
+        val wasDeleted = conversationRepository.setConversationDeletedLocally(conversationId, true).fold(
+            { failure ->
+                kaliumLogger.w("Failed to discard pending MLS conversation: $failure")
+                false
+            },
+            { true }
+        )
+        pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(conversationId))
+        return wasDeleted
+    }
 
     private fun Conversation.isMLSEstablished(): Boolean {
         val mlsProtocol = protocol as? Conversation.ProtocolInfo.MLSCapable
@@ -159,28 +175,43 @@ internal class GroupConversationCreatorImpl(
             ConversationCreationResult.Success(createdConversation)
         })
 
-    private fun CoreFailure.toCreationFailure(): ConversationCreationResult =
-        when (this) {
-                is NetworkFailure.NoNetworkConnection -> {
-                    ConversationCreationResult.SyncFailure
-                }
+    private suspend fun CoreFailure.toCreationFailureWithTerminalCleanup(
+        conversationId: ConversationId? = null,
+    ): ConversationCreationResult {
+        val result = toCreationFailure(conversationId)
+        return if (result is ConversationCreationResult.BackendConflictFailure && conversationId != null) {
+            if (discardPendingMLSGroupCreation(conversationId)) {
+                ConversationCreationResult.BackendConflictFailure(result.domains)
+            } else {
+                result
+            }
+        } else {
+            result
+        }
+    }
 
-                is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
-                    ConversationCreationResult.BackendConflictFailure(domains)
-                }
+    private fun CoreFailure.toCreationFailure(conversationId: ConversationId? = null): ConversationCreationResult =
+        when (val failure = normalizeFederatedBackendConflict()) {
+            is NetworkFailure.NoNetworkConnection -> {
+                ConversationCreationResult.SyncFailure
+            }
 
-                is NetworkFailure.ServerMiscommunication -> {
-                    val exception = kaliumException
-                    if (exception is KaliumException.InvalidRequestError && exception.isOperationDenied()
-                    ) {
-                        ConversationCreationResult.Forbidden
-                    } else {
-                        ConversationCreationResult.UnknownFailure(this)
-                    }
-                }
+            is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
+                ConversationCreationResult.BackendConflictFailure(failure.domains, conversationId)
+            }
 
-                else -> {
-                    ConversationCreationResult.UnknownFailure(this)
+            is NetworkFailure.ServerMiscommunication -> {
+                val exception = failure.kaliumException
+                if (exception is KaliumException.InvalidRequestError && exception.isOperationDenied()
+                ) {
+                    ConversationCreationResult.Forbidden
+                } else {
+                    ConversationCreationResult.UnknownFailure(failure)
                 }
+            }
+
+            else -> {
+                ConversationCreationResult.UnknownFailure(failure)
+            }
         }
 }

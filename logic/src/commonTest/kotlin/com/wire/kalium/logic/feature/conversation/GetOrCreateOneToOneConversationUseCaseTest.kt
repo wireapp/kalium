@@ -37,18 +37,18 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @Suppress("MaxLineLength")
 class GetOrCreateOneToOneConversationUseCaseTest {
 
     @Test
-    fun givenConversationExist_whenCallingTheUseCase_ThenReturnExistingConversation() = runTest {
+    fun givenConversationIsReady_whenCallingTheUseCase_thenReturnExistingConversation() = runTest {
         val (arrangement, useCase) = arrange {
-            withObserveOneToOneConversationWithOtherUserReturning(Either.Right(CONVERSATION))
+            withReadinessResult(CheckOneToOneConversationIsReadyUseCase.Result.Ready(CONVERSATION))
         }
 
         val result = useCase.invoke(OTHER_USER_ID)
@@ -56,18 +56,30 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         assertIs<CreateConversationResult.Success>(result)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationRepository.observeOneToOneConversationWithOtherUser(any())
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any(), any())
         }
     }
 
     @Test
-    fun givenFailure_whenCallingTheUseCase_ThenErrorIsPropagated() = runTest {
+    fun givenReadinessFailure_whenCallingTheUseCase_thenErrorIsPropagatedWithoutResolving() = runTest {
+        val failure = CoreFailure.Unknown(null)
+        val (arrangement, useCase) = arrange {
+            withReadinessResult(CheckOneToOneConversationIsReadyUseCase.Result.Failure(failure))
+        }
+
+        val result = useCase.invoke(OTHER_USER_ID)
+
+        assertIs<CreateConversationResult.Failure>(result)
+        assertEquals(failure, result.coreFailure)
+        verifySuspend(VerifyMode.not) {
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenConversationIsNotReadyAndResolvingFails_whenCallingTheUseCase_thenErrorIsPropagated() = runTest {
         val (_, useCase) = arrange {
-            withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
+            withReadinessResult(CheckOneToOneConversationIsReadyUseCase.Result.NotReady)
             withUserByIdReturning(OTHER_USER.right())
             withResolveOneOnOneConversationWithUserReturning(Either.Left(CoreFailure.NoCommonProtocolFound.SelfNeedToUpdate))
         }
@@ -80,7 +92,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     @Test
     fun givenFailureWhileGettingUser_whenCallingTheUseCase_ThenErrorIsPropagated() = runTest {
         val (_, useCase) = arrange {
-            withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
+            withReadinessResult(CheckOneToOneConversationIsReadyUseCase.Result.NotReady)
             withUserByIdReturning(Either.Left(StorageFailure.DataNotFound))
         }
 
@@ -90,9 +102,9 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     }
 
     @Test
-    fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenResolveOneOnOneConversation() = runTest {
+    fun givenConversationIsNotReady_whenCallingTheUseCase_thenResolveOneOnOneConversation() = runTest {
         val (arrangement, useCase) = arrange {
-            withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
+            withReadinessResult(CheckOneToOneConversationIsReadyUseCase.Result.NotReady)
             withUserByIdReturning(OTHER_USER.right())
             withResolveOneOnOneConversationWithUserReturning(Either.Right(CONVERSATION.id))
             withConversationDetailsByIdReturning(CONVERSATION.right())
@@ -103,8 +115,23 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         assertIs<CreateConversationResult.Success>(result)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), eq(OTHER_USER), any())
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), eq(OTHER_USER), any(), eq(true))
         }
+    }
+
+    @Test
+    fun givenConversationIsNotReadyAndKeyPackagesAreMissing_whenCallingTheUseCase_thenPropagateMissingKeyPackages() = runTest {
+        val failure = CoreFailure.MissingKeyPackages(setOf(OTHER_USER_ID))
+        val (_, useCase) = arrange {
+            withReadinessResult(CheckOneToOneConversationIsReadyUseCase.Result.NotReady)
+            withUserByIdReturning(OTHER_USER.right())
+            withResolveOneOnOneConversationWithUserReturning(Either.Left(failure))
+        }
+
+        val result = useCase.invoke(OTHER_USER_ID)
+
+        assertIs<CreateConversationResult.Failure>(result)
+        assertEquals(failure, result.coreFailure)
     }
 
     private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
@@ -115,6 +142,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         val oneOnOneResolver = mock<OneOnOneResolver>(mode = MockMode.autoUnit)
+        val checkOneToOneConversationIsReady = mock<CheckOneToOneConversationIsReadyUseCase>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = run {
             withTransactionReturning(Either.Right(Unit))
@@ -123,14 +151,13 @@ class GetOrCreateOneToOneConversationUseCaseTest {
                 conversationRepository = conversationRepository,
                 userRepository = userRepository,
                 oneOnOneResolver = oneOnOneResolver,
-                transactionProvider = cryptoTransactionProvider
+                transactionProvider = cryptoTransactionProvider,
+                checkOneToOneConversationIsReady = checkOneToOneConversationIsReady,
             )
         }
 
-        suspend fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, com.wire.kalium.logic.data.conversation.Conversation>) {
-            everySuspend {
-                conversationRepository.observeOneToOneConversationWithOtherUser(any())
-            } returns flowOf(result)
+        suspend fun withReadinessResult(result: CheckOneToOneConversationIsReadyUseCase.Result) {
+            everySuspend { checkOneToOneConversationIsReady(any()) } returns result
         }
 
         suspend fun withUserByIdReturning(result: Either<CoreFailure, com.wire.kalium.logic.data.user.OtherUser>) {
@@ -141,7 +168,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
 
         suspend fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, com.wire.kalium.logic.data.id.ConversationId>) {
             everySuspend {
-                oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
+                oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any(), eq(true))
             } returns result
         }
 

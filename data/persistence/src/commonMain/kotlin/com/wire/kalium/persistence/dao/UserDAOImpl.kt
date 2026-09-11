@@ -24,7 +24,6 @@ import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.UsersQueries
-import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
@@ -165,7 +164,6 @@ class UserMapper {
 @Suppress("TooManyFunctions")
 class UserDAOImpl internal constructor(
     private val userQueries: UsersQueries,
-    private val userCache: FlowCache<UserIDEntity, UserDetailsEntity?>,
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : UserDAO {
@@ -287,13 +285,11 @@ class UserDAOImpl internal constructor(
         .flowOn(readDispatcher.value)
 
     override suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?> =
-        userCache.get(qualifiedID) {
-            userQueries.selectDetailsByQualifiedId(listOf(qualifiedID))
-                .asFlow()
-                .mapToOneOrNull()
-                .map { it?.let { mapper.toDetailsModel(it) } }
-                .flowOn(readDispatcher.value)
-        }
+        userQueries.selectDetailsByQualifiedId(listOf(qualifiedID))
+            .asFlow()
+            .mapToOneOrNull()
+            .map { it?.let { mapper.toDetailsModel(it) } }
+            .flowOn(readDispatcher.value)
 
     override fun getUserDetailsWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?> =
         userQueries.selectWithTeamByQualifiedId(listOf(qualifiedID), mapper::toUserAndTeamPairModel)
@@ -530,6 +526,10 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity? = withContext(readDispatcher.value) {
         userQueries.selectNamesAndHandle(userId, ::NameAndHandleEntity).awaitAsOneOrNull()
+    }
+
+    override suspend fun getTeamIdByQualifiedID(qualifiedID: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
+        userQueries.selectTeamByQualifiedId(qualifiedID).awaitAsOneOrNull()?.team
     }
 
     override suspend fun updateTeamId(userId: UserIDEntity, teamId: String) {

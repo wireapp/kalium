@@ -23,7 +23,6 @@ import kotlinx.coroutines.CoroutineScope
 actual open class BaseMLSClientTest actual constructor() {
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<MLSCiphersuite>,
         defaultCipherSuite: MLSCiphersuite,
         mlsTransporter: MLSTransporter,
         epochObserver: MLSEpochObserver,

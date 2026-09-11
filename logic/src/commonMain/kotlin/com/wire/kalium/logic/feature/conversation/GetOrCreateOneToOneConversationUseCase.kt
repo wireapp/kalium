@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -29,7 +28,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import kotlinx.coroutines.flow.first
 
 /**
  * Operation that creates one-to-one Conversation with specific [UserId] (only if it is absent in local DB)
@@ -44,32 +42,26 @@ internal class GetOrCreateOneToOneConversationUseCaseImpl(
     private val userRepository: UserRepository,
     private val oneOnOneResolver: OneOnOneResolver,
     private val transactionProvider: CryptoTransactionProvider,
+    private val checkOneToOneConversationIsReady: CheckOneToOneConversationIsReadyUseCase,
 ) : GetOrCreateOneToOneConversationUseCase {
 
     /**
-     * The use case operation operation params and return type.
+     * The use case params and return type.
      *
      * @param otherUserId [UserId] private conversation with which we are interested in.
      * @return Result with [Conversation] in case of success, or [CoreFailure] if something went wrong:
      * can't get data from local DB, or can't create a conversation.
      */
     override suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
-        // TODO periodically re-resolve one-on-one
-        return conversationRepository.observeOneToOneConversationWithOtherUser(otherUserId)
-            .first()
-            .fold({ conversationFailure ->
-                if (conversationFailure is StorageFailure.DataNotFound) {
-                    resolveOneOnOneConversationWithUser(otherUserId)
-                        .fold(
-                            CreateConversationResult::Failure,
-                            CreateConversationResult::Success
-                        )
-                } else {
-                    CreateConversationResult.Failure(conversationFailure)
-                }
-            }, { conversation ->
-                CreateConversationResult.Success(conversation)
-            })
+        return when (val result = checkOneToOneConversationIsReady(otherUserId)) {
+            is CheckOneToOneConversationIsReadyUseCase.Result.Ready -> CreateConversationResult.Success(result.conversation)
+            CheckOneToOneConversationIsReadyUseCase.Result.NotReady -> resolveOneOnOneConversationWithUser(otherUserId)
+                .fold(
+                    CreateConversationResult::Failure,
+                    CreateConversationResult::Success
+                )
+            is CheckOneToOneConversationIsReadyUseCase.Result.Failure -> CreateConversationResult.Failure(result.coreFailure)
+        }
     }
 
     /**
@@ -86,12 +78,12 @@ internal class GetOrCreateOneToOneConversationUseCaseImpl(
      */
     private suspend fun resolveOneOnOneConversationWithUser(otherUserId: UserId): Either<CoreFailure, Conversation> =
         userRepository.userById(otherUserId).flatMap { otherUser ->
-            // TODO support lazily establishing mls group for team 1-1
             transactionProvider.transaction("resolveOneOnOneConversationWithUser") { transactionContext ->
                 oneOnOneResolver.resolveOneOnOneConversationWithUser(
                     user = otherUser,
                     invalidateCurrentKnownProtocols = true,
-                    transactionContext = transactionContext
+                    transactionContext = transactionContext,
+                    fallbackToMLS = true,
                 )
             }
         }.flatMap { conversationId -> conversationRepository.getConversationById(conversationId) }

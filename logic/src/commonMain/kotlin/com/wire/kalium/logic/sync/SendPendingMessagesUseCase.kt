@@ -55,18 +55,26 @@ internal class SendPendingMessagesUseCaseImpl(
 
         messageRepository.getAllPendingMessagesFromUser(userId)
             .onSuccess { pendingMessages ->
-                pendingMessages.forEach { message ->
-                    when (message) {
-                        is Message.Regular if message.content is MessageContent.Asset ->
-                            sendPendingAssetMessage(message)
+                pendingMessages
+                    .filterIsInstance<Message.Regular>()
+                    .forEach { message ->
 
-                        is Message.Regular if message.content is MessageContent.Text &&
-                                message.editStatus is Message.EditStatus.Edited ->
-                            resendPendingTextEdit(message, message.content as MessageContent.Text)
+                        when (message.content) {
+                            is MessageContent.Asset -> sendPendingAssetMessage(message)
+                            is MessageContent.Text if message.editStatus is Message.EditStatus.Edited ->
+                                resendPendingTextEdit(message, message.content as MessageContent.Text)
 
-                        else -> messageSender.sendPendingMessage(message.conversationId, message.id)
+                            is MessageContent.Location,
+                            is MessageContent.Multipart,
+                            is MessageContent.Text -> messageSender.sendPendingMessage(message.conversationId, message.id)
+
+                            else -> {
+                                val contentType = message.content::class.simpleName
+                                kaliumLogger.withFeatureId(SYNC)
+                                    .w("Skipping pending message ${message.id} with non-retryable content $contentType")
+                            }
+                        }
                     }
-                }
             }.onFailure {
                 kaliumLogger.withFeatureId(SYNC).w("Failed to fetch and attempt retry of pending messages: $it")
                 result = SendPendingMessagesUseCase.Result.Failure

@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.migrations
 
+import app.cash.sqldelight.SuspendingTransacterImpl
 import app.cash.sqldelight.async.coroutines.awaitMigrate
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
@@ -25,6 +26,7 @@ import com.wire.kalium.persistence.migrations.dump.SchemaDump
 import com.wire.kalium.persistence.migrations.dump.SqliteSchemaDumper
 import dev.andrewbailey.diff.differenceOf
 import kotlinx.coroutines.test.runTest
+import org.sqlite.SQLiteConfig
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -36,7 +38,7 @@ class VerifyDatabaseMigrationsTest {
         // given
         // clean up and prepare base schema for derivation
         File("build/user-schema-dumps").deleteRecursively()
-        File("src/commonMain/db_user/schemas/34.db")
+        File("src/commonMain/db_user/schemas/2.db")
             .copyTo(File(DatabaseSchemaSource.UserDatabaseDefaults.derivedSchemaDbPath), overwrite = true)
 
         val (_, dumper) = Arrangement(DatabaseSchemaSource.UserDatabaseDefaults)
@@ -117,7 +119,7 @@ class VerifyDatabaseMigrationsTest {
         suspend fun withFreshDatabaseSchemaFromDefinitions() = apply {
             val dbFile = File(databaseSchemaSource.freshSchemaDbPath)
             dbFile.parentFile.mkdirs()
-            val driver = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
+            val driver = foreignKeyEnforcingDriver(dbFile)
 
             when (databaseSchemaSource) {
                 is DatabaseSchemaSource.UserDatabaseDefaults -> UserDatabase.Companion.Schema.create(driver).await()
@@ -130,20 +132,26 @@ class VerifyDatabaseMigrationsTest {
         suspend fun withDerivedUserDatabaseFromMigrations() = apply {
             val dbFile = File(databaseSchemaSource.derivedSchemaDbPath)
             dbFile.parentFile.mkdirs()
-            val driver = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
+            val driver = foreignKeyEnforcingDriver(dbFile)
 
             when (databaseSchemaSource) {
-                is DatabaseSchemaSource.UserDatabaseDefaults -> UserDatabase.Companion.Schema.awaitMigrate(
-                    driver,
-                    34, // Starting from 34 since 33.sqm has errors.
-                    UserDatabase.Companion.Schema.version
-                )
+                is DatabaseSchemaSource.UserDatabaseDefaults ->
+                    object : SuspendingTransacterImpl(driver) {}.transaction {
+                        UserDatabase.Companion.Schema.awaitMigrate(
+                            driver,
+                            2,
+                            UserDatabase.Companion.Schema.version
+                        )
+                    }
 
-                is DatabaseSchemaSource.GlobalDatabaseDefaults -> GlobalDatabase.Companion.Schema.awaitMigrate(
-                    driver,
-                    5, // Starting from 5 since 4.sqm has errors.
-                    GlobalDatabase.Companion.Schema.version
-                )
+                is DatabaseSchemaSource.GlobalDatabaseDefaults ->
+                    object : SuspendingTransacterImpl(driver) {}.transaction {
+                        GlobalDatabase.Companion.Schema.awaitMigrate(
+                            driver,
+                            5, // Version 5 is the oldest checked-in global schema snapshot.
+                            GlobalDatabase.Companion.Schema.version
+                        )
+                    }
             }
             driver.close()
             println("Derived-from-migrations DB created at: ${dbFile.absolutePath}")
@@ -159,6 +167,14 @@ class VerifyDatabaseMigrationsTest {
                 outputPath = databaseSchemaSource.ddlDerivedDumpJsonPath
             )
         )
+
+        private fun foreignKeyEnforcingDriver(dbFile: File): JdbcSqliteDriver {
+            val config = SQLiteConfig().apply { enforceForeignKeys(true) }
+            return JdbcSqliteDriver(
+                "jdbc:sqlite:${dbFile.absolutePath}",
+                config.toProperties()
+            )
+        }
     }
 
     sealed class DatabaseSchemaSource(

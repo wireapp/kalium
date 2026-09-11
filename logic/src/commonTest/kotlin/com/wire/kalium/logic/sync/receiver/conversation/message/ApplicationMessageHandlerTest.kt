@@ -31,14 +31,19 @@ import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
@@ -72,7 +77,9 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.time.Duration.Companion.seconds
 
+@Suppress("TooManyFunctions")
 class ApplicationMessageHandlerTest {
 
     @Test
@@ -415,6 +422,335 @@ class ApplicationMessageHandlerTest {
     }
 
     @Test
+    fun givenAvailabilityMessage_whenHandling_thenUserAvailabilityIsUpdated() = runTest {
+        val content = MessageContent.Availability(UserAvailabilityStatus.AWAY)
+        val (arrangement, handler) = Arrangement()
+            .withUserAvailabilityUpdate()
+            .arrange()
+
+        val event = dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateOtherUserAvailabilityStatus(event.senderUserId, content.status)
+        }
+    }
+
+    @Test
+    fun givenClientActionMessage_whenHandling_thenCryptoSessionResetMessageIsPersisted() = runTest {
+        val (arrangement, handler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        val event = dispatch(arrangement, handler, MessageContent.ClientAction)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(
+                matches {
+                    it is Message.System &&
+                            it.content == MessageContent.CryptoSessionReset &&
+                            it.conversationId == event.conversationId &&
+                            it.senderUserId == event.senderUserId
+                }
+            )
+        }
+    }
+
+    @Test
+    fun givenReactionMessage_whenHandling_thenReactionUseCaseIsInvoked() = runTest {
+        val content = MessageContent.Reaction(messageId = "reacted-message", emojiSet = setOf("👍"))
+        val (arrangement, handler) = Arrangement()
+            .withPersistReaction()
+            .arrange()
+
+        val event = dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistReactionsUseCase.invoke(content, event.conversationId, event.senderUserId, event.messageInstant)
+        }
+    }
+
+    @Test
+    fun givenDeleteMessageSignal_whenHandling_thenDeleteMessageHandlerIsInvoked() = runTest {
+        val content = MessageContent.DeleteMessage("deleted-message")
+        val (arrangement, handler) = Arrangement().arrange()
+
+        val event = dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.deleteMessageHandler.invoke(content, event.conversationId, event.senderUserId)
+        }
+    }
+
+    @Test
+    fun givenDeleteForMeSignal_whenHandling_thenDeleteForMeHandlerIsInvoked() = runTest {
+        val content = MessageContent.DeleteForMe("deleted-message", TestEvent.newMessageEvent("content").conversationId)
+        val (arrangement, handler) = Arrangement().arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.deleteForMeHandler.handle(any(), content)
+        }
+    }
+
+    @Test
+    fun givenTextEditSignal_whenHandling_thenTextEditHandlerIsInvoked() = runTest {
+        val content = MessageContent.TextEdited(editMessageId = "edited-message", newContent = "new content")
+        val (arrangement, handler) = Arrangement()
+            .withMessageTextEditHandler()
+            .arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageTextEditHandler.handle(any(), content)
+        }
+    }
+
+    @Test
+    fun givenLastReadSignal_whenHandling_thenLastReadHandlerIsInvoked() = runTest {
+        val event = TestEvent.newMessageEvent("content")
+        val content = MessageContent.LastRead("last-read-message", event.conversationId, event.messageInstant)
+        val (arrangement, handler) = Arrangement().arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.lastReadContentHandler.handle(any(), content)
+        }
+    }
+
+    @Test
+    fun givenClearedSignal_whenHandling_thenClearConversationHandlerIsInvoked() = runTest {
+        val event = TestEvent.newMessageEvent("content")
+        val content = MessageContent.Cleared(event.conversationId, event.messageInstant, needToRemoveLocally = true)
+        val (arrangement, handler) = Arrangement().arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clearConversationContentHandler.handle(any(), any(), content)
+        }
+    }
+
+    @Test
+    fun givenReceiptSignal_whenHandling_thenReceiptHandlerIsInvoked() = runTest {
+        val content = MessageContent.Receipt(ReceiptType.READ, listOf("read-message"))
+        val (arrangement, handler) = Arrangement().arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.receiptMessageHandler.handle(any(), content)
+        }
+    }
+
+    @Test
+    fun givenHiddenUnknownMessage_whenHandling_thenHiddenMessageIsPersisted() = runTest {
+        val content = MessageContent.Unknown(typeName = "future-message", hidden = true)
+        val (arrangement, handler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(
+                matches { it is Message.Regular && it.content == content && it.visibility == Message.Visibility.HIDDEN }
+            )
+        }
+    }
+
+    @Test
+    fun givenSelfKnockWithExpiration_whenHandling_thenMessageMetadataIsPersisted() = runTest {
+        val content = MessageContent.Knock(hotKnock = true)
+        val (arrangement, handler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        dispatch(
+            arrangement = arrangement,
+            handler = handler,
+            content = content,
+            senderUserId = TestUser.SELF.id,
+            expiresAfterMillis = 2.seconds.inWholeMilliseconds,
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(
+                matches {
+                    it is Message.Regular && it.isSelfMessage &&
+                            it.expirationData?.expireAfter == 2.seconds && it.content == content
+                }
+            )
+        }
+    }
+
+    @Test
+    fun givenRegularPersistableMessageTypes_whenHandling_thenEveryMessageIsPersisted() = runTest {
+        val contents = listOf(
+            MessageContent.Composite(textContent = null, buttonList = emptyList()),
+            MessageContent.Location(latitude = 1F, longitude = 2F),
+            MessageContent.FailedDecryption(
+                isDecryptionResolved = false,
+                senderUserId = TestUser.USER_ID,
+            ),
+            MessageContent.Multipart(value = "multipart"),
+        )
+        val (arrangement, handler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        contents.forEach { dispatch(arrangement, handler, it) }
+
+        verifySuspend(VerifyMode.exactly(contents.size)) {
+            arrangement.persistMessage.invoke(any())
+        }
+    }
+
+    @Test
+    fun givenRestrictedAssetMessage_whenHandling_thenMessageIsIgnored() = runTest {
+        val content = MessageContent.RestrictedAsset(mimeType = "image/png", sizeInBytes = 10, name = "restricted.png")
+        val (arrangement, handler) = Arrangement().arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.assetMessageHandler.handle(any()) }
+    }
+
+    @Test
+    fun givenPendingApplicationSideEffects_whenFlushing_thenLastReadsAreFlushed() = runTest {
+        val (arrangement, handler) = Arrangement().arrange()
+
+        handler.flushPendingSideEffects()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.lastReadContentHandler.flushPendingLastReads()
+        }
+    }
+
+    @Test
+    fun givenQuoteWithoutHash_whenHandlingText_thenQuoteIsMarkedUnverifiedWithoutLookup() = runTest {
+        val quote = MessageContent.QuoteReference("quoted-message", quotedMessageSha256 = null, isVerified = true)
+        val content = MessageContent.Text(value = "quoted text", quotedMessageReference = quote)
+        val (arrangement, handler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(
+                matches {
+                    val text = (it.content as? MessageContent.Text)
+                    text?.quotedMessageReference?.isVerified == false
+                }
+            )
+        }
+        verifySuspend(VerifyMode.not) { arrangement.messageRepository.getMessageById(any(), any()) }
+    }
+
+    @Test
+    fun givenQuoteWithMatchingHash_whenHandlingMultipart_thenQuoteIsMarkedVerified() = runTest {
+        val original = TestMessage.TEXT_MESSAGE
+        val hash = MessageContentEncoder()
+            .encodeMessageContent(original.date, original.content)
+            ?.sha256Digest ?: error("Expected encodable test message")
+        val quote = MessageContent.QuoteReference(original.id, hash, isVerified = false)
+        val content = MessageContent.Multipart(value = "quoted multipart", quotedMessageReference = quote)
+        val (arrangement, handler) = Arrangement()
+            .withMessageById(Either.Right(original))
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(
+                matches {
+                    val multipart = (it.content as? MessageContent.Multipart)
+                    multipart?.quotedMessageReference?.isVerified == true
+                }
+            )
+        }
+    }
+
+    @Test
+    fun givenQuotedMessageMissing_whenHandlingText_thenQuoteIsMarkedUnverified() = runTest {
+        val quote = MessageContent.QuoteReference("missing-message", byteArrayOf(1, 2, 3), isVerified = true)
+        val content = MessageContent.Text(value = "quoted text", quotedMessageReference = quote)
+        val (arrangement, handler) = Arrangement()
+            .withMessageById(Either.Left(StorageFailure.DataNotFound))
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(
+                matches {
+                    val text = (it.content as? MessageContent.Text)
+                    text?.quotedMessageReference?.isVerified == false
+                }
+            )
+        }
+    }
+
+    @Test
+    fun givenQuotedMessageHashDoesNotMatch_whenHandlingText_thenQuoteIsMarkedUnverified() = runTest {
+        val original = TestMessage.TEXT_MESSAGE
+        val quote = MessageContent.QuoteReference(original.id, byteArrayOf(9, 8, 7), isVerified = true)
+        val content = MessageContent.Text(value = "quoted text", quotedMessageReference = quote)
+        val (arrangement, handler) = Arrangement()
+            .withMessageById(Either.Right(original))
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        dispatch(arrangement, handler, content)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(
+                matches {
+                    (it.content as? MessageContent.Text)?.quotedMessageReference?.isVerified == false
+                }
+            )
+        }
+    }
+
+    @Test
+    fun givenDecryptionErrorFromSelf_whenHandling_thenVisibleSelfMessageIsPersisted() = runTest {
+        val event = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        val content = MessageContent.FailedDecryption(
+            isDecryptionResolved = false,
+            senderUserId = TestUser.SELF.id,
+        )
+        val (arrangement, handler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        handler.handleDecryptionError(
+            eventId = event.id,
+            conversationId = event.conversationId,
+            messageInstant = event.messageInstant,
+            senderUserId = TestUser.SELF.id,
+            senderClientId = event.senderClientId,
+            content = content,
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(
+                matches {
+                    it is Message.Regular &&
+                            it.content == content &&
+                            it.isSelfMessage &&
+                            it.visibility == Message.Visibility.VISIBLE
+                }
+            )
+        }
+    }
+
+    @Test
     fun givenHistoryClientsRequest_whenHandling_thenMessageIsSafelySkipped() = runTest {
         assertHistoryMessageIsSafelySkipped(
             content = MessageContent.History.ClientsRequest,
@@ -470,13 +806,36 @@ class ApplicationMessageHandlerTest {
         assertFalse(logEntry.message.contains(HISTORY_CLIENT_SECRET_MARKER))
     }
 
+    private suspend fun dispatch(
+        arrangement: Arrangement,
+        handler: ApplicationMessageHandler,
+        content: MessageContent.FromProto,
+        senderUserId: UserId = TestUser.USER_ID,
+        expiresAfterMillis: Long? = null,
+    ) = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray())).also { event ->
+        handler.handleContent(
+            arrangement.transactionContext,
+            event.conversationId,
+            event.messageInstant,
+            senderUserId,
+            event.senderClientId,
+            ProtoContent.Readable(
+                messageUid = "messageId",
+                messageContent = content,
+                expectsReadConfirmation = false,
+                legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+                expiresAfterMillis = expiresAfterMillis,
+            )
+        )
+    }
+
     private class Arrangement(
         kaliumLogger: KaliumLogger = KaliumLogger.disabled(),
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val persistMessage = mock<PersistMessageUseCase>(MockMode.autoUnit)
         val messageRepository = mock<MessageRepository>(MockMode.autoUnit)
-        private val userRepository = mock<UserRepository>(MockMode.autoUnit)
+        val userRepository = mock<UserRepository>(MockMode.autoUnit)
         val userConfigRepository = mock<UserConfigRepository>(MockMode.autoUnit)
         val persistReactionsUseCase = mock<PersistReactionUseCase>(MockMode.autoUnit)
         val messageTextEditHandler = mock<MessageTextEditHandler>(MockMode.autoUnit)
@@ -548,10 +907,34 @@ class ApplicationMessageHandlerTest {
             }.returns(Either.Left(storageFailure))
         }
 
+        fun withMessageById(result: Either<StorageFailure, Message>) = apply {
+            everySuspend {
+                messageRepository.getMessageById(any(), any())
+            }.returns(result)
+        }
+
         fun withButtonActionConfirmation(result: Either<StorageFailure, Unit>) = apply {
             everySuspend {
                 buttonActionConfirmationHandler.handle(any(), any(), any())
             }.returns(result)
+        }
+
+        fun withUserAvailabilityUpdate() = apply {
+            everySuspend {
+                userRepository.updateOtherUserAvailabilityStatus(any(), any())
+            }.returns(Unit)
+        }
+
+        fun withPersistReaction() = apply {
+            everySuspend {
+                persistReactionsUseCase.invoke(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
+        }
+
+        fun withMessageTextEditHandler() = apply {
+            everySuspend {
+                messageTextEditHandler.handle(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
         fun withMessageCompositeEditHandler() = apply {
