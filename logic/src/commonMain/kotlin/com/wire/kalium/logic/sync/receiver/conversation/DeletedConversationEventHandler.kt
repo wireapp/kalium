@@ -66,7 +66,7 @@ internal class DeletedConversationEventHandlerImpl(
                     .onFailure {
                         logger.logFailure(it)
                     }.onSuccess {
-                        val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
+                        val senderUser = event.senderUserId?.let { userRepository.observeUser(it).firstOrNull() }
                         val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
                         if (conversation.type != Conversation.Type.Group.Meeting) {
                             notificationEventsManager.scheduleDeleteConversationNotification(dataNotification)

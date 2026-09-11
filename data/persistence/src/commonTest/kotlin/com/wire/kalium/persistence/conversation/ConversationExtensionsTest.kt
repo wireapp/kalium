@@ -116,6 +116,22 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenAdminlessDeletionTimestamp_whenSearchingConversations_thenPagedResultContainsTimestamp() = runTest(dispatcher) {
+        val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
+        val deletionTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        populateData(count = 1)
+        conversationDAO.insertAdminlessGroupDelete(conversationId, deletionTimestamp)
+
+        val result = getPager(searchQuery = "conversation 0").pagingSource.refresh()
+
+        val page = assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+        assertEquals(
+            deletionTimestamp,
+            page.data.single().conversationViewEntity.adminlessGroupDeletionTimestamp,
+        )
+    }
+
+    @Test
     fun givenInsertedConversations_whenGettingFirstPage_thenTheNextKeyShouldBeTheFirstItemOfTheNextPage() = runTest(dispatcher) {
         populateData()
         val result = getPager().pagingSource.refresh()
