@@ -22,13 +22,14 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.mocks.responses.ServiceDetailsResponseJson
 import com.wire.kalium.mocks.responses.TeamsResponsesJson
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.authenticated.teams.PasswordRequest
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.NonQualifiedUserId
 import com.wire.kalium.network.api.model.ServiceDetailResponse
 import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.api.v0.authenticated.TeamsApiV0
+import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
@@ -38,9 +39,23 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.fail
 
 @ExperimentalCoroutinesApi
 internal class TeamsApiV0Test : ApiTest() {
+
+    @Test
+    fun givenOlderApi_whenGettingCollaboratorsAndApps_thenReturnApiNotSupported() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.OK,
+            assertion = { fail("Unsupported endpoints must not make a network request") }
+        )
+        val teamsApi: TeamsApi = TeamsApiV0(networkClient)
+
+        assertIs<APINotSupported>((teamsApi.getTeamCollaborators(DUMMY_TEAM_ID) as NetworkResponse.Error).kException)
+        assertIs<APINotSupported>((teamsApi.getTeamApps(DUMMY_TEAM_ID) as NetworkResponse.Error).kException)
+    }
 
     @Test
     fun givenAValidGetTeamsFirstPageRequest_whenGettingTeamsMembers_theRequestShouldBeConfiguredCorrectly() =

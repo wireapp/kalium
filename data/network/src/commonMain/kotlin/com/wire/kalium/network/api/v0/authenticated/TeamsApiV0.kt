@@ -19,18 +19,22 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.authenticated.teams.TeamCollaboratorDTO
 import com.wire.kalium.network.api.authenticated.teams.PasswordRequest
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListNonPaginated
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListPaginated
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.TeamsApi.Companion.MIN_API_VERSION_TEAM_APPS
+import com.wire.kalium.network.api.base.authenticated.TeamsApi.Companion.MIN_API_VERSION_TEAM_COLLABORATORS
 import com.wire.kalium.network.api.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.model.NonQualifiedConversationId
 import com.wire.kalium.network.api.model.NonQualifiedUserId
 import com.wire.kalium.network.api.model.ServiceDetailResponse
 import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.model.TeamId
+import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.delete
@@ -87,6 +91,12 @@ internal open class TeamsApiV0 internal constructor(
         wrapRequest {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS/$userId")
         }
+
+    override suspend fun getTeamCollaborators(teamId: TeamId): NetworkResponse<List<TeamCollaboratorDTO>> =
+        getApiNotSupportedError(::getTeamCollaborators.name, MIN_API_VERSION_TEAM_COLLABORATORS)
+
+    override suspend fun getTeamApps(teamId: TeamId): NetworkResponse<List<UserProfileDTO>> =
+        getApiNotSupportedError(::getTeamApps.name, MIN_API_VERSION_TEAM_APPS)
 
     override suspend fun approveLegalHoldRequest(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit> =
         wrapRequest {
