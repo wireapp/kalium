@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -90,6 +91,38 @@ class ConversationFolderDAOTest : BaseDatabaseTest() {
         val result = db.conversationFolderDAO.getFavoriteConversationFolder()
 
         assertEquals(folderId, result?.id)
+    }
+
+    @Test
+    fun givenAdminlessDeletionTimestamp_whenObservingUserAndFavoriteFolders_thenTimestampIsExposed() = runTest {
+        val deletionTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        db.conversationDAO.insertConversation(conversationEntity1)
+        db.userDAO.upsertUser(userEntity1)
+        db.memberDAO.insertMember(member1, conversationEntity1.id)
+        db.conversationDAO.insertAdminlessGroupDelete(conversationEntity1.id, deletionTimestamp)
+        val folders = listOf(
+            folderWithConversationsEntity(
+                id = "user-folder",
+                name = "User folder",
+                type = ConversationFolderTypeEntity.USER,
+                conversationIdList = listOf(conversationEntity1.id),
+            ),
+            folderWithConversationsEntity(
+                id = "favorite-folder",
+                name = "",
+                type = ConversationFolderTypeEntity.FAVORITE,
+                conversationIdList = listOf(conversationEntity1.id),
+            ),
+        )
+        db.conversationFolderDAO.updateConversationFolders(folders)
+
+        folders.forEach { folder ->
+            assertEquals(
+                deletionTimestamp,
+                db.conversationFolderDAO.observeConversationListFromFolder(folder.id)
+                    .first().single().conversationViewEntity.adminlessGroupDeletionTimestamp,
+            )
+        }
     }
 
     @Test

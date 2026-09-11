@@ -18,13 +18,15 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member.Role.Admin
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
@@ -38,7 +40,7 @@ import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
 
 internal interface MemberChangeEventHandler {
-    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged)
+    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged): Either<CoreFailure, Unit>
 }
 
 internal class MemberChangeEventHandlerImpl(
@@ -49,16 +51,20 @@ internal class MemberChangeEventHandlerImpl(
 ) : MemberChangeEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged) {
+    override suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.MemberChanged
+    ): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        when (event) {
+        return when (event) {
             is Event.Conversation.MemberChanged.MemberMutedStatusChanged -> {
                 conversationRepository.updateMutedStatusLocally(
                     event.conversationId,
                     event.mutedConversationStatus,
                     event.mutedConversationChangedTime
-                )
-                eventLogger.logSuccess()
+                ).onSuccess {
+                    eventLogger.logSuccess()
+                }
             }
 
             is Event.Conversation.MemberChanged.MemberArchivedStatusChanged -> {
@@ -66,12 +72,13 @@ internal class MemberChangeEventHandlerImpl(
                     event.conversationId,
                     event.isArchiving,
                     event.archivedConversationChangedTime
-                )
-                eventLogger.logSuccess()
+                ).onSuccess {
+                    eventLogger.logSuccess()
+                }
             }
 
             is Event.Conversation.MemberChanged.MemberChangedRole -> {
-                handleMemberChangedRoleEvent(transactionContext, event)
+                handleMemberChangedRoleEvent(transactionContext, event).right()
             }
 
             else -> {
@@ -79,6 +86,7 @@ internal class MemberChangeEventHandlerImpl(
                     EventLoggingStatus.SKIPPED,
                     arrayOf("info" to "Ignoring 'conversation.member-update' event, not handled yet")
                 )
+                Either.Right(Unit)
             }
         }
     }
