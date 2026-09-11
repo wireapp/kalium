@@ -215,7 +215,7 @@ internal class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) intern
         secondFactorVerificationCode: String? = null,
         modelPostfix: String?
     ) = withContext(dispatchers.io) {
-        preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
+        preKeyRepository.generateNewPreKeysAuto(preKeysToSend).flatMap { preKeys ->
             preKeyRepository.generateNewLastResortKey().flatMap { lastKey ->
                 Either.Right(
                     RegisterClientParameters(
