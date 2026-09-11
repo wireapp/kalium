@@ -55,6 +55,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -87,6 +88,24 @@ internal class ConversationMapperTest {
             conversationMemberMapper,
             messageMapper,
         )
+    }
+
+    @Test
+    fun givenConversationViewEntity_whenMappingToDomain_thenAdminlessDeletionTimestampIsPropagated() {
+        val deletionTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        every { protocolInfoMapper.fromEntity(any()) }.returns(Conversation.ProtocolInfo.Proteus)
+        every { conversationStatusMapper.fromMutedStatusDaoModel(any()) }.returns(MutedConversationStatus.AllAllowed)
+        every { conversationMemberMapper.fromDAO(any()) }.returns(Conversation.Member.Role.Member)
+
+        listOf<Instant?>(null, deletionTimestamp).forEach { timestamp ->
+            val details = assertIs<ConversationDetails.Group.Regular>(
+                conversationMapper.fromDaoModelToDetails(
+                    TestConversation.GROUP_VIEW_ENTITY().copy(adminlessGroupDeletionTimestamp = timestamp)
+                )
+            )
+
+            assertEquals(timestamp, details.conversation.adminlessGroupDeletionTimestamp)
+        }
     }
 
     @Test

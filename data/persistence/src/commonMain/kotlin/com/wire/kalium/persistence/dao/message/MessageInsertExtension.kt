@@ -432,6 +432,7 @@ internal class MessageInsertExtensionImpl(
                 conversation_id = message.conversationId,
                 is_apps_enabled = content.isEnabled
             )
+
         }
     }
 
