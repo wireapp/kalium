@@ -66,7 +66,7 @@ CASE (Conversation.type)
     ELSE 0
 END AS accentId,
 Conversation.last_notified_date AS lastNotifiedMessageDate,
-memberRole. role AS selfRole,
+memberRole.role AS selfRole,
 Conversation.protocol,
 Conversation.mls_cipher_suite,
 Conversation.mls_epoch,
@@ -111,7 +111,8 @@ CurrentFolder.id AS folderId,
 CurrentFolder.name AS folderName,
 Conversation.wire_cell AS wireCell,
 Conversation.history_sharing_retention_seconds AS historySharingRetentionSeconds,
-Conversation.deleted_locally AS deletedLocally
+Conversation.deleted_locally AS deletedLocally,
+AdminlessGroupDelete.deletion_timestamp AS adminlessGroupDeletionTimestamp
 FROM Conversation
 LEFT JOIN SelfUser
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
@@ -129,7 +130,8 @@ LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.q
 LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type IS 'FAVORITE'
 LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id
 LEFT JOIN LabeledConversation AS ConversationLabel ON ConversationLabel.conversation_id = Conversation.qualified_id AND ConversationLabel.folder_id IS NOT FavoriteFolder.id
-LEFT JOIN ConversationFolder AS CurrentFolder ON CurrentFolder.id = ConversationLabel.folder_id AND CurrentFolder.folder_type IS NOT 'FAVORITE';
+LEFT JOIN ConversationFolder AS CurrentFolder ON CurrentFolder.id = ConversationLabel.folder_id AND CurrentFolder.folder_type IS NOT 'FAVORITE'
+LEFT JOIN AdminlessGroupDelete ON AdminlessGroupDelete.conversation_id = Conversation.qualified_id;
 
 selectAllConversationDetails:
 SELECT * FROM ConversationDetails

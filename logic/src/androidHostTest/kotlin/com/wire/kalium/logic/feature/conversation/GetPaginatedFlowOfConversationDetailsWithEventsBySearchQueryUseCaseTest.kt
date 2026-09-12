@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import kotlin.test.assertSame
 
 internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCaseTest {
     private val dispatcher = TestKaliumDispatcher
@@ -144,6 +145,23 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
                 }
             }
         }
+
+    @Test
+    fun givenPagingResults_whenSearching_thenOriginalPagingDataIsReturned() = runTest(dispatcher.default) {
+        val pagingData = PagingData.empty<ConversationDetailsWithEvents>()
+        val (_, useCase) = Arrangement()
+            .withPaginatedConversationResult(flowOf(pagingData))
+            .arrange()
+
+        val result = useCase(
+            queryConfig = ConversationQueryConfig("search"),
+            pagingConfig = PagingConfig(20),
+            startingOffset = 0,
+            strictMlsFilter = false
+        ).first()
+
+        assertSame(pagingData, result)
+    }
 
     inner class Arrangement {
         val callRepository = mock<CallRepository>()

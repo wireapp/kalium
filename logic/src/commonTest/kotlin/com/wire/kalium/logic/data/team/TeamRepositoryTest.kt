@@ -33,16 +33,24 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.client.ClientIdDTO
 import com.wire.kalium.network.api.authenticated.keypackage.LastPreKeyDTO
+import com.wire.kalium.network.api.authenticated.teams.CollaboratorPermissionDTO
+import com.wire.kalium.network.api.authenticated.teams.TeamCollaboratorDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListPaginated
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.model.AppDTO
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.model.ServiceDetailDTO
 import com.wire.kalium.network.api.model.ServiceDetailResponse
 import com.wire.kalium.network.api.model.TeamDTO
+import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.AppDAO
+import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
@@ -262,6 +270,55 @@ class TeamRepositoryTest {
     }
 
     @Test
+    fun givenTeamId_whenFetchingApps_thenPersistUsersAndApps() = runTest {
+        // given
+        val appProfile = TestUser.USER_PROFILE_DTO.copy(
+            id = TestUser.NETWORK_ID.copy(value = "appId"),
+            type = UserTypeDTO.APP,
+            app = AppDTO(description = "description", category = "category")
+        )
+        val (arrangement, teamRepository) = Arrangement().withApiGetTeamAppsSuccess(listOf(appProfile)).arrange()
+
+        // when
+        val result = teamRepository.fetchAppsByTeamId(teamId = TeamId(value = "teamId"))
+
+        // then
+        result.shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userDAO.upsertUsers(any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.appDAO.upsertApps(any())
+        }
+    }
+
+    @Test
+    fun givenTeamId_whenFetchingCollaborators_thenSeedThemAsIncompleteUsers() = runTest {
+        // given
+        val collaborator = TeamCollaboratorDTO(
+            nonQualifiedUserId = "collaboratorId",
+            teamId = "teamId",
+            permissions = listOf(CollaboratorPermissionDTO.CREATE_TEAM_CONVERSATION)
+        )
+        val (arrangement, teamRepository) = Arrangement().withApiGetTeamCollaboratorsSuccess(listOf(collaborator)).arrange()
+
+        // when
+        val result = teamRepository.fetchCollaboratorsByTeamId(teamId = TeamId(value = "teamId"))
+
+        // then
+        result.shouldSucceed()
+        val expectedUserIds = listOf(QualifiedIDEntity("collaboratorId", TestUser.USER_ID.domain))
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userDAO.insertOrIgnoreIncompleteUsers(eq(expectedUserIds))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userDAO.upsertConnectionStatuses(
+                eq(expectedUserIds.associateWith { ConnectionEntity.State.ACCEPTED })
+            )
+        }
+    }
+
+    @Test
     fun givenTeamIdAndUserIdAndPassword_whenApprovingLegalHoldRequest_thenItShouldSucceedAndClearRequestLocallyAndCreateEvent() = runTest {
         // given
         val (arrangement, teamRepository) = Arrangement().withApiApproveLegalHoldSuccess().withHandleLegalHoldSuccesses().arrange()
@@ -392,6 +449,7 @@ class TeamRepositoryTest {
         val userConfigDAO = mock<UserConfigDAO>(mode = MockMode.autoUnit)
         val teamsApi = mock<TeamsApi>(mode = MockMode.autoUnit)
         val serviceDAO = mock<ServiceDAO>(mode = MockMode.autoUnit)
+        val appDAO = mock<AppDAO>(mode = MockMode.autoUnit)
         val legalHoldHandler = mock<LegalHoldHandler>(mode = MockMode.autoUnit)
         val legalHoldRequestHandler = mock<LegalHoldRequestHandler>(mode = MockMode.autoUnit)
 
@@ -402,6 +460,7 @@ class TeamRepositoryTest {
             userDAO = userDAO,
             selfUserId = TestUser.USER_ID,
             serviceDAO = serviceDAO,
+            appDAO = appDAO,
             legalHoldHandler = legalHoldHandler,
             legalHoldRequestHandler = legalHoldRequestHandler,
             userConfigDAO = userConfigDAO
@@ -418,6 +477,18 @@ class TeamRepositoryTest {
             everySuspend {
                 teamsApi.whiteListedServices(any(), any())
             }.returns(NetworkResponse.Success(value = SERVICE_DETAILS_RESPONSE, headers = mapOf(), httpCode = 200))
+        }
+
+        suspend fun withApiGetTeamAppsSuccess(apps: List<UserProfileDTO>) = apply {
+            everySuspend {
+                teamsApi.getTeamApps(any())
+            }.returns(NetworkResponse.Success(value = apps, headers = mapOf(), httpCode = 200))
+        }
+
+        suspend fun withApiGetTeamCollaboratorsSuccess(collaborators: List<TeamCollaboratorDTO>) = apply {
+            everySuspend {
+                teamsApi.getTeamCollaborators(any())
+            }.returns(NetworkResponse.Success(value = collaborators, headers = mapOf(), httpCode = 200))
         }
 
         suspend fun withApiApproveLegalHoldSuccess() = apply {
