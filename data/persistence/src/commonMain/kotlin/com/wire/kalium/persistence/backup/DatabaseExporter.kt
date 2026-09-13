@@ -92,29 +92,41 @@ internal class DatabaseExporterImpl internal constructor(
             return null
         }
 
-        try {
-            // attach the plain DB to the user DB
+        val isDumped = try {
+            dumpLocalIntoPlain(plainDatabase)
+        } finally {
+            // The backup is only read as a file from here on. Closing it releases the file, which Windows
+            // can't delete while it's open.
+            plainDatabase.sqlDriver.close()
+        }
+        if (!isDumped) {
+            // if the dump failed, delete the backup DB file
+            deleteBackupDBFile()
+            return null
+        }
+        return plainDatabase.dbFileLocation()
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun dumpLocalIntoPlain(plainDatabase: UserDatabaseBuilder): Boolean {
+        val isDumped = try {
             // dump the content of the user DB into the plain DB
             plainDatabase.database.dumpContentQueries.dumpAllTables().await()
+            true
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             kaliumLogger.e("Failed to dump the user DB to the plain DB ${e.stackTraceToString()}")
-            // if the dump failed, delete the backup DB file
-            deleteBackupDBFile()
-            return null
+            false
         } finally {
             // detach the plain DB from the user DB
             plainDatabase.sqlDriver.execute(null, "DETACH DATABASE $MAIN_DB_ALIAS", 0)
-            if (plainDatabase.sqlDriver.checkFKViolations()) {
-                kaliumLogger.e("Failed to dump the user DB to the plain DB, FK violations")
-                plainDatabase.sqlDriver.close()
-                // if the dump failed, delete the backup DB file
-                deleteBackupDBFile()
-                return null
-            }
         }
-        return plainDatabase.dbFileLocation()
+        val hasFKViolations = isDumped && plainDatabase.sqlDriver.checkFKViolations()
+        if (hasFKViolations) {
+            kaliumLogger.e("Failed to dump the user DB to the plain DB, FK violations")
+        }
+        return isDumped && !hasFKViolations
     }
 
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
