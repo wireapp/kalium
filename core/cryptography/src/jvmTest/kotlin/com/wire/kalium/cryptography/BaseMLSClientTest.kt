@@ -42,7 +42,8 @@ actual open class BaseMLSClientTest {
         clientId: CryptoQualifiedClientId
     ): CoreCryptoCentral {
         val root = Files.createTempDirectory("mls").toFile()
-        val keyStore = root.resolve("keystore-$clientId")
+        // The qualified client id contains a ':', which Windows doesn't allow in file names.
+        val keyStore = root.resolve("keystore-${clientId.value}")
         return coreCryptoCentral(keyStore.absolutePath, ByteArray(32) { 0 })
     }
 }
