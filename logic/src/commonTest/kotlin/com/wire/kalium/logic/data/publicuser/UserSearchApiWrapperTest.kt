@@ -20,410 +20,132 @@ package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.network.api.authenticated.search.ContactDTO
 import com.wire.kalium.network.api.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.authenticated.search.UserSearchResponse
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
-import com.wire.kalium.network.api.model.UserId as UserIdDTO
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 class UserSearchApiWrapperTest {
 
     @Test
-    fun givenUserSearchIncludesContactMember_whenSearchingForUsersExcludingSelfUser_ThenResultDoesNotContainTheContactMembers() = runTest {
-        val conversationMembers = listOf(
-            MemberEntity(
-                user = QualifiedIDEntity(
-                    "value1",
-                    "someDomain"
-                ),
-                role = MemberEntity.Role.Member
-            )
+    fun givenNoConversationExcludedAndAllTeamsAndDomains_whenSearching_thenReturnsExpectedContacts() = runTest {
+        verifySearch(
+            searchUsersOptions = SearchUsersOptions(conversationMembersExcluded = null, onlySelfTeamAndDomain = false),
+            expectedContacts = listOf(CONVERSATION_MEMBER, TEAMMATE, OTHER_TEAM_CONTACT, OTHER_DOMAIN_CONTACT, NO_TEAM_CONTACT)
         )
-
-        val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
-
-        val searchResultUsers = listOf(
-            Arrangement.generateContactDTO(UserIdDTO("value1", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO("value2", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO("value3", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO(selfUser.id.value, selfUser.id.domain))
-        )
-
-        val expectedResult = listOf(
-            Arrangement.generateContactDTO(UserIdDTO("value2", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO("value3", "someDomain"))
-        )
-
-        val (_, userSearchApiWrapper) = Arrangement()
-            .withSelfUserId(selfUser.id)
-            .withSuccessConversationExcludedFullSearch(
-                conversationMembers,
-                searchResultUsers
-            ).arrange()
-
-        val result = userSearchApiWrapper.search(
-            "someQuery",
-            "someDomain",
-            null,
-            searchUsersOptions = SearchUsersOptions(
-                ConversationMemberExcludedOptions.ConversationExcluded(
-                    ConversationId(
-                        "someValue",
-                        "someDomain"
-                    )
-                ),
-                selfUserIncluded = false
-            )
-        )
-
-        assertIs<Either.Right<UserSearchResponse>>(result)
-        assertTrue { result.value.documents == expectedResult }
-        assertTrue { result.value.found == expectedResult.size }
     }
 
     @Test
-    fun givenUserSearchIncludesOnlyContactMembers_WhenSearchingForUsersExcludingSelfUser_ThenResultIsEmpty() = runTest {
-        val conversationMembers = listOf(
-            MemberEntity(
-                user = QualifiedIDEntity(
-                    "value1",
-                    "someDomain"
-                ),
-                role = MemberEntity.Role.Member
-            ),
-            MemberEntity(
-                user = QualifiedIDEntity(
-                    "value2",
-                    "someDomain"
-                ),
-                role = MemberEntity.Role.Member
-            ),
-            MemberEntity(
-                user = QualifiedIDEntity(
-                    "value3",
-                    "someDomain"
-                ), role = MemberEntity.Role.Member
-            )
+    fun givenConversationExcludedAndAllTeamsAndDomains_whenSearching_thenReturnsExpectedContacts() = runTest {
+        verifySearch(
+            searchUsersOptions = SearchUsersOptions(conversationMembersExcluded = CONVERSATION_ID, onlySelfTeamAndDomain = false),
+            expectedContacts = listOf(TEAMMATE, OTHER_TEAM_CONTACT, OTHER_DOMAIN_CONTACT, NO_TEAM_CONTACT)
         )
-
-        val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
-
-        val searchResultUsers = listOf(
-            Arrangement.generateContactDTO(UserIdDTO("value1", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO("value2", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO("value3", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO(selfUser.id.value, selfUser.id.domain))
-        )
-
-        val (_, userSearchApiWrapper) = Arrangement()
-            .withSelfUserId(selfUser.id)
-            .withSuccessConversationExcludedFullSearch(
-                conversationMembers,
-                searchResultUsers
-            ).arrange()
-
-        val result = userSearchApiWrapper.search(
-            "someQuery",
-            "someDomain",
-            null,
-            searchUsersOptions = SearchUsersOptions(
-                ConversationMemberExcludedOptions.ConversationExcluded(
-                    ConversationId(
-                        "someValue",
-                        "someDomain"
-                    )
-                ), selfUserIncluded = false
-            )
-        )
-
-        assertIs<Either.Right<UserSearchResponse>>(result)
-        assertTrue { result.value.documents.isEmpty() }
-        assertEquals(0, result.value.found)
     }
 
     @Test
-    fun givenUserSearchIncludesSelfUser_WhenSearchingForUsersExcludingSelfUser_ThenPropagateUsersWithoutSelfUser() = runTest {
-        val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
-
-        val searchResultUsers = listOf(
-            Arrangement.generateContactDTO(UserIdDTO("value1", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO("value2", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO("value3", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO(selfUser.id.value, selfUser.id.domain))
+    fun givenNoConversationExcludedAndOnlySelfTeamAndDomain_whenSearching_thenReturnsExpectedContacts() = runTest {
+        verifySearch(
+            searchUsersOptions = SearchUsersOptions(conversationMembersExcluded = null, onlySelfTeamAndDomain = true),
+            expectedContacts = listOf(CONVERSATION_MEMBER, TEAMMATE)
         )
+    }
 
-        val expectedResult = listOf(
-            Arrangement.generateContactDTO(UserIdDTO("value1", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO("value2", "someDomain")),
-            Arrangement.generateContactDTO(UserIdDTO("value3", "someDomain"))
+    @Test
+    fun givenConversationExcludedAndOnlySelfTeamAndDomain_whenSearching_thenReturnsExpectedContacts() = runTest {
+        verifySearch(
+            searchUsersOptions = SearchUsersOptions(conversationMembersExcluded = CONVERSATION_ID, onlySelfTeamAndDomain = true),
+            expectedContacts = listOf(TEAMMATE)
         )
+    }
 
+    private suspend fun verifySearch(searchUsersOptions: SearchUsersOptions, expectedContacts: List<ContactDTO>) {
+        val conversationMemberEntity = MemberEntity(
+            user = UserId(CONVERSATION_MEMBER.qualifiedID.value, CONVERSATION_MEMBER.qualifiedID.domain).toDao(),
+            role = MemberEntity.Role.Member
+        )
         val (_, userSearchApiWrapper) = Arrangement()
-            .withSelfUserId(selfUser.id)
-            .withSuccessFullSearch(searchResultUsers)
+            .withSuccessFullSearch(searchApiUsers = SEARCH_CONTACTS)
+            .apply {
+                if (searchUsersOptions.conversationMembersExcluded != null) {
+                    withObserveConversationMembers(
+                        result = flowOf(listOf(conversationMemberEntity)),
+                        conversationId = { it == CONVERSATION_ID.toDao() }
+                    )
+                }
+            }
             .arrange()
 
         val result = userSearchApiWrapper.search(
-            "someQuery",
-            "someDomain",
-            null,
-            searchUsersOptions = SearchUsersOptions.Default
+            searchQuery = "someQuery",
+            domain = SELF_USER_ID.domain,
+            maxResultSize = null,
+            selfTeamId = SELF_TEAM_ID,
+            searchUsersOptions = searchUsersOptions
         )
 
         assertIs<Either.Right<UserSearchResponse>>(result)
-        assertTrue { result.value.documents == expectedResult }
-        assertTrue { result.value.found == expectedResult.size }
-    }
-
-    @Test
-    fun givenUserSearchHasOnlySelfUser_WhenSearchingForUsersExcludingSelfUser_ThenSearchResultIsEmpty() = runTest {
-        val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
-
-        val searchResultUsers = listOf(
-            Arrangement.generateContactDTO(UserIdDTO(selfUser.id.value, selfUser.id.domain))
-        )
-
-        val (_, userSearchApiWrapper) = Arrangement()
-            .withSelfUserId(selfUser.id)
-            .withSuccessFullSearch(searchResultUsers)
-            .arrange()
-
-        val result = userSearchApiWrapper.search(
-            "someQuery",
-            "someDomain",
-            null,
-            searchUsersOptions = SearchUsersOptions.Default,
-        )
-
-        assertIs<Either.Right<UserSearchResponse>>(result)
-        assertTrue { result.value.documents.isEmpty() }
-        assertTrue { result.value.found == 0 }
-    }
-
-    @Test
-    fun givenUserSearchHasOnlySelfUser_WhenSearchingForUsersIncludingSelfUserThatIsNotInConversation_ThenSearchResultContainsSelfUser() =
-        runTest {
-            val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
-
-            val expectedResult = listOf(
-                Arrangement.generateContactDTO(UserIdDTO(selfUser.id.value, selfUser.id.domain))
-            )
-
-            val searchResultUsers = listOf(
-                Arrangement.generateContactDTO(UserIdDTO(selfUser.id.value, selfUser.id.domain))
-            )
-
-            val (_, userSearchApiWrapper) = Arrangement()
-                .withSelfUserId(selfUser.id)
-                .withSuccessFullSearch(searchResultUsers)
-                .arrange()
-
-            val result = userSearchApiWrapper.search(
-                "someQuery",
-                "someDomain",
-                null,
-                searchUsersOptions = SearchUsersOptions.Default.copy(selfUserIncluded = true),
-            )
-
-            assertIs<Either.Right<UserSearchResponse>>(result)
-            assertTrue { result.value.documents == expectedResult }
-            assertTrue { result.value.found == 1 }
-        }
-
-    @Test
-    fun givenUserSearchHasOnlySelfUser_WhenSearchingForUsersIncludingSelfUserThatIsPartOfConversation_ThenSearchResultIsEmpty() = runTest {
-        val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
-
-        val conversationMembers = listOf(
-            MemberEntity(
-                user = QualifiedIDEntity(
-                    "value1",
-                    "someDomain"
-                ),
-                role = MemberEntity.Role.Member
-            ),
-            MemberEntity(
-                user = QualifiedIDEntity(
-                    "value2",
-                    "someDomain"
-                ),
-                role = MemberEntity.Role.Member
-            ),
-            MemberEntity(
-                user = QualifiedIDEntity(
-                    "value3",
-                    "someDomain"
-                ), role = MemberEntity.Role.Member
-            ),
-            MemberEntity(
-                user = QualifiedIDEntity(
-                    selfUser.id.value,
-                    selfUser.id.domain
-                ), role = MemberEntity.Role.Member
-            )
-        )
-
-        val searchResultUsers = listOf(
-            Arrangement.generateContactDTO(UserIdDTO(selfUser.id.value, selfUser.id.domain))
-        )
-
-        val (_, userSearchApiWrapper) = Arrangement()
-            .withSelfUserId(selfUser.id)
-            .withSuccessConversationExcludedFullSearch(
-                conversationMembers,
-                searchResultUsers
-            ).arrange()
-
-        val result = userSearchApiWrapper.search(
-            "someQuery",
-            "someDomain",
-            null,
-            searchUsersOptions = SearchUsersOptions(
-                ConversationMemberExcludedOptions.ConversationExcluded(
-                    ConversationId(
-                        "someValue",
-                        "someDomain"
-                    )
-                ), selfUserIncluded = true
-            )
-        )
-
-        assertIs<Either.Right<UserSearchResponse>>(result)
-        assertTrue { result.value.documents.isEmpty() }
-        assertTrue { result.value.found == 0 }
+        assertEquals(expectedContacts, result.value.documents)
+        assertEquals(expectedContacts.size, result.value.found)
+        assertEquals(expectedContacts.size, result.value.returned)
     }
 
     private class Arrangement : MemberDAOArrangement by MemberDAOArrangementImpl() {
-
-        lateinit var selfUserId: UserId
         private val userSearchApi: UserSearchApi = mock<UserSearchApi>(mode = MockMode.autoUnit)
 
-        fun withSelfUserId(selfUserId: UserId) = apply {
-            this.selfUserId = selfUserId
-        }
-
-        suspend fun withSuccessConversationExcludedFullSearch(
-            conversationMembers: List<MemberEntity>,
-            searchApiUsers: List<ContactDTO>,
-        ): Arrangement {
-
-            withObserveConversationMembers(flowOf(conversationMembers))
-
-            everySuspend {
-                userSearchApi.search(any())
-            }.returns(
-                    NetworkResponse.Success(
-                        generateUserSearchResponse(searchApiUsers),
-                        mapOf(),
-                        200
-                    )
-                )
-
-            return this
-        }
-
-        suspend fun withSuccessFullSearch(
-            searchApiUsers: List<ContactDTO>,
-        ): Arrangement {
-
-            everySuspend {
-                userSearchApi.search(any())
-            }.returns(
-                    NetworkResponse.Success(
-                        generateUserSearchResponse(searchApiUsers),
-                        mapOf(),
-                        200
-                    )
-                )
-
-            return this
-        }
-
-        fun arrange() = this to UserSearchApiWrapperImpl(
-            userSearchApi,
-            memberDAO,
-            selfUserId
-        ) as UserSearchApiWrapper
-
-        companion object {
-            fun generateContactDTO(id: UserIdDTO): ContactDTO {
-                return ContactDTO(
-                    accentId = null,
-                    handle = null,
-                    name = "",
-                    qualifiedID = id,
-                    team = null
-                )
-            }
-
-            fun generateUserSearchResponse(contactDTOs: List<ContactDTO> = listOf()): UserSearchResponse {
-                return UserSearchResponse(
-                    documents = contactDTOs,
-                    found = contactDTOs.size,
-                    returned = contactDTOs.size,
+        fun withSuccessFullSearch(searchApiUsers: List<ContactDTO>) = apply {
+            everySuspend { userSearchApi.search(any()) } returns NetworkResponse.Success(
+                value = UserSearchResponse(
+                    documents = searchApiUsers,
+                    found = searchApiUsers.size,
+                    returned = searchApiUsers.size,
                     searchPolicy = SearchPolicyDTO.FULL_SEARCH,
                     took = 100
-                )
-            }
-
-            fun generateSelfUser(id: QualifiedID): SelfUser {
-                return SelfUser(
-                    id = id,
-                    name = null,
-                    handle = null,
-                    email = null,
-                    phone = null,
-                    accentId = 0,
-                    teamId = null,
-                    connectionStatus = ConnectionState.NOT_CONNECTED,
-                    previewPicture = null,
-                    completePicture = null,
-                    availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                    expiresAt = null,
-                    supportedProtocols = null,
-                    userType = UserTypeInfo.Regular(UserType.INTERNAL),
-                )
-            }
-
-            val SELF_USER = SelfUser(
-                id = QualifiedID("someValue", "someId"),
-                name = null,
-                handle = null,
-                email = null,
-                phone = null,
-                accentId = 0,
-                teamId = null,
-                connectionStatus = ConnectionState.NOT_CONNECTED,
-                previewPicture = null,
-                completePicture = null,
-                availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                expiresAt = null,
-                supportedProtocols = null,
-                userType = UserTypeInfo.Regular(UserType.INTERNAL),
+                ),
+                headers = mapOf(),
+                httpCode = 200
             )
         }
+
+        fun arrange() = this to UserSearchApiWrapperImpl(userSearchApi, memberDAO, SELF_USER_ID)
+    }
+
+    private companion object {
+        val SELF_USER_ID = UserId(value = "selfUserId", domain = "someDomain")
+        val SELF_TEAM_ID = TeamId(value = "selfTeamId")
+        val CONVERSATION_ID = ConversationId(value = "conversationId", domain = SELF_USER_ID.domain)
+        val SELF_CONTACT = contact(id = SELF_USER_ID.value)
+        val CONVERSATION_MEMBER = contact(id = "conversationMember")
+        val TEAMMATE = contact(id = "teammate")
+        val OTHER_TEAM_CONTACT = contact(id = "otherTeam", team = "otherTeamId")
+        val OTHER_DOMAIN_CONTACT = contact(id = "otherDomain", domain = "otherDomain")
+        val NO_TEAM_CONTACT = contact(id = "noTeam", team = null)
+        val SEARCH_CONTACTS = listOf(SELF_CONTACT, CONVERSATION_MEMBER, TEAMMATE, OTHER_TEAM_CONTACT, OTHER_DOMAIN_CONTACT, NO_TEAM_CONTACT)
+
+        fun contact(id: String, team: String? = SELF_TEAM_ID.value, domain: String = SELF_USER_ID.domain) = ContactDTO(
+            accentId = null,
+            handle = null,
+            name = "",
+            qualifiedID = UserIdDTO(value = id, domain = domain),
+            team = team
+        )
     }
 }
