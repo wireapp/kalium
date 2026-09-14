@@ -22,14 +22,12 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.nuke
 import com.wire.kalium.persistence.utils.IgnoreJS
-import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.IgnoreJvm
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-@IgnoreIOS
 @IgnoreJvm
 @IgnoreJS
 class NukeDBTest : BaseDatabaseTest() {
