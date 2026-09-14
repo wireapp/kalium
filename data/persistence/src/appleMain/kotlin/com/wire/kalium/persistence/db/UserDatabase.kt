@@ -47,7 +47,12 @@ actual fun userDatabaseBuilder(
                 null,
                 null
             )
-            databaseDriver(platformDatabaseData.storageData.storePath, FileNameUtil.userDBName(userId), UserDatabase.Schema.synchronous()) {
+            databaseDriver(
+                platformDatabaseData.storageData.storePath,
+                FileNameUtil.userDBName(userId),
+                UserDatabase.Schema.synchronous(),
+                passphrase?.value
+            ) {
                 isWALEnabled = enableWAL
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
