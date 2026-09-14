@@ -42,8 +42,9 @@ sealed class StorageData {
 }
 
 /**
- * @param passphrase encrypts the database with SQLCipher, see [setSqlCipherKey]. Null or empty leaves the database
- * unencrypted; the backup export uses an empty one for its plain copy.
+ * @param passphrase encrypts the database with SQLCipher, see [setSqlCipherKey]; a database that an earlier version
+ * stored unencrypted is encrypted first, see [encryptPlaintextDatabase]. Null or empty leaves the database unencrypted;
+ * the backup export uses an empty one for its plain copy.
  */
 fun databaseDriver(
     driverUri: String?,
@@ -54,6 +55,9 @@ fun databaseDriver(
 ): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
     val sqlCipherKey = passphrase?.takeIf { it.isNotEmpty() }?.decodeToString()
+    if (driverUri != null && sqlCipherKey != null) {
+        encryptPlaintextDatabase(driverUri, dbName, sqlCipherKey)
+    }
     val inMemory = driverUri == null
     val configuration = DatabaseConfiguration(
         name = dbName,
