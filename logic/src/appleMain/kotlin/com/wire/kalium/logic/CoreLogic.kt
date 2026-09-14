@@ -29,7 +29,9 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.logic.sync.WorkSchedulerProviderImpl
+import com.wire.kalium.logic.util.DatabaseKeyLock
 import com.wire.kalium.logic.util.PlatformContext
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
@@ -67,18 +69,28 @@ public actual class CoreLogic(
             shouldEncryptData = kaliumConfigs.shouldEncryptData()
         )
 
-    // TODO: add support for encrypted DB on apple platforms
-    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
-        platformDatabaseData = PlatformDatabaseData(
-            storageData = if (useInMemoryStorage) {
-                StorageData.InMemory
+    private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+
+    // Choosing the key and the first open run under one lock, so a second SDK instance can't create a
+    // different key for the same file in between.
+    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = DatabaseKeyLock.withLock {
+        globalDatabaseProvider(
+            platformDatabaseData = PlatformDatabaseData(
+                storageData = if (useInMemoryStorage) {
+                    StorageData.InMemory
+                } else {
+                    StorageData.FileBacked("$rootPath/global-storage")
+                }
+            ),
+            queriesContext = KaliumDispatcherImpl.io,
+            // Apple databases were never encrypted before, so there is no legacy key to migrate from.
+            passphrase = if (kaliumConfigs.shouldEncryptData() && !useInMemoryStorage) {
+                securityHelper.globalDBKeyMaterial(databaseExists = false).rawKey
             } else {
-                StorageData.FileBacked("$rootPath/global-storage")
+                null
             }
-        ),
-        queriesContext = KaliumDispatcherImpl.io,
-        passphrase = null
-    )
+        )
+    }
 
     public actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
     actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
