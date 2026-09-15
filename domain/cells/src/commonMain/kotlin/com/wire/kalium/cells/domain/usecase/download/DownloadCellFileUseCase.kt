@@ -28,6 +28,8 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import okio.Path
 
@@ -85,14 +87,21 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
                 // Always use remote path if available since it is most up to date.
                 (remoteFilePath ?: path)?.let { assetPath ->
                     attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
-                    cellsRepository.downloadFile(outFilePath, assetPath, onProgressUpdate)
-                        .onSuccess {
-                            attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
-                            attachmentsRepository.saveLocalPath(assetId, outFilePath.toString())
+                    try {
+                        cellsRepository.downloadFile(outFilePath, assetPath, onProgressUpdate)
+                            .onSuccess {
+                                attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
+                                attachmentsRepository.saveLocalPath(assetId, outFilePath.toString())
+                            }
+                            .onFailure {
+                                attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
+                            }
+                    } catch (cancellation: CancellationException) {
+                        withContext(NonCancellable) {
+                            attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_DOWNLOADED)
                         }
-                        .onFailure {
-                            attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
-                        }
+                        throw cancellation
+                    }
                 } ?: Either.Left(StorageFailure.DataNotFound)
             }
         )
