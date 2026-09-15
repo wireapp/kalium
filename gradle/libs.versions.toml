@@ -251,6 +251,8 @@ difference-jvm = { module = "dev.andrewbailey.difference:difference-jvm", versio
 avs = { module = "com.wire:avs", version.ref = "avs" }
 avsKmp = { module = "com.wire:avs-kmp", version.ref = "avs" }
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+# Not "jna-platform": an alias that extends "jna" would turn libs.jna into a group accessor.
+jnaPlatform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }
 
 # logging
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }

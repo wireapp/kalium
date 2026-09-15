@@ -20,41 +20,103 @@ package com.wire.kalium.persistence.kmmSettings
 
 import com.russhwolf.settings.PropertiesSettings
 import com.russhwolf.settings.Settings
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileWriter
+import java.io.FileOutputStream
+import java.nio.file.FileSystemException
+import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.util.Properties
 
-private fun onModify(properties: Properties, file: File) {
-    properties.store(FileWriter(file), "Store values to properties file")
+private val fileWriteLock = Any()
+
+private const val MOVE_ATTEMPTS = 5
+private const val MOVE_RETRY_DELAY_MILLIS = 50L
+
+/**
+ * Writes the whole file to a temporary sibling, syncs it to disk and moves it over the old one.
+ *
+ * The settings hold the auth tokens and the keys of the CoreCrypto keystores. Rewriting a file in
+ * place could leave it truncated after a crash, and with it keystores that can no longer be decrypted.
+ */
+internal fun writeAtomically(
+    file: File,
+    content: ByteArray,
+    move: (Path, Path) -> Unit = ::replaceAtomically
+) = synchronized(fileWriteLock) {
+    val temporaryFile = File(file.parentFile, "${file.name}.tmp")
+    FileOutputStream(temporaryFile).use { output ->
+        output.write(content)
+        output.fd.sync()
+    }
+    retryWhileLocked { move(temporaryFile.toPath(), file.toPath()) }
 }
 
-private fun createOrLoad(rootPath: String, file: File): Properties {
-    val properties = Properties()
-    File(rootPath).mkdirs()
+private fun replaceAtomically(source: Path, target: Path) {
+    Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+}
+
+/**
+ * Runs [action] up to [attempts] times while it fails with a [FileSystemException].
+ *
+ * On Windows a virus scanner or the search indexer can hold a file open for a moment, and replacing
+ * it fails until they let go. The last failure is rethrown.
+ */
+@Suppress("SwallowedException")
+internal fun retryWhileLocked(
+    attempts: Int = MOVE_ATTEMPTS,
+    pause: (attempt: Int) -> Unit = { Thread.sleep(MOVE_RETRY_DELAY_MILLIS * it) },
+    action: () -> Unit
+) {
+    repeat(attempts - 1) { attempt ->
+        try {
+            action()
+            return
+        } catch (exception: FileSystemException) {
+            pause(attempt + 1)
+        }
+    }
+    action()
+}
+
+private fun Properties.toBytes(): ByteArray =
+    ByteArrayOutputStream().also { store(it, "Store values to properties file") }.toByteArray()
+
+private fun loadPlaintext(file: File): Properties {
     if (!file.exists()) {
-        println(file.absolutePath)
         file.createNewFile()
     }
-    FileInputStream(file).use {
-        properties.load(it)
-    }
-    return properties
+    return Properties().apply { FileInputStream(file).use { load(it) } }
 }
 
-// TODO(jvm): JvmPreferencesSettings is not encrypted
 /**
- * the java implementation is not yet encrypted
+ * Settings are plain properties files unless [SettingOptions.shouldEncryptData] is on. Then the whole
+ * file is encrypted with a master key from the system key store, see [SettingsFileCipher] and
+ * [SettingsMasterKeys].
  */
 internal actual fun buildSettings(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
 ): Settings {
+    File(param.rootPath).mkdirs()
     val file = File(Paths.get(param.rootPath, options.fileName).toString())
-    val properties = createOrLoad(param.rootPath, file)
+    val cipher = if (options.shouldEncryptData) SettingsFileCipher(param.masterKeys.forSettings(file)) else null
+    val properties = cipher?.load(file) ?: loadPlaintext(file)
 
-    return PropertiesSettings(properties) { onModify(it, file) }
+    return PropertiesSettings(properties) {
+        val content = it.toBytes()
+        writeAtomically(file, cipher?.encrypt(content) ?: content)
+    }
 }
 
-internal actual class EncryptedSettingsPlatformParam(val rootPath: String)
+/**
+ * @param masterKeys where the master key of encrypted settings comes from; tests replace the system
+ * key store.
+ */
+internal actual class EncryptedSettingsPlatformParam(
+    val rootPath: String,
+    val masterKeys: SettingsMasterKeys = SettingsMasterKeys.platform
+)
