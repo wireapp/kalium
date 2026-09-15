@@ -24,12 +24,17 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.nio.file.FileSystemException
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.util.Properties
 
 private val fileWriteLock = Any()
+
+private const val MOVE_ATTEMPTS = 5
+private const val MOVE_RETRY_DELAY_MILLIS = 50L
 
 /**
  * Writes the whole file to a temporary sibling, syncs it to disk and moves it over the old one.
@@ -37,13 +42,44 @@ private val fileWriteLock = Any()
  * The settings hold the auth tokens and the keys of the CoreCrypto keystores. Rewriting a file in
  * place could leave it truncated after a crash, and with it keystores that can no longer be decrypted.
  */
-internal fun writeAtomically(file: File, content: ByteArray) = synchronized(fileWriteLock) {
+internal fun writeAtomically(
+    file: File,
+    content: ByteArray,
+    move: (Path, Path) -> Unit = ::replaceAtomically
+) = synchronized(fileWriteLock) {
     val temporaryFile = File(file.parentFile, "${file.name}.tmp")
     FileOutputStream(temporaryFile).use { output ->
         output.write(content)
         output.fd.sync()
     }
-    Files.move(temporaryFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+    retryWhileLocked { move(temporaryFile.toPath(), file.toPath()) }
+}
+
+private fun replaceAtomically(source: Path, target: Path) {
+    Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+}
+
+/**
+ * Runs [action] up to [attempts] times while it fails with a [FileSystemException].
+ *
+ * On Windows a virus scanner or the search indexer can hold a file open for a moment, and replacing
+ * it fails until they let go. The last failure is rethrown.
+ */
+@Suppress("SwallowedException")
+internal fun retryWhileLocked(
+    attempts: Int = MOVE_ATTEMPTS,
+    pause: (attempt: Int) -> Unit = { Thread.sleep(MOVE_RETRY_DELAY_MILLIS * it) },
+    action: () -> Unit
+) {
+    repeat(attempts - 1) { attempt ->
+        try {
+            action()
+            return
+        } catch (exception: FileSystemException) {
+            pause(attempt + 1)
+        }
+    }
+    action()
 }
 
 private fun Properties.toBytes(): ByteArray =
