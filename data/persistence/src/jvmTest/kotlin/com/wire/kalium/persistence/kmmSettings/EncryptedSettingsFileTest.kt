@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.kmmSettings
 
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.util.FileNameUtil
 import java.io.File
 import java.nio.file.Files
 import java.util.UUID
@@ -34,6 +35,9 @@ class EncryptedSettingsFileTest {
     private val rootDirectory = Files.createTempDirectory("encrypted-settings").toFile()
     private val settingsFile = File(rootDirectory, "app-preference")
     private val keyFile = File(rootDirectory, SettingsMasterKeys.KEY_FILE_NAME)
+    private val pendingKeyFile = File(rootDirectory, SettingsMasterKeys.PENDING_KEY_FILE_NAME)
+    private val user = UserIDEntity("user", "domain")
+    private val userSettingsFile = File(rootDirectory, FileNameUtil.userPrefFile(user))
     private val keyStore = InMemoryMasterKeyStore()
 
     @AfterTest
@@ -96,10 +100,41 @@ class EncryptedSettingsFileTest {
     }
 
     @Test
-    fun givenPlaintextSettings_whenLoadedWithEncryption_thenLoadingFails() {
+    fun givenPlaintextAppAndUserSettings_whenEncryptionStarts_thenBothAreEncryptedWithTheirValues() {
         appSettings(shouldEncryptData = false).putString(SECRET_NAME, SECRET_VALUE)
+        userSettings(shouldEncryptData = false).putString(USER_SETTING_NAME, USER_SETTING_VALUE)
 
-        assertFailsWith<SettingsEncryptionException> { appSettings() }
+        appSettings()
+
+        assertTrue(SettingsFileCipher.isEncrypted(settingsFile))
+        assertTrue(SettingsFileCipher.isEncrypted(userSettingsFile))
+        assertTrue(keyFile.exists())
+        assertFalse(pendingKeyFile.exists())
+        assertEquals(SECRET_VALUE, appSettings().getStringOrNull(SECRET_NAME))
+        assertEquals(USER_SETTING_VALUE, userSettings().getStringOrNull(USER_SETTING_NAME))
+    }
+
+    @Test
+    fun givenInterruptedMigration_whenSettingsAreLoaded_thenItFinishesWithTheSameKey() {
+        appSettings(shouldEncryptData = false).putString(SECRET_NAME, SECRET_VALUE)
+        appSettings()
+        // As if the process ended after encrypting the app settings, before the user settings.
+        keyFile.renameTo(pendingKeyFile)
+        userSettings(shouldEncryptData = false).putString(USER_SETTING_NAME, USER_SETTING_VALUE)
+
+        assertEquals(USER_SETTING_VALUE, userSettings().getStringOrNull(USER_SETTING_NAME))
+        assertEquals(SECRET_VALUE, appSettings().getStringOrNull(SECRET_NAME))
+        assertTrue(keyFile.exists())
+        assertFalse(pendingKeyFile.exists())
+        assertEquals(1, keyStore.keys.size)
+    }
+
+    @Test
+    fun givenMasterKey_whenASettingsFileIsPlaintext_thenLoadingFails() {
+        appSettings().putString(SECRET_NAME, SECRET_VALUE)
+        userSettings(shouldEncryptData = false).putString(USER_SETTING_NAME, USER_SETTING_VALUE)
+
+        assertFailsWith<SettingsEncryptionException> { userSettings() }
     }
 
     @Test
@@ -121,6 +156,9 @@ class EncryptedSettingsFileTest {
         shouldEncryptData: Boolean = true
     ) = buildSettings(SettingOptions.AppSettings(shouldEncryptData), param(masterKeys))
 
+    private fun userSettings(shouldEncryptData: Boolean = true) =
+        buildSettings(SettingOptions.UserSettings(shouldEncryptData, user), param(SettingsMasterKeys { keyStore }))
+
     private fun param(masterKeys: SettingsMasterKeys) = EncryptedSettingsPlatformParam(rootDirectory.path, masterKeys)
 
     private class InMemoryMasterKeyStore(override val name: String = "in-memory") : MasterKeyStore {
@@ -136,5 +174,7 @@ class EncryptedSettingsFileTest {
         const val SECRET_NAME = "user_db_secret_alias_v2_user@domain"
         // No characters that Properties escapes, so the plaintext check can search for it directly.
         const val SECRET_VALUE = "c2VjcmV0LWtleS1tYXRlcmlhbA"
+        const val USER_SETTING_NAME = "file_sharing"
+        const val USER_SETTING_VALUE = "on"
     }
 }

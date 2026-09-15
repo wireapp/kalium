@@ -18,7 +18,10 @@
 
 package com.wire.kalium.persistence.kmmSettings
 
+import com.wire.kalium.persistence.util.FileNameUtil
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.security.SecureRandom
 
 /** Keeps the master key of the settings files outside of them, in a system key store. */
@@ -49,31 +52,52 @@ internal fun platformMasterKeyStore(): MasterKeyStore {
  * The master keys that encrypt the settings files, one per settings folder.
  *
  * The key itself stays in a [MasterKeyStore]; a small key file next to the settings names the key
- * store and the entry. A new key is only created while the settings file is still empty. If the key
- * file is missing next to existing settings, those settings can't be read anymore, and a new key
- * would hide that.
+ * store and the entry.
+ *
+ * Settings written before the encryption are plaintext. When the key of a folder is created, all of
+ * them are encrypted with it, and only then the key file gets its final name; after an interruption
+ * the next start continues from the pending key file. Once the key file exists, a plaintext settings
+ * file is an error. So is an encrypted one without key file: those settings can't be read anymore,
+ * and a new key would hide that.
  */
 internal class SettingsMasterKeys(private val keyStore: () -> MasterKeyStore) {
 
     private val keys = HashMap<String, ByteArray>()
 
     @Synchronized
-    fun forSettings(settingsFile: File): ByteArray =
-        keys.getOrPut(settingsFile.absoluteFile.parentFile.path) { loadOrCreate(settingsFile) }
+    fun forSettings(settingsFile: File): ByteArray {
+        val folder = settingsFile.absoluteFile.parentFile
+        return keys.getOrPut(folder.path) { loadOrCreate(folder) }
+    }
 
-    private fun loadOrCreate(settingsFile: File): ByteArray {
-        val keyFile = File(settingsFile.absoluteFile.parentFile, KEY_FILE_NAME)
+    private fun loadOrCreate(folder: File): ByteArray {
+        val keyFile = File(folder, KEY_FILE_NAME)
         if (keyFile.exists()) return load(keyFile)
 
-        if (settingsFile.length() > 0) {
-            throw SettingsEncryptionException("The master key of ${settingsFile.name} is missing, so the settings can't be decrypted")
+        val pendingKeyFile = File(folder, PENDING_KEY_FILE_NAME)
+        val key = if (pendingKeyFile.exists()) load(pendingKeyFile) else create(folder, pendingKeyFile)
+        val cipher = SettingsFileCipher(key)
+        settingsFiles(folder).filterNot { SettingsFileCipher.isEncrypted(it) }
+            .forEach { writeAtomically(it, cipher.encrypt(it.readBytes())) }
+        retryWhileLocked { Files.move(pendingKeyFile.toPath(), keyFile.toPath(), StandardCopyOption.ATOMIC_MOVE) }
+        return key
+    }
+
+    private fun create(folder: File, pendingKeyFile: File): ByteArray {
+        settingsFiles(folder).firstOrNull { SettingsFileCipher.isEncrypted(it) }?.let {
+            throw SettingsEncryptionException("The master key of ${it.name} is missing, so the settings can't be decrypted")
         }
         val store = keyStore()
         val key = ByteArray(KEY_SIZE_BYTES).also(random::nextBytes)
         val reference = store.store(key)
-        writeAtomically(keyFile, listOf(HEADER, store.name, reference).joinToString(separator = "\n", postfix = "\n").encodeToByteArray())
+        val keyFileContent = listOf(HEADER, store.name, reference).joinToString(separator = "\n", postfix = "\n")
+        writeAtomically(pendingKeyFile, keyFileContent.encodeToByteArray())
         return key
     }
+
+    /** The settings files in [folder] that hold settings; empty ones hold none. */
+    private fun settingsFiles(folder: File): List<File> =
+        folder.listFiles { file -> file.isFile && file.length() > 0 && FileNameUtil.isPrefFile(file.name) }.orEmpty().toList()
 
     private fun load(keyFile: File): ByteArray {
         val lines = keyFile.readLines()
@@ -91,6 +115,7 @@ internal class SettingsMasterKeys(private val keyStore: () -> MasterKeyStore) {
 
     companion object {
         const val KEY_FILE_NAME = "settings-master-key"
+        const val PENDING_KEY_FILE_NAME = "$KEY_FILE_NAME.pending"
         private const val HEADER = "kalium-settings-master-key-v1"
         private const val KEY_FILE_LINES = 3
         private const val KEY_SIZE_BYTES = 32

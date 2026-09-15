@@ -57,7 +57,7 @@ internal class SettingsFileCipher(key: ByteArray) {
 
         if (bytes.size <= HEADER.size + NONCE_SIZE_BYTES || !bytes.copyOf(HEADER.size).contentEquals(HEADER)) {
             throw SettingsEncryptionException(
-                "Settings file ${file.name} is not encrypted. Existing plaintext settings are not migrated; remove the file to start over."
+                "Settings file ${file.name} is not encrypted, although its master key exists; remove the file to start over."
             )
         }
         val nonce = bytes.copyOfRange(HEADER.size, HEADER.size + NONCE_SIZE_BYTES)
@@ -73,12 +73,15 @@ internal class SettingsFileCipher(key: ByteArray) {
         return Properties().apply { load(content.inputStream()) }
     }
 
-    private companion object {
-        const val TRANSFORMATION = "AES/GCM/NoPadding"
-        const val KEY_SIZE_BYTES = 32
-        const val NONCE_SIZE_BYTES = 12
-        const val TAG_SIZE_BITS = 128
-        val HEADER = "kalium-encrypted-settings-v1\n".encodeToByteArray()
-        val random = SecureRandom()
+    companion object {
+        private const val TRANSFORMATION = "AES/GCM/NoPadding"
+        private const val KEY_SIZE_BYTES = 32
+        private const val NONCE_SIZE_BYTES = 12
+        private const val TAG_SIZE_BITS = 128
+        private val HEADER = "kalium-encrypted-settings-v1\n".encodeToByteArray()
+        private val random = SecureRandom()
+
+        /** Whether [file] starts with the header of an encrypted settings file. */
+        fun isEncrypted(file: File): Boolean = file.inputStream().use { it.readNBytes(HEADER.size) }.contentEquals(HEADER)
     }
 }
