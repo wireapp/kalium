@@ -28,6 +28,8 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /** Runs on Windows only, with DPAPI-NG of the user running the tests; outside a domain, that is the local user. */
 class WindowsDpapiNgMasterKeyStoreTest {
@@ -63,6 +65,25 @@ class WindowsDpapiNgMasterKeyStoreTest {
     @Test
     fun givenDamagedReference_whenUnprotected_thenItFails() {
         assertFailsWith<SettingsEncryptionException> { store.load("not base64 !") }
+    }
+
+    @Test
+    fun givenProtectedKey_whenItsDescriptorIsRead_thenItNamesTheLocalUser() {
+        val reference = store.store(ByteArray(32) { it.toByte() })
+
+        assertTrue(store.descriptorOf(reference).contains("LOCAL=user", ignoreCase = true))
+    }
+
+    @Test
+    fun givenProtectedKey_whenAnUpgradeIsTried_thenOnlyAMissingSidChangesItAndTheKeyStillLoads() {
+        val key = ByteArray(32) { (it * 7).toByte() }
+        val reference = store.store(key)
+
+        val upgraded = store.upgrade(reference, key)
+
+        // A key protected to the SID needs nothing; outside a domain, the SID stays unavailable.
+        if (store.descriptorOf(reference).contains("SID=", ignoreCase = true)) assertNull(upgraded)
+        assertContentEquals(key, store.load(upgraded ?: reference))
     }
 
     @Test

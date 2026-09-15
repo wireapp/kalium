@@ -35,6 +35,12 @@ internal interface MasterKeyStore {
 
     /** Returns the key behind [reference]; throws [SettingsEncryptionException] if it's gone or the store refuses. */
     fun load(reference: String): ByteArray
+
+    /**
+     * A better reference for [key], which [reference] points to, or null to keep [reference]. Called after every
+     * successful [load], so a key that could only be protected weakly when it was stored is protected better once it can.
+     */
+    fun upgrade(reference: String, key: ByteArray): String? = null
 }
 
 /** The key store of this system; throws [SettingsEncryptionException] where there is none. */
@@ -52,7 +58,8 @@ internal fun platformMasterKeyStore(): MasterKeyStore {
  * The master keys that encrypt the settings files, one per settings folder.
  *
  * The key itself stays in a [MasterKeyStore]; a small key file next to the settings names the key
- * store and the entry.
+ * store and the entry. When the store can protect a loaded key better than when it was stored, the
+ * key file gets the new reference (see [MasterKeyStore.upgrade]).
  *
  * Settings written before the encryption are plaintext. When the key of a folder is created, all of
  * them are encrypted with it, and only then the key file gets its final name; after an interruption
@@ -89,15 +96,16 @@ internal class SettingsMasterKeys(private val keyStore: () -> MasterKeyStore) {
         }
         val store = keyStore()
         val key = ByteArray(KEY_SIZE_BYTES).also(random::nextBytes)
-        val reference = store.store(key)
-        val keyFileContent = listOf(HEADER, store.name, reference).joinToString(separator = "\n", postfix = "\n")
-        writeAtomically(pendingKeyFile, keyFileContent.encodeToByteArray())
+        writeAtomically(pendingKeyFile, keyFileContent(store, store.store(key)))
         return key
     }
 
     /** The settings files in [folder] that hold settings; empty ones hold none. */
     private fun settingsFiles(folder: File): List<File> =
         folder.listFiles { file -> file.isFile && file.length() > 0 && FileNameUtil.isPrefFile(file.name) }.orEmpty().toList()
+
+    private fun keyFileContent(store: MasterKeyStore, reference: String): ByteArray =
+        listOf(HEADER, store.name, reference).joinToString(separator = "\n", postfix = "\n").encodeToByteArray()
 
     private fun load(keyFile: File): ByteArray {
         val lines = keyFile.readLines()
@@ -110,7 +118,9 @@ internal class SettingsMasterKeys(private val keyStore: () -> MasterKeyStore) {
                 "The settings master key belongs to the ${lines[1]} key store, but this system uses ${store.name}"
             )
         }
-        return store.load(lines[2])
+        val key = store.load(lines[2])
+        store.upgrade(lines[2], key)?.let { writeAtomically(keyFile, keyFileContent(store, it)) }
+        return key
     }
 
     companion object {

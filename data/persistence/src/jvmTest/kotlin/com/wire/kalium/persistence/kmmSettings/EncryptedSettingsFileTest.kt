@@ -151,6 +151,19 @@ class EncryptedSettingsFileTest {
         assertFailsWith<IllegalArgumentException> { SettingsFileCipher(ByteArray(16)) }
     }
 
+    @Test
+    fun givenKeyStoreThatCanProtectTheKeyBetterNow_whenSettingsAreReopened_thenTheKeyFileGetsTheNewReferenceOnce() {
+        appSettings().putString(SECRET_NAME, SECRET_VALUE)
+        val reference = keyFile.readLines()[2]
+        val upgradingStore = UpgradingMasterKeyStore(keyStore)
+
+        assertEquals(SECRET_VALUE, appSettings(SettingsMasterKeys { upgradingStore }).getStringOrNull(SECRET_NAME))
+        assertEquals("$STRONGER_PREFIX$reference", keyFile.readLines()[2])
+
+        assertEquals(SECRET_VALUE, appSettings(SettingsMasterKeys { upgradingStore }).getStringOrNull(SECRET_NAME))
+        assertEquals(1, upgradingStore.upgrades)
+    }
+
     private fun appSettings(
         masterKeys: SettingsMasterKeys = SettingsMasterKeys { keyStore },
         shouldEncryptData: Boolean = true
@@ -170,11 +183,25 @@ class EncryptedSettingsFileTest {
             keys[reference]?.copyOf() ?: throw SettingsEncryptionException("No key for $reference")
     }
 
+    /** Keeps the keys of [keys]; gives a key a stronger reference the first time it is loaded, as DPAPI-NG does for the SID. */
+    private class UpgradingMasterKeyStore(private val keys: InMemoryMasterKeyStore) : MasterKeyStore by keys {
+        var upgrades = 0
+
+        override fun upgrade(reference: String, key: ByteArray): String? =
+            if (reference.startsWith(STRONGER_PREFIX)) {
+                null
+            } else {
+                upgrades++
+                "$STRONGER_PREFIX$reference".also { keys.keys[it] = key.copyOf() }
+            }
+    }
+
     private companion object {
         const val SECRET_NAME = "user_db_secret_alias_v2_user@domain"
         // No characters that Properties escapes, so the plaintext check can search for it directly.
         const val SECRET_VALUE = "c2VjcmV0LWtleS1tYXRlcmlhbA"
         const val USER_SETTING_NAME = "file_sharing"
         const val USER_SETTING_VALUE = "on"
+        const val STRONGER_PREFIX = "stronger-"
     }
 }
