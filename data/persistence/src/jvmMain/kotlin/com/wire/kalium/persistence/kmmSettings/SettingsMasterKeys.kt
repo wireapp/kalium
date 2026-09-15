@@ -39,6 +39,7 @@ internal fun platformMasterKeyStore(): MasterKeyStore {
     val osName = System.getProperty("os.name").orEmpty()
     return when {
         osName.startsWith("Mac", ignoreCase = true) -> MacKeychainMasterKeyStore()
+        osName.startsWith("Linux", ignoreCase = true) -> LibsecretMasterKeyStore()
         else -> throw SettingsEncryptionException("Encrypted settings need a system key store, and there is no supported one on $osName")
     }
 }
