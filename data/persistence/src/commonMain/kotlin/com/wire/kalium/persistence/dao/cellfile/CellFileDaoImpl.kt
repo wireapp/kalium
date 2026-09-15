@@ -46,6 +46,7 @@ internal class CellFileDaoImpl(
                 downloadedAt = entity.downloadedAt,
                 isOffline = if (entity.isOffline) 1L else 0L,
                 modifiedAt = entity.modifiedAt,
+                assetPath = entity.remotePath,
             )
         }
     }
@@ -123,5 +124,6 @@ internal class CellFileDaoImpl(
         downloadedAt = downloadedAt,
         isOffline = isOffline == 1L,
         modifiedAt = modifiedAt,
+        remotePath = assetPath,
     )
 }
