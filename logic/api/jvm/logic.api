@@ -3645,6 +3645,7 @@ public final class com/wire/kalium/logic/feature/conversation/ConversationScope 
 	public final fun getRemoveConversationFromFolder ()Lcom/wire/kalium/logic/feature/conversation/folder/RemoveConversationFromFolderUseCase;
 	public final fun getRemoveMemberFromConversation ()Lcom/wire/kalium/logic/feature/conversation/RemoveMemberFromConversationUseCase;
 	public final fun getRenameConversation ()Lcom/wire/kalium/logic/feature/conversation/RenameConversationUseCase;
+	public final fun getRenewMLSKeyingMaterials ()Lcom/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsUseCase;
 	public final fun getRevokeGuestRoomLink ()Lcom/wire/kalium/logic/feature/conversation/guestroomlink/RevokeGuestRoomLinkUseCase;
 	public final fun getSendTypingEvent ()Lcom/wire/kalium/logic/feature/conversation/SendTypingEventUseCase;
 	public final fun getSetNotifiedAboutConversationUnderLegalHold ()Lcom/wire/kalium/logic/feature/conversation/SetNotifiedAboutConversationUnderLegalHoldUseCase;
@@ -4700,6 +4701,37 @@ public final class com/wire/kalium/logic/feature/conversation/guestroomlink/Revo
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/guestroomlink/RevokeGuestRoomLinkUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult {
+}
+
+public final class com/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult$Failure : com/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult$Success : com/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult {
+	public fun <init> (II)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun copy (II)Lcom/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult$Success;IIILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFailedGroups ()I
+	public final fun getRenewedGroups ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/keyingmaterials/RenewMLSKeyingMaterialsUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/messagetimer/UpdateMessageTimerUseCase {

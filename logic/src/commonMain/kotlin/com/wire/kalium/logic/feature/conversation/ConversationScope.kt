@@ -91,6 +91,8 @@ import com.wire.kalium.logic.feature.conversation.guestroomlink.ObserveGuestRoom
 import com.wire.kalium.logic.feature.conversation.guestroomlink.ObserveGuestRoomLinkUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.RevokeGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.RevokeGuestRoomLinkUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.RenewMLSKeyingMaterialsUseCase
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.RenewMLSKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCase
@@ -345,6 +347,9 @@ public class ConversationScope internal constructor(
 
     internal val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, transactionProvider)
+
+    public val renewMLSKeyingMaterials: RenewMLSKeyingMaterialsUseCase
+        get() = RenewMLSKeyingMaterialsUseCaseImpl(syncManager, mlsConversationRepository, transactionProvider)
 
     internal val clearConversationAssetsLocally: ClearConversationAssetsLocallyUseCase
         get() = ClearConversationAssetsLocallyUseCaseImpl(
