@@ -31,6 +31,8 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.util.DatabaseKeyLock
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
@@ -61,6 +63,8 @@ internal actual open class UserSessionScopeProviderImpl(
         userAgent,
 ),
     UserSessionScopeProvider {
+    private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+
     override fun create(userId: UserId): UserSessionScope {
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
         val rootStoragePath = "$rootAccountPath/storage"
@@ -73,6 +77,13 @@ internal actual open class UserSessionScopeProviderImpl(
                 rootPath = rootPathsProvider.rootPath,
                 keychainConfig = keychainConfig,
                 rootStoragePath = rootStoragePath,
+                userDbSecretProvider = { userId ->
+                    // Apple databases were never encrypted before, so there is no legacy key: a user database
+                    // without a stored key gets a new raw key.
+                    DatabaseKeyLock.withLock {
+                        securityHelper.userDBSecret(userId, databaseExists = false)
+                    }
+                },
             ),
             userId,
             globalScope,
