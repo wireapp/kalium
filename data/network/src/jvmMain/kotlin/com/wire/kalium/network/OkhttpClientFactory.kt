@@ -32,4 +32,6 @@ fun buildOkhttpClient(
             .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
             .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
             .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-    }.connectionSpecs(supportedConnectionSpecs()).build()
+    }.connectionSpecs(supportedConnectionSpecs())
+    .also(OkHttpClientCustomization.customizer)
+    .build()
