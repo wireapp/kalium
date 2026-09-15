@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.kmmSettings
 
 import com.russhwolf.settings.PropertiesSettings
 import com.russhwolf.settings.Settings
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -33,42 +34,53 @@ private val fileWriteLock = Any()
 /**
  * Writes the whole file to a temporary sibling, syncs it to disk and moves it over the old one.
  *
- * The file holds the auth tokens and the keys of the CoreCrypto keystores. Rewriting it in place
- * could leave a truncated file after a crash, and with it keystores that can no longer be decrypted.
+ * The settings hold the auth tokens and the keys of the CoreCrypto keystores. Rewriting a file in
+ * place could leave it truncated after a crash, and with it keystores that can no longer be decrypted.
  */
-private fun onModify(properties: Properties, file: File) = synchronized(fileWriteLock) {
+internal fun writeAtomically(file: File, content: ByteArray) = synchronized(fileWriteLock) {
     val temporaryFile = File(file.parentFile, "${file.name}.tmp")
     FileOutputStream(temporaryFile).use { output ->
-        properties.store(output, "Store values to properties file")
+        output.write(content)
         output.fd.sync()
     }
     Files.move(temporaryFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
 }
 
-private fun createOrLoad(rootPath: String, file: File): Properties {
-    val properties = Properties()
-    File(rootPath).mkdirs()
+private fun Properties.toBytes(): ByteArray =
+    ByteArrayOutputStream().also { store(it, "Store values to properties file") }.toByteArray()
+
+private fun loadPlaintext(file: File): Properties {
     if (!file.exists()) {
         file.createNewFile()
     }
-    FileInputStream(file).use {
-        properties.load(it)
-    }
-    return properties
+    return Properties().apply { FileInputStream(file).use { load(it) } }
 }
 
-// TODO(jvm): JvmPreferencesSettings is not encrypted
 /**
- * the java implementation is not yet encrypted
+ * Settings are plain properties files unless [SettingOptions.shouldEncryptData] is on. Then the whole
+ * file is encrypted with a master key from the system key store, see [SettingsFileCipher] and
+ * [SettingsMasterKeys].
  */
 internal actual fun buildSettings(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
 ): Settings {
+    File(param.rootPath).mkdirs()
     val file = File(Paths.get(param.rootPath, options.fileName).toString())
-    val properties = createOrLoad(param.rootPath, file)
+    val cipher = if (options.shouldEncryptData) SettingsFileCipher(param.masterKeys.forSettings(file)) else null
+    val properties = cipher?.load(file) ?: loadPlaintext(file)
 
-    return PropertiesSettings(properties) { onModify(it, file) }
+    return PropertiesSettings(properties) {
+        val content = it.toBytes()
+        writeAtomically(file, cipher?.encrypt(content) ?: content)
+    }
 }
 
-internal actual class EncryptedSettingsPlatformParam(val rootPath: String)
+/**
+ * @param masterKeys where the master key of encrypted settings comes from; tests replace the system
+ * key store.
+ */
+internal actual class EncryptedSettingsPlatformParam(
+    val rootPath: String,
+    val masterKeys: SettingsMasterKeys = SettingsMasterKeys.platform
+)

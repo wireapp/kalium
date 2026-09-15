@@ -91,6 +91,8 @@ kotlin {
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
                 implementation(libs.sqlite.xerialDriver)
+                // System key stores (macOS Keychain, …) for the settings master key
+                implementation(libs.jna)
             }
         }
         val jvmTest by getting {
