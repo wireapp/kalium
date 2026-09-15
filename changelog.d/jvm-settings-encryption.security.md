@@ -2,5 +2,5 @@ JVM: with `KaliumConfigs.shouldEncryptData` on, which is the default, the settin
 
   - ABI: no change
   - Source: no change
-  - Behavior: a `settings-master-key` file next to the settings refers to the key. Kalium throws `SettingsEncryptionException` instead of starting with empty settings when that key is missing or can't be read, or when a settings file is plaintext or was changed. Systems without a supported key store fail the same way; Windows support follows.
+  - Behavior: a `settings-master-key` file next to the settings refers to the key. Kalium throws `SettingsEncryptionException` instead of starting with empty settings when that key is missing or can't be read, or when a settings file is plaintext or was changed. Systems without a supported key store fail the same way.
   - Migration: existing plaintext settings files are not migrated.
