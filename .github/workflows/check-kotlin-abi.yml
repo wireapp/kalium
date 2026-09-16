@@ -31,4 +31,4 @@ jobs:
         uses: ./.github/actions/setup-java-gradle
 
       - name: Check Kotlin ABI
-        run: ./gradlew :logic:checkKotlinAbi -PUSE_UNIFIED_CORE_CRYPTO=true
+        run: ./gradlew :logic:checkKotlinAbi

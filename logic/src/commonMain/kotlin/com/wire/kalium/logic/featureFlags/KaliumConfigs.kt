@@ -16,11 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:OptIn(InternalKaliumApi::class)
+
 package com.wire.kalium.logic.featureFlags
 
 import com.wire.kalium.logic.util.KaliumMockWebsocket
+import com.wire.kalium.network.HttpTrafficObserver
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.utils.TestRequestHandler
+import com.wire.kalium.util.InternalKaliumApi
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
@@ -44,6 +48,9 @@ public data class KaliumConfigs(
     val mockedRequests: List<TestRequestHandler>? = null,
     val mockNetworkStateObserver: NetworkStateObserver? = null,
     val mockedWebSocket: KaliumMockWebsocket? = null,
+    // Opt-in hook to observe real HTTP traffic (including bodies) for debugging purposes.
+    // See HttpTrafficObserver's documentation for how this differs from KaliumHttpLogger.
+    val httpTrafficObserver: HttpTrafficObserver? = null,
     // Interval between attempts to advance the proteus to MLS migration
     val mlsMigrationInterval: Duration = 24.hours,
     // limit for the number of team members to fetch during slow sync

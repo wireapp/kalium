@@ -19,27 +19,27 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.data.app.AppMapper
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.toDao
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapStorageRequest
-import com.wire.kalium.logic.data.app.AppMapper
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.persistence.dao.AppDAO
@@ -55,35 +55,29 @@ internal interface SearchUserRepository {
         searchUsersOptions: SearchUsersOptions
     ): Either<CoreFailure, UserSearchResult>
 
-    suspend fun getKnownContacts(excludeConversation: ConversationId?): Either<StorageFailure, List<UserSearchDetails>>
+    suspend fun getKnownContacts(
+        searchUsersOptions: SearchUsersOptions
+    ): Either<CoreFailure, List<UserSearchDetails>>
 
     suspend fun searchLocalByName(
         name: String,
-        excludeMembersOfConversation: ConversationId?
-    ): Either<StorageFailure, List<UserSearchDetails>>
+        searchUsersOptions: SearchUsersOptions
+    ): Either<CoreFailure, List<UserSearchDetails>>
 
     suspend fun searchLocalByHandle(
         handle: String,
-        excludeMembersOfConversation: ConversationId?
-    ): Either<StorageFailure, List<UserSearchDetails>>
+        searchUsersOptions: SearchUsersOptions
+    ): Either<CoreFailure, List<UserSearchDetails>>
 
 }
 
 internal data class SearchUsersOptions(
-    val conversationExcluded: ConversationMemberExcludedOptions,
-    val selfUserIncluded: Boolean
+    val conversationMembersExcluded: ConversationId? = null, // By default, do not exclude any conversation members
+    val onlySelfTeamAndDomain: Boolean = false, // By default, search users from all teams or no team
 ) {
     internal companion object {
-        internal val Default = SearchUsersOptions(
-            conversationExcluded = ConversationMemberExcludedOptions.None,
-            selfUserIncluded = false
-        )
+        internal val Default = SearchUsersOptions()
     }
-}
-
-internal sealed class ConversationMemberExcludedOptions {
-    internal data object None : ConversationMemberExcludedOptions()
-    internal data class ConversationExcluded(val conversationId: QualifiedID) : ConversationMemberExcludedOptions()
 }
 
 @Suppress("LongParameterList")
@@ -106,10 +100,11 @@ internal class SearchUserRepositoryImpl(
     ): Either<CoreFailure, UserSearchResult> =
         selfTeamIdProvider().flatMap { selfTeamId ->
             userSearchAPiWrapper.search(
-                searchQuery,
-                domain,
-                maxResultSize,
-                searchUsersOptions
+                searchQuery = searchQuery,
+                domain = domain,
+                maxResultSize = maxResultSize,
+                selfTeamId = selfTeamId,
+                searchUsersOptions = searchUsersOptions
             ).flatMap { userSearchResponse ->
 
                 if (userSearchResponse.documents.isEmpty()) return Either.Right(UserSearchResult(listOf()))
@@ -120,37 +115,52 @@ internal class SearchUserRepositoryImpl(
                 }.onSuccess { userProfileDTOList ->
                     updateLocalUsers(userProfileDTOList.usersFound)
                 }.map { userProfileDTOList ->
+                    val localConnectionStates = getLocalConnectionStates(userProfileDTOList.usersFound)
                     UserSearchResult(
                         userProfileDTOList
                             .usersFound
                             .filter { it.type != UserTypeDTO.APP }
                             .map { userProfileDTO ->
-                            userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUserId, selfTeamId)
-                        }
+                                userMapper.fromUserProfileDtoToOtherUser(
+                                    userProfileDTO,
+                                    selfUserId,
+                                    selfTeamId
+                                ).let { remoteUser ->
+                                    remoteUser.copy(
+                                        connectionStatus = localConnectionStates[remoteUser.id] ?: remoteUser.connectionStatus
+                                    )
+                                }
+                            }
                     )
                 }
             }
         }
 
-    override suspend fun getKnownContacts(excludeConversation: ConversationId?): Either<StorageFailure, List<UserSearchDetails>> =
+    override suspend fun getKnownContacts(
+        searchUsersOptions: SearchUsersOptions
+    ): Either<CoreFailure, List<UserSearchDetails>> = selfTeamIdProvider().flatMap { selfTeamId ->
         wrapStorageRequest {
-            if (excludeConversation == null) {
-                searchDAO.getKnownContacts()
-            } else {
-                searchDAO.getKnownContactsExcludingAConversation(excludeConversation.toDao())
-            }
-        }.map {
-            it.map(userMapper::fromSearchEntityToUserSearchDetails)
+            searchDAO.getKnownContacts(
+                excludeConversationId = searchUsersOptions.conversationMembersExcluded?.toDao(),
+                onlyTeamId = if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamId?.value else null,
+                onlyDomain = if (searchUsersOptions.onlySelfTeamAndDomain) selfUserId.domain else null,
+            )
         }
+    }.map {
+        it.map(userMapper::fromSearchEntityToUserSearchDetails)
+    }
 
     override suspend fun searchLocalByName(
         name: String,
-        excludeMembersOfConversation: ConversationId?
-    ): Either<StorageFailure, List<UserSearchDetails>> = wrapStorageRequest {
-        if (excludeMembersOfConversation == null) {
-            searchDAO.searchList(name)
-        } else {
-            searchDAO.searchListExcludingAConversation(excludeMembersOfConversation.toDao(), name)
+        searchUsersOptions: SearchUsersOptions
+    ): Either<CoreFailure, List<UserSearchDetails>> = selfTeamIdProvider().flatMap { selfTeamId ->
+        wrapStorageRequest {
+            searchDAO.searchByName(
+                searchQuery = name,
+                excludeConversationId = searchUsersOptions.conversationMembersExcluded?.toDao(),
+                onlyTeamId = if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamId?.value else null,
+                onlyDomain = if (searchUsersOptions.onlySelfTeamAndDomain) selfUserId.domain else null,
+            )
         }
     }.map {
         it.map(userMapper::fromSearchEntityToUserSearchDetails)
@@ -158,19 +168,18 @@ internal class SearchUserRepositoryImpl(
 
     override suspend fun searchLocalByHandle(
         handle: String,
-        excludeMembersOfConversation: ConversationId?
-    ): Either<StorageFailure, List<UserSearchDetails>> = if (excludeMembersOfConversation == null) {
+        searchUsersOptions: SearchUsersOptions
+    ): Either<CoreFailure, List<UserSearchDetails>> = selfTeamIdProvider().flatMap { selfTeamId ->
         wrapStorageRequest {
-            searchDAO.handleSearch(handle)
-        }.map {
-            it.map(userMapper::fromSearchEntityToUserSearchDetails)
+            searchDAO.searchByHandle(
+                searchQuery = handle,
+                excludeConversationId = searchUsersOptions.conversationMembersExcluded?.toDao(),
+                onlyTeamId = if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamId?.value else null,
+                onlyDomain = if (searchUsersOptions.onlySelfTeamAndDomain) selfUserId.domain else null,
+            )
         }
-    } else {
-        wrapStorageRequest {
-            searchDAO.handleSearchExcludingAConversation(handle, excludeMembersOfConversation.toDao())
-        }.map {
-            it.map(userMapper::fromSearchEntityToUserSearchDetails)
-        }
+    }.map {
+        it.map(userMapper::fromSearchEntityToUserSearchDetails)
     }
 
     private suspend fun updateLocalUsers(
@@ -199,5 +208,19 @@ internal class SearchUserRepositoryImpl(
             }.also {
                 appDAO.upsertApps(it)
             }
+    }
+
+    private suspend fun getLocalConnectionStates(
+        userProfileDTOList: List<UserProfileDTO>
+    ): Map<UserId, ConnectionState> {
+        if (userProfileDTOList.isEmpty()) return emptyMap()
+
+        return wrapStorageRequest {
+            userDAO.getUsersDetailsByQualifiedIDList(userProfileDTOList.map { it.id.toDao() })
+        }.map { userDetails ->
+            userDetails.associate { userDetail ->
+                userMapper.fromUserDetailsEntityToOtherUser(userDetail).let { it.id to it.connectionStatus }
+            }
+        }.getOrElse(emptyMap())
     }
 }

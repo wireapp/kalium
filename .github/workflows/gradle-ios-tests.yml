@@ -55,7 +55,7 @@ jobs:
       - name: iOS Tests
         # Develop runs the complete suite to populate task outputs for future PRs.
         # PR and merge-queue runs keep using affected-module detection.
-        run: ./gradlew ${{ github.event_name == 'push' && 'iosSimulatorArm64Test -PUSE_UNIFIED_CORE_CRYPTO=true' || 'iOSOnlyAffectedTest' }}
+        run: ./gradlew ${{ github.event_name == 'push' && 'iosSimulatorArm64Test' || 'iOSOnlyAffectedTest' }}
         env:
           # This system property is inherited by the nested Gradle process.
           GRADLE_OPTS: -Dorg.gradle.caching=true

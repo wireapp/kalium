@@ -152,6 +152,7 @@ private val CREATE_MEETING = UpsertMeeting(
     title = "Meeting 1",
     startTime = Instant.parse("2026-06-01T10:00:00Z"),
     endTime = Instant.parse("2026-06-01T11:00:00Z"),
+    tzid = "Europe/Berlin",
     recurrence = Meeting.Recurrence(
         frequency = Meeting.Recurrence.Frequency.WEEKLY,
         interval = 1L,

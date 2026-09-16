@@ -156,7 +156,6 @@ class MeetingDaoTest : BaseDatabaseTest() {
         ).copy(
             updatedAt = Instant.parse("2026-01-02T12:00:00Z"),
             title = "Fetched meeting",
-            trial = true
         )
         val otherMeeting = newMeeting(
             meetingId = QualifiedIDEntity("other-meeting", "wire.com"),
@@ -481,7 +480,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
             title = meeting.title,
             start_date = meeting.startTime,
             end_date = meeting.endTime,
-            trial = meeting.trial,
+            tzid = meeting.tzid,
             recurrence_frequency = meeting.recurrence?.frequency,
             recurrence_interval = meeting.recurrence?.interval,
             recurrence_end_date = meeting.recurrence?.until
@@ -498,10 +497,11 @@ class MeetingDaoTest : BaseDatabaseTest() {
 fun newMeeting(
     startTime: Instant = Instant.parse("2026-01-01T10:00:00Z"),
     endTime: Instant = startTime + 1.hours,
+    tzid: String = "Europe/Berlin",
     recurrence: MeetingEntity.RecurrenceEntity? = null,
     meetingId: QualifiedIDEntity = MEETING_ID,
     conversationId: QualifiedIDEntity = CONVERSATION_ID,
-    creatorId: QualifiedIDEntity = CREATOR_ID
+    creatorId: QualifiedIDEntity = CREATOR_ID,
 ) = MeetingEntity(
     meetingId = meetingId,
     conversationId = conversationId,
@@ -511,7 +511,7 @@ fun newMeeting(
     title = "Meeting",
     startTime = startTime,
     endTime = endTime,
-    trial = false,
+    tzid = tzid,
     recurrence = recurrence
 )
 private val SELF_USER_ID = UserIDEntity("self", "wire.com")

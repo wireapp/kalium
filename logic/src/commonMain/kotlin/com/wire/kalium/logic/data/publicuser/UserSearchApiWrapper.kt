@@ -19,27 +19,29 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.authenticated.search.UserSearchRequest
 import com.wire.kalium.network.api.authenticated.search.UserSearchResponse
+import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import kotlinx.coroutines.flow.firstOrNull
 
 internal interface UserSearchApiWrapper {
     /*
      * Searches for users that match given the [searchQuery] using the API.
-     * Depending on the [searchUsersOptions], the members of a conversation can be excluded.
+     * Depending on the [searchUsersOptions], some users of the search result may be filtered out.
      */
     suspend fun search(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?,
+        selfTeamId: TeamId?,
         searchUsersOptions: SearchUsersOptions
     ): Either<NetworkFailure, UserSearchResponse>
 }
@@ -54,6 +56,7 @@ internal class UserSearchApiWrapperImpl(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?,
+        selfTeamId: TeamId?,
         searchUsersOptions: SearchUsersOptions
     ): Either<NetworkFailure, UserSearchResponse> =
         wrapApiRequest {
@@ -65,43 +68,32 @@ internal class UserSearchApiWrapperImpl(
                 )
             )
         }.map { userSearchResponse ->
-            filter(userSearchResponse, searchUsersOptions)
+            filter(
+                selfTeamId = selfTeamId,
+                userSearchResponse = userSearchResponse,
+                searchUsersOptions = searchUsersOptions
+            )
         }
 
     private suspend fun filter(
+        selfTeamId: TeamId?,
         userSearchResponse: UserSearchResponse,
         searchUsersOptions: SearchUsersOptions
     ): UserSearchResponse {
 
         // if we do not exclude the conversation members, we just return empty list
-        val conversationMembersId = if (searchUsersOptions.conversationExcluded is ConversationMemberExcludedOptions.ConversationExcluded) {
+        val conversationMembersId = searchUsersOptions.conversationMembersExcluded?.let { conversationMembersExcluded ->
             memberDAO.observeConversationMembers(
-                qualifiedID = searchUsersOptions.conversationExcluded.conversationId.toDao()
+                qualifiedID = conversationMembersExcluded.toDao()
             ).firstOrNull()?.map { it.user.toModel() }
-        } else {
-            emptyList()
-        }
+        } ?: emptyList()
 
         val filteredContactResponse = userSearchResponse.documents.filter { contactDTO ->
-            val domainId = contactDTO.qualifiedID.toModel()
+            val isSelfUser = contactDTO.qualifiedID.toModel() == selfUserId
+            val isExcludedConversationMember = conversationMembersId.contains(contactDTO.qualifiedID.toModel())
+            val isSameTeamAndDomain = contactDTO.team == selfTeamId?.value && contactDTO.qualifiedID.domain == selfUserId.domain
 
-            var isConversationMember = false
-
-            // if conversation members are empty it means there is nothing to exclude
-            // from the search results, so we keep isConversationMember to be false
-            if (!conversationMembersId.isNullOrEmpty()) {
-                isConversationMember = conversationMembersId.contains(domainId)
-            }
-
-            // if we do not include the self user in the search options
-            // we always set it to false, making the final OR operation
-            // care only about isConversationMember value, since it is going to be
-            // !(isConversationMember || 0) making it a operation based only on negated isConversationMember value
-            // since !(0 || 0) = 1 , !(1 || 0) = 0
-            val isSelfUser: Boolean = if (searchUsersOptions.selfUserIncluded) false else selfUserId == domainId
-
-            // negate it because that is exactly what we do not want to have in filter results
-            !(isConversationMember || isSelfUser)
+            !isSelfUser && !isExcludedConversationMember && (!searchUsersOptions.onlySelfTeamAndDomain || isSameTeamAndDomain)
         }
 
         return userSearchResponse.copy(

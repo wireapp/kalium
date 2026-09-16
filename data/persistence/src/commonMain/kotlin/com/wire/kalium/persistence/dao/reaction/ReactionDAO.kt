@@ -58,6 +58,11 @@ interface ReactionDAO {
         emoji: String
     )
 
+    suspend fun insertOrIgnoreReactions(
+        reactions: List<MessageReactionsEntity>,
+        instant: Instant,
+    )
+
     suspend fun deleteReaction(
         originalMessageId: String,
         conversationId: ConversationIDEntity,
@@ -119,6 +124,26 @@ class ReactionDAOImpl(
                 emoji = emoji,
                 date = instant.toIsoDateTimeString()
             )
+        }
+    }
+
+    override suspend fun insertOrIgnoreReactions(
+        reactions: List<MessageReactionsEntity>,
+        instant: Instant,
+    ) = withContext(writeDispatcher.value) {
+        val date = instant.toIsoDateTimeString()
+        reactionsQueries.transaction {
+            reactions.forEach { messageReactions ->
+                messageReactions.reactions.forEach { reaction ->
+                    reactionsQueries.insertReactionOrIgnore(
+                        message_id = messageReactions.messageId,
+                        conversation_id = messageReactions.conversationId,
+                        sender_id = reaction.userId,
+                        emoji = reaction.emoji,
+                        date = date,
+                    )
+                }
+            }
         }
     }
 

@@ -150,7 +150,6 @@ QuotedLocationContent.name AS quotedLocationName,
 
 CASE WHEN SystemContent.content_type = 'CONVERSATION_APPS_ENABLED_CHANGED' THEN SystemContent.boolean_1 END AS isConversationAppsEnabled,
 CASE WHEN SystemContent.content_type = 'NEW_CONVERSATION_RECEIPT_MODE' THEN SystemContent.boolean_1 END AS newConversationReceiptMode,
-
 CASE WHEN SystemContent.content_type = 'CONVERSATION_RECEIPT_MODE_CHANGED' THEN SystemContent.boolean_1 END AS conversationReceiptModeChanged,
 CASE WHEN SystemContent.content_type = 'CONVERSATION_TIMER_CHANGED' THEN SystemContent.integer_1 END AS messageTimerChanged,
 FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,

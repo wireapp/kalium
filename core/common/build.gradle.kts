@@ -24,9 +24,6 @@ kaliumLibrary {
     multiplatform()
 }
 
-val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
-    ?: error("USE_UNIFIED_CORE_CRYPTO not set")
-
 kotlin {
     sourceSets {
         commonMain {
@@ -40,9 +37,6 @@ kotlin {
                 implementation(projects.core.cryptography)
                 implementation(libs.ktxSerialization)
                 implementation(libs.coroutines.core)
-                if (useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoKmp)
-                }
             }
         }
 
@@ -50,14 +44,16 @@ kotlin {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
 
-        val appleMain by getting
+        val appleMain by getting {
+            dependencies {
+                implementation(libs.coreCryptoKmp)
+            }
+        }
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
-                if (!useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoJvm)
-                }
+                implementation(libs.coreCryptoJvm)
             }
         }
 
@@ -65,11 +61,9 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.work)
-                if (!useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                        exclude("androidx.core")
-                        exclude("androidx.appcompat")
-                    }
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
                 }
             }
         }

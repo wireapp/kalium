@@ -24,7 +24,7 @@ import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.cryptography.E2EIClient
+import com.wire.kalium.cryptography.CryptoCredentialRef
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.WireIdentity
@@ -163,16 +163,26 @@ internal class ObservableMLSConversationRepository(
         .addMemberToMLSGroup(mlsContext, groupID, userIdList, cipherSuite, allowPartialMemberList)
         .onSuccess { hookNotifier.onCryptoStateChanged(userId) }
 
-    override suspend fun rotateKeysAndMigrateConversations(
+    override suspend fun migrateConversationCredential(
         mlsContext: MlsCoreCryptoContext,
+        credentialRef: CryptoCredentialRef,
+        groupID: GroupID
+    ) {
+        delegate.migrateConversationCredential(mlsContext, credentialRef, groupID)
+        hookNotifier.onCryptoStateChanged(userId)
+    }
+
+    override suspend fun prepareX509KeyPackages(
+        mlsContext: MlsCoreCryptoContext,
+        credentialRef: CryptoCredentialRef
+    ): PreparedX509KeyPackages = delegate.prepareX509KeyPackages(mlsContext, credentialRef).also {
+        hookNotifier.onCryptoStateChanged(userId)
+    }
+
+    override suspend fun replaceX509KeyPackages(
         clientId: ClientId,
-        e2eiClient: E2EIClient,
-        certificateChain: String,
-        groupIdList: List<GroupID>,
-        isNewClient: Boolean
-    ): Either<E2EIFailure, Unit> = delegate
-        .rotateKeysAndMigrateConversations(mlsContext, clientId, e2eiClient, certificateChain, groupIdList, isNewClient)
-        .onSuccess { hookNotifier.onCryptoStateChanged(userId) }
+        preparedKeyPackages: PreparedX509KeyPackages
+    ): Either<E2EIFailure, Unit> = delegate.replaceX509KeyPackages(clientId, preparedKeyPackages)
 
     override suspend fun getClientIdentity(
         mlsContext: MlsCoreCryptoContext,

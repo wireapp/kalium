@@ -25,7 +25,7 @@
 #
 # Tunables (env vars):
 #   SCANCODE_PROCESSES     parallel ScanCode workers (default: 8)
-#   SBOM_GRADLE_EXTRA_ARGS extra Gradle args (e.g. "-PUSE_UNIFIED_CORE_CRYPTO=true")
+#   SBOM_GRADLE_EXTRA_ARGS extra Gradle arguments
 #
 
 set -euo pipefail
@@ -80,14 +80,6 @@ fi
 if [[ "$SKIP_SCAN" == "true" && ! -f "$OUTPUT_DIR/scan.json" ]]; then
     echo "ERROR: --skip-scan requires an existing $OUTPUT_DIR/scan.json (none found)." >&2
     exit 1
-fi
-
-# The :core:cryptography commonMain source set references the unified CoreCrypto
-# KMP library, which is only wired in when USE_UNIFIED_CORE_CRYPTO=true. On macOS
-# the iOS/macOS targets are also resolvable, so default the flag on there unless
-# the caller already supplied it.
-if [[ "$(uname -s)" == "Darwin" && "$SBOM_GRADLE_EXTRA_ARGS" != *"USE_UNIFIED_CORE_CRYPTO"* ]]; then
-    SBOM_GRADLE_EXTRA_ARGS="-PUSE_UNIFIED_CORE_CRYPTO=true $SBOM_GRADLE_EXTRA_ARGS"
 fi
 
 if [[ "$SKIP_SCAN" == "true" ]]; then

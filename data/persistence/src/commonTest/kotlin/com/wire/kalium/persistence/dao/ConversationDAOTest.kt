@@ -107,6 +107,31 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenConversationFlowPreviouslyObservedMissingValue_whenConversationInserted_thenGetConversationByIdShouldReadFreshValue() =
+        runTest(dispatcher) {
+            assertNull(conversationDAO.observeConversationById(conversationEntity1.id).first())
+
+            conversationDAO.insertConversation(conversationEntity1)
+
+            val result = conversationDAO.getConversationById(conversationEntity1.id)
+            assertNotNull(result)
+            assertEquals(conversationEntity1.id, result.id)
+            assertEquals(conversationEntity1.name, result.name)
+        }
+
+    @Test
+    fun givenConversationDetailsFlowPreviouslyObservedMissingValue_whenConversationInserted_thenGetConversationDetailsByIdShouldReadFreshValue() =
+        runTest(dispatcher) {
+            assertNull(conversationDAO.observeConversationDetailsById(conversationEntity1.id).first())
+
+            conversationDAO.insertConversation(conversationEntity1)
+            insertTeamUserAndMember(team, user1, conversationEntity1.id)
+
+            val result = conversationDAO.getConversationDetailsById(conversationEntity1.id)
+            assertEquals(conversationEntity1.toViewEntity(user1), result)
+        }
+
+    @Test
     fun givenListOfConversations_ThenMultipleConversationsCanBeInsertedAtOnce() = runTest(dispatcher) {
         conversationDAO.insertConversations(listOf(conversationEntity1, conversationEntity2))
         insertTeamUserAndMember(team, user1, conversationEntity1.id)
@@ -528,6 +553,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         assertNotNull(actual)
         assertEquals(expectedLastReadDate, actual.lastReadDate)
+        assertEquals(expectedLastReadDate, conversationDAO.getConversationLastReadDate(conversationEntity3.id))
     }
 
     @Test
@@ -813,6 +839,76 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 assertNull(result)
             }
         }
+
+    @Test
+    fun givenConversation_whenAdminlessDeletionIsInserted_thenObservedDetailsContainTimestamp() = runTest {
+        val conversation = newConversationEntity("adminless-insert")
+        val deletionTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        conversationDAO.insertConversation(conversation)
+
+        conversationDAO.observeConversationDetailsById(conversation.id).test {
+            assertNull(awaitItem()?.adminlessGroupDeletionTimestamp)
+
+            conversationDAO.insertAdminlessGroupDelete(conversation.id, deletionTimestamp)
+
+            assertEquals(deletionTimestamp, awaitItem()?.adminlessGroupDeletionTimestamp)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+    }
+
+    @Test
+    fun givenAdminlessDeletionAlreadyExists_whenAnotherTimestampIsInserted_thenFirstTimestampWins() = runTest {
+        val conversation = newConversationEntity("adminless-duplicate")
+        val firstTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        val secondTimestamp = Instant.parse("2026-09-01T12:00:00Z")
+        conversationDAO.insertConversation(conversation)
+
+        conversationDAO.insertAdminlessGroupDelete(conversation.id, firstTimestamp)
+        conversationDAO.insertAdminlessGroupDelete(conversation.id, secondTimestamp)
+
+        assertEquals(
+            firstTimestamp,
+            conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp,
+        )
+    }
+
+    @Test
+    fun givenAdminlessDeletion_whenClearingContent_thenTimestampIsPreserved() = runTest {
+        val conversation = newConversationEntity("adminless-clear")
+        val user = newUserEntity("adminless-clear")
+        val message = newRegularMessageEntity(
+            id = "message-to-clear",
+            conversationId = conversation.id,
+            senderUserId = user.id,
+        )
+        val deletionTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        conversationDAO.insertConversation(conversation)
+        userDAO.upsertUser(user)
+        messageDAO.insertOrIgnoreMessage(message)
+        conversationDAO.insertAdminlessGroupDelete(conversation.id, deletionTimestamp)
+
+        conversationDAO.clearContent(conversation.id)
+
+        assertNull(messageDAO.getMessageById(message.id, conversation.id))
+        assertEquals(
+            deletionTimestamp,
+            conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp,
+        )
+    }
+
+    @Test
+    fun givenAdminlessDeletion_whenConversationIsHardDeleted_thenRecordIsCascadeDeleted() = runTest {
+        val conversation = newConversationEntity("adminless-delete")
+        val deletionTimestamp = Instant.parse("2026-08-30T12:00:00Z")
+        conversationDAO.insertConversation(conversation)
+        conversationDAO.insertAdminlessGroupDelete(conversation.id, deletionTimestamp)
+
+        conversationDAO.deleteConversationByQualifiedID(conversation.id)
+        conversationDAO.insertConversation(conversation)
+
+        assertNull(conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp)
+    }
 // Mateusz : This test is failing because of some weird issue, I do not want to block this feature
 // Therefore I will comment it, I am in very unstable and low bandwith internet now and to run test
 // I need new version of xCode which will take me ages to download untill I am home from the trip

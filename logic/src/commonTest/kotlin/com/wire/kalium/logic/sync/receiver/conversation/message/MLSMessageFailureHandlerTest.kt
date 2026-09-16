@@ -97,6 +97,7 @@ class MLSMessageFailureHandlerTest {
             failures = listOf(
                 MLSFailure.ConversationAlreadyExists,
                 MLSFailure.ConversationDoesNotSupportMLS,
+                MLSFailure.FederatedBackendConflict(emptyList()),
                 MLSFailure.Generic(IllegalStateException("generic MLS failure")),
                 MLSFailure.Other("other MLS failure"),
                 E2EIFailure.Disabled,
@@ -105,7 +106,6 @@ class MLSMessageFailureHandlerTest {
                 CoreFailure.MissingKeyPackages(emptySet()),
                 NetworkFailure.FeatureNotSupported,
                 NetworkFailure.FederatedBackendFailure.ConflictingBackends(emptyList()),
-                NetworkFailure.FederatedBackendFailure.ConflictingBackendsWithMissingUsers(emptyList()),
                 NetworkFailure.FederatedBackendFailure.FailedDomains(),
                 NetworkFailure.FederatedBackendFailure.FederationDenied("denied"),
                 NetworkFailure.FederatedBackendFailure.FederationNotEnabled("disabled"),

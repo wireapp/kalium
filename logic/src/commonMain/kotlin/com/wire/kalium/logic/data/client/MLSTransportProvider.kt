@@ -23,11 +23,10 @@ import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.MLSTransporter
-import com.wire.kalium.cryptography.MlsTransportResponse
+import com.wire.kalium.cryptography.MlsMessageRejectedException
 import com.wire.kalium.logic.data.conversation.MLSCommitBundleMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.UserId
@@ -46,36 +45,15 @@ internal class MLSTransportProviderImpl(
     private val mlsCommitBundleMapper: MLSCommitBundleMapper = MapperProvider.mlsCommitBundleMapper(),
 ) : MLSTransportProvider {
 
-    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse {
-//         return messageRepository.sendMLSMessage(MLSMessageApi.Message(mlsMessage))
-//             .onSuccess { response ->
-//                 // handleMlsRecipientsDeliveryFailure(response, response) TODO we don't have an access to conversationId and messageId
-//             }
-//             .fold({
-//                 if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-//                     MlsTransportResponse.Abort((it.kaliumException as KaliumException.InvalidRequestError).errorResponse.label)
-//                 } else {
-//                     MlsTransportResponse.Abort(it.toString())
-//                 }
-//             }, {
-//                 MlsTransportResponse.Success
-//             })
-        // TODO: currently not used by core crypto, leave error logger if it somehow gets used
-        kaliumLogger.e("[MLSTransportProvider] sendMessage triggered which should not happen")
-        return MlsTransportResponse.Success
-    }
-
-    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
-        return wrapApiRequest {
+    override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
+        wrapApiRequest {
             mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(commitBundle))
         }.flatMapLeft { networkFailure ->
             Either.Left(networkFailure.wrapNetworkMlsFailureIfApplicable())
-        }.onSuccess {
-            processCommitBundleEvents(it.events)
         }.fold({
-            MlsTransportResponse.Abort(MLSTransportFailureSerialization.serialize(it))
+            throw MlsMessageRejectedException(MLSTransportFailureSerialization.serialize(it))
         }, {
-            MlsTransportResponse.Success
+            processCommitBundleEvents(it.events)
         })
     }
 
@@ -92,11 +70,4 @@ internal class MLSTransportProviderImpl(
             }
         }
     }
-// TODO remember to handle recipients delivery failure when sendMessage will be used
-//     private suspend fun handleMlsRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
-//         if (messageSent.failedToConfirmClients.isEmpty()) Either.Right(Unit)
-//         else {
-//             messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failedToConfirmClients)
-//         }
-
 }

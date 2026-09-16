@@ -198,7 +198,7 @@ private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
         title = meeting.title,
         start_date = meeting.startTime,
         end_date = meeting.endTime,
-        trial = meeting.trial,
+        tzid = meeting.tzid,
         recurrence_frequency = meeting.recurrence?.frequency,
         recurrence_interval = meeting.recurrence?.interval,
         recurrence_end_date = meeting.recurrence?.until,
@@ -234,6 +234,7 @@ internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
 private fun Meeting.hasSameScheduleAs(meeting: MeetingEntity): Boolean =
     start_date.isSameStoredInstantAs(meeting.startTime) &&
             end_date.isSameStoredInstantAs(meeting.endTime) &&
+            tzid == meeting.tzid &&
             recurrence_frequency == meeting.recurrence?.frequency &&
             recurrence_interval == meeting.recurrence?.interval &&
             recurrence_end_date.isSameStoredInstantAs(meeting.recurrence?.until)

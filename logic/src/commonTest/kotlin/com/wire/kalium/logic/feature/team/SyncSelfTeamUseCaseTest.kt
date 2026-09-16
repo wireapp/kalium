@@ -61,6 +61,12 @@ class SyncSelfTeamUseCaseTest {
         verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.syncServices(any())
         }
+        verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.fetchAppsByTeamId(any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.fetchCollaboratorsByTeamId(any())
+        }
     }
 
     @Test
@@ -74,6 +80,8 @@ class SyncSelfTeamUseCaseTest {
                 .withTeam()
                 .withTeamMembers()
                 .withServicesSync()
+                .withAppsSync()
+                .withCollaboratorsSync()
                 .arrange()
 
             syncSelfTeamUseCase.invoke()
@@ -91,6 +99,12 @@ class SyncSelfTeamUseCaseTest {
             }
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.teamRepository.syncServices(eq(TestUser.SELF.teamId!!))
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.teamRepository.fetchAppsByTeamId(eq(TestUser.SELF.teamId!!))
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.teamRepository.fetchCollaboratorsByTeamId(eq(TestUser.SELF.teamId!!))
             }
         }
 
@@ -116,6 +130,12 @@ class SyncSelfTeamUseCaseTest {
             arrangement.teamRepository.syncServices(any())
         }
         verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.fetchAppsByTeamId(any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.fetchCollaboratorsByTeamId(any())
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.fetchMembersByTeamId(
                 eq(TestUser.SELF.teamId!!),
                 eq(TestUser.SELF.id.domain),
@@ -135,6 +155,27 @@ class SyncSelfTeamUseCaseTest {
             .withTeam()
             .withTeamMembers()
             .withFailingServicesSync()
+            .withAppsSync()
+            .withCollaboratorsSync()
+            .arrange()
+
+        val result = syncSelfTeamUseCase.invoke()
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenFetchingMembersFails_whenSyncingSelfTeam_thenMembersAreIgnoredButUseCaseSucceeds() = runTest {
+        val selfUser = TestUser.SELF.right()
+
+        val (_, syncSelfTeamUseCase) = Arrangement()
+            .withSelfUser(selfUser)
+            .witFetchAllTeamMembersEagerly(null)
+            .withTeam()
+            .withFailingTeamMembers()
+            .withServicesSync()
+            .withAppsSync()
+            .withCollaboratorsSync()
             .arrange()
 
         val result = syncSelfTeamUseCase.invoke()
@@ -152,6 +193,8 @@ class SyncSelfTeamUseCaseTest {
             .withTeamMembers()
             .withTeam()
             .withServicesSync()
+            .withAppsSync()
+            .withCollaboratorsSync()
             .arrange()
 
         syncSelfTeamUseCase.invoke()
@@ -203,9 +246,27 @@ class SyncSelfTeamUseCaseTest {
             } returns Either.Right(Unit)
         }
 
+        suspend fun withFailingTeamMembers() = apply {
+            everySuspend {
+                teamRepository.fetchMembersByTeamId(any(), any(), any(), any())
+            } returns Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied))
+        }
+
         suspend fun withServicesSync() = apply {
             everySuspend {
                 teamRepository.syncServices(any())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withAppsSync() = apply {
+            everySuspend {
+                teamRepository.fetchAppsByTeamId(any())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withCollaboratorsSync() = apply {
+            everySuspend {
+                teamRepository.fetchCollaboratorsByTeamId(any())
             } returns Either.Right(Unit)
         }
 

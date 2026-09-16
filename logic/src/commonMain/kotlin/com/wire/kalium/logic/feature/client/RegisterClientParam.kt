@@ -38,5 +38,4 @@ public data class RegisterClientParam(
     val modelPostfix: String? = null
 )
 
-internal const val FIRST_KEY_ID = 0
 internal const val DEFAULT_PRE_KEYS_COUNT = 100

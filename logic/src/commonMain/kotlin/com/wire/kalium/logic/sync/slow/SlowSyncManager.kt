@@ -77,8 +77,7 @@ internal interface SlowSyncManager {
          * Useful when a new step is added to Slow Sync, or when we fix some bug in Slow Sync,
          * and we'd like to get all users to take advantage of the fix.
          */
-        const val CURRENT_VERSION = 11
-        // because we already had version 9, the next version should be 10
+        const val CURRENT_VERSION = 12
 
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes

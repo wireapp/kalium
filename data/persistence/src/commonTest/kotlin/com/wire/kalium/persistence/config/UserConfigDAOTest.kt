@@ -125,19 +125,13 @@ class UserConfigDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenNoValueStoredForShouldFetchE2EITrustAnchorHasRun_whenCalled_thenReturnTrue() = runTest {
-        assertTrue(userConfigDAO.getShouldFetchE2EITrustAnchorHasRun())
-    }
+    fun givenE2EIRotationCheckpoint_whenStoredAndDeleted_thenItCanNoLongerBeRead() = runTest {
+        val checkpoint = "opaque-rotation-checkpoint"
 
-    @Test
-    fun givenShouldFetchE2EITrustAnchorHasRunIsSetToFalse_whenCalled_thenReturnFalse() = runTest {
-        userConfigDAO.setShouldFetchE2EITrustAnchors(false)
-        assertFalse(userConfigDAO.getShouldFetchE2EITrustAnchorHasRun())
-    }
+        userConfigDAO.setE2EIRotationCheckpoint(checkpoint)
+        assertEquals(checkpoint, userConfigDAO.getE2EIRotationCheckpoint())
 
-    @Test
-    fun givenShouldFetchE2EITrustAnchorHasRunIsSetToTrue_whenCalled_thenReturnTrue() = runTest {
-        userConfigDAO.setShouldFetchE2EITrustAnchors(true)
-        assertTrue(userConfigDAO.getShouldFetchE2EITrustAnchorHasRun())
+        userConfigDAO.deleteE2EIRotationCheckpoint()
+        assertNull(userConfigDAO.getE2EIRotationCheckpoint())
     }
 }

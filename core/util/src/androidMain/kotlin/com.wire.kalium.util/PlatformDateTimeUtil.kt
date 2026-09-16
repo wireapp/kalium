@@ -21,6 +21,8 @@ package com.wire.kalium.util
 import com.wire.kalium.util.DateTimeUtil.MILLISECONDS_DIGITS
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toJavaInstant
+import org.threeten.bp.Instant as ThreeTenInstant
+import org.threeten.bp.ZoneId
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatterBuilder
 import java.util.Locale
@@ -48,5 +50,15 @@ actual open class PlatformDateTimeUtil actual constructor() {
      */
     actual fun fromInstantToSimpleDateTimeString(instant: Instant): String =
         secondsDateTimeFormat.format(System.currentTimeMillis())
+}
 
+// Temporary Android bridge: use ThreeTenBP's bundled IANA tzdb until kotlinx-datetime-zoneinfo publishes the KMP variants we need.
+actual open class PlatformTzidUtil actual constructor() {
+    actual fun isTimeZoneSupported(tzid: String): Boolean = toZoneIdOrNull(tzid) != null
+    actual fun plusDaysOrNull(instant: Instant, days: Int, tzid: String): Instant? = toZoneIdOrNull(tzid)?.let { zoneId ->
+        instant.toThreeTenInstant().atZone(zoneId).plusDays(days.toLong()).toInstant().toKotlinInstant()
+    }
+    private fun toZoneIdOrNull(tzid: String): ZoneId? = runCatching { ZoneId.of(tzid) }.getOrNull()
+    private fun Instant.toThreeTenInstant(): ThreeTenInstant = ThreeTenInstant.ofEpochSecond(epochSeconds, nanosecondsOfSecond.toLong())
+    private fun ThreeTenInstant.toKotlinInstant(): Instant = Instant.fromEpochSeconds(epochSecond, nano.toLong())
 }

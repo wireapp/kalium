@@ -783,6 +783,21 @@ def main():
     with_verbatim = sum(
         1 for s in sections if s["verbatim"] or s.get("license_text")
     )
+    if npm_count:
+        component_identifier = (
+            "a component (Maven coordinate `groupId:artifactId:version` or "
+            "npm package `npm:name@version`)"
+        )
+        component_count = (
+            f"{len(sections)} components "
+            f"({maven_count} Maven, {npm_count} npm)"
+        )
+    else:
+        component_identifier = (
+            "a component by Maven coordinate `groupId:artifactId:version`"
+        )
+        component_count = f"{maven_count} Maven components"
+
     with open(output_md, "w") as out:
         out.write("# Third-Party Notices\n\n")
         out.write(
@@ -790,8 +805,7 @@ def main():
             "each subject to its respective license terms.\n\n"
         )
         out.write(
-            "Each section below identifies a component (Maven coordinate "
-            "`groupId:artifactId:version` or npm package `npm:name@version`), "
+            f"Each section below identifies {component_identifier}, "
             "its declared license, and either the verbatim LICENSE/NOTICE "
             "text bundled in the package's distribution (collapsed by "
             "default — click to expand) or a reference to the canonical "
@@ -802,8 +816,7 @@ def main():
             "linked from each component section.\n\n"
         )
         out.write(
-            f"Generated from {len(sections)} components "
-            f"({maven_count} Maven, {npm_count} npm) — "
+            f"Generated from {component_count} — "
             f"{with_verbatim} ship a bundled LICENSE/NOTICE file, "
             f"{len(sections) - with_verbatim} reference the appendix.\n\n"
         )

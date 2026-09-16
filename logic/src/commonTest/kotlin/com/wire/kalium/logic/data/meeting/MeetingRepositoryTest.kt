@@ -287,6 +287,38 @@ class MeetingRepositoryTest {
     }
 
     @Test
+    fun givenDaoReturnsMeeting_whenGetMeeting_thenReturnsMappedMeeting() = runTest {
+        val meetingId = MEETING_ENTITY.meetingId.toModel()
+        val (arrangement, repository) = Arrangement()
+            .withStoredMeeting(MEETING_ENTITY)
+            .arrange()
+
+        val result = repository.getMeeting(meetingId)
+
+        assertIs<Either.Right<Meeting>>(result).also {
+            assertEquals(arrangement.meetingMapper.fromDaoToModel(MEETING_ENTITY), result.value)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.getMeeting(meetingId.toDao())
+        }
+    }
+
+    @Test
+    fun givenDaoReturnsNoMeeting_whenGetMeeting_thenReturnsDataNotFound() = runTest {
+        val meetingId = MeetingId("missing-meeting", "domain")
+        val (arrangement, repository) = Arrangement()
+            .withMissingStoredMeeting(meetingId)
+            .arrange()
+
+        val result = repository.getMeeting(meetingId)
+
+        assertIs<Either.Left<StorageFailure.DataNotFound>>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.getMeeting(meetingId.toDao())
+        }
+    }
+
+    @Test
     fun givenApiDeleteSucceeds_whenDeleteMeeting_thenMeetingIsDeletedLocally() = runTest {
         val meetingId = MeetingId("meeting1", "domain")
         val (arrangement, repository) = Arrangement()
@@ -1180,6 +1212,10 @@ class MeetingRepositoryTest {
             everySuspend { meetingDao.getMeeting(storedMeeting.meetingId) } returns storedMeeting
         }
 
+        internal fun withMissingStoredMeeting(meetingId: MeetingId) = apply {
+            everySuspend { meetingDao.getMeeting(meetingId.toDao()) } returns null
+        }
+
         internal fun withTransactionMlsContext() = apply {
             every { transactionContext.mls } returns mlsContext
         }
@@ -1274,7 +1310,7 @@ class MeetingRepositoryTest {
         title = "Meeting 1",
         startTime = Instant.parse("2026-06-01T10:00:00Z"),
         endTime = Instant.parse("2026-06-01T11:00:00Z"),
-        trial = false,
+        tzid = "Europe/Berlin",
         recurrence = null,
     )
     private val MEETING_OCCURRENCE_DETAILS = MeetingOccurrenceDetailsEntity(
@@ -1296,6 +1332,7 @@ class MeetingRepositoryTest {
         title = "Meeting 1",
         startTime = Instant.parse("2026-06-01T10:00:00Z"),
         endTime = Instant.parse("2026-06-01T11:00:00Z"),
+        tzid = "Europe/Berlin",
         recurrence = Meeting.Recurrence(
             frequency = Meeting.Recurrence.Frequency.WEEKLY,
             interval = 1L,
@@ -1321,7 +1358,7 @@ class MeetingRepositoryTest {
         title = title,
         startTime = Instant.parse("2026-06-01T10:00:00Z"),
         endTime = Instant.parse("2026-06-01T11:00:00Z"),
-        trial = false,
+        tzid = "Europe/Berlin",
         recurrence = recurrence,
     )
 
@@ -1345,7 +1382,7 @@ class MeetingRepositoryTest {
         title = "Meeting 1",
         startTime = Instant.parse("2026-06-01T10:00:00Z"),
         endTime = Instant.parse("2026-06-01T11:00:00Z"),
-        trial = false,
+        tzid = "Europe/Berlin",
         recurrence = recurrence,
         conversation = ConversationRepositoryTest.CONVERSATION_RESPONSE.copy(
             id = conversationId,

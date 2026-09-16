@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.FloatColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
+import com.wire.kalium.persistence.AdminlessGroupDelete
 import com.wire.kalium.persistence.App
 import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
@@ -76,6 +77,11 @@ import com.wire.kalium.persistence.adapter.SupportedProtocolSetAdapter
 import com.wire.kalium.persistence.content.ButtonContent
 
 internal object TableMapper {
+    val adminlessGroupDeleteAdapter = AdminlessGroupDelete.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        deletion_timestampAdapter = InstantTypeAdapter,
+    )
+
     val callAdapter = Call.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         statusAdapter = EnumColumnAdapter(),

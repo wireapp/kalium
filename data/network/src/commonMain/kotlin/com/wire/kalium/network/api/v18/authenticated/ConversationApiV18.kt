@@ -1,0 +1,56 @@
+/*
+ * Wire
+ * Copyright (C) 2025 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
+package com.wire.kalium.network.api.v18.authenticated
+
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.model.AdminlessConversationErrorResponse
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.v17.authenticated.ConversationApiV17
+import com.wire.kalium.network.exceptions.AdminlessConversationError
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapRequest
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.HttpStatusCode
+
+internal open class ConversationApiV18 internal constructor(
+    authenticatedNetworkClient: AuthenticatedNetworkClient
+) : ConversationApiV17(authenticatedNetworkClient) {
+
+    override suspend fun replaceMembers(
+        conversationId: ConversationId,
+        request: AddConversationMembersRequest
+    ): NetworkResponse<Unit> = wrapRequest(
+        customErrorInterceptor = { responseData ->
+            val error = runCatching {
+                responseData.parseBody<AdminlessConversationErrorResponse>()
+            }.getOrNull()
+            if (responseData.status == HttpStatusCode.Forbidden && error?.label == AdminlessConversationErrorResponse.LABEL) {
+                NetworkResponse.Error(AdminlessConversationError(error))
+            } else {
+                null
+            }
+        }
+    ) {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
+            setBody(request)
+        }
+    }
+}

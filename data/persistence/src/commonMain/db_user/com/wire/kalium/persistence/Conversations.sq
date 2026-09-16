@@ -59,6 +59,13 @@ CREATE TABLE ConversationLegalHoldStatusChangeNotified (
     FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE TABLE AdminlessGroupDelete (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    deletion_timestamp INTEGER AS Instant NOT NULL,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 -- Optimise comparisons and sorting by dates:
 CREATE INDEX conversation_modified_date_index ON Conversation(last_modified_date);
 CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date);
@@ -98,6 +105,12 @@ deleteConversation:
 -- @NotifyCustomKey conversation_list_membership
 -- @NotifyCustomKey Conversation
 DELETE FROM Conversation WHERE qualified_id = ?;
+
+insertAdminlessGroupDelete:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Conversation
+INSERT OR IGNORE INTO AdminlessGroupDelete(conversation_id, deletion_timestamp)
+VALUES (?, ?);
 
 setDeletedLocally:
 -- @NotifyCustomKey conversation_list_membership
@@ -556,7 +569,8 @@ clearContent {
 -- @NotifyCustomKey Asset
 -- @NotifyCustomKey Message
 DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);
-DELETE FROM Message WHERE conversation_id = :conversationId;
+DELETE FROM Message
+WHERE conversation_id = :conversationId;
 }
 
 selectChanges:

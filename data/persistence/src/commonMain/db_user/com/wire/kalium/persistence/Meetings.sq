@@ -1,6 +1,5 @@
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import kotlin.Boolean;
 import kotlinx.datetime.Instant;
 
 CREATE TABLE Meeting (
@@ -12,7 +11,7 @@ CREATE TABLE Meeting (
     title TEXT NOT NULL,
     start_date INTEGER AS Instant NOT NULL,
     end_date INTEGER AS Instant NOT NULL,
-    trial INTEGER  AS Boolean NOT NULL,
+    tzid TEXT NOT NULL,
     recurrence_frequency TEXT AS MeetingEntity.RecurrenceEntity.Frequency,
     recurrence_interval INTEGER,
     recurrence_end_date INTEGER AS Instant,
@@ -37,7 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_occurrences_meeting ON MeetingOccurrence(meeting_
 CREATE INDEX IF NOT EXISTS idx_occurrences_start ON MeetingOccurrence(occurrence_start);
 
 upsertMeeting:
-INSERT INTO Meeting(meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, trial, recurrence_frequency, recurrence_interval, recurrence_end_date)
+INSERT INTO Meeting(meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, tzid, recurrence_frequency, recurrence_interval, recurrence_end_date)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(meeting_id) DO UPDATE SET
     conversation_id = excluded.conversation_id,
@@ -47,7 +46,7 @@ ON CONFLICT(meeting_id) DO UPDATE SET
     title = excluded.title,
     start_date = excluded.start_date,
     end_date = excluded.end_date,
-    trial = excluded.trial,
+    tzid = excluded.tzid,
     recurrence_frequency = excluded.recurrence_frequency,
     recurrence_interval = excluded.recurrence_interval,
     recurrence_end_date = excluded.recurrence_end_date;
@@ -134,7 +133,7 @@ SELECT
     Meeting.title AS meetingTitle,
     Meeting.start_date AS startDate,
     Meeting.end_date AS endDate,
-    Meeting.trial AS trial,
+    Meeting.tzid AS tzid,
     Meeting.recurrence_frequency AS recurrenceFrequency,
     Meeting.recurrence_interval AS recurrenceInterval,
     Meeting.recurrence_end_date AS recurrenceEndDate,
@@ -175,7 +174,7 @@ SELECT
     Meeting.title AS meetingTitle,
     Meeting.start_date AS startDate,
     Meeting.end_date AS endDate,
-    Meeting.trial AS trial,
+    Meeting.tzid AS tzid,
     Meeting.recurrence_frequency AS recurrenceFrequency,
     Meeting.recurrence_interval AS recurrenceInterval,
     Meeting.recurrence_end_date AS recurrenceEndDate,

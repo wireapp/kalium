@@ -21,7 +21,6 @@ package com.wire.kalium.common.error
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.model.MLSErrorResponse
-import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
 import kotlinx.serialization.SerialName
@@ -175,7 +174,6 @@ sealed class NetworkFailure : CoreFailure {
         data class FederationNotImplemented(val label: String) : FederatedBackendFailure()
 
         data class ConflictingBackends(override val domains: List<String>) : FederatedBackendFailure(), RetryableFailure
-        data class ConflictingBackendsWithMissingUsers(val users: List<QualifiedID>) : FederatedBackendFailure()
 
         data class FailedDomains(override val domains: List<String> = emptyList()) : FederatedBackendFailure(), RetryableFailure
 
@@ -251,6 +249,7 @@ sealed interface MLSFailure : CoreFailure {
     data object InvalidGroupId : MLSFailure
 
     data class MessageRejected(val cause: NetworkFailure.MlsMessageRejectedFailure) : MLSFailure
+    data class FederatedBackendConflict(val domains: List<String>) : MLSFailure
 
     data class Other(val message: String) : MLSFailure
     data class Generic(val rootCause: Throwable) : MLSFailure
@@ -259,6 +258,13 @@ sealed interface MLSFailure : CoreFailure {
 fun CoreFailure.wrapNetworkMlsFailureIfApplicable(): CoreFailure = if (this is NetworkFailure.MlsMessageRejectedFailure) {
     MLSFailure.MessageRejected(this)
 } else this
+
+fun CoreFailure.normalizeFederatedBackendConflict(): CoreFailure =
+    if (this is MLSFailure.FederatedBackendConflict) {
+        NetworkFailure.FederatedBackendFailure.ConflictingBackends(domains)
+    } else {
+        this
+    }
 
 interface E2EIFailure : CoreFailure {
     data object Disabled : E2EIFailure

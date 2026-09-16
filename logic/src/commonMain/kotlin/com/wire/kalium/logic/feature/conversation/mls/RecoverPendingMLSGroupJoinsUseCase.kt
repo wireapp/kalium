@@ -19,10 +19,10 @@ package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.normalizeFederatedBackendConflict
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
@@ -75,24 +75,39 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
     ): List<ConversationId> {
         val successfulConversationIds = mutableListOf<ConversationId>()
         pendingConversationIds.forEach { conversationId ->
-            joinExistingMLSConversation(
+            val recoveryResult = joinExistingMLSConversation(
                 transactionContext = transactionContext,
                 conversationId = conversationId,
                 allowJoinByExternalCommit = true
             )
                 .flatMap { conversationRepository.getConversationById(conversationId) }
-                .onFailure {
-                    kaliumLogger.w("Failed to recover pending MLS group join for ${conversationId.toLogString()}: $it")
-                    if (it is NetworkFailure.ServerMiscommunication &&
-                        it.kaliumException is KaliumException.InvalidRequestError &&
-                        (it.kaliumException as KaliumException.InvalidRequestError).isNotFound()
+
+            when (recoveryResult) {
+                is Either.Left -> {
+                    val transportFailure = recoveryResult.value
+                    val failure = transportFailure.normalizeFederatedBackendConflict()
+                    kaliumLogger.w("Failed to recover pending MLS group join for ${conversationId.toLogString()}: $failure")
+                    if (failure is NetworkFailure.ServerMiscommunication &&
+                        failure.kaliumException is KaliumException.InvalidRequestError &&
+                        (failure.kaliumException as KaliumException.InvalidRequestError).isNotFound()
                     ) {
                         successfulConversationIds.add(conversationId)
-                    } else if (it is StorageFailure.DataNotFound) {
+                    } else if (failure is StorageFailure.DataNotFound) {
+                        successfulConversationIds.add(conversationId)
+                    } else if (failure is NetworkFailure.FederatedBackendFailure.ConflictingBackends) {
+                        conversationRepository.setConversationDeletedLocally(conversationId, true)
+                            .onFailure { deletionFailure ->
+                                kaliumLogger.w(
+                                    "Failed to discard terminal pending MLS group " +
+                                            "${conversationId.toLogString()}: $deletionFailure"
+                                )
+                            }
                         successfulConversationIds.add(conversationId)
                     }
                 }
-                .onSuccess { conversation ->
+
+                is Either.Right -> {
+                    val conversation = recoveryResult.value
                     if (conversation.isMLSEstablished()) {
                         successfulConversationIds.add(conversationId)
                     } else {
@@ -101,6 +116,7 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
                         )
                     }
                 }
+            }
         }
         return successfulConversationIds
     }

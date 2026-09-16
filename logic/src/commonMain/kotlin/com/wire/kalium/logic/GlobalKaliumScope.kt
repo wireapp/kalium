@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:OptIn(InternalKaliumApi::class)
+
 package com.wire.kalium.logic
 
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
@@ -81,6 +83,7 @@ import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlin.coroutines.CoroutineContext
@@ -116,6 +119,7 @@ public class GlobalKaliumScope internal constructor(
             kaliumConfigs.certPinningConfig,
             kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
             kaliumConfigs.developmentApiEnabled,
+            httpTrafficObserver = kaliumConfigs.httpTrafficObserver,
         )
     }
 

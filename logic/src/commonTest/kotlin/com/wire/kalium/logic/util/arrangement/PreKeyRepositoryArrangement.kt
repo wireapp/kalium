@@ -66,7 +66,7 @@ internal class PreKeyRepositoryArrangementImpl : PreKeyRepositoryArrangement {
 
     override suspend fun withGenerateNewPreKeysReturning(result: Either<CoreFailure, List<PreKeyCrypto>>) {
         everySuspend {
-            preKeyRepository.generateNewPreKeys(any(), any())
+            preKeyRepository.generateNewPreKeysAuto(any())
         }.returns(result)
     }
 

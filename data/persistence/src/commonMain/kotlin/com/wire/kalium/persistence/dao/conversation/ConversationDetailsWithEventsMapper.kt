@@ -85,6 +85,7 @@ data object ConversationDetailsWithEventsMapper {
         wireCell: String?,
         historySharingRetentionSeconds: Long,
         deletedLocally: Boolean,
+        adminlessGroupDeletionTimestamp: Instant?,
         unreadKnocksCount: Long?,
         unreadMissedCallsCount: Long?,
         unreadMentionsCount: Long?,
@@ -165,6 +166,7 @@ data object ConversationDetailsWithEventsMapper {
             wireCell = wireCell,
             deletedLocally = deletedLocally,
             historySharingRetentionSeconds = historySharingRetentionSeconds,
+            adminlessGroupDeletionTimestamp = adminlessGroupDeletionTimestamp,
         ),
         unreadEvents = UnreadEventMapper.toConversationUnreadEntity(
             conversationId = qualifiedId,

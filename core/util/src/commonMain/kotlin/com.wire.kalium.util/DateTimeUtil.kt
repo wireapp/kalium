@@ -143,3 +143,20 @@ object DateTimeUtil : PlatformDateTimeUtil() {
     fun Instant.asStartOfDay(timeZone: TimeZone = TimeZone.currentSystemDefault()) =
         this.toLocalDateTime(timeZone).date.atStartOfDayIn(timeZone)
 }
+
+/**
+ * Platform bridge for TZID-based date arithmetic.
+ *
+ * This is intentionally isolated from [DateTimeUtil] so the temporary platform-specific timezone data
+ * workarounds can be removed once kotlinx-datetime-zoneinfo is available for all targets we support.
+ * The Android actual currently uses ThreeTenBP to get a bundled IANA timezone database while we wait for
+ * kotlinx-datetime-zoneinfo to publish the KMP variants Kalium needs.
+ * Unsupported TZIDs return null instead of falling back to UTC, because doing so would silently generate
+ * recurrences at the wrong local time.
+ */
+expect open class PlatformTzidUtil() {
+    fun isTimeZoneSupported(tzid: String): Boolean
+    fun plusDaysOrNull(instant: Instant, days: Int, tzid: String): Instant?
+}
+
+object TzidUtil : PlatformTzidUtil()

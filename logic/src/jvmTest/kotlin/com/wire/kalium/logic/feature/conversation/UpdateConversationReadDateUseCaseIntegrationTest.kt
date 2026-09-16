@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -54,8 +53,6 @@ import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -189,10 +186,9 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
             clientApi = ClientApiStub(),
             conversationMetaDataDAO = database.builder.conversationMetaDataDAO,
         )
-        val observedConversation = TestConversation.GROUP().copy(lastReadDate = persistedLastRead)
         return object : ConversationRepository by delegate {
-            override suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>> =
-                flowOf(Either.Right(observedConversation))
+            override suspend fun getConversationLastReadDate(conversationId: ConversationId): Either<StorageFailure, Instant> =
+                Either.Right(persistedLastRead)
         }
     }
 

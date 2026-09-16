@@ -21,7 +21,6 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.call.CallModerationAction
 import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -40,7 +39,6 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.Test
@@ -151,7 +149,7 @@ class CallingMessageHandlerTest {
 
         fun withShouldRemoteMuteCheckerReturning(shouldRemoteMute: Boolean) = apply {
             everySuspend {
-                shouldRemoteMuteChecker.check(any(), any(), any(), any(), any())
+                shouldRemoteMuteChecker.check(any(), any(), any(), any())
             } returns shouldRemoteMute
         }
 
@@ -161,15 +159,15 @@ class CallingMessageHandlerTest {
             } returns clientId.right()
         }
 
-        fun withObserveConversationMembersReturning(members: List<Conversation.Member>) = apply {
+        fun withIsConversationMemberAdminReturning(isAdmin: Boolean) = apply {
             everySuspend {
-                conversationRepository.observeConversationMembers(any())
-            } returns flowOf(members)
+                conversationRepository.isConversationMemberAdmin(any(), any())
+            } returns isAdmin.right()
         }
 
         init {
             withCurrentClientIdProviderReturning(TestClient.CLIENT_ID)
-            withObserveConversationMembersReturning(emptyList())
+            withIsConversationMemberAdminReturning(false)
         }
 
         fun arrange() = this to CallingMessageHandlerImpl(

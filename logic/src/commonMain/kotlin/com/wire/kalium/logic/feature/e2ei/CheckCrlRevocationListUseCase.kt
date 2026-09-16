@@ -17,22 +17,16 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import kotlinx.datetime.Clock
+import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 
-/**
- * Use case to check the certificate revocation list (CRL) for expired entries.
- * param forceUpdate: if true, the CRL will be checked even if it is not expired.
- */
+/** Check installed X.509 credentials, forcing a check even when E2EI is currently disabled. */
 // todo(interface). extract interface for use case
 public class CheckCrlRevocationListUseCase internal constructor(
-    private val certificateRevocationListRepository: CertificateRevocationListRepository,
-    private val revocationListChecker: RevocationListChecker,
-    private val transactionProvider: CryptoTransactionProvider,
+    private val e2eiRepository: E2EIRepository,
+    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     kaliumLogger: KaliumLogger
 ) {
 
@@ -40,16 +34,10 @@ public class CheckCrlRevocationListUseCase internal constructor(
 
     public suspend operator fun invoke(forceUpdate: Boolean) {
         logger.i("Checking certificate revocation list (CRL). Force update: $forceUpdate")
-        certificateRevocationListRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
-            if (forceUpdate || (crl.expiration < Clock.System.now().epochSeconds.toULong())) {
-                transactionProvider.mlsTransaction("CheckCrlRevocationList") { mlsContext ->
-                    revocationListChecker.check(mlsContext, crl.url).map { newExpirationTime ->
-                        newExpirationTime?.let {
-                            certificateRevocationListRepository.addOrUpdateCRL(crl.url, it)
-                        }
-                    }
-                }
-            }
-        } ?: logger.w("No CRLs found.")
+        if (!forceUpdate && !isE2EIEnabledUseCase()) return
+
+        e2eiRepository.checkCredentials().onFailure {
+            logger.w("Checking installed X.509 credentials failed: $it")
+        }
     }
 }

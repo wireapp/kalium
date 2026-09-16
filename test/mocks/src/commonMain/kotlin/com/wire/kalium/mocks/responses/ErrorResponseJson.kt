@@ -41,14 +41,6 @@ object ErrorResponseJson {
         """.trimMargin()
     }
 
-    private val federationConflictWithMissingUsersJsonProvider = { serializable: FederationErrorResponse.ConflictWithMissingUsers ->
-        """
-        |{
-        |  "missing_users": ${Json.encodeToString(serializable.missingUsers)}
-        |}
-        """.trimMargin()
-    }
-
     private val federationUnreachableJsonProvider = { serializable: FederationErrorResponse.Unreachable ->
         """
         |{
@@ -85,11 +77,6 @@ object ErrorResponseJson {
     fun validFederationConflictingBackends(error: FederationErrorResponse.Conflict) = ValidJsonProvider(
         error,
         federationConflictJsonProvider
-    )
-
-    fun validFederationConflictingBackendsWithMissingUsers(error: FederationErrorResponse.ConflictWithMissingUsers) = ValidJsonProvider(
-        error,
-        federationConflictWithMissingUsersJsonProvider
     )
 
     fun validFederationUnreachableBackends(error: FederationErrorResponse.Unreachable) = ValidJsonProvider(

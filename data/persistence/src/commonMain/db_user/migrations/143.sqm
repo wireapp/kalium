@@ -1,0 +1,38 @@
+import com.wire.kalium.persistence.dao.meeting.MeetingEntity;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlinx.datetime.Instant;
+
+CREATE TEMPORARY TABLE MeetingOccurrenceMigration AS SELECT * FROM MeetingOccurrence;
+
+CREATE TABLE Meeting_new (
+    meeting_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    creator_id TEXT AS QualifiedIDEntity NOT NULL,
+    creation_date INTEGER AS Instant NOT NULL,
+    last_edit_date INTEGER AS Instant,
+    title TEXT NOT NULL,
+    start_date INTEGER AS Instant NOT NULL,
+    end_date INTEGER AS Instant NOT NULL,
+    tzid TEXT NOT NULL,
+    recurrence_frequency TEXT AS MeetingEntity.RecurrenceEntity.Frequency,
+    recurrence_interval INTEGER,
+    recurrence_end_date INTEGER AS Instant,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
+    FOREIGN KEY (creator_id) REFERENCES User(qualified_id)
+);
+
+INSERT INTO Meeting_new( meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, tzid, recurrence_frequency, recurrence_interval, recurrence_end_date)
+SELECT meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, 'Europe/Berlin' AS tzid, recurrence_frequency, recurrence_interval, recurrence_end_date FROM Meeting;
+
+DROP TABLE Meeting;
+ALTER TABLE Meeting_new RENAME TO Meeting;
+
+CREATE INDEX meeting_conv_id_index ON Meeting(conversation_id);
+CREATE INDEX meeting_start_date_index ON Meeting(start_date);
+
+DELETE FROM MeetingOccurrence;
+INSERT INTO MeetingOccurrence SELECT * FROM MeetingOccurrenceMigration;
+DROP TABLE MeetingOccurrenceMigration;
+
+PRAGMA optimize;

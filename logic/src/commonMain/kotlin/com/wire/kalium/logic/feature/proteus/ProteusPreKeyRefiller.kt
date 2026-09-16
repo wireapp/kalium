@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.proteus
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller.Companion.MAX_PREKEY_ID
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller.Companion.MINIMUM_PREKEYS_COUNT
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller.Companion.REMOTE_PREKEYS_TARGET_COUNT
 import com.wire.kalium.common.functional.Either
@@ -33,13 +32,6 @@ internal interface ProteusPreKeyRefiller {
     companion object {
         const val MINIMUM_PREKEYS_COUNT = 40
         const val REMOTE_PREKEYS_TARGET_COUNT = 100
-
-        /**
-         * The number of prekeys that can be generated before
-         * resetting back to ID 0.
-         * This number is dictated by Cryptobox.
-         */
-        const val MAX_PREKEY_ID = 65_534
     }
 }
 
@@ -50,14 +42,11 @@ internal interface ProteusPreKeyRefiller {
  * the refill will be triggered.
  * @param remotePreKeyTargetCount Number of remaining prekeys in the backend to aim for
  * when generating a new batch if a refill is triggered.
- * @param maxPreKeyId The highest possible prekey ID, before it needs to be reset down to zero.
- * This number is dictated by Cryptobox.
  */
 internal class ProteusPreKeyRefillerImpl(
     private val preKeyRepository: PreKeyRepository,
     private val lowOnPrekeysTreshold: Int = MINIMUM_PREKEYS_COUNT,
     private val remotePreKeyTargetCount: Int = REMOTE_PREKEYS_TARGET_COUNT,
-    private val maxPreKeyId: Int = MAX_PREKEY_ID,
 ) : ProteusPreKeyRefiller {
     override suspend fun refillIfNeeded(): Either<CoreFailure, Unit> =
         preKeyRepository.fetchRemotelyAvailablePrekeys().flatMap { remotePreKeys ->
@@ -65,22 +54,7 @@ internal class ProteusPreKeyRefillerImpl(
             if (!isLowOnPrekeys) {
                 return Either.Right(Unit)
             }
-            // Exclude the last resort prekey from the result
-            val rollingPreKeys = remotePreKeys.filter { it <= maxPreKeyId }
-            val nextPreKeyBatchSize = remotePreKeyTargetCount - rollingPreKeys.size
-
-            preKeyRepository.mostRecentPreKeyId().flatMap { mostRecentPreKeyId ->
-                val wouldNewBatchGoOverTheLimit = mostRecentPreKeyId + nextPreKeyBatchSize >= maxPreKeyId
-                val nextBatchStartId = if (wouldNewBatchGoOverTheLimit) {
-                    0
-                } else {
-                    mostRecentPreKeyId + 1
-                }
-                preKeyRepository.generateNewPreKeys(
-                    nextBatchStartId,
-                    remotePreKeyTargetCount
-                )
-            }.flatMap { generatedPreKeys ->
+            preKeyRepository.generateNewPreKeysAuto(remotePreKeyTargetCount).flatMap { generatedPreKeys ->
                 preKeyRepository.updateMostRecentPreKeyId(generatedPreKeys.last().id).flatMap {
                     preKeyRepository.uploadNewPrekeyBatch(generatedPreKeys)
                 }

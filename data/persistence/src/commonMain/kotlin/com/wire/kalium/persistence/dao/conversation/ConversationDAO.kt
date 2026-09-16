@@ -38,6 +38,7 @@ interface ConversationDAO {
     suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationsByIds(qualifiedIDs: List<QualifiedIDEntity>): List<ConversationEntity>
+    suspend fun getConversationLastReadDate(qualifiedID: QualifiedIDEntity): Instant?
     suspend fun getNonDeletedConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
@@ -107,6 +108,7 @@ interface ConversationDAO {
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Boolean
+    suspend fun insertAdminlessGroupDelete(conversationId: QualifiedIDEntity, deletionTimestamp: Instant)
     suspend fun setConversationDeletedLocally(qualifiedID: QualifiedIDEntity, deletedLocally: Boolean)
 
     suspend fun updateConversationMutedStatus(

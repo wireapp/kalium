@@ -34,6 +34,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(projects.core.logger)
+                api(projects.core.util)
 
                 implementation(libs.coroutines.core)
             }

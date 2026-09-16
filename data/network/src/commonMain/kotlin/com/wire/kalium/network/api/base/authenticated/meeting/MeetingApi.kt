@@ -34,6 +34,6 @@ interface MeetingApi : BaseApi {
     suspend fun updateMeeting(meetingId: MeetingId, request: UpsertMeetingRequest): NetworkResponse<UpsertMeetingResponse>
 
     companion object {
-        const val MIN_API_VERSION_MEETINGS = 16
+        const val MIN_API_VERSION_MEETINGS = 17
     }
 }

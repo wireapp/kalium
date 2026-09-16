@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.app.AppMapper
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
@@ -26,6 +27,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.service.ServiceMapper
 import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.common.functional.Either
@@ -40,10 +42,14 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
+import com.wire.kalium.network.api.model.UserTypeDTO
+import com.wire.kalium.persistence.dao.AppDAO
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.persistence.dao.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
@@ -62,6 +68,8 @@ internal interface TeamRepository {
     suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun syncTeam(teamId: TeamId): Either<CoreFailure, Team>
     suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
+    suspend fun fetchAppsByTeamId(teamId: TeamId): Either<CoreFailure, Unit>
+    suspend fun fetchCollaboratorsByTeamId(teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
     suspend fun fetchLegalHoldStatus(teamId: TeamId): Either<CoreFailure, LegalHoldStatus>
 
@@ -78,6 +86,7 @@ internal class TeamDataSource(
     private val teamsApi: TeamsApi,
     private val selfUserId: UserId,
     private val serviceDAO: ServiceDAO,
+    private val appDAO: AppDAO,
     private val legalHoldHandler: LegalHoldHandler,
     private val legalHoldRequestHandler: LegalHoldRequestHandler,
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
@@ -85,6 +94,8 @@ internal class TeamDataSource(
     private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val legalHoldStatusMapper: LegalHoldStatusMapper = MapperProvider.legalHoldStatusMapper(),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
+    private val appMapper: AppMapper = MapperProvider.appMapper(),
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
@@ -181,6 +192,36 @@ internal class TeamDataSource(
     }.flatMap {
         wrapStorageRequest {
             serviceDAO.insertMultiple(it)
+        }
+    }
+
+    override suspend fun fetchAppsByTeamId(teamId: TeamId): Either<CoreFailure, Unit> = wrapApiRequest {
+        teamsApi.getTeamApps(teamId = teamId.value)
+    }.flatMap { apps ->
+        val appProfiles = apps.filter { it.type == UserTypeDTO.APP }
+        val userEntities = appProfiles.map { app ->
+            userMapper.fromUserProfileDtoToUserEntity(
+                userProfile = app,
+                connectionState = ConnectionEntity.State.ACCEPTED,
+                userTypeEntity = UserTypeEntity.APP,
+                selfUserId = selfUserId,
+                selfTeamId = teamId
+            )
+        }
+        val appEntities = appProfiles.map(appMapper::fromUserProfileToAppEntity)
+        wrapStorageRequest {
+            userDAO.upsertUsers(userEntities)
+            appDAO.upsertApps(appEntities)
+        }
+    }
+
+    override suspend fun fetchCollaboratorsByTeamId(teamId: TeamId): Either<CoreFailure, Unit> = wrapApiRequest {
+        teamsApi.getTeamCollaborators(teamId = teamId.value)
+    }.flatMap { collaborators ->
+        val userIds = collaborators.map { QualifiedIDEntity(it.nonQualifiedUserId, selfUserId.domain) }
+        wrapStorageRequest {
+            userDAO.insertOrIgnoreIncompleteUsers(userIds)
+            userDAO.upsertConnectionStatuses(userIds.associateWith { ConnectionEntity.State.ACCEPTED })
         }
     }
 

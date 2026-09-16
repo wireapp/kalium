@@ -21,6 +21,8 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CredentialType
+import com.wire.kalium.cryptography.CryptoCredentialRef
 import com.wire.kalium.cryptography.MLSCiphersuite
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
@@ -35,6 +37,7 @@ import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrange
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.MLS_CIPHER_SUITE
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
 import com.wire.kalium.util.DateTimeUtil
@@ -53,12 +56,13 @@ import kotlin.test.assertIs
 
 class RegisterMLSClientUseCaseTest {
     @Test
-    fun givenRegisterMLSClientUseCaseAndE2EIIsRequired_whenInvokedAndE2EIIsEnrolled_thenRegisterMLSClient() =
+    fun givenBasicClientWithX509InstalledAndE2EIRequired_whenInvoked_thenRegisterMLSClientWithX509() =
         runTest {
             val e2eiIsRequired = true
             val (arrangement, registerMLSClient) = Arrangement()
                 .withGetMLSClientSuccessful()
                 .withIsMLSClientInitialisedReturns()
+                .withX509Credential()
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
@@ -83,6 +87,9 @@ class RegisterMLSClientUseCaseTest {
 
             verifySuspend {
                 arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsClient.initializeBasicCredential()
             }
         }
 
@@ -117,8 +124,42 @@ class RegisterMLSClientUseCaseTest {
 
             verifySuspend(VerifyMode.not) {
                 arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
+                arrangement.mlsClient.initializeBasicCredential()
             }
         }
+
+    @Test
+    fun givenInitialisedBasicClientAndE2EIIsRequired_whenInvoked_thenCertificateIsStillRequired() = runTest {
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withIsMLSClientInitialisedReturns(true)
+            .withX509Credential(null)
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = true)))
+            .arrange()
+
+        val result = registerMLSClient(TestClient.CLIENT_ID)
+
+        result.shouldSucceed()
+        assertIs<RegisterMLSClientResult.E2EICertificateRequired>(result.value)
+        verifySuspend(VerifyMode.not) {
+            arrangement.clientRepository.registerMLSClient(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenE2EISettingsCannotBeRead_whenInvoked_thenFailureIsPropagatedWithoutRegistering() = runTest {
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        val result = registerMLSClient(TestClient.CLIENT_ID)
+
+        result.shouldFail { assertIs<StorageFailure.DataNotFound>(it) }
+        verifySuspend(VerifyMode.not) { arrangement.mlsClientProvider.getMLSClient(any()) }
+        verifySuspend(VerifyMode.not) {
+            arrangement.clientRepository.registerMLSClient(any(), any(), any())
+        }
+    }
 
     @Test
     fun givenRegisterMLSClientUseCaseAndE2EIIsNotRequired_whenInvoked_thenRegisterMLSClient() =
@@ -151,10 +192,14 @@ class RegisterMLSClientUseCaseTest {
             verifySuspend {
                 arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
             }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.mlsClient.initializeBasicCredential()
+            }
         }
 
     private class Arrangement {
         val mlsClient: MLSClient = mock(mode = MockMode.autoUnit)
+        val x509CredentialRef: CryptoCredentialRef = mock(mode = MockMode.autoUnit)
         val mlsContext: MlsCoreCryptoContext = mock(mode = MockMode.autoUnit)
         var mlsClientProvider: MLSClientProvider = mock(mode = MockMode.autoUnit)
         val clientRepository: ClientRepository = mock(mode = MockMode.autoUnit)
@@ -196,6 +241,12 @@ class RegisterMLSClientUseCaseTest {
             everySuspend {
                 mlsClient.getPublicKey()
             } returns (publicKey to cipherSuite)
+        }
+
+        suspend fun withX509Credential(credentialRef: CryptoCredentialRef? = x509CredentialRef) = apply {
+            everySuspend {
+                mlsClient.getCredentialRef(CredentialType.X509)
+            } returns credentialRef
         }
 
         suspend fun withGetMLSClientSuccessful() = apply {

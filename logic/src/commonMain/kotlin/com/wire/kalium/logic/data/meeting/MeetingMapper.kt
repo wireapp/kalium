@@ -57,7 +57,7 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
                 title = meeting.title,
                 startTime = meeting.startTime,
                 endTime = meeting.endTime,
-                trial = meeting.trial,
+                tzid = meeting.tzid,
                 recurrence = recurrence
             )
         }
@@ -77,6 +77,7 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         title = meeting.title,
         startTime = meeting.startTime,
         endTime = meeting.endTime,
+        tzid = meeting.tzid,
         recurrence = meeting.recurrence?.let { fromDaoToModel(it) },
     )
 
@@ -123,6 +124,7 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         title = upsertMeeting.title,
         startTime = upsertMeeting.startTime,
         endTime = upsertMeeting.endTime,
+        tzid = upsertMeeting.tzid,
         recurrence = upsertMeeting.recurrence?.let {
             MeetingRecurrenceDTO(
                 frequency = it.frequency.toDaoFrequency().toApiFrequency(),

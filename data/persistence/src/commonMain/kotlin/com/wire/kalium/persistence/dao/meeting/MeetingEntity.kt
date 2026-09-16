@@ -30,7 +30,7 @@ data class MeetingEntity(
     val title: String,
     val startTime: Instant,
     val endTime: Instant,
-    val trial: Boolean,
+    val tzid: String,
     val recurrence: RecurrenceEntity?
 ) {
     data class RecurrenceEntity(

@@ -81,6 +81,7 @@ data object ConversationMapper {
         wireCell: String?,
         historySharingRetentionSeconds: Long,
         deletedLocally: Boolean,
+        adminlessGroupDeletionTimestamp: Instant?,
     ): ConversationViewEntity = ConversationViewEntity(
         id = qualifiedId,
         name = name,
@@ -136,6 +137,7 @@ data object ConversationMapper {
         channelAddPermission = channelAddPermission,
         wireCell = wireCell,
         historySharingRetentionSeconds = historySharingRetentionSeconds,
+        adminlessGroupDeletionTimestamp = adminlessGroupDeletionTimestamp,
     )
 
     @Suppress("LongParameterList", "UnusedParameter")

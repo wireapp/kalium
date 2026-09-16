@@ -49,16 +49,10 @@ internal fun cellsAwsClient(
     endpointProvider = {
         credentials.awaitOrThrow().serverUrl
     },
-    credentialsProvider = {
-        val cellsCredentials = credentials.awaitOrThrow()
-        val session = sessionManager.updateToken(
-            accessTokenApi,
-            sessionManager.session()?.refreshToken ?: ""
-        )
-        S3Credentials(
-            accessKeyId = session.accessToken,
-            secretAccessKey = cellsCredentials.gatewaySecret,
-        )
-    },
+    credentialsProvider = CellsS3CredentialsProvider(
+        cellsCredentials = credentials,
+        sessionManager = sessionManager,
+        accessTokenApi = accessTokenApi,
+    ),
     fileSystem = FileSystem.SYSTEM,
 )

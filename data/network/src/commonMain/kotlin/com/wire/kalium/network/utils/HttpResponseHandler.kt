@@ -56,8 +56,8 @@ internal suspend inline fun <reified ResponseType : Any> wrapRequest(
  *
  * @param performRequest An HTTP response producer
  * @param customErrorInterceptor An optional interceptor for custom error responses.
- * This interceptor will be executed **after** [UnauthorizedResponseInterceptor] but **before** other default interceptors
- * like [FederationErrorResponseInterceptorConflictWithMissingUsers]. This allows overriding the default error handling for specific cases.
+ * This interceptor will be executed **after** [UnauthorizedResponseInterceptor] but **before** other default interceptors.
+ * This allows overriding the default error handling for specific cases.
  * @param successHandler A handler for successful HTTP responses (status codes 200..299).
  * By default, it will deserialize the body to the wanted [ResponseType].
  * @return A NetworkResponse representing the error, which may either include specific error details or a generic error object.
@@ -261,17 +261,6 @@ internal object FederationErrorResponseInterceptorConflict : BaseFederationError
     ): NetworkResponse.Error? =
         runCatching {
             httpResponseData.parseBody<FederationErrorResponse.Conflict>()
-        }.getOrNull()
-            ?.let { NetworkResponse.Error(FederationError(it)) }
-}
-
-internal object FederationErrorResponseInterceptorConflictWithMissingUsers : BaseFederationErrorResponseInterceptor<Nothing>() {
-
-    override suspend fun parseConflictError(
-        httpResponseData: HttpResponseData
-    ): NetworkResponse.Error? =
-        runCatching {
-            httpResponseData.parseBody<FederationErrorResponse.ConflictWithMissingUsers>()
         }.getOrNull()
             ?.let { NetworkResponse.Error(FederationError(it)) }
 }
