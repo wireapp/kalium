@@ -54,9 +54,19 @@ class RefreshNodeAssetStateUseCaseTest {
         private val testPreviews = listOf(
             NodePreview(
                 url = "http://previewUrl",
-                dimension = 720
+                dimension = 720,
+                contentType = "image/jpg",
             )
         )
+
+        /** What a document the backend can convert returns: a thumbnail plus a PDF rendition. */
+        private val testDocumentPreviews = listOf(
+            NodePreview(
+                url = "http://renditionUrl",
+                dimension = 0,
+                contentType = "application/pdf",
+            ),
+        ) + testPreviews
 
         private val testNode: CellNode = CellNode(
             uuid = assetId,
@@ -327,6 +337,25 @@ class RefreshNodeAssetStateUseCaseTest {
     }
 
     @Test
+    fun given_NodeWithPdfAndImagePreviews_when_RefreshInvoked_then_ImagePreviewIsSaved() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withNodeResponseSuccess(testNode.copy(previews = testDocumentPreviews))
+            .withLocalAttachment()
+            .withLocalFileAvailable()
+            .arrange()
+
+        useCase.invoke(assetId)
+
+        // The PDF rendition is what the document is displayed with, never what its thumbnail is.
+        verifySuspend {
+            arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.attachmentsRepository.savePreviewUrl(assetId, "http://renditionUrl")
+        }
+    }
+
+    @Test
     fun given_NodePreviewsNotReady_when_RefreshInvoked_then_PreviewRequestRetried() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withNodeResponseSuccess(testNode)
@@ -375,12 +404,42 @@ class RefreshNodeAssetStateUseCaseTest {
     }
 
     @Test
-    fun given_NodePreviewsAreNull_when_PreviewAvailabilityChecked_then_FalseReturned() = runTest {
+    fun given_NodeWithoutPreviewsYet_when_PreviewAvailabilityChecked_then_TrueReturned() = runTest {
+        // A just received file has no renditions yet: they are generated after upload, and waiting
+        // for them is the whole point of asking whether previews are supported.
         CellNode(
             uuid = assetId,
             versionId = "versionId",
             path = "assetPath",
             previews = null,
+            mimeType = "image/jpg",
+        ).let { node ->
+            assertTrue(node.isPreviewSupported())
+        }
+    }
+
+    @Test
+    fun given_DocumentWithoutPreviewsYet_when_PreviewAvailabilityChecked_then_TrueReturned() = runTest {
+        CellNode(
+            uuid = assetId,
+            versionId = "versionId",
+            path = "assetPath",
+            previews = null,
+            mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            supportedEditors = listOf("collabora"),
+        ).let { node ->
+            assertTrue(node.isPreviewSupported())
+        }
+    }
+
+    @Test
+    fun given_NodeOfATypeWithoutRenditions_when_PreviewAvailabilityChecked_then_FalseReturned() = runTest {
+        CellNode(
+            uuid = assetId,
+            versionId = "versionId",
+            path = "assetPath",
+            previews = null,
+            mimeType = "application/zip",
         ).let { node ->
             assertFalse(node.isPreviewSupported())
         }

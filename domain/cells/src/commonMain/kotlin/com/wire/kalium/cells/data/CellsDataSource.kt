@@ -200,6 +200,7 @@ internal class CellsDataSource internal constructor(
                     NodePreview(
                         preview.url,
                         preview.dimension ?: 0,
+                        preview.contentType,
                     )
                 } ?: emptyList()
             }
