@@ -58,7 +58,8 @@ actual fun globalDatabaseProvider(
 }
 
 actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
-    return (platformDatabaseData.storageData as? StorageData.FileBacked)?.file?.resolve(FileNameUtil.globalDBName())?.delete() ?: false
+    val storageData = platformDatabaseData.storageData as? StorageData.FileBacked ?: return false
+    return deleteDatabaseFiles(storageData.file.resolve(FileNameUtil.globalDBName()))
 }
 
 fun createGlobalInMemoryDatabase(dispatcher: CoroutineDispatcher): GlobalDatabaseBuilder {

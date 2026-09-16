@@ -18,6 +18,7 @@
 package com.wire.kalium.persistence.db
 
 import com.wire.kalium.persistence.dao.UserIDEntity
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Provides an in-memory cache for in-memory databases.
@@ -25,13 +26,13 @@ import com.wire.kalium.persistence.dao.UserIDEntity
  * Useful to hold a database across logins and logouts without losing the data in between.
  */
 internal object InMemoryDatabaseCache {
-    private val cache = mutableMapOf<UserIDEntity, UserDatabaseBuilder>()
+    private val cache = ConcurrentHashMap<UserIDEntity, UserDatabaseBuilder>()
 
     fun getOrCreate(
         userIDEntity: UserIDEntity,
         create: () -> UserDatabaseBuilder
     ): UserDatabaseBuilder {
-        return cache.getOrPut(userIDEntity) { create() }
+        return cache.computeIfAbsent(userIDEntity) { create() }
     }
 
     /**

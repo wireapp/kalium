@@ -17,12 +17,18 @@
  */
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.TransacterImpl
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.sqlite.SQLiteConfig
 import java.io.File
+import java.util.Properties
+
+// Another process, or a second SDK instance on the same file, waits this long for SQLite's lock
+// instead of failing right away.
+private const val BUSY_TIMEOUT_MILLIS = 5_000
 
 actual data class PlatformDatabaseData(
     val storageData: StorageData
@@ -35,6 +41,10 @@ sealed interface StorageData {
 
 /**
  * Creates a JVM SQLite driver with optional SQLDelight-managed schema initialization.
+ *
+ * File-backed databases get a [PooledJdbcSqliteDriver], which keeps its connections open. In-memory
+ * databases keep SQLDelight's single-connection driver: every new connection to them would be a new,
+ * empty database.
  *
  * Behavior:
  * - When [schema] is provided: SQLDelight will create or migrate the database to [schema.version]
@@ -50,19 +60,46 @@ fun databaseDriver(
     schema: SqlSchema<QueryResult.Value<Unit>>? = null,
     config: DriverConfigurationBuilder.() -> Unit = {}
 ): SqlDriver {
-    val driverConfiguration = DriverConfigurationBuilder().apply(config)
-    val sqliteConfig = SQLiteConfig()
-    val journalMode = if (driverConfiguration.isWALEnabled) SQLiteConfig.JournalMode.WAL else SQLiteConfig.JournalMode.DELETE
-    sqliteConfig.setJournalMode(journalMode)
-    sqliteConfig.enforceForeignKeys(driverConfiguration.areForeignKeyConstraintsEnforced)
-    val properties = sqliteConfig.toProperties()
-    return if (schema == null) {
-        JdbcSqliteDriver(uri, properties)
-    } else {
-        JdbcSqliteDriver(
-            url = uri,
-            properties = properties,
-            schema = schema
-        )
+    val properties = connectionProperties(DriverConfigurationBuilder().apply(config))
+    return when {
+        !isInMemory(uri) -> PooledJdbcSqliteDriver(uri, properties).also { driver ->
+            schema?.let { driver.createOrMigrate(it) }
+        }
+        schema == null -> JdbcSqliteDriver(uri, properties)
+        else -> JdbcSqliteDriver(url = uri, properties = properties, schema = schema)
+    }
+}
+
+private fun connectionProperties(configuration: DriverConfigurationBuilder): Properties =
+    SQLiteConfig().apply {
+        setJournalMode(if (configuration.isWALEnabled) SQLiteConfig.JournalMode.WAL else SQLiteConfig.JournalMode.DELETE)
+        enforceForeignKeys(configuration.areForeignKeyConstraintsEnforced)
+        busyTimeout = BUSY_TIMEOUT_MILLIS
+    }.toProperties()
+
+// The rules SQLDelight's JdbcSqliteDriver uses to pick its single-connection mode.
+private fun isInMemory(url: String): Boolean {
+    val path = url.substringBefore('?').substringAfter("jdbc:sqlite:")
+    return path.isEmpty() || path == ":memory:" || path == "file::memory:" || url.contains("mode=memory")
+}
+
+/** Creates or migrates [schema] based on `PRAGMA user_version`, like SQLDelight's `JdbcSqliteDriver(schema = ...)`. */
+private fun SqlDriver.createOrMigrate(schema: SqlSchema<QueryResult.Value<Unit>>) {
+    val driver = this
+    object : TransacterImpl(driver) {}.transaction {
+        val version = driver.executeQuery(
+            identifier = null,
+            sql = "PRAGMA user_version",
+            mapper = { cursor -> QueryResult.Value(if (cursor.next().value) cursor.getLong(0) else null) },
+            parameters = 0
+        ).value ?: 0L
+        if (version == 0L) {
+            schema.create(driver).value
+        } else if (version < schema.version) {
+            schema.migrate(driver, version, schema.version).value
+        }
+        if (version < schema.version) {
+            driver.execute(null, "PRAGMA user_version = ${schema.version}", 0)
+        }
     }
 }

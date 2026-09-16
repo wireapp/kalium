@@ -23,14 +23,12 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.nuke
 import com.wire.kalium.persistence.utils.IgnoreJS
 import com.wire.kalium.persistence.utils.IgnoreIOS
-import com.wire.kalium.persistence.utils.IgnoreJvm
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @IgnoreIOS
-@IgnoreJvm
 @IgnoreJS
 class NukeDBTest : BaseDatabaseTest() {
     private lateinit var localDB: UserDatabaseBuilder
@@ -46,7 +44,8 @@ class NukeDBTest : BaseDatabaseTest() {
 
     @Test
     fun givenDB_whenDeleted_thenItIsDeleted() {
-        assertTrue { nuke(selfUserId, platformDatabaseData = platformDBData(selfUserId)) }
+        // Closes the database before deleting it, as the app does; Windows can't delete an open file.
+        assertTrue { localDB.nuke() }
         assertFalse { doesDatabaseExist(selfUserId) }
     }
 
