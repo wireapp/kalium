@@ -22,19 +22,33 @@ import com.russhwolf.settings.PropertiesSettings
 import com.russhwolf.settings.Settings
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileWriter
+import java.io.FileOutputStream
+import java.nio.file.Files
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.util.Properties
 
-private fun onModify(properties: Properties, file: File) {
-    properties.store(FileWriter(file), "Store values to properties file")
+private val fileWriteLock = Any()
+
+/**
+ * Writes the whole file to a temporary sibling, syncs it to disk and moves it over the old one.
+ *
+ * The file holds the auth tokens and the keys of the CoreCrypto keystores. Rewriting it in place
+ * could leave a truncated file after a crash, and with it keystores that can no longer be decrypted.
+ */
+private fun onModify(properties: Properties, file: File) = synchronized(fileWriteLock) {
+    val temporaryFile = File(file.parentFile, "${file.name}.tmp")
+    FileOutputStream(temporaryFile).use { output ->
+        properties.store(output, "Store values to properties file")
+        output.fd.sync()
+    }
+    Files.move(temporaryFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
 }
 
 private fun createOrLoad(rootPath: String, file: File): Properties {
     val properties = Properties()
     File(rootPath).mkdirs()
     if (!file.exists()) {
-        println(file.absolutePath)
         file.createNewFile()
     }
     FileInputStream(file).use {
