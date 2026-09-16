@@ -26,6 +26,10 @@ object FileNameUtil {
 
     fun userPrefFile(userId: UserIDEntity) = "$USER_PREFERENCE_FILE_PREFIX-${userId.value}-${userId.domain}".filterFileName()
 
+    /** Whether [fileName] is named like [appPrefFile] or [userPrefFile]. */
+    internal fun isPrefFile(fileName: String) = fileName == SHARED_PREFERENCE_FILE_NAME ||
+        (fileName.startsWith("$USER_PREFERENCE_FILE_PREFIX-") && fileName == fileName.filterFileName())
+
     fun userDBName(userId: UserIDEntity) = "$USER_DB_PREFIX-${userId.value}-${userId.domain}".filterFileName()
 
     private const val GLOBAL_DB_NAME = "global-db"
