@@ -18,11 +18,32 @@
 package com.wire.kalium.cells.domain.model
 
 /**
- * Node preview data.
- * @param url URL of the preview.
- * @param dimension max preview thumbnail dimension.
+ * One of the renditions the backend generates for a node, served by its own pre-signed URL.
+ *
+ * A node can have several: image previews of different sizes, and for documents it can convert
+ * (documents, presentations, spreadsheets) a PDF rendition of the whole file.
+ *
+ * @param url pre-signed URL of this rendition.
+ * @param dimension max thumbnail dimension, for image renditions.
+ * @param contentType MIME type of the rendition, which is what tells them apart.
  */
 public data class NodePreview(
     val url: String,
     val dimension: Int,
+    val contentType: String? = null,
 )
+
+/** The largest image rendition, which is what a thumbnail is drawn from. */
+public fun List<NodePreview>?.imagePreviewUrl(): String? = this
+    ?.filter { it.contentType?.startsWith(IMAGE_CONTENT_TYPE_PREFIX) == true }
+    ?.maxByOrNull { it.dimension }
+    ?.url
+
+/** The PDF rendition, which is what lets a document be displayed without an editor. */
+public fun List<NodePreview>?.pdfPreviewUrl(): String? = this
+    ?.firstOrNull { it.contentType?.startsWith(PDF_CONTENT_TYPE) == true }
+    ?.url
+
+private const val IMAGE_CONTENT_TYPE_PREFIX = "image/"
+private const val PDF_CONTENT_TYPE = "application/pdf"
+

@@ -60,6 +60,8 @@ import com.wire.kalium.cells.domain.usecase.GetCellConversationsPagedUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellGroupConversationsUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetPdfPreviewUrlUseCase
+import com.wire.kalium.cells.domain.usecase.GetPdfPreviewUrlUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellGroupConversationsUseCaseImpl
@@ -427,6 +429,10 @@ public class CellsScope(
 
     public val getEditorUrl: GetEditorUrlUseCase by lazy {
         GetEditorUrlUseCaseImpl(cellsRepository)
+    }
+
+    public val getPdfPreviewUrl: GetPdfPreviewUrlUseCase by lazy {
+        GetPdfPreviewUrlUseCaseImpl(cellsRepository)
     }
 
     public val getNodeVersions: GetNodeVersionsUseCase by lazy {
