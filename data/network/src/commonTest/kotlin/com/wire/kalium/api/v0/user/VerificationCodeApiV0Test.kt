@@ -20,16 +20,50 @@ package com.wire.kalium.api.v0.user
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 import com.wire.kalium.network.api.v0.unauthenticated.VerificationCodeApiV0
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class VerificationCodeApiV0Test : ApiTest() {
+
+    @Test
+    fun rateLimitPreservesValidRetryAfterAndRejectsMalformedValues() = runTest {
+        val cases = listOf(
+            "287" to 287,
+            "0" to 0,
+            " 173 " to 173,
+            "-1" to null,
+            "invalid" to null,
+            "99999999999999" to null,
+            null to null,
+        )
+        for (status in listOf(429, 420)) {
+            for ((header, expected) in cases) {
+                val client = mockUnauthenticatedNetworkClient(
+                    """{"code":$status,"label":"too-many-requests","message":"Try later"}""",
+                    HttpStatusCode.fromValue(status),
+                    headers = buildMap {
+                        put("Content-Type", "application/json")
+                        if (header != null) put("Retry-After", header)
+                    }
+                )
+                val result = VerificationCodeApiV0(client).sendVerificationCode(
+                    "user@example.org", VerificationCodeApi.ActionToBeVerified.LOGIN_OR_CLIENT_REGISTRATION
+                )
+                val error = assertIs<KaliumException.InvalidRequestError>(assertIs<NetworkResponse.Error>(result).kException)
+                assertEquals(expected, error.retryAfterSeconds, "status=$status header=$header")
+            }
+        }
+    }
 
     @Test
     fun givenASendCodeRequest_whenExecutingIt_thenThePathShouldBeCorrect() = runTest {

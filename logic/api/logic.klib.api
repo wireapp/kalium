@@ -4256,7 +4256,14 @@ final class com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorV
                 final fun toString(): kotlin/String // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.Generic.toString|toString(){}[0]
             }
 
-            final object TooManyRequests : com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result { // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests|null[0]
+            final class TooManyRequests : com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result { // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests|null[0]
+                constructor <init>(kotlin/Int? = ...) // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests.<init>|<init>(kotlin.Int?){}[0]
+
+                final val retryAfterSeconds // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests.retryAfterSeconds|{}retryAfterSeconds[0]
+                    final fun <get-retryAfterSeconds>(): kotlin/Int? // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests.retryAfterSeconds.<get-retryAfterSeconds>|<get-retryAfterSeconds>(){}[0]
+
+                final fun component1(): kotlin/Int? // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests.component1|component1(){}[0]
+                final fun copy(kotlin/Int? = ...): com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests.copy|copy(kotlin.Int?){}[0]
                 final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests.equals|equals(kotlin.Any?){}[0]
                 final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests.hashCode|hashCode(){}[0]
                 final fun toString(): kotlin/String // com.wire.kalium.logic.feature.auth.verification/RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests.toString|toString(){}[0]

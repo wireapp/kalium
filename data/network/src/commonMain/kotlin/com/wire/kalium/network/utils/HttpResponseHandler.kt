@@ -159,7 +159,10 @@ internal object BaseErrorResponseInterceptor : ErrorResponseInterceptor<Any> {
         @Suppress("MagicNumber")
         val kException = when (httpResponseData.status.value) {
             in (300..399) -> KaliumException.RedirectError(errorResponse)
-            in (400..499) -> KaliumException.InvalidRequestError(errorResponse)
+            in (400..499) -> KaliumException.InvalidRequestError(
+                errorResponse,
+                retryAfterSeconds = httpResponseData.headers["retry-after"]?.trim()?.toIntOrNull()?.takeIf { it >= 0 },
+            )
             in (500..599) -> KaliumException.ServerError(errorResponse)
             else -> {
                 kaliumLogger.e("Server responded with unsupported status code: [${httpResponseData.status}]")

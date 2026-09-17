@@ -85,6 +85,20 @@ class RequestSecondFactorVerificationCodeUseCaseTest {
         assertIs<RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests>(result)
     }
 
+    @Test
+    fun rateLimitDelaySurvivesUseCaseMapping() = runTest {
+        for (seconds in listOf(287, 0, null)) {
+            val failure = NetworkFailure.ServerMiscommunication(
+                KaliumException.InvalidRequestError(
+                    GenericAPIErrorResponse(429, "", "too-many-requests"), retryAfterSeconds = seconds
+                )
+            )
+            val (_, useCase) = Arrangement().withRepositoryReturning(Either.Left(failure)).arrange()
+            val result = useCase("email", VerifiableAction.LOGIN_OR_CLIENT_REGISTRATION)
+            assertEquals(seconds, assertIs<RequestSecondFactorVerificationCodeUseCase.Result.Failure.TooManyRequests>(result).retryAfterSeconds)
+        }
+    }
+
     private class Arrangement {
         val secondFactorVerificationRepository = mock<SecondFactorVerificationRepository>(mode = MockMode.autoUnit)
 

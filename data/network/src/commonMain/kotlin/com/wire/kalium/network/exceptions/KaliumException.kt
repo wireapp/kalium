@@ -73,7 +73,11 @@ sealed class KaliumException : Exception() {
     /**
      * http error 400 .. 499
      */
-    data class InvalidRequestError(val errorResponse: GenericAPIErrorResponse) : KaliumException()
+    data class InvalidRequestError(
+        val errorResponse: GenericAPIErrorResponse,
+        /** Server-provided Retry-After delay in seconds; null when absent or invalid. */
+        val retryAfterSeconds: Int? = null,
+    ) : KaliumException()
 
     /**
      * http error 500 .. 599
