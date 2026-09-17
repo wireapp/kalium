@@ -31,6 +31,7 @@ public data class OfflineFileInfo(
     val size: Long?,
     val downloadedAt: Long,
     val modifiedAt: Long? = null,
+    val remotePath: String? = null,
 )
 
 /**
