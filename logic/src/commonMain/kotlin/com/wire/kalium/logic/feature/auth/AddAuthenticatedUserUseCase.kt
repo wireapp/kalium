@@ -110,8 +110,12 @@ public class AddAuthenticatedUserUseCase internal constructor(
         )
 
     private fun hasSsoIdentityChanged(previousIdpId: String?, currentIdpId: String?): Boolean =
-        // The IdP ID is supplied only by the email-based multi-ingress flow.
-        currentIdpId != null && previousIdpId != currentIdpId
+        // Email SSO supplies an IdP directly; SSO-code login supplies one only when the backend enables detection.
+        // A null previous value means no login ever recorded an IdP for this account: the row predates the migration
+        // that added the column, or every login so far supplied none. A known IdP is never cleared afterwards
+        // (Accounts.sq insertOrReplace coalesces it), so null is never a deliberate "no IdP". With nothing to compare
+        // against we cannot claim a change; the login continues and records the IdP for later comparisons.
+        previousIdpId != null && currentIdpId != null && previousIdpId != currentIdpId
 
     private suspend fun storeUser(session: StoreSessionParam): Result =
         sessionRepository.storeSession(session).onSuccess {

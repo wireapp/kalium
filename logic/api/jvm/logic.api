@@ -1809,7 +1809,12 @@ public final class com/wire/kalium/logic/feature/auth/sso/FetchSSOSettingsUseCas
 }
 
 public abstract interface class com/wire/kalium/logic/feature/auth/sso/GetSSOLoginSessionUseCase {
-	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun invoke (Ljava/lang/String;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/auth/sso/GetSSOLoginSessionUseCase;Ljava/lang/String;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/auth/sso/GetSSOLoginSessionUseCase$DefaultImpls {
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/auth/sso/GetSSOLoginSessionUseCase;Ljava/lang/String;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/auth/sso/SSOInitiateLoginResult {
@@ -1851,12 +1856,16 @@ public final class com/wire/kalium/logic/feature/auth/sso/SSOInitiateLoginResult
 }
 
 public final class com/wire/kalium/logic/feature/auth/sso/SSOInitiateLoginResult$Success : com/wire/kalium/logic/feature/auth/sso/SSOInitiateLoginResult {
-	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/auth/sso/SSOInitiateLoginResult$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/auth/sso/SSOInitiateLoginResult$Success;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/auth/sso/SSOInitiateLoginResult$Success;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/feature/auth/sso/SSOInitiateLoginResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/auth/sso/SSOInitiateLoginResult$Success;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/auth/sso/SSOInitiateLoginResult$Success;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getIdentityProviderId ()Ljava/lang/String;
 	public final fun getRequestUrl ()Ljava/lang/String;
+	public final fun getServerConfigId ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -1929,19 +1938,22 @@ public final class com/wire/kalium/logic/feature/auth/sso/SSOLoginSessionResult$
 }
 
 public final class com/wire/kalium/logic/feature/auth/sso/SSOLoginSessionResult$Success : com/wire/kalium/logic/feature/auth/sso/SSOLoginSessionResult {
-	public fun <init> (Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;Lcom/wire/kalium/logic/data/user/SsoManagedBy;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;Lcom/wire/kalium/logic/data/user/SsoManagedBy;Z)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;Lcom/wire/kalium/logic/data/user/SsoManagedBy;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/auth/AccountTokens;
 	public final fun component2 ()Lcom/wire/kalium/logic/data/user/SsoId;
 	public final fun component3 ()Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;
 	public final fun component4 ()Lcom/wire/kalium/logic/data/user/SsoManagedBy;
-	public final fun copy (Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;Lcom/wire/kalium/logic/data/user/SsoManagedBy;)Lcom/wire/kalium/logic/feature/auth/sso/SSOLoginSessionResult$Success;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/auth/sso/SSOLoginSessionResult$Success;Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;Lcom/wire/kalium/logic/data/user/SsoManagedBy;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/auth/sso/SSOLoginSessionResult$Success;
+	public final fun component5 ()Z
+	public final fun copy (Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;Lcom/wire/kalium/logic/data/user/SsoManagedBy;Z)Lcom/wire/kalium/logic/feature/auth/sso/SSOLoginSessionResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/auth/sso/SSOLoginSessionResult$Success;Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/user/SsoId;Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;Lcom/wire/kalium/logic/data/user/SsoManagedBy;ZILjava/lang/Object;)Lcom/wire/kalium/logic/feature/auth/sso/SSOLoginSessionResult$Success;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccountTokens ()Lcom/wire/kalium/logic/data/auth/AccountTokens;
 	public final fun getManagedBy ()Lcom/wire/kalium/logic/data/user/SsoManagedBy;
 	public final fun getProxyCredentials ()Lcom/wire/kalium/logic/data/auth/login/ProxyCredentials;
 	public final fun getSsoId ()Lcom/wire/kalium/logic/data/user/SsoId;
 	public fun hashCode ()I
+	public final fun isIdpChangeDetectionEnabled ()Z
 	public fun toString ()Ljava/lang/String;
 }
 

@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.network.api.model.AuthenticationResultDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
@@ -39,6 +40,7 @@ public sealed class SSOLoginSessionResult {
         val ssoId: SsoId?,
         val proxyCredentials: ProxyCredentials?,
         val managedBy: SsoManagedBy?,
+        val isIdpChangeDetectionEnabled: Boolean = false,
     ) : SSOLoginSessionResult()
 
     public sealed class Failure : SSOLoginSessionResult() {
@@ -53,32 +55,51 @@ public sealed class SSOLoginSessionResult {
 public interface GetSSOLoginSessionUseCase {
     /**
      * @param cookie the cookie to use for the login
+     * @param checkIdpChangeDetection fetch authenticated system settings for SSO-code login only.
      * @return the [SSOLoginSessionResult] with tokens and proxy credentials
      */
-    public suspend operator fun invoke(cookie: String): SSOLoginSessionResult
+    public suspend operator fun invoke(cookie: String, checkIdpChangeDetection: Boolean = false): SSOLoginSessionResult
 }
 
 internal class GetSSOLoginSessionUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository,
     private val proxyCredentials: ProxyCredentials?,
+    private val fetchSystemSettings: FetchPendingLoginSystemSettings,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : GetSSOLoginSessionUseCase {
 
-    override suspend fun invoke(cookie: String): SSOLoginSessionResult =
-        ssoLoginRepository.provideLoginSession(cookie).fold({
-            if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                if ((it.kaliumException as KaliumException.InvalidRequestError).errorResponse.code == HttpStatusCode.BadRequest.value)
-                    return@fold SSOLoginSessionResult.Failure.InvalidCookie
+    override suspend fun invoke(cookie: String, checkIdpChangeDetection: Boolean): SSOLoginSessionResult =
+        ssoLoginRepository.provideLoginSession(cookie).fold(
+            { it.toLoginFailure() },
+            { login ->
+                if (checkIdpChangeDetection) {
+                    fetchSystemSettings(login.sessionDTO).fold(
+                        { SSOLoginSessionResult.Failure.Generic(it) },
+                        { login.toSuccess(it) }
+                    )
+                } else {
+                    login.toSuccess(false)
+                }
             }
-            SSOLoginSessionResult.Failure.Generic(it)
-        }, {
-            SSOLoginSessionResult.Success(
-                accountTokens = sessionMapper.fromSessionDTO(it.sessionDTO),
-                ssoId = idMapper.toSsoId(it.userDTO.ssoID),
-                proxyCredentials = proxyCredentials,
-                managedBy = userMapper.fromManagedByDtoToSsoManagedBy(it.userDTO.managedByDTO)
-            )
-        })
+        )
+
+    private fun AuthenticationResultDTO.toSuccess(detectionEnabled: Boolean) =
+        SSOLoginSessionResult.Success(
+            accountTokens = sessionMapper.fromSessionDTO(sessionDTO),
+            ssoId = idMapper.toSsoId(userDTO.ssoID),
+            proxyCredentials = proxyCredentials,
+            managedBy = userMapper.fromManagedByDtoToSsoManagedBy(userDTO.managedByDTO),
+            isIdpChangeDetectionEnabled = detectionEnabled
+        )
+
+    private fun NetworkFailure.toLoginFailure(): SSOLoginSessionResult.Failure {
+        val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError
+        return if (invalidRequest?.errorResponse?.code == HttpStatusCode.BadRequest.value) {
+            SSOLoginSessionResult.Failure.InvalidCookie
+        } else {
+            SSOLoginSessionResult.Failure.Generic(this)
+        }
+    }
 }
