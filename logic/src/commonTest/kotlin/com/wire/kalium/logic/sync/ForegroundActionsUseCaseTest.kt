@@ -25,6 +25,12 @@ import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlin.coroutines.ContinuationInterceptor
+import kotlinx.coroutines.currentCoroutineContext
+import kotlin.test.assertEquals
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -40,6 +46,28 @@ internal class ForegroundActionsUseCaseTest {
         val (arrangement, useCase) = arrange {}
         useCase()
         arrangement.verifyActions(times = 1)
+    }
+
+    @Test
+    fun givenRegistrationOnly_whenInvoked_thenDoesNotRefreshConfiguration() = runTest(dispatchers.io) {
+        val (arrangement, useCase) = arrange {}
+        useCase.registerMLSClientIfNeeded()
+        coVerify { arrangement.mlsClientManager() }.wasInvoked(exactly = 1)
+        coVerify { arrangement.userConfigSyncWorker.doWork() }.wasNotInvoked()
+        coVerify { arrangement.mlsMigrationManager() }.wasNotInvoked()
+        coVerify { arrangement.keyingMaterialsManager() }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenDistinctIODispatcher_whenCheckingRegistration_thenManagerInvokedOnIO() = runTest {
+        val io = StandardTestDispatcher(testScheduler, name = "foreground-io")
+        val (arrangement, useCase) = Arrangement({
+            coEvery { mlsClientManager() }.invokes {
+                assertEquals(io, currentCoroutineContext()[ContinuationInterceptor])
+            }
+        }).arrange(io.testKaliumDispatcher())
+        useCase.registerMLSClientIfNeeded()
+        coVerify { arrangement.mlsClientManager() }.wasInvoked(exactly = 1)
     }
 
     private fun testFailedActions(actionResults: ActionResults) = runTest(dispatchers.io) {
@@ -75,7 +103,7 @@ internal class ForegroundActionsUseCaseTest {
         val mlsMigrationManager = mock(MLSMigrationManager::class)
         val keyingMaterialsManager = mock(KeyingMaterialsManager::class)
 
-        suspend fun arrange(): Pair<Arrangement, ForegroundActionsUseCase> = run {
+        suspend fun arrange(actionDispatchers: KaliumDispatcher = dispatchers): Pair<Arrangement, ForegroundActionsUseCase> = run {
             withActionResults(ActionResults())
             configure()
             this@Arrangement to ForegroundActionsUseCaseImpl(
@@ -86,7 +114,7 @@ internal class ForegroundActionsUseCaseTest {
                 mlsClientManager = mlsClientManager,
                 mlsMigrationManager = mlsMigrationManager,
                 keyingMaterialsManager = keyingMaterialsManager,
-                dispatchers = dispatchers,
+                dispatchers = actionDispatchers,
             )
         }
 

@@ -38,6 +38,9 @@ import kotlinx.coroutines.withContext
 @Mockable
 public interface ForegroundActionsUseCase {
     public suspend operator fun invoke()
+
+    /** Checks registration after sync becomes live, independently of configuration refresh. */
+    public suspend fun registerMLSClientIfNeeded()
 }
 
 @Suppress("LongParameterList")
@@ -51,6 +54,10 @@ internal class ForegroundActionsUseCaseImpl(
     private val keyingMaterialsManager: KeyingMaterialsManager,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : ForegroundActionsUseCase {
+
+    override suspend fun registerMLSClientIfNeeded() = withContext(dispatchers.io) {
+        mlsClientManager()
+    }
 
     private val actions: List<suspend () -> Unit> = listOf(
         { updateApiVersionsUseCase() },
