@@ -46,4 +46,3 @@ public fun List<NodePreview>?.pdfPreviewUrl(): String? = this
 
 private const val IMAGE_CONTENT_TYPE_PREFIX = "image/"
 private const val PDF_CONTENT_TYPE = "application/pdf"
-
