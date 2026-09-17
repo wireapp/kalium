@@ -778,6 +778,10 @@ abstract interface com.wire.kalium.logic.feature.conversation.guestroomlink/Revo
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.conversation.guestroomlink/RevokeGuestRoomLinkResult // com.wire.kalium.logic.feature.conversation.guestroomlink/RevokeGuestRoomLinkUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsUseCase { // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsUseCase|null[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsUseCase.invoke|invoke(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.conversation.messagetimer/UpdateMessageTimerUseCase { // com.wire.kalium.logic.feature.conversation.messagetimer/UpdateMessageTimerUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Long?): com.wire.kalium.logic.feature.conversation.messagetimer/UpdateMessageTimerUseCase.Result // com.wire.kalium.logic.feature.conversation.messagetimer/UpdateMessageTimerUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Long?){}[0]
 
@@ -2464,6 +2468,37 @@ sealed interface com.wire.kalium.logic.feature.conversation.guestroomlink/Revoke
     }
 }
 
+sealed interface com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult { // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult|null[0]
+    final class Failure : com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult { // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Failure|null[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+        final val failure // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Failure.failure|{}failure[0]
+            final fun <get-failure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+
+        final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Failure // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Failure.toString|toString(){}[0]
+    }
+
+    final class Success : com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult { // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success|null[0]
+        constructor <init>(kotlin/Int, kotlin/Int) // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.<init>|<init>(kotlin.Int;kotlin.Int){}[0]
+
+        final val failedGroups // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.failedGroups|{}failedGroups[0]
+            final fun <get-failedGroups>(): kotlin/Int // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.failedGroups.<get-failedGroups>|<get-failedGroups>(){}[0]
+        final val renewedGroups // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.renewedGroups|{}renewedGroups[0]
+            final fun <get-renewedGroups>(): kotlin/Int // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.renewedGroups.<get-renewedGroups>|<get-renewedGroups>(){}[0]
+
+        final fun component1(): kotlin/Int // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.component1|component1(){}[0]
+        final fun component2(): kotlin/Int // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.component2|component2(){}[0]
+        final fun copy(kotlin/Int = ..., kotlin/Int = ...): com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.copy|copy(kotlin.Int;kotlin.Int){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsResult.Success.toString|toString(){}[0]
+    }
+}
+
 sealed interface com.wire.kalium.logic.feature.conversation/ConversationUpdateReceiptModeResult { // com.wire.kalium.logic.feature.conversation/ConversationUpdateReceiptModeResult|null[0]
     final class Failure : com.wire.kalium.logic.feature.conversation/ConversationUpdateReceiptModeResult { // com.wire.kalium.logic.feature.conversation/ConversationUpdateReceiptModeResult.Failure|null[0]
         constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.conversation/ConversationUpdateReceiptModeResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
@@ -4101,6 +4136,8 @@ final class com.wire.kalium.logic.feature.conversation/ConversationScope { // co
         final fun <get-removeMemberFromConversation>(): com.wire.kalium.logic.feature.conversation/RemoveMemberFromConversationUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.removeMemberFromConversation.<get-removeMemberFromConversation>|<get-removeMemberFromConversation>(){}[0]
     final val renameConversation // com.wire.kalium.logic.feature.conversation/ConversationScope.renameConversation|{}renameConversation[0]
         final fun <get-renameConversation>(): com.wire.kalium.logic.feature.conversation/RenameConversationUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.renameConversation.<get-renameConversation>|<get-renameConversation>(){}[0]
+    final val renewMLSKeyingMaterials // com.wire.kalium.logic.feature.conversation/ConversationScope.renewMLSKeyingMaterials|{}renewMLSKeyingMaterials[0]
+        final fun <get-renewMLSKeyingMaterials>(): com.wire.kalium.logic.feature.conversation.keyingmaterials/RenewMLSKeyingMaterialsUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.renewMLSKeyingMaterials.<get-renewMLSKeyingMaterials>|<get-renewMLSKeyingMaterials>(){}[0]
     final val revokeGuestRoomLink // com.wire.kalium.logic.feature.conversation/ConversationScope.revokeGuestRoomLink|{}revokeGuestRoomLink[0]
         final fun <get-revokeGuestRoomLink>(): com.wire.kalium.logic.feature.conversation.guestroomlink/RevokeGuestRoomLinkUseCase // com.wire.kalium.logic.feature.conversation/ConversationScope.revokeGuestRoomLink.<get-revokeGuestRoomLink>|<get-revokeGuestRoomLink>(){}[0]
     final val sendTypingEvent // com.wire.kalium.logic.feature.conversation/ConversationScope.sendTypingEvent|{}sendTypingEvent[0]
