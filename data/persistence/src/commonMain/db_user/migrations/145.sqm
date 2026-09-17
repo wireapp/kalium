@@ -1,15 +1,4 @@
-ALTER TABLE MessageLinkPreview ADD COLUMN image_local_path TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_width INTEGER;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_height INTEGER;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_mime_type TEXT;
-
-ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_key TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_token TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_domain TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_otr_key TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_sha256 TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_encryption_algorithm TEXT;
-
+-- Recreates MessageDetailsView: permanentUrl fell back to the literal text "' || url || '" instead of the url column.
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
@@ -116,7 +105,7 @@ IFNULL(
     (SELECT '[' || GROUP_CONCAT('{
         "url":"' || url || '",
         "urlOffset":' || url_offset || ',
-        "permanentUrl":"' || IFNULL(permanent_url,url) || '",
+        "permanentUrl":"' || IFNULL(permanent_url, url) || '",
         "title":"' || title || '",
         "summary":"' || summary || '",
         "imageLocalPath":"' || IFNULL(image_local_path,'') || '",
@@ -152,7 +141,6 @@ QuotedLocationContent.name AS quotedLocationName,
 
 CASE WHEN SystemContent.content_type = 'CONVERSATION_APPS_ENABLED_CHANGED' THEN SystemContent.boolean_1 END AS isConversationAppsEnabled,
 CASE WHEN SystemContent.content_type = 'NEW_CONVERSATION_RECEIPT_MODE' THEN SystemContent.boolean_1 END AS newConversationReceiptMode,
-
 CASE WHEN SystemContent.content_type = 'CONVERSATION_RECEIPT_MODE_CHANGED' THEN SystemContent.boolean_1 END AS conversationReceiptModeChanged,
 CASE WHEN SystemContent.content_type = 'CONVERSATION_TIMER_CHANGED' THEN SystemContent.integer_1 END AS messageTimerChanged,
 FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
@@ -200,5 +188,3 @@ LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedL
 -- end joins for quoted messages
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN SelfUser;
-
-PRAGMA optimize;
