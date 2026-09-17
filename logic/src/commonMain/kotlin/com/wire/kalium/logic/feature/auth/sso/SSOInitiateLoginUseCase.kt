@@ -28,7 +28,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
 public sealed class SSOInitiateLoginResult {
-    public data class Success(val requestUrl: String) : SSOInitiateLoginResult()
+    public data class Success(val requestUrl: String, val identityProviderId: String, val serverConfigId: String) : SSOInitiateLoginResult()
 
     public sealed class Failure : SSOInitiateLoginResult() {
         public data object InvalidCodeFormat : Failure()
@@ -98,7 +98,7 @@ internal class SSOInitiateLoginUseCaseImpl(
             }
             SSOInitiateLoginResult.Failure.Generic(it)
         }, {
-            SSOInitiateLoginResult.Success(it)
+            SSOInitiateLoginResult.Success(it, validUuid, serverConfig.id)
         })
     }
 }
