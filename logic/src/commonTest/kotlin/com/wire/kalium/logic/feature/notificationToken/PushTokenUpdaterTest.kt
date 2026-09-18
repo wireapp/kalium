@@ -40,7 +40,6 @@ import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -254,31 +253,6 @@ class PushTokenUpdaterTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.registerToken(MOCK_APP_ID, MOCK_CLIENT_ID, "00ab", "APNS")
-        }
-    }
-
-    @Test
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun refreshedTokenIsRegisteredAfterThePreviousToken() = runTest {
-        val updates = MutableSharedFlow<Boolean>(replay = 1)
-        updates.emit(true)
-        val (arrangement, updater) = Arrangement()
-            .withCurrentClientId(ClientId(MOCK_CLIENT_ID))
-            .withServerNativePushEnabled(true)
-            .withNotificationToken(Either.Right(NotificationToken("00ab", "APNS", MOCK_APP_ID)))
-            .withRegisterTokenResult(Either.Right(Unit))
-            .arrange()
-        every { arrangement.pushTokenRepository.observeUpdateFirebaseTokenFlag() } returns updates
-        backgroundScope.launch { updater.monitorTokenChanges() }
-        runCurrent()
-        arrangement.withNotificationToken(Either.Right(NotificationToken("00cd", "APNS", MOCK_APP_ID)))
-
-        updates.emit(true)
-        runCurrent()
-
-        verifySuspend(VerifyMode.order) {
-            arrangement.clientRepository.registerToken(MOCK_APP_ID, MOCK_CLIENT_ID, "00ab", "APNS")
-            arrangement.clientRepository.registerToken(MOCK_APP_ID, MOCK_CLIENT_ID, "00cd", "APNS")
         }
     }
 

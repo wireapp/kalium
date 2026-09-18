@@ -76,16 +76,6 @@ class SaveNotificationTokenUseCaseTest {
         verifySuspend(VerifyMode.not) { fixture.pending.single().setUpdateFirebaseTokenFlag(any()) }
     }
 
-    @Test
-    fun failureToMarkAccountForRegistrationIsReportedToTheCaller() = runTest {
-        val fixture = Fixture(listOf(TestUser.SELF))
-        everySuspend { fixture.pending.single().setUpdateFirebaseTokenFlag(true) } returns Either.Left(StorageFailure.DataNotFound)
-        assertEquals(
-            Result.Failure.Generic(StorageFailure.DataNotFound),
-            fixture.useCase("00ab", "APNS", "com.wire.prism.ios")
-        )
-    }
-
     private class Fixture(accounts: List<SelfUser>) {
         val tokens = mock<NotificationTokenRepository>()
         val sessions = mock<UserSessionScopeProvider>()

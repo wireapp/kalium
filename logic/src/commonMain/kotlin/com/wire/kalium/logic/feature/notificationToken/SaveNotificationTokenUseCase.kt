@@ -33,8 +33,8 @@ public interface SaveNotificationTokenUseCase {
      * @param token the push notification token
      * @param type the type being ie: "GCM, APNS"
      * @param applicationId the application id (ie, internal) for which the token is valid
-     * @return success after persisting the token and marking valid accounts for backend registration.
-     * A storage failure leaves the caller responsible for retrying. Backend upload is asynchronous.
+     * @return success after persisting the token and attempting to mark valid accounts for backend registration.
+     * Failures to mark individual accounts are not propagated. Backend upload is asynchronous.
      */
     public suspend operator fun invoke(token: String, type: String, applicationId: String): Result
 }
@@ -59,7 +59,6 @@ internal class SaveNotificationTokenUseCaseImpl(
                 .forEach { (selfUser, _) ->
                     userSessionScopeProvider.getOrCreate(selfUser.id) { pushTokenRepository }
                         .setUpdateFirebaseTokenFlag(true)
-                        .fold({ return Result.Failure.Generic(it) }, {})
                 }
             Result.Success
         })
