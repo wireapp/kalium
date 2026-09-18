@@ -1677,11 +1677,11 @@ abstract interface com.wire.kalium.logic.feature.search/IsFederationSearchAllowe
 }
 
 abstract interface com.wire.kalium.logic.feature.search/SearchUsersByHandleUseCase { // com.wire.kalium.logic.feature.search/SearchUsersByHandleUseCase|null[0]
-    abstract suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID?, kotlin/Boolean = ..., kotlin/String?): com.wire.kalium.logic.feature.search/SearchUserResult // com.wire.kalium.logic.feature.search/SearchUsersByHandleUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID?;kotlin.Boolean;kotlin.String?){}[0]
+    abstract suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID? = ..., kotlin/Boolean = ..., kotlin/String? = ...): com.wire.kalium.logic.feature.search/SearchUserResult // com.wire.kalium.logic.feature.search/SearchUsersByHandleUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID?;kotlin.Boolean;kotlin.String?){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.search/SearchUsersByNameUseCase { // com.wire.kalium.logic.feature.search/SearchUsersByNameUseCase|null[0]
-    abstract suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID?, kotlin/Boolean = ..., kotlin/String?): com.wire.kalium.logic.feature.search/SearchUserResult // com.wire.kalium.logic.feature.search/SearchUsersByNameUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID?;kotlin.Boolean;kotlin.String?){}[0]
+    abstract suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID? = ..., kotlin/Boolean = ..., kotlin/String? = ...): com.wire.kalium.logic.feature.search/SearchUserResult // com.wire.kalium.logic.feature.search/SearchUsersByNameUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID?;kotlin.Boolean;kotlin.String?){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase { // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase|null[0]

@@ -99,7 +99,7 @@ class SearchUserRepositoryTest {
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userSearchApiWrapper.search(any(), any(), any(), any())
+            arrangement.userSearchApiWrapper.search(any(), any(), any(), any(), any())
         }
     }
 
@@ -153,7 +153,7 @@ class SearchUserRepositoryTest {
 
             // then
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.userSearchApiWrapper.search(any(), any(), any(), any())
+                arrangement.userSearchApiWrapper.search(any(), any(), any(), any(), any())
             }
 
             verifySuspend(VerifyMode.exactly(1)) {
@@ -432,7 +432,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        searchUserRepository.getKnownContacts(null).shouldSucceed {
+        searchUserRepository.getKnownContacts(SearchUsersOptions.Default).shouldSucceed {
             assertEquals(expected, it)
         }
 
@@ -473,17 +473,17 @@ class SearchUserRepositoryTest {
         val (arrangement, searchUserRepository) = Arrangement()
             .arrange {
                 withTeamId(Either.Right(TestUser.SELF.teamId))
-                withGetKnownContactsExcludingAConversation(searchResult)
+                withGetKnownContacts(result = searchResult, excludeConversationId = { it == conversationId.toDao() })
             }
 
         // when
-        searchUserRepository.getKnownContacts(conversationId).shouldSucceed {
+        searchUserRepository.getKnownContacts(SearchUsersOptions(conversationMembersExcluded = conversationId)).shouldSucceed {
             assertEquals(expected, it)
         }
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchDAO.getKnownContactsExcludingAConversation(conversationId.toDao())
+            arrangement.searchDAO.getKnownContacts(excludeConversationId = conversationId.toDao())
         }
     }
 
@@ -517,17 +517,17 @@ class SearchUserRepositoryTest {
         val (arrangement, searchUserRepository) = Arrangement()
             .arrange {
                 withTeamId(Either.Right(TestUser.SELF.teamId))
-                withSearchList(searchResult)
+                withSearchByName(searchResult)
             }
 
         // when
-        searchUserRepository.searchLocalByName("name", null).shouldSucceed {
+        searchUserRepository.searchLocalByName("name", SearchUsersOptions.Default).shouldSucceed {
             assertEquals(expected, it)
         }
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchDAO.searchList("name")
+            arrangement.searchDAO.searchByName(searchQuery = "name")
         }
     }
 
@@ -562,17 +562,17 @@ class SearchUserRepositoryTest {
         val (arrangement, searchUserRepository) = Arrangement()
             .arrange {
                 withTeamId(Either.Right(TestUser.SELF.teamId))
-                withSearchListExcludingAConversation(searchResult)
+                withSearchByName(result = searchResult, excludeConversationId = { it == conversationId.toDao() })
             }
 
         // when
-        searchUserRepository.searchLocalByName("name", conversationId).shouldSucceed {
+        searchUserRepository.searchLocalByName("name", SearchUsersOptions(conversationMembersExcluded = conversationId)).shouldSucceed {
             assertEquals(expected, it)
         }
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchDAO.searchListExcludingAConversation(conversationId.toDao(), any())
+            arrangement.searchDAO.searchByName(searchQuery = "name", excludeConversationId = conversationId.toDao())
         }
     }
 
@@ -581,12 +581,13 @@ class SearchUserRepositoryTest {
         val (arrangement, searchUserRepository) = Arrangement()
             .arrange {
                 withSearchByHandle(emptyList())
+                withTeamId(Either.Right(TestUser.SELF.teamId))
             }
 
-        searchUserRepository.searchLocalByHandle("handle", null).shouldSucceed()
+        searchUserRepository.searchLocalByHandle("handle", SearchUsersOptions.Default).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchDAO.handleSearch("handle")
+            arrangement.searchDAO.searchByHandle(searchQuery = "handle")
         }
     }
 
@@ -595,13 +596,15 @@ class SearchUserRepositoryTest {
         val conversationId = ConversationId("conversationId", "domain")
         val (arrangement, searchUserRepository) = Arrangement()
             .arrange {
-                withSearchByHandleExcludingConversation(emptyList())
+                withSearchByHandle(result = emptyList(), excludeConversationId = { it == conversationId.toDao() })
+                withTeamId(Either.Right(TestUser.SELF.teamId))
             }
 
-        searchUserRepository.searchLocalByHandle("handle", conversationId).shouldSucceed()
+        searchUserRepository.searchLocalByHandle("handle", SearchUsersOptions(conversationMembersExcluded = conversationId))
+            .shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchDAO.handleSearchExcludingAConversation("handle", conversationId.toDao())
+            arrangement.searchDAO.searchByHandle(searchQuery = "handle", excludeConversationId = conversationId.toDao())
         }
     }
 
@@ -627,61 +630,37 @@ class SearchUserRepositoryTest {
             this to searchUserRepository
         }
 
-        suspend fun withSearchResult(result: Either<NetworkFailure, UserSearchResponse>) = apply {
+        fun withSearchResult(result: Either<NetworkFailure, UserSearchResponse>) = apply {
             everySuspend {
-                userSearchApiWrapper.search(any(), any(), any(), any())
+                userSearchApiWrapper.search(any(), any(), any(), any(), any())
             }.returns(result)
         }
 
-        suspend fun withGetMultipleUsersResult(result: NetworkResponse<ListUsersDTO>) = apply {
+        fun withGetMultipleUsersResult(result: NetworkResponse<ListUsersDTO>) = apply {
             everySuspend {
                 userDetailsApi.getMultipleUsers(any())
             }.returns(result)
         }
 
-        suspend fun withGetUsersDetailsByQualifiedIdListResult(result: List<UserDetailsEntity>) = apply {
+        fun withGetUsersDetailsByQualifiedIdListResult(result: List<UserDetailsEntity>) = apply {
             everySuspend {
                 userDAO.getUsersDetailsByQualifiedIDList(any())
             }.returns(result)
         }
 
-        suspend fun withGetUsersDetailsByQualifiedIdListFailure(exception: Exception) = apply {
+        fun withGetUsersDetailsByQualifiedIdListFailure(exception: Exception) = apply {
             everySuspend {
                 userDAO.getUsersDetailsByQualifiedIDList(any())
             }.throws(exception)
         }
 
-        suspend fun withObserveUserDetailsByQualifiedIdResult(result: Flow<UserDetailsEntity?>) = apply {
+        fun withObserveUserDetailsByQualifiedIdResult(result: Flow<UserDetailsEntity?>) = apply {
             everySuspend {
                 userDAO.observeUserDetailsByQualifiedID(any())
             }.returns(result)
         }
 
-        suspend fun withGetUsersDetailsNotInConversationByNameOrHandleOrEmailResult(result: Flow<List<UserDetailsEntity>>) = apply {
-            everySuspend {
-                userDAO.getUsersDetailsNotInConversationByNameOrHandleOrEmail(any(), any())
-            }.returns(result)
-        }
-
-        suspend fun withGetUserDetailsByNameOrHandleOrEmailAndConnectionStatesResult(result: Flow<List<UserDetailsEntity>>) = apply {
-            everySuspend {
-                userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(any(), any())
-            }.returns(result)
-        }
-
-        suspend fun withGetUserDetailsByHandleAndConnectionStatesResult(result: Flow<List<UserDetailsEntity>>) = apply {
-            everySuspend {
-                userDAO.getUserDetailsByHandleAndConnectionStates(any(), any())
-            }.returns(result)
-        }
-
-        suspend fun withGetUsersDetailsNotInConversationByHandleResult(result: Flow<List<UserDetailsEntity>>) = apply {
-            everySuspend {
-                userDAO.getUsersDetailsNotInConversationByHandle(any(), any())
-            }.returns(result)
-        }
-
-        suspend fun withUpsertUsersSuccess() = apply {
+        fun withUpsertUsersSuccess() = apply {
             everySuspend {
                 userDAO.upsertUsers(any())
             }.returns(Unit)
