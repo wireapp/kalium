@@ -40,7 +40,12 @@ import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -207,6 +212,95 @@ class PushTokenUpdaterTest {
         verifySuspend(VerifyMode.not) {
             arrangement.sessionRepository.setNativePushSupportedByServer(any(), any())
         }
+    }
+
+    @Test
+    fun apnsTransportsAreSentWithTheExactTokenClientAndApplication() = runTest {
+        for (transport in listOf("APNS", "APNS_SANDBOX")) {
+            val (arrangement, updater) = Arrangement()
+                .withUpdateFirebaseTokenFlag(true)
+                .withCurrentClientId(ClientId(MOCK_CLIENT_ID))
+                .withServerNativePushEnabled(true)
+                .withNotificationToken(Either.Right(NotificationToken("00abff", transport, "com.wire.prism.ios")))
+                .withRegisterTokenResult(Either.Right(Unit))
+                .arrange()
+
+            updater.monitorTokenChanges()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.clientRepository.registerToken("com.wire.prism.ios", MOCK_CLIENT_ID, "00abff", transport)
+                arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(false)
+            }
+        }
+    }
+
+    @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun tokenWaitsForClientRegistrationToComplete() = runTest {
+        val clients = MutableStateFlow<ClientId?>(null)
+        val (arrangement, updater) = Arrangement()
+            .withUpdateFirebaseTokenFlag(true)
+            .withServerNativePushEnabled(true)
+            .withNotificationToken(Either.Right(NotificationToken("00ab", "APNS", MOCK_APP_ID)))
+            .withRegisterTokenResult(Either.Right(Unit))
+            .arrange()
+        everySuspend { arrangement.clientRepository.observeCurrentClientId() } returns clients
+        backgroundScope.launch { updater.monitorTokenChanges() }
+        runCurrent()
+        verifySuspend(VerifyMode.not) { arrangement.clientRepository.registerToken(any(), any(), any(), any()) }
+
+        clients.value = ClientId(MOCK_CLIENT_ID)
+        runCurrent()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientRepository.registerToken(MOCK_APP_ID, MOCK_CLIENT_ID, "00ab", "APNS")
+        }
+    }
+
+    @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun refreshedTokenIsRegisteredAfterThePreviousToken() = runTest {
+        val updates = MutableSharedFlow<Boolean>(replay = 1)
+        updates.emit(true)
+        val (arrangement, updater) = Arrangement()
+            .withCurrentClientId(ClientId(MOCK_CLIENT_ID))
+            .withServerNativePushEnabled(true)
+            .withNotificationToken(Either.Right(NotificationToken("00ab", "APNS", MOCK_APP_ID)))
+            .withRegisterTokenResult(Either.Right(Unit))
+            .arrange()
+        every { arrangement.pushTokenRepository.observeUpdateFirebaseTokenFlag() } returns updates
+        backgroundScope.launch { updater.monitorTokenChanges() }
+        runCurrent()
+        arrangement.withNotificationToken(Either.Right(NotificationToken("00cd", "APNS", MOCK_APP_ID)))
+
+        updates.emit(true)
+        runCurrent()
+
+        verifySuspend(VerifyMode.order) {
+            arrangement.clientRepository.registerToken(MOCK_APP_ID, MOCK_CLIENT_ID, "00ab", "APNS")
+            arrangement.clientRepository.registerToken(MOCK_APP_ID, MOCK_CLIENT_ID, "00cd", "APNS")
+        }
+    }
+
+    @Test
+    fun failedRegistrationStaysPendingAndRetriesWhenMonitoringRestarts() = runTest {
+        val (arrangement, updater) = Arrangement()
+            .withUpdateFirebaseTokenFlag(true)
+            .withCurrentClientId(ClientId(MOCK_CLIENT_ID))
+            .withServerNativePushEnabled(true)
+            .withNotificationToken(Either.Right(NotificationToken("00ab", "APNS", MOCK_APP_ID)))
+            .withRegisterTokenResult(Either.Left(serverMiscommunicationFailure(code = 503, label = "unavailable")))
+            .arrange()
+
+        updater.monitorTokenChanges()
+        verifySuspend(VerifyMode.not) { arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(false) }
+        arrangement.withRegisterTokenResult(Either.Right(Unit))
+        updater.monitorTokenChanges()
+
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.clientRepository.registerToken(MOCK_APP_ID, MOCK_CLIENT_ID, "00ab", "APNS")
+        }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(false) }
     }
 
     companion object {
