@@ -61,11 +61,6 @@ data class TeamMemberIdList(
 )
 
 @Serializable
-data class TeamCollaboratorDTO(
-    @SerialName("user") val nonQualifiedUserId: NonQualifiedUserId
-)
-
-@Serializable
 data class PasswordRequest(
     @SerialName("password") val password: String?
 )

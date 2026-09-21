@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestTeam.TEAM_ID
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -421,7 +422,7 @@ class AppRepositoryTest {
 
         fun withCollaborators(ids: List<String>) = apply {
             everySuspend { teamsApi.getTeamCollaborators(TEAM_ID) } returns NetworkResponse.Success(
-                ids.map(::TeamCollaboratorDTO),
+                ids.map { TeamCollaboratorDTO(it, TEAM_ID, emptyList()) },
                 emptyMap(),
                 200
             )
