@@ -26,9 +26,13 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncStateObserver
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * MLSClientManager is responsible for registering an MLS client when a user
@@ -48,33 +52,35 @@ internal class MLSClientManagerImpl internal constructor(
     private val clientRepository: Lazy<ClientRepository>,
     private val registerMLSClient: Lazy<RegisterMLSClientUseCase>,
     private val userCoroutineScope: CoroutineScope,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : MLSClientManager {
-    /**
-     * A dispatcher with limited parallelism of 1.
-     * This means using this dispatcher only a single coroutine will be processed at a time.
-     */
+
+    private val registrationMutex = Mutex()
 
     override suspend operator fun invoke() {
         syncStateObserver.waitUntilLiveOrFailure().onSuccess {
-            registerMLSClientIfPossibleAndNeeded()
+            // Keep the lock in the user scope: cancelling the caller must not unlock ongoing registration.
+            userCoroutineScope.async(dispatchers.io) {
+                registrationMutex.withLock {
+                    registerMLSClientIfPossibleAndNeeded()
+                }
+            }.await()
         }
     }
 
     private suspend fun registerMLSClientIfPossibleAndNeeded() {
         clientRepository.value.hasRegisteredMLSClient().flatMap { isMLSClientRegistered ->
             if (!isMLSClientRegistered && isAllowedToRegisterMLSClient()) {
-                userCoroutineScope.async {
-                    currentClientIdProvider().flatMap { clientId ->
-                        kaliumLogger.i("No existing MLS Client, registering..")
-                        registerMLSClient.value(clientId).onSuccess { mlsClientRegistrationResult ->
-                            kaliumLogger.i("Registering mls client result: $mlsClientRegistrationResult")
-                            if (mlsClientRegistrationResult is RegisterMLSClientResult.Success) {
-                                kaliumLogger.i("Triggering slow sync after enabling MLS")
-                                slowSyncRepository.value.clearLastSlowSyncCompletionInstant()
-                            }
+                currentClientIdProvider().flatMap { clientId ->
+                    kaliumLogger.i("No existing MLS Client, registering..")
+                    registerMLSClient.value(clientId).onSuccess { mlsClientRegistrationResult ->
+                        kaliumLogger.i("Registering mls client result: $mlsClientRegistrationResult")
+                        if (mlsClientRegistrationResult is RegisterMLSClientResult.Success) {
+                            kaliumLogger.i("Triggering slow sync after enabling MLS")
+                            slowSyncRepository.value.clearLastSlowSyncCompletionInstant()
                         }
                     }
-                }.await()
+                }
             } else {
                 Either.Right(Unit)
             }

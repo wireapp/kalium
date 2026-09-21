@@ -1493,8 +1493,8 @@ public class UserSessionScope internal constructor(
             this,
         )
 
-    internal val mlsClientManager: MLSClientManager
-        get() = MLSClientManagerImpl(
+    internal val mlsClientManager: MLSClientManager by lazy {
+        MLSClientManagerImpl(
             clientIdProvider,
             isAllowedToRegisterMLSClient,
             syncStateObserver.value,
@@ -1511,6 +1511,7 @@ public class UserSessionScope internal constructor(
             },
             this,
         )
+    }
 
     private val mlsMigrationWorker
         get() = MLSMigrationWorkerImpl(
