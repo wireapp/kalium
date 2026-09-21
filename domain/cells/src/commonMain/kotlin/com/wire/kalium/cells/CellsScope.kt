@@ -21,6 +21,7 @@ import com.wire.kalium.cells.data.CellAttachmentsDataSource
 import com.wire.kalium.cells.data.CellConfigDataSource
 import com.wire.kalium.cells.data.CellConversationDataSource
 import com.wire.kalium.cells.data.CellFileDataSource
+import com.wire.kalium.cells.data.CellUploadCoordinatorImpl
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.CellUsersDataSource
 import com.wire.kalium.cells.data.CellsApiImpl
@@ -34,6 +35,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConfigRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellFileRepository
+import com.wire.kalium.cells.domain.CellUploadCoordinator
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsApi
@@ -271,6 +273,13 @@ public class CellsScope(
         CellUploadManagerImpl(
             repository = cellsRepository,
             uploadScope = this,
+        )
+    }
+
+    public val uploadCoordinator: CellUploadCoordinator by lazy {
+        CellUploadCoordinatorImpl(
+            uploadManager = uploadManager,
+            scope = this,
         )
     }
 
