@@ -16,26 +16,30 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.auth.sso
+package com.wire.kalium.logic.data.auth.settings
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.data.session.SessionMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.model.SessionDTO
 import com.wire.kalium.network.networkContainer.TransientAuthenticatedNetworkContainer
 import kotlinx.coroutines.CancellationException
 
-internal fun interface FetchPendingLoginSystemSettings {
-    suspend operator fun invoke(session: SessionDTO): Either<CoreFailure, Boolean>
+internal fun interface PendingLoginSystemSettingsRepository {
+    suspend fun isIdpChangeDetectionEnabled(accountTokens: AccountTokens): Either<CoreFailure, Boolean>
 }
 
-internal class FetchPendingLoginSystemSettingsImpl(
+internal class PendingLoginSystemSettingsRepositoryImpl(
     private val containerFactory: (SessionDTO) -> TransientAuthenticatedNetworkContainer,
-) : FetchPendingLoginSystemSettings {
+    private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
+) : PendingLoginSystemSettingsRepository {
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun invoke(session: SessionDTO): Either<CoreFailure, Boolean> = try {
-        val container = containerFactory(session)
+    override suspend fun isIdpChangeDetectionEnabled(accountTokens: AccountTokens): Either<CoreFailure, Boolean> = try {
+        val container = containerFactory(sessionMapper.toSessionDTO(accountTokens))
         try {
             wrapApiRequest { container.systemSettingsApi.settings() }.map {
                 it.ssoIdpChangeDetectionEnabled == true

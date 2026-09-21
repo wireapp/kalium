@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
+import com.wire.kalium.logic.data.auth.settings.PendingLoginSystemSettingsRepositoryImpl
 import com.wire.kalium.logic.data.auth.settings.UnauthorizedSettingsRepository
 import com.wire.kalium.logic.data.auth.settings.UnauthorizedSettingsRepositoryImpl
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
@@ -43,7 +44,6 @@ import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCase
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseImpl
-import com.wire.kalium.logic.feature.auth.sso.FetchPendingLoginSystemSettingsImpl
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
@@ -156,9 +156,9 @@ public class AuthenticationScope internal constructor(
     public val registerScope: RegisterScope
         get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)
     public val ssoLoginScope: SSOLoginScope
-        get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials, pendingLoginSystemSettings)
+        get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials, pendingLoginSystemSettingsRepository)
 
-    private val pendingLoginSystemSettings get() = FetchPendingLoginSystemSettingsImpl(
+    private val pendingLoginSystemSettingsRepository get() = PendingLoginSystemSettingsRepositoryImpl(
         containerFactory = { session ->
             TransientAuthenticatedNetworkContainer.create(
                 session = session,

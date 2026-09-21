@@ -24,13 +24,13 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
+import com.wire.kalium.logic.data.auth.settings.PendingLoginSystemSettingsRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.model.AuthenticationResultDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
@@ -64,7 +64,7 @@ public interface GetSSOLoginSessionUseCase {
 internal class GetSSOLoginSessionUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository,
     private val proxyCredentials: ProxyCredentials?,
-    private val fetchSystemSettings: FetchPendingLoginSystemSettings,
+    private val pendingLoginSystemSettingsRepository: PendingLoginSystemSettingsRepository,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -74,24 +74,22 @@ internal class GetSSOLoginSessionUseCaseImpl(
         ssoLoginRepository.provideLoginSession(cookie).fold(
             { it.toLoginFailure() },
             { login ->
+                val accountTokens = sessionMapper.fromSessionDTO(login.sessionDTO)
+                val success = SSOLoginSessionResult.Success(
+                    accountTokens = accountTokens,
+                    ssoId = idMapper.toSsoId(login.userDTO.ssoID),
+                    proxyCredentials = proxyCredentials,
+                    managedBy = userMapper.fromManagedByDtoToSsoManagedBy(login.userDTO.managedByDTO),
+                )
                 if (checkIdpChangeDetection) {
-                    fetchSystemSettings(login.sessionDTO).fold(
+                    pendingLoginSystemSettingsRepository.isIdpChangeDetectionEnabled(accountTokens).fold(
                         { SSOLoginSessionResult.Failure.Generic(it) },
-                        { login.toSuccess(it) }
+                        { success.copy(isIdpChangeDetectionEnabled = it) }
                     )
                 } else {
-                    login.toSuccess(false)
+                    success
                 }
             }
-        )
-
-    private fun AuthenticationResultDTO.toSuccess(detectionEnabled: Boolean) =
-        SSOLoginSessionResult.Success(
-            accountTokens = sessionMapper.fromSessionDTO(sessionDTO),
-            ssoId = idMapper.toSsoId(userDTO.ssoID),
-            proxyCredentials = proxyCredentials,
-            managedBy = userMapper.fromManagedByDtoToSsoManagedBy(userDTO.managedByDTO),
-            isIdpChangeDetectionEnabled = detectionEnabled
         )
 
     private fun NetworkFailure.toLoginFailure(): SSOLoginSessionResult.Failure {

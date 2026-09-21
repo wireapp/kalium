@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.auth.sso
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
+import com.wire.kalium.logic.data.auth.settings.PendingLoginSystemSettingsRepository
 import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.model.AuthenticationResultDTO
@@ -42,8 +43,8 @@ class GetSSOLoginSessionUseCaseTest {
         SessionDTO(TestUser.SELF_USER_DTO.id, "Bearer", "fresh-token", "refresh-token", null),
         TestUser.SELF_USER_DTO,
     )
-    private val fetchSettings = mock<FetchPendingLoginSystemSettings>()
-    private val useCase = GetSSOLoginSessionUseCaseImpl(repository, null, fetchSettings)
+    private val settingsRepository = mock<PendingLoginSystemSettingsRepository>()
+    private val useCase = GetSSOLoginSessionUseCaseImpl(repository, null, settingsRepository)
 
     @Test
     fun givenEmailSso_whenPreparingSession_thenSettingsAreNeverRequested() = runTest {
@@ -52,14 +53,14 @@ class GetSSOLoginSessionUseCaseTest {
         val result = useCase("cookie")
 
         assertIs<SSOLoginSessionResult.Success>(result)
-        verifySuspend(VerifyMode.not) { fetchSettings(any()) }
+        verifySuspend(VerifyMode.not) { settingsRepository.isIdpChangeDetectionEnabled(any()) }
     }
 
     @Test
     fun givenCodeSso_whenPreparingSession_thenCapabilityUsesFreshToken() = runTest {
         for (enabled in listOf(true, false)) {
             everySuspend { repository.provideLoginSession("cookie") } returns Either.Right(login)
-            everySuspend { fetchSettings(login.sessionDTO) } returns Either.Right(enabled)
+            everySuspend { settingsRepository.isIdpChangeDetectionEnabled(any()) } returns Either.Right(enabled)
 
             val result = useCase("cookie", checkIdpChangeDetection = true)
 
@@ -73,7 +74,7 @@ class GetSSOLoginSessionUseCaseTest {
     fun givenSettingsFailure_whenPreparingCodeSso_thenNoSessionIsReturned() = runTest {
         val failure = serverMiscommunicationFailure()
         everySuspend { repository.provideLoginSession("cookie") } returns Either.Right(login)
-        everySuspend { fetchSettings(login.sessionDTO) } returns Either.Left(failure)
+        everySuspend { settingsRepository.isIdpChangeDetectionEnabled(any()) } returns Either.Left(failure)
 
         val result = useCase("cookie", checkIdpChangeDetection = true)
 

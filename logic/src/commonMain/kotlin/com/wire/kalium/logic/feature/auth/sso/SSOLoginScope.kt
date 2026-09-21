@@ -21,12 +21,13 @@ package com.wire.kalium.logic.feature.auth.sso
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
+import com.wire.kalium.logic.data.auth.settings.PendingLoginSystemSettingsRepository
 
 public class SSOLoginScope internal constructor(
     private val ssoLoginRepository: SSOLoginRepository,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
-    private val fetchSystemSettings: FetchPendingLoginSystemSettings
+    private val pendingLoginSystemSettingsRepository: PendingLoginSystemSettingsRepository
 ) {
     private val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
     public val initiate: SSOInitiateLoginUseCase
@@ -37,7 +38,7 @@ public class SSOLoginScope internal constructor(
         )
     internal val finalize: SSOFinalizeLoginUseCase get() = SSOFinalizeLoginUseCaseImpl(ssoLoginRepository)
     public val getLoginSession: GetSSOLoginSessionUseCase
-        get() = GetSSOLoginSessionUseCaseImpl(ssoLoginRepository, proxyCredentials, fetchSystemSettings)
+        get() = GetSSOLoginSessionUseCaseImpl(ssoLoginRepository, proxyCredentials, pendingLoginSystemSettingsRepository)
     public val fetchSSOSettings: FetchSSOSettingsUseCase get() = FetchSSOSettingsUseCase(ssoLoginRepository)
     internal val metaData: SSOMetaDataUseCase get() = SSOMetaDataUseCaseImpl(ssoLoginRepository)
     internal val settings: SSOSettingsUseCase get() = SSOSettingsUseCaseImpl(ssoLoginRepository)

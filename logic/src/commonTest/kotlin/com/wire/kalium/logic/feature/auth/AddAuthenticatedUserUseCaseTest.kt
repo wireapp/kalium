@@ -210,7 +210,7 @@ class AddAuthenticatedUserUseCaseTest {
     }
 
     @Test
-    fun givenRetainedAccountWithoutIdpId_whenMultiIngressSsoUserLogsIn_thenIdpIsRecordedAndLoginContinues() = runTest {
+    fun givenRetainedAccountWithoutIdpId_whenMultiIngressSsoUserLogsIn_thenSsoIdentityChangedIsReturned() = runTest {
         val (arrangement, addAuthenticatedUser) = Arrangement()
             .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
@@ -219,27 +219,15 @@ class AddAuthenticatedUserUseCaseTest {
                 TEST_USERID,
                 Either.Right(retainedAccount(ssoIdentityProviderId = null))
             )
-            .withStoreSessionResult(
-                TEST_SERVER_CONFIG.id,
-                TEST_SSO_ID,
-                TEST_AUTH_TOKENS,
-                PROXY_CREDENTIALS,
-                null,
-                Either.Right(Unit),
-                ssoIdentityProviderId = TEST_IDP_ID,
-            )
-            .withUpdateCurrentSessionResult(TEST_USERID, Either.Right(Unit))
             .arrange()
 
         val actual = addAuthenticatedUser(
             defaultSessionParam(ssoIdentityProviderId = TEST_IDP_ID)
         )
 
-        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.storeSession(
-                matching { it.ssoIdentityProviderId == TEST_IDP_ID }
-            )
+        assertIs<AddAuthenticatedUserUseCase.Result.Failure.SsoIdentityChanged>(actual)
+        verifySuspend(VerifyMode.not) {
+            arrangement.sessionRepository.storeSession(any())
         }
     }
 
