@@ -123,7 +123,9 @@ data class MLSMigrationConfigDTO(
     val startTime: Instant?,
     // timestamp of the date until the migration has to finalise
     @SerialName("finaliseRegardlessAfter")
-    val finaliseRegardlessAfter: Instant?
+    val finaliseRegardlessAfter: Instant?,
+    @SerialName("allowManualMigration")
+    val allowManualMigration: Boolean = false,
 )
 
 @Serializable

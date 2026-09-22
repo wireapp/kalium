@@ -140,7 +140,8 @@ internal class FeatureConfigMapperImpl : FeatureConfigMapper {
         MLSMigrationModel(
             data.config.startTime,
             data.config.finaliseRegardlessAfter,
-            fromDTO(data.status)
+            fromDTO(data.status),
+            allowManualMigration = data.config.allowManualMigration
         )
 
     override fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel =
@@ -235,7 +236,8 @@ internal class FeatureConfigMapperImpl : FeatureConfigMapper {
         FeatureConfigData.MLSMigration(
             MLSMigrationConfigDTO(
                 model.startTime,
-                model.endTime
+                model.endTime,
+                allowManualMigration = model.allowManualMigration
             ),
             fromModel(model.status)
         )
@@ -245,12 +247,14 @@ internal fun MLSMigrationModel.toEntity(): MLSMigrationEntity =
     MLSMigrationEntity(
         status = status.equals(Status.ENABLED),
         startTime = startTime,
-        endTime = endTime
+        endTime = endTime,
+        allowManualMigration = allowManualMigration
     )
 
 internal fun MLSMigrationEntity.toModel(): MLSMigrationModel =
     MLSMigrationModel(
         status = if (status) Status.ENABLED else Status.DISABLED,
         startTime = startTime,
-        endTime = endTime
+        endTime = endTime,
+        allowManualMigration = allowManualMigration
     )

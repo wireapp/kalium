@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
+import com.wire.kalium.logic.data.featureConfig.toEntity
+import com.wire.kalium.logic.data.featureConfig.toModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.network.api.authenticated.featureConfigs.AllowedGlobalOperationsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
@@ -38,6 +40,24 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class FeatureConfigMapperTest {
+
+    @Test
+    fun givenManualMigrationFlag_whenMapping_thenPreservesBothValuesInAllDirections() {
+        val (_, mapper) = Arrangement().arrange()
+        listOf(true, false).forEach { allowed ->
+            val dto = FeatureConfigData.MLSMigration(
+                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE, allowed),
+                FeatureFlagStatusDTO.ENABLED
+            )
+
+            val model = mapper.fromDTO(dto)
+            assertEquals(allowed, model.allowManualMigration)
+            assertEquals(dto, mapper.fromModel(model))
+            val entity = model.toEntity()
+            assertEquals(allowed, entity.allowManualMigration)
+            assertEquals(model, entity.toModel())
+        }
+    }
 
     @Test
     fun givenApiModelResponse_whenMappingToModel_thenASingleFieldsShouldBeMappedCorrectly() {

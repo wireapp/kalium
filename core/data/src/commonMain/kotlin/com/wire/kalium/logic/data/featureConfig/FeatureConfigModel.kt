@@ -120,7 +120,9 @@ data class MLSMigrationModel(
     @SerialName("endTime")
     val endTime: Instant?,
     @SerialName("status")
-    val status: Status
+    val status: Status,
+    @SerialName("allowManualMigration")
+    val allowManualMigration: Boolean = false
 )
 
 @Serializable
