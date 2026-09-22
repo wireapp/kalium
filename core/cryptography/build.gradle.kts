@@ -18,6 +18,8 @@
 
 import com.wire.kalium.plugins.appleTargets
 import org.gradle.api.tasks.Sync
+import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -61,6 +63,12 @@ kotlin {
     iosSimulatorArm64 {
         binaries.all {
             linkerOpts("-framework", "Security")
+        }
+        binaries.withType<TestExecutable>().configureEach {
+            // CoreCrypto's iOS WAL salt uses Keychain. Simulator test executables need an identity.
+            val testEntitlements = file("src/iosTest/entitlements.plist")
+            linkerOpts("-sectcreate", "__TEXT", "__entitlements", testEntitlements.absolutePath)
+            linkTaskProvider.configure { inputs.file(testEntitlements) }
         }
     }
     macosArm64 {
@@ -144,6 +152,11 @@ kotlin {
 
 tasks.named("jvmProcessResources") {
     dependsOn(extractCoreCryptoJvmNativeResources)
+}
+
+tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+    // Standalone simulator processes cannot reach the Keychain service used by CoreCrypto.
+    standalone.set(false)
 }
 
 project.appleTargets().forEach {

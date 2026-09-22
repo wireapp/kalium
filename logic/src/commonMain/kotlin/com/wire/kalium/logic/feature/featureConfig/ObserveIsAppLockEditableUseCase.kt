@@ -46,7 +46,7 @@ internal class ObserveIsAppLockEditableUseCaseImpl internal constructor(
             .flatMapRight { accounts ->
                 combine(
                     accounts.map { session ->
-                        userSessionScopeProvider.getOrCreate(session.userId) { userConfigRepository }
+                        userSessionScopeProvider.open(session.userId) { userConfigRepository }
                             .observeAppLockConfig()
                             .map { appLockConfig ->
                                 appLockConfig.fold({ false }, { config -> config.isEnforced })

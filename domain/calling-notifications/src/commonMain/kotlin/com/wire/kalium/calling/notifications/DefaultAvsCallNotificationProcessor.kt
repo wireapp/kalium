@@ -19,7 +19,8 @@
 package com.wire.kalium.calling.notifications
 
 internal class DefaultAvsCallNotificationProcessor(
-    private val gateway: AvsCallNotificationNativeGateway
+    private val gateway: AvsCallNotificationNativeGateway,
+    private val continueAfterEventFailure: Boolean = false,
 ) : AvsCallNotificationProcessor {
 
     override fun process(notifications: List<AvsCallNotification>): AvsCallNotificationProcessingResult {
@@ -36,10 +37,8 @@ internal class DefaultAvsCallNotificationProcessor(
         try {
             for ((index, notification) in notifications.withIndex()) {
                 val failure = gateway.process(notification, index).failureOrNull()
-                if (failure != null) {
-                    processFailure = failure
-                    break
-                }
+                processFailure = processFailure ?: failure
+                if (failure != null && (!continueAfterEventFailure || failure.code == null)) break
             }
         } finally {
             val endFailure = gateway.end().failureOrNull()

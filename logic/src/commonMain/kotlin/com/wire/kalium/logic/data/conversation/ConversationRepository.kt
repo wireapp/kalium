@@ -801,13 +801,8 @@ internal class ConversationDataSource internal constructor(
         conversationId: ConversationId,
         mutedStatus: MutedConversationStatus,
         mutedStatusTimestamp: Instant
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        conversationDAO.updateConversationMutedStatus(
-            conversationId = conversationId.toDao(),
-            mutedStatus = conversationStatusMapper.toMutedStatusDaoModel(mutedStatus),
-            mutedStatusTimestamp = mutedStatusTimestamp
-        )
-    }
+    ): Either<StorageFailure, Unit> =
+        updateMutedStatusLocally(conversationDAO, conversationId, mutedStatus, mutedStatusTimestamp)
 
     override suspend fun updateMutedStatusRemotely(
         conversationId: ConversationId,
@@ -824,13 +819,8 @@ internal class ConversationDataSource internal constructor(
         conversationId: ConversationId,
         isArchived: Boolean,
         archivedStatusTimestamp: Instant
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        conversationDAO.updateConversationArchivedStatus(
-            conversationId = conversationId.toDao(),
-            isArchived = isArchived,
-            archivedStatusTimestamp = archivedStatusTimestamp
-        )
-    }
+    ): Either<StorageFailure, Unit> =
+        updateArchivedStatusLocally(conversationDAO, conversationId, isArchived, archivedStatusTimestamp)
 
     override suspend fun updateArchivedStatusRemotely(
         conversationId: ConversationId,

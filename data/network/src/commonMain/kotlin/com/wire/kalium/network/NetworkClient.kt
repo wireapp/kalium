@@ -44,6 +44,15 @@ import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.websocket.WebSocketSession
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.job
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Provides a [HttpClient] that has all the
@@ -111,6 +120,10 @@ internal class AuthenticatedWebSocketClient(
     private val kaliumLogger: KaliumLogger,
     private val webSocketSessionProvider: ((HttpClient, String) -> WebSocketSession)? = null
 ) {
+    private val clients = MutableStateFlow<Set<DisposableClient>>(emptySet())
+    private val closeFailure = MutableStateFlow<Throwable?>(null)
+    private val lifecycleMutex = Mutex()
+    private var closed = false
 
     /**
      * Creates a [Url] for the WebSocket connection with the ability to be versioned.
@@ -150,11 +163,57 @@ internal class AuthenticatedWebSocketClient(
             }
         }
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun createWebSocketSession(clientId: String, block: HttpRequestBuilder.() -> Unit): WebSocketSession {
-        val client = createDisposableHttpClient()
-        return webSocketSessionProvider?.let {
-            return it(client, clientId)
-        } ?: client.webSocketSession(block)
+        val client = lifecycleMutex.withLock {
+            check(!closed) { "Websocket client is closed" }
+            DisposableClient(createDisposableHttpClient()).also { client -> clients.update { it + client } }
+        }
+        return try {
+            val session = webSocketSessionProvider?.invoke(client.httpClient, clientId) ?: client.httpClient.webSocketSession(block)
+            session.coroutineContext[Job]?.invokeOnCompletion { requestClose(client) }
+            session
+        } catch (failure: Throwable) {
+            withContext(NonCancellable) {
+                requestClose(client)
+                if (closeFailure.value == null) {
+                    client.closeFinished.await()
+                    client.httpClient.coroutineContext.job.join()
+                }
+            }
+            throw failure
+        }
+    }
+
+    suspend fun close() = withContext(NonCancellable) {
+        val remaining = lifecycleMutex.withLock {
+            closed = true
+            clients.value
+        }
+        remaining.forEach(::requestClose)
+        remaining.forEach { it.closeFinished.await() }
+        closeFailure.value?.let { throw it }
+        remaining.forEach { it.httpClient.coroutineContext.job.join() }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun requestClose(client: DisposableClient) {
+        if (!client.closeStarted.compareAndSet(expect = false, update = true)) return
+        try {
+            // Ktor's handshake runs in the disposable client scope, independently of its awaiting caller.
+            client.httpClient.coroutineContext.job.cancel()
+            client.httpClient.close()
+            client.closeFinished.complete(Unit)
+            client.httpClient.coroutineContext.job.invokeOnCompletion { clients.update { it - client } }
+        } catch (failure: Throwable) {
+            closeFailure.compareAndSet(null, failure)
+            client.closeFinished.completeExceptionally(failure)
+        }
+    }
+
+    private class DisposableClient(val httpClient: HttpClient) {
+        val closeStarted = MutableStateFlow(false)
+        val closeFinished = CompletableDeferred<Unit>()
     }
 }
 

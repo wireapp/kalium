@@ -30,16 +30,15 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
+import com.wire.kalium.logic.data.conversation.createForEvent
 import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.network.api.authenticated.conversation.cellEnabled
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 
@@ -77,7 +76,7 @@ internal class NewConversationEventHandlerImpl(
                     }
                     .map { isNewUnhandledConversation }
             }.onSuccess { isNewUnhandledConversation ->
-                createSystemMessagesForNewConversation(selfUserTeamId, isNewUnhandledConversation, event)
+                if (isNewUnhandledConversation) newGroupConversationSystemMessagesCreator.createForEvent(event, selfUserTeamId)
                 eventLogger.logSuccess()
             }.onFailure {
                 eventLogger.logFailure(it)
@@ -99,50 +98,4 @@ internal class NewConversationEventHandlerImpl(
             ).map { Unit }
         } else Either.Right(Unit)
 
-    /**
-     * Creates system messages for new conversation.
-     * Conversation started, members added and failed, read receipt status.
-     *
-     * @param isNewUnhandledConversation if true we need to generate system messages for new conversation
-     * @param event new conversation event
-     */
-    private suspend fun createSystemMessagesForNewConversation(
-        selfUserTeamId: TeamId?,
-        isNewUnhandledConversation: Boolean,
-        event: Event.Conversation.NewConversation
-    ) {
-        if (isNewUnhandledConversation) {
-            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                event.conversation.id.toModel(),
-                event.dateTime
-            )
-            newGroupConversationSystemMessagesCreator.conversationStarted(
-                event.senderUserId,
-                event.conversation,
-                event.dateTime
-            )
-            newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
-                event.conversationId.toDao(),
-                event.conversation.members.otherMembers.map { it.id.toModel() },
-                event.dateTime
-            )
-            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
-                event.conversation,
-                event.dateTime
-            )
-            newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
-                eventId = event.id,
-                conversationId = event.conversationId,
-                hasAppsAccessEnabled = event.conversation.hasAppsAccessEnabled(),
-                creatorId = event.senderUserId,
-                type = event.conversation.toConversationType(selfUserTeamId)
-            )
-            newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
-                conversationId = event.conversationId,
-                conversationTeamId = event.conversation.teamId,
-                isCellEnabled = event.conversation.cellEnabled(),
-                instant = event.dateTime,
-            )
-        }
-    }
 }

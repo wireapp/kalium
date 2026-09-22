@@ -57,7 +57,7 @@ internal class SaveNotificationTokenUseCaseImpl(
             observeValidAccounts()
                 .first()
                 .forEach { (selfUser, _) ->
-                    userSessionScopeProvider.getOrCreate(selfUser.id) { pushTokenRepository }
+                    userSessionScopeProvider.open(selfUser.id) { pushTokenRepository }
                         .setUpdateFirebaseTokenFlag(true)
                 }
             Result.Success

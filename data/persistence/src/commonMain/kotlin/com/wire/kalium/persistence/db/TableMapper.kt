@@ -50,6 +50,7 @@ import com.wire.kalium.persistence.MessageSystemContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.NewClient
+import com.wire.kalium.persistence.PendingDeliveryConfirmations
 import com.wire.kalium.persistence.PendingActions
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
@@ -280,6 +281,8 @@ internal object TableMapper {
         preview_asset_idAdapter = QualifiedIDAdapter,
         complete_asset_idAdapter = QualifiedIDAdapter
     )
+
+    val pendingDeliveryConfirmationsAdapter = PendingDeliveryConfirmations.Adapter(conversation_idAdapter = QualifiedIDAdapter)
 
     val pendingActionsAdapter = PendingActions.Adapter(
         action_typeAdapter = PendingActionTypeAdapter,

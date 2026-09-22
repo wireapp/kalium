@@ -23,8 +23,8 @@ import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.sync.receiver.handler.toReceiptEntity
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.receipt.DetailedReceiptEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 
@@ -32,7 +32,6 @@ internal interface ReceiptsMapper {
     fun toTypeEntity(type: ReceiptType): ReceiptTypeEntity
     fun fromTypeEntity(type: ReceiptTypeEntity): ReceiptType
     fun fromEntityToModel(detailedReceiptEntity: DetailedReceiptEntity): DetailedReceipt
-    fun fromTypeToMessageStatus(type: ReceiptType): MessageEntity.Status
 }
 
 internal class ReceiptsMapperImpl(
@@ -41,10 +40,7 @@ internal class ReceiptsMapperImpl(
     private val domainUserTypeMapper: DomainUserTypeMapper
 ) : ReceiptsMapper {
 
-    override fun toTypeEntity(type: ReceiptType): ReceiptTypeEntity = when (type) {
-        ReceiptType.READ -> ReceiptTypeEntity.READ
-        ReceiptType.DELIVERED -> ReceiptTypeEntity.DELIVERY
-    }
+    override fun toTypeEntity(type: ReceiptType): ReceiptTypeEntity = type.toReceiptEntity()
 
     override fun fromTypeEntity(type: ReceiptTypeEntity): ReceiptType = when (type) {
         ReceiptTypeEntity.READ -> ReceiptType.READ
@@ -70,9 +66,4 @@ internal class ReceiptsMapperImpl(
                 )
             )
         }
-
-    override fun fromTypeToMessageStatus(type: ReceiptType): MessageEntity.Status = when (type) {
-        ReceiptType.READ -> MessageEntity.Status.READ
-        ReceiptType.DELIVERED -> MessageEntity.Status.DELIVERED
-    }
 }

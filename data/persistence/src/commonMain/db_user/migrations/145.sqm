@@ -1,0 +1,6 @@
+CREATE TABLE PendingDeliveryConfirmations (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    UNIQUE (conversation_id, message_id)
+);

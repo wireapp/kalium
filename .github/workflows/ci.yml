@@ -145,7 +145,10 @@ jobs:
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: ./gradlew iosSimulatorArm64Test
+        run: |
+          python3 -m venv "$RUNNER_TEMP/kalium-ios-tests"
+          "$RUNNER_TEMP/kalium-ios-tests/bin/pip" install -r nse/scripts/requirements-ios-tests.txt
+          "$RUNNER_TEMP/kalium-ios-tests/bin/python" nse/scripts/run-ios-tests.py --continue
 
       - name: Upload test reports on failure
         if: failure()
@@ -180,6 +183,15 @@ jobs:
         with:
           enable-kvm: true
 
+      # Build before starting QEMU so Kotlin/D8 do not compete with the emulator.
+      - name: Build Android test APKs
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./gradlew assembleAndroidDeviceTest --max-workers=1 -Dorg.gradle.jvmargs="-Xmx3g -XX:+UseParallelGC" -Pkotlin.compiler.execution.strategy=in-process
+          ./gradlew --stop
+
       - name: Resolve emulator configuration
         id: avd-info
         uses: ./.github/actions/get-avd-info
@@ -195,11 +207,11 @@ jobs:
           api-level: 31
           arch: ${{ steps.avd-info.outputs.arch }}
           target: ${{ steps.avd-info.outputs.target }}
-          cores: 4
-          ram-size: 4096M
-          heap-size: 2048M
+          cores: 2
+          ram-size: 2048M
+          heap-size: 512M
           disable-animations: true
-          script: ./gradlew ${{ (github.event_name == 'pull_request' || github.event_name == 'merge_group') && 'connectedAndroidOnlyAffectedTest' || 'connectedAndroidDeviceTest' }} --max-workers=2
+          script: ./gradlew ${{ (github.event_name == 'pull_request' || github.event_name == 'merge_group') && 'connectedAndroidOnlyAffectedTest' || 'connectedAndroidDeviceTest' }} --max-workers=1 -Dorg.gradle.jvmargs="-Xmx3g -XX:+UseParallelGC" -Pkotlin.compiler.execution.strategy=in-process
 
       - name: Upload test reports on failure
         if: failure()

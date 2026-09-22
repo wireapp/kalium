@@ -106,6 +106,12 @@ public abstract class CoreLogicCommon internal constructor(
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     public abstract fun getSessionScope(userId: UserId): UserSessionScope
 
+    /**
+     * Opens the account, waiting cancellably for Apple app/extension ownership.
+     * On Apple, call this before using the synchronous cached [getSessionScope].
+     */
+    public suspend fun openSessionScope(userId: UserId): UserSessionScope = userSessionScopeProvider.value.open(userId)
+
     internal abstract suspend fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
 
     // TODO: make globalScope a singleton

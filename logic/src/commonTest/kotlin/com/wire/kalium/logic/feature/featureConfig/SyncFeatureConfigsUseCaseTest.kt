@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.ChannelsConfigurationStorage
 import com.wire.kalium.logic.configuration.FileSharingStatus
@@ -75,6 +76,7 @@ import com.wire.kalium.persistence.dao.UserConfigDAO
 import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -100,6 +102,57 @@ class SyncFeatureConfigsUseCaseTest {
     private val dispatcher = StandardTestDispatcher()
 
     private fun runTest(testBody: suspend TestScope.() -> Unit) = runTest(dispatcher, testBody = testBody)
+
+    @Test
+    fun requiredConfigurationReadFailureStopsSync() = runTest {
+        val failure = IllegalStateException("Self-deletion settings cannot be read")
+        val (arrangement, sync) = arrangement().arrange()
+        everySuspend { arrangement.userConfigDAO.getTeamSettingsSelfDeletionStatus() } throws failure
+
+        assertEquals(Either.Left(StorageFailure.Generic(failure)), sync())
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.userConfigDAO.setAsyncNotificationsEnabled(any())
+            arrangement.userConfigDAO.setMeetingsEnabled(any())
+        }
+    }
+
+    @Test
+    fun optionalConfigurationWriteFailureStopsSyncAndCanBeRetried() = runTest {
+        val failure = IllegalStateException("Consumable-notification settings cannot be saved")
+        val (arrangement, sync) = arrangement().arrange()
+        everySuspend { arrangement.userConfigDAO.setAsyncNotificationsEnabled(any()) } throws failure
+
+        assertEquals(Either.Left(StorageFailure.Generic(failure)), sync())
+        verifySuspend(VerifyMode.not) { arrangement.userConfigDAO.setMeetingsEnabled(any()) }
+
+        everySuspend { arrangement.userConfigDAO.setAsyncNotificationsEnabled(any()) } returns Unit
+        assertEquals(Either.Right(Unit), sync())
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigDAO.setMeetingsEnabled(true) }
+    }
+
+    @Test
+    fun channelConfigurationWriteFailureIsPropagated() = runTest {
+        val failure = StorageFailure.Generic(IllegalStateException("Channel settings cannot be saved"))
+        val setup = arrangement()
+        val storage = mock<ChannelsConfigurationStorage>()
+        everySuspend { storage.persistChannelsConfiguration(any()) } returns Either.Left(failure)
+        setup.channelsConfigurationStorage = storage
+        val (arrangement, sync) = setup.arrange()
+
+        assertEquals(Either.Left(failure), sync())
+
+        verifySuspend(VerifyMode.not) { arrangement.userConfigDAO.setAsyncNotificationsEnabled(any()) }
+    }
+
+    @Test
+    fun finalConfigurationWriteFailureIsPropagated() = runTest {
+        val failure = IllegalStateException("Meetings settings cannot be saved")
+        val (arrangement, sync) = arrangement().arrange()
+        everySuspend { arrangement.userConfigDAO.setMeetingsEnabled(any()) } throws failure
+
+        assertEquals(Either.Left(StorageFailure.Generic(failure)), sync())
+    }
 
     @Test
     fun givenSecondFactorChallengeIsEnabled_whenSyncing_thenItShouldBeStoredAsRequired() = runTest {
@@ -904,7 +957,7 @@ class SyncFeatureConfigsUseCaseTest {
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         private val inMemoryStorage = inMemoryUserConfigStorage()
         private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, dispatcher)
-        val channelsConfigurationStorage = ChannelsConfigurationStorage(userDatabase.builder.metadataDAO)
+        var channelsConfigurationStorage = ChannelsConfigurationStorage(userDatabase.builder.metadataDAO)
         var kaliumConfigs = KaliumConfigs()
         val userConfigDAO: UserConfigDAO = mock<UserConfigDAO>(mode = MockMode.autoUnit)
         val slowSyncRepository: SlowSyncRepository = mock(mode = MockMode.autoUnit)
@@ -912,7 +965,7 @@ class SyncFeatureConfigsUseCaseTest {
         var userConfigRepository: UserConfigRepository = UserConfigDataSource(
             inMemoryStorage,
             userConfigDAO,
-            kaliumConfigs
+            kaliumConfigs.fileRestrictionState
         )
             private set
         val featureConfigRepository = mock<FeatureConfigRepository>(mode = MockMode.autoUnit)
@@ -930,6 +983,8 @@ class SyncFeatureConfigsUseCaseTest {
                     )
                 )
                 withMeetingsEnabledReturning(false)
+                withGetSupportedProtocolsReturning(null)
+                withGetTeamSettingsSelfDeletionStatusSuccessful()
             }
         }
 
@@ -940,7 +995,7 @@ class SyncFeatureConfigsUseCaseTest {
             userConfigRepository = UserConfigDataSource(
                 inMemoryStorage,
                 userConfigDAO,
-                kaliumConfigs
+                kaliumConfigs.fileRestrictionState
             )
         }
 
@@ -1001,14 +1056,14 @@ class SyncFeatureConfigsUseCaseTest {
         fun arrange(): Pair<Arrangement, SyncFeatureConfigsUseCase> {
             syncFeatureConfigsUseCase = SyncFeatureConfigsUseCaseImpl(
                 featureConfigRepository,
-                GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
+                GuestRoomConfigHandler(userConfigRepository, kaliumConfigs.guestRoomLink),
                 FileSharingConfigHandler(userConfigRepository),
                 MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
                 MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
                 ClassifiedDomainsConfigHandler(userConfigRepository),
                 ConferenceCallingConfigHandler(userConfigRepository),
                 SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
-                SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
+                SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs.selfDeletingMessages),
                 E2EIConfigHandler(userConfigRepository),
                 AppLockConfigHandler(userConfigRepository),
                 ChannelsFeatureConfigurationHandler(channelsConfigurationStorage),

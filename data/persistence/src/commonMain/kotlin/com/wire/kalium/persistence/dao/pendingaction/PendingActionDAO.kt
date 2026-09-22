@@ -21,7 +21,11 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
 enum class PendingActionType(val dbValue: String) {
     RESOLVE_ONE_ON_ONE_CONVERSATION("resolve_one_on_one_conversation"),
-    JOIN_MLS_GROUP_CONVERSATION("join_mls_group_conversation")
+    JOIN_MLS_GROUP_CONVERSATION("join_mls_group_conversation"),
+
+    // NSE requests only. The app deliberately leaves these pending until cleanup is implemented.
+    CLEAR_CONVERSATION_CONTENT("clear_conversation_content"),
+    DELETE_CONVERSATION_LOCALLY("delete_conversation_locally")
 }
 
 data class PendingActionEntity(

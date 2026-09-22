@@ -67,10 +67,19 @@ kaliumLibrary {
 kotlin {
     explicitApi()
     sourceSets {
+        commonTest.dependencies {
+            implementation(libs.coroutines.test)
+            implementation(libs.ktor.mock)
+        }
         val commonMain by getting {
             kotlin.srcDir(generateUserNetworkApiCacheConfig)
             dependencies {
                 api(projects.data.network)
+                api(projects.core.common)
+                api(projects.core.data)
+                api(projects.data.persistence)
+                implementation(projects.data.dataMappers)
+                implementation(libs.coroutines.core)
                 implementation(libs.concurrentCollections)
                 implementation(libs.statelyCommons)
             }

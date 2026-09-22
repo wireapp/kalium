@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -63,7 +65,7 @@ class DeleteMessageHandlerTest {
 
         val (arrangement, handler) = arrange {
             withGetMessageById(Either.Right(originalMessage))
-            withDeleteMessage(Either.Right(Unit))
+            withDeleteMessage()
         }
 
         handler(
@@ -73,7 +75,7 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
+            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
         }
     }
 
@@ -102,11 +104,11 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
+            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
+            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -134,7 +136,7 @@ class DeleteMessageHandlerTest {
             )
         val (arrangement, handler) = arrange {
             withGetMessageById(Either.Right(originalMessage))
-            withMarkAsDeleted(Either.Right(Unit))
+            withMarkAsDeleted()
         }
 
         handler(
@@ -144,11 +146,11 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
+            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
         }
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
+            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -176,17 +178,17 @@ class DeleteMessageHandlerTest {
             )
         val (arrangement, handler) = arrange {
             withGetMessageById(Either.Right(originalMessage))
-            withDeleteMessage(Either.Right(Unit))
+            withDeleteMessage()
         }
 
         handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
+            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
+            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -216,17 +218,17 @@ class DeleteMessageHandlerTest {
             )
         val (arrangement, handler) = arrange {
             withGetMessageById(Either.Right(originalMessage))
-            withDeleteMessage(Either.Right(Unit))
+            withDeleteMessage()
         }
 
         handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
 
         verifySuspend(VerifyMode.not) {
-            arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
+            arrangement.messageDAO.markMessageAsDeleted(eq(originalMessageID), eq(conversationId.toDao()))
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
+            arrangement.messageDAO.deleteMessage(eq(originalMessageID), eq(conversationId.toDao()))
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
@@ -255,7 +257,7 @@ class DeleteMessageHandlerTest {
         val hookNotifier = RecordingPersistenceEventHookNotifier()
         val (_, handler) = arrange(hookNotifier) {
             withGetMessageById(Either.Right(originalMessage))
-            withDeleteMessage(Either.Right(Unit))
+            withDeleteMessage()
         }
 
         handler(
@@ -303,10 +305,9 @@ class DeleteMessageHandlerTest {
             conversationId = conversationId,
             expirationData = null,
         )
-        val assetId = TestMessage.ASSET_CONTENT.value.remoteData.assetId
         val (arrangement, handler) = arrange {
             withGetMessageById(Either.Right(originalMessage))
-            withMarkAsDeleted(Either.Right(Unit))
+            withMarkAsDeleted()
             withDeleteAssetLocally(Either.Right(Unit))
         }
 
@@ -317,8 +318,31 @@ class DeleteMessageHandlerTest {
         )
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.deleteAssetLocally(eq(assetId))
+            arrangement.assetRepository.deleteAssetLocally(eq(TestMessage.ASSET_CONTENT.value.remoteData!!.assetId))
         }
+    }
+
+    @Test
+    fun unauthorizedAssetDeletionKeepsFiles() = runTest {
+        val message = TestMessage.TEXT_MESSAGE.copy(content = TestMessage.ASSET_CONTENT, expirationData = null)
+        val (arrangement, handler) = arrange { withGetMessageById(Either.Right(message)) }
+        handler(MessageContent.DeleteMessage(message.id), message.conversationId, UserId("unrelated", "example.com"))
+        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.messageDAO.markMessageAsDeleted(any(), any()) }
+    }
+
+    @Test
+    fun assetCleanupFailureDoesNotPreventAuthorizedDeletion() = runTest {
+        val message = TestMessage.TEXT_MESSAGE.copy(content = TestMessage.ASSET_CONTENT, expirationData = null)
+        val (arrangement, handler) = arrange {
+            withGetMessageById(Either.Right(message))
+            withDeleteAssetLocally(Either.Left(StorageFailure.Generic(IllegalStateException("file cleanup failed"))))
+        }
+
+        handler(MessageContent.DeleteMessage(message.id), message.conversationId, message.senderUserId)
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageDAO.markMessageAsDeleted(message.id, message.conversationId.toDao()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.notificationEventsManager.scheduleDeleteMessageNotification(message) }
     }
 
     private companion object {
@@ -337,13 +361,18 @@ class DeleteMessageHandlerTest {
         private val block: suspend Arrangement.() -> Unit
     ) {
         val messageRepository = mock<MessageRepository>()
+        val messageDAO = mock<MessageDAO>(mode = MockMode.autoUnit)
         val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
         val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
-            runBlocking { block() }
+            runBlocking {
+                withDeleteAssetLocally(Either.Right(Unit))
+                block()
+            }
             this@Arrangement to DeleteMessageHandlerImpl(
                 messageRepository = messageRepository,
+                messageDAO = messageDAO,
                 assetRepository = assetRepository,
                 notificationEventsManager = notificationEventsManager,
                 selfUserId = SELF_USER_ID,
@@ -357,16 +386,16 @@ class DeleteMessageHandlerTest {
             } returns result
         }
 
-        suspend fun withDeleteMessage(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
+        suspend fun withDeleteMessage() = apply {
             everySuspend {
-                messageRepository.deleteMessage(any(), any())
-            } returns result
+                messageDAO.deleteMessage(any(), any())
+            } returns Unit
         }
 
-        suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>) = apply {
+        suspend fun withMarkAsDeleted() = apply {
             everySuspend {
-                messageRepository.markMessageAsDeleted(any(), any())
-            } returns result
+                messageDAO.markMessageAsDeleted(any(), any())
+            } returns Unit
         }
 
         suspend fun withDeleteAssetLocally(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {

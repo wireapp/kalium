@@ -184,29 +184,6 @@ abstract fun interface com.wire.kalium.logic.feature.user/UpdateDisplayNameUseCa
     abstract suspend fun invoke(kotlin/String): com.wire.kalium.logic.feature.user/DisplayNameUpdateResult // com.wire.kalium.logic.feature.user/UpdateDisplayNameUseCase.invoke|invoke(kotlin.String){}[0]
 }
 
-abstract interface com.wire.kalium.logic.data.asset/KaliumFileSystem { // com.wire.kalium.logic.data.asset/KaliumFileSystem|null[0]
-    abstract val rootCachePath // com.wire.kalium.logic.data.asset/KaliumFileSystem.rootCachePath|{}rootCachePath[0]
-        abstract fun <get-rootCachePath>(): okio/Path // com.wire.kalium.logic.data.asset/KaliumFileSystem.rootCachePath.<get-rootCachePath>|<get-rootCachePath>(){}[0]
-    abstract val rootDBPath // com.wire.kalium.logic.data.asset/KaliumFileSystem.rootDBPath|{}rootDBPath[0]
-        abstract fun <get-rootDBPath>(): okio/Path // com.wire.kalium.logic.data.asset/KaliumFileSystem.rootDBPath.<get-rootDBPath>|<get-rootDBPath>(){}[0]
-
-    abstract fun copy(okio/Path, okio/Path) // com.wire.kalium.logic.data.asset/KaliumFileSystem.copy|copy(okio.Path;okio.Path){}[0]
-    abstract fun createDirectories(okio/Path) // com.wire.kalium.logic.data.asset/KaliumFileSystem.createDirectories|createDirectories(okio.Path){}[0]
-    abstract fun createDirectory(okio/Path, kotlin/Boolean = ...) // com.wire.kalium.logic.data.asset/KaliumFileSystem.createDirectory|createDirectory(okio.Path;kotlin.Boolean){}[0]
-    abstract fun delete(okio/Path, kotlin/Boolean = ...) // com.wire.kalium.logic.data.asset/KaliumFileSystem.delete|delete(okio.Path;kotlin.Boolean){}[0]
-    abstract fun deleteContents(okio/Path, kotlin/Boolean = ...) // com.wire.kalium.logic.data.asset/KaliumFileSystem.deleteContents|deleteContents(okio.Path;kotlin.Boolean){}[0]
-    abstract fun exists(okio/Path): kotlin/Boolean // com.wire.kalium.logic.data.asset/KaliumFileSystem.exists|exists(okio.Path){}[0]
-    abstract fun providePersistentAssetPath(kotlin/String): okio/Path // com.wire.kalium.logic.data.asset/KaliumFileSystem.providePersistentAssetPath|providePersistentAssetPath(kotlin.String){}[0]
-    abstract fun selfUserAvatarPath(): okio/Path // com.wire.kalium.logic.data.asset/KaliumFileSystem.selfUserAvatarPath|selfUserAvatarPath(){}[0]
-    abstract fun sink(okio/Path, kotlin/Boolean = ...): okio/Sink // com.wire.kalium.logic.data.asset/KaliumFileSystem.sink|sink(okio.Path;kotlin.Boolean){}[0]
-    abstract fun size(okio/Path): kotlin/Long? // com.wire.kalium.logic.data.asset/KaliumFileSystem.size|size(okio.Path){}[0]
-    abstract fun source(okio/Path): okio/Source // com.wire.kalium.logic.data.asset/KaliumFileSystem.source|source(okio.Path){}[0]
-    abstract fun tempFilePath(kotlin/String? = ...): okio/Path // com.wire.kalium.logic.data.asset/KaliumFileSystem.tempFilePath|tempFilePath(kotlin.String?){}[0]
-    abstract suspend fun listDirectories(okio/Path): kotlin.collections/List<okio/Path> // com.wire.kalium.logic.data.asset/KaliumFileSystem.listDirectories|listDirectories(okio.Path){}[0]
-    abstract suspend fun readByteArray(okio/Path): kotlin/ByteArray // com.wire.kalium.logic.data.asset/KaliumFileSystem.readByteArray|readByteArray(okio.Path){}[0]
-    abstract suspend fun writeData(okio/Sink, okio/Source): kotlin/Long // com.wire.kalium.logic.data.asset/KaliumFileSystem.writeData|writeData(okio.Sink;okio.Source){}[0]
-}
-
 abstract interface com.wire.kalium.logic.data.conversation/FetchConversationUseCase { // com.wire.kalium.logic.data.conversation/FetchConversationUseCase|null[0]
     abstract suspend fun fetchWithTransaction(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.conversation/ConversationSyncReason = ...): com.wire.kalium.common.functional/Either<com.wire.kalium.common.error/CoreFailure, kotlin/Unit> // com.wire.kalium.logic.data.conversation/FetchConversationUseCase.fetchWithTransaction|fetchWithTransaction(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.conversation.ConversationSyncReason){}[0]
     abstract suspend fun invoke(com.wire.kalium.cryptography/CryptoTransactionContext, com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.conversation/ConversationSyncReason = ...): com.wire.kalium.common.functional/Either<com.wire.kalium.common.error/CoreFailure, kotlin/Unit> // com.wire.kalium.logic.data.conversation/FetchConversationUseCase.invoke|invoke(com.wire.kalium.cryptography.CryptoTransactionContext;com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.conversation.ConversationSyncReason){}[0]
@@ -220,10 +197,6 @@ abstract interface com.wire.kalium.logic.data.conversation/ResetMLSConversationU
 abstract interface com.wire.kalium.logic.data.id/FederatedIdMapper { // com.wire.kalium.logic.data.id/FederatedIdMapper|null[0]
     abstract suspend fun parseToFederatedId(com.wire.kalium.logic.data.id/QualifiedID): kotlin/String // com.wire.kalium.logic.data.id/FederatedIdMapper.parseToFederatedId|parseToFederatedId(com.wire.kalium.logic.data.id.QualifiedID){}[0]
     abstract suspend fun parseToFederatedId(kotlin/String): kotlin/String // com.wire.kalium.logic.data.id/FederatedIdMapper.parseToFederatedId|parseToFederatedId(kotlin.String){}[0]
-}
-
-abstract interface com.wire.kalium.logic.data.id/QualifiedIdMapper { // com.wire.kalium.logic.data.id/QualifiedIdMapper|null[0]
-    abstract fun fromStringToQualifiedID(kotlin/String): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.id/QualifiedIdMapper.fromStringToQualifiedID|fromStringToQualifiedID(kotlin.String){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.analytics/AnalyticsIdentifierManager { // com.wire.kalium.logic.feature.analytics/AnalyticsIdentifierManager|null[0]
@@ -2066,51 +2039,6 @@ abstract interface com.wire.kalium.logic.util/ExponentialDurationHelper { // com
     abstract fun reset() // com.wire.kalium.logic.util/ExponentialDurationHelper.reset|reset(){}[0]
 }
 
-sealed interface com.wire.kalium.logic.configuration.server/CommonApiVersionType { // com.wire.kalium.logic.configuration.server/CommonApiVersionType|null[0]
-    abstract val version // com.wire.kalium.logic.configuration.server/CommonApiVersionType.version|{}version[0]
-        abstract fun <get-version>(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.version.<get-version>|<get-version>(){}[0]
-
-    final class Valid : com.wire.kalium.logic.configuration.server/CommonApiVersionType { // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Valid|null[0]
-        constructor <init>(kotlin/Int) // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Valid.<init>|<init>(kotlin.Int){}[0]
-
-        final val version // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Valid.version|{}version[0]
-            final fun <get-version>(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Valid.version.<get-version>|<get-version>(){}[0]
-
-        final fun component1(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Valid.component1|component1(){}[0]
-        final fun copy(kotlin/Int = ...): com.wire.kalium.logic.configuration.server/CommonApiVersionType.Valid // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Valid.copy|copy(kotlin.Int){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Valid.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Valid.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Valid.toString|toString(){}[0]
-    }
-
-    final object Companion { // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Companion|null[0]
-        final const val MINIMUM_VALID_API_VERSION // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Companion.MINIMUM_VALID_API_VERSION|{}MINIMUM_VALID_API_VERSION[0]
-            final fun <get-MINIMUM_VALID_API_VERSION>(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Companion.MINIMUM_VALID_API_VERSION.<get-MINIMUM_VALID_API_VERSION>|<get-MINIMUM_VALID_API_VERSION>(){}[0]
-        final const val NEW_API_VERSION_NUMBER // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Companion.NEW_API_VERSION_NUMBER|{}NEW_API_VERSION_NUMBER[0]
-            final fun <get-NEW_API_VERSION_NUMBER>(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Companion.NEW_API_VERSION_NUMBER.<get-NEW_API_VERSION_NUMBER>|<get-NEW_API_VERSION_NUMBER>(){}[0]
-        final const val UNKNOWN_API_VERSION_NUMBER // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Companion.UNKNOWN_API_VERSION_NUMBER|{}UNKNOWN_API_VERSION_NUMBER[0]
-            final fun <get-UNKNOWN_API_VERSION_NUMBER>(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Companion.UNKNOWN_API_VERSION_NUMBER.<get-UNKNOWN_API_VERSION_NUMBER>|<get-UNKNOWN_API_VERSION_NUMBER>(){}[0]
-    }
-
-    final object New : com.wire.kalium.logic.configuration.server/CommonApiVersionType { // com.wire.kalium.logic.configuration.server/CommonApiVersionType.New|null[0]
-        final val version // com.wire.kalium.logic.configuration.server/CommonApiVersionType.New.version|{}version[0]
-            final fun <get-version>(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.New.version.<get-version>|<get-version>(){}[0]
-
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration.server/CommonApiVersionType.New.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.New.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.configuration.server/CommonApiVersionType.New.toString|toString(){}[0]
-    }
-
-    final object Unknown : com.wire.kalium.logic.configuration.server/CommonApiVersionType { // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Unknown|null[0]
-        final val version // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Unknown.version|{}version[0]
-            final fun <get-version>(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Unknown.version.<get-version>|<get-version>(){}[0]
-
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Unknown.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Unknown.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.configuration.server/CommonApiVersionType.Unknown.toString|toString(){}[0]
-    }
-}
-
 sealed interface com.wire.kalium.logic.data.conversation/ConversationListItem { // com.wire.kalium.logic.data.conversation/ConversationListItem|null[0]
     abstract val activityTime // com.wire.kalium.logic.data.conversation/ConversationListItem.activityTime|{}activityTime[0]
         abstract fun <get-activityTime>(): kotlin.time/Instant // com.wire.kalium.logic.data.conversation/ConversationListItem.activityTime.<get-activityTime>|<get-activityTime>(){}[0]
@@ -3014,27 +2942,6 @@ sealed interface com.wire.kalium.logic.feature.featureConfig/AppsAllowedResult {
     }
 }
 
-sealed interface com.wire.kalium.logic.featureFlags/BuildFileRestrictionState { // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState|null[0]
-    final class AllowSome : com.wire.kalium.logic.featureFlags/BuildFileRestrictionState { // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.AllowSome|null[0]
-        constructor <init>(kotlin.collections/List<kotlin/String>) // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.AllowSome.<init>|<init>(kotlin.collections.List<kotlin.String>){}[0]
-
-        final val allowedType // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.AllowSome.allowedType|{}allowedType[0]
-            final fun <get-allowedType>(): kotlin.collections/List<kotlin/String> // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.AllowSome.allowedType.<get-allowedType>|<get-allowedType>(){}[0]
-
-        final fun component1(): kotlin.collections/List<kotlin/String> // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.AllowSome.component1|component1(){}[0]
-        final fun copy(kotlin.collections/List<kotlin/String> = ...): com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.AllowSome // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.AllowSome.copy|copy(kotlin.collections.List<kotlin.String>){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.AllowSome.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.AllowSome.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.AllowSome.toString|toString(){}[0]
-    }
-
-    final object NoRestriction : com.wire.kalium.logic.featureFlags/BuildFileRestrictionState { // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.NoRestriction|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.NoRestriction.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.NoRestriction.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.featureFlags/BuildFileRestrictionState.NoRestriction.toString|toString(){}[0]
-    }
-}
-
 abstract class com.wire.kalium.logic.sync/SyncExecutor { // com.wire.kalium.logic.sync/SyncExecutor|null[0]
     constructor <init>() // com.wire.kalium.logic.sync/SyncExecutor.<init>|<init>(){}[0]
 
@@ -3066,303 +2973,7 @@ abstract class com.wire.kalium.logic/CoreLogicCommon { // com.wire.kalium.logic/
     final fun versionedAuthenticationScope(com.wire.kalium.logic.configuration.server/ServerConfig.Links): com.wire.kalium.logic.feature.auth.autoVersioningAuth/AutoVersionAuthScopeUseCase // com.wire.kalium.logic/CoreLogicCommon.versionedAuthenticationScope|versionedAuthenticationScope(com.wire.kalium.logic.configuration.server.ServerConfig.Links){}[0]
     final inline fun <#A1: kotlin/Any?> globalScope(kotlin/Function1<com.wire.kalium.logic/GlobalKaliumScope, #A1>): #A1 // com.wire.kalium.logic/CoreLogicCommon.globalScope|globalScope(kotlin.Function1<com.wire.kalium.logic.GlobalKaliumScope,0:0>){0§<kotlin.Any?>}[0]
     final inline fun <#A1: kotlin/Any?> sessionScope(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Function1<com.wire.kalium.logic.feature/UserSessionScope, #A1>): #A1 // com.wire.kalium.logic/CoreLogicCommon.sessionScope|sessionScope(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Function1<com.wire.kalium.logic.feature.UserSessionScope,0:0>){0§<kotlin.Any?>}[0]
-}
-
-final class com.wire.kalium.logic.configuration.server/ServerConfig { // com.wire.kalium.logic.configuration.server/ServerConfig|null[0]
-    constructor <init>(kotlin/String, com.wire.kalium.logic.configuration.server/ServerConfig.Links, com.wire.kalium.logic.configuration.server/ServerConfig.MetaData) // com.wire.kalium.logic.configuration.server/ServerConfig.<init>|<init>(kotlin.String;com.wire.kalium.logic.configuration.server.ServerConfig.Links;com.wire.kalium.logic.configuration.server.ServerConfig.MetaData){}[0]
-
-    final val id // com.wire.kalium.logic.configuration.server/ServerConfig.id|{}id[0]
-        final fun <get-id>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.id.<get-id>|<get-id>(){}[0]
-    final val links // com.wire.kalium.logic.configuration.server/ServerConfig.links|{}links[0]
-        final fun <get-links>(): com.wire.kalium.logic.configuration.server/ServerConfig.Links // com.wire.kalium.logic.configuration.server/ServerConfig.links.<get-links>|<get-links>(){}[0]
-    final val metaData // com.wire.kalium.logic.configuration.server/ServerConfig.metaData|{}metaData[0]
-        final fun <get-metaData>(): com.wire.kalium.logic.configuration.server/ServerConfig.MetaData // com.wire.kalium.logic.configuration.server/ServerConfig.metaData.<get-metaData>|<get-metaData>(){}[0]
-
-    final fun component1(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.component1|component1(){}[0]
-    final fun component2(): com.wire.kalium.logic.configuration.server/ServerConfig.Links // com.wire.kalium.logic.configuration.server/ServerConfig.component2|component2(){}[0]
-    final fun component3(): com.wire.kalium.logic.configuration.server/ServerConfig.MetaData // com.wire.kalium.logic.configuration.server/ServerConfig.component3|component3(){}[0]
-    final fun copy(kotlin/String = ..., com.wire.kalium.logic.configuration.server/ServerConfig.Links = ..., com.wire.kalium.logic.configuration.server/ServerConfig.MetaData = ...): com.wire.kalium.logic.configuration.server/ServerConfig // com.wire.kalium.logic.configuration.server/ServerConfig.copy|copy(kotlin.String;com.wire.kalium.logic.configuration.server.ServerConfig.Links;com.wire.kalium.logic.configuration.server.ServerConfig.MetaData){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration.server/ServerConfig.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.toString|toString(){}[0]
-
-    final class ApiProxy { // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy|null[0]
-        constructor <init>(kotlin/Boolean, kotlin/String, kotlin/Int) // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.<init>|<init>(kotlin.Boolean;kotlin.String;kotlin.Int){}[0]
-
-        final val host // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.host|{}host[0]
-            final fun <get-host>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.host.<get-host>|<get-host>(){}[0]
-        final val needsAuthentication // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.needsAuthentication|{}needsAuthentication[0]
-            final fun <get-needsAuthentication>(): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.needsAuthentication.<get-needsAuthentication>|<get-needsAuthentication>(){}[0]
-        final val port // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.port|{}port[0]
-            final fun <get-port>(): kotlin/Int // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.port.<get-port>|<get-port>(){}[0]
-
-        final fun component1(): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.component1|component1(){}[0]
-        final fun component2(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.component2|component2(){}[0]
-        final fun component3(): kotlin/Int // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.component3|component3(){}[0]
-        final fun copy(kotlin/Boolean = ..., kotlin/String = ..., kotlin/Int = ...): com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.copy|copy(kotlin.Boolean;kotlin.String;kotlin.Int){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.toString|toString(){}[0]
-
-        final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy> { // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.$serializer|null[0]
-            final val descriptor // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.$serializer.descriptor|{}descriptor[0]
-                final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
-
-            final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.$serializer.childSerializers|childSerializers(){}[0]
-            final fun deserialize(kotlinx.serialization.encoding/Decoder): com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
-            final fun serialize(kotlinx.serialization.encoding/Encoder, com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy) // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;com.wire.kalium.logic.configuration.server.ServerConfig.ApiProxy){}[0]
-        }
-
-        final object Companion { // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.Companion|null[0]
-            final fun serializer(): kotlinx.serialization/KSerializer<com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy> // com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy.Companion.serializer|serializer(){}[0]
-        }
-    }
-
-    final class Links { // com.wire.kalium.logic.configuration.server/ServerConfig.Links|null[0]
-        constructor <init>(kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/Boolean, com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy?, kotlin/String? = ...) // com.wire.kalium.logic.configuration.server/ServerConfig.Links.<init>|<init>(kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.Boolean;com.wire.kalium.logic.configuration.server.ServerConfig.ApiProxy?;kotlin.String?){}[0]
-
-        final val accounts // com.wire.kalium.logic.configuration.server/ServerConfig.Links.accounts|{}accounts[0]
-            final fun <get-accounts>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.accounts.<get-accounts>|<get-accounts>(){}[0]
-        final val api // com.wire.kalium.logic.configuration.server/ServerConfig.Links.api|{}api[0]
-            final fun <get-api>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.api.<get-api>|<get-api>(){}[0]
-        final val apiProxy // com.wire.kalium.logic.configuration.server/ServerConfig.Links.apiProxy|{}apiProxy[0]
-            final fun <get-apiProxy>(): com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy? // com.wire.kalium.logic.configuration.server/ServerConfig.Links.apiProxy.<get-apiProxy>|<get-apiProxy>(){}[0]
-        final val blackList // com.wire.kalium.logic.configuration.server/ServerConfig.Links.blackList|{}blackList[0]
-            final fun <get-blackList>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.blackList.<get-blackList>|<get-blackList>(){}[0]
-        final val forgotPassword // com.wire.kalium.logic.configuration.server/ServerConfig.Links.forgotPassword|{}forgotPassword[0]
-            final fun <get-forgotPassword>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.forgotPassword.<get-forgotPassword>|<get-forgotPassword>(){}[0]
-        final val isOnPremises // com.wire.kalium.logic.configuration.server/ServerConfig.Links.isOnPremises|{}isOnPremises[0]
-            final fun <get-isOnPremises>(): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.Links.isOnPremises.<get-isOnPremises>|<get-isOnPremises>(){}[0]
-        final val pricing // com.wire.kalium.logic.configuration.server/ServerConfig.Links.pricing|{}pricing[0]
-            final fun <get-pricing>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.pricing.<get-pricing>|<get-pricing>(){}[0]
-        final val supportEmail // com.wire.kalium.logic.configuration.server/ServerConfig.Links.supportEmail|{}supportEmail[0]
-            final fun <get-supportEmail>(): kotlin/String? // com.wire.kalium.logic.configuration.server/ServerConfig.Links.supportEmail.<get-supportEmail>|<get-supportEmail>(){}[0]
-        final val teams // com.wire.kalium.logic.configuration.server/ServerConfig.Links.teams|{}teams[0]
-            final fun <get-teams>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.teams.<get-teams>|<get-teams>(){}[0]
-        final val title // com.wire.kalium.logic.configuration.server/ServerConfig.Links.title|{}title[0]
-            final fun <get-title>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.title.<get-title>|<get-title>(){}[0]
-        final val tos // com.wire.kalium.logic.configuration.server/ServerConfig.Links.tos|{}tos[0]
-            final fun <get-tos>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.tos.<get-tos>|<get-tos>(){}[0]
-        final val webSocket // com.wire.kalium.logic.configuration.server/ServerConfig.Links.webSocket|{}webSocket[0]
-            final fun <get-webSocket>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.webSocket.<get-webSocket>|<get-webSocket>(){}[0]
-        final val website // com.wire.kalium.logic.configuration.server/ServerConfig.Links.website|{}website[0]
-            final fun <get-website>(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.website.<get-website>|<get-website>(){}[0]
-
-        final fun component1(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component1|component1(){}[0]
-        final fun component10(): kotlin/String? // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component10|component10(){}[0]
-        final fun component2(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component2|component2(){}[0]
-        final fun component3(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component3|component3(){}[0]
-        final fun component4(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component4|component4(){}[0]
-        final fun component5(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component5|component5(){}[0]
-        final fun component6(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component6|component6(){}[0]
-        final fun component7(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component7|component7(){}[0]
-        final fun component8(): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component8|component8(){}[0]
-        final fun component9(): com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy? // com.wire.kalium.logic.configuration.server/ServerConfig.Links.component9|component9(){}[0]
-        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/Boolean = ..., com.wire.kalium.logic.configuration.server/ServerConfig.ApiProxy? = ..., kotlin/String? = ...): com.wire.kalium.logic.configuration.server/ServerConfig.Links // com.wire.kalium.logic.configuration.server/ServerConfig.Links.copy|copy(kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.Boolean;com.wire.kalium.logic.configuration.server.ServerConfig.ApiProxy?;kotlin.String?){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.Links.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration.server/ServerConfig.Links.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.Links.toString|toString(){}[0]
-
-        final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<com.wire.kalium.logic.configuration.server/ServerConfig.Links> { // com.wire.kalium.logic.configuration.server/ServerConfig.Links.$serializer|null[0]
-            final val descriptor // com.wire.kalium.logic.configuration.server/ServerConfig.Links.$serializer.descriptor|{}descriptor[0]
-                final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // com.wire.kalium.logic.configuration.server/ServerConfig.Links.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
-
-            final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // com.wire.kalium.logic.configuration.server/ServerConfig.Links.$serializer.childSerializers|childSerializers(){}[0]
-            final fun deserialize(kotlinx.serialization.encoding/Decoder): com.wire.kalium.logic.configuration.server/ServerConfig.Links // com.wire.kalium.logic.configuration.server/ServerConfig.Links.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
-            final fun serialize(kotlinx.serialization.encoding/Encoder, com.wire.kalium.logic.configuration.server/ServerConfig.Links) // com.wire.kalium.logic.configuration.server/ServerConfig.Links.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;com.wire.kalium.logic.configuration.server.ServerConfig.Links){}[0]
-        }
-
-        final object Companion { // com.wire.kalium.logic.configuration.server/ServerConfig.Links.Companion|null[0]
-            final fun serializer(): kotlinx.serialization/KSerializer<com.wire.kalium.logic.configuration.server/ServerConfig.Links> // com.wire.kalium.logic.configuration.server/ServerConfig.Links.Companion.serializer|serializer(){}[0]
-        }
-    }
-
-    final class MetaData { // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData|null[0]
-        constructor <init>(kotlin/Boolean, com.wire.kalium.logic.configuration.server/CommonApiVersionType, kotlin/String?) // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.<init>|<init>(kotlin.Boolean;com.wire.kalium.logic.configuration.server.CommonApiVersionType;kotlin.String?){}[0]
-
-        final val commonApiVersion // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.commonApiVersion|{}commonApiVersion[0]
-            final fun <get-commonApiVersion>(): com.wire.kalium.logic.configuration.server/CommonApiVersionType // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.commonApiVersion.<get-commonApiVersion>|<get-commonApiVersion>(){}[0]
-        final val domain // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.domain|{}domain[0]
-            final fun <get-domain>(): kotlin/String? // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.domain.<get-domain>|<get-domain>(){}[0]
-        final val federation // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.federation|{}federation[0]
-            final fun <get-federation>(): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.federation.<get-federation>|<get-federation>(){}[0]
-
-        final fun component1(): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.component1|component1(){}[0]
-        final fun component2(): com.wire.kalium.logic.configuration.server/CommonApiVersionType // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.component2|component2(){}[0]
-        final fun component3(): kotlin/String? // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.component3|component3(){}[0]
-        final fun copy(kotlin/Boolean = ..., com.wire.kalium.logic.configuration.server/CommonApiVersionType = ..., kotlin/String? = ...): com.wire.kalium.logic.configuration.server/ServerConfig.MetaData // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.copy|copy(kotlin.Boolean;com.wire.kalium.logic.configuration.server.CommonApiVersionType;kotlin.String?){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.toString|toString(){}[0]
-
-        final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<com.wire.kalium.logic.configuration.server/ServerConfig.MetaData> { // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.$serializer|null[0]
-            final val descriptor // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.$serializer.descriptor|{}descriptor[0]
-                final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
-
-            final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.$serializer.childSerializers|childSerializers(){}[0]
-            final fun deserialize(kotlinx.serialization.encoding/Decoder): com.wire.kalium.logic.configuration.server/ServerConfig.MetaData // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
-            final fun serialize(kotlinx.serialization.encoding/Encoder, com.wire.kalium.logic.configuration.server/ServerConfig.MetaData) // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;com.wire.kalium.logic.configuration.server.ServerConfig.MetaData){}[0]
-        }
-
-        final object Companion { // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.Companion|null[0]
-            final val $childSerializers // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.Companion.$childSerializers|{}$childSerializers[0]
-
-            final fun serializer(): kotlinx.serialization/KSerializer<com.wire.kalium.logic.configuration.server/ServerConfig.MetaData> // com.wire.kalium.logic.configuration.server/ServerConfig.MetaData.Companion.serializer|serializer(){}[0]
-        }
-    }
-
-    final class VersionInfo { // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo|null[0]
-        constructor <init>(kotlin/Boolean, kotlin.collections/List<kotlin/Int>, kotlin/String? = ..., kotlin.collections/List<kotlin/Int>? = ...) // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.<init>|<init>(kotlin.Boolean;kotlin.collections.List<kotlin.Int>;kotlin.String?;kotlin.collections.List<kotlin.Int>?){}[0]
-
-        final val developmentSupported // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.developmentSupported|{}developmentSupported[0]
-            final fun <get-developmentSupported>(): kotlin.collections/List<kotlin/Int>? // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.developmentSupported.<get-developmentSupported>|<get-developmentSupported>(){}[0]
-        final val domain // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.domain|{}domain[0]
-            final fun <get-domain>(): kotlin/String? // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.domain.<get-domain>|<get-domain>(){}[0]
-        final val federation // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.federation|{}federation[0]
-            final fun <get-federation>(): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.federation.<get-federation>|<get-federation>(){}[0]
-        final val supported // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.supported|{}supported[0]
-            final fun <get-supported>(): kotlin.collections/List<kotlin/Int> // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.supported.<get-supported>|<get-supported>(){}[0]
-
-        final fun component1(): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.component1|component1(){}[0]
-        final fun component2(): kotlin.collections/List<kotlin/Int> // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.component2|component2(){}[0]
-        final fun component3(): kotlin/String? // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.component3|component3(){}[0]
-        final fun component4(): kotlin.collections/List<kotlin/Int>? // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.component4|component4(){}[0]
-        final fun copy(kotlin/Boolean = ..., kotlin.collections/List<kotlin/Int> = ..., kotlin/String? = ..., kotlin.collections/List<kotlin/Int>? = ...): com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.copy|copy(kotlin.Boolean;kotlin.collections.List<kotlin.Int>;kotlin.String?;kotlin.collections.List<kotlin.Int>?){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.toString|toString(){}[0]
-
-        final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo> { // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.$serializer|null[0]
-            final val descriptor // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.$serializer.descriptor|{}descriptor[0]
-                final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
-
-            final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.$serializer.childSerializers|childSerializers(){}[0]
-            final fun deserialize(kotlinx.serialization.encoding/Decoder): com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
-            final fun serialize(kotlinx.serialization.encoding/Encoder, com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo) // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;com.wire.kalium.logic.configuration.server.ServerConfig.VersionInfo){}[0]
-        }
-
-        final object Companion { // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.Companion|null[0]
-            final val $childSerializers // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.Companion.$childSerializers|{}$childSerializers[0]
-
-            final fun serializer(): kotlinx.serialization/KSerializer<com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo> // com.wire.kalium.logic.configuration.server/ServerConfig.VersionInfo.Companion.serializer|serializer(){}[0]
-        }
-    }
-
-    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<com.wire.kalium.logic.configuration.server/ServerConfig> { // com.wire.kalium.logic.configuration.server/ServerConfig.$serializer|null[0]
-        final val descriptor // com.wire.kalium.logic.configuration.server/ServerConfig.$serializer.descriptor|{}descriptor[0]
-            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // com.wire.kalium.logic.configuration.server/ServerConfig.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
-
-        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // com.wire.kalium.logic.configuration.server/ServerConfig.$serializer.childSerializers|childSerializers(){}[0]
-        final fun deserialize(kotlinx.serialization.encoding/Decoder): com.wire.kalium.logic.configuration.server/ServerConfig // com.wire.kalium.logic.configuration.server/ServerConfig.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
-        final fun serialize(kotlinx.serialization.encoding/Encoder, com.wire.kalium.logic.configuration.server/ServerConfig) // com.wire.kalium.logic.configuration.server/ServerConfig.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;com.wire.kalium.logic.configuration.server.ServerConfig){}[0]
-    }
-
-    final object Companion { // com.wire.kalium.logic.configuration.server/ServerConfig.Companion|null[0]
-        final val DEFAULT // com.wire.kalium.logic.configuration.server/ServerConfig.Companion.DEFAULT|{}DEFAULT[0]
-            final fun <get-DEFAULT>(): com.wire.kalium.logic.configuration.server/ServerConfig.Links // com.wire.kalium.logic.configuration.server/ServerConfig.Companion.DEFAULT.<get-DEFAULT>|<get-DEFAULT>(){}[0]
-        final val DUMMY // com.wire.kalium.logic.configuration.server/ServerConfig.Companion.DUMMY|{}DUMMY[0]
-            final fun <get-DUMMY>(): com.wire.kalium.logic.configuration.server/ServerConfig.Links // com.wire.kalium.logic.configuration.server/ServerConfig.Companion.DUMMY.<get-DUMMY>|<get-DUMMY>(){}[0]
-        final val PRODUCTION // com.wire.kalium.logic.configuration.server/ServerConfig.Companion.PRODUCTION|{}PRODUCTION[0]
-            final fun <get-PRODUCTION>(): com.wire.kalium.logic.configuration.server/ServerConfig.Links // com.wire.kalium.logic.configuration.server/ServerConfig.Companion.PRODUCTION.<get-PRODUCTION>|<get-PRODUCTION>(){}[0]
-        final val STAGING // com.wire.kalium.logic.configuration.server/ServerConfig.Companion.STAGING|{}STAGING[0]
-            final fun <get-STAGING>(): com.wire.kalium.logic.configuration.server/ServerConfig.Links // com.wire.kalium.logic.configuration.server/ServerConfig.Companion.STAGING.<get-STAGING>|<get-STAGING>(){}[0]
-
-        final fun serializer(): kotlinx.serialization/KSerializer<com.wire.kalium.logic.configuration.server/ServerConfig> // com.wire.kalium.logic.configuration.server/ServerConfig.Companion.serializer|serializer(){}[0]
-    }
-}
-
-final class com.wire.kalium.logic.configuration.server/ServerConfigWithUserId { // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId|null[0]
-    constructor <init>(com.wire.kalium.logic.configuration.server/ServerConfig, com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.<init>|<init>(com.wire.kalium.logic.configuration.server.ServerConfig;com.wire.kalium.logic.data.id.QualifiedID){}[0]
-
-    final val serverConfig // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.serverConfig|{}serverConfig[0]
-        final fun <get-serverConfig>(): com.wire.kalium.logic.configuration.server/ServerConfig // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.serverConfig.<get-serverConfig>|<get-serverConfig>(){}[0]
-    final val userId // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.userId|{}userId[0]
-        final fun <get-userId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.userId.<get-userId>|<get-userId>(){}[0]
-
-    final fun component1(): com.wire.kalium.logic.configuration.server/ServerConfig // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.component1|component1(){}[0]
-    final fun component2(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.component2|component2(){}[0]
-    final fun copy(com.wire.kalium.logic.configuration.server/ServerConfig = ..., com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.logic.configuration.server/ServerConfigWithUserId // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.copy|copy(com.wire.kalium.logic.configuration.server.ServerConfig;com.wire.kalium.logic.data.id.QualifiedID){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.configuration.server/ServerConfigWithUserId.toString|toString(){}[0]
-}
-
-final class com.wire.kalium.logic.configuration/AppLockTeamConfig { // com.wire.kalium.logic.configuration/AppLockTeamConfig|null[0]
-    constructor <init>(kotlin/Boolean, kotlin.time/Duration, kotlin/Boolean?) // com.wire.kalium.logic.configuration/AppLockTeamConfig.<init>|<init>(kotlin.Boolean;kotlin.time.Duration;kotlin.Boolean?){}[0]
-
-    final val isEnforced // com.wire.kalium.logic.configuration/AppLockTeamConfig.isEnforced|{}isEnforced[0]
-        final fun <get-isEnforced>(): kotlin/Boolean // com.wire.kalium.logic.configuration/AppLockTeamConfig.isEnforced.<get-isEnforced>|<get-isEnforced>(){}[0]
-    final val isStatusChanged // com.wire.kalium.logic.configuration/AppLockTeamConfig.isStatusChanged|{}isStatusChanged[0]
-        final fun <get-isStatusChanged>(): kotlin/Boolean? // com.wire.kalium.logic.configuration/AppLockTeamConfig.isStatusChanged.<get-isStatusChanged>|<get-isStatusChanged>(){}[0]
-    final val timeout // com.wire.kalium.logic.configuration/AppLockTeamConfig.timeout|{}timeout[0]
-        final fun <get-timeout>(): kotlin.time/Duration // com.wire.kalium.logic.configuration/AppLockTeamConfig.timeout.<get-timeout>|<get-timeout>(){}[0]
-
-    final fun component1(): kotlin/Boolean // com.wire.kalium.logic.configuration/AppLockTeamConfig.component1|component1(){}[0]
-    final fun component2(): kotlin.time/Duration // com.wire.kalium.logic.configuration/AppLockTeamConfig.component2|component2(){}[0]
-    final fun component3(): kotlin/Boolean? // com.wire.kalium.logic.configuration/AppLockTeamConfig.component3|component3(){}[0]
-    final fun copy(kotlin/Boolean = ..., kotlin.time/Duration = ..., kotlin/Boolean? = ...): com.wire.kalium.logic.configuration/AppLockTeamConfig // com.wire.kalium.logic.configuration/AppLockTeamConfig.copy|copy(kotlin.Boolean;kotlin.time.Duration;kotlin.Boolean?){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration/AppLockTeamConfig.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration/AppLockTeamConfig.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.configuration/AppLockTeamConfig.toString|toString(){}[0]
-}
-
-final class com.wire.kalium.logic.configuration/FileSharingStatus { // com.wire.kalium.logic.configuration/FileSharingStatus|null[0]
-    constructor <init>(com.wire.kalium.logic.configuration/FileSharingStatus.Value, kotlin/Boolean?) // com.wire.kalium.logic.configuration/FileSharingStatus.<init>|<init>(com.wire.kalium.logic.configuration.FileSharingStatus.Value;kotlin.Boolean?){}[0]
-
-    final val isStatusChanged // com.wire.kalium.logic.configuration/FileSharingStatus.isStatusChanged|{}isStatusChanged[0]
-        final fun <get-isStatusChanged>(): kotlin/Boolean? // com.wire.kalium.logic.configuration/FileSharingStatus.isStatusChanged.<get-isStatusChanged>|<get-isStatusChanged>(){}[0]
-    final val state // com.wire.kalium.logic.configuration/FileSharingStatus.state|{}state[0]
-        final fun <get-state>(): com.wire.kalium.logic.configuration/FileSharingStatus.Value // com.wire.kalium.logic.configuration/FileSharingStatus.state.<get-state>|<get-state>(){}[0]
-
-    final fun component1(): com.wire.kalium.logic.configuration/FileSharingStatus.Value // com.wire.kalium.logic.configuration/FileSharingStatus.component1|component1(){}[0]
-    final fun component2(): kotlin/Boolean? // com.wire.kalium.logic.configuration/FileSharingStatus.component2|component2(){}[0]
-    final fun copy(com.wire.kalium.logic.configuration/FileSharingStatus.Value = ..., kotlin/Boolean? = ...): com.wire.kalium.logic.configuration/FileSharingStatus // com.wire.kalium.logic.configuration/FileSharingStatus.copy|copy(com.wire.kalium.logic.configuration.FileSharingStatus.Value;kotlin.Boolean?){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration/FileSharingStatus.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration/FileSharingStatus.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.configuration/FileSharingStatus.toString|toString(){}[0]
-
-    sealed interface Value { // com.wire.kalium.logic.configuration/FileSharingStatus.Value|null[0]
-        final class EnabledSome : com.wire.kalium.logic.configuration/FileSharingStatus.Value { // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledSome|null[0]
-            constructor <init>(kotlin.collections/List<kotlin/String>) // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledSome.<init>|<init>(kotlin.collections.List<kotlin.String>){}[0]
-
-            final val allowedType // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledSome.allowedType|{}allowedType[0]
-                final fun <get-allowedType>(): kotlin.collections/List<kotlin/String> // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledSome.allowedType.<get-allowedType>|<get-allowedType>(){}[0]
-
-            final fun component1(): kotlin.collections/List<kotlin/String> // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledSome.component1|component1(){}[0]
-            final fun copy(kotlin.collections/List<kotlin/String> = ...): com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledSome // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledSome.copy|copy(kotlin.collections.List<kotlin.String>){}[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledSome.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledSome.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledSome.toString|toString(){}[0]
-        }
-
-        final object Disabled : com.wire.kalium.logic.configuration/FileSharingStatus.Value { // com.wire.kalium.logic.configuration/FileSharingStatus.Value.Disabled|null[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration/FileSharingStatus.Value.Disabled.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration/FileSharingStatus.Value.Disabled.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.configuration/FileSharingStatus.Value.Disabled.toString|toString(){}[0]
-        }
-
-        final object EnabledAll : com.wire.kalium.logic.configuration/FileSharingStatus.Value { // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledAll|null[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledAll.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledAll.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.configuration/FileSharingStatus.Value.EnabledAll.toString|toString(){}[0]
-        }
-    }
-}
-
-final class com.wire.kalium.logic.configuration/GuestRoomLinkStatus { // com.wire.kalium.logic.configuration/GuestRoomLinkStatus|null[0]
-    constructor <init>(kotlin/Boolean?, kotlin/Boolean?) // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.<init>|<init>(kotlin.Boolean?;kotlin.Boolean?){}[0]
-
-    final val isGuestRoomLinkEnabled // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.isGuestRoomLinkEnabled|{}isGuestRoomLinkEnabled[0]
-        final fun <get-isGuestRoomLinkEnabled>(): kotlin/Boolean? // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.isGuestRoomLinkEnabled.<get-isGuestRoomLinkEnabled>|<get-isGuestRoomLinkEnabled>(){}[0]
-    final val isStatusChanged // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.isStatusChanged|{}isStatusChanged[0]
-        final fun <get-isStatusChanged>(): kotlin/Boolean? // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.isStatusChanged.<get-isStatusChanged>|<get-isStatusChanged>(){}[0]
-
-    final fun component1(): kotlin/Boolean? // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.component1|component1(){}[0]
-    final fun component2(): kotlin/Boolean? // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.component2|component2(){}[0]
-    final fun copy(kotlin/Boolean? = ..., kotlin/Boolean? = ...): com.wire.kalium.logic.configuration/GuestRoomLinkStatus // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.copy|copy(kotlin.Boolean?;kotlin.Boolean?){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.configuration/GuestRoomLinkStatus.toString|toString(){}[0]
+    final suspend fun openSessionScope(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature/UserSessionScope // com.wire.kalium.logic/CoreLogicCommon.openSessionScope|openSessionScope(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
 final class com.wire.kalium.logic.data.asset/DataStoragePaths { // com.wire.kalium.logic.data.asset/DataStoragePaths|null[0]
@@ -3398,31 +3009,6 @@ final class com.wire.kalium.logic.data.auth.login/ProxyCredentials { // com.wire
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.auth.login/ProxyCredentials.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.auth.login/ProxyCredentials.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.auth.login/ProxyCredentials.toString|toString(){}[0]
-}
-
-final class com.wire.kalium.logic.data.auth/AccountTokens { // com.wire.kalium.logic.data.auth/AccountTokens|null[0]
-    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.session.token/AccessToken, com.wire.kalium.logic.data.session.token/RefreshToken, kotlin/String?) // com.wire.kalium.logic.data.auth/AccountTokens.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.session.token.AccessToken;com.wire.kalium.logic.data.session.token.RefreshToken;kotlin.String?){}[0]
-    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin/String, kotlin/String, kotlin/String?) // com.wire.kalium.logic.data.auth/AccountTokens.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.String;kotlin.String;kotlin.String?){}[0]
-
-    final val accessToken // com.wire.kalium.logic.data.auth/AccountTokens.accessToken|{}accessToken[0]
-        final fun <get-accessToken>(): com.wire.kalium.logic.data.session.token/AccessToken // com.wire.kalium.logic.data.auth/AccountTokens.accessToken.<get-accessToken>|<get-accessToken>(){}[0]
-    final val cookieLabel // com.wire.kalium.logic.data.auth/AccountTokens.cookieLabel|{}cookieLabel[0]
-        final fun <get-cookieLabel>(): kotlin/String? // com.wire.kalium.logic.data.auth/AccountTokens.cookieLabel.<get-cookieLabel>|<get-cookieLabel>(){}[0]
-    final val refreshToken // com.wire.kalium.logic.data.auth/AccountTokens.refreshToken|{}refreshToken[0]
-        final fun <get-refreshToken>(): com.wire.kalium.logic.data.session.token/RefreshToken // com.wire.kalium.logic.data.auth/AccountTokens.refreshToken.<get-refreshToken>|<get-refreshToken>(){}[0]
-    final val tokenType // com.wire.kalium.logic.data.auth/AccountTokens.tokenType|{}tokenType[0]
-        final fun <get-tokenType>(): kotlin/String // com.wire.kalium.logic.data.auth/AccountTokens.tokenType.<get-tokenType>|<get-tokenType>(){}[0]
-    final val userId // com.wire.kalium.logic.data.auth/AccountTokens.userId|{}userId[0]
-        final fun <get-userId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.auth/AccountTokens.userId.<get-userId>|<get-userId>(){}[0]
-
-    final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.auth/AccountTokens.component1|component1(){}[0]
-    final fun component2(): com.wire.kalium.logic.data.session.token/AccessToken // com.wire.kalium.logic.data.auth/AccountTokens.component2|component2(){}[0]
-    final fun component3(): com.wire.kalium.logic.data.session.token/RefreshToken // com.wire.kalium.logic.data.auth/AccountTokens.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // com.wire.kalium.logic.data.auth/AccountTokens.component4|component4(){}[0]
-    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.session.token/AccessToken = ..., com.wire.kalium.logic.data.session.token/RefreshToken = ..., kotlin/String? = ...): com.wire.kalium.logic.data.auth/AccountTokens // com.wire.kalium.logic.data.auth/AccountTokens.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.session.token.AccessToken;com.wire.kalium.logic.data.session.token.RefreshToken;kotlin.String?){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.auth/AccountTokens.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.auth/AccountTokens.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.data.auth/AccountTokens.toString|toString(){}[0]
 }
 
 final class com.wire.kalium.logic.data.auth/AuthenticationResult { // com.wire.kalium.logic.data.auth/AuthenticationResult|null[0]
@@ -3985,38 +3571,6 @@ final class com.wire.kalium.logic.data.publicuser.model/UserSearchDetails { // c
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.publicuser.model/UserSearchDetails.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.publicuser.model/UserSearchDetails.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.publicuser.model/UserSearchDetails.toString|toString(){}[0]
-}
-
-final class com.wire.kalium.logic.data.session.token/AccessToken { // com.wire.kalium.logic.data.session.token/AccessToken|null[0]
-    constructor <init>(kotlin/String, kotlin/String) // com.wire.kalium.logic.data.session.token/AccessToken.<init>|<init>(kotlin.String;kotlin.String){}[0]
-
-    final val tokenType // com.wire.kalium.logic.data.session.token/AccessToken.tokenType|{}tokenType[0]
-        final fun <get-tokenType>(): kotlin/String // com.wire.kalium.logic.data.session.token/AccessToken.tokenType.<get-tokenType>|<get-tokenType>(){}[0]
-    final val value // com.wire.kalium.logic.data.session.token/AccessToken.value|{}value[0]
-        final fun <get-value>(): kotlin/String // com.wire.kalium.logic.data.session.token/AccessToken.value.<get-value>|<get-value>(){}[0]
-
-    final fun component1(): kotlin/String // com.wire.kalium.logic.data.session.token/AccessToken.component1|component1(){}[0]
-    final fun component2(): kotlin/String // com.wire.kalium.logic.data.session.token/AccessToken.component2|component2(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ...): com.wire.kalium.logic.data.session.token/AccessToken // com.wire.kalium.logic.data.session.token/AccessToken.copy|copy(kotlin.String;kotlin.String){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.session.token/AccessToken.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.session.token/AccessToken.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.data.session.token/AccessToken.toString|toString(){}[0]
-}
-
-final class com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult { // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult|null[0]
-    constructor <init>(com.wire.kalium.logic.data.session.token/AccessToken, com.wire.kalium.logic.data.session.token/RefreshToken) // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.<init>|<init>(com.wire.kalium.logic.data.session.token.AccessToken;com.wire.kalium.logic.data.session.token.RefreshToken){}[0]
-
-    final val accessToken // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.accessToken|{}accessToken[0]
-        final fun <get-accessToken>(): com.wire.kalium.logic.data.session.token/AccessToken // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.accessToken.<get-accessToken>|<get-accessToken>(){}[0]
-    final val refreshToken // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.refreshToken|{}refreshToken[0]
-        final fun <get-refreshToken>(): com.wire.kalium.logic.data.session.token/RefreshToken // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.refreshToken.<get-refreshToken>|<get-refreshToken>(){}[0]
-
-    final fun component1(): com.wire.kalium.logic.data.session.token/AccessToken // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.component1|component1(){}[0]
-    final fun component2(): com.wire.kalium.logic.data.session.token/RefreshToken // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.component2|component2(){}[0]
-    final fun copy(com.wire.kalium.logic.data.session.token/AccessToken = ..., com.wire.kalium.logic.data.session.token/RefreshToken = ...): com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.copy|copy(com.wire.kalium.logic.data.session.token.AccessToken;com.wire.kalium.logic.data.session.token.RefreshToken){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.data.session.token/AccessTokenRefreshResult.toString|toString(){}[0]
 }
 
 final class com.wire.kalium.logic.data.session/StoreSessionParam { // com.wire.kalium.logic.data.session/StoreSessionParam|null[0]
@@ -6550,6 +6104,7 @@ final class com.wire.kalium.logic/CoreLogic : com.wire.kalium.logic/CoreLogicCom
         final fun <get-networkStateObserver>(): com.wire.kalium.network/NetworkStateObserver // com.wire.kalium.logic/CoreLogic.networkStateObserver.<get-networkStateObserver>|<get-networkStateObserver>(){}[0]
 
     final fun getSessionScope(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature/UserSessionScope // com.wire.kalium.logic/CoreLogic.getSessionScope|getSessionScope(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    final suspend fun releaseSessionScope(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic/CoreLogic.releaseSessionScope|releaseSessionScope(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
 final class com.wire.kalium.logic/GlobalKaliumScope : kotlinx.coroutines/CoroutineScope { // com.wire.kalium.logic/GlobalKaliumScope|null[0]
@@ -6655,17 +6210,6 @@ final value class com.wire.kalium.logic.data.publicuser.model/UserSearchResult {
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.publicuser.model/UserSearchResult.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.publicuser.model/UserSearchResult.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.publicuser.model/UserSearchResult.toString|toString(){}[0]
-}
-
-final value class com.wire.kalium.logic.data.session.token/RefreshToken { // com.wire.kalium.logic.data.session.token/RefreshToken|null[0]
-    constructor <init>(kotlin/String) // com.wire.kalium.logic.data.session.token/RefreshToken.<init>|<init>(kotlin.String){}[0]
-
-    final val value // com.wire.kalium.logic.data.session.token/RefreshToken.value|{}value[0]
-        final fun <get-value>(): kotlin/String // com.wire.kalium.logic.data.session.token/RefreshToken.value.<get-value>|<get-value>(){}[0]
-
-    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.session.token/RefreshToken.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.session.token/RefreshToken.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // com.wire.kalium.logic.data.session.token/RefreshToken.toString|toString(){}[0]
 }
 
 sealed class com.wire.kalium.logic.data.auth/AccountInfo { // com.wire.kalium.logic.data.auth/AccountInfo|null[0]
@@ -9300,10 +8844,8 @@ final val com.wire.kalium.logic.util/inWholeWeeks // com.wire.kalium.logic.util/
 final fun (com.wire.kalium.network.api.authenticated.notification/EventResponse).com.wire.kalium.logic.data.event/toEventResponseToStore(): com.wire.kalium.network.api.authenticated.notification/EventResponseToStore // com.wire.kalium.logic.data.event/toEventResponseToStore|toEventResponseToStore@com.wire.kalium.network.api.authenticated.notification.EventResponse(){}[0]
 final fun (kotlin.time/Duration?).com.wire.kalium.logic.util/isPositiveNotNull(): kotlin/Boolean // com.wire.kalium.logic.util/isPositiveNotNull|isPositiveNotNull@kotlin.time.Duration?(){}[0]
 final fun (kotlin/Int?).com.wire.kalium.logic.util/isGreaterThan(kotlin/Int?): kotlin/Boolean // com.wire.kalium.logic.util/isGreaterThan|isGreaterThan@kotlin.Int?(kotlin.Int?){}[0]
-final fun (kotlin/String).com.wire.kalium.logic.data.id/toQualifiedID(com.wire.kalium.logic.data.id/QualifiedIdMapper): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.data.id/toQualifiedID|toQualifiedID@kotlin.String(com.wire.kalium.logic.data.id.QualifiedIdMapper){}[0]
 final fun (kotlin/String).com.wire.kalium.logic.util/fileExtension(): kotlin/String? // com.wire.kalium.logic.util/fileExtension|fileExtension@kotlin.String(){}[0]
 final fun (kotlin/String).com.wire.kalium.logic.util/splitFileExtension(): kotlin/Pair<kotlin/String, kotlin/String?> // com.wire.kalium.logic.util/splitFileExtension|splitFileExtension@kotlin.String(){}[0]
 final fun (kotlin/String).com.wire.kalium.logic.util/splitFileExtensionAndCopyCounter(): kotlin/Triple<kotlin/String, kotlin/Int, kotlin/String?> // com.wire.kalium.logic.util/splitFileExtensionAndCopyCounter|splitFileExtensionAndCopyCounter@kotlin.String(){}[0]
-final fun com.wire.kalium.logic.data.id/QualifiedIdMapper(com.wire.kalium.logic.data.id/QualifiedID?): com.wire.kalium.logic.data.id/QualifiedIdMapper // com.wire.kalium.logic.data.id/QualifiedIdMapper|QualifiedIdMapper(com.wire.kalium.logic.data.id.QualifiedID?){}[0]
 final fun com.wire.kalium.logic.util/ExponentialDurationHelper(kotlin.time/Duration, kotlin.time/Duration): com.wire.kalium.logic.util/ExponentialDurationHelper // com.wire.kalium.logic.util/ExponentialDurationHelper|ExponentialDurationHelper(kotlin.time.Duration;kotlin.time.Duration){}[0]
 final fun com.wire.kalium.logic.util/buildFileName(kotlin/String, kotlin/String? = ..., kotlin/Int = ...): kotlin/String // com.wire.kalium.logic.util/buildFileName|buildFileName(kotlin.String;kotlin.String?;kotlin.Int){}[0]

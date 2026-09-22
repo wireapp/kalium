@@ -40,7 +40,6 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.cancel
 
 public actual class CoreLogic(
     rootPath: String,
@@ -103,8 +102,15 @@ public actual class CoreLogic(
     public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    actual override suspend fun deleteSessionScope(userId: UserId) {
-        userSessionScopeProvider.value.get(userId)?.cancel()
+    actual override suspend fun deleteSessionScope(userId: UserId) = releaseSessionScope(userId)
+
+    /**
+     * Release app ownership before allowing the NSE to use this account. First cancel and join
+     * every host account operation and collector, including global account observers. This method
+     * drains session workers and closes resources; it cannot drain coroutines owned by the host.
+     * Failure keeps the account unavailable until process exit.
+     */
+    public suspend fun releaseSessionScope(userId: UserId) {
         userSessionScopeProvider.value.delete(userId)
     }
 

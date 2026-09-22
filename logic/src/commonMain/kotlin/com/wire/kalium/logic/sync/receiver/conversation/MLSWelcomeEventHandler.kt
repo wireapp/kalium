@@ -36,6 +36,7 @@ import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.processMLSWelcome
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
@@ -52,7 +53,6 @@ import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationNotFound
 import kotlinx.coroutines.flow.first
-import kotlin.io.encoding.Base64
 
 internal interface MLSWelcomeEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
@@ -82,9 +82,7 @@ internal class MLSWelcomeEventHandlerImpl(
         return fetchConversationIfUnknown(transactionContext, event.conversationId)
             .flatMap {
                 kaliumLogger.d("$TAG: Processing MLS welcome message")
-                wrapMLSRequest {
-                    mlsContext.processWelcomeMessage(Base64.decode(event.message))
-                }
+                processMLSWelcome(mlsContext, event.message)
             }
             .flatMap { groupId ->
                 kaliumLogger.d("$TAG: Marking conversation as established ${groupId.obfuscateId()}")

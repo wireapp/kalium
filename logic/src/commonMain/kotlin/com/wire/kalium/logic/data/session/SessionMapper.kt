@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
-import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.logout.LogoutReason
@@ -62,25 +61,9 @@ internal interface SessionMapper {
 @Suppress("TooManyFunctions")
 internal class SessionMapperImpl : SessionMapper {
 
-    override fun toSessionDTO(authSession: AccountTokens): SessionDTO = with(authSession) {
-        SessionDTO(
-            userId = userId.toApi(),
-            tokenType = tokenType,
-            accessToken = accessToken.value,
-            refreshToken = refreshToken.value,
-            cookieLabel = cookieLabel
-        )
-    }
+    override fun toSessionDTO(authSession: AccountTokens): SessionDTO = authSession.toSessionDTO()
 
-    override fun fromEntityToSessionDTO(authTokenEntity: AuthTokenEntity): SessionDTO = with(authTokenEntity) {
-        SessionDTO(
-            userId = userId.toApi(),
-            tokenType = tokenType,
-            accessToken = accessToken,
-            refreshToken = refreshToken,
-            cookieLabel = cookieLabel
-        )
-    }
+    override fun fromEntityToSessionDTO(authTokenEntity: AuthTokenEntity): SessionDTO = authTokenEntity.toSessionDTO()
 
     override fun fromSessionDTO(sessionDTO: SessionDTO): AccountTokens = with(sessionDTO) {
         AccountTokens(
@@ -123,13 +106,7 @@ internal class SessionMapperImpl : SessionMapper {
         )
     }
 
-    override fun toAccountTokens(authSession: AuthTokenEntity): AccountTokens = AccountTokens(
-        userId = authSession.userId.toModel(),
-        accessToken = authSession.accessToken,
-        refreshToken = authSession.refreshToken,
-        tokenType = authSession.tokenType,
-        cookieLabel = authSession.cookieLabel
-    )
+    override fun toAccountTokens(authSession: AuthTokenEntity): AccountTokens = authSession.toAccountTokens()
 
     override fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId? =
         ssoIdEntity?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
@@ -145,7 +122,7 @@ internal class SessionMapperImpl : SessionMapper {
         }
 
     override fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO =
-        ProxyCredentialsDTO(proxyCredentialsEntity.username, proxyCredentialsEntity.password)
+        proxyCredentialsEntity.toProxyCredentialsDTO()
 
     override fun formEntityToProxyModel(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentials =
         ProxyCredentials(

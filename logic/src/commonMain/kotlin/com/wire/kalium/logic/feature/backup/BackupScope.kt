@@ -28,6 +28,8 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.RootPathsProvider
+import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import kotlinx.coroutines.CoroutineScope
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
@@ -49,6 +51,8 @@ public class BackupScope internal constructor(
     internal val globalPreferences: GlobalPrefProvider,
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository,
     private val rootPathsProvider: RootPathsProvider,
+    private val originatingScope: CoroutineScope,
+    private val userSessionScopeProvider: UserSessionScopeProvider,
 ) {
     private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
 
@@ -129,7 +133,9 @@ public class BackupScope internal constructor(
             kaliumFileSystem = kaliumFileSystem,
             securityHelper = securityHelper,
             clientRepository = clientRepository,
-            eventRepository = eventRepository
+            eventRepository = eventRepository,
+            originatingScope = originatingScope,
+            userSessionScopeProvider = userSessionScopeProvider,
         )
 
     public val restoreCryptoState: RestoreCryptoStateUseCase

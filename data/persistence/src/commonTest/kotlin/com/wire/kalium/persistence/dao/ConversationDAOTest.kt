@@ -824,7 +824,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
             messageDAO.insertOrIgnoreMessages(messages)
 
-            // when
+            // File cleanup must retain every reference until deletion succeeds.
+            assertDAO.deleteMessageFiles(conversation.id, null) { }
             conversationDAO.clearContent(conversation.id)
 
             // then
@@ -1395,6 +1396,17 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val expected = conversation.toViewEntity(user1).copy(accentId = 0)
         assertEquals(expected, result.firstOrNull { it.id == conversation.id })
         assertEquals(expected, resultWithEvents.firstOrNull { it.conversationViewEntity.id == conversation.id }?.conversationViewEntity)
+    }
+
+    @Test
+    fun givenIncompleteConversation_whenReadingCanonicalState_thenPlaceholderFlagIsPreserved() = runTest {
+        val conversation = conversationEntity1.copy(hasIncompleteMetadata = true)
+        conversationDAO.insertConversation(conversation)
+
+        assertEquals(true, conversationDAO.getConversationById(conversation.id)?.hasIncompleteMetadata)
+        assertEquals(true, conversationDAO.observeConversationById(conversation.id).first()?.hasIncompleteMetadata)
+        assertEquals(true, conversationDAO.getNonDeletedConversationById(conversation.id)?.hasIncompleteMetadata)
+        assertEquals(true, conversationDAO.getConversationsByIds(listOf(conversation.id)).single().hasIncompleteMetadata)
     }
 
     @Test

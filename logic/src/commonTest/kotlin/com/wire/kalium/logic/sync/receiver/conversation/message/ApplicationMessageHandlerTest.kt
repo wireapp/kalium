@@ -33,7 +33,9 @@ import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.logic.di.MapperProvider
+import dev.mokkery.answering.throws
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -648,7 +650,7 @@ class ApplicationMessageHandlerTest {
                 }
             )
         }
-        verifySuspend(VerifyMode.not) { arrangement.messageRepository.getMessageById(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.messageDAO.getMessageById(any(), any()) }
     }
 
     @Test
@@ -834,7 +836,7 @@ class ApplicationMessageHandlerTest {
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val persistMessage = mock<PersistMessageUseCase>(MockMode.autoUnit)
-        val messageRepository = mock<MessageRepository>(MockMode.autoUnit)
+        val messageDAO = mock<MessageDAO>(MockMode.autoUnit)
         val userRepository = mock<UserRepository>(MockMode.autoUnit)
         val userConfigRepository = mock<UserConfigRepository>(MockMode.autoUnit)
         val persistReactionsUseCase = mock<PersistReactionUseCase>(MockMode.autoUnit)
@@ -856,7 +858,7 @@ class ApplicationMessageHandlerTest {
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
-            messageRepository,
+            messageDAO,
             assetMessageHandler,
             persistMessage,
             persistReactionsUseCase,
@@ -901,16 +903,19 @@ class ApplicationMessageHandlerTest {
             )
         }
 
-        fun withErrorGetMessageById(storageFailure: StorageFailure) = apply {
-            everySuspend {
-                messageRepository.getMessageById(any(), any())
-            }.returns(Either.Left(storageFailure))
-        }
+        fun withErrorGetMessageById(storageFailure: StorageFailure) = withMessageById(Either.Left(storageFailure))
 
         fun withMessageById(result: Either<StorageFailure, Message>) = apply {
-            everySuspend {
-                messageRepository.getMessageById(any(), any())
-            }.returns(result)
+            when (result) {
+                is Either.Right -> everySuspend {
+                    messageDAO.getMessageById(any(), any())
+                } returns MapperProvider.messageMapper(TestUser.SELF.id).fromMessageToEntity(result.value as Message.Standalone)
+                is Either.Left -> if (result.value == StorageFailure.DataNotFound) {
+                    everySuspend { messageDAO.getMessageById(any(), any()) } returns null
+                } else {
+                    everySuspend { messageDAO.getMessageById(any(), any()) } throws IllegalStateException("Quote storage unavailable")
+                }
+            }
         }
 
         fun withButtonActionConfirmation(result: Either<StorageFailure, Unit>) = apply {

@@ -385,7 +385,12 @@ object MessageMapper {
                 conversationId = conversationId,
                 date = date,
                 senderUserId = senderUserId,
-                senderClientId = senderClientId.requireField("senderClientId"),
+                // Deleted system messages map to the same empty regular tombstone, without an original client ID.
+                senderClientId = if (visibility == MessageEntity.Visibility.DELETED) {
+                    senderClientId.orEmpty()
+                } else {
+                    senderClientId.requireField("senderClientId")
+                },
                 status = status,
                 editStatus = mapEditStatus(lastEdit),
                 expireAfterMs = expireAfterMillis,

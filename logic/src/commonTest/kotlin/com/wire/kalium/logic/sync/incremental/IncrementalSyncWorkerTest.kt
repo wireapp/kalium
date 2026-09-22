@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import kotlin.test.assertFalse
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
@@ -144,6 +146,30 @@ class IncrementalSyncWorkerTest {
         }
 
         assertEquals(coreFailureCause, resultException.coreFailureCause)
+    }
+
+    @Test
+    fun requiredProcessingAndFlushFailuresAbortTheGatheredCryptoCallback() = runTest {
+        for (failOnFlush in listOf(false, true)) {
+            val failure = StorageFailure.Generic(IllegalStateException("required write failed"))
+            val event = TestEvent.memberJoin().wrapInEnvelope()
+            val (arrangement, worker) = Arrangement()
+                .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
+                .withEventProcessorReturning(if (failOnFlush) Either.Right(event.event.id) else Either.Left(failure))
+                .arrange()
+            if (failOnFlush) {
+                everySuspend { arrangement.eventProcessor.flushPendingSideEffects() } returns Either.Left(failure)
+            }
+            var callbackReturned = false
+            everySuspend { arrangement.cryptoTransactionProvider.transaction<MutableList<String>>(any(), any()) } calls {
+                @Suppress("UNCHECKED_CAST")
+                val block = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, MutableList<String>>
+                block(arrangement.transactionContext).also { callbackReturned = true }
+            }
+            assertFailsWith<KaliumSyncException> { worker.processEventsFlow().collect() }
+            assertFalse(callbackReturned, "Returning an Either.Left still lets native crypto commit")
+            verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
+        }
     }
 
     @Test

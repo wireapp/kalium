@@ -26,6 +26,10 @@ interface EventDAO {
 
     fun observeEvents(fromIdExclusive: Long): Flow<List<EventEntity>>
     suspend fun insertEvents(events: List<NewEventEntity>)
+
+    /** App REST page persistence, including its last nontransient cursor, in one transaction. */
+    suspend fun storeFetchedPage(events: List<NewEventEntity>)
+
     suspend fun deleteProcessedEventsBefore(id: Long)
     suspend fun deleteAllProcessedEvents()
     suspend fun getEventById(id: String): EventEntity?

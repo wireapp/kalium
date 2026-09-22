@@ -73,7 +73,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.logoutUseCase.invoke(eq(LogoutReason.REMOVED_CLIENT), eq(true))
+            arrangement.logoutUseCase.invoke(eq(LogoutReason.REMOVED_CLIENT), eq(false))
         }
     }
 
@@ -102,7 +102,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.logoutUseCase.invoke(eq(LogoutReason.DELETED_ACCOUNT), eq(true))
+            arrangement.logoutUseCase.invoke(eq(LogoutReason.DELETED_ACCOUNT), eq(false))
         }
     }
 

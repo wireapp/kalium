@@ -57,6 +57,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class ConversationEventReceiverTest {
     @Test
@@ -254,7 +255,7 @@ class ConversationEventReceiverTest {
         }
 
     @Test
-    fun givenConversationMessageTimerEvent_whenOnEventInvoked_thenPropagateConversationMessageTimerEventHandlerResult() =
+    fun givenConversationMessageTimerFailure_whenOnEventInvoked_thenPropagatesRequiredFailure() =
         runTest {
             val conversationMessageTimerEvent = TestEvent.timerChanged()
 
@@ -269,10 +270,10 @@ class ConversationEventReceiverTest {
             )
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.conversationMessageTimerEventHandler.handle(eq(conversationMessageTimerEvent))
+                arrangement.conversationMessageTimerEventHandler.handle(eq(conversationMessageTimerEvent), eq(false))
             }
 
-            result.shouldFail()
+            result.shouldFail { assertEquals(failure, it) }
         }
 
     @Test
@@ -561,8 +562,8 @@ class ConversationEventReceiverTest {
             everySuspend { memberLeaveEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Unit
             everySuspend { mlsWelcomeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
-            everySuspend { renamedConversationEventHandler.handle(any()) } returns Unit
-            everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Unit
+            everySuspend { renamedConversationEventHandler.handle(any()) } returns Either.Right(Unit)
+            everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Either.Right(Unit)
             everySuspend { protocolUpdateEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { channelAddPermissionUpdateEventHandler.handle(any()) } returns Either.Right(Unit)
             everySuspend { mlsResetConversationEventHandler.handle(any(), any()) } returns Unit
@@ -582,7 +583,7 @@ class ConversationEventReceiverTest {
 
         suspend fun withConversationMessageTimerFailed() = apply {
             everySuspend {
-                conversationMessageTimerEventHandler.handle(any())
+                conversationMessageTimerEventHandler.handle(any(), eq(false))
             } returns Either.Left(failure)
         }
 

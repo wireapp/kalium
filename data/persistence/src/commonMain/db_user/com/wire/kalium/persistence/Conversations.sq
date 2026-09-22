@@ -96,10 +96,13 @@ deleteAllConversations:
 -- @NotifyCustomKey Conversation
 DELETE FROM Conversation;
 
-deleteConversation:
+deleteConversation {
 -- @NotifyCustomKey conversation_list_membership
 -- @NotifyCustomKey Conversation
-DELETE FROM Conversation WHERE qualified_id = ?;
+-- @NotifyCustomKey PendingDeliveryConfirmations
+DELETE FROM PendingDeliveryConfirmations WHERE conversation_id = :conversationId;
+DELETE FROM Conversation WHERE qualified_id = :conversationId;
+}
 
 setDeletedLocally:
 -- @NotifyCustomKey conversation_list_membership
@@ -217,7 +220,8 @@ updateConversationNotificationsDate:
 -- @NotifyCustomKey Conversation
 UPDATE Conversation
 SET last_notified_date = :last_notified_date
-WHERE qualified_id = :conversationId;
+WHERE qualified_id = :conversationId
+AND (last_notified_date IS NULL OR last_notified_date < :last_notified_date);
 
 updateAllNotifiedConversationsNotificationsDate:
 -- @NotifyCustomKey Conversation
@@ -232,8 +236,8 @@ updateConversationModifiedDate:
 -- @NotifyCustomKey conversation_list_order
 -- @NotifyCustomKey Conversation
 UPDATE Conversation
-SET last_modified_date = ?
-WHERE qualified_id = ?;
+SET last_modified_date = :last_modified_date
+WHERE qualified_id = ? AND last_modified_date < :last_modified_date;
 
 updateConversationModifiedDateToMaxOfSources:
 -- @NotifyCustomKey conversation_list_order
@@ -256,6 +260,12 @@ updateConversationReadDate:
 UPDATE Conversation
 SET last_read_date = :last_read_date
 WHERE qualified_id = :qualified_id;
+
+advanceConversationReadDate:
+-- @NotifyCustomKey Conversation
+UPDATE Conversation
+SET last_read_date = :last_read_date
+WHERE qualified_id = :qualified_id AND last_read_date < :last_read_date;
 
 updateDegradedConversationNotifiedFlag:
 UPDATE Conversation
@@ -557,7 +567,10 @@ clearContent {
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey Asset
 -- @NotifyCustomKey Message
-DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);
+-- The caller removes unshared files and their cache rows before content. Shared
+-- assets must keep their rows for messages/previews in other conversations.
+-- @NotifyCustomKey PendingDeliveryConfirmations
+DELETE FROM PendingDeliveryConfirmations WHERE conversation_id = :conversationId;
 DELETE FROM Message WHERE conversation_id = :conversationId;
 }
 

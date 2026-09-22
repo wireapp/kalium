@@ -17,17 +17,18 @@
  */
 package com.wire.kalium.logic.feature.channels
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.ChannelsConfigurationStorage
 import com.wire.kalium.logic.data.featureConfig.ChannelFeatureConfiguration
 
 internal interface ChannelsFeatureConfigurationHandler {
-    suspend fun handle(configs: ChannelFeatureConfiguration)
+    suspend fun handle(configs: ChannelFeatureConfiguration): Either<StorageFailure, Unit>
 }
 
 @Suppress("FunctionNaming")
 internal fun ChannelsFeatureConfigurationHandler(channelsConfigStorage: ChannelsConfigurationStorage) =
     object : ChannelsFeatureConfigurationHandler {
-        override suspend fun handle(configs: ChannelFeatureConfiguration) {
+        override suspend fun handle(configs: ChannelFeatureConfiguration): Either<StorageFailure, Unit> =
             channelsConfigStorage.persistChannelsConfiguration(configs)
-        }
     }

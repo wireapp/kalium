@@ -119,9 +119,9 @@ internal class ObserveE2EIRequiredUseCaseImpl(
         flowOf(instant).onStart { delay(delayMillis) }
     }
 
-    private fun E2EISettings.gracePeriodLeft(): Duration? = gracePeriodEnd?.let {
-        if (gracePeriodEnd <= DateTimeUtil.currentInstant()) null
-        else gracePeriodEnd.minus(DateTimeUtil.currentInstant())
+    private fun E2EISettings.gracePeriodLeft(): Duration? = gracePeriodEnd?.let { end ->
+        if (end <= DateTimeUtil.currentInstant()) null
+        else end.minus(DateTimeUtil.currentInstant())
     }
 
     private fun X509Identity.shouldRenew(): Boolean =

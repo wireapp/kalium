@@ -24,6 +24,8 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
+import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.incremental.IncrementalSyncPhase
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
@@ -39,8 +41,11 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.dao.event.EventEntity
+import com.wire.kalium.persistence.dao.event.EventDAO
+import com.wire.kalium.persistence.dao.event.NewEventEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -57,6 +62,8 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventRepositoryIntegrationTest {
@@ -385,6 +392,81 @@ class EventRepositoryIntegrationTest {
         return IntegrationHarness(database)
     }
 
+    @Test
+    fun pageStorageFailureStopsCatchUpBeforeReadinessAndRetriesFromTheCommittedCursor() = failedPage(false)
+
+    @Test
+    fun pageCancellationEscapesWithoutAnnouncingSuccessfulCatchUp() = failedPage(true)
+
+    private fun failedPage(cancel: Boolean) = runTest {
+        val harness = newHarness()
+        val api = FakeNotificationApi(
+            listOf(WebSocketEvent.Open(), WebSocketEvent.BinaryPayloadReceived(storedEvent("Y"))),
+            mapOf(null to listOf(notificationPage(listOf("A", "B"), true)), "B" to listOf(notificationPage(listOf("C", "D"), true)))
+        )
+        val real = harness.eventDAO
+        val failing = object : EventDAO by real {
+            override suspend fun storeFetchedPage(events: List<NewEventEntity>) {
+                if (events.any { it.eventId == "C" }) {
+                    if (cancel) throw CancellationException("Interrupted page")
+                    error("Unavailable page storage")
+                }
+                real.storeFetchedPage(events)
+            }
+        }
+        val repository = harness.createRepository(api, failing)
+        val phases = mutableListOf<IncrementalSyncPhase>()
+        val flow = assertIs<Either.Right<Flow<IncrementalSyncPhase>>>(repository.liveEvents()).value
+        if (cancel) assertFailsWith<CancellationException> { flow.collect { phases += it } }
+        else assertFailsWith<KaliumSyncException> { flow.collect { phases += it } }
+        assertTrue(phases.isEmpty())
+        assertEquals(listOf(null, "B"), api.requestedCursors)
+        assertEquals(listOf("A", "B"), harness.unprocessedEventIds())
+        assertLastSavedEventId(repository, "B")
+        val retry = FakeNotificationApi(listOf(WebSocketEvent.Open()), mapOf("B" to listOf(notificationPage(listOf("C", "D"), false))))
+        val reopened = harness.createRepository(retry)
+        reopened.collectLegacySync()
+        assertEquals(listOf<String?>("B"), retry.requestedCursors)
+        assertEquals(listOf("A", "B", "C", "D"), harness.unprocessedEventIds())
+        assertLastSavedEventId(reopened, "D")
+    }
+
+    @Test
+    fun pendingPreparationFailurePreventsRESTFetchingAndReadiness() = runTest {
+        val harness = newHarness()
+        val api = FakeNotificationApi(listOf(WebSocketEvent.Open()), emptyMap())
+        val failing = object : EventDAO by harness.eventDAO {
+            override suspend fun setAllUnprocessedEventsAsPending() = error("Unavailable pending storage")
+        }
+        val repository = harness.createRepository(api, failing)
+        assertFailsWith<KaliumSyncException> { repository.collectLegacySync() }
+        assertTrue(api.requestedCursors.isEmpty())
+        assertTrue(harness.unprocessedEventIds().isEmpty())
+    }
+
+    @Test
+    fun transientTailDrivesPaginationWhileOnlyDurableEventAdvancesRestartCursor() = runTest {
+        val harness = newHarness()
+        val api = FakeNotificationApi(listOf(WebSocketEvent.Open()), mapOf(
+            null to listOf(notificationPageFromEvents(listOf(storedEvent("A"), storedEvent("T", transient = true)), true)),
+            "T" to listOf(notificationPage(listOf("B"), false))
+        ))
+        val repository = harness.createRepository(api)
+        repository.collectLegacySync()
+        assertEquals(listOf(null, "T"), api.requestedCursors)
+        assertEquals(listOf("A", "T", "B"), harness.unprocessedEventIds())
+        assertLastSavedEventId(repository, "B")
+    }
+
+    @Test
+    fun emptyNonterminalPageCannotLoopOrAnnounceReadiness() = runTest {
+        val harness = newHarness()
+        val api = FakeNotificationApi(listOf(WebSocketEvent.Open()), mapOf(null to listOf(notificationPage(emptyList(), true))))
+        assertFailsWith<KaliumSyncException> { harness.createRepository(api).collectLegacySync() }
+        assertEquals(listOf<String?>(null), api.requestedCursors)
+        assertTrue(harness.unprocessedEventIds().isEmpty())
+    }
+
     private suspend fun assertLastSavedEventId(repository: EventRepository, expectedId: String) {
         val lastSavedEventId = repository.lastSavedEventId()
         assertTrue(lastSavedEventId is Either.Right)
@@ -396,11 +478,13 @@ class EventRepositoryIntegrationTest {
     ) {
         private val clientRegistrationStorage = ClientRegistrationStorageImpl(database.builder.metadataDAO)
 
-        fun createRepository(notificationApi: NotificationApi): EventRepository {
+        val eventDAO: EventDAO get() = database.builder.eventDAO
+
+        fun createRepository(notificationApi: NotificationApi, events: EventDAO = eventDAO): EventRepository {
             return EventDataSource(
                 notificationApi = notificationApi,
                 metadataDAO = database.builder.metadataDAO,
-                eventDAO = database.builder.eventDAO,
+                eventDAO = events,
                 currentClientId = CurrentClientIdProvider { Either.Right(TestClient.CLIENT_ID) },
                 selfUserId = TestUser.SELF.id,
                 clientRegistrationStorage = clientRegistrationStorage,
@@ -448,6 +532,7 @@ class EventRepositoryIntegrationTest {
         websocketEvents: List<WebSocketEvent<EventResponseToStore>>,
         pendingPages: Map<String?, List<NotificationResponse>>
     ) : NotificationApi {
+        val requestedCursors = mutableListOf<String?>()
         private val websocketChannel = Channel<WebSocketEvent<EventResponseToStore>>(Channel.UNLIMITED).apply {
             websocketEvents.forEach { trySend(it) }
             close()
@@ -492,7 +577,8 @@ class EventRepositoryIntegrationTest {
         ) = Unit
 
         private fun nextPendingPage(querySince: String?): NotificationResponse {
-            return pendingResponses[querySince]?.removeFirstOrNull() ?: emptyNotificationPage()
+            requestedCursors += querySince
+            return checkNotNull(pendingResponses[querySince]?.removeFirstOrNull()) { "Unexpected notification cursor" }
         }
 
         private fun <T : Any> success(value: T): NetworkResponse.Success<T> = NetworkResponse.Success(

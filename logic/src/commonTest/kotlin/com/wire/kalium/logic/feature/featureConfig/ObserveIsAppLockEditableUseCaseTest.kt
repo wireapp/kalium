@@ -112,8 +112,8 @@ internal class ObserveIsAppLockEditableUseCaseTest {
 
         fun withObserveAppLockConfig(userId: UserId, result: Flow<Either<StorageFailure, AppLockTeamConfig>>) = apply {
             val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
-            every {
-                userSessionScopeProvider.getOrCreate(eq(userId), any<UserSessionScope.() -> UserConfigRepository>())
+            everySuspend {
+                userSessionScopeProvider.open(eq(userId), any<UserSessionScope.() -> UserConfigRepository>())
             } returns userConfigRepository
             every {
                 userConfigRepository.observeAppLockConfig()

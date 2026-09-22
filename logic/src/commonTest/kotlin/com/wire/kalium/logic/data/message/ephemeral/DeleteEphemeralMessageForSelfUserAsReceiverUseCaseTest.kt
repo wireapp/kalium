@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.sync.SyncManager
@@ -45,6 +46,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
 
@@ -97,6 +99,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.deleteMessage(any(), any())
         }
+        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any()) }
     }
 
     @Test
@@ -119,8 +122,57 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         useCase(message.conversationId, message.id).toEither().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.assetRepository.deleteAssetLocally(assetContent.remoteData.assetId)
+            arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId)
         }
+    }
+
+    @Test
+    fun givenAssetDeletionFails_whenExpiring_thenStillMarkAndDeleteMessage() = runTest {
+        val message = MESSAGE_REGULAR.copy(content = MessageContent.Asset(ASSET_IMAGE_CONTENT))
+        val failure = StorageFailure.Generic(IllegalStateException("file deletion failed"))
+        val (arrangement, useCase) = Arrangement().arrange {
+            withGetMessageById(Either.Right(message))
+            withDeleteAssetLocally(Either.Left(failure))
+            withMarkAsDeleted(Either.Right(Unit))
+            withCurrentClientIdSuccess(CURRENT_CLIENT_ID)
+            withSelfConversationIds(SELF_CONVERSATION_ID)
+            withSendMessageSucceed()
+            withDeleteMessage(Either.Right(Unit))
+        }
+
+        useCase(message.conversationId, message.id).toEither().shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetRepository.deleteAssetLocally(ASSET_CONTENT_REMOTE_DATA.assetId) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.markMessageAsDeleted(message.id, message.conversationId) }
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.messageSender.sendMessage(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.deleteMessage(message.id, message.conversationId) }
+    }
+
+    @Test
+    fun givenMarkingMessageDeletedFails_whenExpiring_thenReturnRequiredFailure() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (arrangement, useCase) = Arrangement().arrange {
+            withGetMessageById(Either.Right(MESSAGE_REGULAR))
+            withMarkAsDeleted(Either.Left(failure))
+        }
+
+        assertEquals(Either.Left(failure), useCase(MESSAGE_REGULAR.conversationId, MESSAGE_REGULAR.id).toEither())
+        verifySuspend(VerifyMode.not) { arrangement.messageSender.sendMessage(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.messageRepository.deleteMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenPermanentDeletionFails_whenExpiring_thenReturnRequiredFailure() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (_, useCase) = Arrangement().arrange {
+            withGetMessageById(Either.Right(MESSAGE_REGULAR))
+            withMarkAsDeleted(Either.Right(Unit))
+            withCurrentClientIdSuccess(CURRENT_CLIENT_ID)
+            withSelfConversationIds(SELF_CONVERSATION_ID)
+            withSendMessageSucceed()
+            withDeleteMessage(Either.Left(failure))
+        }
+
+        assertEquals(Either.Left(failure), useCase(MESSAGE_REGULAR.conversationId, MESSAGE_REGULAR.id).toEither())
     }
 
     private companion object {
@@ -176,6 +228,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
             )
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteEphemeralMessageForSelfUserAsReceiverUseCase> {
+            withDeleteAssetLocally(Either.Right(Unit))
             block()
             return this to useCase
         }

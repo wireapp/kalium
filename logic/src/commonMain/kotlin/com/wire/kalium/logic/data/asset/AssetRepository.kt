@@ -329,7 +329,15 @@ internal class AssetDataSource(
 
     override suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path> =
         wrapStorageRequest { assetDao.getAssetByKey(assetId).firstOrNull() }
-            .map { it.dataPath.toPath() }
+            .flatMap { asset ->
+                wrapStorageRequest {
+                    val path = asset.dataPath.toPath()
+                    if (kaliumFileSystem.exists(path)) path else {
+                        assetDao.deleteAsset(assetId)
+                        null
+                    }
+                }
+            }
 
     @Suppress("LongParameterList")
     private suspend fun fetchOrDownloadDecodedAsset(
@@ -458,22 +466,13 @@ internal class AssetDataSource(
             .flatMap { deleteAssetLocally(assetId) }
 
     override suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit> =
-        deleteAssetFileLocally(assetId).let {
-            wrapStorageRequest {
-                assetDao.deleteAsset(assetId)
-            }
-        }
-
-    private suspend fun deleteAssetFileLocally(assetId: String) {
         wrapStorageRequest {
-            assetDao.getAssetByKey(assetId).firstOrNull()
-        }.map {
-            val filePath = it.dataPath.toPath()
-            if (kaliumFileSystem.exists(filePath)) {
-                kaliumFileSystem.delete(path = it.dataPath.toPath(), mustExist = false)
+            assetDao.getAssetByKey(assetId).firstOrNull()?.let { asset ->
+                kaliumFileSystem.delete(asset.dataPath.toPath(), mustExist = false)
             }
+            // Keep the cache record if the file could not be removed.
+            assetDao.deleteAsset(assetId)
         }
-    }
 }
 
 private fun buildFileName(name: String, extension: String?): String =

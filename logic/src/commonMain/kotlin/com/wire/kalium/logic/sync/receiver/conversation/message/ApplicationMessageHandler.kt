@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
@@ -30,16 +29,15 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.decryptionFailureMessage
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.logic.data.message.cryptoSessionResetMessage
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.getType
-import com.wire.kalium.logic.data.message.hasValidData
-import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
@@ -57,10 +55,7 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.util.string.toHexString
 import kotlin.time.Instant
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 internal interface ApplicationMessageHandler {
 
@@ -90,7 +85,7 @@ internal interface ApplicationMessageHandler {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ApplicationMessageHandlerImpl(
     private val userRepository: UserRepository,
-    private val messageRepository: MessageRepository,
+    private val messageDAO: MessageDAO,
     private val assetMessageHandler: AssetMessageHandler,
     private val persistMessage: PersistMessageUseCase,
     private val persistReaction: PersistReactionUseCase,
@@ -124,58 +119,26 @@ internal class ApplicationMessageHandlerImpl(
         senderClientId: ClientId,
         content: ProtoContent.Readable
     ) {
-        when (val protoContent = content.messageContent) {
+        when (content.messageContent) {
             is MessageContent.Regular -> {
-                val visibility = when (protoContent) {
-                    is MessageContent.Unknown -> if (protoContent.hidden) Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
-                    is MessageContent.Text -> Message.Visibility.VISIBLE
-                    is MessageContent.Asset -> Message.Visibility.VISIBLE
-                    is MessageContent.Knock -> Message.Visibility.VISIBLE
-                    is MessageContent.RestrictedAsset -> Message.Visibility.VISIBLE
-                    is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
-                    is MessageContent.Composite -> Message.Visibility.VISIBLE
-                    is MessageContent.Location -> Message.Visibility.VISIBLE
-                    is MessageContent.Multipart -> Message.Visibility.VISIBLE
-                }
-                val message = Message.Regular(
-                    id = content.messageUid,
-                    content = protoContent,
-                    conversationId = conversationId,
-                    date = messageInstant,
-                    senderUserId = senderUserId,
-                    senderClientId = senderClientId,
-                    status = Message.Status.Sent,
-                    editStatus = Message.EditStatus.NotEdited,
-                    visibility = visibility,
-                    expectsReadConfirmation = content.expectsReadConfirmation,
-                    isSelfMessage = senderUserId == selfUserId,
-                    expirationData = content.expiresAfterMillis?.let {
-                        Message.ExpirationData(
-                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                            selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                        )
-                    }
-                )
+                val message = MessageUnpackResult.ApplicationMessage(
+                    conversationId,
+                    messageInstant,
+                    senderUserId,
+                    senderClientId,
+                    content
+                ).toRegularMessage(selfUserId)
                 processMessage(message)
             }
 
             is MessageContent.Signaling -> {
-                val signalingMessage = Message.Signaling(
-                    id = content.messageUid,
-                    content = protoContent,
-                    conversationId = conversationId,
-                    date = messageInstant,
-                    senderUserId = senderUserId,
-                    senderClientId = senderClientId,
-                    status = Message.Status.Sent,
-                    isSelfMessage = senderUserId == selfUserId,
-                    expirationData = content.expiresAfterMillis?.let {
-                        Message.ExpirationData(
-                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                            selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
-                        )
-                    }
-                )
+                val signalingMessage = MessageUnpackResult.ApplicationMessage(
+                    conversationId,
+                    messageInstant,
+                    senderUserId,
+                    senderClientId,
+                    content
+                ).toSignalingMessage(selfUserId)
                 processSignaling(transactionContext, signalingMessage)
             }
         }
@@ -253,16 +216,7 @@ internal class ApplicationMessageHandlerImpl(
     ) {
         logger.i(message = "ClientAction status update received: ")
 
-        val message = Message.System(
-            id = signaling.id,
-            content = MessageContent.CryptoSessionReset,
-            conversationId = signaling.conversationId,
-            date = signaling.date,
-            senderUserId = signaling.senderUserId,
-            status = signaling.status,
-            senderUserName = signaling.senderUserName,
-            expirationData = null
-        )
+        val message = signaling.cryptoSessionResetMessage()
 
         logger.i(message = "Persisting crypto session reset system message..")
         persistMessage(message)
@@ -320,14 +274,12 @@ internal class ApplicationMessageHandlerImpl(
         message: Message.Regular,
         messageContent: MessageContent.Text
     ) {
-        val quotedReference = messageContent.quotedMessageReference
-        val adjustedQuoteReference = if (quotedReference != null) {
-            verifyMessageQuote(quotedReference, message)
-        } else {
-            messageContent.quotedMessageReference
-        }
-        val adjustedMessage = message.copy(
-            content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
+        val adjustedMessage = prepareReceivedTextMessage(message, messageDAO, selfUserId, messageEncoder).getOrElse(
+            message.copy(
+                content = messageContent.copy(
+                    quotedMessageReference = messageContent.quotedMessageReference?.copy(isVerified = false)
+                )
+            )
         )
         persistMessage(adjustedMessage).onSuccess {
             resolveLinkPreviewImages(adjustedMessage.conversationId, adjustedMessage.id)
@@ -337,26 +289,10 @@ internal class ApplicationMessageHandlerImpl(
     private suspend fun verifyMessageQuote(
         quotedReference: MessageContent.QuoteReference,
         message: Message.Regular
-    ): MessageContent.QuoteReference {
-        val quotedMessageSha256 = quotedReference.quotedMessageSha256 ?: run {
-            logger.i("Quote message received with null hash. Marking as unverified.")
-            return quotedReference.copy(isVerified = false)
-        }
-
-        val originalHash =
-            messageRepository.getMessageById(message.conversationId, quotedReference.quotedMessageId).map { originalMessage ->
-                messageEncoder.encodeMessageContent(originalMessage.date, originalMessage.content)
-            }.getOrElse(null)
-
-        return if (quotedMessageSha256.contentEquals(originalHash?.sha256Digest)) {
-            quotedReference.copy(isVerified = true)
-        } else {
-            logger.d("Expected hash = ${originalHash?.sha256Digest?.toHexString()}")
-            logger.d("Received hash = ${quotedMessageSha256.toHexString()}")
-            logger.i("Quote message received but original doesn't match or wasn't found. Marking as unverified.")
-            quotedReference.copy(isVerified = false)
-        }
-    }
+    ): MessageContent.QuoteReference =
+        // Keep the app's existing unverified-quote fallback; NSE callers propagate storage failure.
+        verifyMessageQuote(quotedReference, message.conversationId, messageDAO, selfUserId, messageEncoder)
+            .getOrElse(quotedReference.copy(isVerified = false))
 
     @Suppress("LongParameterList")
     override suspend fun handleDecryptionError(
@@ -367,17 +303,14 @@ internal class ApplicationMessageHandlerImpl(
         senderClientId: ClientId,
         content: MessageContent.FailedDecryption
     ) {
-        val message = Message.Regular(
-            id = eventId,
-            content = content,
+        val message = decryptionFailureMessage(
+            eventId = eventId,
             conversationId = conversationId,
-            date = messageInstant,
+            messageInstant = messageInstant,
             senderUserId = senderUserId,
             senderClientId = senderClientId,
-            status = Message.Status.Sent,
-            editStatus = Message.EditStatus.NotEdited,
-            visibility = Message.Visibility.VISIBLE,
-            isSelfMessage = senderUserId == selfUserId
+            content = content,
+            selfUserId = selfUserId,
         )
         processMessage(message)
     }
@@ -386,15 +319,3 @@ internal class ApplicationMessageHandlerImpl(
         lastReadContentHandler.flushPendingLastReads()
     }
 }
-
-@Deprecated(
-    "This will be moved to another package",
-    ReplaceWith("com.wire.kalium.logic.data.message.hasValidRemoteData")
-)
-internal fun AssetContent.hasValidRemoteData() = hasValidRemoteData()
-
-@Deprecated(
-    "This will be moved to another package",
-    ReplaceWith("com.wire.kalium.logic.data.message.hasValidData")
-)
-internal fun AssetContent.RemoteData.hasValidData() = hasValidData()

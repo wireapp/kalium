@@ -53,12 +53,17 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.every
 import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
+import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LogoutUseCaseTest {
@@ -446,7 +451,49 @@ class LogoutUseCaseTest {
         }
     }
 
+    @Test
+    fun waitingForLogoutReportsCleanupFailureAndSkipsCompletionCallback() = runTest {
+        val (arrangement, logout) = Arrangement(
+            globalTestScope = TestScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
+        ).withSessionLogoutResult(Either.Right(Unit))
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withNoOngoingCalls()
+            .arrange()
+        val failure = IllegalStateException("Native cleanup failed")
+        everySuspend { arrangement.userSessionScopeProvider.delete(any()) } calls { throw failure }
+
+        val reported = assertFailsWith<IllegalStateException> {
+            logout(LogoutReason.SESSION_EXPIRED, waitUntilCompletes = true)
+        }
+        assertEquals(failure.message, reported.message)
+        verifySuspend(VerifyMode.not) { arrangement.logoutCallback(any(), any()) }
+    }
+
+    @Test
+    fun failedWorkerShutdownPreventsRemovalAndCompletionOnEveryRetry() = runTest {
+        val (arrangement, logout) = Arrangement(
+            globalTestScope = TestScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
+        ).withSessionLogoutResult(Either.Right(Unit))
+            .withNoOngoingCalls()
+            .arrange()
+        arrangement.shutdownFailure = IllegalStateException("Account workers did not drain")
+        repeat(2) {
+            assertFailsWith<IllegalStateException> { logout(LogoutReason.SESSION_EXPIRED, waitUntilCompletes = true) }
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.clientRepository.clearCurrentClientId()
+            arrangement.clearClientDataUseCase()
+            arrangement.clearUserDataUseCase()
+            arrangement.userSessionScopeProvider.delete(any())
+            arrangement.logoutCallback(any(), any())
+        }
+    }
+
     private data class Arrangement(
+        val sessionScope: CoroutineScope = CoroutineScope(SupervisorJob()),
+        var shutdownFailure: Throwable? = null,
         val logoutRepository: LogoutRepository = mock<LogoutRepository>(mode = MockMode.autoUnit),
         val sessionRepository: SessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit),
         val clientRepository: ClientRepository = mock<ClientRepository>(mode = MockMode.autoUnit),
@@ -555,6 +602,7 @@ class LogoutUseCaseTest {
 
         suspend fun arrange() = this to LogoutUseCaseImpl(
             logoutRepository = logoutRepository,
+            sessionScope = sessionScope,
             sessionRepository = sessionRepository,
             clientRepository = clientRepository,
             userConfigRepository = userConfigRepository,
@@ -572,6 +620,17 @@ class LogoutUseCaseTest {
             kaliumConfigs = kaliumConfigs,
             isNomadEnabled = isNomadEnabled
         ).also {
+            everySuspend { userSessionScopeProvider.logout(any(), any(), any(), any()) } calls { invocation ->
+                @Suppress("UNCHECKED_CAST")
+                val prepare = invocation.args[2] as suspend () -> Unit
+                @Suppress("UNCHECKED_CAST")
+                val clear = invocation.args[3] as suspend () -> Unit
+                prepare()
+                shutdownFailure?.let { throw it }
+                clear()
+                userSessionScopeProvider.delete(USER_ID)
+                true
+            }
             everySuspend {
                 endCall.invoke(any())
             } returns (Unit)

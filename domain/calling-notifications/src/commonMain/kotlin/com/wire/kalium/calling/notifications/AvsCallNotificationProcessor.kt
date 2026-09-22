@@ -20,6 +20,8 @@ package com.wire.kalium.calling.notifications
 
 public interface AvsCallNotificationProcessor {
     public fun process(notifications: List<AvsCallNotification>): AvsCallNotificationProcessingResult
+
+    /** On Apple, releases this request's callbacks; the account's event handle/context live until process exit. */
     public fun close()
 }
 

@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.auth.Account
@@ -195,7 +194,7 @@ internal class SessionDataSource internal constructor(
     override suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit> {
         val idEntity = userId.toDao()
         return wrapStorageRequest { accountsDAO.deleteAccount(idEntity) }
-            .onSuccess {
+            .flatMap {
                 wrapStorageRequest { authTokenStorage.deleteToken(idEntity) }
             }
     }

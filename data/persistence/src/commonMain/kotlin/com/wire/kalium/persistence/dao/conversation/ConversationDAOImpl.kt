@@ -444,6 +444,13 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).awaitAsOneOrNull()
         }
 
+    override suspend fun getConversationMLSInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo.MLS? =
+        withContext(readDispatcher.value) {
+            conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID) { _, groupId, state, epoch, keyUpdate, cipher ->
+                ConversationEntity.ProtocolInfo.MLS(groupId.orEmpty(), state, epoch.toULong(), keyUpdate, cipher)
+            }.awaitAsOneOrNull()
+        }
+
     override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? = withContext(readDispatcher.value) {
         conversationQueries.selectByGroupId(groupID, mapper = conversationMapper::toConversationEntity)
             .awaitAsOneOrNull()
@@ -461,7 +468,7 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         conversationQueries.transactionWithResult {
-            conversationQueries.deleteConversation(qualifiedID)
+            conversationQueries.deleteConversation(qualifiedID).await()
             conversationQueries.selectChanges().awaitAsOne() > 0
         }
     }
@@ -795,7 +802,7 @@ internal class ConversationDAOImpl internal constructor(
             buildMap(conversationDates.size) {
                 conversationDates.forEach { (conversationId, date) ->
                     unreadEventsQueries.deleteUnreadEvents(date, conversationId)
-                    conversationQueries.updateConversationReadDate(date, conversationId)
+                    conversationQueries.advanceConversationReadDate(date, conversationId)
                     put(conversationId, unreadEventsQueries.getHasUnreadEventsForConversation(conversationId).awaitAsOneOrNull() ?: false)
                 }
             }

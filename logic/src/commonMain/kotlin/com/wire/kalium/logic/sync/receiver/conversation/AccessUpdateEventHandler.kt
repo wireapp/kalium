@@ -22,7 +22,7 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.conversation.updateConversationAccess
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -46,15 +46,9 @@ internal fun AccessUpdateEventHandler(
             val newAccessList = conversationMapper.fromModelToDAOAccess(event.access)
             val newAccessRole = conversationMapper.fromModelToDAOAccessRole(event.accessRole)
 
-            val oldAccessRole = conversationDAO.getConversationById(event.conversationId.toDao())?.accessRole
-            val hadServiceRole = oldAccessRole?.contains(ConversationEntity.AccessRole.SERVICE) == true
+            val old = updateConversationAccess(conversationDAO, event.conversationId, newAccessList, newAccessRole)
+            val hadServiceRole = old?.accessRole?.contains(ConversationEntity.AccessRole.SERVICE) == true
             val hasServiceRoleNow = newAccessRole.contains(ConversationEntity.AccessRole.SERVICE)
-
-            conversationDAO.updateAccess(
-                conversationID = event.conversationId.toDao(),
-                accessList = newAccessList,
-                accessRoleList = newAccessRole
-            )
 
             // Persist system message if apps access changed
             persistConversationAppsAccessChangedMessageIfChanged(event, hadServiceRole, hasServiceRoleNow)

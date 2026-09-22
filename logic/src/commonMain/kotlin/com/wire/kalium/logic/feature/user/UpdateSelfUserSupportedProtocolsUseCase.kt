@@ -26,18 +26,11 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.isActive
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
-import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import kotlin.time.Instant
 
 /**
  * Updates the supported protocols of the current user.
@@ -78,17 +71,7 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
             UpdateSelfUserSupportedProtocolsResult.NotUpdated
         } else {
             userRepository.getSelfUser().flatMap { selfUser ->
-                selfSupportedProtocols().flatMap { calculatedSupportedProtocols ->
-                    val finalizedSupportedProtocols = if (selfUser.supportedProtocols?.contains(SupportedProtocol.MLS) == true) {
-                        calculatedSupportedProtocols + SupportedProtocol.MLS
-                    } else {
-                        calculatedSupportedProtocols
-                    }
-                    logger.i(
-                        "Updating supported protocols = $calculatedSupportedProtocols " +
-                                "previously = ${selfUser.supportedProtocols}, " +
-                                "finalized = $finalizedSupportedProtocols"
-                    )
+                selfSupportedProtocols(selfUser.supportedProtocols).flatMap { finalizedSupportedProtocols ->
                     if (finalizedSupportedProtocols != selfUser.supportedProtocols) {
                         userRepository.updateSupportedProtocols(finalizedSupportedProtocols).map { true }
                     } else {
@@ -117,7 +100,7 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
         }
     }
 
-    private suspend fun selfSupportedProtocols(): Either<CoreFailure, Set<SupportedProtocol>> =
+    private suspend fun selfSupportedProtocols(previous: Set<SupportedProtocol>?): Either<CoreFailure, Set<SupportedProtocol>> =
         currentClientIdProvider().flatMap { currentClientId ->
             clientsRepository.selfListOfClients().flatMap { selfClients ->
                 userConfigRepository.getMigrationConfiguration()
@@ -130,71 +113,20 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
                     }
                     .flatMap { migrationConfiguration ->
                         userConfigRepository.getSupportedProtocols().map { teamSupportedProtocols ->
-                            val selfSupportedProtocols = mutableSetOf<SupportedProtocol>()
-                            if (proteusIsSupported(
-                                    teamSettingsSupportedProtocols = teamSupportedProtocols,
-                                    migrationConfiguration = migrationConfiguration
-                                )
-                            ) {
-                                selfSupportedProtocols.add(SupportedProtocol.PROTEUS)
-                            }
-
-                            if (mlsIsSupported(
-                                    teamSettingsSupportedProtocols = teamSupportedProtocols,
-                                    migrationConfiguration = migrationConfiguration,
-                                    selfClients = selfClients,
-                                    selfClientId = currentClientId
-                                )
-                            ) {
-                                selfSupportedProtocols.add(SupportedProtocol.MLS)
-                            }
-                            selfSupportedProtocols
+                            selfSupportedProtocols(
+                                teamProtocols = teamSupportedProtocols,
+                                migration = migrationConfiguration,
+                                clients = selfClients,
+                                currentClientId = currentClientId,
+                                previous = previous,
+                                logger = logger,
+                            )
                         }
                     }
             }
         }
 
-    private fun mlsIsSupported(
-        teamSettingsSupportedProtocols: Set<SupportedProtocol>,
-        migrationConfiguration: MLSMigrationModel,
-        selfClients: List<Client>,
-        selfClientId: ClientId
-    ): Boolean {
-        val mlsIsSupported = teamSettingsSupportedProtocols.contains(SupportedProtocol.MLS)
-        val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
-        val allSelfClientsAreMLSCapable = selfClients
-            .filter { it.isActive || it.id == selfClientId }
-            .ifEmpty {
-                logger.w("user has 0 active clients")
-                emptyList()
-            }.all { it.isMLSCapable }
-
-        logger.d(
-            "mls is supported = $mlsIsSupported, " +
-                    "all active self clients are mls capable = $allSelfClientsAreMLSCapable " +
-                    "migration has ended = $mlsMigrationHasEnded"
-        )
-        return mlsIsSupported && (mlsMigrationHasEnded || allSelfClientsAreMLSCapable)
-    }
-
-    private fun proteusIsSupported(
-        teamSettingsSupportedProtocols: Set<SupportedProtocol>,
-        migrationConfiguration: MLSMigrationModel
-    ): Boolean {
-        val proteusIsSupported = teamSettingsSupportedProtocols.contains(SupportedProtocol.PROTEUS)
-        val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
-        logger.d(
-            "proteus is supported = $proteusIsSupported, " +
-                    "migration has ended = $mlsMigrationHasEnded"
-        )
-        return proteusIsSupported || !mlsMigrationHasEnded
-    }
-
     companion object {
-        val MIGRATION_CONFIGURATION_DISABLED = MLSMigrationModel(
-            startTime = Instant.DISTANT_FUTURE,
-            endTime = Instant.DISTANT_FUTURE,
-            status = Status.DISABLED
-        )
+        val MIGRATION_CONFIGURATION_DISABLED = DISABLED_MLS_MIGRATION
     }
 }

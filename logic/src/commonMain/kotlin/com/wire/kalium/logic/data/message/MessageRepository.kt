@@ -63,7 +63,6 @@ import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageRes
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
-import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -684,10 +683,7 @@ internal class MessageDataSource internal constructor(
                 editInstant = editInstant,
                 conversationId = conversationId.toDao(),
                 currentMessageId = messageContent.editMessageId,
-                newTextContent = MessageEntityContent.Text(
-                    messageBody = messageContent.newTextContent ?: "",
-                    mentions = messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
-                ),
+                newTextContent = messageContent.toEntity(),
                 newMessageId = newMessageId
             )
         }
@@ -912,14 +908,7 @@ internal class MessageDataSource internal constructor(
             conversationId = conversationId.toDao(),
             currentMessageId = messageContent.editMessageId,
             editInstant = editInstant,
-            newCompositeContent = MessageEntityContent.Composite(
-                messageContent.newTextContent?.value?.let {
-                    MessageEntityContent.Text(
-                        messageBody = it
-                    )
-                },
-                messageContent.newButtonList.map { ButtonEntity(it.text, it.id, it.isSelected) }
-            ),
+            newCompositeContent = messageContent.toEntity(),
             newMessageId = newMessageId
         )
     }

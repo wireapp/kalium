@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
+import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import kotlin.time.Instant
 import kotlin.test.Test
@@ -30,6 +31,36 @@ import com.wire.kalium.logic.data.id.QualifiedID as ModelQualifiedID
 import com.wire.kalium.network.api.model.QualifiedID as NetworkQualifiedID
 
 class EventMapperTest {
+
+    @Test
+    fun meetingConversationUsesTheExistingCreationEventAndKeepsItsGroupType() {
+        val response = com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE.copy(
+            conversationGroupType = com.wire.kalium.network.api.authenticated.conversation.ConversationResponse.GroupType.Meeting)
+        val timestamp = Instant.parse("2026-07-24T12:00:00.000Z")
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val dto = EventContentDTO.Conversation.NewMeetingConversationDTO(response.id, TestUser.NETWORK_ID, timestamp, response)
+        val event = assertIs<Event.Conversation.NewConversation>(mapper.fromEventContentDTO("meeting", dto))
+        assertEquals("meeting", event.id)
+        assertEquals(ModelQualifiedID(response.id.value, response.id.domain), event.conversationId)
+        assertEquals(ModelQualifiedID(TestUser.NETWORK_ID.value, TestUser.NETWORK_ID.domain), event.senderUserId)
+        assertEquals(timestamp, event.dateTime)
+        assertEquals(response, event.conversation)
+    }
+
+    @Test
+    fun metadataPayloadsHaveStableDistinctSystemIdentitiesAndKeepTheirQueueIdentity() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val dto = EventContentDTO.Conversation.ConversationRenameDTO(
+            NetworkQualifiedID("conversation-id", "domain"), TestUser.NETWORK_ID,
+            Instant.parse("2026-07-24T12:00:00.000Z"), ConversationNameUpdateEvent("Renamed")
+        )
+        val events = mapper.fromStoredDTO("notification", listOf(dto, dto), false).map {
+            assertIs<Event.Conversation.RenamedConversation>(it.event)
+        }
+        assertEquals(listOf("notification", "notification"), events.map { it.id })
+        assertEquals(listOf("notification", "notification:1"), events.map { it.systemMessageId })
+        assertEquals(events, mapper.fromStoredDTO("notification", listOf(dto, dto), false).map { it.event })
+    }
 
     @Test
     fun givenSessionRefreshSuggestedDTO_whenMapping_thenSessionRefreshSuggestedEventIsReturned() {

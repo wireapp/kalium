@@ -57,6 +57,7 @@ class ProteusClientCoreCryptoImpl private constructor(
     }
 
     private fun proteusCoreCryptoContext(coreContext: CoreCryptoContext) = object : ProteusCoreCryptoContext {
+
         override suspend fun getLocalFingerprint(): String {
             return coreContext.proteusFingerprint()
         }

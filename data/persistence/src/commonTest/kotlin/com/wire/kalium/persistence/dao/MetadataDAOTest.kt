@@ -22,6 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.builtins.serializer
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -38,13 +39,25 @@ class MetadataDAOTest : BaseDatabaseTest() {
     private val key2 = "key2"
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
+    private lateinit var database: com.wire.kalium.persistence.db.UserDatabaseBuilder
     private lateinit var metadataDAO: MetadataDAO
 
     @BeforeTest
     fun setUp() {
         deleteDatabase(selfUserId)
-        val db = createDatabase(selfUserId, encryptedDBSecret, true)
-        metadataDAO = db.metadataDAO
+        database = createDatabase(selfUserId, encryptedDBSecret, true)
+        metadataDAO = database.metadataDAO
+    }
+
+    @Test
+    fun metadataFlowsReadEarlierWritesWithinReceivingTransaction() = runTest(dispatcher) {
+        metadataDAO.insertValue(value1, key1)
+        database.writeMessageEffects {
+            metadata.insertValue(value2, key1)
+            assertEquals(value2, metadata.valueByKeyFlow(key1).first())
+            metadata.putSerializable(key2, value2, String.serializer())
+            assertEquals(value2, metadata.observeSerializable(key2, String.serializer()).first())
+        }
     }
 
     @Test

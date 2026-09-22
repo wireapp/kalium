@@ -45,7 +45,12 @@ internal suspend fun <T> CoreCrypto.transaction(
         val asyncLockWork = async {
             val result = transaction {
                 kaliumLogger.d("CC Transaction '$workUniqueId' started.")
-                block(it)
+                try {
+                    block(it)
+                } finally {
+                    // The callback owns a UniFFI context handle that otherwise waits for GC.
+                    it.close()
+                }
             }
             kaliumLogger.d("CC Transaction '$workUniqueId' completed.")
             result

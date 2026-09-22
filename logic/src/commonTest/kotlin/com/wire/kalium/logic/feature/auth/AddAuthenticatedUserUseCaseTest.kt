@@ -41,6 +41,7 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.calls
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
@@ -569,9 +570,15 @@ class AddAuthenticatedUserUseCaseTest {
         val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
         val serverConfigurationDAO = mock<ServerConfigurationDAO>(mode = MockMode.autoUnit)
 
-        private val addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(sessionRepository, serverConfigurationDAO)
+        val userSessionScopeProvider = mock<com.wire.kalium.logic.feature.UserSessionScopeProvider>(mode = MockMode.autoUnit)
+        private val addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(
+            sessionRepository, serverConfigurationDAO, userSessionScopeProvider
+        )
 
         init {
+            everySuspend { userSessionScopeProvider.storeSession(any(), sessionRepository) } calls { invocation ->
+                sessionRepository.storeSession(invocation.args[0] as StoreSessionParam)
+            }
             everySuspend { sessionRepository.doesSessionExist(any()) } returns Either.Right(false)
         }
 

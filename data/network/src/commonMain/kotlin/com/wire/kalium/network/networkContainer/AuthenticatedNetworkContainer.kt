@@ -72,6 +72,11 @@ import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 import io.ktor.websocket.WebSocketSession
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.job
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
@@ -81,6 +86,9 @@ interface AuthenticatedNetworkContainer {
      * of the access token from the session manager on the next request.
      */
     suspend fun clearCachedToken()
+
+    /** Cancel and join all caller requests/collectors before closing. Injected mock engines remain caller-owned. */
+    suspend fun close()
 
     val accessTokenApi: AccessTokenApi
 
@@ -135,7 +143,6 @@ interface AuthenticatedNetworkContainer {
     val meetingApi: MeetingApi
 
     val cellsHttpClient: HttpClient
-        get() = HttpClient()
 
     companion object {
 
@@ -333,6 +340,9 @@ interface AuthenticatedNetworkContainer {
 }
 
 internal interface AuthenticatedHttpClientProvider {
+    suspend fun close()
+    val cellsHttpClient: HttpClient
+        get() = networkClient.httpClient
     val backendConfig: ServerConfigDTO.Links
     val nomadServiceUrl: String?
     val networkClient: AuthenticatedNetworkClient
@@ -341,11 +351,13 @@ internal interface AuthenticatedHttpClientProvider {
     suspend fun clearCachedToken()
 }
 
+@Suppress("LongParameterList")
 internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
     override val nomadServiceUrl: String?,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine,
+    private val ownsEngine: Boolean,
     private val webSocketSessionProvider: ((HttpClient, String) -> WebSocketSession)?,
     private val kaliumLogger: KaliumLogger,
 ) : AuthenticatedHttpClientProvider {
@@ -380,7 +392,7 @@ internal class AuthenticatedHttpClientProviderImpl(
 
     override val backendConfig = sessionManager.serverConfig().links
 
-    override val networkClient by lazy {
+    private val networkClientDelegate = lazy {
         AuthenticatedNetworkClient(
             engine,
             sessionManager.serverConfig(),
@@ -388,7 +400,7 @@ internal class AuthenticatedHttpClientProviderImpl(
             kaliumLogger
         )
     }
-    override val websocketClient by lazy {
+    private val websocketClientDelegate = lazy {
         AuthenticatedWebSocketClient(
             engine,
             bearerAuthProvider,
@@ -397,7 +409,7 @@ internal class AuthenticatedHttpClientProviderImpl(
             webSocketSessionProvider
         )
     }
-    override val networkClientWithoutCompression by lazy {
+    private val networkClientWithoutCompressionDelegate = lazy {
         AuthenticatedNetworkClient(
             engine,
             sessionManager.serverConfig(),
@@ -405,5 +417,37 @@ internal class AuthenticatedHttpClientProviderImpl(
             kaliumLogger,
             installCompression = false
         )
+    }
+
+    override val networkClient by networkClientDelegate
+    override val websocketClient by websocketClientDelegate
+    override val networkClientWithoutCompression by networkClientWithoutCompressionDelegate
+    private val closeMutex = Mutex()
+    private var closeFailure: Throwable? = null
+    private var closed = false
+
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun close() = withContext(NonCancellable) {
+        closeMutex.withLock {
+            closeFailure?.let { throw it }
+            if (closed) return@withLock
+            try {
+                if (websocketClientDelegate.isInitialized()) websocketClientDelegate.value.close()
+                val clients = listOfNotNull(
+                    networkClientDelegate.takeIf { it.isInitialized() }?.value?.httpClient,
+                    networkClientWithoutCompressionDelegate.takeIf { it.isInitialized() }?.value?.httpClient,
+                )
+                clients.forEach { it.close() }
+                clients.forEach { it.coroutineContext.job.join() }
+                if (ownsEngine) {
+                    engine.close()
+                    engine.coroutineContext.job.join()
+                }
+                closed = true
+            } catch (failure: Throwable) {
+                closeFailure = failure
+                throw failure
+            }
+        }
     }
 }

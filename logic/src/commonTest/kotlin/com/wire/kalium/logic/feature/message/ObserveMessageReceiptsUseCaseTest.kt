@@ -51,14 +51,6 @@ class ObserveMessageReceiptsUseCaseTest {
         var usedReceiptType: ReceiptType? = null
 
         val receiptRepository = object : ReceiptRepositoryStub() {
-            override suspend fun persistReceipts(
-                userId: UserId,
-                conversationId: ConversationId,
-                date: Instant,
-                type: ReceiptType,
-                messageIds: List<String>
-            ) = Unit
-
             override fun observeMessageReceipts(
                 conversationId: ConversationId,
                 messageId: String,

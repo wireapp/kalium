@@ -19,6 +19,7 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.await
 
 import com.wire.kalium.persistence.ConversationsQueries
@@ -32,7 +33,6 @@ import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import kotlin.time.Instant
-import kotlin.coroutines.cancellation.CancellationException
 
 internal fun MessageEntityContent.Asset.hasValidRemoteData() =
     assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()
@@ -103,18 +103,14 @@ internal class MessageInsertExtensionImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override suspend fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean) {
-        try {
-            insertBaseMessageOrError(message)
-            insertMessageContent(message)
-            if (withUnreadEvents) {
-                insertUnreadEvent(message)
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            /* no-op */
+        // The caller owns one write transaction. Ignore only an existing identity; every other
+        // base/content/unread failure must roll back that transaction and reach its caller.
+        if (messagesQueries.messageExists(message.id, message.conversationId).awaitAsOne()) return
+        insertBaseMessageOrError(message)
+        insertMessageContent(message)
+        if (withUnreadEvents) {
+            insertUnreadEvent(message)
         }
     }
 

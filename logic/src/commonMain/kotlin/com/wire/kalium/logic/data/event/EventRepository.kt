@@ -24,6 +24,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -71,7 +72,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.transform
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
 import kotlin.uuid.Uuid
@@ -244,7 +245,7 @@ internal class EventDataSource(
                 is WebSocketEvent.Open -> {
                     clearOnFirstWSMessage.emit(true)
                     logger.d("set all unprocessed events as pending")
-                    setAllUnprocessedEventsAsPending()
+                    setAllUnprocessedEventsAsPending().onFailure(::throwPendingEventException)
                     val isLegacyNotificationsSystem = webSocketEvent.shouldProcessPendingEvents
                     if (isLegacyNotificationsSystem) {
                         logger.d("fetch pending events from server")
@@ -423,44 +424,40 @@ internal class EventDataSource(
                 }
             }
 
+    @Suppress("ReturnCount")
     private suspend fun fetchPendingEvents(clientId: ClientId): Either<CoreFailure, Unit> {
         var hasMore = true
-        var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
+        val storedCursor = wrapStorageNullableRequest {
+            metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
+        }
+        var lastFetchedNotificationId = when (storedCursor) {
+            is Either.Left -> return storedCursor
+            is Either.Right -> storedCursor.value
+        }
 
-        while (coroutineContext.isActive && hasMore) {
+        while (hasMore) {
+            coroutineContext.ensureActive()
             val notificationsPageResult = getNextPendingEventsPage(lastFetchedNotificationId, clientId)
 
             if (notificationsPageResult.isSuccessful()) {
-                hasMore = notificationsPageResult.value.hasMore
-                lastFetchedNotificationId = notificationsPageResult.value.notifications.lastOrNull()?.id
-
-                val entities = notificationsPageResult.value.notifications.mapNotNull { event ->
-                    event.payload?.let {
-                        NewEventEntity(
-                            eventId = event.id,
-                            payload = event.payload,
-                            isLive = false,
-                            transient = event.transient
-                        )
-                    }
+                val page = notificationsPageResult.value
+                if (page.hasMore && page.notifications.isEmpty()) {
+                    return Either.Left(CoreFailure.Unknown(IllegalStateException("Notification page did not advance")))
                 }
-                logger.d("inserting ${entities.size} events from pending notifications, hasMore: $hasMore")
-                val eventIdsToRemove = entities.map { it.eventId }
-                wrapStorageRequest {
-                    eventDAO.deleteUnprocessedLiveEventsByIds(eventIdsToRemove)
-                }.onSuccess {
-                    wrapStorageRequest {
-                        eventDAO.insertEvents(entities)
-                    }.onSuccess {
-                        notificationsPageResult.value.notifications.lastOrNull { !it.transient }?.let {
-                            updateLastSavedEventId(it.id)
-                        }
-                    }
+                val entities = page.notifications.map { event ->
+                    NewEventEntity(event.id, event.payload, event.transient, false)
                 }
+                when (val stored = wrapStorageRequest { eventDAO.storeFetchedPage(entities) }) {
+                    is Either.Left -> return stored
+                    is Either.Right -> Unit
+                }
+                hasMore = page.hasMore
+                lastFetchedNotificationId = page.notifications.lastOrNull()?.id ?: lastFetchedNotificationId
             } else {
                 return Either.Left(NetworkFailure.ServerMiscommunication(notificationsPageResult.kException))
             }
         }
+        coroutineContext.ensureActive()
         logger.i("Pending events collection finished. Collecting Live events.")
         return Either.Right(Unit)
     }

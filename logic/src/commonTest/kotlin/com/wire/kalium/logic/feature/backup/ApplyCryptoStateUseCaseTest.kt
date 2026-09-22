@@ -201,6 +201,8 @@ class ApplyCryptoStateUseCaseTest {
 
         fun arrange(): Pair<Arrangement, ApplyCryptoStateUseCase> {
             return this to ApplyCryptoStateUseCaseImpl(
+                originatingScope = mock<kotlinx.coroutines.CoroutineScope>(),
+                userSessionScopeProvider = mock<com.wire.kalium.logic.feature.UserSessionScopeProvider>(mode = dev.mokkery.MockMode.autoUnit),
                 userId = selfUserId,
                 rootPathsProvider = FakeRootPathsProvider(),
                 kaliumFileSystem = kaliumFileSystem,

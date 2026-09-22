@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -42,6 +41,7 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.isUserNotFoundFailure
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.sync.incremental.EventSource
@@ -50,8 +50,6 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNotFound
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
@@ -157,7 +155,8 @@ internal class UserEventReceiverImpl internal constructor(
         return currentClientIdProvider().map { currentClientId ->
             if (currentClientId == event.clientId) {
                 logger.logSuccess("info" to "CURRENT_CLIENT")
-                logout(LogoutReason.REMOVED_CLIENT, waitUntilCompletes = true)
+                // Logout must drain this event worker before removing storage.
+                logout(LogoutReason.REMOVED_CLIENT, waitUntilCompletes = false)
             } else {
                 logger.logSuccess("info" to "OTHER_CLIENT")
             }
@@ -193,7 +192,8 @@ internal class UserEventReceiverImpl internal constructor(
     private suspend fun handleUserDelete(event: Event.User.UserDelete): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
         return if (selfUserId == event.userId) {
-            logout(LogoutReason.DELETED_ACCOUNT, waitUntilCompletes = true)
+            // This worker must return before logout can drain the session.
+            logout(LogoutReason.DELETED_ACCOUNT, waitUntilCompletes = false)
             Either.Right(Unit)
         } else {
             userRepository.markUserAsDeletedAndRemoveFromGroupConversations(event.userId)
@@ -221,7 +221,3 @@ internal class UserEventReceiverImpl internal constructor(
             }
     }
 }
-
-private fun CoreFailure.isUserNotFoundFailure(): Boolean =
-    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError)
-        ?.isNotFound() == true

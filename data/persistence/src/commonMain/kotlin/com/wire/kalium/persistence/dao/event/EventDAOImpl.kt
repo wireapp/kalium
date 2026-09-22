@@ -21,6 +21,7 @@ import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.EventsQueries
+import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
@@ -30,6 +31,7 @@ import kotlinx.coroutines.withContext
 
 class EventDAOImpl(
     private val eventsQueries: EventsQueries,
+    private val metadataQueries: MetadataQueries,
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : EventDAO {
@@ -66,6 +68,21 @@ class EventDAOImpl(
                         transient = event.transient
                     )
                 }
+            }
+        }
+    }
+
+    override suspend fun storeFetchedPage(events: List<NewEventEntity>) = withContext(writeDispatcher.value) {
+        require(events.none { it.isLive })
+        // Preserve the app's existing null-payload policy and overlap behavior.
+        val stored = events.filter { it.payload != null }
+        eventsQueries.transaction {
+            eventsQueries.deleteUnprocessedLiveEventsByIds(stored.map { it.eventId })
+            stored.forEach { event ->
+                eventsQueries.insertOrIgnoreEvent(event.eventId, 0, event.payload, 0, event.transient)
+            }
+            events.lastOrNull { !it.transient }?.let {
+                metadataQueries.insertValue(NotificationEventStore.FETCH_CURSOR_KEY, it.eventId)
             }
         }
     }

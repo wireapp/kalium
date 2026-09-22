@@ -20,8 +20,6 @@ package com.wire.kalium.logic.data.auth
 
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.logout.LogoutReason
-import com.wire.kalium.logic.data.session.token.AccessToken
-import com.wire.kalium.logic.data.session.token.RefreshToken
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.logic.data.user.UserId
@@ -59,28 +57,6 @@ internal data class Account(
     val nomadServiceUrl: String? = null,
     val ssoIdentityProviderId: String? = null,
 )
-
-/**
- * Holds information about the user ID, and the associated user id.
- */
-public data class AccountTokens(
-    val userId: UserId,
-    val accessToken: AccessToken,
-    val refreshToken: RefreshToken,
-    val cookieLabel: String?
-) {
-    public constructor(
-        userId: UserId,
-        accessToken: String,
-        refreshToken: String,
-        tokenType: String,
-        cookieLabel: String?
-    ) : this(userId, AccessToken(accessToken, tokenType), RefreshToken(refreshToken), cookieLabel)
-
-    val tokenType: String
-        get() = accessToken.tokenType
-
-}
 
 public data class AuthenticationResult(
     val accountTokens: AccountTokens,

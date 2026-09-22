@@ -50,3 +50,11 @@ _Avoid_: Last message, message details
 **Joinable call**:
 An ongoing call associated with a conversation that the current user can join.
 _Avoid_: Active call
+
+### Account ownership
+
+**Conversation member**: A user who belongs to a conversation. The user's devices may each have their own cryptographic membership.
+
+**MLS client**: One device identity in an MLS group. Removing this client does not, by itself, remove the user from the conversation.
+
+**Prepared account**: An account whose app has completed the setup needed for an extension to receive using its existing state.

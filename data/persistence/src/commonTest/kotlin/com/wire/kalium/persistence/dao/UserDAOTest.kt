@@ -28,10 +28,6 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserDetailsEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.test.TestResult
-import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -41,6 +37,10 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.runTest
 
 class UserDAOTest : BaseDatabaseTest() {
 
@@ -987,6 +987,19 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(users)
 
         assertFalse { db.userDAO.isAtLeastOneUserATeamMember(users.map { it.id }, teamId) }
+    }
+
+    @Test
+    fun unchangedProfilesPreserveOtherEffectsInAnEnclosingReceivingTransaction() = runTest(dispatcher) {
+        db.userDAO.upsertUser(user1)
+        val result = db.writeMessageEffects {
+            users.upsertUser(user2)
+            users.upsertUsers(emptyList())
+            users.upsertUser(user1)
+            "committed"
+        }
+        assertEquals("committed", result)
+        assertNotNull(db.userDAO.getUserDetailsByQualifiedID(user2.id))
     }
 
     @Test

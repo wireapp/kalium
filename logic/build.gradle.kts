@@ -16,6 +16,9 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
+import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -52,6 +55,22 @@ kotlin {
         }
     }
 
+    iosSimulatorArm64 {
+        binaries.withType<TestExecutable>().configureEach {
+            val entitlements = rootProject.file("core/cryptography/src/iosTest/entitlements.plist")
+            linkerOpts("-framework", "Security", "-sectcreate", "__TEXT", "__entitlements", entitlements.absolutePath)
+            linkTaskProvider.configure { inputs.file(entitlements) }
+        }
+        binaries.executable("swiftAppFixture", listOf(NativeBuildType.DEBUG)) {
+            compilation = compilations.getByName("test")
+            baseName = "swift-app-verifier"
+            entryPoint = "com.wire.kalium.logic.runSwiftReceivingAppVerifier"
+            val entitlements = rootProject.file("core/cryptography/src/iosTest/entitlements.plist")
+            linkerOpts("-framework", "Security", "-sectcreate", "__TEXT", "__entitlements", entitlements.absolutePath)
+            linkTaskProvider.configure { inputs.file(entitlements) }
+        }
+    }
+
     val xcf = XCFramework("KaliumLogic")
     val appleTargets = listOf(iosArm64(), iosSimulatorArm64(), macosArm64())
     appleTargets.forEach {
@@ -71,6 +90,7 @@ kotlin {
                 implementation(projects.data.network)
                 api(projects.core.data)
                 implementation(projects.data.dataMappers)
+                implementation(projects.domain.messaging.receiving)
                 api(projects.data.networkUtil)
                 implementation(projects.core.cryptography)
                 implementation(projects.data.persistence)
@@ -179,4 +199,9 @@ kotlin {
             }
         }
     }
+}
+
+// Account session integration tests use CoreCrypto and require the simulator Keychain service.
+tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+    standalone.set(false)
 }

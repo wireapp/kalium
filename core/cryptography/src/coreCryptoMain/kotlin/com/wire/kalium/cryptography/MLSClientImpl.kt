@@ -38,8 +38,10 @@ import com.wire.crypto.toWelcome
 import com.wire.kalium.cryptography.utils.toBundle
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 @Suppress("TooManyFunctions")
 class MLSClientImpl private constructor(
@@ -50,12 +52,16 @@ class MLSClientImpl private constructor(
 ) : MLSClient {
 
     private var isClosed = false
+    private val closeMutex = Mutex()
     private val credentialInitializationMutex = Mutex()
 
-    override suspend fun close() {
-        if (isClosed) return
-        isClosed = true
-        onClose()
+    override suspend fun close(): Unit = withContext(NonCancellable) {
+        closeMutex.withLock {
+            if (!isClosed) {
+                onClose()
+                isClosed = true
+            }
+        }
     }
 
     override suspend fun initializeBasicCredential() = credentialInitializationMutex.withLock {
@@ -63,11 +69,14 @@ class MLSClientImpl private constructor(
             clientId = clientId,
             cipherSuite = defaultCipherSuite
         )
-        if (existingCredentials.isNotEmpty()) return@withLock
+        val hasCredential = existingCredentials.isNotEmpty()
+        existingCredentials.forEach { it.close() }
+        if (hasCredential) return@withLock
 
         coreCrypto.transaction("initializeBasicCredential") { context ->
-            val credential = Credential.basic(defaultCipherSuite, clientId)
-            context.addCredential(credential)
+            Credential.basic(defaultCipherSuite, clientId).useNative { credential ->
+                context.addCredential(credential).close()
+            }
         }
         Unit
     }
@@ -115,14 +124,19 @@ class MLSClientImpl private constructor(
         }
 
     private suspend fun <R> withDefaultCredential(block: suspend (CredentialRef) -> R): R {
-        val credential = coreCrypto.findCredentials(
+        val credentials = coreCrypto.findCredentials(
             clientId = clientId,
             cipherSuite = defaultCipherSuite
-        ).takeDefault() ?: error(NO_DEFAULT_CREDENTIAL_MESSAGE)
-        return block(credential)
+        )
+        return try {
+            block(credentials.takeDefault() ?: error(NO_DEFAULT_CREDENTIAL_MESSAGE))
+        } finally {
+            credentials.forEach { it.close() }
+        }
     }
 
     private fun mlsCoreCryptoContext(context: CoreCryptoContext) = object : MlsCoreCryptoContext {
+
         override fun getDefaultCipherSuite(): MLSCiphersuite = defaultCipherSuite.toCryptography()
 
         override suspend fun generateKeyPackages(

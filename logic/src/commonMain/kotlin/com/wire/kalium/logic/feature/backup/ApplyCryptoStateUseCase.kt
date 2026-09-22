@@ -26,6 +26,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
+import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import kotlinx.coroutines.CoroutineScope
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -58,6 +60,8 @@ internal class ApplyCryptoStateUseCaseImpl(
     private val securityHelper: SecurityHelper,
     private val clientRepository: ClientRepository,
     private val eventRepository: EventRepository,
+    private val originatingScope: CoroutineScope,
+    private val userSessionScopeProvider: UserSessionScopeProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : ApplyCryptoStateUseCase {
 
@@ -68,6 +72,7 @@ internal class ApplyCryptoStateUseCaseImpl(
             val clientId = extractResult.metadata.clientId
 
             try {
+                userSessionScopeProvider.invalidateReceiving(userId, originatingScope, cryptoReplacement = true)
                 // Apply MLS keystore
                 val mlsApplyResult = applyMLSKeystore(
                     extractedMlsPath = extractResult.mlsKeystorePath,
@@ -236,8 +241,8 @@ internal class ApplyCryptoStateUseCaseImpl(
         private const val KEYSTORE_NAME = "keystore"
         private const val WAL_SUFFIX = "-wal"
         private const val WAL_SHM_SUFFIX = "-shm"
-        const val MLS_DB_PASSPHRASE_PREFIX_V2 = "mls_db_secret_alias_v2"
-        const val PROTEUS_DB_PASSPHRASE_PREFIX_V2 = "proteus_db_secret_alias_v2"
+        const val MLS_DB_PASSPHRASE_PREFIX_V2 = com.wire.kalium.persistence.dbPassphrase.MLS_DB_PASSPHRASE_PREFIX_V2
+        const val PROTEUS_DB_PASSPHRASE_PREFIX_V2 = com.wire.kalium.persistence.dbPassphrase.PROTEUS_DB_PASSPHRASE_PREFIX_V2
     }
 }
 

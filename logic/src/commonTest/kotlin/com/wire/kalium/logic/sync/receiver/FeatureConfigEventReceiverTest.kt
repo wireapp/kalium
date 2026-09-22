@@ -458,13 +458,13 @@ class FeatureConfigEventReceiverTest {
 
         private val featureConfigEventReceiver: FeatureConfigEventReceiver by lazy {
             FeatureConfigEventReceiverImpl(
-                GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
+                GuestRoomConfigHandler(userConfigRepository, kaliumConfigs.guestRoomLink),
                 FileSharingConfigHandler(userConfigRepository),
                 MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
                 MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, cryptoTransactionProvider),
                 ClassifiedDomainsConfigHandler(userConfigRepository),
                 ConferenceCallingConfigHandler(userConfigRepository),
-                SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
+                SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs.selfDeletingMessages),
                 E2EIConfigHandler(userConfigRepository),
                 AppLockConfigHandler(userConfigRepository),
                 AllowedGlobalOperationsHandler(userConfigRepository),
@@ -496,7 +496,7 @@ class FeatureConfigEventReceiverTest {
 
         suspend fun withIsFileSharingEnabled(result: Either<StorageFailure, FileSharingStatus>) = apply {
             everySuspend {
-                userConfigRepository.isFileSharingEnabled()
+                userConfigRepository.getFileSharingServerStatus()
             } returns result
         }
 

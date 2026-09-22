@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -27,207 +28,99 @@ import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
-import kotlin.time.Instant
 import kotlin.test.Test
+import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.minutes
 
 class MessageTextEditHandlerTest {
+    @Test
+    fun authorizedTextEditChangesIdentityContentAndDate() = runTest {
+        val fixture = Fixture().givenOriginal(ORIGINAL)
+        fixture.handler.handle(EDIT, CONTENT)
+        verifySuspend {
+            fixture.dao.updateTextMessageContent(
+                EDIT.date, ORIGINAL.conversationId.toDao(), ORIGINAL.id,
+                MessageEntityContent.Text(CONTENT.newContent, emptyList(), emptyList()), EDIT.id, null
+            )
+            fixture.notifications.scheduleEditMessageNotification(EDIT, CONTENT)
+        }
+    }
 
     @Test
-    fun givenEditMatchesOriginalSender_whenHandling_thenShouldUpdateContentWithCorrectParameters() = runTest {
-        val (arrangement, messageTextEditHandler) = arrange {
-            withGetMessageById(Either.Right(ORIGINAL_MESSAGE))
+    fun editFromAnotherSenderIsIgnoredWithoutMutationOrPresentation() = runTest {
+        val fixture = Fixture().givenOriginal(ORIGINAL)
+        assertIs<Either.Left<StorageFailure>>(fixture.handler.handle(EDIT.copy(senderUserId = TestUser.OTHER_USER_ID), CONTENT))
+        verifySuspend(VerifyMode.not) {
+            fixture.dao.updateTextMessageContent(any(), any(), any(), any(), any(), any())
+            fixture.notifications.scheduleEditMessageNotification(any(), any<MessageContent.TextEdited>())
         }
+    }
 
-        messageTextEditHandler.handle(EDIT_MESSAGE.copy(senderUserId = ORIGINAL_SENDER_USER_ID), EDIT_CONTENT)
-
-        with(arrangement) {
-            verifySuspend(VerifyMode.exactly(1)) {
-                messageRepository.updateTextMessage(
-                    eq(EDIT_MESSAGE.conversationId),
-                    eq(EDIT_CONTENT),
-                    eq(EDIT_MESSAGE.id),
-                    eq(EDIT_MESSAGE.date)
+    @Test
+    fun newerOrEqualServerEditAlsoCompletesThePendingLocalEdit() = runTest {
+        for (date in listOf(EDIT.date, EDIT.date - 1.minutes)) {
+            val fixture = Fixture().givenOriginal(ORIGINAL.copy(editStatus = Message.EditStatus.Edited(date), status = Message.Status.Pending))
+            fixture.handler.handle(EDIT, CONTENT)
+            verifySuspend {
+                fixture.dao.updateTextMessageContent(
+                    EDIT.date, ORIGINAL.conversationId.toDao(), ORIGINAL.id,
+                    MessageEntityContent.Text(CONTENT.newContent, emptyList(), emptyList()), EDIT.id, MessageEntity.Status.SENT
                 )
+                fixture.notifications.scheduleEditMessageNotification(EDIT, CONTENT)
             }
         }
     }
 
     @Test
-    fun givenEditDoesNOTMatchesOriginalSender_whenHandling_thenShouldNOTUpdateContent() = runTest {
-        val (arrangement, messageTextEditHandler) = arrange {
-            withGetMessageById(Either.Right(ORIGINAL_MESSAGE))
-        }
-
-        messageTextEditHandler.handle(EDIT_MESSAGE.copy(senderUserId = TestUser.OTHER_USER_ID), EDIT_CONTENT)
-
-        with(arrangement) {
-            verifySuspend(VerifyMode.not) {
-                messageRepository.updateTextMessage(any(), any(), any(), any())
-            }
-        }
-    }
-
-    @Test
-    fun givenEditIsNewerThanLocalPendingStoredEdit_whenHandling_thenShouldUpdateTheWholeMessageDataAndStatus() = runTest {
-        val originalContent = TestMessage.TEXT_CONTENT
-        val originalEditStatus = Message.EditStatus.Edited(Instant.UNIX_FIRST_DATE)
-        val originalMessage = ORIGINAL_MESSAGE.copy(
-            editStatus = originalEditStatus,
-            content = originalContent,
-            status = Message.Status.Pending
+    fun olderServerEditRekeysWhilePreservingNewerLocalTextDateAndPendingStatus() = runTest {
+        val localDate = EDIT.date + 1.minutes
+        val original = ORIGINAL.copy(
+            content = MessageContent.Text("pending local text"), editStatus = Message.EditStatus.Edited(localDate), status = Message.Status.Pending
         )
-        val editContent = EDIT_CONTENT
-        val editMessage = EDIT_MESSAGE.copy(
-            date = Instant.UNIX_FIRST_DATE,
-            content = editContent
-        )
-        val (arrangement, messageTextEditHandler) = arrange {
-            withGetMessageById(Either.Right(originalMessage))
-        }
-
-        messageTextEditHandler.handle(editMessage, editContent)
-
-        with(arrangement) {
-            verifySuspend(VerifyMode.exactly(1)) {
-                messageRepository.updateTextMessage(
-                    eq(editMessage.conversationId),
-                    eq(editContent),
-                    eq(editMessage.id),
-                    eq(editMessage.date)
-                )
-            }
-            verifySuspend(VerifyMode.exactly(1)) {
-                messageRepository.updateMessageStatus(eq(MessageEntity.Status.SENT), eq(editMessage.conversationId), eq(editMessage.id))
-            }
-            verifySuspend(VerifyMode.exactly(1)) {
-                notificationEventsManager.scheduleEditMessageNotification(eq(editMessage), eq(editContent))
-            }
-        }
-    }
-
-    @Test
-    fun givenEditIsOlderThanLocalPendingStoredEdit_whenHandling_thenShouldUpdateOnlyMessageIdAndDate() = runTest {
-        val originalContent = TestMessage.TEXT_CONTENT
-        val originalEditStatus = Message.EditStatus.Edited(Instant.DISTANT_FUTURE) // original message date is newer than edit date
-        val originalMessage = ORIGINAL_MESSAGE.copy(
-            editStatus = originalEditStatus,
-            content = originalContent,
-            status = Message.Status.Pending
-
-        )
-        val editContent = EDIT_CONTENT
-        val editMessage = EDIT_MESSAGE.copy(
-            date = originalEditStatus.lastEditInstant - 10.minutes, // edit date is older than original message date
-            content = editContent
-        )
-        val expectedContent = MessageContent.TextEdited(
-            editMessageId = editContent.editMessageId,
-            newContent = originalContent.value,
-            newMentions = originalContent.mentions
-        )
-        val (arrangement, messageTextEditHandler) = arrange {
-            withGetMessageById(Either.Right(originalMessage))
-        }
-
-        messageTextEditHandler.handle(editMessage, editContent)
-
-        with(arrangement) {
-            verifySuspend(VerifyMode.exactly(1)) {
-                messageRepository.updateTextMessage(any(), eq(expectedContent), eq(editMessage.id), eq(originalEditStatus.lastEditInstant))
-            }
-            verifySuspend(VerifyMode.not) {
-                messageRepository.updateMessageStatus(any(), any(), any())
-            }
-        }
-    }
-
-    @Test
-    fun givenAnAlreadyEditedMessage_whenNewEditIsInTheFuture_thenMessageContentIsUpdatd() = runTest {
-        val originalContent = TestMessage.TEXT_CONTENT
-        val originalEditStatus = Message.EditStatus.Edited(Instant.UNIX_FIRST_DATE)
-        val originalMessage = ORIGINAL_MESSAGE.copy(
-            editStatus = originalEditStatus,
-            content = originalContent,
-            status = Message.Status.Sent
-        )
-        val editContent = EDIT_CONTENT
-        val editMessage = EDIT_MESSAGE.copy(
-            date = Instant.UNIX_FIRST_DATE + 10.minutes,
-            content = editContent
-        )
-        val expectedContent = MessageContent.TextEdited(
-            editMessageId = editContent.editMessageId,
-            newContent = editContent.newContent,
-            newMentions = editContent.newMentions
-        )
-        val (arrangement, messageTextEditHandler) = arrange {
-            withGetMessageById(Either.Right(originalMessage))
-        }
-
-        messageTextEditHandler.handle(editMessage, editContent)
-
-        with(arrangement) {
-            verifySuspend(VerifyMode.exactly(1)) {
-                messageRepository.updateTextMessage(any(), eq(expectedContent), eq(editMessage.id), eq(editMessage.date))
-            }
-            verifySuspend(VerifyMode.exactly(1)) {
-                messageRepository.updateMessageStatus(any(), any(), any())
-            }
-        }
-    }
-
-    private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
-
-    private class Arrangement(
-        private val block: suspend Arrangement.() -> Unit
-    ) {
-        val messageRepository = mock<MessageRepository>()
-        val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
-
-        suspend fun arrange() = block().run {
-            everySuspend {
-                messageRepository.updateTextMessage(any(), any(), any(), any())
-            } returns Either.Right(Unit)
-            everySuspend {
-                messageRepository.updateMessageStatus(any(), any(), any())
-            } returns Either.Right(Unit)
-            this@Arrangement to MessageTextEditHandlerImpl(
-                messageRepository = messageRepository,
-                notificationEventsManager = notificationEventsManager,
+        val fixture = Fixture().givenOriginal(original)
+        fixture.handler.handle(EDIT, CONTENT)
+        verifySuspend {
+            fixture.dao.updateTextMessageContent(
+                localDate, ORIGINAL.conversationId.toDao(), ORIGINAL.id,
+                MessageEntityContent.Text("pending local text", emptyList(), emptyList()), EDIT.id, null
             )
         }
+        verifySuspend(VerifyMode.not) { fixture.notifications.scheduleEditMessageNotification(any(), any<MessageContent.TextEdited>()) }
+    }
 
-        suspend fun withGetMessageById(result: Either<StorageFailure, Message>) {
-            everySuspend {
-                messageRepository.getMessageById(any(), any())
-            } returns result
+    @Test
+    fun storageFailureDoesNotEmitAnEditNotification() = runTest {
+        val fixture = Fixture().givenOriginal(ORIGINAL)
+        everySuspend { fixture.dao.updateTextMessageContent(any(), any(), any(), any(), any(), any()) } throws IllegalStateException("write failed")
+        assertIs<Either.Left<*>>(fixture.handler.handle(EDIT, CONTENT))
+        verifySuspend(VerifyMode.not) { fixture.notifications.scheduleEditMessageNotification(any(), any<MessageContent.TextEdited>()) }
+    }
+
+    private class Fixture {
+        val repository = mock<MessageRepository>()
+        val dao = mock<MessageDAO>(mode = MockMode.autoUnit)
+        val notifications = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
+        val handler = MessageTextEditHandlerImpl(repository, dao, notifications)
+        suspend fun givenOriginal(message: Message) = apply {
+            everySuspend { repository.getMessageById(any(), any()) } returns Either.Right(message)
         }
-
     }
 
     private companion object {
-        val ORIGINAL_MESSAGE = TestMessage.TEXT_MESSAGE
-        val ORIGINAL_MESSAGE_ID = ORIGINAL_MESSAGE.id
-        val ORIGINAL_SENDER_USER_ID = ORIGINAL_MESSAGE.senderUserId
-        val EDIT_CONTENT = MessageContent.TextEdited(
-            editMessageId = ORIGINAL_MESSAGE_ID,
-            newContent = "some new content",
-            newMentions = listOf()
-        )
-        val EDIT_MESSAGE = TestMessage.signalingMessage(
-            content = EDIT_CONTENT
-        )
+        val ORIGINAL = TestMessage.TEXT_MESSAGE
+        val CONTENT = MessageContent.TextEdited(editMessageId = ORIGINAL.id, newContent = "server text", newMentions = emptyList())
+        val EDIT = TestMessage.signalingMessage(content = CONTENT).copy(senderUserId = ORIGINAL.senderUserId)
     }
 }

@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.logger.kaliumLogger
@@ -28,6 +30,9 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
+import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.data.user.UserId
+import kotlinx.coroutines.CoroutineScope
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 
@@ -51,10 +56,14 @@ internal class GetOrRegisterClientUseCaseImpl(
     private val verifyExistingClientUseCase: VerifyExistingClientUseCase,
     private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
     private val cachedClientIdClearer: CachedClientIdClearer,
-    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
+    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase,
+    private val userId: UserId,
+    private val originatingScope: CoroutineScope,
+    private val userSessionScopeProvider: UserSessionScopeProvider,
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientParam): RegisterClientResult {
+        userSessionScopeProvider.invalidateReceiving(userId, originatingScope)
         syncFeatureConfigsUseCase()
 
         val result: RegisterClientResult = clientRepository.retainedClientId()
@@ -82,31 +91,35 @@ internal class GetOrRegisterClientUseCaseImpl(
                 }
             ) ?: registerClient(registerClientParam)
 
-        when (result) {
+        return when (result) {
             is RegisterClientResult.E2EICertificateRequired -> {
                 kaliumLogger.i("Client registration blocked because E2EI certificate required")
                 clientRepository.setClientRegistrationBlockedByE2EI()
-                upgradeCurrentSessionAndPersistClient(result.client.id)
+                    .flatMap { upgradeCurrentSessionAndPersistClient(result.client.id) }
+                    .fold({ RegisterClientResult.Failure.Generic(it) }, { result })
             }
 
             is RegisterClientResult.Success ->
                 upgradeCurrentSessionAndPersistClient(
                     result.client.id,
                     result.client.isAsyncNotificationsCapable
-                )
+                ).flatMap { userSessionScopeProvider.prepareReceiving(userId, originatingScope) }
+                    .fold({ RegisterClientResult.Failure.Generic(it) }, { result })
 
-            else -> Unit
+            else -> result
         }
-
-        return result
     }
 
-    private suspend fun upgradeCurrentSessionAndPersistClient(clientId: ClientId, isConsumableNotificationsCapable: Boolean = false) {
+    private suspend fun upgradeCurrentSessionAndPersistClient(
+        clientId: ClientId,
+        isConsumableNotificationsCapable: Boolean = false,
+    ): Either<CoreFailure, Unit> {
         kaliumLogger.i("Upgrade current session for client ${clientId.value.obfuscateId()}")
-        upgradeCurrentSessionUseCase(clientId).flatMap {
+        return upgradeCurrentSessionUseCase(clientId).flatMap {
             kaliumLogger.i("Persist client ${clientId.value.obfuscateId()}")
-            clientRepository.persistClientId(clientId)
-            clientRepository.persistClientHasConsumableNotifications(isConsumableNotificationsCapable)
+            clientRepository.persistClientId(clientId).flatMap {
+                clientRepository.persistClientHasConsumableNotifications(isConsumableNotificationsCapable)
+            }
         }
     }
 

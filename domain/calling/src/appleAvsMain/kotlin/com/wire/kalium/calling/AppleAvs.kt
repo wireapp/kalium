@@ -23,6 +23,7 @@ package com.wire.kalium.calling
 import avs.wcall_answer
 import avs.wcall_config_update
 import avs.wcall_create
+import avs.wcall_destroy
 import avs.wcall_end
 import avs.wcall_network_changed
 import avs.wcall_process_notifications
@@ -43,6 +44,7 @@ import avs.wcall_set_network_quality_handler
 import avs.wcall_set_participant_changed_handler
 import avs.wcall_set_req_clients_handler
 import avs.wcall_set_req_new_epoch_handler
+import avs.wcall_set_shutdown_handler
 import avs.wcall_set_video_send_state
 import avs.wcall_sft_resp
 import avs.wcall_setup
@@ -59,6 +61,8 @@ import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.staticCFunction
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.usePinned
+import kotlinx.coroutines.CompletableDeferred
+import platform.Foundation.NSRecursiveLock
 
 actual object AppleAvs {
     actual val bridge: AppleAvsBridge = AppleAvsBridgeImpl
@@ -66,12 +70,29 @@ actual object AppleAvs {
 
 @Suppress("LongParameterList", "ReturnCount", "TooManyFunctions")
 private object AppleAvsBridgeImpl : AppleAvsBridge {
-    data class CreatedHandle(val handle: UInt, val stableRef: StableRef<AppleAvsCallbacks>)
+    private class HandleCallbacks(val delegate: AppleAvsCallbacks) {
+        val shutdown = CompletableDeferred<Unit>()
+    }
+
+    private class CreatedHandle(
+        var handle: UInt,
+        val stableRef: StableRef<HandleCallbacks>,
+        val shutdown: CompletableDeferred<Unit>,
+    ) {
+        var releasing = false
+    }
 
     private var isStarted = false
     private val handles = mutableMapOf<String, CreatedHandle>()
+    private val handlesLock = NSRecursiveLock()
+    private val startLock = NSRecursiveLock()
 
-    private fun callbacks(arg: COpaquePointer?): AppleAvsCallbacks? = arg?.asStableRef<AppleAvsCallbacks>()?.get()
+    private inline fun <T> withHandlesLock(block: () -> T): T {
+        handlesLock.lock()
+        return try { block() } finally { handlesLock.unlock() }
+    }
+
+    private fun callbacks(arg: COpaquePointer?): AppleAvsCallbacks? = arg?.asStableRef<HandleCallbacks>()?.get()?.delegate
     private fun CPointer<ByteVar>?.string(): String? = this?.toKString()
     private fun CPointer<UByteVar>?.bytes(length: ULong): ByteArray = this?.readBytes(length.toInt()) ?: byteArrayOf()
 
@@ -81,7 +102,18 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
     }
 
     private val logHandler = staticCFunction { level: Int, message: CPointer<ByteVar>?, _: COpaquePointer? ->
-        handles.values.forEach { it.stableRef.get().onLog(level, message.string().orEmpty()) }
+        // The global logger is independent of a user's native shutdown queue.
+        withHandlesLock {
+            handles.values.forEach { it.stableRef.get().delegate.onLog(level, message.string().orEmpty()) }
+        }
+        Unit
+    }
+
+    private val shutdownHandler = staticCFunction { _: UInt, arg: COpaquePointer? ->
+        // AVS calls this only after instance_destroy has removed listeners/calls and
+        // ide_handler has released the marshal queue. Capture the reference before waking waiters.
+        val shutdown = arg?.asStableRef<HandleCallbacks>()?.get()?.shutdown
+        shutdown?.complete(Unit)
         Unit
     }
 
@@ -250,50 +282,83 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
     }
 
     override fun startIfAvailable(): Boolean {
-        if (isStarted) return true
-
-        return runCatching {
-            wcall_setup()
-            wcall_run()
-            wcall_set_log_handler(logHandler, null)
-            isStarted = true
-            true
-        }.getOrElse {
-            false
+        startLock.lock()
+        return try {
+            if (isStarted) return true
+            runCatching {
+                wcall_setup()
+                wcall_run()
+                wcall_set_log_handler(logHandler, null)
+                isStarted = true
+                true
+            }.getOrElse { false }
+        } finally {
+            startLock.unlock()
         }
     }
 
     override fun userHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt? {
         if (!startIfAvailable()) return null
-
         val key = "$selfUserId:$selfClientId"
-        handles[key]?.let { return it.handle }
+        val created = withHandlesLock {
+            handles[key]?.let {
+                check(it.handle != 0u && !it.releasing && it.stableRef.get().delegate === callbacks) {
+                    "AVS user handle is being created or still belongs to another owner"
+                }
+                return it.handle
+            }
+            val context = HandleCallbacks(callbacks)
+            CreatedHandle(0u, StableRef.create(context), context.shutdown).also { handles[key] = it }
+        }
+        val arg = created.stableRef.asCPointer()
+        // Native calls can log from another thread. Never hold handlesLock across them.
+        val handle = wcall_create(
+            userid = selfUserId,
+            clientid = selfClientId,
+            readyh = readyHandler,
+            sendh = sendHandler,
+            sfth = sftRequestHandler,
+            incomingh = incomingHandler,
+            missedh = missedHandler,
+            answerh = answeredHandler,
+            estabh = establishedHandler,
+            closeh = closeHandler,
+            metricsh = metricsHandler,
+            cfg_reqh = configRequestHandler,
+            acbrh = audioCbrHandler,
+            vstateh = videoStateHandler,
+            arg = arg
+        )
+        if (handle == 0u) {
+            // A failed wcall_create synchronously destroys its unpublished instance.
+            withHandlesLock {
+                handles.remove(key)
+                created.stableRef.dispose()
+            }
+            return null
+        }
+        wcall_set_shutdown_handler(handle, shutdownHandler, arg)
+        registerAdditionalHandlers(handle, arg)
+        withHandlesLock { created.handle = handle }
+        return handle
+    }
 
-        return runCatching {
-            val stableRef = StableRef.create(callbacks)
-            val arg = stableRef.asCPointer()
-            val handle = wcall_create(
-                userid = selfUserId,
-                clientid = selfClientId,
-                readyh = readyHandler,
-                sendh = sendHandler,
-                sfth = sftRequestHandler,
-                incomingh = incomingHandler,
-                missedh = missedHandler,
-                answerh = answeredHandler,
-                estabh = establishedHandler,
-                closeh = closeHandler,
-                metricsh = metricsHandler,
-                cfg_reqh = configRequestHandler,
-                acbrh = audioCbrHandler,
-                vstateh = videoStateHandler,
-                arg = arg
-            )
-            registerAdditionalHandlers(handle, arg)
-            handles[key] = CreatedHandle(handle, stableRef)
-            handle
-        }.getOrElse {
-            null
+    override suspend fun releaseUserHandle(handle: UInt) {
+        val (key, created, requestDestroy) = withHandlesLock {
+            val entry = handles.entries.firstOrNull { it.value.handle == handle } ?: return
+            val requestDestroy = !entry.value.releasing
+            entry.value.releasing = true
+            Triple(entry.key, entry.value, requestDestroy)
+        }
+        if (requestDestroy) wcall_destroy(handle)
+        // Cancellation/failure leaves the handle and references owned for a later close attempt.
+        // Concurrent releases share the same native shutdown signal; none can release early.
+        created.shutdown.await()
+        withHandlesLock {
+            if (handles[key] === created) {
+                handles.remove(key)
+                created.stableRef.dispose()
+            }
         }
     }
 
@@ -414,7 +479,11 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
 
     override fun setNetworkQualityInterval(handle: UInt, callbacks: AppleAvsCallbacks, intervalInSeconds: Int) {
         if (!startIfAvailable()) return
-        val arg = handles.values.firstOrNull { it.stableRef.get() === callbacks }?.stableRef?.asCPointer()
+        val arg = withHandlesLock {
+            val created = handles.values.firstOrNull { it.handle == handle && it.stableRef.get().delegate === callbacks }
+            if (created == null || created.releasing) return
+            created.stableRef.asCPointer()
+        }
         wcall_set_network_quality_handler(handle, networkQualityHandler, intervalInSeconds, arg)
     }
 

@@ -150,7 +150,7 @@ public class GlobalKaliumScope internal constructor(
 
     public val addAuthenticatedAccount: AddAuthenticatedUserUseCase
         get() =
-            AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO)
+            AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO, userSessionScopeProvider.value)
     public val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     public val getAllSessions: GetAllSessionsUseCase get() = GetAllSessionsUseCase(sessionRepository)
     public val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)

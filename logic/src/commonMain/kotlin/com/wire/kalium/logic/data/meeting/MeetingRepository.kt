@@ -68,7 +68,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.time.Instant
-import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
     suspend fun fetchAndPersistMeetings(
@@ -436,8 +435,3 @@ internal class MeetingDataSource(
     data class UpdateConversationNameFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
     data object MeetingNotSupportedFailure : CoreFailure.FeatureFailure()
 }
-
-private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
-private const val OUTDATED_MEETING_RETENTION_DAYS = 30
-private fun occurrenceGenerationUntil() = currentInstant().asStartOfDay().plus((OCCURRENCE_GENERATION_WINDOW_DAYS + 1).days)
-private fun occurrenceOutdatedThreshold() = currentInstant().asStartOfDay().minus(OUTDATED_MEETING_RETENTION_DAYS.days)

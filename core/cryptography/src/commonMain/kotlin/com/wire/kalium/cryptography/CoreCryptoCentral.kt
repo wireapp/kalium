@@ -32,6 +32,9 @@ interface CoreCryptoCentral {
 
     suspend fun proteusClient(): ProteusClient
 
+    /** Read installed credentials without initializing a client or creating key material. */
+    suspend fun hasCredential(clientId: CryptoQualifiedClientId, cipherSuite: MLSCiphersuite): Boolean
+
     /**
      * Creates and installs a PKI environment backed by the same encrypted database as Core Crypto.
      */
@@ -71,7 +74,11 @@ interface CoreCryptoCentral {
      */
     suspend fun exportDatabaseCopy(destinationPath: String)
 
-    /** Close Core Crypto, its PKI environment, and its database. */
+    /**
+     * Close Core Crypto, its PKI environment, and its database after their users have stopped.
+     * A native close failure remains a failure on later calls; the account owner must retain its
+     * lease because the native binding cannot confirm successful release by retrying.
+     */
     suspend fun close()
 }
 

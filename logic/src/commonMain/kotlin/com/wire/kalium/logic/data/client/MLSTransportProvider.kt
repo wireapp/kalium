@@ -17,17 +17,11 @@
  */
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.common.error.MLSTransportFailureSerialization
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.MLSTransporter
-import com.wire.kalium.cryptography.MlsMessageRejectedException
 import com.wire.kalium.logic.data.conversation.MLSCommitBundleMapper
+import com.wire.kalium.logic.data.conversation.sendMLSCommitBundle
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -46,15 +40,7 @@ internal class MLSTransportProviderImpl(
 ) : MLSTransportProvider {
 
     override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
-        wrapApiRequest {
-            mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(commitBundle))
-        }.flatMapLeft { networkFailure ->
-            Either.Left(networkFailure.wrapNetworkMlsFailureIfApplicable())
-        }.fold({
-            throw MlsMessageRejectedException(MLSTransportFailureSerialization.serialize(it))
-        }, {
-            processCommitBundleEvents(it.events)
-        })
+        processCommitBundleEvents(sendMLSCommitBundle(mlsMessageApi, commitBundle, mlsCommitBundleMapper))
     }
 
     private fun processCommitBundleEvents(events: List<EventContentDTO>) {

@@ -36,6 +36,8 @@ fun HttpClientConfig<*>.installWireDefaultRequest(serverConfigDTO: ServerConfigD
             val apiBaseUrl = Url(links.api)
             // enforce https as url protocol
             url.protocol = URLProtocol.HTTPS
+            // Preserve the configured TLS endpoint, including on-premises HTTPS ports.
+            if (apiBaseUrl.protocol == URLProtocol.HTTPS) url.port = apiBaseUrl.port
             // add the default host
             url.host = apiBaseUrl.host
             // for api version 0 no api version should be added to the request

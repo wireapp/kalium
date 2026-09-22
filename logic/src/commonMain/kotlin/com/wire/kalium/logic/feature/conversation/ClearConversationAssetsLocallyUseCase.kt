@@ -20,9 +20,9 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.logic.data.message.MessageRepository
 
 internal interface ClearConversationAssetsLocallyUseCase {
     /**
@@ -37,15 +37,13 @@ internal class ClearConversationAssetsLocallyUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository
 ) : ClearConversationAssetsLocallyUseCase {
-    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
-        return messageRepository.getAllAssetIdsFromConversationId(conversationId)
-            .flatMap { ids ->
-                if (ids.isEmpty()) return Either.Right(Unit)
-
-                ids.map { id -> assetRepository.deleteAssetLocally(id) }
-                    .reduce { acc, either ->
-                        acc.flatMap { either }
-                    }
+    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> =
+        messageRepository.getAllAssetIdsFromConversationId(conversationId).flatMap { ids ->
+            var result: Either<CoreFailure, Unit> = Either.Right(Unit)
+            for (id in ids) {
+                val cleanup = assetRepository.deleteAssetLocally(id)
+                if (result is Either.Right) result = cleanup
             }
-    }
+            result
+        }
 }

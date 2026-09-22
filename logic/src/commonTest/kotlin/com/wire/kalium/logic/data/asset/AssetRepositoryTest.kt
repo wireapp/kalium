@@ -61,6 +61,7 @@ import kotlinx.coroutines.test.setMain
 import okio.Buffer
 import okio.Path
 import okio.buffer
+import okio.fakefilesystem.FakeFileSystem
 import okio.use
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -359,6 +360,7 @@ internal class AssetRepositoryTest {
 
             val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
                 .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetPath, assetRawData.size.toLong()))
+                .withRawStoredData(assetRawData, assetPath)
                 .arrange()
 
             // When
@@ -524,6 +526,7 @@ internal class AssetRepositoryTest {
 
         val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withSuccessfulDownload(listOf(assetKey))
+            .withRawStoredData(expectedImage, dummyPath)
             .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, dummyPath, expectedImage.size.toLong()))
             .arrange()
         // When
@@ -632,6 +635,44 @@ internal class AssetRepositoryTest {
 
         // Then
         assertEquals(false, fakeKaliumFileSystem!!.exists(assetFile))
+    }
+
+    @Test
+    fun failedFileDeletionPreservesTheAssetRecordForRetry() = runTest {
+        val fileSystem = FakeFileSystem()
+        val kaliumFileSystem = FakeKaliumFileSystem(fileSystem)
+        fileSystem.allowDeletingOpenFiles = false
+        val assetKey = UserAssetId("locked-asset", "domain")
+        val path = kaliumFileSystem.providePersistentAssetPath(assetKey.value)
+        val (arrangement, repository) = Arrangement(kaliumFileSystem)
+            .withRawStoredData(byteArrayOf(1), path)
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, path, 1))
+            .withSuccessDeleteLocallyResponse()
+            .arrange()
+
+        kaliumFileSystem.source(path).use {
+            repository.deleteAssetLocally(assetKey.value).shouldFail()
+            verifySuspend(VerifyMode.not) { arrangement.assetDAO.deleteAsset(any()) }
+            assertTrue(kaliumFileSystem.exists(path))
+        }
+
+        repository.deleteAssetLocally(assetKey.value).shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetDAO.deleteAsset(assetKey.value) }
+        assertEquals(false, kaliumFileSystem.exists(path))
+    }
+
+    @Test
+    fun missingFileDoesNotPreventRemovingItsCacheRecord() = runTest {
+        val assetKey = UserAssetId("missing-file", "domain")
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.value)
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, path, 1))
+            .withSuccessDeleteLocallyResponse()
+            .arrange()
+
+        repository.deleteAssetLocally(assetKey.value).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetDAO.deleteAsset(assetKey.value) }
     }
 
     @Test

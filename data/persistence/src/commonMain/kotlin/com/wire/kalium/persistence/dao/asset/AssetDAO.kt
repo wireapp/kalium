@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.asset
 
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
 
 data class AssetEntity(
@@ -36,4 +37,11 @@ interface AssetDAO {
     suspend fun updateAsset(assetEntity: AssetEntity)
     suspend fun deleteAsset(key: String)
     suspend fun getAssets(): List<AssetEntity>
+    suspend fun isFileReferenced(path: String): Boolean
+
+    /** Null messageId selects the conversation's messages. Independent/shared file references survive. */
+    suspend fun deleteMessageFiles(conversationId: QualifiedIDEntity, messageId: String?, deleteFile: (String) -> Unit)
+
+    /** Includes drafts owned by a conversation which is being removed. */
+    suspend fun deleteConversationFiles(conversationId: QualifiedIDEntity, deleteFile: (String) -> Unit)
 }

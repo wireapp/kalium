@@ -144,6 +144,65 @@ class LastReadContentHandlerTest {
         }
     }
 
+    @Test
+    fun failedFlushDoesNotThrowAndRetainsReadDatesWithoutSchedulingSeenNotification() = runTest {
+        val timestamp = Instant.parse("2026-02-10T12:00:00Z")
+        val (arrangement, handler) = Arrangement()
+            .withIsMessageSentInSelfConversation(true)
+            .withUpdateReadDatesAndGetHasUnreadEvents(Either.Left(StorageFailure.Generic(IllegalStateException("write failed"))))
+            .arrange()
+        handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(CONVERSATION_ID, timestamp))
+        handler.flushPendingLastReads()
+        verifySuspend(VerifyMode.not) { arrangement.notificationEventsManager.scheduleConversationSeenNotification(any()) }
+        arrangement.withUpdateReadDatesAndGetHasUnreadEvents(Either.Right(mapOf(CONVERSATION_ID to false)))
+        handler.flushPendingLastReads()
+        handler.flushPendingLastReads()
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to timestamp)))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.notificationEventsManager.scheduleConversationSeenNotification(CONVERSATION_ID)
+        }
+    }
+
+    @Test
+    fun givenFailedFlush_whenNewReadArrives_thenRetryKeepsOtherPendingDatesAndUsesNewestRead() = runTest {
+        val older = Instant.parse("2026-02-10T12:00:00Z")
+        val newer = Instant.parse("2026-02-10T12:01:00Z")
+        val (arrangement, handler) = Arrangement()
+            .withIsMessageSentInSelfConversation(true)
+            .withUpdateReadDatesAndGetHasUnreadEvents(Either.Left(StorageFailure.Generic(IllegalStateException("write failed"))))
+            .arrange()
+
+        handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(CONVERSATION_ID, older))
+        handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(OTHER_CONVERSATION_ID, older))
+        handler.flushPendingLastReads()
+
+        handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(CONVERSATION_ID, newer))
+        arrangement.withUpdateReadDatesAndGetHasUnreadEvents(
+            Either.Right(mapOf(CONVERSATION_ID to false, OTHER_CONVERSATION_ID to true))
+        )
+        handler.flushPendingLastReads()
+        handler.flushPendingLastReads()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(
+                eq(mapOf(CONVERSATION_ID to newer, OTHER_CONVERSATION_ID to older))
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(
+                eq(mapOf(CONVERSATION_ID to older, OTHER_CONVERSATION_ID to older))
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.notificationEventsManager.scheduleConversationSeenNotification(CONVERSATION_ID)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.notificationEventsManager.scheduleConversationSeenNotification(OTHER_CONVERSATION_ID)
+        }
+    }
+
     private class Arrangement {
         val conversationRepository = mock<ConversationRepository>()
         private val isMessageSentInSelfConversation = mock<IsMessageSentInSelfConversationUseCase>()

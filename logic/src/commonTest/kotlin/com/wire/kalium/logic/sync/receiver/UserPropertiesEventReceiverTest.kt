@@ -20,8 +20,10 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
+import com.wire.kalium.persistence.config.UserConfigStorage
+import com.wire.kalium.logic.sync.receiver.handler.UserPropertiesEventHandler
+import dev.mokkery.answering.throws
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -50,7 +52,7 @@ class UserPropertiesEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setReadReceiptsStatus(any())
+            arrangement.userConfigRepository.persistReadReceipts(any())
         }
     }
 
@@ -79,7 +81,7 @@ class UserPropertiesEventReceiverTest {
 
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setTypingIndicatorStatus(event.value)
+            arrangement.userConfigRepository.persistTypingIndicator(event.value)
         }
     }
 
@@ -94,36 +96,39 @@ class UserPropertiesEventReceiverTest {
 
         result.shouldFail()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userConfigRepository.setTypingIndicatorStatus(event.value)
+            arrangement.userConfigRepository.persistTypingIndicator(event.value)
         }
     }
 
     private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
-        val userConfigRepository = mock<UserConfigRepository>()
-        val conversationFolderRepository = mock<ConversationFolderRepository>()
+        val userConfigRepository = mock<UserConfigStorage>()
+        val conversationFolderRepository = mock<ConversationFolderDAO>()
 
         private val userPropertiesEventReceiver: UserPropertiesEventReceiver = UserPropertiesEventReceiverImpl(
-            userConfigRepository = userConfigRepository,
-            conversationFolderRepository = conversationFolderRepository
+            UserPropertiesEventHandler(userConfigRepository, conversationFolderRepository)
         )
 
         suspend fun withUpdateReadReceiptsSuccess() = apply {
             everySuspend {
-                userConfigRepository.setReadReceiptsStatus(any())
-            } returns Either.Right(Unit)
+                userConfigRepository.persistReadReceipts(any())
+            } returns Unit
         }
 
         suspend fun withUpdateConversationFolders() = apply {
             everySuspend {
                 conversationFolderRepository.updateConversationFolders(any())
-             } returns Either.Right(Unit)
+             } returns Unit
         }
 
         suspend fun withUpdateTypingIndicator(result: Either<StorageFailure, Unit>) = apply {
-            everySuspend {
-                userConfigRepository.setTypingIndicatorStatus(any())
-            } returns result
+            if (result is Either.Right) {
+                everySuspend { userConfigRepository.persistTypingIndicator(any()) } returns Unit
+            } else {
+                everySuspend {
+                    userConfigRepository.persistTypingIndicator(any())
+                } throws IllegalStateException("required preference write failed")
+            }
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {

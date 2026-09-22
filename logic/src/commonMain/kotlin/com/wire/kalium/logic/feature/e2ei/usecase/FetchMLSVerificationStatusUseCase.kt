@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
@@ -28,24 +27,24 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.cryptography.CredentialType
-import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.actualMLSVerificationStatus
+import com.wire.kalium.logic.data.conversation.areMLSIdentitiesVerified
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
+import com.wire.kalium.logic.data.conversation.mlsVerificationMessage
 import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import kotlin.uuid.Uuid
 import kotlin.time.Clock
 
 internal typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
@@ -119,13 +118,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
                 // check that all identities are valid and name and handle are matching
                 for ((userId, wireIdentity) in ccIdentity) {
                     val persistedMemberInfo = dbData.members[userId]
-                    val isUserVerified = wireIdentity.none {
-                        it.status != CryptoCertificateStatus.VALID ||
-                                it.credentialType != CredentialType.X509 ||
-                                it.x509Identity == null ||
-                                it.x509Identity?.displayName != persistedMemberInfo?.name ||
-                                it.x509Identity?.handle?.handle != persistedMemberInfo?.handle
-                    }
+                    val isUserVerified = areMLSIdentitiesVerified(wireIdentity, persistedMemberInfo?.name, persistedMemberInfo?.handle)
                     if (!isUserVerified) {
                         newStatus = VerificationStatus.NOT_VERIFIED
                         break
@@ -172,7 +165,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
         verificationStatusData: VerificationStatusData
     ) {
         logger.i("Updating verification status and notifying user if needed")
-        val newStatus = getActualNewStatus(
+        val newStatus = actualMLSVerificationStatus(
             newStatusFromCC = verificationStatusData.newStatus,
             currentStatus = verificationStatusData.currentPersistedStatus
         )
@@ -187,21 +180,6 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
     }
 
     /**
-     * Current CoreCrypto implementation returns only a boolean flag "if conversation is verified or not".
-     * So we need to calculate if status was degraded on our side by comparing it to the previous status.
-     * @param newStatusFromCC - [VerificationStatus] that CoreCrypto returns.
-     * @param currentStatus - [VerificationStatus] that conversation currently has.
-     * @return [VerificationStatus] that should be saved to DB.
-     */
-    private fun getActualNewStatus(newStatusFromCC: VerificationStatus, currentStatus: VerificationStatus): VerificationStatus =
-        if (newStatusFromCC == VerificationStatus.NOT_VERIFIED && currentStatus == VerificationStatus.VERIFIED)
-            VerificationStatus.DEGRADED
-        else if (newStatusFromCC == VerificationStatus.NOT_VERIFIED && currentStatus == VerificationStatus.DEGRADED)
-            VerificationStatus.DEGRADED
-        else
-            newStatusFromCC
-
-    /**
      * Add a SystemMessage into a conversation, to inform user when the conversation verification status becomes DEGRADED.
      */
     private suspend fun notifyUserAboutStateChanges(
@@ -209,21 +187,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
         updatedStatus: VerificationStatus
     ) {
         logger.i("Notifying user about state changes")
-        val content = if (updatedStatus == VerificationStatus.VERIFIED) MessageContent.ConversationVerifiedMLS
-        else MessageContent.ConversationDegradedMLS
-
-        val conversationDegradedMessage = Message.System(
-            id = Uuid.random().toString(),
-            content = content,
-            conversationId = conversationId,
-            date = Clock.System.now(),
-            senderUserId = selfUserId,
-            status = Message.Status.Sent,
-            visibility = Message.Visibility.VISIBLE,
-            expirationData = null
-        )
-
-        persistMessage(conversationDegradedMessage)
+        persistMessage(mlsVerificationMessage(Uuid.random().toString(), conversationId, selfUserId, Clock.System.now(), updatedStatus))
         conversationRepository.setDegradedConversationNotifiedFlag(conversationId, updatedStatus != VerificationStatus.DEGRADED)
     }
 }

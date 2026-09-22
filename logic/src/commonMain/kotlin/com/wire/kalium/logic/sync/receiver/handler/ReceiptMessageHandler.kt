@@ -18,16 +18,15 @@
 
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
-import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReadReceiptEventData
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 
 internal interface ReceiptMessageHandler {
     suspend fun handle(
@@ -38,10 +37,8 @@ internal interface ReceiptMessageHandler {
 
 internal class ReceiptMessageHandlerImpl(
     private val selfUserId: UserId,
-    private val receiptRepository: ReceiptRepository,
-    private val messageRepository: MessageRepository,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
-    private val receiptsMapper: ReceiptsMapper = MapperProvider.receiptsMapper()
+    private val database: UserDatabaseBuilder,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier
 ) : ReceiptMessageHandler {
 
     override suspend fun handle(
@@ -53,15 +50,13 @@ internal class ReceiptMessageHandlerImpl(
         // and we can squish some performance by skipping it completely
         if (message.senderUserId == selfUserId) return
 
-        updateMessagesStatus(messageContent, message)
-
-        receiptRepository.persistReceipts(
-            userId = message.senderUserId,
-            conversationId = message.conversationId,
-            date = message.date,
-            type = messageContent.type,
-            messageIds = messageContent.messageIds
-        )
+        database.writeMessageEffects {
+            when (val result = persistReceipt(messages, receipts, selfUserId, message, messageContent)) {
+                is Either.Left ->
+                    throw KaliumSyncException("Receipt persistence failed", result.value)
+                is Either.Right -> Unit
+            }
+        }
 
         if (messageContent.type == ReceiptType.READ) {
             persistenceEventHookNotifier.onReadReceiptPersisted(
@@ -71,14 +66,4 @@ internal class ReceiptMessageHandlerImpl(
         }
     }
 
-    private suspend fun updateMessagesStatus(
-        messageContent: MessageContent.Receipt,
-        message: Message.Signaling
-    ) {
-        messageRepository.updateMessagesStatusIfNotRead(
-            messageStatus = receiptsMapper.fromTypeToMessageStatus(messageContent.type),
-            messageIds = messageContent.messageIds,
-            conversationId = message.conversationId,
-        )
-    }
 }

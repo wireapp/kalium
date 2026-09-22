@@ -41,6 +41,9 @@ interface MessageDAO {
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteAllMessages()
 
+    /** Atomically insert new messages or complete asset previews; canonical duplicates have no repeated effects. */
+    suspend fun insertReceivedMessages(messages: List<ReceivedMessage>)
+
     /**
      * Inserts the message, or ignores if there's already a message with the same [MessageEntity.id] and [MessageEntity.conversationId].
      * There is only one exception where a second message with the same id will not be ignored, and it is when the first message is an asset
@@ -71,6 +74,7 @@ interface MessageDAO {
 
     suspend fun updateMessagesStatus(status: MessageEntity.Status, id: List<String>, conversationId: QualifiedIDEntity)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity?
+    suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity>
     fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
     suspend fun getOldestVisibleMessageTimestampByConversationId(conversationId: ConversationIDEntity): Long?
     fun getMessagesByConversationAndVisibility(
@@ -96,7 +100,8 @@ interface MessageDAO {
         conversationId: QualifiedIDEntity,
         currentMessageId: String,
         newTextContent: MessageEntityContent.Text,
-        newMessageId: String
+        newMessageId: String,
+        updateStatus: MessageEntity.Status? = null,
     )
     suspend fun updateLinkPreviewImageLocalPath(
         conversationId: QualifiedIDEntity,
@@ -226,3 +231,10 @@ interface MessageDAO {
 
     suspend fun updateAudioMessageNormalizedLoudness(conversationId: QualifiedIDEntity, messageId: String, normalizedLoudness: ByteArray)
 }
+
+/** Required writes for an incoming regular message, not additional persisted receiving state. */
+data class ReceivedMessage(
+    val message: MessageEntity.Regular,
+    val updateConversationOrder: Boolean,
+    val enqueueDelivery: Boolean,
+)

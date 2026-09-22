@@ -85,6 +85,10 @@ class RenameConversationUseCaseTest {
         val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
         val renamedConversationEventHandler = mock<RenamedConversationEventHandler>(mode = MockMode.autoUnit)
 
+        init {
+            everySuspend { renamedConversationEventHandler.handle(any()) } returns Either.Right(Unit)
+        }
+
         val selfUserId = USER_ID
 
         private val renameConversation = RenameConversationUseCaseImpl(

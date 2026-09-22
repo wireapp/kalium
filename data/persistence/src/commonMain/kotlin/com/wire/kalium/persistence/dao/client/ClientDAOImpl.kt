@@ -74,7 +74,8 @@ internal class ClientDAOImpl internal constructor(
     private val clientsQueries: ClientsQueries,
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
-    private val mapper: ClientMapper = ClientMapper
+    private val mapper: ClientMapper = ClientMapper,
+    private val rollbackUnchangedUpserts: Boolean = true,
 ) : ClientDAO {
 
     /**
@@ -141,7 +142,7 @@ internal class ClientDAOImpl internal constructor(
                 val anyInsertedOrModified = clientsList.map { client -> insert(client) }.any { it }
                 clientsQueries.deleteClientsOfUserExcept(userId, clientsList.map { it.id })
                 val anyDeleted = clientsQueries.selectChanges().awaitAsOne() > 0
-                if (!anyInsertedOrModified && !anyDeleted) {
+                if (rollbackUnchangedUpserts && !anyInsertedOrModified && !anyDeleted) {
                     // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
                     this.rollback()
                 }

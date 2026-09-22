@@ -42,11 +42,13 @@ import com.wire.kalium.util.InternalCryptoAccess
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 internal interface ProteusClientProvider : CryptoBackupExporter {
     suspend fun clearLocalFiles()
+    suspend fun close()
 
     /**
      * Returns the ProteusClient or creates new one if doesn't exists.
@@ -71,10 +73,23 @@ internal class ProteusClientProviderImpl(
 
     private var _proteusClient: ProteusClient? = null
     private var _coreCryptoCentral: CoreCryptoCentral? = null
+    private var openFailure: Throwable? = null
     private val mutex = Mutex()
 
     override suspend fun clearLocalFiles() {
         mutex.withLock { removeLocalFiles() }
+    }
+
+    override suspend fun close() = withContext(NonCancellable) {
+        mutex.withLock { closeClients() }
+    }
+
+    private suspend fun closeClients() {
+        openFailure?.let { throw it }
+        // Initialization may have opened the central before a Proteus client could be returned.
+        _coreCryptoCentral?.close() ?: _proteusClient?.close()
+        _proteusClient = null
+        _coreCryptoCentral = null
     }
 
     override suspend fun getOrCreate(): ProteusClient {
@@ -106,6 +121,8 @@ internal class ProteusClientProviderImpl(
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun createProteusClient(): ProteusClient {
+        openFailure?.let { throw it }
+        _coreCryptoCentral?.let { return getCentralProteusClientOrError(it) }
         val central = try {
 
             val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath)
@@ -113,7 +130,9 @@ internal class ProteusClientProviderImpl(
                 rootDir = rootProteusPath,
                 passphrase = dbSecret.passphrase,
             )
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            // Native opening may have allocated a handle before failing to return it.
+            openFailure = e
             val logMap = mapOf(
                 "userId" to userId.value.obfuscateId(),
                 "exception" to e,
@@ -149,9 +168,7 @@ internal class ProteusClientProviderImpl(
      */
     private suspend fun removeLocalFiles() {
         withContext(dispatcher.io) {
-            _proteusClient?.close()
-            _proteusClient = null
-            _coreCryptoCentral = null
+            closeClients()
             FileUtil.deleteDirectory(rootProteusPath)
         }
     }

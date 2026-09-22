@@ -113,6 +113,10 @@ interface ConversationDAO {
 
     fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
+
+    /** MLS columns survive a protocol update, including while the visible protocol is Proteus. */
+    suspend fun getConversationMLSInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo.MLS?
+
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Boolean

@@ -89,6 +89,7 @@ internal class IncrementalSyncWorkerImpl(
                                 .flatMap { eventIds ->
                                     eventProcessor.flushPendingSideEffects().map { eventIds }
                                 }
+                                .onFailure { throw KaliumSyncException("Processing failed", it) }
                         }
                     }
                         .onSuccess { eventIds ->

@@ -24,6 +24,8 @@ import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -212,6 +214,19 @@ class RestoreMPBackupUseCaseTest {
         assertTrue(insertedMessage.conversationId.domain.isNotBlank())
     }
 
+    @Test
+    fun givenMessagePageWriteFails_whenRestoring_thenFailureStopsTheRestore() = runTest {
+        val (arrangement, useCase) = Arrangement().withSuccessImport().withMessageWriteFailure().arrange()
+        val result = useCase(arrangement.storedPath, null) {}
+        assertEquals(
+            RestoreBackupResult.Failure(
+                RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("IO error: Failed to persist restored message page")
+            ),
+            result
+        )
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
+    }
+
     private inner class Arrangement {
 
         val backupRepository = mock<BackupRepository>(mode = MockMode.autoUnit)
@@ -226,6 +241,11 @@ class RestoreMPBackupUseCaseTest {
         var usersInsertStubConfigured = false
         var conversationsInsertStubConfigured = false
         var messagesInsertStubConfigured = false
+
+        suspend fun withMessageWriteFailure() = apply {
+            messagesInsertStubConfigured = true
+            everySuspend { backupRepository.insertMessages(any()) } returns StorageFailure.DataNotFound.left()
+        }
 
         val storedPath = "testPath/backupFile.zip".toPath()
 

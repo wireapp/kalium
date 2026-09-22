@@ -26,6 +26,9 @@ import kotlinx.cinterop.COpaquePointer
 interface AppleAvsBridge {
     fun startIfAvailable(): Boolean
     fun userHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt?
+
+    /** Returns only after AVS has stopped this handle's callbacks and released its callback queue. */
+    suspend fun releaseUserHandle(handle: UInt)
     fun receiveCallingMessage(
         handle: UInt,
         payload: ByteArray,

@@ -18,11 +18,10 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.common.functional.Either
-import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -31,72 +30,33 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertIs
+import kotlin.test.assertEquals
 
 class ClearConversationAssetsLocallyUseCaseTest {
-
     @Test
-    fun givenConversationAssetIds_whenAllDeletionsAreSuccess_thenSuccessResultIsPropagated() = runTest {
-        val ids = listOf("id_1", "id_2")
-        val (arrangement, useCase) = Arrangement()
-            .withAssetIdsResponse(ids)
-            .withAssetClearSuccess("id_1")
-            .withAssetClearSuccess("id_2")
-            .arrange()
+    fun assetFailureDoesNotSkipRemainingAssetsAndIsReturned() = runTest {
+        val messages = mock<MessageRepository>()
+        val assets = mock<AssetRepository>()
+        val id = ConversationId("conversation", "example.com")
+        val failure = Either.Left(CoreFailure.Unknown(null))
+        everySuspend { messages.getAllAssetIdsFromConversationId(id) } returns Either.Right(listOf("first", "second"))
+        everySuspend { assets.deleteAssetLocally("first") } returns failure
+        everySuspend { assets.deleteAssetLocally("second") } returns Either.Right(Unit)
 
-        val result = useCase(ConversationId("someValue", "someDomain"))
+        assertEquals(failure, ClearConversationAssetsLocallyUseCaseImpl(messages, assets)(id))
 
-        assertIs<Either.Right<Unit>>(result)
-        verifySuspend(VerifyMode.exactly(2)) { arrangement.assetRepository.deleteAssetLocally(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { assets.deleteAssetLocally("second") }
     }
 
     @Test
-    fun givenConversationAssetIds_whenOneDeletionFailed_thenFailureResultIsPropagated() = runTest {
-        val ids = listOf("id_1", "id_2")
-        val (arrangement, useCase) = Arrangement()
-            .withAssetIdsResponse(ids)
-            .withAssetClearSuccess("id_1")
-            .withAssetClearError("id_2")
-            .arrange()
+    fun emptyConversationNeedsNoAssetCleanup() = runTest {
+        val messages = mock<MessageRepository>()
+        val assets = mock<AssetRepository>()
+        val id = ConversationId("conversation", "example.com")
+        everySuspend { messages.getAllAssetIdsFromConversationId(id) } returns Either.Right(emptyList())
 
-        val result = useCase(ConversationId("someValue", "someDomain"))
+        assertEquals(Either.Right(Unit), ClearConversationAssetsLocallyUseCaseImpl(messages, assets)(id))
 
-        assertIs<Either.Left<Unit>>(result)
-        verifySuspend(VerifyMode.exactly(2)) { arrangement.assetRepository.deleteAssetLocally(any()) }
-    }
-
-    @Test
-    fun givenEmptyConversationAssetIds_whenInvoked_thenDeletionsAreNotInvoked() = runTest {
-        val (arrangement, useCase) = Arrangement()
-            .withAssetIdsResponse(emptyList())
-            .arrange()
-
-        val result = useCase(ConversationId("someValue", "someDomain"))
-
-        assertIs<Either.Right<Unit>>(result)
-        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any()) }
-    }
-
-    private class Arrangement {
-        
-        val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
-        val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
-
-        suspend fun withAssetClearSuccess(id: String) = apply {
-            everySuspend { assetRepository.deleteAssetLocally(id) } returns Either.Right(Unit)
-        }
-
-        suspend fun withAssetClearError(id: String) = apply {
-            everySuspend { assetRepository.deleteAssetLocally(id) } returns Either.Left(CoreFailure.Unknown(null))
-        }
-
-        suspend fun withAssetIdsResponse(ids: List<String>) = apply {
-            everySuspend { messageRepository.getAllAssetIdsFromConversationId(any()) } returns Either.Right(ids)
-        }
-
-        fun arrange() = this to ClearConversationAssetsLocallyUseCaseImpl(
-            messageRepository = messageRepository,
-            assetRepository = assetRepository
-        )
+        verifySuspend(VerifyMode.not) { assets.deleteAssetLocally(any()) }
     }
 }

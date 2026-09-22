@@ -19,15 +19,35 @@
 package com.wire.kalium.logic.feature
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.session.StoreSessionParam
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 
 internal interface UserSessionScopeProvider {
+    suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean = false)
+    suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit>
     fun get(userId: UserId): UserSessionScope?
+    suspend fun open(userId: UserId): UserSessionScope
+    suspend fun <T> open(userId: UserId, action: UserSessionScope.() -> T): T
     fun getOrCreate(userId: UserId): UserSessionScope
     fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T
+    suspend fun logout(
+        userId: UserId,
+        originatingScope: CoroutineScope,
+        prepare: suspend () -> Unit,
+        clearLocalData: suspend () -> Unit,
+    ): Boolean
     suspend fun delete(userId: UserId)
+    suspend fun deleteSession(userId: UserId, sessionRepository: SessionRepository): Either<StorageFailure, Unit>
+    suspend fun storeSession(session: StoreSessionParam, sessionRepository: SessionRepository): Either<StorageFailure, Unit>
 }
 
 internal abstract class UserSessionScopeProviderCommon(
@@ -37,9 +57,17 @@ internal abstract class UserSessionScopeProviderCommon(
     protected val userAgent: String
 ) : UserSessionScopeProvider {
 
+    override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean) = Unit
+
+    override suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit> = Either.Right(Unit)
+
     private val userScopeStorage: ConcurrentMutableMap<UserId, UserSessionScope> by lazy {
         ConcurrentMutableMap()
     }
+
+    override suspend fun open(userId: UserId): UserSessionScope = getOrCreate(userId)
+
+    override suspend fun <T> open(userId: UserId, action: UserSessionScope.() -> T): T = open(userId).action()
 
     override fun getOrCreate(userId: UserId): UserSessionScope =
         userScopeStorage.computeIfAbsent(userId) {
@@ -49,6 +77,28 @@ internal abstract class UserSessionScopeProviderCommon(
     override fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T = getOrCreate(userId).action()
 
     override fun get(userId: UserId): UserSessionScope? = userScopeStorage.get(userId)
+
+    override suspend fun storeSession(session: StoreSessionParam, sessionRepository: SessionRepository): Either<StorageFailure, Unit> =
+        sessionRepository.storeSession(session)
+
+    override suspend fun deleteSession(userId: UserId, sessionRepository: SessionRepository): Either<StorageFailure, Unit> =
+        sessionRepository.deleteSession(userId).onSuccess {
+            get(userId)?.cancel()
+            delete(userId)
+        }
+
+    override suspend fun logout(
+        userId: UserId,
+        originatingScope: CoroutineScope,
+        prepare: suspend () -> Unit,
+        clearLocalData: suspend () -> Unit,
+    ): Boolean {
+        prepare()
+        get(userId)?.stopAccountWork()
+        clearLocalData()
+        delete(userId)
+        return true
+    }
 
     override suspend fun delete(userId: UserId) {
         globalCallManager.removeInMemoryCallingManagerForUser(userId)
@@ -61,8 +111,20 @@ internal abstract class UserSessionScopeProviderCommon(
 }
 
 internal expect class UserSessionScopeProviderImpl : UserSessionScopeProvider {
+    override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean)
+    override suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit>
     override fun get(userId: UserId): UserSessionScope?
+    override suspend fun open(userId: UserId): UserSessionScope
+    override suspend fun <T> open(userId: UserId, action: UserSessionScope.() -> T): T
     override fun getOrCreate(userId: UserId): UserSessionScope
     override fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T
+    override suspend fun logout(
+        userId: UserId,
+        originatingScope: CoroutineScope,
+        prepare: suspend () -> Unit,
+        clearLocalData: suspend () -> Unit,
+    ): Boolean
     override suspend fun delete(userId: UserId)
+    override suspend fun deleteSession(userId: UserId, sessionRepository: SessionRepository): Either<StorageFailure, Unit>
+    override suspend fun storeSession(session: StoreSessionParam, sessionRepository: SessionRepository): Either<StorageFailure, Unit>
 }

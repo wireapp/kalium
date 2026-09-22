@@ -20,6 +20,12 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationClear
+import com.wire.kalium.logic.data.conversation.conversationClear
+import com.wire.kalium.common.functional.getOrFail
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
@@ -55,18 +61,25 @@ internal class ClearConversationContentHandlerImpl(
         val isSelfSender = message.senderUserId == selfUserId
         val isMessageInSelfConversation: Boolean = isMessageSentInSelfConversation(message)
 
-        if (isSelfSender != isMessageInSelfConversation) return
+        val action = conversationClear(isSelfSender, isMessageInSelfConversation, messageContent.needToRemoveLocally)
+        if (action == ConversationClear.IGNORE) return
 
         clearConversation(messageContent.conversationId)
 
-        if (messageContent.needToRemoveLocally && isSelfSender) {
-            deleteConversation(transactionContext, messageContent.conversationId)
+        if (action == ConversationClear.CONVERSATION) {
+            deleteConversation(transactionContext, messageContent.conversationId).getOrFail {
+                throw KaliumSyncException("Conversation deletion failed", it)
+            }
         }
     }
 
     private suspend fun clearConversation(conversationId: ConversationId) {
-        conversationRepository.clearContent(conversationId)
-        clearLocalConversationAssets(conversationId)
+        clearLocalConversationAssets(conversationId).onFailure {
+            kaliumLogger.w("Conversation asset cleanup failed: $it")
+        }
+        conversationRepository.clearContent(conversationId).getOrFail {
+            throw KaliumSyncException("Conversation content cleanup failed", it)
+        }
         persistenceEventHookNotifier.onConversationCleared(
             ConversationClearEventData(conversationId),
             selfUserId

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.sync.receiver.handler.normalizedEmojiSet
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
@@ -47,16 +48,7 @@ internal class PersistReactionUseCaseImpl(
         senderUserId: UserId,
         date: Instant
     ): Either<CoreFailure, Unit> {
-        val emojiSet = reaction.emojiSet.map {
-            // If we receive the heavy black heart unicode, we convert it to the emoji version.
-            // This is a compatibility layer, so we properly handle reactions sent from older clients
-            // This does not cover the fact that we send the new emoji to older clients.
-            if (it == "❤") { // \u2764
-                "❤️" // \u2764\ufe0f (heavy black heart + variation selector 16)
-            } else {
-                it
-            }
-        }.toSet()
+        val emojiSet = reaction.normalizedEmojiSet()
         return reactionRepository.updateReaction(
             reaction.messageId,
             conversationId,

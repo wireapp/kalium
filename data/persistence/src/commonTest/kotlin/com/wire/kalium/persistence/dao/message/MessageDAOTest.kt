@@ -49,6 +49,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -880,6 +881,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenUnreadMessages_WhenInsertingSelfMessage_thenReturnZeroUnreadCount() = runTest {
+        userDAO.upsertUser(newUserEntity(selfUserId))
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
         conversationDAO.insertConversation(
@@ -911,11 +913,12 @@ class MessageDAOTest : BaseDatabaseTest() {
                     date = Instant.parse("2000-01-01T14:00:00.000Z"),
                     conversationId = conversationId,
                     senderUserId = selfUserId,
-                )
+                ).copy(isSelfMessage = true)
             )
         }
 
         messageDAO.insertOrIgnoreMessages(message)
+        assertNotNull(messageDAO.getMessageById("unreadSelf", conversationId))
 
         // when
         val messageTypes = messageDAO.observeUnreadEvents()
@@ -1011,6 +1014,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     @Test
     fun givenMessagesAreInserted_whenGettingPendingMessagesByConversationAfterDate_thenMessagesFromSelfAreNotReturned() = runTest {
         insertInitialData()
+        userDAO.upsertUser(newUserEntity(selfUserId))
 
         val conversationInQuestion = conversationEntity1
         val initialDate = Instant.parse("2022-03-30T15:41:00.000Z")
@@ -2505,7 +2509,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreButNoUserInserted_whenGettingSenderNameByMessageId_thenNullNameReturned() = runTest {
+    fun givenMessageHasMissingSender_whenInsertingBatch_thenFailureRollsBackBatch() = runTest {
         insertInitialData()
 
         val insertingMessages = listOf(
@@ -2526,11 +2530,9 @@ class MessageDAOTest : BaseDatabaseTest() {
                 sender = userDetailsEntity2
             )
         )
-        messageDAO.insertOrIgnoreMessages(insertingMessages)
-
-        val result = messageDAO.getSenderNameById("1", conversationEntity1.id)
-
-        assertEquals(null, result)
+        assertFails { messageDAO.insertOrIgnoreMessages(insertingMessages.reversed()) }
+        assertNull(messageDAO.getMessageById("1", conversationEntity1.id))
+        assertNull(messageDAO.getMessageById("2", conversationEntity1.id))
     }
 
     @Test

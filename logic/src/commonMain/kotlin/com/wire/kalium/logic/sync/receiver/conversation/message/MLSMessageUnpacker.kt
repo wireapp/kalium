@@ -34,19 +34,16 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.conversation.proposalCommitDeadline
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.message.PlainMessageBlob
-import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
-import com.wire.kalium.logic.sync.KaliumSyncException
-import kotlin.time.Instant
 import kotlin.io.encoding.Base64
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 internal interface MLSMessageUnpacker {
     suspend fun unpackMlsMessage(
@@ -88,33 +85,13 @@ internal class MLSMessageUnpackerImpl(
         bundle: DecryptedMessageBundle,
         conversationId: ConversationId,
         messageInstant: Instant
-    ): MessageUnpackResult = when (bundle) {
-        is DecryptedMessageBundle.Text -> {
-            val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(bundle.applicationMessage.message))
-            if (protoContent !is ProtoContent.Readable) {
-                throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
-            }
-            MessageUnpackResult.ApplicationMessage(
-                conversationId = conversationId,
-                instant = messageInstant,
-                senderUserId = bundle.applicationMessage.senderID,
-                senderClientId = bundle.applicationMessage.senderClientID,
-                content = protoContent
-            )
-        }
-
-        is DecryptedMessageBundle.Proposal -> {
+    ): MessageUnpackResult {
+        if (bundle is DecryptedMessageBundle.Proposal) {
             bundle.commitDelay?.let {
-                handlePendingProposal(
-                    timestamp = messageInstant,
-                    groupId = bundle.groupID,
-                    commitDelay = it
-                )
+                handlePendingProposal(messageInstant, bundle.groupID, it)
             }
-            MessageUnpackResult.HandshakeMessage
         }
-
-        is DecryptedMessageBundle.Commit -> MessageUnpackResult.HandshakeMessage
+        return bundle.unpack(conversationId, messageInstant, protoContentMapper)
     }
 
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
@@ -128,7 +105,7 @@ internal class MLSMessageUnpackerImpl(
         )
         pendingProposalScheduler.scheduleCommit(
             groupId,
-            timestamp.plus(commitDelay.seconds)
+            proposalCommitDeadline(timestamp, commitDelay)
         )
     }
 

@@ -19,6 +19,7 @@ public abstract class com/wire/kalium/logic/CoreLogicCommon {
 	public abstract fun getSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/UserSessionScope;
 	protected final fun getUserAgent ()Ljava/lang/String;
 	public final fun globalScope (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun openSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun registerLogger (Lcom/wire/kalium/logger/KaliumLogger$Config;)V
 	public final fun sessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public final fun versionedAuthenticationScope (Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;)Lcom/wire/kalium/logic/feature/auth/autoVersioningAuth/AutoVersionAuthScopeUseCase;
@@ -54,309 +55,6 @@ public final class com/wire/kalium/logic/GlobalKaliumScope : kotlinx/coroutines/
 	public final fun getValidateUserHandleUseCase ()Lcom/wire/kalium/logic/feature/auth/ValidateUserHandleUseCase;
 	public final fun isCrossBackendLoginBlocked ()Lcom/wire/kalium/logic/feature/server/IsCrossBackendLoginBlockedUseCase;
 	public final fun isCurrentSessionNomadAccount ()Lcom/wire/kalium/logic/feature/session/IsCurrentSessionNomadAccountUseCase;
-}
-
-public final class com/wire/kalium/logic/configuration/AppLockTeamConfig {
-	public synthetic fun <init> (ZJLjava/lang/Boolean;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Z
-	public final fun component2-UwyO8pc ()J
-	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy-8Mi8wO0 (ZJLjava/lang/Boolean;)Lcom/wire/kalium/logic/configuration/AppLockTeamConfig;
-	public static synthetic fun copy-8Mi8wO0$default (Lcom/wire/kalium/logic/configuration/AppLockTeamConfig;ZJLjava/lang/Boolean;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/AppLockTeamConfig;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getTimeout-UwyO8pc ()J
-	public fun hashCode ()I
-	public final fun isEnforced ()Z
-	public final fun isStatusChanged ()Ljava/lang/Boolean;
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/configuration/FileSharingStatus {
-	public fun <init> (Lcom/wire/kalium/logic/configuration/FileSharingStatus$Value;Ljava/lang/Boolean;)V
-	public final fun component1 ()Lcom/wire/kalium/logic/configuration/FileSharingStatus$Value;
-	public final fun component2 ()Ljava/lang/Boolean;
-	public final fun copy (Lcom/wire/kalium/logic/configuration/FileSharingStatus$Value;Ljava/lang/Boolean;)Lcom/wire/kalium/logic/configuration/FileSharingStatus;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/FileSharingStatus;Lcom/wire/kalium/logic/configuration/FileSharingStatus$Value;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/FileSharingStatus;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getState ()Lcom/wire/kalium/logic/configuration/FileSharingStatus$Value;
-	public fun hashCode ()I
-	public final fun isStatusChanged ()Ljava/lang/Boolean;
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract interface class com/wire/kalium/logic/configuration/FileSharingStatus$Value {
-}
-
-public final class com/wire/kalium/logic/configuration/FileSharingStatus$Value$Disabled : com/wire/kalium/logic/configuration/FileSharingStatus$Value {
-	public static final field INSTANCE Lcom/wire/kalium/logic/configuration/FileSharingStatus$Value$Disabled;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/configuration/FileSharingStatus$Value$EnabledAll : com/wire/kalium/logic/configuration/FileSharingStatus$Value {
-	public static final field INSTANCE Lcom/wire/kalium/logic/configuration/FileSharingStatus$Value$EnabledAll;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/configuration/FileSharingStatus$Value$EnabledSome : com/wire/kalium/logic/configuration/FileSharingStatus$Value {
-	public fun <init> (Ljava/util/List;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lcom/wire/kalium/logic/configuration/FileSharingStatus$Value$EnabledSome;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/FileSharingStatus$Value$EnabledSome;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/FileSharingStatus$Value$EnabledSome;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAllowedType ()Ljava/util/List;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/configuration/GuestRoomLinkStatus {
-	public fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;)V
-	public final fun component1 ()Ljava/lang/Boolean;
-	public final fun component2 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/wire/kalium/logic/configuration/GuestRoomLinkStatus;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/GuestRoomLinkStatus;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/GuestRoomLinkStatus;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public final fun isGuestRoomLinkEnabled ()Ljava/lang/Boolean;
-	public final fun isStatusChanged ()Ljava/lang/Boolean;
-	public fun toString ()Ljava/lang/String;
-}
-
-public abstract interface class com/wire/kalium/logic/configuration/server/CommonApiVersionType {
-	public static final field Companion Lcom/wire/kalium/logic/configuration/server/CommonApiVersionType$Companion;
-	public static final field MINIMUM_VALID_API_VERSION I
-	public static final field NEW_API_VERSION_NUMBER I
-	public static final field UNKNOWN_API_VERSION_NUMBER I
-	public abstract fun getVersion ()I
-}
-
-public final class com/wire/kalium/logic/configuration/server/CommonApiVersionType$Companion {
-	public static final field MINIMUM_VALID_API_VERSION I
-	public static final field NEW_API_VERSION_NUMBER I
-	public static final field UNKNOWN_API_VERSION_NUMBER I
-}
-
-public final class com/wire/kalium/logic/configuration/server/CommonApiVersionType$New : com/wire/kalium/logic/configuration/server/CommonApiVersionType {
-	public static final field INSTANCE Lcom/wire/kalium/logic/configuration/server/CommonApiVersionType$New;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getVersion ()I
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/configuration/server/CommonApiVersionType$Unknown : com/wire/kalium/logic/configuration/server/CommonApiVersionType {
-	public static final field INSTANCE Lcom/wire/kalium/logic/configuration/server/CommonApiVersionType$Unknown;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getVersion ()I
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/configuration/server/CommonApiVersionType$Valid : com/wire/kalium/logic/configuration/server/CommonApiVersionType {
-	public fun <init> (I)V
-	public final fun component1 ()I
-	public final fun copy (I)Lcom/wire/kalium/logic/configuration/server/CommonApiVersionType$Valid;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/server/CommonApiVersionType$Valid;IILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/server/CommonApiVersionType$Valid;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun getVersion ()I
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfig {
-	public static final field Companion Lcom/wire/kalium/logic/configuration/server/ServerConfig$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
-	public final fun component3 ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData;
-	public final fun copy (Ljava/lang/String;Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData;)Lcom/wire/kalium/logic/configuration/server/ServerConfig;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/server/ServerConfig;Ljava/lang/String;Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/server/ServerConfig;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getId ()Ljava/lang/String;
-	public final fun getLinks ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
-	public final fun getMetaData ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final synthetic class com/wire/kalium/logic/configuration/server/ServerConfig$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
-	public static final field INSTANCE Lcom/wire/kalium/logic/configuration/server/ServerConfig$$serializer;
-	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
-	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/wire/kalium/logic/configuration/server/ServerConfig;
-	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
-	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
-	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/wire/kalium/logic/configuration/server/ServerConfig;)V
-	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy {
-	public static final field Companion Lcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy$Companion;
-	public fun <init> (ZLjava/lang/String;I)V
-	public final fun component1 ()Z
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()I
-	public final fun copy (ZLjava/lang/String;I)Lcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;ZLjava/lang/String;IILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getHost ()Ljava/lang/String;
-	public final fun getNeedsAuthentication ()Z
-	public final fun getPort ()I
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final synthetic class com/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
-	public static final field INSTANCE Lcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy$$serializer;
-	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
-	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;
-	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
-	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
-	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;)V
-	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfig$Companion {
-	public final fun getDEFAULT ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
-	public final fun getDUMMY ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
-	public final fun getPRODUCTION ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
-	public final fun getSTAGING ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfig$Links {
-	public static final field Companion Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Z
-	public final fun component9 ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;Ljava/lang/String;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAccounts ()Ljava/lang/String;
-	public final fun getApi ()Ljava/lang/String;
-	public final fun getApiProxy ()Lcom/wire/kalium/logic/configuration/server/ServerConfig$ApiProxy;
-	public final fun getBlackList ()Ljava/lang/String;
-	public final fun getForgotPassword ()Ljava/lang/String;
-	public final fun getPricing ()Ljava/lang/String;
-	public final fun getSupportEmail ()Ljava/lang/String;
-	public final fun getTeams ()Ljava/lang/String;
-	public final fun getTitle ()Ljava/lang/String;
-	public final fun getTos ()Ljava/lang/String;
-	public final fun getWebSocket ()Ljava/lang/String;
-	public final fun getWebsite ()Ljava/lang/String;
-	public fun hashCode ()I
-	public final fun isOnPremises ()Z
-	public fun toString ()Ljava/lang/String;
-}
-
-public final synthetic class com/wire/kalium/logic/configuration/server/ServerConfig$Links$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
-	public static final field INSTANCE Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links$$serializer;
-	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
-	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;
-	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
-	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
-	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;)V
-	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfig$Links$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfig$MetaData {
-	public static final field Companion Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData$Companion;
-	public fun <init> (ZLcom/wire/kalium/logic/configuration/server/CommonApiVersionType;Ljava/lang/String;)V
-	public final fun component1 ()Z
-	public final fun component2 ()Lcom/wire/kalium/logic/configuration/server/CommonApiVersionType;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (ZLcom/wire/kalium/logic/configuration/server/CommonApiVersionType;Ljava/lang/String;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData;ZLcom/wire/kalium/logic/configuration/server/CommonApiVersionType;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getCommonApiVersion ()Lcom/wire/kalium/logic/configuration/server/CommonApiVersionType;
-	public final fun getDomain ()Ljava/lang/String;
-	public final fun getFederation ()Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final synthetic class com/wire/kalium/logic/configuration/server/ServerConfig$MetaData$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
-	public static final field INSTANCE Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData$$serializer;
-	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
-	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData;
-	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
-	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
-	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/wire/kalium/logic/configuration/server/ServerConfig$MetaData;)V
-	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfig$MetaData$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfig$VersionInfo {
-	public static final field Companion Lcom/wire/kalium/logic/configuration/server/ServerConfig$VersionInfo$Companion;
-	public fun <init> (ZLjava/util/List;Ljava/lang/String;Ljava/util/List;)V
-	public synthetic fun <init> (ZLjava/util/List;Ljava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Z
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/List;
-	public final fun copy (ZLjava/util/List;Ljava/lang/String;Ljava/util/List;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$VersionInfo;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/server/ServerConfig$VersionInfo;ZLjava/util/List;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$VersionInfo;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getDevelopmentSupported ()Ljava/util/List;
-	public final fun getDomain ()Ljava/lang/String;
-	public final fun getFederation ()Z
-	public final fun getSupported ()Ljava/util/List;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final synthetic class com/wire/kalium/logic/configuration/server/ServerConfig$VersionInfo$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
-	public static final field INSTANCE Lcom/wire/kalium/logic/configuration/server/ServerConfig$VersionInfo$$serializer;
-	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
-	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/wire/kalium/logic/configuration/server/ServerConfig$VersionInfo;
-	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
-	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
-	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/wire/kalium/logic/configuration/server/ServerConfig$VersionInfo;)V
-	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
-	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfig$VersionInfo$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public final class com/wire/kalium/logic/configuration/server/ServerConfigWithUserId {
-	public fun <init> (Lcom/wire/kalium/logic/configuration/server/ServerConfig;Lcom/wire/kalium/logic/data/id/QualifiedID;)V
-	public final fun component1 ()Lcom/wire/kalium/logic/configuration/server/ServerConfig;
-	public final fun component2 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun copy (Lcom/wire/kalium/logic/configuration/server/ServerConfig;Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/configuration/server/ServerConfigWithUserId;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/configuration/server/ServerConfigWithUserId;Lcom/wire/kalium/logic/configuration/server/ServerConfig;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/configuration/server/ServerConfigWithUserId;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getServerConfig ()Lcom/wire/kalium/logic/configuration/server/ServerConfig;
-	public final fun getUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/logic/data/asset/AssetsStorageFolder {
@@ -416,39 +114,6 @@ public final class com/wire/kalium/logic/data/asset/DataStoragePaths {
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class com/wire/kalium/logic/data/asset/KaliumFileSystem {
-	public abstract fun copy (Lokio/Path;Lokio/Path;)V
-	public abstract fun createDirectories (Lokio/Path;)V
-	public abstract fun createDirectory (Lokio/Path;Z)V
-	public static synthetic fun createDirectory$default (Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;Lokio/Path;ZILjava/lang/Object;)V
-	public abstract fun delete (Lokio/Path;Z)V
-	public static synthetic fun delete$default (Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;Lokio/Path;ZILjava/lang/Object;)V
-	public abstract fun deleteContents (Lokio/Path;Z)V
-	public static synthetic fun deleteContents$default (Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;Lokio/Path;ZILjava/lang/Object;)V
-	public abstract fun exists (Lokio/Path;)Z
-	public abstract fun getRootCachePath ()Lokio/Path;
-	public abstract fun getRootDBPath ()Lokio/Path;
-	public abstract fun listDirectories (Lokio/Path;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public abstract fun providePersistentAssetPath (Ljava/lang/String;)Lokio/Path;
-	public abstract fun readByteArray (Lokio/Path;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public abstract fun selfUserAvatarPath ()Lokio/Path;
-	public abstract fun sink (Lokio/Path;Z)Lokio/Sink;
-	public static synthetic fun sink$default (Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;Lokio/Path;ZILjava/lang/Object;)Lokio/Sink;
-	public abstract fun size (Lokio/Path;)Ljava/lang/Long;
-	public abstract fun source (Lokio/Path;)Lokio/Source;
-	public abstract fun tempFilePath (Ljava/lang/String;)Lokio/Path;
-	public static synthetic fun tempFilePath$default (Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;Ljava/lang/String;ILjava/lang/Object;)Lokio/Path;
-	public abstract fun writeData (Lokio/Sink;Lokio/Source;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public final class com/wire/kalium/logic/data/asset/KaliumFileSystem$DefaultImpls {
-	public static synthetic fun createDirectory$default (Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;Lokio/Path;ZILjava/lang/Object;)V
-	public static synthetic fun delete$default (Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;Lokio/Path;ZILjava/lang/Object;)V
-	public static synthetic fun deleteContents$default (Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;Lokio/Path;ZILjava/lang/Object;)V
-	public static synthetic fun sink$default (Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;Lokio/Path;ZILjava/lang/Object;)Lokio/Sink;
-	public static synthetic fun tempFilePath$default (Lcom/wire/kalium/logic/data/asset/KaliumFileSystem;Ljava/lang/String;ILjava/lang/Object;)Lokio/Path;
-}
-
 public abstract class com/wire/kalium/logic/data/auth/AccountInfo {
 	public abstract fun getUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun isValid ()Z
@@ -474,25 +139,6 @@ public final class com/wire/kalium/logic/data/auth/AccountInfo$Valid : com/wire/
 	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/auth/AccountInfo$Valid;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/auth/AccountInfo$Valid;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/data/auth/AccountTokens {
-	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/session/token/AccessToken;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
-	public final fun component2 ()Lcom/wire/kalium/logic/data/session/token/AccessToken;
-	public final fun component3-H9M5l0g ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun copy-GTIoL1M (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/session/token/AccessToken;Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/data/auth/AccountTokens;
-	public static synthetic fun copy-GTIoL1M$default (Lcom/wire/kalium/logic/data/auth/AccountTokens;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/session/token/AccessToken;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/auth/AccountTokens;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAccessToken ()Lcom/wire/kalium/logic/data/session/token/AccessToken;
-	public final fun getCookieLabel ()Ljava/lang/String;
-	public final fun getRefreshToken-H9M5l0g ()Ljava/lang/String;
-	public final fun getTokenType ()Ljava/lang/String;
-	public final fun getUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -903,15 +549,6 @@ public final class com/wire/kalium/logic/data/event/EventExtentionKt {
 public abstract interface class com/wire/kalium/logic/data/id/FederatedIdMapper {
 	public abstract fun parseToFederatedId (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun parseToFederatedId (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public abstract interface class com/wire/kalium/logic/data/id/QualifiedIdMapper {
-	public abstract fun fromStringToQualifiedID (Ljava/lang/String;)Lcom/wire/kalium/logic/data/id/QualifiedID;
-}
-
-public final class com/wire/kalium/logic/data/id/QualifiedIdMapperKt {
-	public static final fun QualifiedIdMapper (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/data/id/QualifiedIdMapper;
-	public static final fun toQualifiedID (Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedIdMapper;)Lcom/wire/kalium/logic/data/id/QualifiedID;
 }
 
 public final class com/wire/kalium/logic/data/message/paging/NomadMessagePagingResult {
@@ -1537,46 +1174,6 @@ public final class com/wire/kalium/logic/data/session/StoreSessionParam {
 	public fun hashCode ()I
 	public final fun isPersistentWebSocketEnabled ()Z
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/data/session/token/AccessToken {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/data/session/token/AccessToken;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/session/token/AccessToken;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/session/token/AccessToken;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getTokenType ()Ljava/lang/String;
-	public final fun getValue ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/data/session/token/AccessTokenRefreshResult {
-	public synthetic fun <init> (Lcom/wire/kalium/logic/data/session/token/AccessToken;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lcom/wire/kalium/logic/data/session/token/AccessToken;
-	public final fun component2-H9M5l0g ()Ljava/lang/String;
-	public final fun copy-O0gDTE4 (Lcom/wire/kalium/logic/data/session/token/AccessToken;Ljava/lang/String;)Lcom/wire/kalium/logic/data/session/token/AccessTokenRefreshResult;
-	public static synthetic fun copy-O0gDTE4$default (Lcom/wire/kalium/logic/data/session/token/AccessTokenRefreshResult;Lcom/wire/kalium/logic/data/session/token/AccessToken;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/session/token/AccessTokenRefreshResult;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAccessToken ()Lcom/wire/kalium/logic/data/session/token/AccessToken;
-	public final fun getRefreshToken-H9M5l0g ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/data/session/token/RefreshToken {
-	public static final synthetic fun box-impl (Ljava/lang/String;)Lcom/wire/kalium/logic/data/session/token/RefreshToken;
-	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
-	public fun equals (Ljava/lang/Object;)Z
-	public static fun equals-impl (Ljava/lang/String;Ljava/lang/Object;)Z
-	public static final fun equals-impl0 (Ljava/lang/String;Ljava/lang/String;)Z
-	public final fun getValue ()Ljava/lang/String;
-	public fun hashCode ()I
-	public static fun hashCode-impl (Ljava/lang/String;)I
-	public fun toString ()Ljava/lang/String;
-	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
-	public final synthetic fun unbox-impl ()Ljava/lang/String;
 }
 
 public abstract class com/wire/kalium/logic/data/sync/SyncState {
@@ -8340,27 +7937,6 @@ public final class com/wire/kalium/logic/feature/user/webSocketStatus/SetAllPers
 
 public abstract interface class com/wire/kalium/logic/feature/user/webSocketStatus/SetPersistentWebSocketForAllUsersUseCase {
 	public abstract fun invoke (ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
-public abstract interface class com/wire/kalium/logic/featureFlags/BuildFileRestrictionState {
-}
-
-public final class com/wire/kalium/logic/featureFlags/BuildFileRestrictionState$AllowSome : com/wire/kalium/logic/featureFlags/BuildFileRestrictionState {
-	public fun <init> (Ljava/util/List;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lcom/wire/kalium/logic/featureFlags/BuildFileRestrictionState$AllowSome;
-	public static synthetic fun copy$default (Lcom/wire/kalium/logic/featureFlags/BuildFileRestrictionState$AllowSome;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/featureFlags/BuildFileRestrictionState$AllowSome;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAllowedType ()Ljava/util/List;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/wire/kalium/logic/featureFlags/BuildFileRestrictionState$NoRestriction : com/wire/kalium/logic/featureFlags/BuildFileRestrictionState {
-	public static final field INSTANCE Lcom/wire/kalium/logic/featureFlags/BuildFileRestrictionState$NoRestriction;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/logic/featureFlags/KaliumConfigs {

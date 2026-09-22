@@ -62,7 +62,7 @@ class SaveNotificationTokenUseCaseTest {
         val fixture = Fixture(emptyList())
         assertEquals(Result.Success, fixture.useCase("00ab", "APNS", "com.wire.prism.ios"))
         verify { fixture.tokens.persistNotificationToken("00ab", "APNS", "com.wire.prism.ios") }
-        verify(VerifyMode.not) { fixture.sessions.getOrCreate(any(), any<UserSessionScope.() -> PushTokenRepository>()) }
+        verifySuspend(VerifyMode.not) { fixture.sessions.open(any(), any<UserSessionScope.() -> PushTokenRepository>()) }
     }
 
     @Test
@@ -82,8 +82,8 @@ class SaveNotificationTokenUseCaseTest {
         private val observeAccounts = mock<ObserveValidAccountsUseCase>()
         val pending = accounts.map { user ->
             mock<PushTokenRepository>(mode = MockMode.autoUnit).also { repository ->
-                every {
-                    sessions.getOrCreate(eq(user.id), any<UserSessionScope.() -> PushTokenRepository>())
+                everySuspend {
+                    sessions.open(eq(user.id), any<UserSessionScope.() -> PushTokenRepository>())
                 } returns repository
                 everySuspend { repository.setUpdateFirebaseTokenFlag(true) } returns Either.Right(Unit)
             }

@@ -235,7 +235,7 @@ public class MessageScope internal constructor(
             kaliumLogger = kaliumLogger
         )
 
-    private val sendDeliverSignalUseCase: SendDeliverSignalUseCase = SendDeliverSignalUseCaseImpl(
+    internal val sendDeliverSignalUseCase: SendDeliverSignalUseCase = SendDeliverSignalUseCaseImpl(
         selfUserId = selfUserId,
         messageSender = messageSender,
         currentClientIdProvider = currentClientIdProvider,

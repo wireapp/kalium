@@ -19,10 +19,15 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.toEntity
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
@@ -33,6 +38,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class RenamedConversationEventHandlerTest {
 
@@ -78,12 +84,41 @@ class RenamedConversationEventHandlerTest {
         }
     }
 
+    @Test
+    fun replayDoesNotRegressConversationStateOrPersistAgain() = runTest {
+        val event = TestEvent.renamedConversation()
+        val (arrangement, handler) = Arrangement().arrange()
+        everySuspend { arrangement.messageDAO.getMessageById(any(), any()) } returns Message.System(
+            id = event.systemMessageId,
+            content = MessageContent.ConversationRenamed(event.conversationName),
+            conversationId = event.conversationId,
+            date = event.dateTime,
+            senderUserId = event.senderUserId,
+            status = Message.Status.Sent,
+            expirationData = null,
+        ).toEntity()
+
+        assertEquals(Either.Right(Unit), handler.handle(event))
+
+        verifySuspend(VerifyMode.not) { arrangement.conversationDao.updateConversationName(any(), any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+    }
+
+    @Test
+    fun systemPersistenceFailureIsReturnedToTheCaller() = runTest {
+        val failure = Either.Left(StorageFailure.DataNotFound)
+        val (_, handler) = Arrangement().withRenamingConversationSuccess().withPersistingMessageReturning(failure).arrange()
+        assertEquals(failure, handler.handle(TestEvent.renamedConversation()))
+    }
+
     private class Arrangement {
+        val messageDAO = mock<MessageDAO>(mode = MockMode.autofill)
         val persistMessage = mock<PersistMessageUseCase>()
         val conversationDao = mock<ConversationDAO>(mode = MockMode.autoUnit)
 
         private val renamedConversationEventHandler: RenamedConversationEventHandler = RenamedConversationEventHandlerImpl(
             conversationDao,
+            messageDAO,
             persistMessage
         )
 

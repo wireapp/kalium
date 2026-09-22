@@ -40,12 +40,15 @@ import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.time.Instant
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
+import com.wire.kalium.logic.sync.KaliumSyncException
 import kotlin.test.assertEquals
 
 class ClearConversationContentHandlerTest {
@@ -224,6 +227,52 @@ class ClearConversationContentHandlerTest {
         assertEquals(TestUser.USER_ID, selfUserId)
     }
 
+
+    @Test
+    fun assetCleanupFailureDoesNotPreventClearAndRemove() = runTest {
+        val hook = RecordingPersistenceEventHookNotifier()
+        val (arrangement, handler) = Arrangement(hook).arrange {
+            withMessageSentInSelfConversation(true)
+            everySuspend { clearConversationAssetsLocally(any()) } returns Either.Left(CoreFailure.Unknown(null))
+        }
+
+        handler.handle(arrangement.transactionContext, OWN_MESSAGE,
+            MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, true))
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(CONVERSATION_ID) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.deleteConversation(any(), eq(CONVERSATION_ID)) }
+        assertEquals(1, hook.conversationClearCalls.size)
+    }
+
+    @Test
+    fun contentFailureStillPreventsRemovalAndSuccessHook() = runTest {
+        val hook = RecordingPersistenceEventHookNotifier()
+        val (arrangement, handler) = Arrangement(hook).arrange {
+            withMessageSentInSelfConversation(true)
+            everySuspend { conversationRepository.clearContent(any()) } returns Either.Left(CoreFailure.Unknown(null))
+        }
+
+        assertFailsWith<KaliumSyncException> {
+            handler.handle(arrangement.transactionContext, OWN_MESSAGE,
+                MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, true))
+        }
+
+        verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+        assertEquals(0, hook.conversationClearCalls.size)
+    }
+
+    @Test
+    fun conversationDeletionFailureStillPropagates() = runTest {
+        val (arrangement, handler) = Arrangement().arrange {
+            withMessageSentInSelfConversation(true)
+            everySuspend { deleteConversation(any(), any()) } returns Either.Left(CoreFailure.Unknown(null))
+        }
+
+        assertFailsWith<KaliumSyncException> {
+            handler.handle(arrangement.transactionContext, OWN_MESSAGE,
+                MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, true))
+        }
+    }
 
     private class Arrangement(
         private val hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier,

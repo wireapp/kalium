@@ -22,6 +22,8 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
@@ -40,6 +42,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
+import com.wire.kalium.logic.util.createEventProcessingLogger
 
 internal interface ConversationEventReceiver : EventReceiver<Event.Conversation> {
     suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> = Either.Right(Unit)
@@ -127,7 +130,10 @@ internal class ConversationEventReceiverImpl(
             }
 
             is Event.Conversation.AccessUpdate -> accessUpdateEventHandler.handle(event)
-            is Event.Conversation.ConversationMessageTimer -> conversationMessageTimerEventHandler.handle(event)
+            is Event.Conversation.ConversationMessageTimer -> {
+                conversationMessageTimerEventHandler.handle(event, requireSystemMessagePersistence = false)
+                    .onFailure { kaliumLogger.createEventProcessingLogger(event).logFailure(it) }
+            }
             is Event.Conversation.CodeDeleted -> codeDeletedHandler.handle(event)
             is Event.Conversation.CodeUpdated -> codeUpdatedHandler.handle(event)
             is Event.Conversation.TypingIndicator -> typingIndicatorHandler.handle(event)

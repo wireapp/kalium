@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.message.receipt
 
+import com.wire.kalium.logic.sync.receiver.handler.toMessageStatus
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
@@ -159,7 +160,7 @@ class ReceiptsMapperTest {
         val (_, receiptsMapper) = Arrangement().arrange()
 
         // when
-        val result = receiptsMapper.fromTypeToMessageStatus(type = ReceiptType.READ)
+        val result = ReceiptType.READ.toMessageStatus()
 
         // then
         assertEquals(

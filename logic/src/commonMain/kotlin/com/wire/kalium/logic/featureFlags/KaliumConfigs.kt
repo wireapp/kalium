@@ -74,8 +74,3 @@ public data class KaliumConfigs(
     val callConfigTransformer: ((String) -> String)? = null,
     val drivePermissionsEnabled: Boolean = false
 )
-
-public sealed interface BuildFileRestrictionState {
-    public data object NoRestriction : BuildFileRestrictionState
-    public data class AllowSome(val allowedType: List<String>) : BuildFileRestrictionState
-}

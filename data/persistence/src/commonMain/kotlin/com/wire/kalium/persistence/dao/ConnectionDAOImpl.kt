@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 
 import app.cash.sqldelight.coroutines.asFlow
@@ -177,7 +178,7 @@ class ConnectionDAOImpl(
         withContext(writeDispatcher.value) {
             connectionsQueries.transaction {
                 connectionsQueries.deleteConnection(conversationId)
-                conversationsQueries.deleteConversation(conversationId)
+                conversationsQueries.deleteConversation(conversationId).await()
             }
         }
 

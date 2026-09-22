@@ -19,13 +19,17 @@
 package com.wire.kalium.persistence.dao.asset
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.AssetsQueries
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
@@ -109,4 +113,39 @@ class AssetDAOImpl internal constructor(
     override suspend fun getAssets(): List<AssetEntity> = withContext(readDispatcher.value) {
         queries.getAssets(mapper::fromAssets).awaitAsList()
     }
+
+    override suspend fun isFileReferenced(path: String): Boolean = withContext(readDispatcher.value) {
+        queries.isFileReferenced(path).awaitAsOne()
+    }
+
+    override suspend fun deleteMessageFiles(conversationId: QualifiedIDEntity, messageId: String?, deleteFile: (String) -> Unit) =
+        deleteFiles(conversationId, messageId, includeDrafts = false, deleteFile)
+
+    override suspend fun deleteConversationFiles(conversationId: QualifiedIDEntity, deleteFile: (String) -> Unit) =
+        deleteFiles(conversationId, messageId = null, includeDrafts = true, deleteFile)
+
+    private suspend fun deleteFiles(
+        conversationId: QualifiedIDEntity,
+        messageId: String?,
+        includeDrafts: Boolean,
+        deleteFile: (String) -> Unit,
+    ) =
+        withContext(writeDispatcher.value) {
+            queries.transaction {
+                // Ordinary text/system deletion should not materialize all of the account's file references.
+                val drafts = if (includeDrafts) 1L else 0L
+                if (!queries.messageHasLocalFiles(conversationId, messageId, drafts).awaitAsOne()) return@transaction
+                val paths = queries.messageFilesToDelete(
+                    conversationId = conversationId,
+                    messageId = messageId,
+                    includeDrafts = drafts
+                ).awaitAsList()
+                paths.forEach { path ->
+                    currentCoroutineContext().ensureActive()
+                    deleteFile(path)
+                }
+                // A partial filesystem failure keeps every path available for retry. Missing files are accepted by the caller.
+                paths.forEach { queries.forgetDeletedMessageFile(it).await() }
+            }
+        }
 }

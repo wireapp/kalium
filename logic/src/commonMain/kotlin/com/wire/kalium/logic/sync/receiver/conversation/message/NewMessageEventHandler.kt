@@ -20,12 +20,12 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.decryptionFailureContent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.typeDescription
 import com.wire.kalium.logic.data.user.UserId
@@ -127,20 +127,13 @@ internal class NewMessageEventHandlerImpl(
         event: Event.Conversation.NewMessage,
         isDecryptionResolved: Boolean
     ) {
-        val errorCode = if (failure is ProteusFailure) failure.proteusException.intCode else null
         applicationMessageHandler.handleDecryptionError(
             eventId = event.id,
             conversationId = event.conversationId,
             messageInstant = event.messageInstant,
             senderUserId = event.senderUserId,
             senderClientId = event.senderClientId,
-            content = MessageContent.FailedDecryption(
-                encodedData = event.encryptedExternalContent?.data,
-                errorCode = errorCode,
-                isDecryptionResolved = isDecryptionResolved,
-                senderUserId = event.senderUserId,
-                clientId = ClientId(event.senderClientId.value)
-            )
+            content = event.decryptionFailureContent(failure, isDecryptionResolved)
         )
     }
 

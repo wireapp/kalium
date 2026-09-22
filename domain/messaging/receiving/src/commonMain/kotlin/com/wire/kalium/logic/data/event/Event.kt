@@ -1,0 +1,907 @@
+/*
+ * Wire
+ * Copyright (C) 2024 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
+package com.wire.kalium.logic.data.event
+
+import com.wire.kalium.cryptography.utils.EncryptedData
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.client.Client
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation.Access
+import com.wire.kalium.logic.data.conversation.Conversation.AccessRole
+import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.Conversation.Protocol
+import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
+import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
+import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
+import com.wire.kalium.logic.data.conversation.FolderWithConversations
+import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.featureConfig.AllowedGlobalOperationsModel
+import com.wire.kalium.logic.data.featureConfig.AppLockModel
+import com.wire.kalium.logic.data.featureConfig.AssetAuditLogConfigModel
+import com.wire.kalium.logic.data.featureConfig.CellsInternalModel
+import com.wire.kalium.logic.data.featureConfig.CellsModel
+import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
+import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
+import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
+import com.wire.kalium.logic.data.featureConfig.E2EIModel
+import com.wire.kalium.logic.data.featureConfig.EnableUserProfileQRCodeConfigModel
+import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
+import com.wire.kalium.logic.data.featureConfig.MLSModel
+import com.wire.kalium.logic.data.featureConfig.MeetingsConfigModel
+import com.wire.kalium.logic.data.featureConfig.PreventAdminlessGroupsConfigModel
+import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.legalhold.LastPreKey
+import com.wire.kalium.logic.data.user.Connection
+import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.util.serialization.toJsonElement
+import kotlin.time.Instant
+import kotlinx.serialization.json.JsonNull
+
+/**
+ * Represents an event.
+ *
+ * @property id The ID of the event. As of Jan 2024, the ID used by the backend is
+ * _not_ guaranteed to be unique, so comparing the full object might be necessary.
+ */
+sealed class Event(open val id: String) {
+
+    private companion object {
+        const val typeKey = "type"
+        const val idKey = "id"
+        const val featureStatusKey = "status"
+        const val clientIdKey = "clientId"
+        const val userIdKey = "userId"
+        const val conversationIdKey = "conversationId"
+        const val senderUserIdKey = "senderUserId"
+        const val teamIdKey = "teamId"
+        const val memberIdKey = "memberId"
+        const val timestampIsoKey = "timestampIso"
+        const val selfDeletionDurationKey = "selfDeletionDuration"
+        const val meetingIdKey = "meetingId"
+    }
+
+    open fun toLogString(): String {
+        return "${toLogMap().toJsonElement()}"
+    }
+
+    abstract fun toLogMap(): Map<String, Any?>
+
+    sealed class Conversation(
+        id: String,
+        open val conversationId: ConversationId
+    ) : Event(id) {
+        data class AccessUpdate(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val access: Set<Access>,
+            val accessRole: Set<AccessRole>,
+            val qualifiedFrom: UserId,
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.AccessUpdate",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                "qualifiedFrom" to qualifiedFrom.toLogString()
+            )
+        }
+
+        data class NewMessage(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val senderUserId: UserId,
+            val senderClientId: ClientId,
+            val messageInstant: Instant,
+            val content: String,
+            val encryptedExternalContent: EncryptedData?
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.NewMessage",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                senderUserIdKey to senderUserId.toLogString(),
+                "senderClientId" to senderClientId.toLogString(),
+                timestampIsoKey to messageInstant
+            )
+        }
+
+        data class NewMLSMessage(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val subconversationId: SubconversationId?,
+            val senderUserId: UserId,
+            val messageInstant: Instant,
+            val content: String
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.NewMLSMessage",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                senderUserIdKey to senderUserId.toLogString(),
+                timestampIsoKey to messageInstant
+            )
+        }
+
+        data class NewConversation(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val senderUserId: UserId,
+            val dateTime: Instant,
+            val conversation: ConversationResponse
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.NewConversation",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                timestampIsoKey to dateTime
+            )
+        }
+
+        data class MemberJoin(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val addedBy: UserId,
+            val members: List<Member>,
+            val dateTime: Instant,
+            val systemMessageId: String = id,
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.MemberJoin",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                "addedBy" to addedBy.toLogString(),
+                "members" to members.map { it.toMap() },
+                timestampIsoKey to dateTime
+            )
+        }
+
+        data class MemberLeave(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val removedBy: UserId,
+            val removedList: List<UserId>,
+            val dateTime: Instant,
+            val reason: MemberLeaveReason,
+            val systemMessageId: String = id,
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.MemberLeave",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                "removedBy" to removedBy.toLogString(),
+                timestampIsoKey to dateTime
+            )
+        }
+
+        sealed class MemberChanged(
+            override val id: String,
+            override val conversationId: ConversationId,
+        ) : Conversation(id, conversationId) {
+            class MemberChangedRole(
+                override val id: String,
+                override val conversationId: ConversationId,
+                val dateTime: Instant,
+                val member: Member?,
+            ) : MemberChanged(id, conversationId) {
+
+                override fun toLogMap(): Map<String, Any?> = mapOf(
+                    typeKey to "Conversation.MemberChangedRole",
+                    idKey to id,
+                    conversationIdKey to conversationId.toLogString(),
+                    "member" to (member?.toMap() ?: JsonNull),
+                    timestampIsoKey to dateTime
+                )
+            }
+
+            data class MemberMutedStatusChanged(
+                override val id: String,
+                override val conversationId: ConversationId,
+                val mutedConversationStatus: MutedConversationStatus,
+                val mutedConversationChangedTime: Instant
+            ) : MemberChanged(id, conversationId) {
+
+                override fun toLogMap(): Map<String, Any?> = mapOf(
+                    typeKey to "Conversation.MemberMutedStatusChanged",
+                    idKey to id,
+                    conversationIdKey to conversationId.toLogString(),
+                    "mutedConversationStatus" to mutedConversationStatus.status,
+                    "mutedConversationChangedTime" to mutedConversationChangedTime
+                )
+            }
+
+            data class MemberArchivedStatusChanged(
+                override val id: String,
+                override val conversationId: ConversationId,
+                val archivedConversationChangedTime: Instant,
+                val isArchiving: Boolean
+            ) : MemberChanged(id, conversationId) {
+
+                override fun toLogMap(): Map<String, Any?> = mapOf(
+                    typeKey to "Conversation.MemberArchivedStatusChanged",
+                    idKey to id,
+                    conversationIdKey to conversationId.toLogString(),
+                    "isArchiving" to isArchiving,
+                    "archivedConversationChangedTime" to archivedConversationChangedTime
+                )
+            }
+
+            data class IgnoredMemberChanged(
+                override val id: String,
+                override val conversationId: ConversationId,
+            ) : MemberChanged(id, conversationId) {
+
+                override fun toLogMap(): Map<String, Any?> = mapOf(
+                    typeKey to "Conversation.IgnoredMemberChanged",
+                    idKey to id,
+                    conversationIdKey to conversationId.toLogString(),
+                )
+            }
+        }
+
+        data class MLSWelcome(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val senderUserId: UserId,
+            val message: String,
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.MLSWelcome",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                senderUserIdKey to senderUserId.toLogString()
+            )
+        }
+
+        data class DeletedConversation(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val senderUserId: UserId,
+            val dateTime: Instant,
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.DeletedConversation",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                timestampIsoKey to dateTime,
+                senderUserIdKey to senderUserId.toLogString()
+            )
+        }
+
+        data class RenamedConversation(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val conversationName: String,
+            val senderUserId: UserId,
+            val dateTime: Instant,
+            val systemMessageId: String = id,
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.RenamedConversation",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                senderUserIdKey to senderUserId.toLogString(),
+                "conversationName" to conversationName,
+                timestampIsoKey to dateTime,
+            )
+        }
+
+        data class ConversationReceiptMode(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val receiptMode: ReceiptMode,
+            val senderUserId: UserId,
+            val systemMessageId: String = id,
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.ConversationReceiptMode",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                "receiptMode" to receiptMode.name,
+                senderUserIdKey to senderUserId.toLogString(),
+            )
+        }
+
+        data class ConversationMessageTimer(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val messageTimer: Long?,
+            val senderUserId: UserId,
+            val dateTime: Instant,
+            val systemMessageId: String = id,
+        ) : Conversation(id, conversationId) {
+
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.ConversationMessageTimer",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                "messageTime" to messageTimer,
+                senderUserIdKey to senderUserId.toLogString(),
+                timestampIsoKey to dateTime
+            )
+        }
+
+        data class CodeUpdated(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val key: String,
+            val code: String,
+            val uri: String?,
+            val isPasswordProtected: Boolean,
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id,
+                typeKey to "Conversation.CodeUpdated"
+            )
+        }
+
+        data class CodeDeleted(
+            override val id: String,
+            override val conversationId: ConversationId,
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id,
+                typeKey to "Conversation.CodeDeleted"
+            )
+        }
+
+        data class TypingIndicator(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val senderUserId: UserId,
+            val typingIndicatorMode: TypingIndicatorMode,
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                idKey to id,
+                typeKey to "Conversation.TypingIndicator",
+                conversationIdKey to conversationId.toLogString(),
+                "typingIndicatorMode" to typingIndicatorMode.name,
+                senderUserIdKey to senderUserId.toLogString(),
+            )
+        }
+
+        data class ConversationProtocol(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val protocol: Protocol,
+            val senderUserId: UserId
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.ConversationProtocol",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                "protocol" to protocol.name,
+                senderUserIdKey to senderUserId.toLogString(),
+            )
+        }
+
+        data class ConversationChannelAddPermission(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val channelAddPermission: ChannelAddPermission,
+            val senderUserId: UserId
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.ChannelAddPermission",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+                "channelAddPermission" to channelAddPermission.name,
+                senderUserIdKey to senderUserId.toLogString(),
+            )
+        }
+
+        data class MLSReset(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val from: UserId,
+            val groupID: GroupID,
+            val newGroupID: GroupID,
+        ) : Conversation(id, conversationId) {
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.MlsReset",
+                idKey to id,
+                conversationIdKey to conversationId.toLogString(),
+            )
+        }
+    }
+
+    sealed class Team(
+        id: String,
+        open val teamId: String,
+    ) : Event(id) {
+
+        data class MemberLeave(
+            override val id: String,
+            override val teamId: String,
+            val memberId: String,
+            val dateTime: Instant,
+        ) : Team(id, teamId) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Team.MemberLeave",
+                idKey to id,
+                teamIdKey to teamId.obfuscateId(),
+                timestampIsoKey to dateTime,
+                memberIdKey to memberId.obfuscateId(),
+            )
+        }
+    }
+
+    sealed class FeatureConfig(
+        id: String,
+    ) : Event(id) {
+        data class FileSharingUpdated(
+            override val id: String,
+            val model: ConfigsStatusModel
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.FileSharingUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class MLSUpdated(
+            override val id: String,
+            val model: MLSModel
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.MLSUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name
+            )
+        }
+
+        data class MLSMigrationUpdated(
+            override val id: String,
+            val model: MLSMigrationModel
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.MLSMigrationUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+                "startTime" to model.startTime,
+                "endTime" to model.endTime
+            )
+        }
+
+        data class ClassifiedDomainsUpdated(
+            override val id: String,
+            val model: ClassifiedDomainsModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.ClassifiedDomainsUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+                "domains" to model.config.domains.map { it.obfuscateDomain() }
+            )
+        }
+
+        data class ConferenceCallingUpdated(
+            override val id: String,
+            val model: ConferenceCallingModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap() = mapOf(
+                typeKey to "FeatureConfig.ConferenceCallingUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class GuestRoomLinkUpdated(
+            override val id: String,
+            val model: ConfigsStatusModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.GuestRoomLinkUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class SelfDeletingMessagesConfig(
+            override val id: String,
+            val model: SelfDeletingMessagesModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.SelfDeletingMessagesConfig",
+                idKey to id,
+                featureStatusKey to model.status.name,
+                selfDeletionDurationKey to model.config.enforcedTimeoutSeconds
+            )
+        }
+
+        data class MLSE2EIUpdated(
+            override val id: String,
+            val model: E2EIModel
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.MLSE2EIUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+                "config" to model.config
+            )
+        }
+
+        data class AppLockUpdated(
+            override val id: String,
+            val model: AppLockModel
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.AppLockUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+                "timeout" to model.inactivityTimeoutSecs
+            )
+        }
+
+        data class AllowedGlobalOperationsUpdated(
+            override val id: String,
+            val model: AllowedGlobalOperationsModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.AllowedGlobalOperationsUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+                "mlsConversationReset" to model.mlsConversationsReset
+            )
+        }
+
+        data class CellsConfigUpdated(
+            override val id: String,
+            val model: CellsModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.CellsConfigUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class CellsInternalConfigUpdated(
+            override val id: String,
+            val model: CellsInternalModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.CellsInternalConfigUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class EnableUserProfileQRCodeConfigUpdated(
+            override val id: String,
+            val model: EnableUserProfileQRCodeConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.ProfileQRCodeConfigUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class AssetAuditLogConfigUpdated(
+            override val id: String,
+            val model: AssetAuditLogConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.AssetAudiLogConfigUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class PreventAdminlessGroupsConfigUpdated(
+            override val id: String,
+            val model: PreventAdminlessGroupsConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.PreventAdminlessGroupsConfigUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        data class UnknownFeatureUpdated(
+            override val id: String,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.UnknownFeatureUpdated",
+                idKey to id,
+            )
+        }
+
+        data class MeetingsConfigUpdated(
+            override val id: String,
+            val model: MeetingsConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.MeetingsConfigUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+            )
+        }
+    }
+
+    sealed class User(
+        id: String,
+    ) : Event(id) {
+
+        data class Update(
+            override val id: String,
+            val userId: UserId,
+            val accentId: Int?,
+            val ssoIdDeleted: Boolean?,
+            val name: String?,
+            val handle: String?,
+            val email: String?,
+            val previewAssetId: String?,
+            val completeAssetId: String?,
+            val supportedProtocols: Set<SupportedProtocol>?
+        ) : User(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.Update",
+                idKey to id,
+                userIdKey to userId.toLogString()
+            )
+        }
+
+        data class NewConnection(
+            override val id: String,
+            val connection: Connection
+        ) : User(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.NewConnection",
+                idKey to id,
+                "connection" to connection.toMap()
+            )
+        }
+
+        data class ClientRemove(
+            override val id: String,
+            val clientId: ClientId
+        ) : User(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.ClientRemove",
+                idKey to id,
+                clientIdKey to clientId.toLogString()
+            )
+        }
+
+        data class UserDelete(
+            override val id: String,
+            val userId: UserId,
+        ) : User(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.UserDelete",
+                idKey to id,
+                userIdKey to userId.toLogString(),
+            )
+        }
+
+        data class NewClient(
+            override val id: String,
+            val client: Client,
+        ) : User(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.NewClient",
+                idKey to id,
+                clientIdKey to client.id.toLogString(),
+                "registrationTime" to client.registrationTime,
+                "model" to (client.model ?: ""),
+                "clientType" to client.type,
+                "deviceType" to client.deviceType,
+                "label" to (client.label ?: ""),
+                "isMLSCapable" to client.isMLSCapable
+            )
+        }
+
+        data class LegalHoldRequest(
+            override val id: String,
+            val clientId: ClientId,
+            val lastPreKey: LastPreKey,
+            val userId: UserId
+        ) : User(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.LegalHold-request",
+                idKey to id,
+                "clientId" to clientId.toLogString(),
+                "userId" to userId.toLogString(),
+            )
+        }
+
+        data class LegalHoldEnabled(
+            override val id: String,
+            val userId: UserId
+        ) : User(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.LegalHold-enabled",
+                idKey to id,
+                "userId" to userId.toLogString()
+            )
+        }
+
+        data class LegalHoldDisabled(
+            override val id: String,
+            val userId: UserId
+        ) : User(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.LegalHold-disabled",
+                idKey to id,
+                "userId" to userId.toLogString()
+            )
+        }
+
+        data class SessionRefreshSuggested(
+            override val id: String,
+        ) : User(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.SessionRefreshSuggested",
+                idKey to id,
+            )
+        }
+    }
+
+    sealed class UserProperty(
+        id: String,
+    ) : Event(id) {
+
+        data class ReadReceiptModeSet(
+            override val id: String,
+            val value: Boolean,
+        ) : UserProperty(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.UserProperty.ReadReceiptModeSet",
+                idKey to id,
+                "value" to "$value"
+            )
+        }
+
+        data class TypingIndicatorModeSet(
+            override val id: String,
+            val value: Boolean,
+        ) : UserProperty(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.UserProperty.TypingIndicatorModeSet",
+                idKey to id,
+                "value" to "$value"
+            )
+        }
+
+        data class FoldersUpdate(
+            override val id: String,
+            val folders: List<FolderWithConversations>,
+        ) : UserProperty(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.UserProperty.FoldersUpdate",
+                idKey to id,
+                "folders" to folders.map { it.id }
+            )
+        }
+    }
+
+    data class Unknown(
+        override val id: String,
+        val unknownType: String?,
+        val cause: String? = null
+    ) : Event(id) {
+        override fun toLogMap(): Map<String, Any?> = mapOf(
+            typeKey to "User.UnknownEvent",
+            idKey to id,
+            "unknownType" to unknownType,
+            "cause" to cause
+        )
+    }
+
+    sealed class Federation(
+        id: String,
+    ) : Event(id) {
+
+        data class Delete(
+            override val id: String,
+            val domain: String,
+        ) : Federation(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Federation.Delete",
+                idKey to id,
+                "domain" to domain
+            )
+        }
+
+        data class ConnectionRemoved(
+            override val id: String,
+            val domains: List<String>,
+        ) : Federation(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Federation.ConnectionRemoved",
+                idKey to id,
+                "domains" to domains
+            )
+        }
+    }
+
+    sealed class Meeting(
+        id: String
+    ) : Event(id) {
+
+        data class Create(
+            override val id: String,
+            val meetingId: MeetingId,
+            val dateTime: Instant,
+        ) : Meeting(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Meeting.Create",
+                idKey to id,
+                meetingIdKey to meetingId.toLogString(),
+                timestampIsoKey to dateTime
+            )
+        }
+
+        data class Delete(
+            override val id: String,
+            val meetingId: MeetingId,
+            val dateTime: Instant,
+        ) : Meeting(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Meeting.Delete",
+                idKey to id,
+                meetingIdKey to meetingId.toLogString(),
+                timestampIsoKey to dateTime
+            )
+        }
+
+        data class Update(
+            override val id: String,
+            val meetingId: MeetingId,
+            val dateTime: Instant,
+        ) : Meeting(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Meeting.Update",
+                idKey to id,
+                meetingIdKey to meetingId.toLogString(),
+                timestampIsoKey to dateTime
+            )
+        }
+
+        data class MemberAdd(
+            override val id: String,
+            val meetingId: MeetingId,
+            val dateTime: Instant,
+        ) : Meeting(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Meeting.MemberAdd",
+                idKey to id,
+                meetingIdKey to meetingId.toLogString(),
+                timestampIsoKey to dateTime
+            )
+        }
+    }
+}

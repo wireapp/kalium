@@ -17,7 +17,12 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import dev.mokkery.MockMode
+import dev.mokkery.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.answering.throws
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -25,8 +30,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.arrangement.PersistenceEventHookNotifierArrangement
 import com.wire.kalium.logic.util.arrangement.PersistenceEventHookNotifierArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.IsMessageSentInSelfConversationUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.IsMessageSentInSelfConversationUseCaseArrangementImpl
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
@@ -44,13 +47,12 @@ class DeleteForMeHandlerTest {
     fun givenMessageFromSelfConversation_whenHandling_thenMessageIsDeletedAndHookIsNotified() = runTest {
         val (arrangement, handler) = arrange {
             withMessageSentInSelfConversationReturning(true)
-            withDeleteMessage(Either.Right(Unit))
         }
 
         handler.handle(MESSAGE, CONTENT)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageRepository.deleteMessage(eq(MESSAGE_ID), eq(CONVERSATION_ID))
+            arrangement.messageDAO.deleteMessage(eq(MESSAGE_ID), eq(CONVERSATION_ID.toDao()))
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistenceEventHookNotifier.onMessageDeleted(
@@ -68,7 +70,15 @@ class DeleteForMeHandlerTest {
 
         handler.handle(MESSAGE, CONTENT)
 
-        verifySuspend(VerifyMode.not) { arrangement.messageRepository.deleteMessage(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.messageDAO.deleteMessage(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.persistenceEventHookNotifier.onMessageDeleted(any(), any()) }
+    }
+
+    @Test
+    fun failedDeleteDoesNotNotifyTheAppHook() = runTest {
+        val (arrangement, handler) = arrange { withMessageSentInSelfConversationReturning(true) }
+        everySuspend { arrangement.messageDAO.deleteMessage(any(), any()) } throws IllegalStateException("write failed")
+        handler.handle(MESSAGE, CONTENT)
         verifySuspend(VerifyMode.not) { arrangement.persistenceEventHookNotifier.onMessageDeleted(any(), any()) }
     }
 
@@ -76,14 +86,15 @@ class DeleteForMeHandlerTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit,
-    ) : MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
-        IsMessageSentInSelfConversationUseCaseArrangement by IsMessageSentInSelfConversationUseCaseArrangementImpl(),
+    ) : IsMessageSentInSelfConversationUseCaseArrangement by IsMessageSentInSelfConversationUseCaseArrangementImpl(),
         PersistenceEventHookNotifierArrangement by PersistenceEventHookNotifierArrangementImpl() {
+
+        val messageDAO = mock<MessageDAO>(MockMode.autoUnit)
 
         suspend fun arrange() = run {
             block()
             this@Arrangement to DeleteForMeHandlerImpl(
-                messageRepository = messageRepository,
+                messageDAO = messageDAO,
                 isMessageSentInSelfConversation = isMessageSentInSelfConversationUseCase,
                 persistenceEventHookNotifier = persistenceEventHookNotifier,
                 selfUserId = SELF_USER_ID,

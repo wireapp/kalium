@@ -22,8 +22,7 @@ import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.event.removedFromTeamMessage
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -60,17 +59,7 @@ internal class TeamEventReceiverImpl(
         userRepository.markUserAsDeletedAndRemoveFromGroupConversations(removedUser)
             .onSuccess {
                 it.forEach { conversationId ->
-                    val message = Message.System(
-                        id = Uuid.random().toString(), // We generate a random uuid for this new system message
-                        content = MessageContent.MemberChange.RemovedFromTeam(listOf(removedUser)),
-                        conversationId = conversationId,
-                        date = event.dateTime,
-                        senderUserId = removedUser,
-                        status = Message.Status.Sent,
-                        visibility = Message.Visibility.VISIBLE,
-                        expirationData = null
-                    )
-                    persistMessage(message)
+                    persistMessage(event.removedFromTeamMessage(selfUserId.domain, conversationId, Uuid.random().toString()))
                 }
             }
     }

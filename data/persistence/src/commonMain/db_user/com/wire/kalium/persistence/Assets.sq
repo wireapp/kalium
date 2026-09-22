@@ -1,3 +1,5 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+
 CREATE TABLE Asset (
     key TEXT NOT NULL,
     domain TEXT NOT NULL,
@@ -24,3 +26,73 @@ SELECT * FROM Asset WHERE key = ?;
 
 getAssets:
 SELECT * FROM Asset;
+
+isFileReferenced:
+SELECT EXISTS(
+    SELECT 1 FROM Asset WHERE data_path = :path
+    UNION ALL
+    SELECT 1 FROM MessageLinkPreview WHERE image_local_path = :path
+    UNION ALL
+    SELECT 1 FROM CellFile WHERE localPath = :path
+    UNION ALL
+    SELECT 1 FROM MessageAttachmentDraft WHERE data_path = :path
+);
+
+-- A file can be referenced by several messages, previews, attachment rows or independent caches.
+-- Keep all references until the caller has successfully removed every unshared file.
+messageHasLocalFiles:
+SELECT EXISTS(
+    SELECT 1 FROM MessageAssetContent m JOIN Asset a ON a.key = m.asset_id
+    WHERE m.conversation_id = :conversationId AND (:messageId IS NULL OR m.message_id = :messageId)
+    UNION ALL
+    SELECT 1 FROM MessageLinkPreview p LEFT JOIN Asset a ON a.key = p.image_asset_key
+    WHERE p.conversation_id = :conversationId AND (:messageId IS NULL OR p.message_id = :messageId)
+      AND (p.image_local_path IS NOT NULL OR a.data_path IS NOT NULL)
+    UNION ALL
+    SELECT 1 FROM MessageAttachments m JOIN CellFile c ON c.uuid = m.asset_id
+    WHERE m.conversation_id = :conversationId AND (:messageId IS NULL OR m.message_id = :messageId) AND c.localPath IS NOT NULL
+    UNION ALL
+    SELECT 1 FROM MessageAttachmentDraft WHERE :includeDrafts = 1 AND conversation_id = :conversationId
+);
+
+messageFilesToDelete:
+WITH file_references(conversation_id, message_id, path) AS (
+    SELECT m.conversation_id, m.message_id, a.data_path
+    FROM MessageAssetContent m JOIN Asset a ON a.key = m.asset_id
+    UNION ALL
+    SELECT p.conversation_id, p.message_id, a.data_path
+    FROM MessageLinkPreview p JOIN Asset a ON a.key = p.image_asset_key
+    UNION ALL
+    SELECT conversation_id, message_id, image_local_path FROM MessageLinkPreview WHERE image_local_path IS NOT NULL
+    UNION ALL
+    SELECT m.conversation_id, m.message_id, c.localPath
+    FROM CellFile c LEFT JOIN MessageAttachments m ON m.asset_id = c.uuid
+    WHERE c.localPath IS NOT NULL
+    UNION ALL
+    SELECT NULL, NULL, localPath FROM CellFile WHERE isOffline = 1 AND localPath IS NOT NULL
+    UNION ALL
+    SELECT CASE WHEN :includeDrafts = 1 THEN conversation_id ELSE NULL END, NULL, data_path FROM MessageAttachmentDraft
+    UNION ALL
+    SELECT NULL, NULL, a.data_path FROM Asset a JOIN User u
+      ON u.preview_asset_id = a.key || '@' || a.domain OR u.complete_asset_id = a.key || '@' || a.domain
+    UNION ALL
+    SELECT NULL, NULL, a.data_path FROM Asset a JOIN Team t ON t.icon = a.key
+)
+SELECT DISTINCT target.path
+FROM file_references target
+WHERE target.conversation_id = :conversationId AND (:messageId IS NULL OR target.message_id = :messageId)
+  AND target.path IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM file_references other WHERE other.path = target.path
+        AND (other.conversation_id IS NOT :conversationId OR (:messageId IS NOT NULL AND other.message_id IS NOT :messageId))
+  )
+ORDER BY target.path;
+
+forgetDeletedMessageFile {
+-- @NotifyCustomKey Asset
+-- @NotifyCustomKey CellFile
+-- @NotifyCustomKey MessageLinkPreview
+    DELETE FROM Asset WHERE data_path = :path;
+    UPDATE CellFile SET localPath = NULL, assetTransferStatus = 'NOT_DOWNLOADED' WHERE localPath = :path;
+    UPDATE MessageLinkPreview SET image_local_path = NULL WHERE image_local_path = :path;
+}

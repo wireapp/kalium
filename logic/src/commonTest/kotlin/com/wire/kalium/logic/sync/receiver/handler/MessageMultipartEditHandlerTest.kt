@@ -172,8 +172,39 @@ class MessageMultipartEditHandlerTest {
         assertEquals(1, updateStatusCalled)
     }
 
+    @Test
+    fun givenContentWriteFails_whenHandling_thenNotificationKeepsItsExistingTimingAndStatusIsNotWritten() = runTest {
+        val order = mutableListOf<String>()
+        val failure = Either.Left(StorageFailure.DataNotFound)
+        val (_, handler) = Arrangement()
+            .withScheduleNotification { order += "notification" }
+            .withUpdateMultipartMessage { order += "content" }
+            .withContentResult(failure)
+            .withUpdateMessageStatus { order += "status" }
+            .arrange()
+        assertEquals(failure, handler.handle(EDIT_MESSAGE.copy(senderUserId = ORIGINAL_SENDER_USER_ID), EDIT_CONTENT))
+        assertEquals(listOf("notification", "content"), order)
+    }
+
+    @Test
+    fun givenStatusWriteFails_whenHandlingNewerEcho_thenContentAndNotificationHaveAlreadyRun() = runTest {
+        val order = mutableListOf<String>()
+        val failure = Either.Left(StorageFailure.DataNotFound)
+        val (_, handler) = Arrangement()
+            .withGetMessageById(ORIGINAL_MESSAGE.copy(editStatus = Message.EditStatus.Edited(Instant.UNIX_FIRST_DATE)))
+            .withScheduleNotification { order += "notification" }
+            .withUpdateMultipartMessage { order += "content" }
+            .withUpdateMessageStatus { order += "status" }
+            .withStatusResult(failure)
+            .arrange()
+        assertEquals(failure, handler.handle(EDIT_MESSAGE.copy(senderUserId = ORIGINAL_SENDER_USER_ID), EDIT_CONTENT))
+        assertEquals(listOf("notification", "content", "status"), order)
+    }
+
     private class Arrangement {
 
+        private var contentResult: Either<CoreFailure, Unit> = Either.Right(Unit)
+        private var statusResult: Either<CoreFailure, Unit> = Either.Right(Unit)
         private var message: Message = ORIGINAL_MESSAGE
         private var updateMultipartMessage: (MessageContent.MultipartEdited, Instant) -> Unit = { _, _ -> }
         private var updateMessageStatus: () -> Unit = {}
@@ -191,7 +222,8 @@ class MessageMultipartEditHandlerTest {
                 newMessageId: String,
                 editInstant: Instant
             ): Either<CoreFailure, Unit> {
-                return updateMultipartMessage(messageContent, editInstant).right()
+                updateMultipartMessage(messageContent, editInstant)
+                return contentResult
             }
 
             override suspend fun updateMessageStatus(
@@ -199,7 +231,8 @@ class MessageMultipartEditHandlerTest {
                 conversationId: ConversationId,
                 messageUuid: String
             ): Either<CoreFailure, Unit> {
-                return updateMessageStatus().right()
+                updateMessageStatus()
+                return statusResult
             }
 
             override suspend fun updateLinkPreviewImageLocalPath(
@@ -215,6 +248,10 @@ class MessageMultipartEditHandlerTest {
                 scheduleMessageNotification()
             }
         }
+
+        fun withContentResult(result: Either<CoreFailure, Unit>) = apply { contentResult = result }
+
+        fun withStatusResult(result: Either<CoreFailure, Unit>) = apply { statusResult = result }
 
         fun withGetMessageById(message: Message) = apply {
             this.message = message

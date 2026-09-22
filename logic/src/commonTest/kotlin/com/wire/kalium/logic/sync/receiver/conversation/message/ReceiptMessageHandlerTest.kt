@@ -19,12 +19,10 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import app.cash.turbine.test
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -43,17 +41,8 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import dev.mokkery.answering.returns
-import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
-import dev.mokkery.mock
-import dev.mokkery.verify.VerifyMode
-import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -71,10 +60,9 @@ class ReceiptMessageHandlerTest {
     private val userDatabase = TestUserDatabase(SELF_USER_ID_ENTITY, testDispatcher)
     private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
 
-    private val messageRepository: MessageRepository = mock()
-
     private val receiptMessageHandler = ReceiptMessageHandlerImpl(
-        SELF_USER_ID, receiptRepository, messageRepository, NoOpPersistenceEventHookNotifier
+        SELF_USER_ID,
+        userDatabase.builder, NoOpPersistenceEventHookNotifier
     )
 
     private suspend fun insertTestData() {
@@ -105,9 +93,6 @@ class ReceiptMessageHandlerTest {
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -127,9 +112,6 @@ class ReceiptMessageHandlerTest {
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -154,9 +136,6 @@ class ReceiptMessageHandlerTest {
         val senderUserId = SELF_USER_ID
         val type = ReceiptType.READ
 
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -177,9 +156,6 @@ class ReceiptMessageHandlerTest {
         // Delivery != Read
         val type = ReceiptType.DELIVERED
 
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -197,16 +173,14 @@ class ReceiptMessageHandlerTest {
         val type = ReceiptType.DELIVERED
         val messageUuids = listOf("1", "2", "3")
 
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
-
+        insertTestData()
+        messageUuids.forEach { userDatabase.builder.messageDAO.insertOrIgnoreMessage(MESSAGE_ENTITY.copy(id = it)) }
         // when
         handleNewReceipt(type, date, senderUserId, messageUuids)
 
         // then
-        verifySuspend(VerifyMode.exactly(1)) {
-            messageRepository.updateMessagesStatusIfNotRead(eq(MessageEntity.Status.DELIVERED), any(), eq(messageUuids))
+        messageUuids.forEach {
+            assertEquals(MessageEntity.Status.DELIVERED, userDatabase.builder.messageDAO.getMessageById(it, CONVERSATION_ENTITY_ID)?.status)
         }
     }
 
@@ -215,14 +189,12 @@ class ReceiptMessageHandlerTest {
         // given
         val hookNotifier = RecordingPersistenceEventHookNotifier()
         val handler = ReceiptMessageHandlerImpl(
-            SELF_USER_ID, receiptRepository, messageRepository, hookNotifier
+            SELF_USER_ID,
+            userDatabase.builder,
+            hookNotifier
         )
         insertTestData()
         val date = DateTimeUtil.currentInstant()
-
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
 
         val readContent = MessageContent.Receipt(type = ReceiptType.READ, messageIds = listOf(MESSAGE_ID))
         handler.handle(
@@ -253,13 +225,11 @@ class ReceiptMessageHandlerTest {
         // given
         val hookNotifier = RecordingPersistenceEventHookNotifier()
         val handler = ReceiptMessageHandlerImpl(
-            SELF_USER_ID, receiptRepository, messageRepository, hookNotifier
+            SELF_USER_ID,
+            userDatabase.builder,
+            hookNotifier
         )
         val date = DateTimeUtil.currentInstant()
-
-        everySuspend {
-            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        } returns Either.Right(Unit)
 
         val deliveredContent = MessageContent.Receipt(type = ReceiptType.DELIVERED, messageIds = listOf(MESSAGE_ID))
         handler.handle(
@@ -279,6 +249,20 @@ class ReceiptMessageHandlerTest {
 
         // then DELIVERED receipt should NOT trigger hook
         assertTrue(hookNotifier.readReceiptCalls.isEmpty())
+    }
+
+    @Test
+    fun receiptReplayPreservesReadStatusAndOriginalReceiptDate() = runTest {
+        insertTestData()
+        val first = Instant.parse("2026-02-10T12:00:00Z")
+        val later = Instant.parse("2026-02-10T12:01:00Z")
+        handleNewReceipt(ReceiptType.READ, first, OTHER_USER_ID)
+        handleNewReceipt(ReceiptType.READ, later, OTHER_USER_ID)
+        handleNewReceipt(ReceiptType.DELIVERED, later, OTHER_USER_ID)
+        assertEquals(MessageEntity.Status.READ, userDatabase.builder.messageDAO.getMessageById(MESSAGE_ID, CONVERSATION_ENTITY_ID)?.status)
+        receiptRepository.observeMessageReceipts(CONVERSATION_ID, MESSAGE_ID, ReceiptType.READ).test {
+            assertEquals(first, awaitItem().single().date)
+        }
     }
 
     private suspend fun handleNewReceipt(

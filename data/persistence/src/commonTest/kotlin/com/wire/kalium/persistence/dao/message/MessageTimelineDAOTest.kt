@@ -61,6 +61,7 @@ class MessageTimelineDAOTest : BaseDatabaseTest() {
 
     @BeforeTest
     fun setUp() {
+        deleteDatabase(self.id)
         val original = createDatabase(self.id, encryptedDBSecret, true, dbInvalidationControlEnabled = true)
         driver = RecordingDriver(original.sqlDriver)
         db = UserDatabaseBuilder(self.id, driver, dispatcher, platformDBData(self.id), false, original.dbInvalidationController)
@@ -70,6 +71,7 @@ class MessageTimelineDAOTest : BaseDatabaseTest() {
     fun tearDown() {
         sessions.forEach { it.close() }
         driver.close()
+        deleteDatabase(self.id)
     }
 
     private suspend fun seed(messages: List<MessageEntity> = emptyList()) {

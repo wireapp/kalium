@@ -42,6 +42,20 @@ class ConnectionDaoTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun connectionDeletionAlsoRemovesConversationAndPendingDelivery() = runTest {
+        val conversation = com.wire.kalium.persistence.utils.stubs.newConversationEntity(connection1.qualifiedConversationId)
+        db.conversationDAO.insertConversation(conversation)
+        db.connectionDAO.insertConnection(connection1)
+        db.pendingDeliveryConfirmationDAO.enqueue(conversation.id, "pending-message")
+
+        db.connectionDAO.deleteConnectionDataAndConversation(conversation.id)
+
+        assertEquals(null, db.connectionDAO.getConnection(conversation.id))
+        assertEquals(null, db.conversationDAO.getConversationById(conversation.id))
+        assertEquals(emptyList(), db.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10))
+    }
+
+    @Test
     fun givenConnection_ThenConnectionCanBeInserted() = runTest {
         db.connectionDAO.insertConnection(connection1)
         val result = db.connectionDAO.getConnectionRequests().first()

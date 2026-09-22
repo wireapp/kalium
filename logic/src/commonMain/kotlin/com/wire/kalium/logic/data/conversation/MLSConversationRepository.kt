@@ -41,7 +41,6 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoCredentialRef
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.MLSDecryptResult
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.client.toDao
@@ -70,6 +69,9 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlin.io.encoding.Base64
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -81,58 +83,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
-import kotlin.io.encoding.Base64
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
-
-internal data class ApplicationMessage(
-    val message: ByteArray,
-    val senderID: UserId,
-    val senderClientID: ClientId
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as ApplicationMessage
-
-        if (!message.contentEquals(other.message)) return false
-        if (senderID != other.senderID) return false
-        if (senderClientID != other.senderClientID) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = message.contentHashCode()
-        result = 31 * result + senderID.hashCode()
-        result = 31 * result + senderClientID.hashCode()
-        return result
-    }
-}
-
-internal sealed interface DecryptedMessageBundle {
-    val groupID: GroupID
-    val identity: WireIdentity?
-
-    data class Text(
-        override val groupID: GroupID,
-        val applicationMessage: ApplicationMessage,
-        override val identity: WireIdentity?
-    ) : DecryptedMessageBundle
-
-    data class Commit(
-        override val groupID: GroupID,
-        val isActive: Boolean,
-        override val identity: WireIdentity?
-    ) : DecryptedMessageBundle
-
-    data class Proposal(
-        override val groupID: GroupID,
-        val commitDelay: Long?,
-        override val identity: WireIdentity?
-    ) : DecryptedMessageBundle
-}
 
 internal data class PreparedX509KeyPackages(
     val keyPackages: List<ByteArray>,
@@ -380,23 +330,7 @@ internal class MLSConversationDataSource(
         mlsContext: MlsCoreCryptoContext,
         message: ByteArray,
         groupID: GroupID
-    ): Either<CoreFailure, List<DecryptedMessageBundle>> {
-        logger.d("Decrypting message for group ${groupID.toLogString()}")
-        return wrapMLSRequest {
-            mlsContext.decryptMessage(
-                idMapper.toCryptoModel(groupID),
-                message
-            )
-        }.flatMap { result ->
-            when (result) {
-                MLSDecryptResult.BufferedFutureMessage -> Left(MLSFailure.BufferedFutureMessage)
-                MLSDecryptResult.BufferedCommit -> Left(MLSFailure.BufferedCommit)
-                is MLSDecryptResult.Success -> wrapMLSRequest {
-                    result.messages.map { it.toModel(groupID) }
-                }
-            }
-        }
-    }
+    ): Either<CoreFailure, List<DecryptedMessageBundle>> = decryptMLSMessage(mlsContext, message, groupID, idMapper)
 
     override suspend fun encryptMessage(
         mlsContext: MlsCoreCryptoContext,
@@ -489,15 +423,7 @@ internal class MLSConversationDataSource(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID
     ): Either<CoreFailure, Unit> {
-        logger.d("Committing pending proposals for group ${groupID.toLogString()}")
-        return wrapMLSRequest {
-            mlsContext.commitPendingProposals(idMapper.toCryptoModel(groupID))
-        }
-            .flatMap {
-                wrapStorageRequest {
-                    conversationDAO.clearProposalTimer(idMapper.toCryptoModel(groupID))
-                }
-            }
+        return commitPendingMLSProposals(mlsContext, groupID, conversationDAO)
     }
 
     override suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean) {

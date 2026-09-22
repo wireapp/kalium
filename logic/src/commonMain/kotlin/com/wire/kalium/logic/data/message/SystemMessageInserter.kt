@@ -19,13 +19,15 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.appsAccessChangedMessage
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.mlsEpochWarningMessage
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.LocalId
+import kotlin.uuid.Uuid
 import kotlin.time.Clock
 import kotlin.time.Instant
-import kotlin.uuid.Uuid
 
 internal interface SystemMessageInserter {
     suspend fun insertProtocolChangedSystemMessage(
@@ -114,17 +116,7 @@ internal class SystemMessageInserterImpl(
     }
 
     override suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit> {
-        val mlsEpochWarningMessage = Message.System(
-            id = Uuid.random().toString(),
-            content = MessageContent.MLSWrongEpochWarning,
-            conversationId = conversationId,
-            date = instant,
-            senderUserId = selfUserId,
-            status = Message.Status.Read(0),
-            visibility = Message.Visibility.VISIBLE,
-            senderUserName = null,
-            expirationData = null
-        )
+        val mlsEpochWarningMessage = mlsEpochWarningMessage(Uuid.random().toString(), conversationId, selfUserId, instant)
         return persistMessage(mlsEpochWarningMessage)
     }
 
@@ -149,17 +141,6 @@ internal class SystemMessageInserterImpl(
         senderUserId: UserId,
         isAppsAccessEnabled: Boolean
     ) {
-        persistMessage(
-            Message.System(
-                id = eventId,
-                content = MessageContent.ConversationAppsEnabledChanged(isAppsAccessEnabled),
-                conversationId = conversationId,
-                date = Clock.System.now(),
-                senderUserId = senderUserId,
-                status = Message.Status.Sent,
-                visibility = Message.Visibility.VISIBLE,
-                expirationData = null
-            )
-        )
+        persistMessage(appsAccessChangedMessage(eventId, conversationId, senderUserId, isAppsAccessEnabled))
     }
 }
