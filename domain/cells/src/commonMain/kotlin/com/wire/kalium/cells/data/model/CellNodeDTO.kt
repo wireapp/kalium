@@ -131,9 +131,9 @@ internal fun RestNode.editorUrl(urlKey: String): String? = this.editorURLs?.get(
  * by their content type, so that a consumer picks the rendition it needs rather than the mapping
  * deciding for it.
  */
-private fun List<RestFilePreview>?.toDto() = when {
+private fun List<RestFilePreview>?.toDto(): List<PreviewDto>? = when {
     isNullOrEmpty() -> null
-    all { it.error == true } -> null
+    all { it.error == true && it.processing != true } -> emptyList()
     else -> {
         filter { it.error != true }
             .mapNotNull { preview ->
@@ -141,6 +141,8 @@ private fun List<RestFilePreview>?.toDto() = when {
                     PreviewDto(url, preview.dimension ?: 0, preview.contentType)
                 }
             }
+            // Still processing, not failed: report as "not ready" (null), not "failed" (empty).
+            .ifEmpty { null }
     }
 }
 
