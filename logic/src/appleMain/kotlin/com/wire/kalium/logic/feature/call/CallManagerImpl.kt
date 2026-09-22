@@ -314,10 +314,10 @@ internal class CallManagerImpl internal constructor(
     }
 
     override suspend fun updateConversationClients(conversationId: ConversationId, clients: String) {
-        if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.Proteus) {
-            withCalling { handle ->
-                AppleAvs.bridge.setClientsForConversation(handle, federatedIdMapper.parseToFederatedId(conversationId), clients)
-            }
+        // AVS uses this list for client-targeted signaling before an MLS client joins the call.
+        // Epoch information is supplied separately after the conference subconversation is available.
+        withCalling { handle ->
+            AppleAvs.bridge.setClientsForConversation(handle, federatedIdMapper.parseToFederatedId(conversationId), clients)
         }
     }
 
