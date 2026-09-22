@@ -35,7 +35,7 @@ import kotlinx.coroutines.withContext
 interface MessageAttachmentsDao {
     suspend fun getAssetPath(assetId: String): String?
     suspend fun setLocalPath(assetId: String, path: String?)
-    suspend fun setPreviewUrl(assetId: String, previewUrl: String?)
+    suspend fun setPreviewUrl(assetId: String, previewUrl: String?, conversationId: String?)
     suspend fun setTransferStatus(assetId: String, status: String)
     suspend fun getAttachment(assetId: String): MessageAttachmentEntity
 
@@ -112,11 +112,12 @@ internal class MessageAttachmentsDaoImpl(
         }
     }
 
-    override suspend fun setPreviewUrl(assetId: String, previewUrl: String?) {
+    override suspend fun setPreviewUrl(assetId: String, previewUrl: String?, conversationId: String?) {
         withContext(writeDispatcher.value) {
             queries.setPreviewUrl(
                 previewUrl = previewUrl,
-                uuid = assetId
+                assetId = assetId,
+                conversationId = conversationId,
             )
         }
     }

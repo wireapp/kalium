@@ -42,9 +42,9 @@ internal class CellAttachmentsDataSource(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : CellAttachmentsRepository {
 
-    override suspend fun savePreviewUrl(assetId: String, url: String?) = withContext(dispatchers.io) {
+    override suspend fun savePreviewUrl(assetId: String, url: String?, conversationId: String?) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            messageAttachments.setPreviewUrl(assetId, url)
+            messageAttachments.setPreviewUrl(assetId, url, conversationId)
         }
     }
 

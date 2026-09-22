@@ -113,7 +113,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         assertFalse { arrangement.fileSystem.exists("localPath".toPath()) }
     }
@@ -129,7 +129,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.saveLocalPath(testAttachment.id, null)
@@ -146,7 +146,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileMissing()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.saveLocalPath(testAttachment.id, null)
@@ -163,7 +163,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileMissing()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.updateAttachment(
@@ -190,7 +190,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_DOWNLOADED)
@@ -209,7 +209,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
@@ -227,7 +227,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         assertFalse { arrangement.fileSystem.exists("localPath".toPath()) }
 
@@ -242,7 +242,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withNodeResponseError()
             .arrange()
 
-        val result = useCase.invoke(assetId)
+        val result = useCase.invoke(assetId, testNode.conversationId)
 
         assertTrue { result.isLeft() }
     }
@@ -255,7 +255,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         assertFalse { arrangement.fileSystem.exists("localPath".toPath()) }
 
@@ -272,7 +272,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         assertFalse { arrangement.fileSystem.exists("localPath".toPath()) }
 
@@ -291,7 +291,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend(VerifyMode.not) {
             arrangement.cellsRepository.getPreviews(any())
@@ -308,7 +308,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend(VerifyMode.not) {
             arrangement.cellsRepository.getPreviews(any())
@@ -325,14 +325,14 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend(VerifyMode.not) {
             arrangement.cellsRepository.getPreviews(any())
         }
 
         verifySuspend {
-            arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url)
+            arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url, testNode.conversationId)
         }
     }
 
@@ -344,14 +344,14 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         // The PDF rendition is what the document is displayed with, never what its thumbnail is.
         verifySuspend {
-            arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url)
+            arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url, testNode.conversationId)
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.attachmentsRepository.savePreviewUrl(assetId, "http://renditionUrl")
+            arrangement.attachmentsRepository.savePreviewUrl(assetId, "http://renditionUrl", testNode.conversationId)
         }
     }
 
@@ -364,7 +364,7 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend {
             arrangement.cellsRepository.getPreviews(any())
@@ -380,7 +380,23 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.cellsRepository.getPreviews(any())
+        }
+    }
+
+    @Test
+    fun given_NodePreviewsGenerationFailed_when_RefreshInvoked_then_PreviewRequestNotRetried() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withNodeResponseSuccess(testNode)
+            .withPreviewsGenerationFailed()
+            .withLocalAttachment()
+            .withLocalFileAvailable()
+            .arrange()
+
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.getPreviews(any())
@@ -396,10 +412,10 @@ class RefreshNodeAssetStateUseCaseTest {
             .withLocalFileAvailable()
             .arrange()
 
-        useCase.invoke(assetId)
+        useCase.invoke(assetId, testNode.conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url)
+            arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url, testNode.conversationId)
         }
     }
 
@@ -547,6 +563,10 @@ class RefreshNodeAssetStateUseCaseTest {
         }
 
         suspend fun withPreviewsNotReady() = apply {
+            everySuspend { cellsRepository.getPreviews(any()) }.returns(null.right())
+        }
+
+        suspend fun withPreviewsGenerationFailed() = apply {
             everySuspend { cellsRepository.getPreviews(any()) }.returns(emptyList<NodePreview>().right())
         }
 
@@ -568,7 +588,7 @@ class RefreshNodeAssetStateUseCaseTest {
 
             everySuspend { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
             everySuspend { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
-            everySuspend { attachmentsRepository.savePreviewUrl(any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.savePreviewUrl(any(), any(), any()) }.returns(Unit.right())
             everySuspend { attachmentsRepository.updateAttachment(any(), any(), any(), any(), any(), any()) }.returns(Unit.right())
 
             return this to RefreshCellAssetStateUseCaseImpl(
