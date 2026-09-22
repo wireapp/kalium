@@ -18,10 +18,20 @@
 package com.wire.kalium.logic.feature.app
 
 import com.wire.kalium.logic.data.app.AppRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 
 public class AppScope internal constructor(
-    private val appRepository: AppRepository
+    private val appRepository: AppRepository,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val apiVersion: Int
 ) {
+
+    public val syncApps: SyncAppsUseCase
+        get() = SyncAppsUseCaseImpl(
+            appRepository = appRepository,
+            selfTeamIdProvider = selfTeamIdProvider,
+            apiVersion = apiVersion
+        )
 
     public val getAppById: GetAppByIdUseCase
         get() = GetAppByIdUseCaseImpl(
