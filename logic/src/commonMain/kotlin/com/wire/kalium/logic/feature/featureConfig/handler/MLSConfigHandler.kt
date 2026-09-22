@@ -33,9 +33,13 @@ internal class MLSConfigHandler(
     internal suspend fun handle(
         mlsConfig: MLSModel,
         duringSlowSync: Boolean,
-        transactionContext: CryptoTransactionContext? = null
+        transactionContext: CryptoTransactionContext? = null,
+        duringClientRegistration: Boolean = false,
     ): Either<CoreFailure, Unit> = userConfigRepository.applyMLSConfiguration(mlsConfig) {
-        if (transactionContext != null) {
+        if (duringClientRegistration) {
+            // There is no registered crypto client yet. SlowSyncWorker updates supported protocols after registration.
+            Either.Right(Unit)
+        } else if (transactionContext != null) {
             updateSupportedProtocolsAndResolveOneOnOnes(transactionContext, !duringSlowSync)
         } else {
             transactionProvider.transaction("MLSConfigHandler") { ctx ->

@@ -386,6 +386,25 @@ class EventRepositoryIntegrationTest {
             assertLastSavedEventId(repository, "Y")
         }
 
+    @Test
+    fun nseStoredPageResumesWithoutFetchingOrEmittingCompletedEvents() = runTest {
+        for (completed in listOf(listOf("A"), listOf("A", "B", "C"))) {
+            val harness = newHarness()
+            // Use the NSE writer, including its atomic fetched-page cursor.
+            harness.storeNsePage(listOf("A", "B", "C"))
+            harness.markEventsAsProcessed(*completed.toTypedArray())
+            val api = FakeNotificationApi(
+                listOf(WebSocketEvent.Open(shouldProcessPendingEvents = true)),
+                mapOf("C" to listOf(emptyNotificationPage()))
+            )
+            val repository = harness.createRepository(api)
+            repository.collectLegacySync()
+            assertEquals(listOf<String?>("C"), api.requestedCursors)
+            assertLastSavedEventId(repository, "C")
+            assertEquals(listOf("A", "B", "C") - completed.toSet(), harness.unprocessedEventIds())
+        }
+    }
+
     private fun newHarness(): IntegrationHarness {
         val database = TestUserDatabase(TestUser.ENTITY_ID, dispatcher)
         databases += database
@@ -493,6 +512,13 @@ class EventRepositoryIntegrationTest {
                 },
                 logger = com.wire.kalium.common.logger.kaliumLogger
             )
+        }
+
+        suspend fun storeNsePage(ids: List<String>) {
+            database.builder.notificationEventStore.storePage(null, ids.map { id ->
+                val event = storedEvent(id)
+                NewEventEntity(event.id, event.payload, event.transient, false)
+            })
         }
 
         suspend fun seedInitialCatchUpWithBufferedLiveEvents() {

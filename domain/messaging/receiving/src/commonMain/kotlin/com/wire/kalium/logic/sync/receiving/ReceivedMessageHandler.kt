@@ -210,7 +210,7 @@ internal class ReceivedMessageHandler(
                 "Calling target requires synchronization"
             }
         }
-        calls += ReceivedCallEvent(
+        val event = ReceivedCallEvent(
             payload = content.value,
             conversationId = targetId,
             senderId = message.senderUserId.toDao(),
@@ -218,7 +218,10 @@ internal class ReceivedMessageHandler(
             time = message.instant,
             isGroup = conversation.type.isGroup,
             isMLS = isMLS,
+            messageId = message.content.messageUid,
         )
+        CallSignalJournal.append(data.metadata, event)
+        calls += event
     }
 
     private suspend fun trackingIdentifier(unpacked: MessageUnpackResult.ApplicationMessage, content: MessageContent.DataTransfer) {
@@ -424,7 +427,7 @@ internal class ReceivedMessageHandler(
     }
 
     /** Actions alone are silent. New content in the target is selected from its final canonical state. */
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod") // Preserve the ordered completion effects.
     suspend fun finish(): ReceivedMessageResult? {
         val pending = lastReads.snapshot()
         data.conversations.updateReadDatesAndGetHasUnreadEvents(pending.mapKeys { it.key.toDao() })
@@ -467,11 +470,38 @@ internal class ReceivedMessageHandler(
                 message.senderUserId != selfUserId.toDao() && message.date > conversation.lastReadDate &&
                 (lastNotificationDate == null || message.date > lastNotificationDate) &&
                 data.messages.needsToBeNotified(message.id, conversationId)
-            val mayPreview = message.expireAfterMs == null &&
-                conversation.mlsVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED &&
-                conversation.proteusVerificationStatus != ConversationEntity.VerificationStatus.DEGRADED
+            val degraded = when (conversation.protocolInfo) {
+                is ConversationEntity.ProtocolInfo.MLS ->
+                    conversation.mlsVerificationStatus == ConversationEntity.VerificationStatus.DEGRADED
+                ConversationEntity.ProtocolInfo.Proteus ->
+                    conversation.proteusVerificationStatus == ConversationEntity.VerificationStatus.DEGRADED
+                is ConversationEntity.ProtocolInfo.Mixed ->
+                    conversation.mlsVerificationStatus == ConversationEntity.VerificationStatus.DEGRADED ||
+                        conversation.proteusVerificationStatus == ConversationEntity.VerificationStatus.DEGRADED
+            }
+            val mayPreview = message.expireAfterMs == null && !degraded
             val text = (message.content as? MessageEntityContent.Text)?.messageBody
-            ReceivedMessageResult(message.id, conversationId.value, conversationId.domain, text, notify, mayPreview)
+            val reason = if (notify) null else when {
+                message.content is MessageEntityContent.Multipart -> "MULTIPART"
+                !mapper.fromEntity(message).shouldNotifyUser() -> "CONTENT_POLICY"
+                conversation.archived -> "ARCHIVED"
+                message.senderUserId == selfUserId.toDao() -> "SELF_MESSAGE"
+                message.date <= conversation.lastReadDate -> "ALREADY_READ"
+                lastNotificationDate != null && message.date <= lastNotificationDate -> "ALREADY_NOTIFIED"
+                else -> "NOTIFICATION_POLICY"
+            }
+            ReceivedMessageResult(
+                message.id,
+                conversationId.value,
+                conversationId.domain,
+                text,
+                notify,
+                mayPreview,
+                suppressionReason = reason,
+                previewPolicyReason = if (mayPreview) null else
+                    "expiry=${message.expireAfterMs != null};mls=${conversation.mlsVerificationStatus.name};" +
+                        "proteus=${conversation.proteusVerificationStatus.name}"
+            )
         }
         return presentations.lastOrNull { it.shouldNotify } ?: presentations.lastOrNull()
     }
@@ -515,6 +545,8 @@ data class ReceivedMessageResult(
     val type: ReceivedNotificationType = ReceivedNotificationType.MESSAGE,
     val conversationName: String? = null,
     val senderName: String? = null,
+    val suppressionReason: String? = null,
+    val previewPolicyReason: String? = null,
 )
 
 enum class ReceivedNotificationType { MESSAGE, CONVERSATION_DELETED, CONNECTION_REQUEST }

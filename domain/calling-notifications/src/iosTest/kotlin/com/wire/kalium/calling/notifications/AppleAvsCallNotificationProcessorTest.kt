@@ -127,19 +127,123 @@ class AppleAvsCallNotificationProcessorTest {
         assertEquals(listOf("after"), nestedCallbacks.incoming)
     }
 
+    // AVS 10.5.10 accepts these signals but only emits the self-response/reject
+    // callback when senderClientId == the receiving client, not another device.
+    // Use distinct account identities to force fresh native handles. Opening another
+    // wrapper for the same identity would reuse process-global native state.
+    @Test
+    fun otherDeviceAnswerInFreshHandleOrLaterBatchDoesNotProduceClosed() {
+        for (type in listOf("SETUP", "GROUPSTART", "CONFSTART")) {
+            for (warm in listOf(false, true)) {
+                val account = "answer-$type-$warm"
+                val callbacks = Callbacks()
+                if (warm) {
+                    processor(account, Callbacks()).also {
+                        assertSuccess(it.process(listOf(event("call", payload = signal(type, response = false)))))
+                        it.close()
+                    }
+                }
+                processor(account, callbacks).also {
+                    assertSuccess(it.process(listOf(event("call", payload = signal(type, response = true),
+                        sender = "$account@example.com"))))
+                    it.close()
+                }
+                assertEquals(emptyList(), callbacks.incoming, "$type warm=$warm")
+                assertEquals(emptyList(), callbacks.closed, "$type warm=$warm")
+                assertEquals(emptyList(), callbacks.missed, "$type warm=$warm")
+            }
+        }
+    }
+
+    @Test
+    fun otherDeviceRejectInFreshHandleOrLaterBatchDoesNotProduceClosed() {
+        for (warm in listOf(false, true)) {
+            val account = "reject-$warm"
+            if (warm) processor(account, Callbacks()).also {
+                assertSuccess(it.process(listOf(event("call"))))
+                it.close()
+            }
+            val callbacks = Callbacks()
+            processor(account, callbacks).also {
+                assertSuccess(it.process(listOf(event("call", payload = signal("REJECT", session = ""),
+                    sender = "$account@example.com"))))
+                it.close()
+            }
+            assertEquals(emptyList(), callbacks.closed)
+            assertEquals(emptyList(), callbacks.incoming)
+            assertEquals(emptyList(), callbacks.missed)
+        }
+    }
+
+    @Test
+    fun cancelInFreshHandleOrLaterBatchDoesNotProduceClosed() {
+        for (warm in listOf(false, true)) {
+            val account = "cancel-$warm"
+            if (warm) processor(account, Callbacks()).also {
+                assertSuccess(it.process(listOf(event("call", payload = signal("SETUP")))))
+                it.close()
+            }
+            val callbacks = Callbacks()
+            processor(account, callbacks).also {
+                assertSuccess(it.process(listOf(event("call", payload = signal("CANCEL")))))
+                it.close()
+            }
+            assertEquals(emptyList(), callbacks.closed)
+            assertEquals(emptyList(), callbacks.incoming)
+            assertEquals(emptyList(), callbacks.missed)
+        }
+    }
+
+    @Test
+    fun conferenceEndInFreshHandleAndLaterBatchPreservesReason() {
+        for (warm in listOf(false, true)) {
+            val account = "confend-$warm"
+            if (warm) processor(account, Callbacks()).also {
+                assertSuccess(it.process(listOf(event("call", payload = signal("CONFSTART")))))
+                it.close()
+            }
+            val callbacks = Callbacks()
+            processor(account, callbacks).also {
+                assertSuccess(it.process(listOf(event("call", payload = signal("CONFEND")))))
+                it.close()
+            }
+            assertEquals(listOf("call"), callbacks.closed)
+            assertEquals(listOf(AvsCallNotificationClosedReason.Normal), callbacks.reasons)
+        }
+    }
+
+    @Test
+    fun responseFromReceivingClientProducesAnsweredElsewhereButOtherClientDoesNot() {
+        val account = "receiving-client-response"
+        val callbacks = Callbacks()
+        processor(account, callbacks, client = "def456").also {
+            assertSuccess(it.process(listOf(event("call", payload = signal("SETUP", response = true),
+                sender = "$account@example.com"))))
+            it.close()
+        }
+        assertEquals(listOf("call"), callbacks.closed)
+        assertEquals(listOf(AvsCallNotificationClosedReason.AnsweredElsewhere), callbacks.reasons)
+    }
+
+    private fun signal(type: String, response: Boolean = false, session: String = "call"): String =
+        // Minimal valid decoder fixtures, not SDP used to establish media.
+        """{"version":"3.0","type":"$type","sessid":"$session","resp":$response,"sdp":"v=0",
+"props":{"videosend":"false"},"sft_url":"https://sft.invalid","secret":"YWJjZA==","timestamp":"1","seqno":"1"}"""
+
     private fun processor(account: String, callbacks: Callbacks, client: String = "abc123"): AvsCallNotificationProcessor =
         AvsCallNotificationProcessorFactory.create("$account@example.com", client, callbacks)
 
     private fun event(
         conversation: String,
         type: String = "GROUPSTART",
-        payload: String = """{"version":"3.0","type":"$type","sessid":"$conversation","resp":false}"""
+        payload: String = """{"version":"3.0","type":"$type","sessid":"$conversation","resp":false}""",
+        sender: String = "peer@example.com"
     ): AvsCallNotification = AvsCallNotification(
         payload = payload.encodeToByteArray(),
         currentTimeSeconds = 100u,
         messageTimeSeconds = 99u,
         conversationId = conversation,
-        senderUserId = "peer@example.com",
+        senderUserId = sender,
         senderClientId = "def456",
         conversationType = AvsCallNotificationConversationType.ConferenceMls
     )
@@ -152,6 +256,7 @@ class AppleAvsCallNotificationProcessorTest {
         val incoming = mutableListOf<String>()
         val missed = mutableListOf<String>()
         val closed = mutableListOf<String>()
+        val reasons = mutableListOf<AvsCallNotificationClosedReason>()
         var onIncoming: (() -> Unit)? = null
 
         override fun onIncomingCall(incomingCall: AvsIncomingCallNotification) {
@@ -165,6 +270,7 @@ class AppleAvsCallNotificationProcessorTest {
 
         override fun onClosedCall(closedCall: AvsClosedCallNotification) {
             closed += closedCall.conversationId
+            reasons += closedCall.reason
         }
     }
 }

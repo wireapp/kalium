@@ -124,18 +124,26 @@ ordinary notification. Caller names obey the host privacy setting and conversati
 verification state. Only self-authored signals may redirect to a different calling
 conversation, preserving the shared app's authorization rule.
 
-Include [KaliumNSECallKitReporter.swift](host/KaliumNSECallKitReporter.swift) in the
-host NSE target and supply the host's account UUID:
+The wire-android host uses `IncomingCallReporter` and its versioned
+`CallNotification` contract, not the sample adapter below. Incoming results carry
+`handoffId`, the UUID of a durable account-scoped signaling record. The host
+reports this UUID to CallKit and resumes the existing account's full AVS engine.
+CallKit termination comes from that engine's callbacks, preserving its close reason.
+The NSE never starts media or the full engine.
 
-```swift
-let result = try await KaliumNSECallKitReporter().process(
-    receiver: receiver,
-    request: request,
-    accountID: accountID
-)
-// Reporting has finished. Apply the ordinary notification decision and invoke
-// the host's single completion handler, using its existing failure fallback.
-```
+Raw signals are persisted in encrypted account metadata inside the receiving SQL
+transaction. A separate readiness update after successful native crypto commit
+precedes the processed marker. Unready records cannot be submitted to AVS. Marker
+replay reuses the same signaling identity. The host submits ready records in stored
+order and acknowledges native enqueue for its handle generation. A new handle
+replays retained signals; presentation tombstones prevent reopening an ended UUID.
+This is retryable delivery, not exactly-once native processing: `wcall_recv_msg`
+acknowledges enqueue and exposes no completion barrier. Recovery needs another
+push or host launch if the process dies before the platform reporting effect.
+
+The sample [KaliumNSECallKitReporter.swift](host/KaliumNSECallKitReporter.swift)
+remains available for legacy hosts. Its payload differs from wire-android's host
+contract and must not be connected to the new parser.
 
 The host must also link and embed AVS. The NSE module now applies the existing
 [Apple AVS runtime plugin](../plugins/apple-avs-runtime/README.md): generate its
@@ -145,10 +153,35 @@ target's configuration, and run `:nse:embedAvsForXcode` from that target's Xcode
 build phase to embed/sign the matching runtime. Copying only `KaliumNSE.framework`
 does not include its dynamic AVS dependency.
 
-The helper uses the iOS branch's CallKit payload fields (`accountID`,
-`conversationID`, `shouldRing`, `hasVideo`, `callerName`). It awaits reports in
-callback order and propagates errors/cancellation to the host. Missed and closed
-callbacks stop a ring only if that qualified conversation rang during this request.
+The helper retains the legacy required payload fields (`accountID`,
+`conversationID`, `shouldRing`, `hasVideo`, `callerName`) on every event, including
+termination. Payload version 1 adds `callPayloadVersion`, `accountDomain`,
+`conversationDomain`, `eventType` (`incoming`, `missed`, `closed`),
+`messageTimeSeconds`, `callerID`, `callerDomain`, and optional `callerClientID` and
+`closeReason` (the AVS integer reason, including 5 for answered elsewhere and 10
+for rejection). `process` takes the account domain from the request; direct
+`report` callers must supply it. Unknown call types and invalid conversation UUIDs
+fail reporting rather than silently acknowledging unsupported work.
+
+The adapter awaits reports in order and propagates errors/cancellation. It forwards
+terminations even without an incoming event in the current invocation, and forwards
+duplicates. It does **not** own the host call register, deduplicate events, or infer
+a call-instance UUID from a conversation. Hosts must correlate these decisions to
+an existing call instance before applying them. This payload is evidence, not a
+complete instance-correlation contract: AVS callbacks do not supply a signal ID or
+call-instance ID. Do not wire this adapter directly to a conversation-only host
+termination path when successive calls can overlap delayed events.
+
+Native AVS 10.5.10 tests demonstrate that valid SETUP/GROUPSTART/CONFSTART responses
+and REJECT from another local device can succeed without a CLOSED callback, both
+on fresh native handles and after an earlier incoming batch. CANCEL can also
+succeed silently. CONFEND does produce CLOSED in a separate batch. Therefore,
+forwarding CLOSED alone does not implement answered-elsewhere, rejection, or
+cancellation. The full `wcall_create` / `wcall_recv_msg` engine is different: retained-handle tests
+cover answer, reject and cancel for one-to-one, legacy group, conference and MLS
+conference calls. One-to-one closes with reasons 5, 10 and 4 respectively; group
+answer/reject closes local ringing with reason 7 (still ongoing).
+
 The host retains ownership of its completion handler and extension-expiry policy;
 the Kotlin budget bounds receiving, so leave time for CallKit reporting as well.
 

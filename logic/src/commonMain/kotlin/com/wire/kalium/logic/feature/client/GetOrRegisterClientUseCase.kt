@@ -64,7 +64,8 @@ internal class GetOrRegisterClientUseCaseImpl(
 
     override suspend fun invoke(registerClientParam: RegisterClientParam): RegisterClientResult {
         userSessionScopeProvider.invalidateReceiving(userId, originatingScope)
-        syncFeatureConfigsUseCase()
+        val configuration = syncFeatureConfigsUseCase.beforeClientRegistration()
+        if (configuration is Either.Left) return RegisterClientResult.Failure.Generic(configuration.value)
 
         val result: RegisterClientResult = clientRepository.retainedClientId()
             .nullableFold(
@@ -79,8 +80,10 @@ internal class GetOrRegisterClientUseCaseImpl(
                             clearOldClientRelatedData()
                             // Clearing client metadata also clears the feature configuration used to decide whether
                             // the replacement client must be registered with MLS support.
-                            syncFeatureConfigsUseCase()
-                            null
+                            when (val refreshedConfiguration = syncFeatureConfigsUseCase.beforeClientRegistration()) {
+                                is Either.Left -> RegisterClientResult.Failure.Generic(refreshedConfiguration.value)
+                                is Either.Right -> null
+                            }
                         }
 
                         is VerifyExistingClientResult.Failure.E2EICertificateRequired -> RegisterClientResult.E2EICertificateRequired(

@@ -72,9 +72,9 @@ import okio.Path.Companion.toPath
 /** Test-only executable: the actual app scope sees Swift's message and uses its advanced crypto state. */
 fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
     withContext(Dispatchers.Default) {
-        val accounts = KtxSerializer.json.parseToJsonElement(FileSystem.SYSTEM.read(args.first().toPath()) {
-            readUtf8()
-        }).jsonArray
+        val stress = args.getOrNull(1) == "stress"
+        val parsed = KtxSerializer.json.parseToJsonElement(FileSystem.SYSTEM.read(args.first().toPath()) { readUtf8() })
+        val accounts = if (stress) kotlinx.serialization.json.JsonArray(listOf(parsed)) else parsed.jsonArray
         val afterProposal = args.getOrNull(1) == "after-proposal"
         val selected = accounts.map { it.jsonObject }.filter { !afterProposal || it["pendingProposal"]?.jsonPrimitive?.boolean == true }
         for (account in selected) {
@@ -82,7 +82,7 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
             val user = UserId(account.getValue("userValue").jsonPrimitive.content, account.getValue("userDomain").jsonPrimitive.content)
             val keychain = ApplePersistenceConfig(account.getValue("service").jsonPrimitive.content)
             // Fixture app metadata is created here, under ownership, before app construction.
-            // The production NSE has already finished; it never opens this global database.
+            // This belongs to app fixture bootstrap; the NSE never opens this global database.
             if (!afterProposal) {
                 val lease = assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(root).tryAcquire(user)).value
                 try {
@@ -120,7 +120,35 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                 useInMemoryStorage = false,
             )
             try {
-                val session = logic.openSessionScope(user)
+                var session = logic.openSessionScope(user)
+                if (stress) {
+                    val gate = args[2]
+                    val resumed = args.getOrNull(3) == "app-resume"
+                    if (resumed) logic.releaseSessionScope(user)
+                    FileSystem.SYSTEM.write("$gate.ready".toPath()) { writeUtf8("ready") }
+                    withTimeout(60.seconds) {
+                        while (!FileSystem.SYSTEM.exists("$gate.release".toPath())) delay(10)
+                    }
+                    if (resumed) session = logic.openSessionScope(user)
+                    // In NSE-first mode, prove public app reads work before any replay/sync.
+                    if (args.getOrNull(3) == "nse-first" || resumed) {
+                        for (id in account.getValue("messageIds").jsonArray.map { it.jsonPrimitive.content }) {
+                            val stored = assertIs<GetMessageByIdUseCase.Result.Success>(
+                                session.messages.getMessageById(ConversationId("conversation", "example.com"), id)).message
+                            assertEquals(id, assertIs<MessageContent.Text>(assertIs<Message.Regular>(stored).content).value)
+                        }
+                        println("MLS_STRESS_APP_VISIBLE_BEFORE_SYNC")
+                    }
+                    assertIs<com.wire.kalium.logic.feature.debug.SynchronizeExternalDataResult.Success>(
+                        session.debug.synchronizeExternalData(account.getValue("response").toString()))
+                    for (id in account.getValue("messageIds").jsonArray.map { it.jsonPrimitive.content }) {
+                        val message = assertIs<GetMessageByIdUseCase.Result.Success>(
+                            session.messages.getMessageById(ConversationId("conversation", "example.com"), id)).message
+                        assertEquals(id, assertIs<MessageContent.Text>(assertIs<Message.Regular>(message).content).value)
+                    }
+                    println("MLS_STRESS_APP_RECEIVED")
+                    return@withContext
+                }
                 for (messageId in account.getValue("messageIds").jsonArray.map { it.jsonPrimitive.content }) {
                     val result = assertIs<GetMessageByIdUseCase.Result.Success>(
                         session.messages.getMessageById(ConversationId("conversation", "example.com"), messageId)

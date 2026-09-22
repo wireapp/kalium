@@ -50,6 +50,40 @@ import kotlin.test.assertIs
 class GetOrRegisterClientUseCaseTest {
 
     @Test
+    fun failedRegistrationConfigurationCannotRegisterAClientOrPublishReadiness() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult(Either.Left(failure))
+            .arrange()
+
+        assertEquals(RegisterClientResult.Failure.Generic(failure), useCase(RegisterClientParam("", listOf())))
+        verifySuspend(VerifyMode.not) { arrangement.registerClientUseCase.invoke(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userSessionScopeProvider.prepareReceiving(any(), any()) }
+    }
+
+    @Test
+    fun failedConfigurationReloadCannotRegisterAReplacementClient() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (arrangement, useCase) = Arrangement()
+            .withRetainedClientIdResult(Either.Right(ClientId("obsolete")))
+            .withVerifyExistingClientResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withClearHasConsumableNotifications(Either.Right(Unit))
+            .withSetUpdateFirebaseTokenFlagResult(Either.Right(Unit))
+            .arrange()
+        var synchronizations = 0
+        everySuspend { arrangement.syncFeatureConfigsUseCase.beforeClientRegistration() } calls {
+            synchronizations++
+            if (synchronizations == 1) Either.Right(Unit) else Either.Left(failure)
+        }
+
+        assertEquals(RegisterClientResult.Failure.Generic(failure), useCase(RegisterClientParam("", listOf())))
+        assertEquals(2, synchronizations)
+        verifySuspend(VerifyMode.not) { arrangement.registerClientUseCase.invoke(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userSessionScopeProvider.prepareReceiving(any(), any()) }
+    }
+
+    @Test
     fun failedClientPersistenceCannotReportRegistrationSuccessOrPublishReadiness() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withSyncFeatureConfigResult()
@@ -186,7 +220,7 @@ class GetOrRegisterClientUseCaseTest {
             .withSetUpdateFirebaseTokenFlagResult(Either.Right(Unit))
             .arrange()
         val calls = mutableListOf<String>()
-        everySuspend { arrangement.syncFeatureConfigsUseCase.invoke() } calls {
+        everySuspend { arrangement.syncFeatureConfigsUseCase.beforeClientRegistration() } calls {
             calls += "syncFeatureConfigs"
             Either.Right(Unit)
         }
@@ -302,8 +336,8 @@ class GetOrRegisterClientUseCaseTest {
 
         suspend fun withSyncFeatureConfigResult(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             everySuspend {
-                syncFeatureConfigsUseCase.invoke()
-            } returns Either.Right(Unit)
+                syncFeatureConfigsUseCase.beforeClientRegistration()
+            } returns result
         }
 
         suspend fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {

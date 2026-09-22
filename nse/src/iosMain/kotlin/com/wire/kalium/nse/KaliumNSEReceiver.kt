@@ -67,6 +67,10 @@ public data class KaliumNSEResult(
     public val senderName: String? = null,
     /** AVS callbacks for the received prefix, in callback order. Report before completing the NSE request. */
     public val calls: List<KaliumNSECall> = emptyList(),
+    /** Diagnostic code only; never contains account data or message content. */
+    public val failureReason: String? = null,
+    public val presentationReason: String? = null,
+    public val callSignalsPending: Boolean = false,
 )
 
 public enum class KaliumNSEStatus { SUCCESS, FAILED }
@@ -88,13 +92,14 @@ public data class KaliumNSECall(
     public val closeReason: Int?,
     /** Null when the host privacy preference or verification state suppresses names. */
     public val callerName: String?,
+    public val handoffId: String? = null,
 )
 
 /** Bounded prepared-account receiving. Unsupported earlier work stops the attempt and preserves its processed marker. */
 public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration) {
     @Throws(CancellationException::class)
     public suspend fun process(request: KaliumNSERequest): KaliumNSEResult {
-        if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) return failure()
+        if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) return failure("INVALID_REQUEST")
         return withTimeoutOrNull(request.budgetMilliseconds) {
             val result = AppleAccountRuntime.use(
                 configuration.rootPath,
@@ -118,12 +123,13 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 ).process(request.notificationId)
             }
             when (result) {
-                is Either.Left -> failure()
+                is Either.Left -> failure(result.value.name)
                 is Either.Right -> success(result.value, request.showMessageContent)
             }
-        } ?: failure()
+        } ?: failure("TIMEOUT")
     }
 
+    @Suppress("CyclomaticComplexMethod") // Maps optional receiving fields to the public result.
     private fun success(result: com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult, showContent: Boolean): KaliumNSEResult {
         val message = result.message
         val canPreview = showContent && message?.shouldNotify == true && message.mayPreview
@@ -135,6 +141,14 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         return KaliumNSEResult(
             KaliumNSEStatus.SUCCESS, message?.shouldNotify == true, message?.messageId,
             message?.conversationValue, message?.conversationDomain, message?.text?.takeIf { canPreview },
+            callSignalsPending = result.callSignalsPending,
+            presentationReason = result.presentationReason ?: when {
+                message == null -> "NO_MESSAGE_CANDIDATE"
+                !message.shouldNotify -> message.suppressionReason ?: "NOT_ELIGIBLE"
+                !message.mayPreview -> message.previewPolicyReason ?: "PREVIEW_POLICY"
+                message.text.isNullOrEmpty() -> "NO_TEXT"
+                else -> "TEXT"
+            },
             contentType = contentType,
             conversationName = message?.conversationName?.takeIf { canPreview },
             senderName = message?.senderName?.takeIf { canPreview },
@@ -155,6 +169,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     isVideoCall = call.isVideoCall,
                     closeReason = call.closeReason,
                     callerName = call.callerName?.takeIf { showContent },
+                    handoffId = call.handoffId,
                 )
             },
         )
@@ -166,7 +181,15 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY -> AppleKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY
     }
 
-    private fun failure() = KaliumNSEResult(KaliumNSEStatus.FAILED, false, null, null, null, null)
+    private fun failure(reason: String) = KaliumNSEResult(
+        KaliumNSEStatus.FAILED,
+        false,
+        null,
+        null,
+        null,
+        null,
+        failureReason = reason
+    )
 
     private companion object {
         const val MAX_BUDGET_MS = 25_000L

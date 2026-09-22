@@ -8,6 +8,8 @@ import kotlin.time.Instant
 data class ReceivedNotificationResult(
     val message: ReceivedMessageResult?,
     val calls: List<ReceivedCallResult> = emptyList(),
+    val presentationReason: String? = null,
+    val callSignalsPending: Boolean = false,
 )
 
 enum class ReceivedCallType { INCOMING, MISSED, CLOSED }
@@ -24,6 +26,7 @@ data class ReceivedCallResult(
     val isVideoCall: Boolean,
     val closeReason: Int? = null,
     val callerName: String? = null,
+    val handoffId: String? = null,
 )
 
 data class ReceivedCallEvent(
@@ -34,6 +37,7 @@ data class ReceivedCallEvent(
     val time: Instant,
     val isGroup: Boolean,
     val isMLS: Boolean,
+    val messageId: String = "",
 )
 
 internal data class NotificationEffectsResult(

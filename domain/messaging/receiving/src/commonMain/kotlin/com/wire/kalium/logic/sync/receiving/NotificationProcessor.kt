@@ -95,9 +95,8 @@ class NotificationProcessor(
     suspend fun process(targetId: String): ReceivedNotificationResult {
         require(targetId.isNotBlank())
         previewImages.cleanupAbandoned(database.assetDAO)
-        if (database.eventDAO.getEventById(targetId)?.isProcessed == true) return ReceivedNotificationResult(null)
+        if (database.eventDAO.getEventById(targetId)?.isProcessed == true) return withPendingCalls(null, "ALREADY_PROCESSED")
         database.eventDAO.setAllUnprocessedEventsAsPending()
-        val calls = mutableListOf<ReceivedCallEvent>()
         val targetMessage: ReceivedMessageResult?
         var canFetch = true
         while (true) {
@@ -106,8 +105,8 @@ class NotificationProcessor(
             if (next != null) {
                 val effects = processNotification(next)
                 currentCoroutineContext().ensureActive()
+                CallSignalJournal(database).committed(effects.calls)
                 database.eventDAO.markEventAsProcessed(next.eventId)
-                calls += effects.calls
                 if (next.eventId == targetId) {
                     targetMessage = effects.message
                     break
@@ -127,8 +126,26 @@ class NotificationProcessor(
                 canFetch = page.hasMore
             }
         }
-        val callResults = if (calls.isEmpty()) emptyList() else checkNotNull(evaluateCalls)(calls)
-        return ReceivedNotificationResult(targetMessage, callResults)
+        return withPendingCalls(targetMessage)
+    }
+
+    private suspend fun withPendingCalls(message: ReceivedMessageResult?, reason: String? = null): ReceivedNotificationResult {
+        if (evaluateCalls == null) return ReceivedNotificationResult(message, presentationReason = reason)
+        val pending = CallSignalJournal(database).signals().filter { it.submittedGeneration == null }
+        val events = pending.map {
+            ReceivedCallEvent(
+                it.payload,
+                com.wire.kalium.persistence.dao.QualifiedIDEntity(it.conversationValue, it.conversationDomain),
+                com.wire.kalium.persistence.dao.QualifiedIDEntity(it.senderValue, it.senderDomain),
+                it.senderClientId,
+                kotlin.time.Instant.fromEpochMilliseconds(it.timeMillis),
+                it.isGroup,
+                it.isMLS,
+                it.messageId
+            )
+        }
+        val results = if (events.isEmpty()) emptyList() else evaluateCalls.invoke(events)
+        return ReceivedNotificationResult(message, results, reason, pending.isNotEmpty())
     }
 
     private suspend fun processNotification(event: EventEntity): NotificationEffectsResult {

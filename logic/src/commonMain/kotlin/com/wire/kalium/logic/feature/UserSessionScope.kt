@@ -567,6 +567,8 @@ import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingMemberAddEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandlerImpl
+import com.wire.kalium.logic.sync.receiving.CallPresentationRecord
+import com.wire.kalium.logic.sync.receiving.CallSignalJournal
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -1784,7 +1786,7 @@ public class UserSessionScope internal constructor(
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata
-        )
+        ).also { it.attachSignalJournal(CallSignalJournal(userStorage.database)) }
     }
 
     private val endCallOnMLSReset: EndCallOnMLSResetUseCase by lazy {
@@ -2850,6 +2852,16 @@ public class UserSessionScope internal constructor(
         get() = AppScope(
             appRepository = appRepository
         )
+
+    /** Resume NSE-committed signaling using this session's existing full calling engine. */
+    public suspend fun resumePendingCallSignals(): Unit = callManager.value.replayPendingSignals()
+
+    public fun observeCallPresentations(): Flow<List<CallPresentationRecord>> = CallSignalJournal(
+        userStorage.database
+    ).observePresentations()
+
+    public suspend fun callPresentations(): List<CallPresentationRecord> =
+        CallSignalJournal(userStorage.database).presentations()
 
     public val calls: CallsScope
         get() = CallsScope(

@@ -176,7 +176,84 @@ internal class CallManagerImpl internal constructor(
 
     private suspend fun <T> withCalling(action: suspend (handle: UInt) -> T): T = action(deferredHandle.await())
 
-    override suspend fun onCallingMessageReceived(message: Message.Signaling, content: MessageContent.Calling) = withCalling { handle ->
+    private var signalJournal: com.wire.kalium.logic.sync.receiving.CallSignalStore? = null
+    private val signalGeneration = Uuid.random().toString()
+    private val signalMutex = Mutex()
+    private val signalWatermarks = mutableMapOf<String, Long>()
+    private val callEffects = kotlinx.coroutines.channels.Channel<suspend () -> Unit>(kotlinx.coroutines.channels.Channel.UNLIMITED)
+    init {
+        scope.launch {
+            for (effect in callEffects) {
+                try {
+                    effect()
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    platform.Foundation.NSLog("CALL_FLOW stage=callback_effect result=failed")
+                }
+            }
+        }
+    }
+
+    override fun attachSignalJournal(journal: com.wire.kalium.logic.sync.receiving.CallSignalStore) {
+        check(signalJournal == null)
+        signalJournal = journal
+    }
+
+    override suspend fun onCallingMessageReceived(message: Message.Signaling, content: MessageContent.Calling) {
+        val target = if (message.isSelfMessage) content.conversationId ?: message.conversationId else message.conversationId
+        val (type, _) = getCallConversationType(target)
+        val journal = signalJournal
+        if (journal == null) {
+            receiveSignal(message, content)
+            return
+        }
+        journal.append(
+            com.wire.kalium.logic.sync.receiving.ReceivedCallEvent(
+            payload = content.value,
+            conversationId = com.wire.kalium.persistence.dao.QualifiedIDEntity(target.value, target.domain),
+            senderId = com.wire.kalium.persistence.dao.QualifiedIDEntity(message.senderUserId.value, message.senderUserId.domain),
+            senderClientId = message.senderClientId.value,
+            time = message.date,
+            isGroup = type != ConversationTypeCalling.OneOnOne,
+            isMLS = type == ConversationTypeCalling.ConferenceMls,
+            messageId = message.id,
+        )
+        )
+        replayPendingSignals()
+    }
+
+    @Suppress("LoopWithTooManyJumpStatements") // Skip already submitted and stale records independently.
+    override suspend fun replayPendingSignals() = signalMutex.withLock {
+        val journal = signalJournal ?: return@withLock
+        for (signal in journal.signals()) {
+            if (signal.submittedGeneration == signalGeneration) continue
+            val key = "${signal.conversationValue}@${signal.conversationDomain}"
+            val watermark = signalWatermarks[key]
+            if (watermark != null && signal.timeMillis < watermark) {
+                platform.Foundation.NSLog("CALL_FLOW engine=$signalGeneration signal=${signal.id} stage=native_enqueue result=stale")
+                journal.submitted(signal.id, signalGeneration)
+                continue
+            }
+            val target = ConversationId(signal.conversationValue, signal.conversationDomain)
+            val sender = UserId(signal.senderValue, signal.senderDomain)
+            val content = MessageContent.Calling(signal.payload, target)
+            receiveSignal(
+                Message.Signaling(
+                id = signal.messageId, content = content, conversationId = target,
+                date = kotlin.time.Instant.fromEpochMilliseconds(signal.timeMillis), senderUserId = sender,
+                senderClientId = ClientId(signal.senderClientId), status = Message.Status.Sent,
+                isSelfMessage = sender == selfUserId, expirationData = null,
+            ),
+                content
+            )
+            signalWatermarks[key] = signal.timeMillis
+            journal.submitted(signal.id, signalGeneration)
+            platform.Foundation.NSLog("CALL_FLOW engine=$signalGeneration signal=${signal.id} stage=native_enqueue result=accepted")
+        }
+    }
+
+    private suspend fun receiveSignal(message: Message.Signaling, content: MessageContent.Calling) = withCalling { handle ->
         ensureServerTimeOffsetComputed()
         callingLogger.i("$tagWithUserId: onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
         val targetConversationId = if (message.isSelfMessage) {
@@ -197,7 +274,7 @@ internal class CallManagerImpl internal constructor(
             conversationType = callMapper.toConversationTypeCalling(type).avsValue,
             meeting = isMeeting
         )
-        callingLogger.i("$tagWithUserId: wcall_recv_msg() forwarded=$received")
+        check(received) { "AVS did not accept calling signal" }
     }
 
     override suspend fun startCall(
@@ -467,7 +544,9 @@ internal class CallManagerImpl internal constructor(
             val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
             val isMuted = setOf(ConversationTypeForCall.Conference, ConversationTypeForCall.ConferenceMls).contains(mappedConversationType)
             val status = if (shouldRing) CallStatus.INCOMING else CallStatus.STILL_ONGOING
-            scope.launch {
+            callEffects.trySend {
+                val target = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+                val caller = qualifiedIdMapper.fromStringToQualifiedID(userId)
                 callRepository.createCall(
                     conversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationId),
                     status = status,
@@ -476,6 +555,19 @@ internal class CallManagerImpl internal constructor(
                     isCameraOn = video,
                     type = mappedConversationType,
                     isCbrEnabled = kaliumConfigs.forceConstantBitrateCalls
+                )
+                val presentation = signalJournal?.incoming(
+                    target.value,
+                    target.domain,
+                    caller.value,
+                    caller.domain,
+                    messageTime.toLong(),
+                    shouldRing,
+                    video,
+                    signalGeneration
+                )
+                platform.Foundation.NSLog(
+                    "CALL_FLOW engine=$signalGeneration call=${presentation?.id ?: "none"} stage=avs_incoming ring=$shouldRing"
                 )
             }
         }
@@ -486,14 +578,14 @@ internal class CallManagerImpl internal constructor(
 
         override fun onAnsweredCall(conversationId: String?) {
             if (conversationId == null) return
-            scope.launch {
+            callEffects.trySend {
                 callRepository.updateCallStatusById(qualifiedIdMapper.fromStringToQualifiedID(conversationId), CallStatus.ANSWERED)
             }
         }
 
         override fun onEstablishedCall(conversationId: String?, userId: String?, clientId: String?) {
             if (conversationId == null) return
-            scope.launch {
+            callEffects.trySend {
                 callRepository.updateCallStatusById(qualifiedIdMapper.fromStringToQualifiedID(conversationId), CallStatus.ESTABLISHED)
             }
         }
@@ -645,33 +737,37 @@ internal class CallManagerImpl internal constructor(
         val callStatus = getCallStatusFromCloseReason(avsReason)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
-        scope.launch {
-            val callMetadata = callRepository.getCallMetadata(conversationIdWithDomain)
-            val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
-            if (isConnectedToInternet && shouldPersistMissedCall(callMetadata, callStatus)) {
-                callRepository.persistMissedCall(conversationIdWithDomain)
-            }
-
-            val shouldUpdateCallStatus = if (callMetadata?.conversationType == Conversation.Type.OneOnOne) {
-                when (callMetadata.callStatus) {
-                    CallStatus.MISSED,
-                    CallStatus.REJECTED,
-                    CallStatus.CLOSED -> false
-                    else -> true
+        callEffects.trySend {
+            try {
+                val callMetadata = callRepository.getCallMetadata(conversationIdWithDomain)
+                val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
+                if (isConnectedToInternet && shouldPersistMissedCall(callMetadata, callStatus)) {
+                    callRepository.persistMissedCall(conversationIdWithDomain)
                 }
-            } else {
-                true
-            }
 
-            if (shouldUpdateCallStatus) {
-                callRepository.updateCallStatusById(conversationIdWithDomain, callStatus)
-            }
-            if (callMetadata?.protocol is Conversation.ProtocolInfo.MLS) {
-                callRepository.leaveMlsConference(conversationIdWithDomain)
+                val shouldUpdateCallStatus = if (callMetadata?.conversationType == Conversation.Type.OneOnOne) {
+                    when (callMetadata.callStatus) {
+                        CallStatus.MISSED,
+                        CallStatus.REJECTED,
+                        CallStatus.CLOSED -> false
+                        else -> true
+                    }
+                } else {
+                    true
+                }
+
+                if (shouldUpdateCallStatus) {
+                    callRepository.updateCallStatusById(conversationIdWithDomain, callStatus)
+                }
+                if (callMetadata?.protocol is Conversation.ProtocolInfo.MLS) {
+                    callRepository.leaveMlsConference(conversationIdWithDomain)
+                }
+                createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason)
+            } finally {
+                val endedId = signalJournal?.closed(conversationIdWithDomain.value, conversationIdWithDomain.domain, reason)
+                platform.Foundation.NSLog("CALL_FLOW engine=$signalGeneration call=${endedId ?: "none"} stage=avs_closed reason=$reason")
             }
         }
-
-        scope.launch { createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason) }
     }
 
     private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean = when (callStatus) {

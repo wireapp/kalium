@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -103,6 +105,10 @@ public actual class CoreLogic(
         userSessionScopeProvider.value.getOrCreate(userId)
 
     actual override suspend fun deleteSessionScope(userId: UserId) = releaseSessionScope(userId)
+
+    /** Revalidate an owned, synced session for notification receiving after app restoration. */
+    public suspend fun prepareSessionForNotifications(userId: UserId, scope: UserSessionScope): Either<CoreFailure, Unit> =
+        userSessionScopeProvider.value.prepareReceiving(userId, scope)
 
     /**
      * Release app ownership before allowing the NSE to use this account. First cancel and join

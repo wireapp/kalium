@@ -53,6 +53,9 @@ import com.wire.kalium.network.exceptions.isNoTeam
  */
 internal interface SyncFeatureConfigsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
+
+    /** Persist server policy before a client exists. Initial slow sync performs protocol updates after registration. */
+    suspend fun beforeClientRegistration(): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -78,12 +81,20 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val preventAdminlessGroupsConfigHandler: PreventAdminlessGroupsConfigHandler,
     private val meetingsConfigHandler: MeetingsConfigHandler,
 ) : SyncFeatureConfigsUseCase {
-    override suspend operator fun invoke(): Either<CoreFailure, Unit> =
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> = sync(duringClientRegistration = false)
+
+    override suspend fun beforeClientRegistration(): Either<CoreFailure, Unit> = sync(duringClientRegistration = true)
+
+    private suspend fun sync(duringClientRegistration: Boolean): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { config ->
             // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
             guestRoomConfigHandler.handle(config.guestRoomLinkModel).onFailure { return@flatMap Either.Left(it) }
             fileSharingConfigHandler.handle(config.fileSharingModel).onFailure { return@flatMap Either.Left(it) }
-            mlsConfigHandler.handle(config.mlsModel, duringSlowSync = true).onFailure { return@flatMap Either.Left(it) }
+            mlsConfigHandler.handle(
+                config.mlsModel,
+                duringSlowSync = true,
+                duringClientRegistration = duringClientRegistration
+            ).onFailure { return@flatMap Either.Left(it) }
             config.mlsMigrationModel?.let { mlsMigrationConfigHandler.handle(it, duringSlowSync = true) }
                 ?.onFailure { return@flatMap Either.Left(it) }
             classifiedDomainsConfigHandler.handle(config.classifiedDomainsModel).onFailure { return@flatMap Either.Left(it) }

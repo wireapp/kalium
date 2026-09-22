@@ -167,6 +167,91 @@ import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSUUID
 
 class NotificationProcessorNativeTest {
+    /** Separate simulator processes share only prepared stores and this synthetic event manifest. */
+    fun runMLSStress(args: Array<String>) = kotlinx.coroutines.runBlocking {
+        withContext(Dispatchers.Default) {
+            val operation = args[0]
+            val manifestPath = args[1].toPath()
+            if (operation == "prepare") {
+                val count = args[2].toInt()
+                require(count in 1..5000)
+                val fixture = Fixture(true)
+                try {
+                    fixture.prepare()
+                    val events = mutableListOf<EventResponseToStore>()
+                    val ids = (0 until count).map { "stress-$it" }
+                    ids.forEachIndexed { index, id ->
+                        if (index % 10 == 0) events += fixture.event("commit-$index", fixture.commit())
+                        events += fixture.event(id, fixture.encrypt(id))
+                    }
+                    val notification = fixture.batch("notification", *events.toTypedArray())
+                    val next = fixture.encrypt("next")
+                    fixture.releasePrepared()
+                    FileSystem.SYSTEM.write(manifestPath) {
+                        writeUtf8(fixture.manifest(notification, next, next, ids).toString())
+                    }
+                } finally {
+                    fixture.close(deleteStorage = false)
+                }
+                println("MLS_STRESS_PREPARED messages=$count")
+                return@withContext
+            }
+            val manifest = KtxSerializer.json.parseToJsonElement(FileSystem.SYSTEM.read(manifestPath) { readUtf8() }).jsonObject
+            val fixture = Fixture(true, root = manifest.getValue("root").jsonPrimitive.content,
+                keychainService = manifest.getValue("service").jsonPrimitive.content)
+            val ids = manifest.getValue("messageIds").jsonArray.map { it.jsonPrimitive.content }
+            val response = KtxSerializer.json.decodeFromString<NotificationResponse>(manifest.getValue("response").toString())
+            when (operation) {
+                "receive" -> {
+                    val stage = args[2]
+                    val gate = args[3]
+                    val interruption = args[4].takeUnless { it == "NONE" }?.let { Interruption.valueOf(it) }
+                    var paused = false
+                    val result = fixture.receive(response.notifications, "notification", interruption,
+                        transactionCheckpoint = { checkpoint ->
+                            if (!paused && checkpoint == stage) {
+                                paused = true
+                                FileSystem.SYSTEM.write("$gate.ready".toPath()) { writeUtf8("ready") }
+                                withTimeout(60.seconds) {
+                                    while (!FileSystem.SYSTEM.exists("$gate.release".toPath())) kotlinx.coroutines.delay(10)
+                                }
+                            }
+                        })
+                    when {
+                        result is Either.Left && result.value == AccountRuntimeFailure.BUSY -> println("MLS_STRESS_BUSY")
+                        interruption != null -> { assertIs<Either.Left<*>>(result); println("MLS_STRESS_INTERRUPTED") }
+                        else -> { assertIs<Either.Right<*>>(result); println("MLS_STRESS_RECEIVED") }
+                    }
+                }
+                "verify" -> {
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        val messages = runtime.database.messageDAO
+                            .getMessagesByConversationAndVisibility(CONVERSATION_ID, ids.size + 100, 0).first()
+                            .filterIsInstance<MessageEntity.Regular>()
+                        assertEquals(ids.toSet(), messages.map { it.id }.toSet())
+                        assertEquals(ids.size, messages.size)
+                        messages.forEach { assertEquals(it.id, (it.content as MessageEntityContent.Text).messageBody) }
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
+                        val deliveries = runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, ids.size.toLong() + 1)
+                        // Main-app reception does not enqueue NSE deferred delivery receipts.
+                        val expectedDeliveries = if (args.getOrNull(2) == "app-first") emptyList() else ids
+                        assertEquals(expectedDeliveries.toSet(), deliveries.map { it.messageId }.toSet())
+                        assertEquals(expectedDeliveries.size, deliveries.size)
+                        assertEquals(1uL + ((ids.size + 9) / 10).toULong(),
+                            checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
+                    })
+                    assertIs<Either.Right<*>>(fixture.decryptAndCheck(
+                        Base64.decode(manifest.getValue("next").jsonPrimitive.content), "next"))
+                    fixture.close(deleteStorage = false)
+                    println("MLS_STRESS_VERIFIED messages=${ids.size}")
+                }
+                "cleanup-trigger" -> assertIs<Either.Right<*>>(fixture.open { fixture.sql("DROP TRIGGER IF EXISTS interrupt_receive") })
+                "cleanup" -> fixture.close()
+                else -> error("Unknown stress operation")
+            }
+        }
+    }
+
     @Test
     fun sentConnectionMetadataProteus() = sentConnectionMetadata(false)
 
@@ -2710,7 +2795,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun incomingCallsAreEvaluatedAfterCommittedPrefixAndProcessedTargetsStaySilent() = runTest {
+    fun incomingCallsSurviveProcessedTargetUntilHostHandoff() = runTest {
         for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 val now = Clock.System.now()
@@ -2736,8 +2821,95 @@ class NotificationProcessorNativeTest {
                     assertEquals(listOf("first"), runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
                 })
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), text.id)).value)
+                assertEquals(result.handoffId, fixture.receivedCalls.single().handoffId)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val journal = CallSignalJournal(runtime.database)
+                    val signal = journal.signals().single()
+                    assertEquals("call", signal.messageId)
+                    assertEquals(result.handoffId, signal.id)
+                    journal.submitted(signal.id, "test-native-generation")
+                })
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), text.id)).value)
                 assertTrue(fixture.receivedCalls.isEmpty())
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    // Enqueue ACK suppresses duplicate wakes, but a new engine can reconstruct.
+                    assertEquals("test-native-generation", CallSignalJournal(runtime.database).signals().single().submittedGeneration)
+                })
                 fixture.verifyStoredAndNext(next, "first", listOf("first"))
+            }
+        }
+    }
+
+    @Test
+    fun incomingCallPresentationHonorsMutedConversationAndAwayStatus() = runTest {
+        for (mls in listOf(false, true)) for (away in listOf(false, true)) withContext(Dispatchers.Default) {
+            withFixture(mls) { fixture ->
+                val event = fixture.event("call", fixture.encrypt("call", fixture.callContent()), time = Clock.System.now())
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    if (away) runtime.database.userDAO.updateUserAvailabilityStatus(SELF.toDao(),
+                        com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity.AWAY)
+                    else runtime.database.conversationDAO.updateConversationMutedStatus(CONVERSATION_ID,
+                        com.wire.kalium.persistence.dao.conversation.ConversationEntity.MutedStatus.ALL_MUTED, Clock.System.now())
+                })
+                assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id))
+                assertFalse(fixture.receivedCalls.single().shouldRing)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertEquals(1, CallSignalJournal(runtime.database).signals().size)
+                })
+            }
+        }
+    }
+
+    @Test
+    fun callJournalSurvivesMarkerFailureAndRollsBackWithReceiveEffects() = runTest {
+        for (mls in listOf(false, true)) for (stage in listOf(Interruption.BEFORE_COMMIT, Interruption.MARKER)) {
+            withContext(Dispatchers.Default) {
+                withFixture(mls) { fixture ->
+                    val event = fixture.event("call", fixture.encrypt("call", fixture.callContent()), time = Clock.System.now())
+                    fixture.releasePrepared()
+                    assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id, interruption = stage))
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertEquals(if (stage == Interruption.BEFORE_COMMIT) 0 else 1, CallSignalJournal(runtime.database).signals().size)
+                    })
+                    if (stage == Interruption.MARKER) fixture.sql("DROP TRIGGER interrupt_receive")
+                    assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id))
+                    val id = fixture.receivedCalls.single().handoffId
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertEquals(id, CallSignalJournal(runtime.database).signals().single().id)
+                    })
+                }
+            }
+        }
+    }
+
+    @Test
+    fun callPresentationReplayPreservesTerminalTombstonesAndNextCallIdentity() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(false) { fixture ->
+                val first = fixture.event("start-one", fixture.encrypt("start-one", fixture.callContent()), time = Clock.System.now())
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.receive(listOf(first), first.id))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val journal = CallSignalJournal(runtime.database)
+                    val original = journal.signals().single()
+                    suspend fun incoming(generation: String, seconds: Long) = journal.incoming(
+                        CONVERSATION_ID.value, CONVERSATION_ID.domain, SENDER.value, SENDER.domain,
+                        seconds, true, false, generation)
+                    val one = checkNotNull(incoming("engine-one", original.timeMillis / 1000))
+                    journal.closed(CONVERSATION_ID.value, CONVERSATION_ID.domain, 5)
+                    val next = journal.append(ReceivedCallEvent(original.payload, CONVERSATION_ID, SENDER.toDao(), SENDER_CLIENT,
+                        kotlin.time.Instant.fromEpochMilliseconds(original.timeMillis + 2000), false, false, "start-two"))
+                    val two = checkNotNull(incoming("engine-one", next.timeMillis / 1000))
+                    assertTrue(one.id != two.id)
+                    assertTrue(two.ringing)
+                    // A new full engine replays old signals in order. Old incoming is still ended.
+                    assertFalse(checkNotNull(incoming("engine-two", original.timeMillis / 1000)).ringing)
+                    journal.closed(CONVERSATION_ID.value, CONVERSATION_ID.domain, 5)
+                    assertTrue(checkNotNull(incoming("engine-two", next.timeMillis / 1000)).ringing)
+                    assertTrue(journal.presentations().last().ringing)
+                    assertEquals(two.id, journal.presentations().last().id)
+                })
             }
         }
     }
@@ -2945,6 +3117,54 @@ class NotificationProcessorNativeTest {
                 if (failure == "sql") fixture.sql("DROP TRIGGER x509_failure")
                 assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), event.id))
                 fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first"))
+            }
+        }
+    }
+
+    @Test
+    fun irrelevantProtocolVerificationDoesNotHideText() = runTest {
+        for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
+            withFixture(mls) { fixture ->
+                val column = if (mls) "proteus_verification_status" else "verification_status"
+                fixture.sql("UPDATE Conversation SET $column = 'DEGRADED'")
+                val event = fixture.event("notification", fixture.encrypt("first"))
+                val next = fixture.encrypt("next")
+                fixture.releasePrepared()
+                val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id)).value
+                assertTrue(checkNotNull(result).mayPreview)
+                assertTrue(result.shouldNotify)
+                assertEquals("first", result.text)
+                fixture.verifyStoredAndNext(next, "first")
+            }
+        }
+    }
+
+    @Test
+    fun relevantDegradedVerificationHidesText() = previewPolicyIsPrivate(mixed = false, ephemeral = false)
+
+    @Test
+    fun mixedDegradedVerificationHidesText() = previewPolicyIsPrivate(mixed = true, ephemeral = false)
+
+    @Test
+    fun ephemeralContentHidesText() = previewPolicyIsPrivate(mixed = false, ephemeral = true)
+
+    private fun previewPolicyIsPrivate(mixed: Boolean, ephemeral: Boolean) = runTest {
+        for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
+            withFixture(mls) { fixture ->
+                if (mixed) fixture.sql("UPDATE Conversation SET protocol = 'MIXED'")
+                if (!ephemeral) {
+                    val column = if (mls) "verification_status" else "proteus_verification_status"
+                    fixture.sql("UPDATE Conversation SET $column = 'DEGRADED'")
+                }
+                val event = fixture.event("notification", fixture.encrypt("first",
+                    expiresAfterMillis = if (ephemeral) 60_000L else null))
+                val next = fixture.encrypt("next")
+                fixture.releasePrepared()
+                val result = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(
+                    fixture.receive(listOf(event), event.id)).value)
+                assertFalse(result.mayPreview)
+                assertTrue(result.shouldNotify)
+                fixture.verifyStoredAndNext(next, "first")
             }
         }
     }
@@ -10477,6 +10697,7 @@ class NotificationProcessorNativeTest {
             downloadPreview: (suspend (okio.Sink) -> Unit)? = null,
             deleteFile: (String) -> Unit = { FileSystem.SYSTEM.delete(it.toPath(), mustExist = false) },
             hasCredential: (suspend (com.wire.kalium.cryptography.MLSCiphersuite) -> Boolean)? = null,
+            transactionCheckpoint: suspend (String) -> Unit = {},
         ) = open { runtime ->
             if (interruption in listOf(Interruption.DELIVERY, Interruption.MARKER, Interruption.SECOND_MESSAGE)) {
                 val trigger = when (interruption) {
@@ -10502,8 +10723,14 @@ class NotificationProcessorNativeTest {
                 object : MLSClient by realMLS {
                     override suspend fun <R> transaction(name: String, block: suspend (MlsCoreCryptoContext) -> R): R =
                         realMLS.transaction(name) { context ->
-                            block(decorateMLSContext(context)).also { if (name == "nse-notification") interruption?.beforeCommit() }
-                        }.also { if (name == "nse-notification") interruption?.afterCommit() }
+                            block(decorateMLSContext(context)).also { if (name == "nse-notification") {
+                                transactionCheckpoint("before-commit")
+                                interruption?.beforeCommit()
+                            } }
+                        }.also { if (name == "nse-notification") {
+                            transactionCheckpoint("after-commit")
+                            interruption?.afterCommit()
+                        } }
                 }
             }
             NotificationProcessor(
@@ -11397,6 +11624,7 @@ class NotificationProcessorNativeTest {
 fun runSwiftReceivingFixture(args: Array<String>) {
     val fixture = NotificationProcessorNativeTest()
     when (args.first()) {
+        "stress" -> fixture.runMLSStress(args.drop(1).toTypedArray())
         "export" -> fixture.exportPreparedAccountsForSwift()
         "export-multiple" -> fixture.exportPreparedAccountsForSwift(multiple = true)
         "export-mls-commit" -> fixture.exportPreparedAccountsForSwift(mlsCommit = true)

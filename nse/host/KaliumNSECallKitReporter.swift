@@ -27,51 +27,63 @@ public struct KaliumNSECallKitReporter {
     ) async throws -> KaliumNSEResult {
         let result = try await receiver.process(request: request)
         if result.status == .success {
-            try await report(result.calls, accountID: accountID)
+            try await report(result.calls, accountID: accountID, accountDomain: request.userDomain)
         }
         return result
     }
 
-    public func report(_ calls: [KaliumNSECall], accountID: UUID) async throws {
-        // Like the iOS NSE branch, only stop a ring reported during this request.
-        // Track each qualified conversation separately when AVS emits several callbacks.
-        var ringing = Set<String>()
+    public func report(_ calls: [KaliumNSECall], accountID: UUID, accountDomain: String) async throws {
+        guard !accountDomain.isEmpty else { throw ReportingError.missingAccountDomain }
+        // This is a transport adapter, not the host call register. An end signal can
+        // arrive in a different push/process from its start. Forward every decision;
+        // the host must deduplicate and correlate it before touching CallKit.
         for call in calls {
             try Task.checkCancellation()
             guard let conversationID = UUID(uuidString: call.conversationValue) else {
                 throw ReportingError.invalidConversationID
             }
-            let key = "\(conversationID.uuidString.lowercased())@\(call.conversationDomain.lowercased())"
+            let shouldRing: Bool
+            let eventType: String
             switch call.type {
             case .incoming:
-                try await reportPayload([
-                    "accountID": accountID.uuidString,
-                    "conversationID": conversationID.uuidString,
-                    "shouldRing": call.shouldRing,
-                    "hasVideo": call.isVideoCall,
-                    "callerName": call.callerName ?? ""
-                ])
-                if call.shouldRing {
-                    ringing.insert(key)
-                } else {
-                    ringing.remove(key)
-                }
-            case .missed, .closed:
-                guard ringing.contains(key) else { continue }
-                try await reportPayload([
-                    "accountID": accountID.uuidString,
-                    "conversationID": conversationID.uuidString,
-                    "shouldRing": false
-                ])
-                ringing.remove(key)
+                shouldRing = call.shouldRing
+                eventType = "incoming"
+            case .missed:
+                shouldRing = false
+                eventType = "missed"
+            case .closed:
+                shouldRing = false
+                eventType = "closed"
             default:
-                break
+                throw ReportingError.unsupportedCallType
             }
+            // Keep the legacy required fields on *every* event, including termination.
+            // Additional evidence is for the new host parser; it is not a call UUID.
+            var payload: [String: Any] = [
+                "callPayloadVersion": 1,
+                "accountID": accountID.uuidString,
+                "accountDomain": accountDomain,
+                "conversationID": conversationID.uuidString,
+                "conversationDomain": call.conversationDomain,
+                "eventType": eventType,
+                "messageTimeSeconds": call.messageTimeSeconds,
+                "callerID": call.callerValue,
+                "callerDomain": call.callerDomain,
+                "shouldRing": shouldRing,
+                "hasVideo": call.isVideoCall,
+                "callerName": call.callerName ?? ""
+            ]
+            if let handoffID = call.handoffId { payload["handoffID"] = handoffID }
+            if let clientID = call.callerClientId { payload["callerClientID"] = clientID }
+            if let reason = call.closeReason { payload["closeReason"] = reason.intValue }
+            try await reportPayload(payload)
         }
         try Task.checkCancellation()
     }
 
     public enum ReportingError: Error {
+        case missingAccountDomain
         case invalidConversationID
+        case unsupportedCallType
     }
 }

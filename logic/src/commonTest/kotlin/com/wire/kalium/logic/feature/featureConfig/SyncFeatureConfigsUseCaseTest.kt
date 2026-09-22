@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.ChannelsConfigurationStorage
@@ -38,6 +39,7 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
 import com.wire.kalium.logic.data.featureConfig.MeetingsConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
@@ -102,6 +104,57 @@ class SyncFeatureConfigsUseCaseTest {
     private val dispatcher = StandardTestDispatcher()
 
     private fun runTest(testBody: suspend TestScope.() -> Unit) = runTest(dispatcher, testBody = testBody)
+
+    // Registration must persist the actual server certificate policy before crypto resources exist.
+    @Test
+    fun registrationConfigurationPersistsE2eiWithoutARegisteredCryptoClient() = runTest {
+        val config = FeatureConfigTest.newModel()
+        val (arrangement, sync) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                config.copy(mlsModel = config.mlsModel.copy(
+                    supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+                ))
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+        everySuspend {
+            arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
+        } returns Either.Left(CoreFailure.MissingClientRegistration)
+
+        assertEquals(Either.Right(Unit), sync.beforeClientRegistration())
+        arrangement.userConfigRepository.getE2EISettings().shouldSucceed { assertTrue(it.isRequired) }
+        verifySuspend(VerifyMode.not) { arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any()) }
+    }
+
+    // Reproducer for fresh-account login: sync aborts before the E2EI configuration needed by MLS registration.
+    @Test
+    fun regularConfigurationSyncStillPropagatesMissingCryptoClient() = runTest {
+        val config = FeatureConfigTest.newModel()
+        val (arrangement, sync) = arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                config.copy(mlsModel = config.mlsModel.copy(
+                    supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+                ))
+            )
+            .withGetSupportedProtocolsReturning(null)
+            .arrange()
+        everySuspend {
+            arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
+        } returns Either.Left(CoreFailure.MissingClientRegistration)
+
+        assertEquals(Either.Left(CoreFailure.MissingClientRegistration), sync())
+        assertEquals(Either.Left(StorageFailure.DataNotFound), arrangement.userConfigRepository.getE2EISettings())
+    }
+
+    @Test
+    fun registrationConfigurationStillPropagatesStorageFailure() = runTest {
+        val failure = IllegalStateException("Self-deletion settings cannot be read")
+        val (arrangement, sync) = arrangement().arrange()
+        everySuspend { arrangement.userConfigDAO.getTeamSettingsSelfDeletionStatus() } throws failure
+
+        assertEquals(Either.Left(StorageFailure.Generic(failure)), sync.beforeClientRegistration())
+        assertEquals(Either.Left(StorageFailure.DataNotFound), arrangement.userConfigRepository.getE2EISettings())
+    }
 
     @Test
     fun requiredConfigurationReadFailureStopsSync() = runTest {

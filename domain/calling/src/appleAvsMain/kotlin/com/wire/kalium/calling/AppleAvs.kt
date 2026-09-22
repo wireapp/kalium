@@ -399,9 +399,8 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
                     clientid = senderClientId,
                     conv_type = conversationType,
                     meeting = meeting.toAvsInt()
-                )
+                ) == 0
             }
-            true
         }.getOrElse {
             false
         }

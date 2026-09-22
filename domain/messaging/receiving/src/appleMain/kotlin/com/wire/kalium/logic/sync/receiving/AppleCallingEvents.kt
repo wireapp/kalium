@@ -1,4 +1,5 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.calling.notifications.AvsCallNotification
@@ -19,6 +20,9 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlin.time.Clock
 
+private const val MILLISECONDS_PER_SECOND = 1000L
+
+@Suppress("LongMethod", "CyclomaticComplexMethod") // Native callback collection and presentation eligibility.
 internal suspend fun evaluateCallingEvents(
     events: List<ReceivedCallEvent>,
     self: UserId,
@@ -27,6 +31,11 @@ internal suspend fun evaluateCallingEvents(
 ): List<ReceivedCallResult> {
     if (events.isEmpty()) return emptyList()
     currentCoroutineContext().ensureActive()
+    val journal = CallSignalJournal(database).signals()
+    val messageIds = events.map { it.messageId }.toSet()
+    journal.filter { it.messageId in messageIds }.forEach {
+        platform.Foundation.NSLog("CALL_FLOW signal=${it.id} stage=durable_ready")
+    }
     val results = mutableListOf<ReceivedCallResult>()
     fun record(
         type: ReceivedCallType,
@@ -39,7 +48,7 @@ internal suspend fun evaluateCallingEvents(
         reason: Int? = null,
     ) {
         val event = events.lastOrNull {
-            it.conversationId.avsId() == conversationId && it.senderId.avsId() == callerId
+            it.conversationId.avsId() == conversationId && it.senderId.avsId() == callerId && it.time.epochSeconds == time.toLong()
         } ?: return
         results += ReceivedCallResult(
             type, event.conversationId.value, event.conversationId.domain,
@@ -89,6 +98,8 @@ internal suspend fun evaluateCallingEvents(
         processor.close()
     }
     currentCoroutineContext().ensureActive()
+    val away = database.userDAO.getUserDetailsByQualifiedID(self.toDao())?.availabilityStatus ==
+        com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity.AWAY
     return results.map { result ->
         val conversation = database.conversationDAO.getConversationById(
             QualifiedIDEntity(result.conversationValue, result.conversationDomain)
@@ -99,7 +110,20 @@ internal suspend fun evaluateCallingEvents(
         val name = if (!canPreview) null else if (conversation.type.isGroup) conversation.name else {
             database.userDAO.getNameAndHandle(QualifiedIDEntity(result.callerValue, result.callerDomain))?.name ?: conversation.name
         }
-        result.copy(callerName = name)
+        val source = journal.lastOrNull {
+            it.messageId in messageIds &&
+                (result.callerClientId == null || it.senderClientId == result.callerClientId) &&
+                it.conversationValue == result.conversationValue && it.conversationDomain == result.conversationDomain &&
+                it.senderValue == result.callerValue && it.senderDomain == result.callerDomain &&
+                it.timeMillis / MILLISECONDS_PER_SECOND == result.messageTimeSeconds
+        }
+        platform.Foundation.NSLog("CALL_FLOW call=${source?.id ?: "none"} stage=nse_decision type=${result.type} ring=${result.shouldRing}")
+        result.copy(
+            callerName = name,
+            handoffId = source?.id,
+            shouldRing = result.shouldRing && !away && conversation != null &&
+                conversation.mutedStatus != ConversationEntity.MutedStatus.ALL_MUTED
+        )
     }
 }
 
