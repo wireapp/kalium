@@ -116,7 +116,7 @@ class SSOInitiateLoginUseCaseTest {
                 ssoLoginRepository.initiate(TEST_UUID)
             } returns Either.Right(TEST_RESPONSE)
             val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE))
-            assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
+            assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE, TEST_UUID, serverConfig.id))
         }
 
     @Test
@@ -132,7 +132,7 @@ class SSOInitiateLoginUseCaseTest {
 
             val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithRedirect(TEST_CODE))
 
-            assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
+            assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE, TEST_UUID, serverConfig.id))
         }
 
     @Test
@@ -155,7 +155,7 @@ class SSOInitiateLoginUseCaseTest {
                 SSOInitiateLoginUseCase.Param.WithRedirect(TEST_CODE, TEST_COOKIE_LABEL)
             )
 
-            assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
+            assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE, TEST_UUID, serverConfig.id))
         }
 
     private companion object {
