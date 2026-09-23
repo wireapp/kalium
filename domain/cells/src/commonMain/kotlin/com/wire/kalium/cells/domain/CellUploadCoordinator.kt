@@ -81,6 +81,8 @@ public data class CellUploadItem(
     val state: CellUploadState = CellUploadState.Queued,
     /** Draft node created by [CellUploadManager] once the transfer starts, needed to cancel or retry it. */
     val nodeUuid: String? = null,
+    /** Draft version created alongside [nodeUuid], needed to publish the node once the transfer succeeds. */
+    val versionId: String? = null,
 ) {
     public val fileName: String get() = request.fileName
     public val sizeBytes: Long get() = request.sizeBytes

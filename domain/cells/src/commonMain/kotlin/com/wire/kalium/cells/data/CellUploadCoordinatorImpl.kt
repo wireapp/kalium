@@ -23,7 +23,11 @@ import com.wire.kalium.cells.domain.CellUploadItem
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellUploadRequest
 import com.wire.kalium.cells.domain.CellUploadState
+import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.common.functional.nullableFold
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -47,6 +51,7 @@ import kotlin.uuid.Uuid
 @Suppress("TooManyFunctions")
 internal class CellUploadCoordinatorImpl internal constructor(
     private val uploadManager: CellUploadManager,
+    private val cellsRepository: CellsRepository,
     private val scope: CoroutineScope,
     private val maxConcurrentUploads: Int = MAX_CONCURRENT_UPLOADS,
     private val largeFileThresholdBytes: Long = LARGE_FILE_THRESHOLD_BYTES,
@@ -97,8 +102,11 @@ internal class CellUploadCoordinatorImpl internal constructor(
             Command.CancelAll -> cancelAllItems()
             is Command.Retry -> requeueFailed(command.id)
             Command.RetryAllFailed -> requeueAllFailed()
-            is Command.NodeCreated -> updateItem(command.id) { copy(nodeUuid = command.nodeUuid) }
+            is Command.NodeCreated -> updateItem(command.id) {
+                copy(nodeUuid = command.nodeUuid, versionId = command.versionId)
+            }
             is Command.Progress -> updateProgress(command.id, command.progress)
+            is Command.TransferCompleted -> publishAndFinish(command.id)
             is Command.Finished -> finishItem(command.id, command.outcome)
         }
     }
@@ -157,7 +165,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
                 null
             },
             { node ->
-                commands.trySend(Command.NodeCreated(item.id, node.uuid))
+                commands.trySend(Command.NodeCreated(item.id, node.uuid, node.versionId))
                 node.uuid
             }
         )
@@ -167,7 +175,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
         val events = uploadManager.observeUpload(nodeUuid) ?: run {
             // The manager drops an upload from its registry as soon as it succeeds, so a missing flow at
             // this point means the transfer already finished.
-            commands.trySend(Command.Finished(itemId, CellUploadState.Completed))
+            commands.trySend(Command.TransferCompleted(itemId))
             return@coroutineScope
         }
         val collector = launch { collectEvents(itemId, events) }
@@ -183,7 +191,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
         events.collect { event ->
             when (event) {
                 is CellUploadEvent.UploadProgress -> commands.trySend(Command.Progress(itemId, event.progress))
-                CellUploadEvent.UploadCompleted -> commands.trySend(Command.Finished(itemId, CellUploadState.Completed))
+                CellUploadEvent.UploadCompleted -> commands.trySend(Command.TransferCompleted(itemId))
                 CellUploadEvent.UploadError -> commands.trySend(Command.Finished(itemId, CellUploadState.Failed))
                 // The scheduler marks the item cancelled itself, since it is the only thing that cancels.
                 CellUploadEvent.UploadCancelled -> Unit
@@ -199,10 +207,27 @@ internal class CellUploadCoordinatorImpl internal constructor(
     private fun reportOutcomeReachedBeforeSubscribing(itemId: String, nodeUuid: String) {
         val info = uploadManager.getUploadInfo(nodeUuid)
         when {
-            info == null -> commands.trySend(Command.Finished(itemId, CellUploadState.Completed))
+            info == null -> commands.trySend(Command.TransferCompleted(itemId))
             info.uploadFailed -> commands.trySend(Command.Finished(itemId, CellUploadState.Failed))
             else -> Unit
         }
+    }
+
+    /**
+     * The transfer succeeded, but the node it created is still a draft (`x-amz-meta-draft-mode: true`) and
+     * stays invisible in its folder until published. Only publishing counts as the upload finishing.
+     */
+    private suspend fun publishAndFinish(id: String) {
+        val item = _uploads.value.firstOrNull { it.id == id } ?: return
+        val nodeUuid = item.nodeUuid
+        val versionId = item.versionId
+        if (nodeUuid == null || versionId == null) {
+            finishItem(id, CellUploadState.Failed)
+            return
+        }
+        cellsRepository.publishDrafts(listOf(NodeIdAndVersion(nodeUuid, versionId)))
+            .onSuccess { finishItem(id, CellUploadState.Completed) }
+            .onFailure { finishItem(id, CellUploadState.Failed) }
     }
 
     private suspend fun cancelItem(id: String) {
@@ -262,8 +287,9 @@ internal class CellUploadCoordinatorImpl internal constructor(
         data object CancelAll : Command
         data class Retry(val id: String) : Command
         data object RetryAllFailed : Command
-        data class NodeCreated(val id: String, val nodeUuid: String) : Command
+        data class NodeCreated(val id: String, val nodeUuid: String, val versionId: String) : Command
         data class Progress(val id: String, val progress: Float) : Command
+        data class TransferCompleted(val id: String) : Command
         data class Finished(val id: String, val outcome: CellUploadState) : Command
     }
 }

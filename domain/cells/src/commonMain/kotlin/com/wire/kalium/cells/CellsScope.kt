@@ -279,6 +279,7 @@ public class CellsScope(
     public val uploadCoordinator: CellUploadCoordinator by lazy {
         CellUploadCoordinatorImpl(
             uploadManager = uploadManager,
+            cellsRepository = cellsRepository,
             scope = this,
         )
     }
