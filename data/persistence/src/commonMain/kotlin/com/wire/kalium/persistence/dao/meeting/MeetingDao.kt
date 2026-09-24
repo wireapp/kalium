@@ -150,6 +150,7 @@ internal class MeetingDaoImpl(
                     ).asFlow()
                         .mapToList(readDispatcher.value)
                         .map { meeting.copy(participants = it) }
+                        .flowOn(readDispatcher.value)
                 }
             }
             .flowOn(readDispatcher.value)

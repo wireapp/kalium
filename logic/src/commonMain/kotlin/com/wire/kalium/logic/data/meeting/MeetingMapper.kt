@@ -43,6 +43,7 @@ internal interface MeetingMapper {
     fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest
 }
 
+@Suppress("TooManyFunctions")
 internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : MeetingMapper {
     override fun fromApiToDao(meeting: MeetingDTO): MeetingEntity? {
         val recurrence = meeting.recurrence?.let { fromApiToDao(it) }
