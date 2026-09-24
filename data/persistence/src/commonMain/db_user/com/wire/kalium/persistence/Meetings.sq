@@ -208,6 +208,7 @@ SELECT
 FROM Member
 JOIN User ON User.qualified_id = Member.user
 WHERE Member.conversation IN :conversationIds
+    AND User.deleted = 0
 ORDER BY Member.conversation ASC, Member.user ASC;
 
 selectNextUnfinishedMeetingOccurrenceDetailsId:
