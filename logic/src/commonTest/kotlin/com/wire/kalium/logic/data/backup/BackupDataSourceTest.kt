@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.backup
 
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
@@ -117,6 +119,41 @@ class BackupDataSourceTest {
         assertEquals(messages.map { it.id }.toSet(), subject.getMessages().first().data.map { it.id }.toSet())
         assertEquals(knownUser, subject.getUsers().single { it.id == knownUser.id })
         assertTrue(subject.getUsers().any { it.id == missingUser })
+    }
+
+    @Test
+    fun givenMissingConversationAndSender_whenRestoringTwice_thenPreserveHistoryAndKnownMetadata() = runTest {
+        val knownConversation = createTestConversation("known")
+        subject.insertConversations(listOf(knownConversation))
+        val dao = testDatabase.builder.conversationDAO
+        val knownId = QualifiedIDEntity(knownConversation.id.value, userId.domain)
+        val knownBefore = assertNotNull(dao.getConversationById(knownId))
+        val missingId = QualifiedID("missing", userId.domain)
+        val messages = listOf(
+            createTestMessage(knownConversation.id, "known-message", userId),
+            createTestMessage(missingId, "orphan-message", userId),
+            createTestMessage(missingId, "older-message", userId).copy(date = Instant.UNIX_FIRST_DATE),
+        )
+
+        repeat(2) { assertTrue(subject.insertMessages(messages) is Either.Right) }
+
+        val restored = subject.getMessages().toList().flatMap { it.data }
+        assertEquals(messages.map { it.id }.toSet(), restored.map { it.id }.toSet())
+        assertEquals(messages.size, restored.size)
+        val placeholder = assertNotNull(dao.getConversationById(QualifiedIDEntity(missingId.value, missingId.domain)))
+        assertTrue(placeholder.hasIncompleteMetadata)
+        assertTrue(testDatabase.builder.memberDAO.getConversationMembers(placeholder.id).isEmpty())
+        assertEquals(messages[1].date, placeholder.lastModifiedDate)
+        val knownAfter = assertNotNull(dao.getConversationById(knownId))
+        assertEquals(knownBefore.copy(lastModifiedDate = knownAfter.lastModifiedDate), knownAfter)
+
+        // The regular sync write must be able to replace the incomplete metadata later.
+        val hydrated = knownBefore.copy(id = placeholder.id)
+        dao.insertConversation(hydrated)
+        assertEquals(
+            hydrated.copy(lastModifiedDate = placeholder.lastModifiedDate, lastReadDate = placeholder.lastReadDate),
+            dao.getConversationById(placeholder.id)
+        )
     }
 
     @Test

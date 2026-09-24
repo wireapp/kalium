@@ -244,16 +244,31 @@ class RestoreMPBackupUseCaseTest {
     }
 
     @Test
-    fun givenMessagePageWriteFails_whenRestoring_thenFailureStopsTheRestore() = runTest {
+    fun givenMessagePageWriteFails_whenRestoring_thenContinueWithNextPageAndReportSuccess() = runTest {
         val (arrangement, useCase) = Arrangement().withSuccessImport().withMessageWriteFailure().arrange()
         val result = useCase(arrangement.storedPath, null) {}
-        assertEquals(
-            RestoreBackupResult.Failure(
-                RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("IO error: Failed to persist restored message page")
-            ),
-            result
-        )
-        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
+        assertEquals(RestoreBackupResult.Success, result)
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+    }
+
+    @Test
+    fun givenUserPageWriteFails_whenRestoring_thenContinueAndReportSuccess() = runTest {
+        val (arrangement, useCase) = Arrangement().withSuccessImport().withUserWriteFailure().arrange()
+        val result = useCase(arrangement.storedPath, null) {}
+        assertEquals(RestoreBackupResult.Success, result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+    }
+
+    @Test
+    fun givenConversationPageWriteFails_whenRestoring_thenContinueAndReportSuccess() = runTest {
+        val (arrangement, useCase) = Arrangement().withSuccessImport().withConversationWriteFailure().arrange()
+        val result = useCase(arrangement.storedPath, null) {}
+        assertEquals(RestoreBackupResult.Success, result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
     }
 
     private inner class Arrangement {
@@ -271,10 +286,25 @@ class RestoreMPBackupUseCaseTest {
         var usersInsertStubConfigured = false
         var conversationsInsertStubConfigured = false
         var messagesInsertStubConfigured = false
+        var messagePageCount = 1
+
+        suspend fun withUserWriteFailure() = apply {
+            usersInsertStubConfigured = true
+            everySuspend { backupRepository.insertUsers(any()) } returns StorageFailure.DataNotFound.left()
+        }
+
+        suspend fun withConversationWriteFailure() = apply {
+            conversationsInsertStubConfigured = true
+            everySuspend { backupRepository.insertConversations(any()) } returns StorageFailure.DataNotFound.left()
+        }
 
         suspend fun withMessageWriteFailure() = apply {
             messagesInsertStubConfigured = true
-            everySuspend { backupRepository.insertMessages(any()) } returns StorageFailure.DataNotFound.left()
+            messagePageCount = 2
+            var attempts = 0
+            everySuspend { backupRepository.insertMessages(any()) } calls {
+                if (attempts++ == 0) StorageFailure.DataNotFound.left() else Unit.right()
+            }
         }
 
         val storedPath = "testPath/backupFile.zip".toPath()
@@ -384,7 +414,7 @@ class RestoreMPBackupUseCaseTest {
             every { conversationsPager.nextPage() } returns (arrayOf(TestConversation.CONVERSATION.toBackupConversation()))
 
             var messagesHasMorePagesIndex = 0
-            every { messagesPager.hasMorePages() } calls { messagesHasMorePagesIndex++ == 0 }
+            every { messagesPager.hasMorePages() } calls { messagesHasMorePagesIndex++ < messagePageCount }
             every { messagesPager.nextPage() } returns (arrayOf(TestMessage.TEXT_MESSAGE.toBackupMessage()!!))
 
             var reactionsHasMorePagesIndex = 0

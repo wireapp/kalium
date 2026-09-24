@@ -169,7 +169,6 @@ internal class RestoreMPBackupUseCaseImpl(
                 backupRepository.insertMessages(page.mapNotNull { it.toMessage(selfUserId) })
                     .onFailure { error ->
                         kaliumLogger.e("Restore messages error: $error")
-                        throw IOException("Failed to persist restored message page")
                     }
                 onPageProcessed()
             }

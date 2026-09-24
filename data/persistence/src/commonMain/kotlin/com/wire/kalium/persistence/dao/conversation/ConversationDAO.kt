@@ -56,6 +56,7 @@ interface ConversationDAO {
     suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
+    suspend fun insertIncompleteConversationsOrBumpLastModified(datesByConversation: Map<QualifiedIDEntity, Instant>)
     suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)

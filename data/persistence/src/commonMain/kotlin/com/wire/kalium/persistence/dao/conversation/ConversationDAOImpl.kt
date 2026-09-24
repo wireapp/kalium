@@ -170,6 +170,16 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
+    override suspend fun insertIncompleteConversationsOrBumpLastModified(
+        datesByConversation: Map<QualifiedIDEntity, Instant>
+    ) = withContext(writeDispatcher.value) {
+        conversationQueries.transaction {
+            datesByConversation.forEach { (id, date) ->
+                conversationQueries.insertIncompleteConversationOrBumpLastModifiedDate(id, date)
+            }
+        }
+    }
+
     override suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>) = withContext(writeDispatcher.value) {
         conversationQueries.transaction {
             for (conversationEntity: ConversationEntity in conversationEntities) {
