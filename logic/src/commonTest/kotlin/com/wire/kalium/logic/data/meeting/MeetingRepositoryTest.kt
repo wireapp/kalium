@@ -1323,7 +1323,6 @@ class MeetingRepositoryTest {
         meeting = MEETING_ENTITY,
         conversationName = "Conversation 1",
         conversationType = ConversationEntity.Type.GROUP,
-        otherUserPreviewAssetId = null,
         channelAccess = null,
         selfUserId = MEETING_ENTITY.creatorId,
     )

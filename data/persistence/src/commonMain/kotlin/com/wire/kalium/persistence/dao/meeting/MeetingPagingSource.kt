@@ -25,7 +25,6 @@ import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import com.wire.kalium.persistence.MeetingsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
@@ -42,7 +41,7 @@ internal class MeetingPagingSource(
         old?.removeListener(this)
         new?.addListener(this)
     }
-    private var currentAvatarsQuery: Query<MeetingParticipantPreviewAssetEntity>? by Delegates.observable(null) { _, old, new ->
+    private var currentParticipantsQuery: Query<MeetingParticipantEntity>? by Delegates.observable(null) { _, old, new ->
         old?.removeListener(this)
         new?.addListener(this)
     }
@@ -52,8 +51,8 @@ internal class MeetingPagingSource(
         registerInvalidatedCallback {
             currentMeetingQuery?.removeListener(this)
             currentMeetingQuery = null
-            currentAvatarsQuery?.removeListener(this)
-            currentAvatarsQuery = null
+            currentParticipantsQuery?.removeListener(this)
+            currentParticipantsQuery = null
         }
     }
 
@@ -83,9 +82,9 @@ internal class MeetingPagingSource(
                     mapper = MeetingMapper::fromViewToDetails
                 ).also { currentMeetingQuery = it }
                 val meetings = meetingQuery.awaitAsList()
-                val participantPreviewAssetIds = loadAndObserveAvatars(meetings)
+                val participants = loadAndObserveParticipants(meetings)
                 val data = meetings.map {
-                    it.copy(participantPreviewAssetIds = participantPreviewAssetIds[it.meeting.conversationId].orEmpty())
+                    it.copy(participants = participants[it.meeting.conversationId].orEmpty())
                 }
                 val nextPosition = offset + data.size
 
@@ -138,27 +137,23 @@ internal class MeetingPagingSource(
     private suspend fun countMeetingOccurrences(): Int =
         meetingsQueries.countUpcomingMeetingOccurrences(fromDate = parameters.from).awaitAsOne().toInt()
 
-    private suspend fun loadAndObserveAvatars(
+    private suspend fun loadAndObserveParticipants(
         meetings: List<MeetingOccurrenceDetailsEntity>
-    ): Map<QualifiedIDEntity, List<QualifiedIDEntity>> {
-        val conversationIds = meetings.filter { meeting ->
-            // Only load avatars for group meeting conversations, as only those have participant avatars to show
-            meeting.conversationType == ConversationEntity.Type.MEETING
-        }.mapTo(mutableSetOf()) { it.meeting.conversationId }
+    ): Map<QualifiedIDEntity, List<MeetingParticipantEntity>> {
+        val conversationIds = meetings.mapTo(mutableSetOf()) { it.meeting.conversationId }
 
         if (conversationIds.isEmpty()) {
-            currentAvatarsQuery = null
+            currentParticipantsQuery = null
             return emptyMap()
         }
 
-        val query = meetingsQueries.selectMeetingParticipantPreviewAssetIds(
+        val query = meetingsQueries.selectMeetingParticipants(
             conversationIds = conversationIds.toList(),
-            mapper = ::MeetingParticipantPreviewAssetEntity
+            mapper = ::MeetingParticipantEntity
         )
-        currentAvatarsQuery = query
+        currentParticipantsQuery = query
         return query.awaitAsList()
-            .groupBy(keySelector = { it.conversationId }, valueTransform = { it.previewAssetId })
-            .mapValues { (_, previewAssetIds) -> previewAssetIds.filterNotNull() }
+            .groupBy { it.conversationId }
     }
 }
 
