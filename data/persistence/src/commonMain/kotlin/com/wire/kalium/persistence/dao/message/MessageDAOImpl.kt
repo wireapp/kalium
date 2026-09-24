@@ -212,13 +212,31 @@ internal class MessageDAOImpl internal constructor(
         checkAssetUpdate: Boolean,
     ) = withContext(writeDispatcher.value) {
         queries.transaction {
+            // Restore does not update existing assets or unread events. Avoid an INSERT and
+            // SELECT changes() per duplicate, keeping the lookup in the same write transaction.
+            val existing = if (!checkAssetUpdate && !withUnreadEvents) existingRegularMessages(messages) else emptySet()
             messages.forEach {
+                if (it is MessageEntity.Regular && (it.conversationId to it.id) in existing) return@forEach
                 insertInDB(
                     message = it,
-                    withUnreadEvents = withUnreadEvents
+                    withUnreadEvents = withUnreadEvents,
+                    checkAssetUpdate = checkAssetUpdate,
                 )
             }
         }
+    }
+
+    private suspend fun existingRegularMessages(messages: List<MessageEntity>): Set<Pair<QualifiedIDEntity, String>> {
+        val existing = mutableSetOf<Pair<QualifiedIDEntity, String>>()
+        messages.filterIsInstance<MessageEntity.Regular>().groupBy { it.conversationId }.forEach { (conversationId, page) ->
+            // Leave room for the conversation bind parameter on SQLite builds with a 999-variable limit.
+            page.map { it.id }.distinct().chunked(EXISTING_MESSAGE_IDS_BATCH_SIZE).forEach { ids ->
+                queries.selectExistingMessageIds(conversationId, ids).awaitAsList().forEach { id ->
+                    existing.add(conversationId to id)
+                }
+            }
+        }
+        return existing
     }
 
     override suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System) {
@@ -896,3 +914,5 @@ internal class MessageDAOImpl internal constructor(
         readDispatcher,
     )
 }
+
+private const val EXISTING_MESSAGE_IDS_BATCH_SIZE = 900

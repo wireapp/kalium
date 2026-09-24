@@ -101,6 +101,25 @@ class BackupDataSourceTest {
     }
 
     @Test
+    fun givenMissingSender_whenImportingMessages_thenPreserveMessagesAndExistingProfiles() = runTest {
+        val knownUser = createTestUser("known")
+        val missingUser = UserId("missing", userId.domain)
+        val conversation = createTestConversation("restore")
+        subject.insertUsers(listOf(knownUser))
+        subject.insertConversations(listOf(conversation))
+        val messages = listOf(
+            createTestMessage(conversation.id, "known-message", knownUser.id),
+            createTestMessage(conversation.id, "missing-message", missingUser),
+        )
+
+        repeat(2) { subject.insertMessages(messages) }
+
+        assertEquals(messages.map { it.id }.toSet(), subject.getMessages().first().data.map { it.id }.toSet())
+        assertEquals(knownUser, subject.getUsers().single { it.id == knownUser.id })
+        assertTrue(subject.getUsers().any { it.id == missingUser })
+    }
+
+    @Test
     fun givenSelfDeletingMessages_whenGettingMessages_thenShouldNotExportThem() = runTest {
         // Given
         val conversation = createTestConversation("1")

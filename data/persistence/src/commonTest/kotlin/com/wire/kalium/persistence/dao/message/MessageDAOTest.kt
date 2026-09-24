@@ -61,6 +61,27 @@ import kotlin.time.Duration.Companion.seconds
 @Suppress("LargeClass")
 class MessageDAOTest : BaseDatabaseTest() {
 
+    @Test
+    fun givenRestorePageWithDuplicates_whenImporting_thenKeepExistingContentAndInsertNewKeysAcrossConversations() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        userDAO.upsertUser(userEntity1)
+        val original = newRegularMessageEntity("same-id", conversationId = conversationEntity1.id, senderUserId = userEntity1.id)
+        messageDAO.insertOrIgnoreMessages(listOf(original))
+        val otherConversation = original.copy(conversationId = conversationEntity2.id)
+        // Exercise query chunking as well as equal IDs in different conversations.
+        val newMessages = (1..1001).map { original.copy(id = "new-$it") }
+        val page = listOf(original.copy(status = MessageEntity.Status.FAILED), otherConversation) + newMessages
+
+        repeat(2) { messageDAO.insertOrIgnoreMessages(page, withUnreadEvents = false, checkAssetUpdate = false) }
+
+        assertEquals(original.status, messageDAO.getMessageById(original.id, original.conversationId)?.status)
+        assertEquals(original.content, messageDAO.getMessageById(original.id, original.conversationId)?.content)
+        assertNotNull(messageDAO.getMessageById(otherConversation.id, otherConversation.conversationId))
+        newMessages.forEach { assertNotNull(messageDAO.getMessageById(it.id, it.conversationId)) }
+        assertEquals(1003L, messageDAO.countMessagesForBackup(MessageEntity.ContentType.entries))
+    }
+
     private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO

@@ -150,6 +150,9 @@ internal class BackupDataSource(
     }
 
     override suspend fun insertMessages(messages: List<Message.Standalone>) = wrapStorageRequest {
+        // Backups may reference senders missing from the users page (for example deleted users).
+        // Keep existing profiles intact and create incomplete users before enforcing message FKs.
+        userDAO.insertOrIgnoreIncompleteUsers(messages.map { idMapper.fromDomainToDao(it.senderUserId) }.distinct())
         messageDAO.insertOrIgnoreMessages(
             messages = messages.map { messageMapper.fromMessageToEntity(it) },
             withUnreadEvents = false,

@@ -331,6 +331,9 @@ SELECT sender_user_id FROM Message WHERE id = ? AND conversation_id = ?;
 selectChanges:
 SELECT changes();
 
+selectExistingMessageIds:
+SELECT id FROM Message WHERE conversation_id = :conversation_id AND id IN :message_ids;
+
 insertOrIgnoreMessage:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey conversation_list_last_message

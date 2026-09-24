@@ -26,7 +26,7 @@ import com.wire.backup.data.BackupUser
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -56,11 +56,14 @@ import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
 import dev.mokkery.every
 import dev.mokkery.mock
+import dev.mokkery.verify
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import okio.IOException
 import okio.Path.Companion.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -68,6 +71,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RestoreMPBackupUseCaseTest {
@@ -167,6 +171,31 @@ class RestoreMPBackupUseCaseTest {
     }
 
     @Test
+    fun givenIOException_whenRestoring_thenCleanupRunsAndRestoreFails() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withIOException()
+            .arrange()
+
+        val result = useCase(arrangement.storedPath, null) {}
+
+        assertTrue(result is RestoreBackupResult.Failure)
+        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.BackupIOFailure)
+        verify(VerifyMode.exactly(2)) { arrangement.kaliumFileSystem.deleteContents(any(), any()) }
+    }
+
+    @Test
+    fun givenRestoreIsCancelled_whenRestoring_thenCleanupRunsAndCancellationPropagates() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withCancellation()
+            .arrange()
+
+        assertFailsWith<CancellationException> {
+            useCase(arrangement.storedPath, null) {}
+        }
+        verify(VerifyMode.exactly(2)) { arrangement.kaliumFileSystem.deleteContents(any(), any()) }
+    }
+
+    @Test
     fun givenBackupContainsUsersWithEmptyDomain_whenRestoring_thenMalformedUserIsSkipped() = runTest {
         val malformedBackupUser = testUser.toBackupUser().copy(
             id = BackupQualifiedId("participant-malformed", "")
@@ -237,6 +266,7 @@ class RestoreMPBackupUseCaseTest {
         val messagesPager = mock<ImportDataPagerForMocking<BackupMessage>>(mode = MockMode.autoUnit)
         val reactionsPager = mock<ImportDataPagerForMocking<BackupReaction>>(mode = MockMode.autoUnit)
         val importer = mock<BackupImporter>(mode = MockMode.autoUnit)
+        val kaliumFileSystem = mock<KaliumFileSystem>(mode = MockMode.autoUnit)
         var usersPages: List<Array<BackupUser>> = listOf(arrayOf(testUser.toBackupUser()))
         var usersInsertStubConfigured = false
         var conversationsInsertStubConfigured = false
@@ -280,6 +310,18 @@ class RestoreMPBackupUseCaseTest {
             )
         }
 
+        suspend fun withCancellation() = apply {
+            everySuspend { importer.importFromFile(any(), any()) } calls {
+                throw CancellationException("cancelled")
+            }
+        }
+
+        suspend fun withIOException() = apply {
+            everySuspend { importer.importFromFile(any(), any()) } calls {
+                throw IOException("read failed")
+            }
+        }
+
         fun withUsersPages(vararg pages: Array<BackupUser>) = apply {
             usersPages = pages.toList()
         }
@@ -318,6 +360,7 @@ class RestoreMPBackupUseCaseTest {
 
             every { importerProvider.providePeekImporter() } returns (importer)
             every { importerProvider.provideImporter(any(), any()) } returns (importer)
+            every { kaliumFileSystem.tempFilePath(any()) } returns "testPath/restore-workdir".toPath()
 
             if (!usersInsertStubConfigured) {
                 everySuspend { backupRepository.insertUsers(any()) } returns (Unit.right())
@@ -357,7 +400,7 @@ class RestoreMPBackupUseCaseTest {
             return this to RestoreMPBackupUseCaseImpl(
                 selfUserId = selfUserId,
                 backupRepository = backupRepository,
-                kaliumFileSystem = FakeKaliumFileSystem(),
+                kaliumFileSystem = kaliumFileSystem,
                 backupImporterProvider = importerProvider,
                 dispatchers = dispatchers
             )

@@ -71,8 +71,8 @@ internal class RestoreMPBackupUseCaseImpl(
         password: String?,
         onProgress: (Float) -> Unit
     ): RestoreBackupResult = withContext(dispatchers.io) {
+        val backupWorkDir = kaliumFileSystem.tempFilePath("${backupFilePath.name}-restore-workdir")
         try {
-            val backupWorkDir = kaliumFileSystem.tempFilePath("${backupFilePath.name}-restore-workdir")
             kaliumFileSystem.deleteContents(backupWorkDir)
 
             val importer = backupImporterProvider.provideImporter(
@@ -113,8 +113,6 @@ internal class RestoreMPBackupUseCaseImpl(
                 is ImportResult.Failure.UnknownError -> RestoreBackupResult.Failure(
                     RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unknown error")
                 )
-            }.also {
-                kaliumFileSystem.deleteContents(backupWorkDir)
             }
         } catch (e: CancellationException) {
             throw e
@@ -123,6 +121,9 @@ internal class RestoreMPBackupUseCaseImpl(
             RestoreBackupResult.Failure(
                 RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("IO error: ${e.message}")
             )
+        } finally {
+            runCatching { kaliumFileSystem.deleteContents(backupWorkDir) }
+                .onFailure { kaliumLogger.e("Failed to clean backup restore work directory", it) }
         }
     }
 

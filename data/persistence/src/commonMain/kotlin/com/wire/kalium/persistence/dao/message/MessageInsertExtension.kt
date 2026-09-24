@@ -18,8 +18,8 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
-import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.async.coroutines.await
 
 import com.wire.kalium.persistence.ConversationsQueries
@@ -106,17 +106,16 @@ internal class MessageInsertExtensionImpl(
     override suspend fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean) {
         // The caller owns one write transaction. Ignore only an existing identity; every other
         // base/content/unread failure must roll back that transaction and reach its caller.
-        if (messagesQueries.messageExists(message.id, message.conversationId).awaitAsOne()) return
-        insertBaseMessageOrError(message)
+        if (!insertBaseMessage(message)) return
         insertMessageContent(message)
         if (withUnreadEvents) {
             insertUnreadEvent(message)
         }
     }
 
-    private suspend fun insertBaseMessageOrError(message: MessageEntity) {
+    private suspend fun insertBaseMessage(message: MessageEntity): Boolean {
         // do not add withContext
-        messagesQueries.insertMessage(
+        messagesQueries.insertOrIgnoreMessage(
             id = message.id,
             conversation_id = message.conversationId,
             creation_date = message.date,
@@ -132,6 +131,7 @@ internal class MessageInsertExtensionImpl(
             expire_after_millis = if (message is MessageEntity.Regular) message.expireAfterMs else null,
             self_deletion_end_date = if (message is MessageEntity.Regular) message.selfDeletionEndDate else null
         )
+        return messagesQueries.selectChanges().awaitAsOne() > 0
     }
 
     @Suppress("LongMethod", "ComplexMethod")
