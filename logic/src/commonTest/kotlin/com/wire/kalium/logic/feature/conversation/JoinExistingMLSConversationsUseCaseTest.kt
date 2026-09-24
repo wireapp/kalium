@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.sync.SlowSyncProgress
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
@@ -53,6 +54,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class JoinExistingMLSConversationsUseCaseTest {
@@ -358,6 +360,66 @@ class JoinExistingMLSConversationsUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(Arrangement.MLS_CONVERSATION1.id), any(), any())
         }
+    }
+
+    @Test
+    fun givenConversations_whenJoining_thenReportsProcessedCountsOncePerConversation() = runTest {
+        val (_, useCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful()
+            .withJoinExistingMLSConversationSuccessful()
+            .arrange()
+        val progress = mutableListOf<SlowSyncProgress>()
+
+        useCase(onProgress = { progress += it }).shouldSucceed()
+
+        assertEquals(listOf(0, 1, 2), progress.map { it.completed })
+        assertEquals(listOf(2, 2, 2), progress.map { it.total })
+    }
+
+    @Test
+    fun givenDeferredConversations_whenJoining_thenCountsProcessedWorkWithoutExtraRetries() = runTest {
+        val (_, useCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful()
+            .withNoKeyPackagesAvailable()
+            .arrange()
+        val progress = mutableListOf<SlowSyncProgress>()
+
+        useCase(onProgress = { progress += it }).shouldSucceed()
+
+        assertEquals(listOf(0, 1, 2), progress.map { it.completed })
+    }
+
+    @Test
+    fun givenNoConversations_whenJoining_thenReportsEmptyWork() = runTest {
+        val (_, useCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful(emptyList())
+            .arrange()
+        val progress = mutableListOf<SlowSyncProgress>()
+
+        useCase(onProgress = { progress += it }).shouldSucceed()
+
+        assertEquals(listOf(SlowSyncProgress(0, 0)), progress)
+    }
+
+    @Test
+    fun givenNetworkFailure_whenJoining_thenDoesNotCountFailedConversations() = runTest {
+        val (_, useCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful()
+            .withJoinExistingMLSConversationNetworkFailure()
+            .arrange()
+        val progress = mutableListOf<SlowSyncProgress>()
+
+        useCase(onProgress = { progress += it }).shouldFail()
+
+        assertEquals(listOf(SlowSyncProgress(0, 2)), progress)
     }
 
     private class Arrangement(
