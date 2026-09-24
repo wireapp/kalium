@@ -21,6 +21,7 @@ import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserConfigDAO
+import kotlinx.serialization.json.Json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -48,6 +49,28 @@ class UserConfigDAOTest : BaseDatabaseTest() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, enableWAL = true)
         userConfigDAO = db.userConfigDAO
+    }
+
+    @Test
+    fun givenManualMigrationAllowed_whenStored_thenFlagIsPreserved() = runTest {
+        val config = MLSMigrationEntity(true, null, null, true)
+        userConfigDAO.setMigrationConfiguration(config)
+        assertEquals(config, userConfigDAO.getMigrationConfiguration())
+    }
+
+    @Test
+    fun givenManualMigrationDisallowed_whenStored_thenFlagIsPreserved() = runTest {
+        val config = MLSMigrationEntity(true, null, null, false)
+        userConfigDAO.setMigrationConfiguration(config)
+        assertEquals(config, userConfigDAO.getMigrationConfiguration())
+    }
+
+    @Test
+    fun givenLegacyMigrationConfiguration_whenDecoded_thenManualMigrationDefaultsToFalse() {
+        val config = Json.decodeFromString<MLSMigrationEntity>(
+            """{"status":true,"startTime":null,"endTime":null}"""
+        )
+        assertFalse(config.allowManualMigration)
     }
 
     @Test

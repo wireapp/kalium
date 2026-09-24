@@ -308,6 +308,7 @@ data class MLSMigrationEntity(
     @Serializable val status: Boolean,
     @Serializable val startTime: Instant?,
     @Serializable val endTime: Instant?,
+    @Serializable val allowManualMigration: Boolean = false,
 )
 
 @Serializable
