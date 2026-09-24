@@ -54,13 +54,15 @@ data class MeetingOccurrenceDetailsEntity(
     val meeting: MeetingEntity,
     val conversationName: String?,
     val conversationType: ConversationEntity.Type,
-    val otherUserPreviewAssetId: QualifiedIDEntity?,
     val channelAccess: ConversationEntity.ChannelAccess?,
     val selfUserId: QualifiedIDEntity?,
-    val participantPreviewAssetIds: List<QualifiedIDEntity> = emptyList()
+    val participants: List<MeetingParticipantEntity> = emptyList()
 )
 
-data class MeetingParticipantPreviewAssetEntity(
+data class MeetingParticipantEntity(
     val conversationId: QualifiedIDEntity,
+    val userId: QualifiedIDEntity,
+    val name: String,
+    val accentColor: Int,
     val previewAssetId: QualifiedIDEntity?
 )
