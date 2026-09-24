@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -41,6 +42,7 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.datetime.Instant
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -83,37 +85,127 @@ class MLSConversationMembershipAuditManagerTest {
     }
 
     @Test
-    fun givenDeferredAudit_whenPostRegistrationSlowSyncCompletes_thenAuditBecomesRequired() = runTest {
+    fun givenDeferredAudit_whenPostRegistrationSlowSyncCompletes_thenKeyPackageCheckIsRequested() = runTest {
         val (arrangement, manager) = Arrangement()
             .withAuditState(MLSMembershipAuditState.REQUIRED_AFTER_SLOW_SYNC)
             .withIncrementalSyncState(IncrementalSyncStatus.Live)
+            .withLastSlowSyncInstant(null)
             .arrange()
 
         manager.observeShouldForceKeyPackageCheck().test {
             assertFalse(awaitItem())
 
-            arrangement.slowSyncState.value = SlowSyncStatus.Pending
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
-            arrangement.slowSyncState.value = SlowSyncStatus.Complete
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            arrangement.lastSlowSyncInstant.value = Instant.fromEpochSeconds(100)
 
             assertTrue(awaitItem())
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.auditRepository.markAuditRequired()
-            }
+        }
+        // The deferred state is no longer promoted by a DB write from inside a flow operator.
+        verifySuspend(VerifyMode.not) {
+            arrangement.auditRepository.markAuditRequired()
         }
     }
 
     @Test
-    fun givenDeferredAuditAfterRestart_whenSyncIsAlreadyComplete_thenAnotherSlowSyncCycleIsRequired() = runTest {
-        val (_, manager) = Arrangement()
+    fun givenDeferredAuditAndNoSlowSyncSinceRegistration_whenSyncIsAlreadyComplete_thenAnotherSlowSyncCycleIsRequired() =
+        runTest {
+            val (_, manager) = Arrangement()
+                .withAuditState(MLSMembershipAuditState.REQUIRED_AFTER_SLOW_SYNC)
+                .withIncrementalSyncState(IncrementalSyncStatus.Live)
+                .withLastSlowSyncInstant(null)
+                .arrange()
+
+            manager.observeShouldForceKeyPackageCheck().test {
+                assertFalse(awaitItem())
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun givenDeferredAuditAndPersistedInstantAtProcessStart_whenSyncIsAlreadyComplete_thenKeyPackageCheckIsRequested() =
+        runTest {
+            // RegisterMLSClientUseCase clears the completion instant before writing the deferred
+            // marker, so a persisted instant sitting alongside a deferred marker can only have come
+            // from a slow sync that completed after registration. This is the inference the whole
+            // design rests on, and it is what makes a restart unambiguous.
+            // Fresh process: SlowSyncManager took the skip branch and went straight to Complete
+            // without running a real sync, so there is no Pending -> Complete transition to observe.
+            // The persisted instant is the only evidence, and it is sufficient.
+            val (_, manager) = Arrangement()
+                .withAuditState(MLSMembershipAuditState.REQUIRED_AFTER_SLOW_SYNC)
+                .withSlowSyncState(SlowSyncStatus.Complete)
+                .withIncrementalSyncState(IncrementalSyncStatus.Live)
+                .withLastSlowSyncInstant(Instant.fromEpochSeconds(100))
+                .arrange()
+
+            manager.observeShouldForceKeyPackageCheck().test {
+                assertTrue(awaitItem())
+            }
+        }
+
+    @Test
+    fun givenDeferredAuditAndInstantPersistedWhileSlowSyncStillOngoing_thenNoCheckUntilComplete() = runTest {
+        // SlowSyncManager persists the completion instant before flipping the status to Complete,
+        // so the instant is briefly visible while slow sync is still Ongoing.
+        val (arrangement, manager) = Arrangement()
             .withAuditState(MLSMembershipAuditState.REQUIRED_AFTER_SLOW_SYNC)
+            .withSlowSyncState(SlowSyncStatus.Ongoing(SlowSyncStep.CONVERSATIONS))
             .withIncrementalSyncState(IncrementalSyncStatus.Live)
+            .withLastSlowSyncInstant(null)
             .arrange()
 
         manager.observeShouldForceKeyPackageCheck().test {
             assertFalse(awaitItem())
+
+            arrangement.lastSlowSyncInstant.value = Instant.fromEpochSeconds(100)
             expectNoEvents()
+
+            arrangement.slowSyncState.value = SlowSyncStatus.Complete
+            assertTrue(awaitItem())
+        }
+    }
+
+    @Test
+    fun givenDeferredAuditAndNoPersistedInstant_whenAuditing_thenAuditIsDeferred() = runTest {
+        val (arrangement, manager) = Arrangement()
+            .withAuditState(MLSMembershipAuditState.REQUIRED_AFTER_SLOW_SYNC)
+            .withIncrementalSyncState(IncrementalSyncStatus.Live)
+            .withLastSlowSyncInstant(null)
+            .withAuditSuccessful()
+            .arrange()
+
+        val result = manager.auditIfNeeded(RefillKeyPackagesResult.Success(availableCountBeforeRefill = 10, refilled = false))
+
+        assertIs<Either.Right<Unit>>(result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.auditMLSConversationMembership.invoke(any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.auditRepository.clearAuditRequired()
+        }
+    }
+
+    @Test
+    fun givenDeferredAuditAndPersistedInstant_whenAuditing_thenAuditRunsAndMarkerIsCleared() = runTest {
+        // The payoff path: a deferred marker whose post-registration slow sync has since completed
+        // must actually reach the audit and clear the marker. If it did not, the force-check signal
+        // would stay true and KeyPackageManager would re-check on every sync flap, forever.
+        val (arrangement, manager) = Arrangement()
+            .withAuditState(MLSMembershipAuditState.REQUIRED_AFTER_SLOW_SYNC)
+            .withIncrementalSyncState(IncrementalSyncStatus.Live)
+            .withLastSlowSyncInstant(Instant.fromEpochSeconds(100))
+            .withAuditSuccessful()
+            .arrange()
+
+        val result = manager.auditIfNeeded(
+            RefillKeyPackagesResult.Success(availableCountBeforeRefill = 10, refilled = false)
+        )
+
+        assertIs<Either.Right<Unit>>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.auditMLSConversationMembership.invoke(any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.auditRepository.clearAuditRequired()
         }
     }
 
@@ -233,6 +325,7 @@ class MLSConversationMembershipAuditManagerTest {
         val auditMLSConversationMembership: AuditMLSConversationMembershipUseCase = mock()
         val slowSyncState = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete)
         val auditState = MutableStateFlow(MLSMembershipAuditState.NOT_REQUIRED)
+        val lastSlowSyncInstant = MutableStateFlow<Instant?>(Instant.fromEpochSeconds(0))
         private var auditClearFailure: StorageFailure? = null
 
         fun withAuditState(state: MLSMembershipAuditState) = apply {
@@ -241,6 +334,10 @@ class MLSConversationMembershipAuditManagerTest {
 
         fun withSlowSyncState(state: SlowSyncStatus) = apply {
             slowSyncState.value = state
+        }
+
+        fun withLastSlowSyncInstant(instant: Instant?) = apply {
+            lastSlowSyncInstant.value = instant
         }
 
         suspend fun withIncrementalSyncState(state: IncrementalSyncStatus) = apply {
@@ -267,6 +364,12 @@ class MLSConversationMembershipAuditManagerTest {
             every {
                 slowSyncRepository.slowSyncStatus
             } returns slowSyncState
+            every {
+                slowSyncRepository.observeLastSlowSyncCompletionInstant()
+            } returns lastSlowSyncInstant
+            everySuspend {
+                slowSyncRepository.getLastSlowSyncCompletionInstant()
+            } calls { lastSlowSyncInstant.value }
             every {
                 auditRepository.observeAuditState()
             } returns auditState

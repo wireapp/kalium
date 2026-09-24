@@ -21,7 +21,6 @@ package com.wire.kalium.logic.data.keypackage
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -33,9 +32,7 @@ internal enum class MLSMembershipAuditState {
 }
 
 internal interface MLSMembershipAuditRepository {
-    fun observeAuditRequired(): Flow<Boolean>
     fun observeAuditState(): Flow<MLSMembershipAuditState>
-    suspend fun isAuditRequired(): Either<StorageFailure, Boolean>
     suspend fun getAuditState(): Either<StorageFailure, MLSMembershipAuditState>
     suspend fun markAuditRequired(): Either<StorageFailure, Unit>
     suspend fun markAuditRequiredAfterSlowSync(): Either<StorageFailure, Unit>
@@ -46,21 +43,23 @@ internal class MLSMembershipAuditRepositoryImpl(
     private val metadataDAO: MetadataDAO
 ) : MLSMembershipAuditRepository {
 
-    override fun observeAuditRequired(): Flow<Boolean> =
-        observeAuditState().map { it != MLSMembershipAuditState.NOT_REQUIRED }
-
     override fun observeAuditState(): Flow<MLSMembershipAuditState> =
         metadataDAO.valueByKeyFlow(MLS_MEMBERSHIP_AUDIT_REQUIRED_KEY).map { it.toAuditState() }
-
-    override suspend fun isAuditRequired(): Either<StorageFailure, Boolean> =
-        getAuditState().map { it != MLSMembershipAuditState.NOT_REQUIRED }
 
     override suspend fun getAuditState(): Either<StorageFailure, MLSMembershipAuditState> = wrapStorageRequest {
         metadataDAO.valueByKey(MLS_MEMBERSHIP_AUDIT_REQUIRED_KEY).toAuditState()
     }
 
     override suspend fun markAuditRequired(): Either<StorageFailure, Unit> = wrapStorageRequest {
-        metadataDAO.insertValue(value = AUDIT_REQUIRED_VALUE, key = MLS_MEMBERSHIP_AUDIT_REQUIRED_KEY)
+        // Never downgrade the deferral. REQUIRED_AFTER_SLOW_SYNC is the strictly more conservative
+        // gate and still resolves to an audit, just after the post-registration slow sync. Without
+        // this guard the zero-key-package signal that fires right after MLS client registration
+        // would clear the deferral and audit the pre-registration conversation list.
+        if (metadataDAO.valueByKey(MLS_MEMBERSHIP_AUDIT_REQUIRED_KEY).toAuditState()
+            != MLSMembershipAuditState.REQUIRED_AFTER_SLOW_SYNC
+        ) {
+            metadataDAO.insertValue(value = AUDIT_REQUIRED_VALUE, key = MLS_MEMBERSHIP_AUDIT_REQUIRED_KEY)
+        }
     }
 
     override suspend fun markAuditRequiredAfterSlowSync(): Either<StorageFailure, Unit> = wrapStorageRequest {
@@ -73,7 +72,7 @@ internal class MLSMembershipAuditRepositoryImpl(
 
     private companion object {
         const val MLS_MEMBERSHIP_AUDIT_REQUIRED_KEY = "mlsMembershipAuditRequired"
-        const val AUDIT_REQUIRED_VALUE = "true"
+        const val AUDIT_REQUIRED_VALUE = "required"
         const val AUDIT_REQUIRED_AFTER_SLOW_SYNC_VALUE = "required_after_slow_sync"
 
         fun String?.toAuditState(): MLSMembershipAuditState = when (this) {

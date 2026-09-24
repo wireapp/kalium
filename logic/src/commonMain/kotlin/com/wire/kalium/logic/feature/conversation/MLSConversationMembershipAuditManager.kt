@@ -21,7 +21,6 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.keypackage.MLSMembershipAuditRepository
@@ -35,7 +34,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 
 internal interface MLSConversationMembershipAuditManager {
     fun observeShouldForceKeyPackageCheck(): Flow<Boolean>
@@ -53,47 +52,33 @@ internal class MLSConversationMembershipAuditManagerImpl(
     private val transactionProvider: CryptoTransactionProvider,
 ) : MLSConversationMembershipAuditManager {
 
-    private var waitingForPostRegistrationSync = false
-    private var observedPostRegistrationSlowSync = false
-
     override fun observeShouldForceKeyPackageCheck(): Flow<Boolean> =
         combine(
             incrementalSyncRepository.incrementalSyncState,
             slowSyncRepository.slowSyncStatus,
+            slowSyncRepository.observeLastSlowSyncCompletionInstant(),
             auditRepository.observeAuditState()
-        ) { incrementalSyncState, slowSyncState, auditState ->
-            Triple(incrementalSyncState, slowSyncState, auditState)
-        }.map { (incrementalSyncState, slowSyncState, auditState) ->
-            when (auditState) {
-                MLSMembershipAuditState.NOT_REQUIRED -> {
-                    resetPostRegistrationSyncObservation()
-                    false
-                }
-
-                MLSMembershipAuditState.REQUIRED -> {
-                    resetPostRegistrationSyncObservation()
-                    isSyncReadyForAudit(incrementalSyncState, slowSyncState)
-                }
-
-                MLSMembershipAuditState.REQUIRED_AFTER_SLOW_SYNC -> {
-                    handleAuditWaitingForSlowSync(incrementalSyncState, slowSyncState)
-                    false
-                }
-            }
+        ) { incrementalSyncState, slowSyncState, lastSlowSyncInstant, auditState ->
+            isAuditDue(
+                auditState = auditState,
+                incrementalSyncState = incrementalSyncState,
+                slowSyncState = slowSyncState,
+                lastSlowSyncInstant = lastSlowSyncInstant
+            )
         }.distinctUntilChanged()
 
     override suspend fun auditIfNeeded(
         refillResult: RefillKeyPackagesResult.Success
     ): Either<CoreFailure, Unit> =
         auditRepository.getAuditState().flatMap { auditState ->
-
             val keyPackagesAreAvailable = refillResult.refilled || refillResult.availableCountBeforeRefill > 0
 
-            val shouldRunAudit = when {
-                auditState != MLSMembershipAuditState.REQUIRED -> false
-                !keyPackagesAreAvailable -> false
-                else -> isCurrentSyncReadyForAudit()
-            }
+            val shouldRunAudit = keyPackagesAreAvailable && isAuditDue(
+                auditState = auditState,
+                incrementalSyncState = incrementalSyncRepository.incrementalSyncState.first(),
+                slowSyncState = slowSyncRepository.slowSyncStatus.value,
+                lastSlowSyncInstant = slowSyncRepository.getLastSlowSyncCompletionInstant()
+            )
 
             if (shouldRunAudit) {
                 runAudit()
@@ -102,32 +87,26 @@ internal class MLSConversationMembershipAuditManagerImpl(
             }
         }
 
-    private suspend fun handleAuditWaitingForSlowSync(
+    /**
+     * Pure predicate; no state, no side effects, safe under any number of collectors.
+     *
+     * [MLSMembershipAuditState.REQUIRED_AFTER_SLOW_SYNC] additionally requires a persisted slow-sync
+     * completion instant. [com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase] clears that
+     * instant immediately before writing the deferred marker, so any instant observed afterwards
+     * necessarily belongs to a slow sync that completed after the MLS client was registered. Unlike
+     * [SlowSyncStatus], the instant survives process death, so a restart cannot mistake the in-memory
+     * Pending -> Complete skip transition for a real sync.
+     */
+    private fun isAuditDue(
+        auditState: MLSMembershipAuditState,
         incrementalSyncState: IncrementalSyncStatus,
         slowSyncState: SlowSyncStatus,
-    ) {
-        if (!waitingForPostRegistrationSync) {
-            waitingForPostRegistrationSync = true
-            observedPostRegistrationSlowSync = slowSyncState !is SlowSyncStatus.Complete
-            kaliumLogger.d("Deferring post-registration MLS membership audit until the next completed sync")
-            return
-        }
-
-        if (slowSyncState !is SlowSyncStatus.Complete) {
-            observedPostRegistrationSlowSync = true
-        } else if (
-            observedPostRegistrationSlowSync &&
-            incrementalSyncState is IncrementalSyncStatus.Live
-        ) {
-            kaliumLogger.i("Post-registration sync completed; MLS membership audit is ready")
-            auditRepository.markAuditRequired()
-                .onFailure { kaliumLogger.w("Failed to make post-registration MLS membership audit ready: $it") }
-        }
-    }
-
-    private fun resetPostRegistrationSyncObservation() {
-        waitingForPostRegistrationSync = false
-        observedPostRegistrationSlowSync = false
+        lastSlowSyncInstant: Instant?,
+    ): Boolean = when (auditState) {
+        MLSMembershipAuditState.NOT_REQUIRED -> false
+        MLSMembershipAuditState.REQUIRED -> isSyncReadyForAudit(incrementalSyncState, slowSyncState)
+        MLSMembershipAuditState.REQUIRED_AFTER_SLOW_SYNC ->
+            lastSlowSyncInstant != null && isSyncReadyForAudit(incrementalSyncState, slowSyncState)
     }
 
     private fun isSyncReadyForAudit(
@@ -136,12 +115,6 @@ internal class MLSConversationMembershipAuditManagerImpl(
     ): Boolean =
         incrementalSyncState is IncrementalSyncStatus.Live &&
             slowSyncState is SlowSyncStatus.Complete
-
-    private suspend fun isCurrentSyncReadyForAudit(): Boolean =
-        isSyncReadyForAudit(
-            incrementalSyncRepository.incrementalSyncState.first(),
-            slowSyncRepository.slowSyncStatus.value
-        )
 
     private suspend fun runAudit(): Either<CoreFailure, Unit> {
         kaliumLogger.i("Auditing MLS conversation membership after key package recovery")

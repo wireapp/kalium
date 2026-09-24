@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.keypackage.MLSMembershipAuditRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.E2EI_TEAM_SETTINGS
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.MLS_CIPHER_SUITE
 import com.wire.kalium.logic.framework.TestClient
@@ -45,6 +46,7 @@ import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -117,6 +119,9 @@ class RegisterMLSClientUseCaseTest {
 
             verifySuspend(VerifyMode.not) {
                 arrangement.mlsMembershipAuditRepository.markAuditRequiredAfterSlowSync()
+                // An E2EI-blocked attempt never succeeds, so forcing a slow sync here would repeat
+                // on every retry. The clear must stay below the E2EI branch.
+                arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
                 arrangement.clientRepository.registerMLSClient(
                     TestClient.CLIENT_ID,
                     Arrangement.MLS_PUBLIC_KEY,
@@ -225,6 +230,55 @@ class RegisterMLSClientUseCaseTest {
         }
     }
 
+    @Test
+    fun givenKeyPackageUploadFails_whenInvoked_thenSlowSyncIsClearedAndAuditMarkerIsPersisted() = runTest {
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = false)))
+            .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withAuditAfterSlowSyncMarked()
+            .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
+            .withUploadKeyPackagesFailing()
+            .withMLSTransaction<Unit>()
+            .arrange()
+
+        registerMLSClient(TestClient.CLIENT_ID).shouldFail()
+
+        // The registration flag is already persisted at this point, so the forced slow sync and the
+        // deferred audit marker must survive the upload failure - otherwise no later run would ever
+        // re-enter registration and the deferred audit would wait on a sync that never happens.
+        verifySuspend(VerifyMode.order) {
+            arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
+            arrangement.mlsMembershipAuditRepository.markAuditRequiredAfterSlowSync()
+        }
+    }
+
+    @Test
+    fun givenClearingSlowSyncInstantFails_whenInvoked_thenAuditMarkerIsNotPersisted() = runTest {
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = false)))
+            .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withClearLastSlowSyncCompletionInstantFailing()
+            .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
+            .withUploadKeyPackagesSuccessful()
+            .withMLSTransaction<Unit>()
+            .arrange()
+
+        registerMLSClient(TestClient.CLIENT_ID).shouldFail()
+
+        // A surviving pre-registration instant alongside the deferred marker would open the audit
+        // gate immediately, so the clear must gate the marker write rather than merely precede it.
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsMembershipAuditRepository.markAuditRequiredAfterSlowSync()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), any(), any())
+        }
+    }
+
     private class Arrangement {
         val mlsClient: MLSClient = mock(mode = MockMode.autoUnit)
         val x509CredentialRef: CryptoCredentialRef = mock(mode = MockMode.autoUnit)
@@ -235,6 +289,7 @@ class RegisterMLSClientUseCaseTest {
         val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock(mode = MockMode.autoUnit)
         val userConfigRepository: UserConfigRepository = mock(mode = MockMode.autoUnit)
         val mlsMembershipAuditRepository: MLSMembershipAuditRepository = mock(mode = MockMode.autoUnit)
+        val slowSyncRepository: SlowSyncRepository = mock(mode = MockMode.autoUnit)
 
         suspend fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
             everySuspend {
@@ -258,6 +313,18 @@ class RegisterMLSClientUseCaseTest {
             everySuspend {
                 mlsMembershipAuditRepository.markAuditRequiredAfterSlowSync()
             } returns Either.Right(Unit)
+        }
+
+        suspend fun withClearLastSlowSyncCompletionInstantFailing() = apply {
+            everySuspend {
+                slowSyncRepository.clearLastSlowSyncCompletionInstant()
+            } throws IllegalStateException("db unavailable")
+        }
+
+        suspend fun withUploadKeyPackagesFailing() = apply {
+            everySuspend {
+                keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, any())
+            } returns Either.Left(CoreFailure.Unknown(null))
         }
 
         suspend fun withAuditAfterSlowSyncMarkFailed() = apply {
@@ -315,6 +382,7 @@ class RegisterMLSClientUseCaseTest {
             TestUser.SELF.id,
             NoOpCryptoStateChangeHookNotifier,
             mlsMembershipAuditRepository,
+            slowSyncRepository,
         )
 
         companion object {

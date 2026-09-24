@@ -1398,6 +1398,7 @@ public class UserSessionScope internal constructor(
             userId,
             currentCryptoStateChangeHookNotifier,
             mlsMembershipAuditRepository,
+            slowSyncRepository,
         )
 
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
@@ -1724,7 +1725,6 @@ public class UserSessionScope internal constructor(
             clientIdProvider,
             isAllowedToRegisterMLSClient,
             syncStateObserver.value,
-            lazy { slowSyncRepository },
             lazy { clientRepository },
             lazy {
                 RegisterMLSClientUseCaseImpl(
@@ -1736,6 +1736,7 @@ public class UserSessionScope internal constructor(
                     userId,
                     currentCryptoStateChangeHookNotifier,
                     mlsMembershipAuditRepository,
+                    slowSyncRepository,
                 )
             },
             this,
@@ -2666,7 +2667,6 @@ public class UserSessionScope internal constructor(
             refreshUsersWithoutMetadata,
             isE2EIEnabled,
             incrementalSyncRepository,
-            slowSyncRepository,
             sessionManager,
             selfTeamId,
             userScopedLogger,

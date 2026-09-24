@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
@@ -131,22 +130,15 @@ class VerifyExistingClientUseCaseTest {
         val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
         val isAllowedToRegisterMLSClientUseCase = mock<IsAllowedToRegisterMLSClientUseCase>(mode = MockMode.autoUnit)
         val registerMLSClientUseCase = mock<RegisterMLSClientUseCase>(mode = MockMode.autoUnit)
-        val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
             runBlocking { block() }
-            runBlocking {
-                everySuspend {
-                    slowSyncRepository.clearLastSlowSyncCompletionInstant()
-                } returns Unit
-            }
 
             this@Arrangement to VerifyExistingClientUseCaseImpl(
                 TestUser.USER_ID,
                 clientRepository,
                 isAllowedToRegisterMLSClientUseCase,
                 registerMLSClientUseCase,
-                slowSyncRepository
             )
         }
 

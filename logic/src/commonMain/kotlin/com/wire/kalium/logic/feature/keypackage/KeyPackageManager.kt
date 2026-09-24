@@ -43,9 +43,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
 
 // The duration in hours after which we should re-check key package count.
-internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
+internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.seconds
 
 /**
  * Observes the MLS key package count and uploads new key packages when necessary.
