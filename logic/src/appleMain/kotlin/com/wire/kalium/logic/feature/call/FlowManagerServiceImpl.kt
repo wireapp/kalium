@@ -22,15 +22,33 @@ import com.wire.kalium.calling.AppleAvsFlowManager
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.RemoteVideoViewAttachment
+import com.wire.kalium.logic.feature.RemoteVideoViewAttachmentOwner
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformRotation
 import com.wire.kalium.logic.util.PlatformView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal actual open class FlowManagerServiceImpl(
     appContext: PlatformContext
 ) : FlowManagerService {
     private val flowManager by lazy {
         AppleAvsFlowManager()
+    }
+    private val remoteViews by lazy {
+        RemoteVideoViewAttachmentOwner(
+            attachNative = { view, userId, clientId -> flowManager.attachPlatformRemoteVideoView(view, userId, clientId) },
+            detachNative = { view -> flowManager.detachPlatformRemoteVideoView(view) },
+        )
+    }
+
+    internal suspend fun attachRemoteVideoView(
+        view: PlatformView,
+        userId: String,
+        clientId: String,
+    ): RemoteVideoViewAttachment = withContext(Dispatchers.Main) {
+        remoteViews.attach(view, userId, clientId)
     }
 
     actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {

@@ -39,6 +39,15 @@ actual class AppleAvsFlowManager actual constructor() {
         return true
     }
 
+    actual fun attachRemoteVideoView(view: Any?, userId: String, clientId: String): Boolean {
+        // The macOS AVS framework does not export its remote view type in its module map.
+        return false
+    }
+
+    actual fun detachRemoteVideoView(view: Any?): Boolean {
+        return false
+    }
+
     actual fun setVideoCaptureDevice(deviceId: String, forConversation: String) {
         flowManager.setVideoCaptureDevice(deviceId = deviceId, forConversation = forConversation)
     }

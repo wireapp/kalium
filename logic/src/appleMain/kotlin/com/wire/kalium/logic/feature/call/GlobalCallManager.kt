@@ -60,7 +60,7 @@ internal actual class GlobalCallManager actual constructor(
     platformContext: PlatformContext
 ) : CallNetworkChangeManager(scope, networkStateObserver) {
 
-    private val flowManagerService by lazy { FlowManagerServiceImpl(platformContext) }
+    internal val flowManagerService by lazy { FlowManagerServiceImpl(platformContext) }
     private val mediaManagerService by lazy { MediaManagerServiceImpl(platformContext) }
     private var hasEnabledCallingClient = false
 

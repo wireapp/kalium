@@ -23,3 +23,12 @@ import com.wire.kalium.logic.util.PlatformView
 
 internal fun AppleAvsFlowManager.attachPlatformVideoView(view: PlatformView): Boolean =
     attachVideoView(view.view)
+
+internal fun AppleAvsFlowManager.attachPlatformRemoteVideoView(
+    view: PlatformView,
+    userId: String,
+    clientId: String,
+): Boolean = attachRemoteVideoView(view.view, userId, clientId)
+
+internal fun AppleAvsFlowManager.detachPlatformRemoteVideoView(view: PlatformView): Boolean =
+    detachRemoteVideoView(view.view)

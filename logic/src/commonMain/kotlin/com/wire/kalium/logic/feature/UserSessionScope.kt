@@ -630,7 +630,7 @@ public class UserSessionScope internal constructor(
     userAgent: String,
     internal val userId: UserId,
     private val globalScope: GlobalKaliumScope,
-    private val globalCallManager: GlobalCallManager,
+    internal val globalCallManager: GlobalCallManager,
     private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val globalPreferences: GlobalPrefProvider,
     authenticationScopeProvider: AuthenticationScopeProvider,

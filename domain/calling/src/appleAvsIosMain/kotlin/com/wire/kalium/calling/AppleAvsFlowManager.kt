@@ -20,6 +20,7 @@ package com.wire.kalium.calling
 
 import avs.AVSFlowManager
 import avs.AVSMediaManager
+import avs.AVSVideoView
 import platform.UIKit.UIView
 
 actual class AppleAvsFlowManager actual constructor() {
@@ -36,6 +37,20 @@ actual class AppleAvsFlowManager actual constructor() {
     actual fun attachVideoView(view: Any?): Boolean {
         val videoView = view as? UIView ?: return false
         flowManager.attachVideoView(videoView)
+        return true
+    }
+
+    actual fun attachRemoteVideoView(view: Any?, userId: String, clientId: String): Boolean {
+        val remoteView = view as? AVSVideoView ?: return false
+        remoteView.userid = userId
+        remoteView.clientid = clientId
+        flowManager.attachVideoView(remoteView)
+        return true
+    }
+
+    actual fun detachRemoteVideoView(view: Any?): Boolean {
+        val remoteView = view as? AVSVideoView ?: return false
+        flowManager.detachVideoView(remoteView)
         return true
     }
 

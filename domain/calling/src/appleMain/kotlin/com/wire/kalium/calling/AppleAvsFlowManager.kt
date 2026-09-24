@@ -20,6 +20,8 @@ package com.wire.kalium.calling
 
 expect class AppleAvsFlowManager() {
     fun attachVideoView(view: Any?): Boolean
+    fun attachRemoteVideoView(view: Any?, userId: String, clientId: String): Boolean
+    fun detachRemoteVideoView(view: Any?): Boolean
     fun setVideoCaptureDevice(deviceId: String, forConversation: String)
     fun startIfAvailable(): Boolean
 }
