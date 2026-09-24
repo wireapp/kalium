@@ -95,6 +95,10 @@ internal class CellUploadCoordinatorImpl internal constructor(
         commands.trySend(Command.RetryAllFailed)
     }
 
+    override fun dismiss(id: String) {
+        commands.trySend(Command.Dismiss(id))
+    }
+
     private suspend fun handle(command: Command) {
         when (command) {
             is Command.Enqueue -> addItems(command.requests)
@@ -102,6 +106,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
             Command.CancelAll -> cancelAllItems()
             is Command.Retry -> requeueFailed(command.id)
             Command.RetryAllFailed -> requeueAllFailed()
+            is Command.Dismiss -> dismissItem(command.id)
             is Command.NodeCreated -> updateItem(command.id) {
                 copy(nodeUuid = command.nodeUuid, versionId = command.versionId)
             }
@@ -250,11 +255,19 @@ internal class CellUploadCoordinatorImpl internal constructor(
     }
 
     private fun requeueFailed(id: String) {
-        updateItem(id) { if (state is CellUploadState.Failed) copy(state = CellUploadState.Queued) else this }
+        updateItem(id) {
+            if (state is CellUploadState.Failed || state is CellUploadState.Cancelled) copy(state = CellUploadState.Queued) else this
+        }
     }
 
     private fun requeueAllFailed() {
         _uploads.value.filter { it.state is CellUploadState.Failed }.forEach { requeueFailed(it.id) }
+    }
+
+    private fun dismissItem(id: String) {
+        val item = _uploads.value.firstOrNull { it.id == id } ?: return
+        if (item.state is CellUploadState.Queued || item.state is CellUploadState.Uploading) return
+        _uploads.update { items -> items.filterNot { it.id == id } }
     }
 
     private fun updateProgress(id: String, progress: Float) {
@@ -287,6 +300,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
         data object CancelAll : Command
         data class Retry(val id: String) : Command
         data object RetryAllFailed : Command
+        data class Dismiss(val id: String) : Command
         data class NodeCreated(val id: String, val nodeUuid: String, val versionId: String) : Command
         data class Progress(val id: String, val progress: Float) : Command
         data class TransferCompleted(val id: String) : Command

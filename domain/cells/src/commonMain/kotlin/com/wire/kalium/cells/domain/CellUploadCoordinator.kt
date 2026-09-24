@@ -41,11 +41,14 @@ public interface CellUploadCoordinator {
     /** Cancels every queued and running upload. */
     public fun cancelAll()
 
-    /** Re-queues a failed upload. Completed and running uploads are untouched. */
+    /** Re-queues a failed or cancelled upload. Completed and running uploads are untouched. */
     public fun retry(id: String)
 
     /** Re-queues every failed upload, in their original order. */
     public fun retryAllFailed()
+
+    /** Removes a finished (completed, failed or cancelled) upload from [uploads]. Active uploads are untouched. */
+    public fun dismiss(id: String)
 }
 
 /**
