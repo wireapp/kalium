@@ -300,6 +300,102 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     @Test
+    fun givenMigratedConversationWithStaleZeroEpoch_whenInvokingUseCase_thenRefreshBeforeExternalCommit() = runTest {
+        val (arrangement, joinExistingMLSConversationUseCase) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSequentially(
+                Arrangement.MLS_MIGRATED_STALE_GROUP_CONVERSATION,
+                Arrangement.MLS_MIGRATED_REFRESHED_GROUP_CONVERSATION
+            )
+            .withFetchConversationSuccessful()
+            .withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationUseCase(
+            arrangement.transactionContext,
+            Arrangement.MLS_MIGRATED_STALE_GROUP_CONVERSATION.id
+        ).shouldSucceed()
+
+        verifySuspend(VerifyMode.order) {
+            arrangement.fetchConversation(
+                any(),
+                eq(Arrangement.MLS_MIGRATED_STALE_GROUP_CONVERSATION.id),
+                eq(ConversationSyncReason.Other)
+            )
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(
+                any(),
+                eq(Arrangement.GROUP_ID3),
+                any()
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenStaleOneOnOneConversationWithSelfMemberFirst_whenInvokingUseCase_thenRefreshUsingOtherMember() = runTest {
+        verifyStaleOneOnOneRefreshUsesOtherMember(
+            members = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID),
+            dispatcher = testKaliumDispatcher
+        )
+    }
+
+    @Test
+    fun givenStaleOneOnOneConversationWithSelfMemberLast_whenInvokingUseCase_thenRefreshUsingOtherMember() = runTest {
+        verifyStaleOneOnOneRefreshUsesOtherMember(
+            members = listOf(TestUser.OTHER_USER_ID, TestUser.USER_ID),
+            dispatcher = testKaliumDispatcher
+        )
+    }
+
+    @Test
+    fun givenStaleMessageForOneOnOneConversation_whenRetrying_thenRefreshUsingOtherMember() = runTest {
+        val conversation = Arrangement.MLS_MIGRATED_REFRESHED_ONE_ON_ONE_CONVERSATION
+        val (arrangement, joinExistingMLSConversationUseCase) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSequentially(conversation, conversation)
+            .withGetConversationMembersSuccessful(listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID))
+            .withFetchMLSOneToOneConversationSuccessful(conversation)
+            .withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .withJoinByExternalCommitGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1)
+            .arrange()
+
+        joinExistingMLSConversationUseCase(arrangement.transactionContext, conversation.id).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.fetchMLSOneToOneConversation(any(), eq(TestUser.OTHER_USER_ID))
+        }
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(
+                any(),
+                eq(Arrangement.GROUP_ID_ONE_ON_ONE),
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun givenStaleOneOnOneConversationWithoutOtherMember_whenInvokingUseCase_thenFailureIsReported() = runTest {
+        verifyInvalidOneOnOneMembersFail(
+            members = listOf(TestUser.USER_ID),
+            dispatcher = testKaliumDispatcher
+        )
+    }
+
+    @Test
+    fun givenStaleOneOnOneConversationWithMultipleOtherMembers_whenInvokingUseCase_thenFailureIsReported() = runTest {
+        verifyInvalidOneOnOneMembersFail(
+            members = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID, Arrangement.ANOTHER_USER_ID),
+            dispatcher = testKaliumDispatcher
+        )
+    }
+
+    @Test
     fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true)
@@ -310,6 +406,51 @@ class JoinExistingMLSConversationUseCaseTest {
             .arrange()
 
         joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldFail()
+    }
+
+    private suspend fun verifyStaleOneOnOneRefreshUsesOtherMember(
+        members: List<UserId>,
+        dispatcher: KaliumDispatcher
+    ) {
+        val staleConversation = Arrangement.MLS_MIGRATED_STALE_ONE_ON_ONE_CONVERSATION
+        val refreshedConversation = Arrangement.MLS_MIGRATED_REFRESHED_ONE_ON_ONE_CONVERSATION
+        val (arrangement, joinExistingMLSConversationUseCase) = Arrangement(dispatcher)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(staleConversation)
+            .withGetConversationMembersSuccessful(members)
+            .withFetchMLSOneToOneConversationSuccessful(refreshedConversation)
+            .withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationUseCase(arrangement.transactionContext, staleConversation.id).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.fetchMLSOneToOneConversation(any(), eq(TestUser.OTHER_USER_ID))
+        }
+    }
+
+    private suspend fun verifyInvalidOneOnOneMembersFail(
+        members: List<UserId>,
+        dispatcher: KaliumDispatcher
+    ) {
+        val conversation = Arrangement.MLS_MIGRATED_STALE_ONE_ON_ONE_CONVERSATION
+        val (arrangement, joinExistingMLSConversationUseCase) = Arrangement(dispatcher)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(conversation)
+            .withGetConversationMembersSuccessful(members)
+            .arrange()
+
+        joinExistingMLSConversationUseCase(arrangement.transactionContext, conversation.id).shouldFail()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.fetchMLSOneToOneConversation(any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
+        }
     }
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) :
@@ -392,6 +533,12 @@ class JoinExistingMLSConversationUseCaseTest {
             } returns Either.Right(members)
         }
 
+        suspend fun withFetchMLSOneToOneConversationSuccessful(conversation: Conversation) = apply {
+            everySuspend {
+                fetchMLSOneToOneConversation(any(), any())
+            } returns Either.Right(conversation)
+        }
+
         suspend fun withEstablishMLSGroupSuccessful(additionResult: MLSAdditionResult) = apply {
             everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
@@ -463,6 +610,7 @@ class JoinExistingMLSConversationUseCaseTest {
             val GROUP_ID_ONE_ON_ONE = GroupID("group-one-on-ne")
             val GROUP_ID_SELF = GroupID("group-self")
             val LOCAL_GROUP_EPOCH = 7UL
+            val ANOTHER_USER_ID = UserId("another-user", "domain")
 
             val MLS_CONVERSATION1 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
@@ -513,6 +661,46 @@ class JoinExistingMLSConversationUseCaseTest {
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id-pending-after-reset", "domain"))
+
+            val MLS_MIGRATED_STALE_GROUP_CONVERSATION = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID3,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id-migrated-stale", "domain"))
+
+            val MLS_MIGRATED_REFRESHED_GROUP_CONVERSATION = MLS_MIGRATED_STALE_GROUP_CONVERSATION.copy(
+                protocol = Conversation.ProtocolInfo.MLS(
+                    GROUP_ID3,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
+                    epoch = 2UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            )
+
+            val MLS_MIGRATED_STALE_ONE_ON_ONE_CONVERSATION = TestConversation.ONE_ON_ONE(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID_ONE_ON_ONE,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("one-on-one-migrated-stale", "domain"))
+
+            val MLS_MIGRATED_REFRESHED_ONE_ON_ONE_CONVERSATION = MLS_MIGRATED_STALE_ONE_ON_ONE_CONVERSATION.copy(
+                protocol = Conversation.ProtocolInfo.MLS(
+                    GROUP_ID_ONE_ON_ONE,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
+                    epoch = 2UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            )
 
             val MLS_ESTABLISHED_GROUP_CONVERSATION = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(

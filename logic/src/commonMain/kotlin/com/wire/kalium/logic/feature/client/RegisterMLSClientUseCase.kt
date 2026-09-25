@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
@@ -36,6 +37,8 @@ import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.keypackage.MLSMembershipAuditRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 
@@ -60,7 +63,9 @@ internal class RegisterMLSClientUseCaseImpl(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val userConfigRepository: UserConfigRepository,
     private val selfUserId: UserId,
-    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier
+    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
+    private val mlsMembershipAuditRepository: MLSMembershipAuditRepository,
+    private val slowSyncRepository: SlowSyncRepository,
 ) : RegisterMLSClientUseCase {
 
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> {
@@ -102,6 +107,15 @@ internal class RegisterMLSClientUseCaseImpl(
             wrapMLSRequest { mlsClient.getPublicKey() }
                 .flatMap { (publicKey, cipherSuite) ->
                     clientRepository.registerMLSClient(clientId, publicKey, cipherSuite.toModel())
+                }.flatMap {
+                    // Force a post-registration slow sync. Migrated conversations must be synced before the
+                    // membership audit can run. This must succeed before the marker is written: a surviving
+                    // pre-registration instant would open the audit gate immediately.
+                    kaliumLogger.d("Forcing a post-registration slow sync before the MLS membership audit")
+                    wrapStorageRequest { slowSyncRepository.clearLastSlowSyncCompletionInstant() }
+                }.flatMap {
+                    kaliumLogger.d("Deferring MLS membership audit until MLS client registration slow sync completes")
+                    mlsMembershipAuditRepository.markAuditRequiredAfterSlowSync()
                 }.flatMap {
                     mlsClient.transaction("uploadNewKeyPackages") { context ->
                         keyPackageRepository.uploadNewKeyPackages(context, clientId, keyPackageLimitsProvider.refillAmount())

@@ -39,6 +39,7 @@ internal interface SlowSyncRepository {
     suspend fun setNeedsToPersistHistoryLostMessage(value: Boolean)
     suspend fun needsToPersistHistoryLostMessage(): Boolean
     fun observeLastSlowSyncCompletionInstant(): Flow<Instant?>
+    suspend fun getLastSlowSyncCompletionInstant(): Instant?
     fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus)
     suspend fun setSlowSyncVersion(version: Int)
     suspend fun getSlowSyncVersion(): Int?
@@ -88,9 +89,24 @@ internal class SlowSyncRepositoryImpl(
 
     override fun observeLastSlowSyncCompletionInstant(): Flow<Instant?> =
         metadataDao.valueByKeyFlow(key = LAST_SLOW_SYNC_INSTANT_KEY)
-            .map { instantString ->
-                instantString?.let { Instant.parse(it) }
-            }
+            .map { instantString -> instantString.toInstantOrNull() }
+
+    override suspend fun getLastSlowSyncCompletionInstant(): Instant? =
+        metadataDao.valueByKey(key = LAST_SLOW_SYNC_INSTANT_KEY).toInstantOrNull()
+
+    /**
+     * A malformed persisted value must not propagate as an exception: this flow is collected by
+     * long-lived observers that have no restart logic, so a parse failure would silently kill them.
+     * Treating it as "no slow sync recorded" degrades to re-running slow sync, which is recoverable.
+     */
+    private fun String?.toInstantOrNull(): Instant? = this?.let {
+        try {
+            Instant.parse(it)
+        } catch (e: IllegalArgumentException) {
+            logger.w("Ignoring malformed last slow sync instant: ${e.message}")
+            null
+        }
+    }
 
     override fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus) {
         logger.i("Updating SlowSync status: $slowSyncStatus")
