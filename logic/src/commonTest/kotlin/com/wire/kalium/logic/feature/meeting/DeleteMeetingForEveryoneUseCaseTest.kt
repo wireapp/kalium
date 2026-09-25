@@ -71,6 +71,7 @@ class DeleteMeetingForEveryoneUseCaseTest {
 
         assertEquals(failure, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure>(result).coreFailure)
         verifySuspend(VerifyMode.not) {
+            arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
             arrangement.deleteConversation(any(), any())
         }
     }
@@ -87,12 +88,13 @@ class DeleteMeetingForEveryoneUseCaseTest {
         assertEquals(failure, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure>(result).coreFailure)
         verifySuspend(VerifyMode.not) {
             arrangement.meetingRepository.deleteMeeting(any())
+            arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
             arrangement.deleteConversation(any(), any())
         }
     }
 
     @Test
-    fun givenConversationDeleteFails_whenInvoking_thenReturnsFailure() = runTest {
+    fun givenConversationDeleteFails_whenInvoking_thenReturnsSuccess() = runTest {
         val failure = CoreFailure.Unknown(RuntimeException("conversation delete failed"))
         val (arrangement, useCase) = Arrangement()
             .withDeleteConversationReturning(Either.Left(failure))
@@ -100,7 +102,7 @@ class DeleteMeetingForEveryoneUseCaseTest {
 
         val result = useCase(MEETING_ID)
 
-        assertEquals(failure, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure>(result).coreFailure)
+        assertEquals(DeleteMeetingForEveryoneUseCase.Result.Success, result)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.deleteMeeting(MEETING_ID)
             arrangement.deleteConversation(arrangement.transactionContext, CONVERSATION_ID)
@@ -128,13 +130,14 @@ class DeleteMeetingForEveryoneUseCaseTest {
                 arrangement.conversationRepository.getConversationById(CONVERSATION_ID)
             }
             verifySuspend(VerifyMode.not) {
+                arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
                 arrangement.deleteConversation(any(), any())
             }
         }
     }
 
     @Test
-    fun givenConversationLookupFails_whenInvoking_thenReturnsFailureAndDoesNotDeleteConversation() = runTest {
+    fun givenConversationLookupFails_whenInvoking_thenReturnsSuccessAndDoesNotDeleteConversation() = runTest {
         val failure = StorageFailure.DataNotFound
         val (arrangement, useCase) = Arrangement()
             .withGetConversationReturning(Either.Left(failure))
@@ -142,7 +145,29 @@ class DeleteMeetingForEveryoneUseCaseTest {
 
         val result = useCase(MEETING_ID)
 
-        assertEquals(failure, assertIs<DeleteMeetingForEveryoneUseCase.Result.Failure>(result).coreFailure)
+        assertEquals(DeleteMeetingForEveryoneUseCase.Result.Success, result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
+            arrangement.deleteConversation(any(), any())
+        }
+    }
+
+    @Test
+    fun givenCryptoTransactionFails_whenInvoking_thenReturnsSuccessAfterDeletingMeeting() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange()
+        everySuspend {
+            arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
+        } returns Either.Left(CoreFailure.Unknown(RuntimeException("transaction failed")))
+
+        val result = useCase(MEETING_ID)
+
+        assertEquals(DeleteMeetingForEveryoneUseCase.Result.Success, result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingRepository.getMeeting(MEETING_ID)
+            arrangement.meetingRepository.deleteMeeting(MEETING_ID)
+            arrangement.conversationRepository.getConversationById(CONVERSATION_ID)
+            arrangement.cryptoTransactionProvider.transaction<Unit>("DeleteMeetingForEveryone", any())
+        }
         verifySuspend(VerifyMode.not) {
             arrangement.deleteConversation(any(), any())
         }
