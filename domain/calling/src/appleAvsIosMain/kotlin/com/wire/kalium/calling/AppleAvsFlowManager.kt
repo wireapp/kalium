@@ -34,10 +34,24 @@ actual class AppleAvsFlowManager actual constructor() {
         }
     }
 
-    actual fun attachVideoView(view: Any?): Boolean {
-        val videoView = view as? UIView ?: return false
-        flowManager.attachVideoView(videoView)
+    actual fun attachLocalVideoPreview(view: Any?): Boolean {
+        val preview = view as? UIView ?: return false
+        flowManager.attachVideoPreview(preview)
         return true
+    }
+
+    actual fun detachLocalVideoPreview(view: Any?): Boolean {
+        val preview = view as? UIView ?: return false
+        flowManager.detachVideoPreview(preview)
+        return true
+    }
+
+    actual fun startLocalVideoCapture() {
+        flowManager.startVideoCapture()
+    }
+
+    actual fun stopLocalVideoCapture() {
+        flowManager.stopVideoCapture()
     }
 
     actual fun attachRemoteVideoView(view: Any?, userId: String, clientId: String): Boolean {

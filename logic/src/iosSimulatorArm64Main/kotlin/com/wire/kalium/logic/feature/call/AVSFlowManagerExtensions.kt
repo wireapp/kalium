@@ -21,8 +21,13 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.calling.AppleAvsFlowManager
 import com.wire.kalium.logic.util.PlatformView
 
-internal fun AppleAvsFlowManager.attachPlatformVideoView(view: PlatformView): Boolean =
-    attachVideoView(view.view)
+internal fun PlatformView.hasNativeView(): Boolean = view != null
+
+internal fun AppleAvsFlowManager.attachPlatformLocalVideoPreview(view: PlatformView): Boolean =
+    attachLocalVideoPreview(view.view)
+
+internal fun AppleAvsFlowManager.detachPlatformLocalVideoPreview(view: PlatformView): Boolean =
+    detachLocalVideoPreview(view.view)
 
 internal fun AppleAvsFlowManager.attachPlatformRemoteVideoView(
     view: PlatformView,

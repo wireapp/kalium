@@ -22,6 +22,8 @@ import com.wire.kalium.calling.AppleAvsFlowManager
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.LocalVideoPreviewAttachment
+import com.wire.kalium.logic.feature.LocalVideoPreviewAttachmentOwner
 import com.wire.kalium.logic.feature.RemoteVideoViewAttachment
 import com.wire.kalium.logic.feature.RemoteVideoViewAttachmentOwner
 import com.wire.kalium.logic.util.PlatformContext
@@ -42,6 +44,15 @@ internal actual open class FlowManagerServiceImpl(
             detachNative = { view -> flowManager.detachPlatformRemoteVideoView(view) },
         )
     }
+    private val localPreview by lazy {
+        LocalVideoPreviewAttachmentOwner(
+            attachNative = { view -> flowManager.attachPlatformLocalVideoPreview(view) },
+            detachNative = { view -> flowManager.detachPlatformLocalVideoPreview(view) },
+            startNativeCapture = { flowManager.startLocalVideoCapture() },
+            stopNativeCapture = { flowManager.stopLocalVideoCapture() },
+        )
+    }
+    private var legacyPreview: LocalVideoPreviewAttachment? = null
 
     internal suspend fun attachRemoteVideoView(
         view: PlatformView,
@@ -51,13 +62,19 @@ internal actual open class FlowManagerServiceImpl(
         remoteViews.attach(view, userId, clientId)
     }
 
-    actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
-        if (!flowManager.attachPlatformVideoView(view)) {
-            kaliumLogger.w("AVS iOS: setVideoPreview ignored because view is null")
-            return
+    internal suspend fun attachLocalVideoPreview(view: PlatformView): LocalVideoPreviewAttachment =
+        withContext(Dispatchers.Main) { localPreview.attach(view) }
+
+    actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) =
+        withContext(Dispatchers.Main) {
+            if (view.hasNativeView()) {
+                legacyPreview = localPreview.attach(view)
+            } else {
+                legacyPreview?.let(localPreview::detach)
+                legacyPreview = null
+            }
+            callingLogger.i("AVS Apple: updated local video preview for conversation=${conversationId.value}")
         }
-        callingLogger.i("AVS iOS: attached remote video view for conversation=${conversationId.value}")
-    }
 
     actual override suspend fun flipToFrontCamera(conversationId: ConversationId) {
         flowManager.setVideoCaptureDevice(deviceId = "front", forConversation = conversationId.toString())
