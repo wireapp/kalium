@@ -23,21 +23,14 @@ import co.touchlab.sqliter.JournalMode
 import co.touchlab.sqliter.NO_VERSION_CHECK
 import co.touchlab.sqliter.createDatabaseManager
 import co.touchlab.sqliter.getVersion
-import co.touchlab.sqliter.sqlite3.SQLITE_OK
-import co.touchlab.sqliter.sqlite3.SQLITE_OPEN_READWRITE
-import co.touchlab.sqliter.sqlite3.sqlite3_close_v2
-import co.touchlab.sqliter.sqlite3.sqlite3_exec
-import co.touchlab.sqliter.sqlite3.sqlite3_open_v2
+import co.touchlab.sqliter.interop.SQLiteException
 import co.touchlab.sqliter.withConnection
+import co.touchlab.sqliter.withStatement
 import com.wire.kalium.persistence.kaliumLogger
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.allocPointerTo
 import kotlinx.cinterop.convert
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
 import kotlinx.cinterop.usePinned
-import kotlinx.cinterop.value
 import platform.Foundation.NSFileManager
 import platform.posix.EINTR
 import platform.posix.LOCK_EX
@@ -84,7 +77,7 @@ internal fun encryptPlaintextDatabase(directory: String, name: String, key: Stri
     val path = "$directory/$name"
     if (!hasSqliteHeader(path)) return
     withFileLock("$path$ENCRYPTION_LOCK_SUFFIX") {
-        if (isReadableWithoutKey(path)) encrypt(directory, name, key)
+        if (isReadableWithoutKey(directory, name)) encrypt(directory, name, key)
     }
 }
 
@@ -111,19 +104,16 @@ private fun encrypt(directory: String, name: String, key: String) {
 
 /**
  * Whether the database can be read without a key. Only then is it unencrypted. An encrypted one can't be read: behind
- * its plaintext header, if it has one, SQLite finds encrypted bytes and reports an error, which one depends on those
- * bytes. The check writes nothing. It calls the same SQLite that SQLiter uses.
+ * its plaintext header, if it has one, SQLite finds encrypted bytes and fails, with an error that depends on those
+ * bytes. Opening an unencrypted database switches it to a rollback journal, as the encryption that follows does anyway.
  */
-@OptIn(ExperimentalForeignApi::class)
-private fun isReadableWithoutKey(path: String): Boolean = memScoped {
-    val database = allocPointerTo<cnames.structs.sqlite3>()
-    try {
-        val opened = sqlite3_open_v2(path, database.ptr, SQLITE_OPEN_READWRITE, null)
-        check(opened == SQLITE_OK) { "Could not open a database to check whether it is encrypted, SQLite error $opened" }
-        sqlite3_exec(database.value, "SELECT count(*) FROM sqlite_schema", null, null, null) == SQLITE_OK
-    } finally {
-        sqlite3_close_v2(database.value)
+private fun isReadableWithoutKey(directory: String, name: String): Boolean = try {
+    createDatabaseManager(configurationWithoutKey(directory, name)).withConnection { connection ->
+        connection.withStatement("SELECT count(*) FROM sqlite_schema") { query().next() }
     }
+    true
+} catch (_: SQLiteException) {
+    false
 }
 
 private fun configurationWithoutKey(directory: String, name: String) = DatabaseConfiguration(
