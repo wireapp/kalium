@@ -39,6 +39,8 @@ sealed class LocalNotification(open val conversationId: ConversationId) {
             val meetingTitle: String,
             val author: LocalNotificationMessageAuthor?,
             val time: Instant,
+            val startTime: Instant,
+            val endTime: Instant,
         ) : Meeting(conversationId)
     }
 

@@ -52,6 +52,8 @@ internal class MeetingMemberAddEventHandlerImpl(
                         meetingTitle = meeting.title,
                         author = event.senderUserId?.getNotificationAuthor(),
                         time = event.dateTime,
+                        startTime = meeting.startTime,
+                        endTime = meeting.endTime,
                     )
                 )
             }

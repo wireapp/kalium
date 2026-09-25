@@ -51,6 +51,7 @@ import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.hours
 
 class MeetingMemberAddEventHandlerTest {
 
@@ -178,8 +179,8 @@ class MeetingMemberAddEventHandlerTest {
         conversationId = event.meetingId,
         creatorId = creatorId,
         title = "Planning",
-        startTime = event.dateTime,
-        endTime = event.dateTime,
+        startTime = event.dateTime + 1.hours,
+        endTime = event.dateTime + 2.hours,
         tzid = "UTC",
         recurrence = null,
     )
@@ -192,6 +193,8 @@ class MeetingMemberAddEventHandlerTest {
             meetingTitle = meeting.title,
             author = author,
             time = event.dateTime,
+            startTime = meeting.startTime,
+            endTime = meeting.endTime,
         )
 
     private class Arrangement {

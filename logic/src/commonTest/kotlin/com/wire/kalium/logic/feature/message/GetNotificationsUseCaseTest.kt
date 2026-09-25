@@ -327,7 +327,16 @@ class GetNotificationsUseCaseTest {
     }
     @Test
     fun givenTwoSessionPublishers_whenBothObserve_thenNotificationsStayInTheirSession() = runTest {
-        val invite = LocalNotification.Meeting.Invite("event", conversationId(), conversationId(), "Planning", null, TIME)
+        val invite = LocalNotification.Meeting.Invite(
+            eventId = "event",
+            meetingId = conversationId(),
+            conversationId = conversationId(),
+            meetingTitle = "Planning",
+            author = null,
+            time = TIME,
+            startTime = TIME,
+            endTime = TIME,
+        )
         val firstPublisher = NotificationEventsManagerImpl()
         val secondPublisher = NotificationEventsManagerImpl()
         suspend fun notificationsFor(publisher: NotificationEventsManager) = arrange {
