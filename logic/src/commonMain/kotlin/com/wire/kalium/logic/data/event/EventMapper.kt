@@ -810,7 +810,8 @@ internal class EventMapper(
     ) = Event.Meeting.MemberAdd(
         id = id,
         meetingId = event.qualifiedMeetingId.toModel(),
-        dateTime = event.time
+        dateTime = event.time,
+        senderUserId = event.qualifiedFrom?.toModel()
     )
 }
 
