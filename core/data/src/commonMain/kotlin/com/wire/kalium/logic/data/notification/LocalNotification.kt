@@ -19,30 +19,46 @@
 package com.wire.kalium.logic.data.notification
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserAssetId
 import kotlinx.datetime.Instant
 
 /**
- * Kalium local data classes that contains all the necessary data for displaying Message Notifications,
+ * Kalium local data classes that contains all the necessary data for displaying Notifications,
  * and suppose to be mapped (in platform side) into platform-specific objects to show the notification
  */
 sealed class LocalNotification(open val conversationId: ConversationId) {
-    data class Conversation(
-        val id: ConversationId,
-        val conversationName: String?,
-        val messages: List<LocalNotificationMessage>,
-        val isOneToOneConversation: Boolean,
-        val isReplyAllowed: Boolean = false
-    ) : LocalNotification(id)
-
-    data class UpdateMessage(
+    sealed class Meeting(
         override val conversationId: ConversationId,
-        val messageId: String,
-        val action: LocalNotificationUpdateMessageAction
-    ) : LocalNotification(conversationId)
+    ) : LocalNotification(conversationId) {
+        data class Invite(
+            val eventId: String,
+            val meetingId: MeetingId,
+            override val conversationId: ConversationId,
+            val meetingTitle: String,
+            val author: LocalNotificationMessageAuthor?,
+            val time: Instant,
+        ) : Meeting(conversationId)
+    }
 
-    data class ConversationSeen(override val conversationId: ConversationId) : LocalNotification(conversationId)
+    sealed class Conversation(override val conversationId: ConversationId) : LocalNotification(conversationId) {
+        data class NewMessages(
+            val id: ConversationId,
+            val conversationName: String?,
+            val messages: List<LocalNotificationMessage>,
+            val isOneToOneConversation: Boolean,
+            val isReplyAllowed: Boolean = false
+        ) : Conversation(id)
+
+        data class UpdateMessage(
+            override val conversationId: ConversationId,
+            val messageId: String,
+            val action: LocalNotificationUpdateMessageAction
+        ) : Conversation(conversationId)
+
+        data class Seen(override val conversationId: ConversationId) : Conversation(conversationId)
+    }
 }
 
 sealed class LocalNotificationUpdateMessageAction {

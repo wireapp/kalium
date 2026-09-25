@@ -944,6 +944,7 @@ internal sealed class Event(open val id: String) {
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
+            val senderUserId: UserId? = null,
         ) : Meeting(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Meeting.MemberAdd",
