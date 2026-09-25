@@ -52,6 +52,11 @@ internal actual open class FlowManagerServiceImpl(
             stopNativeCapture = { flowManager.stopLocalVideoCapture() },
         )
     }
+    private val cameraController by lazy {
+        AppleCameraController { deviceId, conversationId ->
+            flowManager.setVideoCaptureDevice(deviceId, conversationId)
+        }
+    }
     private var legacyPreview: LocalVideoPreviewAttachment? = null
 
     internal suspend fun attachRemoteVideoView(
@@ -76,14 +81,21 @@ internal actual open class FlowManagerServiceImpl(
             callingLogger.i("AVS Apple: updated local video preview for conversation=${conversationId.value}")
         }
 
-    actual override suspend fun flipToFrontCamera(conversationId: ConversationId) {
-        flowManager.setVideoCaptureDevice(deviceId = "front", forConversation = conversationId.toString())
-        callingLogger.i("AVS iOS: switched to front camera for conversation=${conversationId.value}")
+    actual override suspend fun flipToFrontCamera(conversationId: ConversationId) = withContext(Dispatchers.Main) {
+        selectCamera(AppleCameraPosition.FRONT, conversationId)
     }
 
-    actual override suspend fun flipToBackCamera(conversationId: ConversationId) {
-        flowManager.setVideoCaptureDevice(deviceId = "back", forConversation = conversationId.toString())
-        callingLogger.i("AVS iOS: switched to back camera for conversation=${conversationId.value}")
+    actual override suspend fun flipToBackCamera(conversationId: ConversationId) = withContext(Dispatchers.Main) {
+        selectCamera(AppleCameraPosition.BACK, conversationId)
+    }
+
+    private fun selectCamera(position: AppleCameraPosition, conversationId: ConversationId) {
+        val camera = position.name.lowercase()
+        if (cameraController.select(position, conversationId.toString())) {
+            callingLogger.i("AVS Apple: switched to $camera camera for conversation=${conversationId.value}")
+        } else {
+            callingLogger.w("AVS Apple: $camera camera unavailable for conversation=${conversationId.value}")
+        }
     }
 
     actual override suspend fun setUIRotation(rotation: PlatformRotation) {
