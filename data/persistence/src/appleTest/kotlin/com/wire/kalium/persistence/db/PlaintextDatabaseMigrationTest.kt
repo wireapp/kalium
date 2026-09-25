@@ -18,6 +18,10 @@
 
 package com.wire.kalium.persistence.db
 
+import co.touchlab.sqliter.DatabaseConfiguration
+import co.touchlab.sqliter.JournalMode
+import co.touchlab.sqliter.createDatabaseManager
+import co.touchlab.sqliter.withConnection
 import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.KEY
 import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.MARKER
 import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.NAME
@@ -26,11 +30,15 @@ import platform.Foundation.NSFileManager
 import platform.Foundation.NSString
 import platform.Foundation.NSUTF8StringEncoding
 import platform.Foundation.writeToFile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class PlaintextDatabaseMigrationTest {
 
@@ -75,5 +83,60 @@ class PlaintextDatabaseMigrationTest {
         assertEquals(MARKER, database.read(KEY))
 
         assertFalse(database.bytes().contains(MARKER))
+    }
+
+    @Test
+    fun givenAnEncryptedDatabaseWithAPlaintextHeader_whenEncryptionIsChecked_thenTheFileIsLeftAsItIs() {
+        writeEncryptedDatabaseWithPlaintextHeader()
+        val before = database.bytes()
+        assertTrue(before.startsWith(SQLITE_HEADER))
+
+        encryptPlaintextDatabase(database.directory, NAME, KEY.decodeToString())
+
+        assertContentEquals(before, database.bytes())
+        assertFalse(NSFileManager.defaultManager.fileExistsAtPath("${database.directory}/$NAME$ENCRYPTED_COPY_SUFFIX"))
+    }
+
+    @Test
+    fun givenAnUnencryptedDatabase_whenSeveralThreadsEncryptItAtOnce_thenItIsEncryptedAndKeepsItsContent() {
+        database.write(null)
+
+        runBlocking {
+            repeat(CONCURRENT_ENCRYPTIONS) {
+                launch(Dispatchers.Default) { encryptPlaintextDatabase(database.directory, NAME, KEY.decodeToString()) }
+            }
+        }
+
+        assertEquals(MARKER, database.read(KEY))
+        assertFalse(database.bytes().startsWith(SQLITE_HEADER))
+        assertFalse(NSFileManager.defaultManager.fileExistsAtPath("${database.directory}/$NAME$ENCRYPTED_COPY_SUFFIX"))
+    }
+
+    /** An encrypted database that keeps its first 32 bytes readable, as SQLCipher does for iOS app group containers. */
+    private fun writeEncryptedDatabaseWithPlaintextHeader() {
+        val configuration = DatabaseConfiguration(
+            name = NAME,
+            version = 1,
+            create = { connection ->
+                connection.rawExecSql("CREATE TABLE t(x TEXT)")
+                connection.rawExecSql("INSERT INTO t VALUES ('$MARKER')")
+            },
+            journalMode = JournalMode.DELETE,
+            extendedConfig = DatabaseConfiguration.Extended(basePath = database.directory),
+            lifecycleConfig = DatabaseConfiguration.Lifecycle(
+                onCreateConnection = { connection ->
+                    connection.setSqlCipherKey(KEY.decodeToString())
+                    connection.rawExecSql("PRAGMA cipher_plaintext_header_size = 32")
+                    // With a plaintext header the salt isn't stored in the file, so it's given here.
+                    connection.rawExecSql("PRAGMA cipher_salt = \"x'$SALT'\"")
+                }
+            )
+        )
+        createDatabaseManager(configuration).withConnection { }
+    }
+
+    private companion object {
+        const val CONCURRENT_ENCRYPTIONS = 4
+        const val SALT = "00112233445566778899aabbccddeeff"
     }
 }
