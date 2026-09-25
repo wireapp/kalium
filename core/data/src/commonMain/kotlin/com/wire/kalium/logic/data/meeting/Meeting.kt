@@ -31,15 +31,18 @@ data class MeetingOccurrence(
     val occurrenceId: String,
     val occurrenceStartTime: Instant,
     val occurrenceEndTime: Instant,
+    val participants: List<Participant>
 ) {
     sealed interface ConversationType {
         data object Group : ConversationType
-        data class Meeting(val previewPictures: List<UserAssetId>) : ConversationType
+        data object Meeting : ConversationType
         data class Channel(val isPrivateChannel: Boolean) : ConversationType
-        data class OneOnOne(val previewPicture: UserAssetId?) : ConversationType
+        data object OneOnOne : ConversationType
     }
 
     enum class SelfRole { Creator, Member }
+
+    data class Participant(val userId: UserId, val name: String, val accentColor: Int, val assetId: UserAssetId? = null)
 }
 
 data class Meeting(
