@@ -38,7 +38,10 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
 import dev.mokkery.mock
+import kotlinx.coroutines.CoroutineScope
+import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -106,7 +109,7 @@ class MPBackupRealCompressionIntegrationTest {
         assertTrue(fileSystem.exists(createResult.backupFilePath))
         assertTrue((fileSystem.metadata(createResult.backupFilePath).size ?: 0L) > 0)
 
-        val restoreWithWrongPassword = restoreUseCase(BackupRepositoryStub()).invoke(
+        val restoreWithWrongPassword = restoreUseCase(BackupRepositoryStub(), backgroundScope).invoke(
             createResult.backupFilePath,
             "wrong_password",
         ) {}
@@ -116,7 +119,7 @@ class MPBackupRealCompressionIntegrationTest {
         )
 
         val restoreRepository = BackupRepositoryStub()
-        val restoreResult = restoreUseCase(restoreRepository).invoke(createResult.backupFilePath, password) {}
+        val restoreResult = restoreUseCase(restoreRepository, backgroundScope).invoke(createResult.backupFilePath, password) {}
 
         assertIs<RestoreBackupResult.Success>(restoreResult)
         assertEquals(listOf(TestUser.OTHER.id.value.lowercase()), restoreRepository.insertedUsers.map { it.id.value })
@@ -125,8 +128,11 @@ class MPBackupRealCompressionIntegrationTest {
         assertEquals(listOf(testReaction.messageId.lowercase()), restoreRepository.insertedReactions.map { it.messageId.lowercase() })
     }
 
-    private fun restoreUseCase(backupRepository: BackupRepository) = RestoreMPBackupUseCaseImpl(
+    private fun restoreUseCase(backupRepository: BackupRepository, scope: CoroutineScope) = RestoreMPBackupUseCaseImpl(
         selfUserId = TestUser.SELF.id,
+        userSessionScope = scope,
+        waitUntilSyncLive = {},
+        refreshConversationsWithoutMetadata = mock<RefreshConversationsWithoutMetadataUseCase>(mode = MockMode.autoUnit),
         backupRepository = backupRepository,
         kaliumFileSystem = kaliumFileSystem,
         backupImporterProvider = MPBackupImporterProviderImpl(fileSystem),

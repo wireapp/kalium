@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -38,6 +40,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlin.test.assertEquals
 import kotlin.test.Test
 
 @ExperimentalCoroutinesApi
@@ -81,6 +84,55 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
         // Then
         verifySuspend(VerifyMode.not) { arrangement.conversationRepository.fetchConversationListDetails(any()) }
         verifySuspend(VerifyMode.not) { arrangement.persistConversations(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun givenNotFoundConversation_whenRefreshing_thenKeepHistoryWithoutPersistingReplacementMetadata() = runTest {
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withConversationIdsWithoutMetadata(listOf(TestConversation.ID)).arrange()
+        everySuspend { arrangement.conversationRepository.fetchConversationListDetails(any()) } returns Either.Right(
+            CONVERSATION_RESPONSE_DTO.copy(
+                conversationsFound = emptyList(),
+                conversationsFailed = emptyList(),
+                conversationsNotFound = listOf(TestConversation.NETWORK_ID)
+            )
+        )
+        useCase()
+        verifySuspend(VerifyMode.not) { arrangement.persistConversations(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun givenTemporaryFetchFailure_whenRefreshingAgain_thenConversationCanBeResolved() = runTest {
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withConversationIdsWithoutMetadata(listOf(TestConversation.ID))
+            .withPersistConversationsSuccess().arrange()
+        everySuspend { arrangement.conversationRepository.fetchConversationListDetails(any()) } returns
+            Either.Left(NetworkFailure.NoNetworkConnection(null))
+        useCase()
+        verifySuspend(VerifyMode.not) { arrangement.persistConversations(any(), any(), any(), any()) }
+        arrangement.withFetchConversationListDetailsSuccess()
+        useCase()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistConversations(any(), any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.conversationRepository.getConversationIdsWithoutMetadata() }
+    }
+
+    @Test
+    fun givenLargeRestoreAndFailedBatch_whenRefreshing_thenRequestsAreBoundedAndLaterBatchesContinue() = runTest {
+        val ids = (0..200).map { QualifiedID("restored-$it", "example.com") }
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withConversationIdsWithoutMetadata(ids + ids.first())
+            .withPersistConversationsSuccess().arrange()
+        val batches = mutableListOf<List<QualifiedID>>()
+        everySuspend { arrangement.conversationRepository.fetchConversationListDetails(any()) } calls { call ->
+            @Suppress("UNCHECKED_CAST")
+            val batch = call.args[0] as List<QualifiedID>
+            batches += batch
+            if (batches.size == 1) Either.Left(NetworkFailure.NoNetworkConnection(null)) else Either.Right(CONVERSATION_RESPONSE_DTO)
+        }
+        useCase()
+        assertEquals(listOf(100, 100, 1), batches.map { it.size })
+        assertEquals(ids, batches.flatten())
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.persistConversations(any(), any(), any(), any()) }
     }
 
     private class Arrangement(private val dispatcher: KaliumDispatcher) :

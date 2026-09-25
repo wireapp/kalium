@@ -19,6 +19,8 @@
 
 package com.wire.kalium.logic.feature.backup
 
+import kotlinx.coroutines.CoroutineScope
+import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -30,6 +32,9 @@ public class MultiPlatformBackupScope internal constructor(
     private val kaliumFileSystem: KaliumFileSystem,
     private val backupRepository: BackupRepository,
     private val userRepository: UserRepository,
+    private val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase,
+    private val userSessionScope: CoroutineScope,
+    private val waitUntilSyncLive: suspend () -> Unit,
 ) {
 
     public val create: CreateMPBackupUseCase
@@ -42,6 +47,9 @@ public class MultiPlatformBackupScope internal constructor(
     public val restore: RestoreMPBackupUseCase
         get() = RestoreMPBackupUseCaseImpl(
             selfUserId = selfUserId,
+            refreshConversationsWithoutMetadata = refreshConversationsWithoutMetadata,
+            userSessionScope = userSessionScope,
+            waitUntilSyncLive = waitUntilSyncLive,
             backupRepository = backupRepository,
             kaliumFileSystem = kaliumFileSystem,
         )

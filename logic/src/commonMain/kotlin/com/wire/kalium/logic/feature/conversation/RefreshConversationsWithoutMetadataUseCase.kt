@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -43,24 +43,29 @@ internal class RefreshConversationsWithoutMetadataUseCaseImpl(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RefreshConversationsWithoutMetadataUseCase {
     override suspend fun invoke() = withContext(dispatchers.io) {
-        conversationRepository.getConversationIdsWithoutMetadata()
-            .flatMap { conversationIdList ->
-                if (conversationIdList.isNotEmpty()) {
-                    kaliumLogger.d("Numbers of conversations to refresh: ${conversationIdList.size}")
-                    conversationRepository.fetchConversationListDetails(conversationIdList)
-                        .onSuccess {
+        conversationRepository.getConversationIdsWithoutMetadata().fold(
+            { kaliumLogger.w("Failed to load conversations without metadata") },
+            { conversationIds ->
+                conversationIds.distinct().chunked(CONVERSATIONS_PER_BATCH).forEach { batch ->
+                    conversationRepository.fetchConversationListDetails(batch).flatMap { response ->
+                        // Only authoritative metadata is persisted. Not-found and failed IDs keep
+                        // their restored history and remain eligible for a later metadata sync.
+                        if (response.conversationsFound.isEmpty()) {
+                            Either.Right(Unit)
+                        } else {
                             transactionProvider.transaction("RefreshConversationsWithoutMetadata") { transactionContext ->
-                                persistConversations(transactionContext, it.conversationsFound, false)
+                                persistConversations(transactionContext, response.conversationsFound, false)
                             }
                         }
-                } else {
-                    Either.Right(Unit)
+                    }.onFailure {
+                        kaliumLogger.w("Failed to refresh a conversation metadata batch; metadata remains retryable")
+                    }
                 }
             }
-            .fold({
-                kaliumLogger.w("Error while syncing conversations without metadata $it")
-            }) {
-                kaliumLogger.d("Finished syncing conversations without metadata")
-            }
+        )
+    }
+
+    private companion object {
+        const val CONVERSATIONS_PER_BATCH = 100
     }
 }

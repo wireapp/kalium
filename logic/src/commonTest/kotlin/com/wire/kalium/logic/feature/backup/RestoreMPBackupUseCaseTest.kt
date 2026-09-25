@@ -67,6 +67,12 @@ import okio.IOException
 import okio.Path.Companion.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.runCurrent
+import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -91,7 +97,7 @@ class RestoreMPBackupUseCaseTest {
     @Test
     fun givenACorrectNonEncryptedBackupFile_whenRestoring_thenTheBackupIsRestoredSuccessfully() = runTest {
 
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
             .withSuccessImport()
             .arrange()
 
@@ -106,7 +112,7 @@ class RestoreMPBackupUseCaseTest {
     @Test
     fun givenAValidEncryptedBackupFile_whenRestoring_thenTheBackupIsRestoredCorrectly() = runTest {
 
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
             .withSuccessImport()
             .arrange()
 
@@ -121,7 +127,7 @@ class RestoreMPBackupUseCaseTest {
     @Test
     fun givenInvalidPassword_whenRestoring_thenTheErrorReturned() = runTest {
 
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
             .withInvalidPassword()
             .arrange()
 
@@ -134,7 +140,7 @@ class RestoreMPBackupUseCaseTest {
     @Test
     fun givenParsingError_whenRestoring_thenTheErrorReturned() = runTest {
 
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
             .withParsingFailure()
             .arrange()
 
@@ -147,7 +153,7 @@ class RestoreMPBackupUseCaseTest {
     @Test
     fun givenUnzipError_whenRestoring_thenTheErrorReturned() = runTest {
 
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
             .withUnzipFailure()
             .arrange()
 
@@ -160,7 +166,7 @@ class RestoreMPBackupUseCaseTest {
     @Test
     fun givenOtherError_whenRestoring_thenTheErrorReturned() = runTest {
 
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
             .withOtherFailure()
             .arrange()
 
@@ -172,7 +178,7 @@ class RestoreMPBackupUseCaseTest {
 
     @Test
     fun givenIOException_whenRestoring_thenCleanupRunsAndRestoreFails() = runTest {
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
             .withIOException()
             .arrange()
 
@@ -185,7 +191,7 @@ class RestoreMPBackupUseCaseTest {
 
     @Test
     fun givenRestoreIsCancelled_whenRestoring_thenCleanupRunsAndCancellationPropagates() = runTest {
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
             .withCancellation()
             .arrange()
 
@@ -204,7 +210,7 @@ class RestoreMPBackupUseCaseTest {
         val capturedInsertedConversations = mutableListOf<List<Conversation>>()
         val capturedInsertedMessages = mutableListOf<List<Message.Standalone>>()
 
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
             .withSuccessImport()
             .withUsersPages(arrayOf(malformedBackupUser, testUser.toBackupUser()))
             .captureInsertedUsers(capturedInsertedUsers)
@@ -245,7 +251,7 @@ class RestoreMPBackupUseCaseTest {
 
     @Test
     fun givenMessagePageWriteFails_whenRestoring_thenContinueWithNextPageAndReportSuccess() = runTest {
-        val (arrangement, useCase) = Arrangement().withSuccessImport().withMessageWriteFailure().arrange()
+        val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().withMessageWriteFailure().arrange()
         val result = useCase(arrangement.storedPath, null) {}
         assertEquals(RestoreBackupResult.Success, result)
         verifySuspend(VerifyMode.exactly(2)) { arrangement.backupRepository.insertMessages(any()) }
@@ -254,7 +260,7 @@ class RestoreMPBackupUseCaseTest {
 
     @Test
     fun givenUserPageWriteFails_whenRestoring_thenContinueAndReportSuccess() = runTest {
-        val (arrangement, useCase) = Arrangement().withSuccessImport().withUserWriteFailure().arrange()
+        val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().withUserWriteFailure().arrange()
         val result = useCase(arrangement.storedPath, null) {}
         assertEquals(RestoreBackupResult.Success, result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
@@ -264,14 +270,64 @@ class RestoreMPBackupUseCaseTest {
 
     @Test
     fun givenConversationPageWriteFails_whenRestoring_thenContinueAndReportSuccess() = runTest {
-        val (arrangement, useCase) = Arrangement().withSuccessImport().withConversationWriteFailure().arrange()
+        val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().withConversationWriteFailure().arrange()
         val result = useCase(arrangement.storedPath, null) {}
         assertEquals(RestoreBackupResult.Success, result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
     }
 
-    private inner class Arrangement {
+    @Test
+    fun givenSlowMetadataFetch_whenRestoreCompletes_thenSuccessDoesNotWaitAndSessionCancellationStopsFetch() = runTest {
+        val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().arrange()
+        var cancelled = false
+        arrangement.refresh = {
+            try { awaitCancellation() } finally { cancelled = true }
+        }
+
+        assertEquals(RestoreBackupResult.Success, useCase(arrangement.storedPath, null) {})
+        runCurrent()
+        assertEquals(1, arrangement.refreshCalls)
+        backgroundScope.cancel()
+        runCurrent()
+        assertTrue(cancelled)
+    }
+
+    @Test
+    fun givenMetadataFetchThrows_whenRestoreCompletes_thenRestoreStillSucceeds() = runTest {
+        val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().arrange()
+        arrangement.refresh = { error("metadata unavailable") }
+        assertEquals(RestoreBackupResult.Success, useCase(arrangement.storedPath, null) {})
+        runCurrent()
+        assertEquals(1, arrangement.refreshCalls)
+    }
+
+    @Test
+    fun givenInvalidBackup_whenRestoreFails_thenMetadataIsNotFetched() = runTest {
+        val (arrangement, useCase) = Arrangement(backgroundScope).withParsingFailure().arrange()
+        assertTrue(useCase(arrangement.storedPath, null) {} is RestoreBackupResult.Failure)
+        runCurrent()
+        assertEquals(0, arrangement.refreshCalls)
+    }
+
+    @Test
+    fun givenOfflineRestore_whenSyncBecomesLive_thenMetadataFetchStartsWithoutBlockingRestore() = runTest {
+        val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().arrange()
+        val online = CompletableDeferred<Unit>()
+        arrangement.waitForSync = { online.await() }
+        assertEquals(RestoreBackupResult.Success, useCase(arrangement.storedPath, null) {})
+        runCurrent()
+        assertEquals(0, arrangement.refreshCalls)
+        online.complete(Unit)
+        runCurrent()
+        assertEquals(1, arrangement.refreshCalls)
+    }
+
+    private inner class Arrangement(private val userSessionScope: CoroutineScope) {
+        var refresh: suspend () -> Unit = {}
+        var waitForSync: suspend () -> Unit = {}
+        var refreshCalls = 0
+
 
         val backupRepository = mock<BackupRepository>(mode = MockMode.autoUnit)
         val importerProvider = mock<MPBackupImporterProvider>(mode = MockMode.autoUnit)
@@ -429,6 +485,14 @@ class RestoreMPBackupUseCaseTest {
 
             return this to RestoreMPBackupUseCaseImpl(
                 selfUserId = selfUserId,
+                userSessionScope = userSessionScope,
+                waitUntilSyncLive = { waitForSync() },
+                refreshConversationsWithoutMetadata = object : RefreshConversationsWithoutMetadataUseCase {
+                    override suspend fun invoke() {
+                        refreshCalls++
+                        refresh()
+                    }
+                },
                 backupRepository = backupRepository,
                 kaliumFileSystem = kaliumFileSystem,
                 backupImporterProvider = importerProvider,

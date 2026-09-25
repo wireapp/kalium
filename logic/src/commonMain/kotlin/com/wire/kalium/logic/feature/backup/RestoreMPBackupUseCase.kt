@@ -41,6 +41,9 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import kotlinx.coroutines.withContext
 import okio.IOException
 import okio.Path
@@ -58,10 +61,14 @@ public interface RestoreMPBackupUseCase {
     public suspend operator fun invoke(backupFilePath: Path, password: String?, onProgress: (Float) -> Unit): RestoreBackupResult
 }
 
+@Suppress("LongParameterList")
 internal class RestoreMPBackupUseCaseImpl(
     private val selfUserId: UserId,
     private val backupRepository: BackupRepository,
     private val kaliumFileSystem: KaliumFileSystem,
+    private val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase,
+    private val userSessionScope: CoroutineScope,
+    private val waitUntilSyncLive: suspend () -> Unit,
     private val backupImporterProvider: MPBackupImporterProvider = MPBackupImporterProviderImpl(),
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : RestoreMPBackupUseCase {
@@ -95,6 +102,7 @@ internal class RestoreMPBackupUseCaseImpl(
                     persistBackupData(result.pager) { currentPage, totalPages ->
                         onProgress(currentPage.toFloat() / totalPages)
                     }
+                    refreshRestoredConversationMetadata()
                     RestoreBackupResult.Success
                 }
 
@@ -124,6 +132,21 @@ internal class RestoreMPBackupUseCaseImpl(
         } finally {
             runCatching { kaliumFileSystem.deleteContents(backupWorkDir) }
                 .onFailure { kaliumLogger.e("Failed to clean backup restore work directory", it) }
+        }
+    }
+
+    private fun refreshRestoredConversationMetadata() {
+        // The session owns this work: dismissing the restore screen must not cancel it,
+        // while logout must. Network work never delays or changes the restore result.
+        userSessionScope.launch(dispatchers.io) {
+            try {
+                waitUntilSyncLive()
+                refreshConversationsWithoutMetadata()
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Exception) {
+                kaliumLogger.w("Failed to refresh restored conversation metadata; metadata remains retryable")
+            }
         }
     }
 

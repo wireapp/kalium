@@ -1226,6 +1226,9 @@ public class UserSessionScope internal constructor(
             backupRepository = backupRepository,
             userRepository = userRepository,
             kaliumFileSystem = kaliumFileSystem,
+            refreshConversationsWithoutMetadata = conversations.refreshConversationsWithoutMetadata,
+            userSessionScope = this,
+            waitUntilSyncLive = syncManager::waitUntilLive,
         )
 
     internal val persistMessage: PersistMessageUseCase
