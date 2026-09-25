@@ -575,6 +575,7 @@ sealed class EventContentDTO {
         data class MeetingMemberAddDTO(
             @SerialName("qualified_id") val qualifiedMeetingId: MeetingId,
             @SerialName("time") val time: Instant,
+            @SerialName("qualified_from") val qualifiedFrom: UserId? = null,
         ) : Meeting()
     }
 }

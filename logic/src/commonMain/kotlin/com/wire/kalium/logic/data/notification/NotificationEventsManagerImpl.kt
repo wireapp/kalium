@@ -29,9 +29,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 /**
- * This singleton allow us to queue checking for new regular notifications AND queue ephemeral notifications from different user flows.
+ * Publishes regular notification checks and ephemeral notifications within one user session.
  */
-internal object NotificationEventsManagerImpl : NotificationEventsManager {
+internal class NotificationEventsManagerImpl : NotificationEventsManager {
 
     private val mapper by lazy { MapperProvider.localNotificationMessageMapper() }
 
@@ -77,6 +77,10 @@ internal object NotificationEventsManagerImpl : NotificationEventsManager {
     }
 
     override suspend fun observeRegularNotificationsChecking(): Flow<Unit> = regularNotificationChecking
+
+    override suspend fun scheduleMeetingNotification(notification: LocalNotification.Meeting) {
+        ephemeralNotifications.emit(notification)
+    }
 }
 
 internal interface NotificationEventsManager {
@@ -123,6 +127,12 @@ internal interface NotificationEventsManager {
      * @return [Flow] that emits every time when new message/event that user should be notified about came and persisted
      */
     suspend fun observeRegularNotificationsChecking(): Flow<Unit>
+
+    /**
+     * Schedule an ephemeral meeting notification for active observers in this user session.
+     * The notification is not persisted or replayed to future observers.
+     */
+    suspend fun scheduleMeetingNotification(notification: LocalNotification.Meeting)
 }
 
 /**

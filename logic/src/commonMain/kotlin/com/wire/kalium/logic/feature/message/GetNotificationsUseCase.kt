@@ -80,7 +80,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                 } else {
                     observeEphemeralNotifications()
                 }.map { list ->
-                    list.filter { it !is LocalNotification.Conversation || it.messages.isNotEmpty() }
+                    list.filter { it !is LocalNotification.Conversation.NewMessages || it.messages.isNotEmpty() }
                 }
             }
             .filter { it.isNotEmpty() }

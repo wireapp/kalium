@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver.meeting
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.Event
@@ -33,6 +34,6 @@ internal class MeetingCreateEventHandlerImpl(
 ) : MeetingCreateEventHandler {
     override suspend fun handle(event: Event.Meeting.Create): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        return meetingRepository.handleMeetingFetchAndUpsert(meetingId = event.meetingId, eventLogger = eventLogger)
+        return meetingRepository.handleMeetingFetchAndUpsert(meetingId = event.meetingId, eventLogger = eventLogger).map { }
     }
 }

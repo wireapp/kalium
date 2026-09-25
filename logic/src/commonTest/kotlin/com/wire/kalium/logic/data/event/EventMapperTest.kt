@@ -25,7 +25,6 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleCh
 import com.wire.kalium.network.api.authenticated.notification.AdminlessDeleteReminderData
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import kotlinx.datetime.Instant
-import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -285,6 +284,19 @@ class EventMapperTest {
         assertEquals(EVENT_TIME, regularResult.dateTime)
         assertEquals(DELETION_TIME, regularResult.deletionScheduledFor)
         assertEquals(regularResult.copy(senderUserId = null), systemResult)
+    }
+
+    @Test
+    fun givenMeetingInviteWithOptionalSender_whenMapping_thenPreserveSender() {
+        listOf(null, NetworkQualifiedID("inviter", "example.com")).forEach { sender ->
+            val dto = EventContentDTO.Meeting.MeetingMemberAddDTO(
+                qualifiedMeetingId = NetworkQualifiedID("meeting", "example.com"),
+                time = Instant.parse("2026-09-23T12:00:00Z"),
+                qualifiedFrom = sender,
+            )
+            val event = assertIs<Event.Meeting.MemberAdd>(MapperProvider.eventMapper(TestUser.SELF.id).fromEventContentDTO("invite", dto))
+            assertEquals(sender?.let { ModelQualifiedID(it.value, it.domain) }, event.senderUserId)
+        }
     }
 
     private companion object {
