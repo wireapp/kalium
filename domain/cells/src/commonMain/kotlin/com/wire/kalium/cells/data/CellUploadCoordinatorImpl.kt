@@ -34,8 +34,12 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
@@ -59,6 +63,11 @@ internal class CellUploadCoordinatorImpl internal constructor(
 
     private val _uploads = MutableStateFlow<List<CellUploadItem>>(emptyList())
     override val uploads: StateFlow<List<CellUploadItem>> = _uploads.asStateFlow()
+
+    override val hasActiveUploads: StateFlow<Boolean> = _uploads
+        .map { items -> items.any { it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading } }
+        .distinctUntilChanged()
+        .stateIn(scope, SharingStarted.Eagerly, false)
 
     // UNLIMITED so posting a command never suspends: upload workers post from inside event collection,
     // and a worker blocked on send while the scheduler waits on that same worker would deadlock.

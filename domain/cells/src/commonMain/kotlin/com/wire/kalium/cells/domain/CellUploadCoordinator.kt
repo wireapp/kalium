@@ -32,6 +32,14 @@ public interface CellUploadCoordinator {
     /** Every upload of the current session, in the order the files were picked. */
     public val uploads: StateFlow<List<CellUploadItem>>
 
+    /**
+     * Whether any upload is still queued or running.
+     *
+     * Kept here rather than derived by each caller so the platform layer keeping the process alive in the
+     * background reads the same definition of "still working" the scheduler itself uses.
+     */
+    public val hasActiveUploads: StateFlow<Boolean>
+
     /** Adds [requests] to the end of the queue. They start as soon as the concurrency rules allow. */
     public fun enqueue(requests: List<CellUploadRequest>)
 
