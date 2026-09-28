@@ -105,6 +105,8 @@ actual fun encryptFileWithAES256(source: Source, key: AES256Key, sink: Sink): Lo
             Buffer().use {
                 sink.write(it.write(iv), iv.size.toLong())
             }
+            // The upload length must include the IV prefixed to the ciphertext.
+            bytesCopiedTotal += iv.size.toULong()
 
             val inputBuffer = source.buffer()
             val unencryptedBuffer = ByteArray(BUFFER_SIZE)
