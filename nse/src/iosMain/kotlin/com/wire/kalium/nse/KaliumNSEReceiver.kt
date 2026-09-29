@@ -20,6 +20,7 @@ package com.wire.kalium.nse
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
+import com.wire.kalium.logic.sync.receiving.ReceivingDiagnostics
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
 import com.wire.kalium.persistence.kmmSettings.AppleKeychainAccessibility
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
@@ -99,8 +100,11 @@ public data class KaliumNSECall(
 public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration) {
     @Throws(CancellationException::class)
     public suspend fun process(request: KaliumNSERequest): KaliumNSEResult {
-        if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) return failure("INVALID_REQUEST")
-        return withTimeoutOrNull(request.budgetMilliseconds) {
+        val diagnostics = ReceivingDiagnostics()
+        if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) {
+            return failure("INVALID_REQUEST").also { diagnostics.record("FAILED", it.failureReason, false) }
+        }
+        val outcome = withTimeoutOrNull(request.budgetMilliseconds) {
             val result = AppleAccountRuntime.use(
                 configuration.rootPath,
                 UserId(request.userValue, request.userDomain),
@@ -109,6 +113,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 ),
                 configuration.userAgent,
                 configuration.certificatePins,
+                diagnostics = diagnostics,
             ) { runtime ->
                 runtime.notificationProcessor(
                     com.wire.kalium.logic.sync.receiving.ReceivingOptions(
@@ -119,7 +124,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                         fileRestrictionState = configuration.allowedFileExtensions?.let {
                             com.wire.kalium.logic.featureFlags.BuildFileRestrictionState.AllowSome(it)
                         } ?: com.wire.kalium.logic.featureFlags.BuildFileRestrictionState.NoRestriction
-                    )
+                    ),
+                    diagnostics = diagnostics,
                 ).process(request.notificationId)
             }
             when (result) {
@@ -127,6 +133,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 is Either.Right -> success(result.value, request.showMessageContent)
             }
         } ?: failure("TIMEOUT")
+        diagnostics.record(outcome.status.name, outcome.failureReason, outcome.shouldNotify)
+        return outcome
     }
 
     @Suppress("CyclomaticComplexMethod") // Maps optional receiving fields to the public result.

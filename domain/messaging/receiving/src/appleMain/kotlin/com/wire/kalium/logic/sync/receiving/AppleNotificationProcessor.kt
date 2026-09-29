@@ -21,6 +21,7 @@ import okio.Path.Companion.toPath
 @InternalKaliumApi
 public suspend fun AppleAccountRuntime.notificationProcessor(
     options: ReceivingOptions = ReceivingOptions(),
+    diagnostics: ReceivingDiagnostics? = null,
 ): NotificationProcessor {
     check(prepared.nomadServiceUrl == null) { "Nomad receiving hooks are not implemented" }
     val mls = mlsCoreCrypto?.mlsClient(
@@ -63,5 +64,6 @@ public suspend fun AppleAccountRuntime.notificationProcessor(
             checkNotNull(mlsCoreCrypto).hasCredential(CryptoQualifiedClientId(prepared.clientId, prepared.userId.toCrypto()), cipher)
         },
         evaluateCalls = { events -> evaluateCallingEvents(events, prepared.userId, prepared.clientId, database) },
+        diagnostics = diagnostics,
     )
 }

@@ -85,15 +85,25 @@ class NotificationProcessor(
     private val selfApi: com.wire.kalium.network.api.base.authenticated.self.SelfApi? = null,
     private val hasMLSCredential: suspend (com.wire.kalium.cryptography.MLSCiphersuite) -> Boolean = { false },
     private val evaluateCalls: (suspend (List<ReceivedCallEvent>) -> List<ReceivedCallResult>)? = null,
+    private val diagnostics: ReceivingDiagnostics? = null,
 ) {
     private val unpacker = ProteusMessageUnpackerImpl(selfUserId)
     private val events = database.notificationEventStore
     private val previewImages = ReceivedLinkPreviewImages(options.linkPreviewEnabled, assetApi, assetDirectory)
 
     /** Only the target can return content. Unsupported earlier events remain unprocessed. */
+    @Suppress("TooGenericExceptionCaught")
+    suspend fun process(targetId: String): ReceivedNotificationResult = try {
+        processEvents(targetId)
+    } catch (failure: Throwable) {
+        if (failure !is kotlinx.coroutines.CancellationException) diagnostics?.failed(failure)
+        throw failure
+    }
+
     @Suppress("ReturnCount")
-    suspend fun process(targetId: String): ReceivedNotificationResult {
+    private suspend fun processEvents(targetId: String): ReceivedNotificationResult {
         require(targetId.isNotBlank())
+        diagnostics?.stage = "LOAD_QUEUE"
         previewImages.cleanupAbandoned(database.assetDAO)
         if (database.eventDAO.getEventById(targetId)?.isProcessed == true) return withPendingCalls(null, "ALREADY_PROCESSED")
         database.eventDAO.setAllUnprocessedEventsAsPending()
@@ -103,8 +113,10 @@ class NotificationProcessor(
             currentCoroutineContext().ensureActive()
             val next = events.nextPending()
             if (next != null) {
+                diagnostics?.beginEvent(next.eventId == targetId, next.eventId)
                 val effects = processNotification(next)
                 currentCoroutineContext().ensureActive()
+                diagnostics?.stage = "MARK_PROCESSED"
                 CallSignalJournal(database).committed(effects.calls)
                 database.eventDAO.markEventAsProcessed(next.eventId)
                 if (next.eventId == targetId) {
@@ -113,6 +125,7 @@ class NotificationProcessor(
                 }
             } else {
                 check(canFetch) { "Target notification was not found" }
+                diagnostics?.fetching()
                 val cursor = events.cursor()
                 val page = wrapApiRequest {
                     if (cursor == null) notificationApi.getAllNotifications(PAGE_SIZE, clientId)
@@ -122,6 +135,7 @@ class NotificationProcessor(
                 check(page.notifications.lastOrNull()?.id != cursor || page.notifications.isEmpty()) {
                     "Notification cursor did not advance"
                 }
+                diagnostics?.stage = "STORE_PAGE"
                 events.storePage(cursor, page.notifications.map { NewEventEntity(it.id, it.payload, it.transient, false) })
                 canFetch = page.hasMore
             }
@@ -130,6 +144,7 @@ class NotificationProcessor(
     }
 
     private suspend fun withPendingCalls(message: ReceivedMessageResult?, reason: String? = null): ReceivedNotificationResult {
+        diagnostics?.stage = "PRESENTATION"
         if (evaluateCalls == null) return ReceivedNotificationResult(message, presentationReason = reason)
         val pending = CallSignalJournal(database).signals().filter { it.submittedGeneration == null }
         val events = pending.map {
@@ -194,8 +209,11 @@ class NotificationProcessor(
         ).toMutableList()
         // Native proposals and their SQL deadlines are the existing durable handoff to
         // the app scheduler. NSE must not send commits whose response cannot be replayed.
+        diagnostics?.stage = "MLS_VERIFICATION"
         val verifications = mlsHandler.verificationUpdates()
+        diagnostics?.stage = "LOAD_PROFILES"
         decoded += ReceivedPayload.Profiles(users.load(verifications.flatMap { it.identities.keys }.toSet()))
+        diagnostics?.stage = "PERSIST"
         return try {
             NotificationEffects(
                 database = database,
@@ -227,6 +245,7 @@ class NotificationProcessor(
         mlsContext: MlsCoreCryptoContext? = null,
     ): List<ReceivedPayload> = payload.flatMapIndexed { index, content ->
         currentCoroutineContext().ensureActive()
+        diagnostics?.decoding(content)
         when (content) {
             is EventContentDTO.Conversation.NewConversationDTO -> {
                 val event = newConversation(eventId, content, index)
@@ -407,7 +426,10 @@ class NotificationProcessor(
                     }
                 )
             }
-            else -> error("Notification contains unsupported required work")
+            else -> {
+                diagnostics?.unsupportedEvent()
+                error("Notification contains unsupported required work")
+            }
         }
     }
 

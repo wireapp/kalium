@@ -266,6 +266,7 @@ public class AppleAccountRuntime private constructor(
             keychainConfig: ApplePersistenceConfig,
             userAgent: String,
             certificatePinning: CertificatePinning,
+            diagnostics: ReceivingDiagnostics? = null,
             block: suspend (AppleAccountRuntime) -> T,
         ): Either<AccountRuntimeFailure, T> {
             val lease = when (val acquired = AppleAccountRuntimeOwner(rootPath).tryAcquire(userId)) {
@@ -282,6 +283,7 @@ public class AppleAccountRuntime private constructor(
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (failure: Throwable) {
+                diagnostics?.failed(failure)
                 kaliumLogger.w("Prepared account runtime failed", failure)
                 val reason = if (failure is ExistingDatabaseException && failure.reason == ExistingDatabaseException.Reason.INCOMPATIBLE) {
                     AccountRuntimeFailure.INCOMPATIBLE
