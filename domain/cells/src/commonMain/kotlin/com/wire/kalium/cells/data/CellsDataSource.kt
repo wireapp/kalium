@@ -193,16 +193,16 @@ internal class CellsDataSource internal constructor(
         }
     }
 
-    override suspend fun getPreviews(nodeUuid: String) = withContext(dispatchers.io) {
+    override suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>?> = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.getNode(nodeUuid).mapSuccess { response ->
-                response.previews?.map { preview ->
-                    NodePreview(
-                        preview.url,
-                        preview.dimension ?: 0,
-                        preview.contentType,
-                    )
-                } ?: emptyList()
+            cellsApi.getNode(nodeUuid)
+        }.map { response ->
+            response.previews?.map { preview ->
+                NodePreview(
+                    preview.url,
+                    preview.dimension ?: 0,
+                    preview.contentType,
+                )
             }
         }
     }

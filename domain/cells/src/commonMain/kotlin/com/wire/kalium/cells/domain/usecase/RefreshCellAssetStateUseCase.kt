@@ -54,7 +54,7 @@ import okio.SYSTEM
  * - Fetch preview URL with retries.
  */
 public fun interface RefreshCellAssetStateUseCase {
-    public suspend operator fun invoke(assetId: String): Either<CoreFailure, CellNode>
+    public suspend operator fun invoke(assetId: String, conversationId: String?): Either<CoreFailure, CellNode>
 }
 
 internal class RefreshCellAssetStateUseCaseImpl internal constructor(
@@ -69,7 +69,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
         private const val DELAY = 500L
     }
 
-    override suspend fun invoke(assetId: String): Either<CoreFailure, CellNode> {
+    override suspend fun invoke(assetId: String, conversationId: String?): Either<CoreFailure, CellNode> {
         return cellsRepository.getNode(assetId)
             .onSuccess { node ->
                 if (node.isRecycled) {
@@ -86,7 +86,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
                 if (node.isPreviewSupported() && node.isRecycled.not()) {
                     getImagePreviewUrl(node)
                         .onSuccess { url ->
-                            attachmentsRepository.savePreviewUrl(assetId, url)
+                            attachmentsRepository.savePreviewUrl(assetId, url, conversationId)
                         }
                 }
             }
@@ -107,6 +107,8 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
                         }
                     }
                     .flatMap { previews ->
+                        // Non-null empty means every rendition attempt failed for good: stop polling.
+                        if (previews != null && previews.isEmpty()) return StorageFailure.DataNotFound.left()
                         previews.imagePreviewUrl()?.right() ?: StorageFailure.DataNotFound.left()
                     }
             }

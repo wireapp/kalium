@@ -21,6 +21,7 @@
 package com.wire.kalium.logic.feature.auth
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
 import com.wire.kalium.logic.configuration.server.CustomServerConfigDataSource
@@ -33,6 +34,7 @@ import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
+import com.wire.kalium.logic.data.auth.settings.PendingLoginSystemSettingsRepositoryImpl
 import com.wire.kalium.logic.data.auth.settings.UnauthorizedSettingsRepository
 import com.wire.kalium.logic.data.auth.settings.UnauthorizedSettingsRepositoryImpl
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
@@ -47,6 +49,7 @@ import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerifi
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
+import com.wire.kalium.network.networkContainer.TransientAuthenticatedNetworkContainer
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.util.InternalKaliumApi
@@ -153,7 +156,24 @@ public class AuthenticationScope internal constructor(
     public val registerScope: RegisterScope
         get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)
     public val ssoLoginScope: SSOLoginScope
-        get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials)
+        get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials, pendingLoginSystemSettingsRepository)
+
+    private val pendingLoginSystemSettingsRepository get() = PendingLoginSystemSettingsRepositoryImpl(
+        containerFactory = { session ->
+            TransientAuthenticatedNetworkContainer.create(
+                session = session,
+                serverConfigDTO = MapperProvider.serverConfigMapper().toDTO(serverConfig),
+                proxyCredentials = proxyCredentials?.let {
+                    MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it)
+                },
+                userAgent = userAgent,
+                certificatePinning = kaliumConfigs.certPinningConfig,
+                mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
+                kaliumLogger = kaliumLogger,
+                httpTrafficObserver = kaliumConfigs.httpTrafficObserver,
+            )
+        }
+    )
     internal val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase
         get() = CheckIfUpdateRequiredUseCaseImpl(appVersionRepository)
 
