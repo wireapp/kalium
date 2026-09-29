@@ -45,10 +45,15 @@ kotlin {
             implementation(projects.core.cryptography)
             implementation(projects.core.data)
             implementation(projects.core.common)
+            implementation(projects.core.logger)
             implementation(projects.data.dataMappers)
             implementation(projects.data.persistence)
             implementation(projects.data.network)
             implementation(libs.coroutines.core)
+        }
+        iosTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.coroutines.test)
         }
     }
 }

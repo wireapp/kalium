@@ -246,7 +246,26 @@ class NotificationProcessor(
     ): List<ReceivedPayload> = payload.flatMapIndexed { index, content ->
         currentCoroutineContext().ensureActive()
         diagnostics?.decoding(content)
-        when (content) {
+        val metadataId = when (content) {
+            is EventContentDTO.Conversation.ConversationRenameDTO -> content.qualifiedConversation
+            is EventContentDTO.Conversation.ReceiptModeUpdate -> content.qualifiedConversation
+            is EventContentDTO.Conversation.MessageTimerUpdate -> content.qualifiedConversation
+            is EventContentDTO.Conversation.MemberLeaveDTO -> content.qualifiedConversation
+            is EventContentDTO.Conversation.MemberUpdateDTO -> when (
+                conversationMemberUpdate(metadataSystemMessageId(eventId, index), content)
+            ) {
+                is Event.Conversation.MemberChanged.IgnoredMemberChanged,
+                is Event.Conversation.MemberChanged.MemberChangedRole -> null
+                else -> content.qualifiedConversation
+            }
+            else -> null
+        }
+        val requiredMetadata = if (metadataId == null) emptyList() else {
+            diagnostics?.stage = "EVENT_FETCH_CONVERSATION"
+            conversations.fetchMissingConversation(metadataId.toModel(), mlsContext)
+                ?: return@flatMapIndexed emptyList()
+        }
+        requiredMetadata + when (content) {
             is EventContentDTO.Conversation.NewConversationDTO -> {
                 val event = newConversation(eventId, content, index)
                 conversations.create(event) + oneOnOnes.resolve(event.conversationId, metadataSystemMessageId(eventId, index), mlsContext)
@@ -257,7 +276,9 @@ class NotificationProcessor(
             }
             is EventContentDTO.Conversation.MLSWelcomeDTO -> {
                 val id = content.qualifiedConversation.toModel()
+                diagnostics?.stage = "WELCOME_FETCH_CONVERSATION"
                 val metadata = conversations.fetchForWelcome(id, mlsHandler.hasJoined(id))
+                    ?: return@flatMapIndexed emptyList()
                 val accepted = mlsHandler.welcome(checkNotNull(mlsContext), content, metadataSystemMessageId(eventId, index))
                 metadata + if (accepted) oneOnOnes.resolve(id, metadataSystemMessageId(eventId, index), mlsContext) else emptyList()
             }
@@ -273,8 +294,13 @@ class NotificationProcessor(
                     } else listOf(receivedProteusDecryptionFailure(event, result.value, selfUserId))
                 }
             }
-            is EventContentDTO.Conversation.NewMLSMessageDTO ->
-                mlsHandler.decrypt(checkNotNull(mlsContext), newMLSMessage(eventId, content), metadataSystemMessageId(eventId, index))
+            is EventContentDTO.Conversation.NewMLSMessageDTO -> {
+                diagnostics?.stage = "MLS_FETCH_CONVERSATION"
+                val context = checkNotNull(mlsContext)
+                val metadata = conversations.fetchMissingConversation(content.qualifiedConversation.toModel(), context)
+                    ?: return@flatMapIndexed emptyList()
+                metadata + mlsHandler.decrypt(context, newMLSMessage(eventId, content), metadataSystemMessageId(eventId, index))
+            }
             is EventContentDTO.Conversation.DeletedConversationDTO -> listOf(
                 ReceivedPayload.Deletion(
                     Event.Conversation.DeletedConversation(
@@ -301,7 +327,9 @@ class NotificationProcessor(
                 conversations.updateProtocol(content, metadataSystemMessageId(eventId, index), mlsContext)
             is EventContentDTO.Conversation.MemberJoinDTO -> {
                 val event = conversationMemberJoin(eventId, content, index)
+                diagnostics?.stage = "JOIN_REFRESH_CONVERSATION"
                 val metadata = conversations.refreshForJoin(event.conversationId, mlsContext)
+                    ?: return@flatMapIndexed emptyList()
                 checkNotNull(
                     conversations.conversation(event.conversationId)
                 ) { "Conversation must already exist" }
@@ -334,8 +362,13 @@ class NotificationProcessor(
             is EventContentDTO.Conversation.MemberUpdateDTO -> {
                 val event = conversationMemberUpdate(metadataSystemMessageId(eventId, index), content)
                 when (event) {
-                    is Event.Conversation.MemberChanged.MemberChangedRole ->
-                        listOf(ReceivedPayload.MemberRole(event, conversations.fetchIfUnknown(event.conversationId, mlsContext)))
+                    is Event.Conversation.MemberChanged.MemberChangedRole -> {
+                        diagnostics?.stage = "EVENT_FETCH_CONVERSATION"
+                        val metadata = conversations.fetchMissingConversation(event.conversationId, mlsContext)
+                            ?: return@flatMapIndexed emptyList()
+                        // Compare the old role before the fetched member list is persisted.
+                        listOf(ReceivedPayload.MemberRole(event, (metadata.singleOrNull() as? ReceivedPayload.Creation)?.creation))
+                    }
                     is Event.Conversation.MemberChanged.IgnoredMemberChanged -> emptyList()
                     else -> listOf(ReceivedPayload.Metadata(event))
                 }

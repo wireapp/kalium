@@ -8,7 +8,6 @@ package com.wire.kalium.logic.sync.receiving
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.ConversationResponseMapper
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapperImpl
@@ -35,11 +34,13 @@ import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationNotFound
+import com.wire.kalium.network.exceptions.isAccessDenied
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.MessageEffectDAOs
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.util.DateTimeUtil
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.first
 
 /** Metadata needed by later payloads is staged here until the notification's atomic SQL write. */
@@ -51,6 +52,11 @@ internal class ReceivedConversationHandler(
     private val api: ConversationApi?,
 ) {
     private val staged = linkedMapOf<ConversationId, ConversationCreation>()
+
+    // Decode runs before its SQL write. Reuse canonical lookups within this notification,
+    // including the lookup that precedes MLS decryption.
+    private val stored = mutableMapOf<ConversationId, ConversationEntity?>()
+    private val unavailable = mutableSetOf<ConversationId>()
     private val retainedMLS = mutableMapOf<ConversationId, ConversationEntity.ProtocolInfo.MLSCapable>()
 
     fun pendingConnection(connection: com.wire.kalium.persistence.dao.ConnectionEntity) {
@@ -63,8 +69,26 @@ internal class ReceivedConversationHandler(
         return listOf(ReceivedPayload.Creation(stageFetched(response, context)))
     }
 
-    suspend fun fetchIfUnknown(id: ConversationId, context: MlsCoreCryptoContext?): ConversationCreation? =
-        if (conversation(id) == null) stageFetched(fetch(id), context) else null
+    /** Null means the conversation fetch confirmed that this event is no longer available. */
+    suspend fun fetchMissingConversation(id: ConversationId, context: MlsCoreCryptoContext?): List<ReceivedPayload>? {
+        return when {
+            conversation(id) != null -> emptyList()
+            id in unavailable -> null
+            else -> {
+                val result = wrapApiRequest {
+                    checkNotNull(api) { "Conversation metadata requires authenticated transport" }.fetchConversationDetails(id.toApi())
+                }
+                if (rememberUnavailable(id, result)) null else {
+                    val response = result.orThrow()
+                    check(response.id.toModel() == id) { "Required conversation metadata was not returned" }
+                    listOf(ReceivedPayload.Creation(stageFetched(response, context)))
+                }
+            }
+        }
+    }
+
+    private fun rememberUnavailable(id: ConversationId, result: Either<NetworkFailure, ConversationResponse>): Boolean =
+        result.isUnavailableConversationFetch().also { if (it) unavailable.add(id) }
 
     private suspend fun stageFetched(response: ConversationResponse, context: MlsCoreCryptoContext?): ConversationCreation {
         // Match PersistConversationsUseCase: this checks existence, without creating,
@@ -97,7 +121,9 @@ internal class ReceivedConversationHandler(
     }
 
     suspend fun conversation(id: ConversationId): ConversationEntity? =
-        staged[id]?.conversation ?: database.conversationDAO.getConversationById(id.toDao())
+        staged[id]?.conversation ?: if (stored.containsKey(id)) stored[id] else {
+            database.conversationDAO.getConversationById(id.toDao()).also { stored[id] = it }
+        }
 
     suspend fun members(id: ConversationId): List<com.wire.kalium.persistence.dao.UserIDEntity> =
         staged[id]?.members?.takeIf { it.isNotEmpty() }?.map { it.user }
@@ -145,14 +171,22 @@ internal class ReceivedConversationHandler(
 
     fun includesSelf(id: ConversationId): Boolean = staged[id]?.members?.any { it.user == selfUserId.toDao() } == true
 
-    suspend fun refreshForJoin(id: ConversationId, context: MlsCoreCryptoContext?): List<ReceivedPayload> {
+    suspend fun refreshForJoin(id: ConversationId, context: MlsCoreCryptoContext?): List<ReceivedPayload>? {
+        if (id in unavailable) return null
         // The app attempts this refresh for every join, but still adds event members
         // when the network fetch fails. Required mapping/native/SQL effects are awaited.
-        val response = wrapApiRequest {
+        val result = wrapApiRequest {
             checkNotNull(api) { "Conversation refresh requires authenticated transport" }.fetchConversationDetails(id.toApi())
-        }.getOrNull() ?: return emptyList()
-        check(response.id.toModel() == id) { "Required conversation metadata was not returned" }
-        return refresh(response, context)
+        }
+        return when {
+            rememberUnavailable(id, result) -> null
+            result is Either.Left && conversation(id) != null -> emptyList()
+            else -> {
+                val response = result.orThrow()
+                check(response.id.toModel() == id) { "Required conversation metadata was not returned" }
+                refresh(response, context)
+            }
+        }
     }
 
     suspend fun updateProtocol(
@@ -298,15 +332,25 @@ internal class ReceivedConversationHandler(
         return prepare(response, existing, event, selfTeam)
     }
 
-    suspend fun fetchForWelcome(id: ConversationId, selfJoined: Boolean = false): List<ReceivedPayload> {
+    suspend fun fetchForWelcome(id: ConversationId, selfJoined: Boolean = false): List<ReceivedPayload>? {
+        if (id in unavailable) return null
         val existing = conversation(id)
-        if (existing != null && !existing.hasIncompleteMetadata) {
-            if (selfJoined || includesSelf(id) || database.memberDAO.getMemberRole(selfUserId.toDao(), existing.id) != null) {
-                return emptyList()
+        val canUseCachedMetadata = when {
+            existing == null || existing.hasIncompleteMetadata -> false
+            selfJoined || includesSelf(id) -> true
+            else -> database.memberDAO.getMemberRole(selfUserId.toDao(), id.toDao()) != null
+        }
+        return if (canUseCachedMetadata) emptyList() else {
+            val result = wrapApiRequest {
+                checkNotNull(api) { "Welcome metadata requires authenticated transport" }.fetchConversationDetails(id.toApi())
+            }
+            if (rememberUnavailable(id, result)) null else {
+                val response = result.orThrow()
+                check(response.id.toModel() == id) { "Required conversation metadata was not returned" }
+                val selfTeam = database.userDAO.getUserDetailsByQualifiedID(selfUserId.toDao())?.team?.let(::TeamId)
+                prepare(response, existing, null, selfTeam)
             }
         }
-        val selfTeam = database.userDAO.getUserDetailsByQualifiedID(selfUserId.toDao())?.team?.let(::TeamId)
-        return prepare(fetch(id), existing, null, selfTeam)
     }
 
     private suspend fun fetch(id: ConversationId): ConversationResponse = wrapApiRequest {
@@ -391,6 +435,14 @@ internal class ReceivedConversationHandler(
                 protocol.groupId == incomingProtocol.groupId && protocol.cipherSuite == incomingProtocol.cipherSuite
         ) { "Creation cannot migrate or reset an existing conversation" }
     }
+}
+
+/** Apply only to fetchConversationDetails; a status or label alone does not establish staleness. */
+private fun Either<NetworkFailure, ConversationResponse>.isUnavailableConversationFetch(): Boolean {
+    val failure = (this as? Either.Left)?.value as? NetworkFailure.ServerMiscommunication
+    val error = failure?.kaliumException as? KaliumException.InvalidRequestError ?: return false
+    return error.errorResponse.code == HttpStatusCode.NotFound.value && error.isConversationNotFound() ||
+        error.errorResponse.code == HttpStatusCode.Forbidden.value && error.isAccessDenied()
 }
 
 internal data class ConversationCreation(

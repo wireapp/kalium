@@ -6944,6 +6944,290 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun joinUnavailableConversationDoesNotBlockFollowingMessage() = runTest {
+        withContext(Dispatchers.Default) {
+            for (label in listOf("no-conversation", "not-found")) withFixture(true) { fixture ->
+                val join = fixture.plainEvent("join", """{"type":"conversation.member-join",
+                    "qualified_conversation":{"id":"missing-conversation","domain":"example.com"},
+                    "qualified_from":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},
+                    "from":"${SENDER.value}","time":"$TIME",
+                    "data":{"user_ids":[],"users":[]}}""")
+                val tail = fixture.event("text", fixture.encrypt("first"))
+                fixture.releasePrepared()
+                val diagnostics = ReceivingDiagnostics()
+                val result = fixture.receive(listOf(join, tail), tail.id, diagnostics = diagnostics, fetchConversation = {
+                    throw KaliumException.InvalidRequestError(GenericAPIErrorResponse(code = 404, label = label, message = "private response"))
+                })
+                if (label == "no-conversation") {
+                    assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
+                } else {
+                    assertIs<Either.Left<*>>(result)
+                    assertEquals(404, diagnostics.httpStatus)
+                }
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertEquals(label == "no-conversation", checkNotNull(runtime.database.eventDAO.getEventById(join.id)).isProcessed)
+                })
+            }
+        }
+    }
+
+
+    @Test
+    fun welcomeUnavailableConversationDoesNotBlockFollowingMessage() = runTest {
+        withContext(Dispatchers.Default) {
+            for (status in listOf(404, 503)) withFixture(true) { fixture ->
+                val welcome = fixture.plainEvent("stale-welcome", """{"type":"conversation.mls-welcome",
+                    "qualified_conversation":{"id":"missing-conversation","domain":"example.com"},
+                    "qualified_from":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},
+                    "from":"${SENDER.value}","time":"$TIME","data":"AA=="}""")
+                val tail = fixture.event("text", fixture.encrypt("first"))
+                fixture.releasePrepared()
+                val diagnostics = ReceivingDiagnostics()
+                var welcomeCalls = 0
+                val result = fixture.receive(listOf(welcome, tail), tail.id, diagnostics = diagnostics, fetchConversation = {
+                    throw KaliumException.InvalidRequestError(
+                        GenericAPIErrorResponse(code = status, label = "no-conversation", message = "private response")
+                    )
+                }, decorateMLSContext = { context -> object : MlsCoreCryptoContext by context {
+                    override suspend fun processWelcomeMessage(message: ByteArray): String {
+                        welcomeCalls++
+                        error("Stale welcome must not reach native crypto")
+                    }
+                } })
+                assertEquals(0, welcomeCalls)
+                if (status == 404) {
+                    assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
+                } else {
+                    assertIs<Either.Left<*>>(result)
+                    assertEquals(status, diagnostics.httpStatus)
+                    assertEquals("WELCOME_FETCH_CONVERSATION", diagnostics.stage)
+                }
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertEquals(status == 404, checkNotNull(runtime.database.eventDAO.getEventById(welcome.id)).isProcessed)
+                })
+            }
+        }
+    }
+
+
+    @Test
+    fun unavailableMLSLifecycleDoesNotBlockOtherConversation() = runTest {
+        withContext(Dispatchers.Default) {
+            for ((status, label) in listOf(404 to "no-conversation", 403 to "access-denied", 403 to "operation-denied", 503 to "access-denied")) withFixture(true) { fixture ->
+                fun stale(id: String, type: String, data: String) = fixture.plainEvent(id, """{"type":"$type",
+                    "qualified_conversation":{"id":"missing-conversation","domain":"example.com"},
+                    "qualified_from":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},
+                    "from":"${SENDER.value}","time":"$TIME","subconv":null,"data":$data}""")
+                val join = stale("join", "conversation.member-join", """{"user_ids":[],"users":[]}""")
+                val welcome = stale("welcome", "conversation.mls-welcome", "\"AA==\"")
+                val message = stale("message", "conversation.mls-message-add", "\"AA==\"")
+                val rename = stale("rename", "conversation.rename", """{"name":"Renamed"}""")
+                val leave = stale("leave", "conversation.member-leave",
+                    """{"qualified_user_ids":[{"id":"${SELF.value}","domain":"${SELF.domain}"}],"reason":"removed"}""")
+                val tail = fixture.event("text", fixture.encrypt("first"))
+                fixture.releasePrepared()
+                val result = fixture.receive(listOf(join, welcome, rename, message, leave, tail), tail.id, fetchConversation = {
+                    throw KaliumException.InvalidRequestError(
+                        GenericAPIErrorResponse(code = status, label = label, message = "private response")
+                    )
+                })
+                if (status == 404 || (status == 403 && label == "access-denied")) {
+                    assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        for (event in listOf(join, welcome, rename, message, leave, tail)) {
+                            assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                        }
+                    })
+                } else {
+                    assertIs<Either.Left<*>>(result)
+                }
+            }
+        }
+    }
+
+
+    @Test
+    fun unavailableCachedConversationSkipsWelcomeButPreservesDecryptableHistory() = runTest {
+        withContext(Dispatchers.Default) {
+            for ((status, label) in listOf(404 to "no-conversation", 403 to "access-denied")) withFixture(true) { fixture ->
+                fixture.seedProteusConversation()
+                val welcome = fixture.plainEvent("stale-welcome", """{"type":"conversation.mls-welcome",
+                    "qualified_conversation":{"id":"${CONVERSATION_ID.value}","domain":"${CONVERSATION_ID.domain}"},
+                    "qualified_from":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},
+                    "from":"${SENDER.value}","time":"$TIME","data":"AA=="}""")
+                val tail = fixture.event("tail", fixture.encrypt("tail", protocolMLS = false),
+                    protocolMLS = false, conversationId = DELETE_TARGET)
+                val notification = fixture.batch("notification", fixture.memberJoin(), welcome,
+                    fixture.event("history", fixture.encrypt("history")), tail)
+                val next = fixture.event("next", fixture.encrypt("next"))
+                fixture.releasePrepared()
+                var welcomeCalls = 0
+                var decryptCalls = 0
+                var fetches = 0
+                val result = fixture.receive(listOf(notification, next), notification.id, fetchConversation = {
+                    fetches++
+                    throw KaliumException.InvalidRequestError(
+                        GenericAPIErrorResponse(code = status, label = label, message = "private response")
+                    )
+                }, decorateMLSContext = { context -> object : MlsCoreCryptoContext by context {
+                    override suspend fun processWelcomeMessage(message: ByteArray): String {
+                        welcomeCalls++
+                        error("Unavailable conversation must not consume a Welcome")
+                    }
+                    override suspend fun decryptMessage(groupId: MLSGroupId, message: ByteArray): MLSDecryptResult {
+                        decryptCalls++
+                        return context.decryptMessage(groupId, message)
+                    }
+                } })
+                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
+                assertEquals(0, welcomeCalls)
+                assertEquals(1, decryptCalls)
+                assertEquals(1, fetches)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(notification.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("tail", DELETE_TARGET))
+                    assertNotNull(runtime.database.messageDAO.getMessageById("history", CONVERSATION_ID))
+                })
+                // Unavailability belongs to this decode, not a persisted conversation state.
+                assertEquals("next", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), next.id)).value?.text)
+            }
+        }
+    }
+
+    @Test
+    fun missingConversationMetadataEventsDoNotBlockFollowingMessage() = runTest {
+        withContext(Dispatchers.Default) {
+            for (kind in listOf("rename", "receipt", "timer", "role", "preference", "self-leave")) withFixture(true) { fixture ->
+                val missing = CONVERSATION_ID.copy(value = "missing-conversation")
+                val event = when (kind) {
+                    "role" -> fixture.memberRoleEvent("wire_admin", target = missing)
+                    "preference" -> fixture.memberMutedEvent(missing)
+                    "rename" -> fixture.metadataEvents(missing)[0]
+                    "receipt" -> fixture.metadataEvents(missing)[1]
+                    "timer" -> fixture.metadataEvents(missing)[2]
+                    else -> fixture.plainEvent("stale-$kind", """{
+                        "type":"conversation.member-leave",
+                        "qualified_conversation":{"id":"${missing.value}","domain":"${missing.domain}"},
+                        "qualified_from":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},
+                        "from":"${SENDER.value}","time":"$TIME",
+                        "data":{"qualified_user_ids":[{"id":"${SELF.value}","domain":"${SELF.domain}"}],"reason":"removed"}
+                    }""")
+                }
+                val tail = fixture.event("tail", fixture.encrypt("tail"))
+                fixture.releasePrepared()
+                val diagnostics = ReceivingDiagnostics()
+                assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), tail.id, diagnostics = diagnostics, fetchConversation = {
+                    throw KaliumException.InvalidRequestError(
+                        GenericAPIErrorResponse(code = 404, label = "no-conversation", message = "private response")
+                    )
+                }))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("tail", CONVERSATION_ID))
+                })
+            }
+        }
+    }
+
+    @Test
+    fun missingConversationMetadataIsFetchedOnceAndAppliedInOrder() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val missing = CONVERSATION_ID.copy(value = "missing-conversation")
+                val metadata = fixture.metadataEvents(missing)
+                val notification = fixture.batch("metadata", *metadata.toTypedArray(), fixture.memberMutedEvent(missing),
+                    fixture.memberLeave("leave-missing", SENDER, target = missing))
+                val tail = fixture.event("tail", fixture.encrypt("tail"))
+                fixture.releasePrepared()
+                var fetches = 0
+                val result = fixture.receive(listOf(notification, tail), tail.id, fetchConversation = {
+                    fetches++
+                    fixture.creationResponse().copy(id = missing.toApi(), protocol = ConvProtocol.PROTEUS, groupId = null, epoch = null)
+                })
+                assertEquals("tail", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
+                assertEquals(1, fetches)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val conversation = checkNotNull(runtime.database.conversationDAO.getConversationById(missing))
+                    assertEquals("Renamed", conversation.name)
+                    assertEquals(ConversationEntity.ReceiptMode.ENABLED, conversation.receiptMode)
+                    assertEquals(45_000, conversation.messageTimer)
+                    assertEquals(ConversationEntity.MutedStatus.ALL_MUTED, conversation.mutedStatus)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(notification.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("tail", CONVERSATION_ID))
+                })
+            }
+        }
+    }
+
+    @Test
+    fun missingConversationMetadataTransientFailuresKeepFollowingMessagePending() = runTest {
+        withContext(Dispatchers.Default) {
+            for (kind in listOf("rename", "receipt", "timer", "role", "preference", "leave")) withFixture(true) { fixture ->
+                val missing = CONVERSATION_ID.copy(value = "missing-conversation")
+                val event = when (kind) {
+                    "rename" -> fixture.metadataEvents(missing)[0]
+                    "receipt" -> fixture.metadataEvents(missing)[1]
+                    "timer" -> fixture.metadataEvents(missing)[2]
+                    "role" -> fixture.memberRoleEvent("wire_admin", target = missing)
+                    "preference" -> fixture.memberMutedEvent(missing)
+                    else -> fixture.memberLeave(target = missing)
+                }
+                val tail = fixture.event("tail", fixture.encrypt("tail"))
+                fixture.releasePrepared()
+                assertIs<Either.Left<*>>(fixture.receive(listOf(event, tail), tail.id, fetchConversation = {
+                    throw KaliumException.InvalidRequestError(
+                        GenericAPIErrorResponse(code = 503, label = "access-denied", message = "private response")
+                    )
+                }))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
+                    assertNull(runtime.database.messageDAO.getMessageById("tail", CONVERSATION_ID))
+                })
+            }
+        }
+    }
+
+
+    @Test
+    fun mlsMessageFetchesMissingLocalConversation() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val event = fixture.event("text", fixture.encrypt("first"))
+                fixture.releasePrepared()
+                fixture.sql("DELETE FROM Conversation")
+                val result = fixture.receive(listOf(event), event.id, fetchConversation = { fixture.creationResponse() })
+                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
+            }
+        }
+    }
+
+
+    @Test
+    fun joinMissingConversationRetainsFetchFailure() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true, newConversation = true) { fixture ->
+                val event = fixture.memberJoin()
+                fixture.releasePrepared()
+                val diagnostics = ReceivingDiagnostics()
+                val result = assertIs<Either.Left<AccountRuntimeFailure>>(
+                    fixture.receive(listOf(event), event.id, diagnostics = diagnostics, fetchConversation = {
+                        throw KaliumException.InvalidRequestError(GenericAPIErrorResponse(code = 503, label = "temporary", message = "private response"))
+                    })
+                )
+                assertEquals(AccountRuntimeFailure.STORAGE, result.value)
+                assertEquals("ServerMiscommunication", diagnostics.errorCode)
+                assertEquals(503, diagnostics.httpStatus)
+                assertEquals("JOIN_REFRESH_CONVERSATION", diagnostics.stage)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                })
+            }
+        }
+    }
+
+
+    @Test
     fun creationProfilesRequired() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true, newConversation = true) { fixture ->
@@ -10368,9 +10652,10 @@ class NotificationProcessorNativeTest {
             "data":{"user_ids":["${member.value}"],"users":[{"id":"${member.value}","qualified_id":{"id":"${member.value}","domain":"${member.domain}"},"conversation_role":"wire_member"}]}}"""
         )
 
-        fun memberLeave(id: String = "leave", member: UserId = THIRD, reason: String = "removed") = plainEvent(
+        fun memberLeave(id: String = "leave", member: UserId = THIRD, reason: String = "removed",
+            target: QualifiedIDEntity = CONVERSATION_ID) = plainEvent(
             id,
-            """{"type":"conversation.member-leave","qualified_conversation":{"id":"conversation","domain":"example.com"},
+            """{"type":"conversation.member-leave","qualified_conversation":{"id":"${target.value}","domain":"${target.domain}"},
             "qualified_from":{"id":"${SENDER.value}","domain":"example.com"},"from":"${SENDER.value}","time":"$TIME",
             "data":{"qualified_user_ids":[{"id":"${member.value}","domain":"example.com"}],"reason":"$reason"}}"""
         )
@@ -10649,19 +10934,19 @@ class NotificationProcessorNativeTest {
             return EventResponseToStore(id, KtxSerializer.json.encodeToString(listOf(content)), false)
         }
 
-        fun metadataEvents(): List<EventResponseToStore> = listOf(
+        fun metadataEvents(target: QualifiedIDEntity = CONVERSATION_ID): List<EventResponseToStore> = listOf(
             EventContentDTO.Conversation.ConversationRenameDTO(
-                CONVERSATION_ID.toApi(), senderId.toApi(), TIME,
+                target.toApi(), senderId.toApi(), TIME,
                 com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent("Renamed")
             ),
             EventContentDTO.Conversation.ReceiptModeUpdate(
-                CONVERSATION_ID.toApi(),
+                target.toApi(),
                 com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO(
                     com.wire.kalium.network.api.authenticated.conversation.ReceiptMode.ENABLED
                 ), senderId.toApi()
             ),
             EventContentDTO.Conversation.MessageTimerUpdate(
-                CONVERSATION_ID.toApi(),
+                target.toApi(),
                 com.wire.kalium.network.api.authenticated.conversation.messagetimer.ConversationMessageTimerDTO(45_000),
                 senderId.toApi(), TIME
             )
@@ -10698,6 +10983,7 @@ class NotificationProcessorNativeTest {
             deleteFile: (String) -> Unit = { FileSystem.SYSTEM.delete(it.toPath(), mustExist = false) },
             hasCredential: (suspend (com.wire.kalium.cryptography.MLSCiphersuite) -> Boolean)? = null,
             transactionCheckpoint: suspend (String) -> Unit = {},
+            diagnostics: ReceivingDiagnostics? = null,
         ) = open { runtime ->
             if (interruption in listOf(Interruption.DELIVERY, Interruption.MARKER, Interruption.SECOND_MESSAGE)) {
                 val trigger = when (interruption) {
@@ -10735,6 +11021,7 @@ class NotificationProcessorNativeTest {
             }
             NotificationProcessor(
                 runtime.database, api, CLIENT, SELF, proteus, mls,
+                diagnostics = diagnostics,
                 evaluateCalls = { events ->
                     receivedCallEvents = events
                     evaluateCallingEvents(events, SELF, CLIENT, runtime.database)
@@ -10909,6 +11196,12 @@ class NotificationProcessorNativeTest {
             "qualified_from":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},"from":"${SENDER.value}","time":"$TIME",
             "data":{"target":"${member.value}","qualified_target":{"id":"${member.value}","domain":"${member.domain}"},
             "conversation_role":${role?.let { "\"$it\"" } ?: "null"},"otr_muted_ref":null,"otr_muted_status":null,"otr_archived":null,"otr_archived_ref":null}}""")
+
+        fun memberMutedEvent(target: QualifiedIDEntity = CONVERSATION_ID) = plainEvent("member-muted",
+            """{"type":"conversation.member-update","qualified_conversation":{"id":"${target.value}","domain":"${target.domain}"},
+            "qualified_from":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},"from":"${SENDER.value}","time":"$TIME",
+            "data":{"target":"${SELF.value}","qualified_target":{"id":"${SELF.value}","domain":"${SELF.domain}"},
+            "conversation_role":null,"otr_muted_ref":null,"otr_muted_status":3,"otr_archived":null,"otr_archived_ref":null}}""")
 
         suspend fun memberRoleEvents(member: UserId = SENDER, target: QualifiedIDEntity = CONVERSATION_ID) = batch("notification",
             event("prefix", encrypt("prefix")), memberRoleEvent("custom-role", member, target), memberRoleEvent("wire_admin", member, target),
