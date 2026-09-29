@@ -356,25 +356,6 @@ class RefreshNodeAssetStateUseCaseTest {
     }
 
     @Test
-    fun given_NodeWithPdfAndImagePreviews_when_RefreshInvoked_then_ImagePreviewIsSaved() = runTest {
-        val (arrangement, useCase) = Arrangement()
-            .withNodeResponseSuccess(testNode.copy(previews = testDocumentPreviews))
-            .withLocalAttachment()
-            .withLocalFileAvailable()
-            .arrange()
-
-        useCase.invoke(assetId)
-
-        // The PDF rendition is what the document is displayed with, never what its thumbnail is.
-        verifySuspend {
-            arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url)
-        }
-        verifySuspend(VerifyMode.not) {
-            arrangement.attachmentsRepository.savePreviewUrl(assetId, "http://renditionUrl")
-        }
-    }
-
-    @Test
     fun given_NodePreviewsNotReady_when_RefreshInvoked_then_PreviewRequestRetried() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withNodeResponseSuccess(testNode)

@@ -319,5 +319,4 @@ internal class CellUploadCoordinatorImpl internal constructor(
 
 private const val MAX_CONCURRENT_UPLOADS = 3
 
-// Matches the size at which CellsS3Client switches to a multipart upload.
 private const val LARGE_FILE_THRESHOLD_BYTES = 100 * 1024 * 1024L
