@@ -2031,6 +2031,7 @@ public class UserSessionScope internal constructor(
             selfTeamIdProvider = selfTeamId,
             mlsConversationRepository = mlsConversationRepository,
             meetingRepository = meetingRepository,
+            notificationEventsManager = notificationEventsManager,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
@@ -2311,11 +2312,15 @@ public class UserSessionScope internal constructor(
     private val meetingDeleteEventHandler: MeetingDeleteEventHandler
         get() = MeetingDeleteEventHandlerImpl(
             meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            notificationEventsManager = notificationEventsManager,
         )
 
     private val meetingUpdateEventHandler: MeetingUpdateEventHandler
         get() = MeetingUpdateEventHandlerImpl(
             meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            notificationEventsManager = notificationEventsManager,
         )
 
     private val meetingMemberAddEventHandler: MeetingMemberAddEventHandler

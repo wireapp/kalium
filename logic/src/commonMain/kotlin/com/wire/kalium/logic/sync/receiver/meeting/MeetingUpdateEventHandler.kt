@@ -23,7 +23,12 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.data.notification.toLocalNotificationMessageAuthor
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import kotlinx.coroutines.flow.firstOrNull
 
 internal interface MeetingUpdateEventHandler {
     suspend fun handle(event: Event.Meeting.Update): Either<CoreFailure, Unit>
@@ -31,9 +36,28 @@ internal interface MeetingUpdateEventHandler {
 
 internal class MeetingUpdateEventHandlerImpl(
     private val meetingRepository: MeetingRepository,
+    private val userRepository: UserRepository,
+    private val notificationEventsManager: NotificationEventsManager,
 ) : MeetingUpdateEventHandler {
     override suspend fun handle(event: Event.Meeting.Update): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        return meetingRepository.handleMeetingFetchAndUpsert(meetingId = event.meetingId, eventLogger = eventLogger).map { }
+        return meetingRepository.handleMeetingFetchAndUpsert(meetingId = event.meetingId, eventLogger = eventLogger).map { meeting ->
+            meeting?.let {
+                notificationEventsManager.scheduleMeetingNotification(
+                    LocalNotification.Meeting.Update(
+                        eventId = event.id,
+                        meetingId = meeting.meetingId,
+                        conversationId = meeting.conversationId,
+                        meetingTitle = meeting.title,
+                        author = event.senderUserId?.let {
+                            userRepository.observeUser(it).firstOrNull()?.toLocalNotificationMessageAuthor()
+                        },
+                        time = event.dateTime,
+                        startTime = meeting.startTime,
+                        endTime = meeting.endTime,
+                    )
+                )
+            }
+        }
     }
 }
