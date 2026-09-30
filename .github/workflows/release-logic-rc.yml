@@ -82,3 +82,52 @@ jobs:
       PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+  publish-wire-maven:
+    name: Publish Wire Maven
+    needs: build
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: macos-15
+    if: github.repository == 'wireapp/kalium'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429870054e64f2f61f3dade44661a93b # v4
+        with:
+          role-to-assume: arn:aws:iam::093205192929:role/gh-actions-maven-publish-kalium
+          aws-region: us-east-1
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Resolve Maven version
+        env:
+          INPUT_TAG_NAME: ${{ github.ref_name }}
+        run: |
+          case "$INPUT_TAG_NAME" in
+            v*) version="${INPUT_TAG_NAME#v}" ;;
+            *)
+              echo "::error::Wire Maven publish tags must start with v: $INPUT_TAG_NAME"
+              exit 1
+              ;;
+          esac
+          echo "KALIUM_PUBLISH_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Publish to Wire Maven
+        run: |
+          ./gradlew publishAllPublicationsToWireMavenRepository \
+            -Pkalium.publish.version="$KALIUM_PUBLISH_VERSION"
+
+      - name: Wire Maven summary
+        if: always()
+        run: |
+          echo "## Wire Maven Publish" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version**: ${KALIUM_PUBLISH_VERSION}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Repository**: https://maven.wire.com" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Note**: Artifacts may take up to 60 seconds to appear due to CDN caching." >> "$GITHUB_STEP_SUMMARY"

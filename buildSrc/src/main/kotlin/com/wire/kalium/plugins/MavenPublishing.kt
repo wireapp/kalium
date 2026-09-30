@@ -34,6 +34,8 @@ import org.gradle.plugins.signing.SigningExtension
 private const val CENTRAL_STAGING_REPOSITORY_NAME = "mavenCentralStaging"
 private const val CENTRAL_SNAPSHOTS_REPOSITORY_NAME = "mavenCentralSnapshots"
 private const val CENTRAL_SNAPSHOTS_REPOSITORY_URL = "https://central.sonatype.com/repository/maven-snapshots/"
+private const val WIRE_MAVEN_REPOSITORY_NAME = "wireMaven"
+private const val WIRE_MAVEN_REPOSITORY_URL = "s3://maven-wire-com"
 private const val SIGNING_REQUIRED_PROPERTY = "kalium.mavenCentral.signingRequired"
 private const val PUBLISH_VERSION_PROPERTY = "kalium.publish.version"
 private const val PUBLISH_VERSION_ENV = "KALIUM_PUBLISH_VERSION"
@@ -101,6 +103,10 @@ internal fun Project.configureKaliumMavenPublishingIfNeeded() {
                         username = mavenCentralUsername.orNull
                         password = mavenCentralPassword.orNull
                     }
+                }
+                maven {
+                    name = WIRE_MAVEN_REPOSITORY_NAME
+                    url = uri(WIRE_MAVEN_REPOSITORY_URL)
                 }
             }
 
