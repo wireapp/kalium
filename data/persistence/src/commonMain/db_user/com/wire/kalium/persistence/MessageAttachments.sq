@@ -52,7 +52,11 @@ ORDER BY ma.asset_index ASC
 LIMIT 1;
 
 setPreviewUrl:
-UPDATE CellFile SET previewUrl = ? WHERE uuid = ?;
+-- @NotifyCustomKey message_list_:conversationId
+-- @NotifyCustomKey CellFile
+-- The tautology is always true; it only exists to bind conversationId (typed) for the notify key above.
+UPDATE CellFile SET previewUrl = :previewUrl
+WHERE uuid = :assetId AND (conversationId IS :conversationId OR conversationId IS NOT :conversationId);
 
 setLocalPath:
 UPDATE CellFile SET localPath = ? WHERE uuid = ?;

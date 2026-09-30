@@ -125,25 +125,35 @@ internal fun RestNode.toDto() = CellNodeDTO(
 
 internal fun RestNode.editorUrl(urlKey: String): String? = this.editorURLs?.get(urlKey)?.url
 
-private fun List<RestFilePreview>?.toDto() = when {
+/**
+ * Every rendition the backend generated for the node — image previews of different sizes and, for
+ * documents it can convert, a PDF rendition of the file. They are kept in one list and told apart
+ * by their content type, so that a consumer picks the rendition it needs rather than the mapping
+ * deciding for it.
+ */
+private fun List<RestFilePreview>?.toDto(): List<PreviewDto>? = when {
     isNullOrEmpty() -> null
-    all { it.error == true } -> null
+    all { it.error == true && it.processing != true } -> emptyList()
     else -> {
-        filter { it.contentType?.endsWith("jpg") == true }
-            .mapNotNull {
-                it.preSignedGET?.url?.let { url ->
-                    PreviewDto(url, it.dimension ?: 0)
+        filter { it.error != true }
+            .mapNotNull { preview ->
+                preview.preSignedGET?.url?.takeIf { it.isNotEmpty() }?.let { url ->
+                    PreviewDto(url, preview.dimension ?: 0, preview.contentType)
                 }
             }
+            // Still processing, not failed: report as "not ready" (null), not "failed" (empty).
+            .ifEmpty { null }
     }
 }
 
 internal data class PreviewDto(
     val url: String,
     val dimension: Int?,
+    val contentType: String?,
 )
 
 internal fun PreviewDto.toModel() = NodePreview(
     url = url,
     dimension = dimension ?: 0,
+    contentType = contentType,
 )

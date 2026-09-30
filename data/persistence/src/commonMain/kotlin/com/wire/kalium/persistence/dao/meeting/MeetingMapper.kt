@@ -76,7 +76,6 @@ data object MeetingMapper {
         recurrenceEndDate: Instant?,
         conversationName: String?,
         conversationType: ConversationEntity.Type,
-        previewAssetId: QualifiedIDEntity?,
         channelAccess: ConversationEntity.ChannelAccess?,
         selfUserId: QualifiedIDEntity?,
     ): MeetingOccurrenceDetailsEntity = MeetingOccurrenceDetailsEntity(
@@ -102,7 +101,6 @@ data object MeetingMapper {
         ),
         conversationName = conversationName,
         conversationType = conversationType,
-        otherUserPreviewAssetId = previewAssetId,
         channelAccess = channelAccess,
         selfUserId = selfUserId,
     )

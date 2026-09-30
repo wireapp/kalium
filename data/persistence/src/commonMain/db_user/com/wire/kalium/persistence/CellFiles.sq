@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS CellFile (
 );
 
 upsertCellFile:
-INSERT INTO CellFile(uuid, conversationId, name, owner, assetMimeType, localPath, size, downloadedAt, isOffline, modifiedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO CellFile(uuid, conversationId, name, owner, assetMimeType, localPath, size, downloadedAt, isOffline, modifiedAt, assetPath)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(uuid) DO UPDATE SET
     conversationId = COALESCE(excluded.conversationId, conversationId),
     name = COALESCE(excluded.name, name),
@@ -36,7 +36,8 @@ ON CONFLICT(uuid) DO UPDATE SET
     size = COALESCE(excluded.size, size),
     downloadedAt = excluded.downloadedAt,
     isOffline = MAX(isOffline, excluded.isOffline),
-    modifiedAt = COALESCE(excluded.modifiedAt, modifiedAt);
+    modifiedAt = COALESCE(excluded.modifiedAt, modifiedAt),
+    assetPath = COALESCE(excluded.assetPath, assetPath);
 
 deleteCellFile:
 DELETE FROM CellFile WHERE uuid = ?;

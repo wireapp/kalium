@@ -142,9 +142,6 @@ SELECT
         ELSE Conversation.name
     END AS conversationName,
     Conversation.type AS conversationType,
-    CASE Conversation.type
-        WHEN 'ONE_ON_ONE' THEN otherUser.preview_asset_id
-    END AS previewAssetId,
     Conversation.channel_access AS channelAccess,
     SelfUser.id AS selfUserId
 FROM MeetingOccurrence
@@ -183,9 +180,6 @@ SELECT
         ELSE Conversation.name
     END AS conversationName,
     Conversation.type AS conversationType,
-    CASE Conversation.type
-        WHEN 'ONE_ON_ONE' THEN otherUser.preview_asset_id
-    END AS previewAssetId,
     Conversation.channel_access AS channelAccess,
     SelfUser.id AS selfUserId
 FROM MeetingOccurrence
@@ -204,15 +198,17 @@ ORDER BY occurrenceStart ASC,
 LIMIT :limit
 OFFSET :offset;
 
-selectMeetingParticipantPreviewAssetIds:
+selectMeetingParticipants:
 SELECT
     Member.conversation AS conversationId,
+    User.qualified_id AS userId,
+    coalesce(User.name, '') AS name,
+    User.accent_id AS accentColor,
     User.preview_asset_id AS previewAssetId
 FROM Member
 JOIN User ON User.qualified_id = Member.user
-LEFT JOIN SelfUser
 WHERE Member.conversation IN :conversationIds
-    AND User.preview_asset_id IS NOT NULL
+    AND User.deleted = 0
 ORDER BY Member.conversation ASC, Member.user ASC;
 
 selectNextUnfinishedMeetingOccurrenceDetailsId:

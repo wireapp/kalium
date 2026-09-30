@@ -30,6 +30,7 @@ data class CellFileEntity(
     val downloadedAt: Long,
     val isOffline: Boolean,
     val modifiedAt: Long? = null,
+    val remotePath: String? = null,
 )
 
 data class CellFileLocalPath(
