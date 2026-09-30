@@ -124,6 +124,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
             is Command.NodeCreated -> updateItem(command.id) {
                 copy(nodeUuid = command.nodeUuid, versionId = command.versionId)
             }
+
             is Command.Progress -> updateProgress(command.id, command.progress)
             is Command.TransferCompleted -> publishAndFinish(command.id)
             is Command.Finished -> finishItem(command.id, command.outcome)
@@ -285,7 +286,11 @@ internal class CellUploadCoordinatorImpl internal constructor(
     }
 
     private fun dismissAllItems() {
-        _uploads.update { items -> items.filter { it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading } }
+        _uploads.update { items ->
+            items.filter {
+                it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading
+            }
+        }
     }
 
     private fun updateProgress(id: String, progress: Float) {
