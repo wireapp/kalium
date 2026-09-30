@@ -29,22 +29,21 @@ internal class RemoteVideoViewAttachmentOwner(
     private val attachNative: (PlatformView, String, String) -> Boolean,
     private val detachNative: (PlatformView) -> Boolean,
 ) {
-    private var current: RemoteVideoViewAttachment? = null
+    private val attachments = mutableListOf<RemoteVideoViewAttachment>()
 
     fun attach(view: PlatformView, userId: String, clientId: String): RemoteVideoViewAttachment {
-        current?.let { previous ->
-            if (previous.view === view && previous.userId == userId && previous.clientId == clientId) return previous
-            check(detachNative(previous.view)) { "AVS could not detach the previous remote video view" }
-            current = null
+        attachments.firstOrNull { it.view.view === view.view }?.let { previous ->
+            if (previous.userId == userId && previous.clientId == clientId) return previous
+            detach(previous)
         }
         check(attachNative(view, userId, clientId)) { "AVS could not attach the remote video view" }
-        return RemoteVideoViewAttachment(this, view, userId, clientId).also { current = it }
+        return RemoteVideoViewAttachment(this, view, userId, clientId).also { attachments.add(it) }
     }
 
     fun detach(attachment: RemoteVideoViewAttachment) {
-        if (current !== attachment) return
+        if (attachment !in attachments) return
         check(detachNative(attachment.view)) { "AVS could not detach the remote video view" }
-        current = null
+        attachments.remove(attachment)
     }
 }
 
