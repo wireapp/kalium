@@ -57,6 +57,9 @@ public interface CellUploadCoordinator {
 
     /** Removes a finished (completed, failed or cancelled) upload from [uploads]. Active uploads are untouched. */
     public fun dismiss(id: String)
+
+    /** Removes every finished upload from [uploads]. Active uploads are untouched. */
+    public fun dismissAll()
 }
 
 /**

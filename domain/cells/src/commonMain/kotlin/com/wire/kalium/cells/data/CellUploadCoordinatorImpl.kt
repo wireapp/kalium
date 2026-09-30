@@ -108,6 +108,10 @@ internal class CellUploadCoordinatorImpl internal constructor(
         commands.trySend(Command.Dismiss(id))
     }
 
+    override fun dismissAll() {
+        commands.trySend(Command.DismissAll)
+    }
+
     private suspend fun handle(command: Command) {
         when (command) {
             is Command.Enqueue -> addItems(command.requests)
@@ -116,6 +120,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
             is Command.Retry -> requeueFailed(command.id)
             Command.RetryAllFailed -> requeueAllFailed()
             is Command.Dismiss -> dismissItem(command.id)
+            Command.DismissAll -> dismissAllItems()
             is Command.NodeCreated -> updateItem(command.id) {
                 copy(nodeUuid = command.nodeUuid, versionId = command.versionId)
             }
@@ -279,6 +284,10 @@ internal class CellUploadCoordinatorImpl internal constructor(
         _uploads.update { items -> items.filterNot { it.id == id } }
     }
 
+    private fun dismissAllItems() {
+        _uploads.update { items -> items.filter { it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading } }
+    }
+
     private fun updateProgress(id: String, progress: Float) {
         updateItem(id) {
             if (state is CellUploadState.Uploading) copy(state = CellUploadState.Uploading(progress)) else this
@@ -310,6 +319,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
         data class Retry(val id: String) : Command
         data object RetryAllFailed : Command
         data class Dismiss(val id: String) : Command
+        data object DismissAll : Command
         data class NodeCreated(val id: String, val nodeUuid: String, val versionId: String) : Command
         data class Progress(val id: String, val progress: Float) : Command
         data class TransferCompleted(val id: String) : Command

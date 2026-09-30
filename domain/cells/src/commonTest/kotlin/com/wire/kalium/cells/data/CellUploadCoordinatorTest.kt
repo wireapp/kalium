@@ -279,6 +279,23 @@ class CellUploadCoordinatorTest {
     }
 
     @Test
+    fun given_dismissAll_then_only_finished_items_are_removed() = runTest {
+        val arrangement = Arrangement(this, maxConcurrentUploads = 1)
+        arrangement.coordinator.enqueue(listOf(request("a.txt"), request("b.txt")))
+        advanceUntilIdle()
+
+        arrangement.manager.emit("a.txt", CellUploadEvent.UploadCompleted)
+        advanceUntilIdle()
+
+        arrangement.coordinator.dismissAll()
+        advanceUntilIdle()
+
+        assertEquals(listOf("b.txt"), arrangement.coordinator.uploads.value.map { it.fileName })
+        assertEquals(CellUploadState.Uploading(), arrangement.state("b.txt"))
+        arrangement.close()
+    }
+
+    @Test
     fun given_draft_creation_fails_then_item_is_failed_and_slot_released() = runTest {
         val arrangement = Arrangement(this, maxConcurrentUploads = 1)
         arrangement.manager.failUploadFor += "a.txt"
