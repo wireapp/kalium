@@ -75,13 +75,14 @@ public class SendTextMessageUseCase internal constructor(
         text: String,
         linkPreviews: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
-        quotedMessageId: String? = null
+        quotedMessageId: String? = null,
+        messageId: String = Uuid.random().toString()
     ): MessageOperationResult = scope.async(dispatchers.io) {
+        require(messageId.isNotBlank()) { "Message ID must not be blank." }
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
 
-        val generatedMessageUuid = Uuid.random().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
         val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
             .first()
@@ -91,7 +92,7 @@ public class SendTextMessageUseCase internal constructor(
 
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
-                id = generatedMessageUuid,
+                id = messageId,
                 content = MessageContent.Text(
                     value = text,
                     linkPreviews = previews,
@@ -122,7 +123,7 @@ public class SendTextMessageUseCase internal constructor(
             messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                 failure = it,
                 conversationId = conversationId,
-                messageId = generatedMessageUuid,
+                messageId = messageId,
                 messageType = TYPE,
                 scheduleResendIfNoNetwork = pendingMessagesEnabled,
             )

@@ -58,10 +58,72 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
+import kotlin.test.assertFailsWith
 import kotlin.test.Test
 import kotlin.test.assertIs
 
 class SendTextMessageCaseTest {
+
+    @Test
+    fun givenBlankMessageId_whenSending_thenRejectsItBeforePersisting() {
+        assertFailsWith<IllegalArgumentException> {
+            runTest {
+                val (_, sendMessage) = Arrangement(this).arrange()
+                sendMessage(TestConversation.ID, "some-text", messageId = " ")
+            }
+        }
+    }
+
+    @Test
+    fun givenExplicitMessageId_whenSendingWithSuccess_thenUsesItThroughoutTheOperation() = runTest {
+        val (arrangement, sendMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        val messageId = "explicit-message-id"
+
+        val result = sendMessage(TestConversation.ID, "some-text", messageId = messageId)
+        result.toEither().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { it.id == messageId })
+            arrangement.messageSender.sendMessage(matching { it.id == messageId }, any())
+        }
+    }
+
+    @Test
+    fun givenExplicitMessageId_whenSendingWithFailure_thenUsesItThroughoutTheOperation() = runTest {
+        val (arrangement, sendMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageFailure()
+            .arrange()
+        val messageId = "explicit-message-id"
+
+        val result = sendMessage(TestConversation.ID, "some-text", messageId = messageId)
+        result.toEither().shouldFail()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { it.id == messageId })
+            arrangement.messageSender.sendMessage(matching { it.id == messageId }, any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                any(),
+                any(),
+                eq(messageId),
+                any(),
+                any()
+            )
+        }
+    }
 
     @Test
     fun givenAValidMessage_whenSendingSomeText_thenShouldReturnASuccessResult() = runTest {
@@ -185,9 +247,11 @@ class SendTextMessageCaseTest {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matching { message ->
-                (message.content as MessageContent.Text).linkPreviews.get(0).image == null
-            })
+            arrangement.persistMessage.invoke(
+                matching { message ->
+                    (message.content as MessageContent.Text).linkPreviews.get(0).image == null
+                }
+            )
         }
     }
 
@@ -267,9 +331,11 @@ class SendTextMessageCaseTest {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matching { message ->
-                (message.content as MessageContent.Text).linkPreviews.get(0).image != null
-            })
+            arrangement.persistMessage.invoke(
+                matching { message ->
+                    (message.content as MessageContent.Text).linkPreviews.get(0).image != null
+                }
+            )
         }
     }
 
@@ -306,10 +372,12 @@ class SendTextMessageCaseTest {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(matching { message ->
-                assertIs<MessageContent.Text>(message.content)
-                (message.content as MessageContent.Text).linkPreviews.get(0).image == null
-            })
+            arrangement.persistMessage.invoke(
+                matching { message ->
+                    assertIs<MessageContent.Text>(message.content)
+                    (message.content as MessageContent.Text).linkPreviews.get(0).image == null
+                }
+            )
         }
     }
 
@@ -363,7 +431,8 @@ class SendTextMessageCaseTest {
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
         val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
         val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
-        val observeSelfDeletionTimerSettingsForConversation = mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>(mode = MockMode.autoUnit)
+        val observeSelfDeletionTimerSettingsForConversation =
+            mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>(mode = MockMode.autoUnit)
         private var pendingMessages = true
 
         suspend fun withSendMessageSuccess() = apply {

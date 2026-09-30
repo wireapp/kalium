@@ -32,12 +32,14 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.InternalKaliumApi
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.matching
 import dev.mokkery.mock
@@ -47,10 +49,70 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
+import kotlin.test.assertFailsWith
 import kotlin.test.Test
 
 @OptIn(InternalKaliumApi::class)
 class SendButtonMessageCaseTest {
+
+    @Test
+    fun givenBlankMessageId_whenSending_thenRejectsItBeforePersisting() {
+        assertFailsWith<IllegalArgumentException> {
+            runTest {
+                val (_, sendMessage) = Arrangement(this).arrange()
+                sendMessage(TestConversation.ID, "some-text", messageId = " ")
+            }
+        }
+    }
+
+    @Test
+    fun givenExplicitMessageId_whenSendingWithSuccess_thenUsesItThroughoutTheOperation() = runTest {
+        val (arrangement, sendMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withSendMessageSuccess()
+            .arrange()
+        val messageId = "explicit-message-id"
+
+        val result = sendMessage(TestConversation.ID, "some-text", messageId = messageId)
+        result.toEither().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { it.id == messageId })
+            arrangement.messageSender.sendMessage(matching { it.id == messageId }, any())
+        }
+    }
+
+    @Test
+    fun givenExplicitMessageId_whenSendingWithFailure_thenUsesItThroughoutTheOperation() = runTest {
+        val (arrangement, sendMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withSendMessageFailure()
+            .arrange()
+        val messageId = "explicit-message-id"
+
+        val result = sendMessage(TestConversation.ID, "some-text", messageId = messageId)
+        result.toEither().shouldFail()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { it.id == messageId })
+            arrangement.messageSender.sendMessage(matching { it.id == messageId }, any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                any(),
+                any(),
+                eq(messageId),
+                any(),
+                any()
+            )
+        }
+    }
 
     @Test
     fun givenATextMessageContainsButtons_whenSendingIt_thenShouldBeCompositeAndReturnASuccessResult() = runTest {

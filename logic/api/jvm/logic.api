@@ -5818,8 +5818,8 @@ public final class com/wire/kalium/logic/feature/message/SendMultipartMessageUse
 }
 
 public final class com/wire/kalium/logic/feature/message/SendTextMessageUseCase {
-	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/message/SendTextMessageUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/message/SendTextMessageUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/message/ToggleReactionResult {

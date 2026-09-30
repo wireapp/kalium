@@ -66,13 +66,14 @@ public class SendButtonMessageUseCase internal constructor(
         text: String,
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null,
-        buttons: List<String> = listOf()
+        buttons: List<String> = listOf(),
+        messageId: String = Uuid.random().toString()
     ): MessageOperationResult = scope.async(dispatchers.io) {
+        require(messageId.isNotBlank()) { "Message ID must not be blank." }
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
 
-        val generatedMessageUuid = Uuid.random().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
         provideClientId().flatMap { clientId ->
@@ -93,7 +94,7 @@ public class SendButtonMessageUseCase internal constructor(
             val content = MessageContent.Composite(textContent, buttonContent)
 
             val message = Message.Regular(
-                id = generatedMessageUuid,
+                id = messageId,
                 content = content,
                 expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,
@@ -113,7 +114,7 @@ public class SendButtonMessageUseCase internal constructor(
             messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                 failure = it,
                 conversationId = conversationId,
-                messageId = generatedMessageUuid,
+                messageId = messageId,
                 messageType = TYPE
             )
         }.fold(
