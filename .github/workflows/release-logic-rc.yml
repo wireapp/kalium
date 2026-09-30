@@ -97,14 +97,19 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
+        with:
+          xcode-version: "16.1.0"
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429870054e64f2f61f3dade44661a93b # v4
         with:
           role-to-assume: arn:aws:iam::093205192929:role/gh-actions-maven-publish-kalium
           aws-region: us-east-1
-
-      - name: Setup Java and Gradle
-        uses: ./.github/actions/setup-java-gradle
 
       - name: Resolve Maven version
         env:
@@ -119,10 +124,14 @@ jobs:
           esac
           echo "KALIUM_PUBLISH_VERSION=$version" >> "$GITHUB_ENV"
 
-      - name: Publish to Wire Maven
+      - name: Publish Gradle publications to local staging repository
         run: |
-          ./gradlew publishAllPublicationsToWireMavenRepository \
+          ./gradlew publishAllPublicationsToMavenCentralStagingRepository \
             -Pkalium.publish.version="$KALIUM_PUBLISH_VERSION"
+
+      - name: Upload to Wire S3
+        run: |
+          aws s3 sync build/maven-central-staging s3://maven-wire-com
 
       - name: Wire Maven summary
         if: always()
