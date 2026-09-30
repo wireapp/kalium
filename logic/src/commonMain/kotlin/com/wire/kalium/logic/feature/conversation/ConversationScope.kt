@@ -440,7 +440,8 @@ public class ConversationScope internal constructor(
     internal val typingIndicatorIncomingRepository =
         TypingIndicatorIncomingRepositoryImpl(
             ConcurrentMutableMap(),
-            userPropertyRepository
+            userPropertyRepository,
+            scope
         )
 
     internal val typingIndicatorOutgoingRepository =
