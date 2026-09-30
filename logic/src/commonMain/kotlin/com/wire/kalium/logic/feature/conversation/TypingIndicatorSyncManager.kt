@@ -31,7 +31,7 @@ internal class TypingIndicatorSyncManager(
     private val logger = kaliumLogger.withTextTag("TypingIndicatorSyncManager")
 
     /**
-     * Periodically clears and drop orphaned typing indicators, so we don't keep them forever.
+     * Clears orphaned typing indicators whenever the sync state changes.
      */
     suspend fun execute() {
         logger.d("Starting to monitor")
