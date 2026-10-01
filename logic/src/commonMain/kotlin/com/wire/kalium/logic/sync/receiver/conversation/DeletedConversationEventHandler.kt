@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -26,8 +27,11 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.data.notification.toLocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
@@ -41,9 +45,11 @@ internal interface DeletedConversationEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.DeletedConversation)
 }
 
+@Suppress("LongParameterList")
 internal class DeletedConversationEventHandlerImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
+    private val meetingRepository: MeetingRepository,
     private val notificationEventsManager: NotificationEventsManager,
     private val deleteConversation: DeleteConversationUseCase,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
@@ -70,6 +76,21 @@ internal class DeletedConversationEventHandlerImpl(
                         val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
                         if (conversation.type != Conversation.Type.Group.Meeting) {
                             notificationEventsManager.scheduleDeleteConversationNotification(dataNotification)
+                        } else {
+                            meetingRepository.getMeetingsByConversationId(conversation.id).getOrNull()?.forEach { meeting ->
+                                notificationEventsManager.scheduleMeetingNotification(
+                                    LocalNotification.Meeting.Cancel(
+                                        eventId = event.id,
+                                        meetingId = meeting.meetingId,
+                                        conversationId = meeting.conversationId,
+                                        meetingTitle = meeting.title,
+                                        author = event.senderUserId?.let {
+                                            userRepository.observeUser(it).firstOrNull()?.toLocalNotificationMessageAuthor()
+                                        },
+                                        time = event.dateTime,
+                                    )
+                                )
+                            }
                         }
                         logger.logSuccess()
                     }
