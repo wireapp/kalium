@@ -1995,6 +1995,7 @@ public class UserSessionScope internal constructor(
         get() = DeletedConversationEventHandlerImpl(
             userRepository,
             conversationRepository,
+            meetingRepository,
             notificationEventsManager,
             deleteConversationUseCase,
             currentPersistenceEventHookNotifier,
