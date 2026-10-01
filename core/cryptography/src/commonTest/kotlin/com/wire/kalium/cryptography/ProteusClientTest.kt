@@ -57,10 +57,13 @@ class ProteusClientTest : BaseProteusClientTest() {
     }
 
     @Test
-    fun givenProteusClient_whenCallingNewPreKeys_thenItReturnsAListOfPreKeys() = runTest {
+    fun givenProteusClient_whenCallingNewPreKeysAuto_thenItReturnsAListOfPreKeys() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
-        val preKeyList = aliceClient.newPreKeys(0, 10)
-        assertEquals(preKeyList.size, 10)
+        val preKeyList = aliceClient.newPreKeysAuto(10)
+        assertEquals(10, preKeyList.size)
+        val nextPreKeyList = aliceClient.newPreKeysAuto(10)
+        assertEquals(10, nextPreKeyList.size)
+        assertEquals(20, (preKeyList + nextPreKeyList).map { it.id }.toSet().size)
     }
 
     @Test
@@ -69,7 +72,7 @@ class ProteusClientTest : BaseProteusClientTest() {
         val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
         val message = "Hi Alice!"
-        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        val aliceKey = aliceClient.newPreKeysAuto(10).first()
         val encryptedMessage =
             bobClient.transaction("encryptWithPreKey") { it.encryptWithPreKey(message.encodeToByteArray(), aliceKey, aliceSessionId) }
         val decryptedMessage = aliceClient.transaction("decrypt") { it.decryptMessage(bobSessionId, encryptedMessage) { it } }
@@ -81,7 +84,7 @@ class ProteusClientTest : BaseProteusClientTest() {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
         val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
-        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        val aliceKey = aliceClient.newPreKeysAuto(10).first()
         val message1 = "Hi Alice!"
         val encryptedMessage1 = bobClient.transaction("encryptWithPreKey") {
             it.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
@@ -100,7 +103,7 @@ class ProteusClientTest : BaseProteusClientTest() {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
         val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
-        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        val aliceKey = aliceClient.newPreKeysAuto(10).first()
         val message1 = "Hi Alice!"
         val encryptedMessage1 =
             bobClient.transaction("encryptWithPreKey") { it.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId) }
@@ -133,7 +136,7 @@ class ProteusClientTest : BaseProteusClientTest() {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
         val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
-        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        val aliceKey = aliceClient.newPreKeysAuto(10).first()
         val message1 = "Hi Alice!"
         bobClient.transaction("createSession") { it.createSession(aliceKey, aliceSessionId) }
 
@@ -154,7 +157,7 @@ class ProteusClientTest : BaseProteusClientTest() {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
         val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
-        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        val aliceKey = aliceClient.newPreKeysAuto(10).first()
         bobClient.transaction("createSession") { it.createSession(aliceKey, aliceSessionId) }
         assertNotNull(bobClient.transaction("encrypt") { it.encrypt("Hello World".encodeToByteArray(), aliceSessionId) })
     }
@@ -175,7 +178,7 @@ class ProteusClientTest : BaseProteusClientTest() {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
         val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
-        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+        val aliceKey = aliceClient.newPreKeysAuto(10).first()
         bobClient.transaction("createSession") { it.createSession(aliceKey, aliceSessionId) }
         bobClient.transaction("remoteFingerPrint") { it.remoteFingerPrint(aliceSessionId) }.also {
             assertEquals(aliceClient.transaction("getLocalFingerprint") { it.getLocalFingerprint() }, it)
@@ -188,7 +191,7 @@ class ProteusClientTest : BaseProteusClientTest() {
         val failedAliceClient = createProteusClient(aliceRef, PROTEUS_DB_SECRET)
         val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
 
-        val aliceKey = failedAliceClient.newPreKeys(0, 10).first()
+        val aliceKey = failedAliceClient.newPreKeysAuto(10).first()
         val message1 = "Hi Alice!"
 
         var decryptedCount = 0

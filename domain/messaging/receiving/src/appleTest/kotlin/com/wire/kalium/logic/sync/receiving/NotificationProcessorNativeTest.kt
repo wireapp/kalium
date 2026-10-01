@@ -9667,7 +9667,7 @@ class NotificationProcessorNativeTest {
             sender = coreCryptoCentral("$root/sender-proteus", KEY)
             receiverProteus = receiver.proteusClient()
             senderProteus = sender.proteusClient()
-            receiverPrekey = receiverProteus.newPreKeys(0, 1).single()
+            receiverPrekey = receiverProteus.newPreKeysAuto(1).single()
             var protocol: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus
             if (mlsEnabled) {
                 preferences.passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$SELF", Base64.encode(KEY))

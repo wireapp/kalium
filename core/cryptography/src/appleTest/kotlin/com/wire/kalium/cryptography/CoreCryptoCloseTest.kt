@@ -46,6 +46,29 @@ import platform.Foundation.NSUUID
 
 class CoreCryptoCloseTest {
     @Test
+    fun givenStoredPrekeys_whenReopeningProteus_thenAutomaticIdsDoNotRepeat() = runTest {
+        val root = "${NSTemporaryDirectory()}/kalium-prekeys-${NSUUID().UUIDString}"
+        val key = ByteArray(32) { 7 }
+        var central = coreCryptoCentral(root, key)
+        try {
+            val client = central.proteusClient()
+            val firstBatch = client.newPreKeysAuto(10)
+            val secondBatch = client.newPreKeysAuto(10)
+            central.close()
+            central = coreCryptoCentral(root, key)
+            val reopenedBatch = central.proteusClient().newPreKeysAuto(10)
+
+            assertEquals(10, firstBatch.size)
+            assertEquals(10, secondBatch.size)
+            assertEquals(10, reopenedBatch.size)
+            assertEquals(30, (firstBatch + secondBatch + reopenedBatch).map { it.id }.toSet().size)
+        } finally {
+            central.close()
+            NSFileManager.defaultManager.removeItemAtPath(root, null)
+        }
+    }
+
+    @Test
     fun reinitializingAndClosingMLSReleasesNativeFiles() = runTest {
         val root = "${NSTemporaryDirectory()}/kalium-mls-close-${NSUUID().UUIDString}"
         val central = coreCryptoCentral(root, ByteArray(32) { 7 })
@@ -121,7 +144,7 @@ class CoreCryptoCloseTest {
             val receiverClient = receiver.proteusClient()
             val senderSession = CryptoSessionId(CryptoUserID("sender", "wire.test"), CryptoClientId("1"))
             val receiverSession = CryptoSessionId(CryptoUserID("receiver", "wire.test"), CryptoClientId("2"))
-            val prekey = receiverClient.newPreKeys(0, 1).single()
+            val prekey = receiverClient.newPreKeysAuto(1).single()
             val first = senderClient.transaction("first") {
                 it.encryptWithPreKey("first".encodeToByteArray(), prekey, receiverSession)
             }

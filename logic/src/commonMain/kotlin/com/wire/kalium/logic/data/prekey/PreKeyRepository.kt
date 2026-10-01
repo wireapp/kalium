@@ -66,20 +66,6 @@ internal interface PreKeyRepository {
     suspend fun uploadNewPrekeyBatch(batch: List<PreKeyCrypto>): Either<CoreFailure, Unit>
 
     /**
-     * Generates prekeys starting with the caller-provided [firstKeyId], to be uploaded to
-     * the backend and shared with other clients in order to initialise a new conversation with this client.
-     *
-     * As these are consumed, we should keep uploading new prekeys to the backend.
-     * For this reason, these can be called "rolling" prekeys, in an attempt to separate them
-     * from the "last resort" prekey, which is described in [generateNewLastResortKey].
-     *
-     * @param firstKeyId The ID to use for the first new prekey.
-     * @param keysCount The number of prekeys to generate.
-     * @see generateNewLastResortKey
-     */
-    suspend fun generateNewPreKeys(firstKeyId: Int, keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
-
-    /**
      * Generates rolling prekeys, with Core Crypto automatically selecting the next available
      * prekey ID. The generated prekeys can be uploaded to the backend and shared with other
      * clients in order to initialise a new conversation with this client.
@@ -112,20 +98,20 @@ internal interface PreKeyRepository {
     /**
      * Also known as "last prekey", it's the prekey that the backend will
      * share with other clients when it runs out of prekeys for this client.
-     * For "rolling" prekeys, see [generateNewPreKeys].
-     * @see generateNewPreKeys
+     * For "rolling" prekeys, see [generateNewPreKeysAuto].
+     * @see generateNewPreKeysAuto
      */
     suspend fun generateNewLastResortKey(): Either<ProteusFailure, PreKeyCrypto>
 
     /**
      * Returns the ID of the most recent "rolling" prekey that was generated.
-     * @see generateNewPreKeys
+     * @see generateNewPreKeysAuto
      */
     suspend fun mostRecentPreKeyId(): Either<StorageFailure, Int>
 
     /**
      * Updates the ID of the most recent "rolling" prekey that was generated.
-     * @see generateNewPreKeys
+     * @see generateNewPreKeysAuto
      * @see forceInsertMostRecentPreKeyId
      */
     suspend fun updateMostRecentPreKeyId(newId: Int): Either<StorageFailure, Unit>
@@ -168,20 +154,6 @@ internal class PreKeyDataSource(
             wrapApiRequest {
                 preKeyApi.uploadNewPrekeys(clientId.value, preKeyDTOs)
             }
-        }
-
-    override suspend fun generateNewPreKeys(
-        firstKeyId: Int,
-        keysCount: Int
-    ): Either<ProteusFailure, List<PreKeyCrypto>> =
-        wrapProteusRequest { proteusClientProvider.getOrCreate().newPreKeys(firstKeyId, keysCount) }.onSuccess {
-            kaliumLogger.i(
-                """Generating PreKeys: {"success":true,"firstKeyId":$firstKeyId,"keysCount":$keysCount}"""
-            )
-        }.onFailure {
-            kaliumLogger.i(
-                """Generating PreKeys: {"success":false,"firstKeyId":$firstKeyId, "keysCount":$keysCount}"""
-            )
         }
 
     override suspend fun generateNewPreKeysAuto(
