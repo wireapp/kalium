@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
@@ -64,10 +65,86 @@ import okio.Path
 import okio.buffer
 import okio.use
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryFailedMessageUseCaseTest {
+
+    @Test
+    fun givenUnknownContent_whenRetrying_thenShouldRejectWithoutChangingStatusOrSending() =
+        testUnsupportedRegularContent(MessageContent.Unknown())
+
+    @Test
+    fun givenFailedDecryptionContent_whenRetrying_thenShouldRejectWithoutChangingStatusOrSending() =
+        testUnsupportedRegularContent(
+            MessageContent.FailedDecryption(isDecryptionResolved = false, senderUserId = TEXT_MESSAGE.senderUserId)
+        )
+
+    @Test
+    fun givenRestrictedAssetContent_whenRetrying_thenShouldRejectWithoutChangingStatusOrSending() =
+        testUnsupportedRegularContent(MessageContent.RestrictedAsset("application/pdf", 42L, "test.pdf"))
+
+    @Test
+    fun givenCompositeEditedContent_whenRetrying_thenShouldRejectWithoutChangingStatusOrSending() =
+        testUnsupportedSignalingContent(MessageContent.CompositeEdited(editMessageId = TEXT_MESSAGE.id))
+
+    @Test
+    fun givenIgnoredContent_whenRetrying_thenShouldRejectWithoutChangingStatusOrSending() =
+        testUnsupportedSignalingContent(MessageContent.Ignored)
+
+    private fun testUnsupportedRegularContent(content: MessageContent.Regular) {
+        for (status in listOf(Message.Status.Failed, Message.Status.FailedRemotely)) {
+            for (visibility in listOf(Message.Visibility.VISIBLE, Message.Visibility.DELETED)) {
+                for (editStatus in listOf(Message.EditStatus.NotEdited, Message.EditStatus.Edited(TEST_DATE))) {
+                    assertUnsupportedRetry(
+                        TEXT_MESSAGE.copy(content = content, status = status, visibility = visibility, editStatus = editStatus)
+                    )
+                }
+            }
+        }
+    }
+
+    // Signaling content is not currently loaded from storage; cover the defensive guard at the repository boundary.
+    private fun testUnsupportedSignalingContent(content: MessageContent.Signaling) {
+        for (status in listOf(Message.Status.Failed, Message.Status.FailedRemotely)) {
+            assertUnsupportedRetry(
+                Message.Signaling(
+                    id = TEXT_MESSAGE.id,
+                    content = content,
+                    conversationId = TEXT_MESSAGE.conversationId,
+                    date = TEST_DATE,
+                    senderUserId = TEXT_MESSAGE.senderUserId,
+                    senderClientId = TEXT_MESSAGE.senderClientId,
+                    status = status,
+                    isSelfMessage = true,
+                    expirationData = null
+                )
+            )
+        }
+    }
+
+    private fun assertUnsupportedRetry(message: Message.Sendable) = runTest(testDispatcher.default) {
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .withSendMessage(Either.Right(Unit))
+            .arrange()
+
+        val result = useCase(message.id, message.conversationId)
+        advanceUntilIdle()
+
+        val failure = assertIs<MessageOperationResult.Failure>(result)
+        val error = assertIs<CoreFailure.Unknown>(failure.error)
+        val cause = assertIs<IllegalStateException>(error.rootCause)
+        assertEquals("Message with ${message.content.getType()} content cannot be retried", cause.message)
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.messageRepository.updateMessageStatus(any(), any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
 
     private fun testResendingWithGivenMessageStatus(
         status: Message.Status,

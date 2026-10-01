@@ -3041,6 +3041,7 @@ public class UserSessionScope internal constructor(
             refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             leaveConversation = conversations.leaveConversation,
+            deleteConversation = deleteConversationUseCase,
             transactionProvider = cryptoTransactionProvider
         )
     }
