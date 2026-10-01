@@ -43,6 +43,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
+import okio.FileSystem
+import okio.SYSTEM
 import kotlin.uuid.Uuid
 
 /**
@@ -59,6 +61,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
     private val scope: CoroutineScope,
     private val maxConcurrentUploads: Int = MAX_CONCURRENT_UPLOADS,
     private val largeFileThresholdBytes: Long = LARGE_FILE_THRESHOLD_BYTES,
+    private val fileSystem: FileSystem = FileSystem.SYSTEM,
 ) : CellUploadCoordinator {
 
     private val _uploads = MutableStateFlow<List<CellUploadItem>>(emptyList())
@@ -283,14 +286,17 @@ internal class CellUploadCoordinatorImpl internal constructor(
         val item = _uploads.value.firstOrNull { it.id == id } ?: return
         if (item.state is CellUploadState.Queued || item.state is CellUploadState.Uploading) return
         _uploads.update { items -> items.filterNot { it.id == id } }
+        deleteLocalFile(item)
     }
 
     private fun dismissAllItems() {
-        _uploads.update { items ->
-            items.filter {
-                it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading
-            }
+        val finished = _uploads.value.filterNot {
+            it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading
         }
+        _uploads.update { items ->
+            items.filter { it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading }
+        }
+        finished.forEach(::deleteLocalFile)
     }
 
     private fun updateProgress(id: String, progress: Float) {
@@ -304,10 +310,18 @@ internal class CellUploadCoordinatorImpl internal constructor(
         // Only a running upload can finish. This drops outcomes that race a cancellation, and the duplicate
         // reports that the recovery check above can produce.
         updateItem(id) { if (state is CellUploadState.Uploading) copy(state = outcome) else this }
+        val item = _uploads.value.firstOrNull { it.id == id }
+        if (item?.state is CellUploadState.Completed) {
+            deleteLocalFile(item)
+        }
     }
 
     private fun stopWorker(id: String) {
         workers.remove(id)?.cancel()
+    }
+
+    private fun deleteLocalFile(item: CellUploadItem) {
+        runCatching { fileSystem.delete(item.request.localPath, mustExist = false) }
     }
 
     private fun updateItem(id: String, block: CellUploadItem.() -> CellUploadItem) {

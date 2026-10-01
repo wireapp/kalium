@@ -43,6 +43,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
+import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -296,6 +297,58 @@ class CellUploadCoordinatorTest {
     }
 
     @Test
+    fun given_item_completes_then_its_local_file_is_deleted_immediately() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.stageLocalFile("a.txt")
+        arrangement.coordinator.enqueue(listOf(request("a.txt")))
+        advanceUntilIdle()
+
+        arrangement.manager.emit("a.txt", CellUploadEvent.UploadCompleted)
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Completed, arrangement.state("a.txt"))
+        assertFalse(arrangement.fileSystem.exists("/tmp/a.txt".toPath()))
+        arrangement.close()
+    }
+
+    @Test
+    fun given_item_fails_then_its_local_file_is_kept_until_dismissed() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.manager.failUploadFor += "a.txt"
+        arrangement.stageLocalFile("a.txt")
+        arrangement.coordinator.enqueue(listOf(request("a.txt")))
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Failed, arrangement.state("a.txt"))
+        assertTrue(arrangement.fileSystem.exists("/tmp/a.txt".toPath()))
+
+        arrangement.coordinator.dismiss(arrangement.id("a.txt"))
+        advanceUntilIdle()
+
+        assertFalse(arrangement.fileSystem.exists("/tmp/a.txt".toPath()))
+        arrangement.close()
+    }
+
+    @Test
+    fun given_cancelled_item_then_its_local_file_is_kept_until_dismissAll() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.stageLocalFile("a.txt")
+        arrangement.coordinator.enqueue(listOf(request("a.txt")))
+        advanceUntilIdle()
+        arrangement.coordinator.cancel(arrangement.id("a.txt"))
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Cancelled, arrangement.state("a.txt"))
+        assertTrue(arrangement.fileSystem.exists("/tmp/a.txt".toPath()))
+
+        arrangement.coordinator.dismissAll()
+        advanceUntilIdle()
+
+        assertFalse(arrangement.fileSystem.exists("/tmp/a.txt".toPath()))
+        arrangement.close()
+    }
+
+    @Test
     fun given_draft_creation_fails_then_item_is_failed_and_slot_released() = runTest {
         val arrangement = Arrangement(this, maxConcurrentUploads = 1)
         arrangement.manager.failUploadFor += "a.txt"
@@ -360,9 +413,14 @@ class CellUploadCoordinatorTest {
         private val scope = CoroutineScope(testScope.coroutineContext + Job())
         val manager = FakeCellUploadManager()
         val repository = FakeCellsRepository()
+        val fileSystem = FakeFileSystem().apply { createDirectories("/tmp".toPath()) }
         val coordinator = CellUploadCoordinatorImpl(
-            manager, repository, scope, maxConcurrentUploads, largeFileThresholdBytes
+            manager, repository, scope, maxConcurrentUploads, largeFileThresholdBytes, fileSystem
         )
+
+        fun stageLocalFile(fileName: String) {
+            fileSystem.write("/tmp/$fileName".toPath()) { writeUtf8("content") }
+        }
 
         fun state(fileName: String): CellUploadState =
             coordinator.uploads.value.first { it.fileName == fileName }.state
