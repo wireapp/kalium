@@ -31,7 +31,6 @@ import platform.posix.fopen
 import platform.posix.fputs
 import platform.posix.getenv
 
-// TODO encrypt database using sqlcipher
 actual data class PlatformDatabaseData(
     val storageData: StorageData,
     val useGradleSafeSqliterLogging: Boolean = false
@@ -42,13 +41,23 @@ sealed class StorageData {
     data object InMemory : StorageData()
 }
 
+/**
+ * @param passphrase encrypts the database with SQLCipher, see [setSqlCipherKey]; a database that an earlier version
+ * stored unencrypted is encrypted first, see [encryptPlaintextDatabase]. Null or empty leaves the database unencrypted;
+ * the backup export uses an empty one for its plain copy.
+ */
 fun databaseDriver(
     driverUri: String?,
     dbName: String,
     schema: SqlSchema<QueryResult.Value<Unit>>,
+    passphrase: ByteArray? = null,
     config: DriverConfigurationBuilder.() -> Unit = {}
 ): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
+    val sqlCipherKey = passphrase?.takeIf { it.isNotEmpty() }?.decodeToString()
+    if (driverUri != null && sqlCipherKey != null) {
+        encryptPlaintextDatabase(driverUri, dbName, sqlCipherKey)
+    }
     val inMemory = driverUri == null
     val configuration = DatabaseConfiguration(
         name = dbName,
@@ -72,6 +81,10 @@ fun databaseDriver(
         ) else DatabaseConfiguration.Extended(
             basePath = driverUri,
             foreignKeyConstraints = driverConfiguration.areForeignKeyConstraintsEnforced
+        ),
+        lifecycleConfig = DatabaseConfiguration.Lifecycle(
+            // Every connection, the readers of a WAL database included, gets the key before SQLiter reads the file.
+            onCreateConnection = { connection -> sqlCipherKey?.let(connection::setSqlCipherKey) }
         )
     )
     return NativeSqliteDriver(configuration, maxReaderConnections = NATIVE_MAX_READER_CONNECTIONS)

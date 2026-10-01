@@ -20,6 +20,7 @@ package com.wire.kalium.persistence
 
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
@@ -49,7 +50,8 @@ actual abstract class GlobalDBBaseTest {
                 useGradleSafeSqliterLogging = true
             ),
             StandardTestDispatcher(),
-            null,
+            // A raw key, like the one the SDK gives the global database.
+            GlobalDatabaseSecret("x'${"42".repeat(32)}'".encodeToByteArray()),
             false
         )
     }
