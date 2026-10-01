@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.backup
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
@@ -9,6 +10,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +28,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -189,6 +192,35 @@ class BackupDataSourceTest {
         val result = subject.getReactions().first().data.single().reactions.map { it.emoji }
 
         assertContentEquals(listOf("existing", "new"), result.sorted())
+    }
+
+    @Test
+    fun givenDeletedReactedMessage_whenRestoringExportedPage_thenKeepValidReactions() = runTest {
+        val conversation = createTestConversation("backup")
+        val conversationId = QualifiedIDEntity(conversation.id.value, conversation.id.domain)
+        val visible = createTestMessage(conversation.id, "visible", userId)
+        val deleted = createTestMessage(conversation.id, "deleted", userId)
+        subject.insertUsers(listOf(createTestUser(userId.value)))
+        subject.insertConversations(listOf(conversation))
+        subject.insertMessages(listOf(visible, deleted))
+        subject.insertReactions(listOf(visible, deleted).map { message ->
+            MessageReactions(message.id, conversation.id, listOf(MessageReactionWithUsers("reaction", listOf(userId))))
+        })
+        testDatabase.builder.messageDAO.markMessageAsDeleted(deleted.id, conversationId)
+
+        val messages = subject.getMessages().toList().flatMap { it.data }
+        val reactions = subject.getReactions().toList().flatMap { it.data }
+        assertEquals(listOf(visible.id), messages.map { it.id })
+        assertEquals(setOf(visible.id, deleted.id), reactions.map { it.messageId }.toSet())
+
+        // Restore the exported history into an empty message table, as on a fresh client.
+        testDatabase.builder.messageDAO.deleteMessage(visible.id, conversationId)
+        testDatabase.builder.messageDAO.deleteMessage(deleted.id, conversationId)
+        assertIs<Either.Right<Unit>>(subject.insertMessages(messages))
+        repeat(2) { assertIs<Either.Right<Unit>>(subject.insertReactions(reactions)) }
+
+        val restored = subject.getReactions().toList().flatMap { it.data }
+        assertEquals(listOf(reactions.single { it.messageId == visible.id }), restored)
     }
 
     private fun createTestUser(id: String) = TestUser.OTHER.copy(id = UserId(id, userId.domain))

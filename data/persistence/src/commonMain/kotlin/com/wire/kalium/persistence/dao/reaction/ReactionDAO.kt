@@ -134,6 +134,11 @@ class ReactionDAOImpl(
         val date = instant.toIsoDateTimeString()
         reactionsQueries.transaction {
             reactions.forEach { messageReactions ->
+                // Backups can include reactions to messages excluded from message export.
+                val messageExists = reactionsQueries.doesMessageExist(messageReactions.messageId, messageReactions.conversationId)
+                    .awaitAsOneOrNull() != null
+                if (!messageExists) return@forEach
+
                 messageReactions.reactions.forEach { reaction ->
                     reactionsQueries.insertReactionOrIgnore(
                         message_id = messageReactions.messageId,
