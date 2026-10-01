@@ -19,21 +19,20 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.SubconversationId
-import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import io.ktor.util.collections.ConcurrentMap
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import com.wire.kalium.persistence.dao.conversation.SubconversationDAO
 
 internal interface SubconversationRepository {
 
@@ -72,45 +71,20 @@ internal interface SubconversationRepository {
 }
 
 internal class SubconversationRepositoryImpl(
-    private val conversationApi: ConversationApi
+    private val conversationApi: ConversationApi,
+    private val subconversations: SubconversationDAO,
 ) : SubconversationRepository {
 
-    private val mutex = Mutex()
-    private val subconversations = ConcurrentMap<Pair<ConversationId, SubconversationId>, GroupID>()
+    override suspend fun insertSubconversation(conversationId: ConversationId, subconversationId: SubconversationId, groupId: GroupID) =
+        subconversations.upsert(conversationId.toDao(), subconversationId.value, groupId.value)
 
-    override suspend fun insertSubconversation(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId,
-        groupId: GroupID
-    ) {
-        mutex.withLock {
-            subconversations[Pair(conversationId, subconversationId)] = groupId
-        }
-    }
+    override suspend fun getSubconversationInfo(conversationId: ConversationId, subconversationId: SubconversationId): GroupID? =
+        subconversations.getGroupId(conversationId.toDao(), subconversationId.value)?.let(::GroupID)
 
-    override suspend fun getSubconversationInfo(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId
-    ): GroupID? {
-        mutex.withLock {
-            return subconversations[Pair(conversationId, subconversationId)]
-        }
-    }
+    override suspend fun containsSubconversation(groupId: GroupID): Boolean = subconversations.containsGroup(groupId.value)
 
-    override suspend fun containsSubconversation(groupId: GroupID): Boolean {
-        mutex.withLock {
-            return subconversations.containsValue(groupId)
-        }
-    }
-
-    override suspend fun deleteSubconversation(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId
-    ) {
-        mutex.withLock {
-            subconversations.remove(Pair(conversationId, subconversationId))
-        }
-    }
+    override suspend fun deleteSubconversation(conversationId: ConversationId, subconversationId: SubconversationId) =
+        subconversations.delete(conversationId.toDao(), subconversationId.value)
 
     override suspend fun deleteRemoteSubConversation(
         conversationId: ConversationId,

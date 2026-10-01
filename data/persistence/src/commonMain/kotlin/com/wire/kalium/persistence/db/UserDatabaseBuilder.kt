@@ -18,7 +18,6 @@
 
 package com.wire.kalium.persistence.db
 
-import com.wire.kalium.persistence.dao.message.MessageTimelineDAO
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
@@ -66,6 +65,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
+import com.wire.kalium.persistence.dao.conversation.SubconversationDAO
+import com.wire.kalium.persistence.dao.conversation.SubconversationDAOImpl
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAOImpl
 import com.wire.kalium.persistence.dao.event.EventDAO
@@ -80,6 +81,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
+import com.wire.kalium.persistence.dao.message.MessageTimelineDAO
 import com.wire.kalium.persistence.dao.message.PendingDeliveryConfirmationDAO
 import com.wire.kalium.persistence.dao.message.PendingDeliveryConfirmationDAOImpl
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
@@ -296,6 +298,10 @@ class UserDatabaseBuilder internal constructor(
             readDispatcher,
             writeDispatcher,
         )
+
+    val subconversationDAO: SubconversationDAO by lazy {
+        SubconversationDAOImpl(database, readDispatcher, writeDispatcher)
+    }
 
     val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(

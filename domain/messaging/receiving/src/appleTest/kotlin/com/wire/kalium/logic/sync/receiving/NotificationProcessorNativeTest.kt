@@ -2101,10 +2101,10 @@ class NotificationProcessorNativeTest {
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
                 val result = fixture.receive(listOf(event), event.id, decorateProteusContext = { context ->
-                    fixture.sql("ALTER TABLE Metadata RENAME TO Metadata_saved")
+                    fixture.sql("ALTER TABLE Conversation RENAME TO Conversation_saved")
                     context
                 })
-                fixture.sql("ALTER TABLE Metadata_saved RENAME TO Metadata")
+                fixture.sql("ALTER TABLE Conversation_saved RENAME TO Conversation")
                 assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)

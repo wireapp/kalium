@@ -50,7 +50,8 @@ class Migration149Test : BaseDatabaseTest() {
                 database.eventDAO.insertEvents(listOf(NewEventEntity("pending", "[]", false, false)))
                 database.messageDAO.insertReceivedMessages(listOf(ReceivedMessage(message, true, true)))
                 val before = database.messageDAO.getMessageById("text", conversation.id)
-                UserDatabase.Schema.awaitMigrate(database.sqlDriver, oldVersion, UserDatabase.Schema.version)
+                // The fixture uses the current schema; replay only the receipt migrations under test.
+                UserDatabase.Schema.awaitMigrate(database.sqlDriver, oldVersion, 150L)
                 assertEquals(before, database.messageDAO.getMessageById("text", conversation.id))
                 assertFalse(checkNotNull(database.eventDAO.getEventById("pending")).isProcessed)
                 assertEquals(listOf("text"), database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
