@@ -1,0 +1,1 @@
+Backup restore skips reactions whose target messages are absent, including reactions to deleted messages in existing backups. Valid reactions in the same page are preserved, and restore continues. Other storage failures still roll back the page. No API or schema changes.
