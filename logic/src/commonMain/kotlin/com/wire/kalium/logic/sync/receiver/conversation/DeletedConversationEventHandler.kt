@@ -19,7 +19,8 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -67,7 +68,8 @@ internal class DeletedConversationEventHandlerImpl(
                     )
                 )
             }
-            .flatMap { conversation ->
+            .map { it to meetingRepository.getMeetingsByConversationId(it.id).getOrElse { emptyList() } }
+            .flatMap { (conversation, meetings) ->
                 deleteConversation(transactionContext, event.conversationId)
                     .onFailure {
                         logger.logFailure(it)
@@ -77,7 +79,7 @@ internal class DeletedConversationEventHandlerImpl(
                         if (conversation.type != Conversation.Type.Group.Meeting) {
                             notificationEventsManager.scheduleDeleteConversationNotification(dataNotification)
                         } else {
-                            meetingRepository.getMeetingsByConversationId(conversation.id).getOrNull()?.forEach { meeting ->
+                            meetings.forEach { meeting ->
                                 notificationEventsManager.scheduleMeetingNotification(
                                     LocalNotification.Meeting.Cancel(
                                         eventId = event.id,
