@@ -174,6 +174,7 @@ class UpdateMeetingUseCaseTest {
             title = "Meeting",
             startTime = Instant.parse("2026-08-01T12:00:00.000Z"),
             endTime = Instant.parse("2026-08-01T13:00:00.000Z"),
+            tzid = "Europe/Berlin",
             recurrence = Meeting.Recurrence(
                 frequency = Meeting.Recurrence.Frequency.WEEKLY,
                 interval = 1L,

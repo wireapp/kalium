@@ -50,6 +50,7 @@ data class Meeting(
     val startTime: Instant,
     val endTime: Instant,
     val recurrence: Recurrence?,
+    val tzid: String,
 ) {
     data class Recurrence(
         val frequency: Frequency,
@@ -75,4 +76,5 @@ data class UpsertMeeting(
     val endTime: Instant,
     val recurrence: Meeting.Recurrence?,
     val otherParticipants: List<UserId>,
+    val tzid: String,
 )

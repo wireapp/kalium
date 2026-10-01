@@ -19,9 +19,9 @@
 package com.wire.kalium.persistence.backup
 
 import com.wire.kalium.persistence.ImportContentQueries
-import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.UserDatabaseSchema
 import com.wire.kalium.persistence.db.checkFKViolations
 import com.wire.kalium.persistence.db.migrate
 import com.wire.kalium.persistence.db.userDatabaseDriverByPath
@@ -42,7 +42,7 @@ internal class DatabaseImporterImpl internal constructor(
     override suspend fun importFromFile(filePath: String, fromOtherClient: Boolean) {
 
         userDatabaseDriverByPath(platformDatabaseData, filePath, null, false).also {
-            val isMigrated = it.migrate(UserDatabase.Schema)
+            val isMigrated = it.migrate(UserDatabaseSchema)
             if (!isMigrated) throw IllegalStateException("Database is not migrated")
             if (it.checkFKViolations()) throw IllegalStateException("Database has FK violations")
             it.close()

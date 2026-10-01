@@ -123,3 +123,10 @@ kotlin {
         }
     }
 }
+
+// Native tests read the same SQLite upgrade fixtures as JVM tests.
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
+    val fixtures = file("src/commonTest/resources/user-database-upgrade").absolutePath
+    environment("KALIUM_USER_UPGRADE_FIXTURES", fixtures)
+    environment("SIMCTL_CHILD_KALIUM_USER_UPGRADE_FIXTURES", fixtures)
+}

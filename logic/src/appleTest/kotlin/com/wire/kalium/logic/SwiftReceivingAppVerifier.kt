@@ -390,6 +390,7 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                     val start = kotlin.time.Instant.parse(account.getValue("meetingMetadata").jsonObject.getValue("start_time").jsonPrimitive.content)
                     val occurrence = checkNotNull(session.meetings.getNextUnfinishedMeetingOccurrence(meetingId, start))
                     assertEquals("Fixture meeting", occurrence.meeting.title)
+                    assertEquals("America/New_York", occurrence.meeting.tzid)
                     assertEquals(ConversationId("conversation", user.domain), occurrence.meeting.conversationId)
                     assertEquals(start.toEpochMilliseconds(), occurrence.occurrenceStartTime.toEpochMilliseconds())
                     assertEquals(occurrence, session.meetings.observeMeetingOccurrence.invoke(occurrence.occurrenceId).first())

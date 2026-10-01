@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.migration
 
+import app.cash.sqldelight.SuspendingTransacterImpl
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitCreate
 import app.cash.sqldelight.async.coroutines.awaitMigrate
@@ -57,7 +58,11 @@ class MessageTimelineMigrationTest {
             }
             val driver = JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}")
             try {
-                if (upgrade) UserDatabase.Schema.awaitMigrate(driver, 124, 144) else UserDatabase.Schema.awaitCreate(driver)
+                if (upgrade) {
+                    object : SuspendingTransacterImpl(driver) {}.transaction {
+                        UserDatabase.Schema.awaitMigrate(driver, 124, 145)
+                    }
+                } else UserDatabase.Schema.awaitCreate(driver)
                 val self = newUserEntity("timeline-migration-self")
                 val conversation = newConversationEntity("timeline-migration")
                 val builder = UserDatabaseBuilder(
@@ -73,7 +78,7 @@ class MessageTimelineMigrationTest {
                     )
                 }
                 builder.messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = false)
-                if (upgrade) UserDatabase.Schema.awaitMigrate(driver, 144, UserDatabase.Schema.version)
+                if (upgrade) UserDatabase.Schema.awaitMigrate(driver, 145, UserDatabase.Schema.version)
 
                 definitions += driver.strings(
                     "SELECT sql FROM sqlite_master " +

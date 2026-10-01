@@ -18,10 +18,8 @@
 package com.wire.kalium.persistence.dao.meeting
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.datetime.DateTimePeriod
+import com.wire.kalium.util.TzidUtil
 import kotlin.time.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
 import kotlin.uuid.Uuid
 
 object MeetingOccurrencesGenerator {
@@ -33,9 +31,8 @@ object MeetingOccurrencesGenerator {
     ): List<MeetingOccurrenceEntity> {
         if (meetings.isEmpty()) return emptyList()
         val maxDateLimit = (limit as? GenerationLimit.Window)?.until
-        val minDateLimit = (limit as? GenerationLimit.Window)?.from
         val totalCountToGenerate = (limit as? GenerationLimit.Count)?.totalCount
-        val statesList = meetings.initialGeneratorStates(lastGeneratedStarts, minDateLimit)
+        val statesList = meetings.initialGeneratorStates(lastGeneratedStarts, limit)
         return generateOccurrences(statesList, maxDateLimit, totalCountToGenerate)
     }
 
@@ -56,16 +53,19 @@ object MeetingOccurrencesGenerator {
 
     private fun List<MeetingEntity>.initialGeneratorStates(
         lastGeneratedStarts: Map<QualifiedIDEntity, Instant>,
-        minDateLimit: Instant?,
+        limit: GenerationLimit,
     ): MutableList<MeetingGeneratorState> =
         this.mapNotNull { meeting ->
-            meeting.toGeneratorState(lastGeneratedStarts[meeting.meetingId], minDateLimit)
+            meeting.toGeneratorState(lastGeneratedStarts[meeting.meetingId], limit)
         }.toMutableList()
 
-    private fun MeetingEntity.toGeneratorState(lastStart: Instant?, minDateLimit: Instant?): MeetingGeneratorState? {
+    private fun MeetingEntity.toGeneratorState(lastStart: Instant?, limit: GenerationLimit): MeetingGeneratorState? {
+        // Keep unsupported series stored until the platform's timezone data can generate them.
+        if (recurrence != null && !TzidUtil.isTimeZoneSupported(tzid)) return null
+
         val interval = recurrence?.interval?.toInt() ?: 1
         val firstCandidateStart = firstCandidateStart(lastStart, interval)?.let {
-            advanceUntilAfter(candidateStart = it, minDateLimit = minDateLimit, interval = interval)
+            advanceIntoRange(candidateStart = it, limit = limit, interval = interval)
         }
         return if (firstCandidateStart == null || isBeyondSeriesEnd(firstCandidateStart)) {
             null
@@ -107,11 +107,10 @@ object MeetingOccurrencesGenerator {
     private fun MeetingGeneratorState.nextState(): MeetingGeneratorState? {
         val recurrence = meeting.recurrence ?: return null
         val interval = recurrence.interval?.toInt() ?: 1
-        val nextStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval)
-        return if (nextStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(nextStart)) {
-            copy(nextCandidateStart = nextStart)
-        } else {
-            null
+        return nextCandidateStart.plusPeriod(recurrence.frequency, interval, meeting.tzid)?.takeIf { nextStart ->
+            nextStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(nextStart)
+        }?.let {
+            copy(nextCandidateStart = it)
         }
     }
 
@@ -121,23 +120,29 @@ object MeetingOccurrencesGenerator {
     private fun MeetingEntity.firstCandidateStart(lastStart: Instant?, interval: Int): Instant? {
         val recurrence = this.recurrence
         return when {
-            lastStart != null && recurrence != null -> lastStart.plusPeriod(recurrence.frequency, interval)
+            lastStart != null && recurrence != null -> lastStart.plusPeriod(recurrence.frequency, interval, tzid)
             lastStart != null -> null
             else -> startTime
         }
     }
 
-    private fun MeetingEntity.advanceUntilAfter(candidateStart: Instant, minDateLimit: Instant?, interval: Int): Instant? {
+    private fun MeetingEntity.advanceIntoRange(candidateStart: Instant, limit: GenerationLimit, interval: Int): Instant? {
         val duration = endTime - startTime
         val recurrence = recurrence
         var nextCandidateStart: Instant? = candidateStart
-        while (minDateLimit != null && nextCandidateStart != null && nextCandidateStart + duration <= minDateLimit) {
-            nextCandidateStart = if (recurrence != null) {
-                val advancedStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval)
-                if (advancedStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(advancedStart)) {
-                    advancedStart
+        while (
+            nextCandidateStart != null && when (limit) {
+                is GenerationLimit.Window -> nextCandidateStart + duration <= limit.from
+                is GenerationLimit.Count -> limit.from != null && if (limit.includeOngoing) {
+                    nextCandidateStart + duration <= limit.from
                 } else {
-                    null
+                    nextCandidateStart < limit.from
+                }
+            }
+        ) {
+            nextCandidateStart = if (recurrence != null) {
+                nextCandidateStart.plusPeriod(recurrence.frequency, interval, tzid)?.takeIf { advancedStart ->
+                    advancedStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(advancedStart)
                 }
             } else {
                 null
@@ -149,13 +154,13 @@ object MeetingOccurrencesGenerator {
     private fun MeetingEntity.isBeyondSeriesEnd(candidateStart: Instant): Boolean =
         recurrence?.until?.let { candidateStart > it } ?: false
 
-    private fun Instant.plusPeriod(frequency: MeetingEntity.RecurrenceEntity.Frequency, interval: Int): Instant {
-        val timeZone = TimeZone.currentSystemDefault()
-        val period = when (frequency) {
-            MeetingEntity.RecurrenceEntity.Frequency.DAILY -> DateTimePeriod(days = interval)
-            MeetingEntity.RecurrenceEntity.Frequency.WEEKLY -> DateTimePeriod(days = interval * 7)
+    @Suppress("MagicNumber")
+    private fun Instant.plusPeriod(frequency: MeetingEntity.RecurrenceEntity.Frequency, interval: Int, tzid: String): Instant? {
+        val daysToAdd = when (frequency) {
+            MeetingEntity.RecurrenceEntity.Frequency.DAILY -> interval
+            MeetingEntity.RecurrenceEntity.Frequency.WEEKLY -> interval * 7
         }
-        return this.plus(period, timeZone)
+        return TzidUtil.plusDaysOrNull(this, daysToAdd, tzid)
     }
 
     private data class MeetingGeneratorState(
@@ -164,7 +169,7 @@ object MeetingOccurrencesGenerator {
     )
 
     sealed interface GenerationLimit {
-        data class Count(val totalCount: Int) : GenerationLimit
+        data class Count(val totalCount: Int, val from: Instant? = null, val includeOngoing: Boolean = false) : GenerationLimit
         data class Window(val from: Instant, val until: Instant) : GenerationLimit
     }
 }

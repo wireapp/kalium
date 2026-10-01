@@ -80,9 +80,18 @@ its own content, not the notification or every adjacent write. Deletion and rese
 guards remain where losing metadata or a native group would destroy replay inputs.
 
 There are no receiving checkpoints, NotificationReceipts, outcome journals or
-startup recovery mode. Migrations 144–146 retain compatibility with databases
+startup recovery mode. Migrations 147 through 149 retain compatibility with databases
 created during the earlier implementation and drop the former receipt table.
 Removing those migrations requires a separate compatibility decision.
+
+When upstream meeting migration 143 shifts local migrations to 144 through 149,
+older fork databases at versions 144 through 149 still have `Meeting.trial` and
+no `tzid`. App and backup migration inspect those columns, apply the unchanged
+upstream conversion, and resume at the old version plus one. This skips local
+operations the fork already completed. Upstream databases already containing
+`tzid` use their original version. Explicit migration binds one writer connection
+and commits the schema and version together, as automatic production opens do.
+The NSE still requires the prepared current version and never migrates SQLite.
 
 ## Proportionate replay guarantees
 

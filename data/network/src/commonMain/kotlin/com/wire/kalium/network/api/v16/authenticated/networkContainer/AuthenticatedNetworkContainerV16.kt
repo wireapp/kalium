@@ -176,7 +176,7 @@ internal class AuthenticatedNetworkContainerV16 internal constructor(
     override val serverTimeApi: ServerTimeApi
         get() = ServerTimeApiV16(networkClient)
 
-    override val meetingApi: MeetingApi get() = MeetingApiV16(networkClient)
+    override val meetingApi: MeetingApi get() = MeetingApiV16()
 
     override val cellsHttpClient: HttpClient = networkClient.httpClient
 }

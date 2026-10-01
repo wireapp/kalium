@@ -1,10 +1,6 @@
-CREATE TABLE NotificationReceipts (
-    protocol TEXT NOT NULL PRIMARY KEY,
-    event_id TEXT NOT NULL UNIQUE,
-    checkpoint TEXT NOT NULL,
-    previous_checkpoint TEXT,
+CREATE TABLE PendingDeliveryConfirmations (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL,
     message_id TEXT NOT NULL,
-    conversation_value TEXT NOT NULL,
-    conversation_domain TEXT NOT NULL,
-    completed INTEGER NOT NULL DEFAULT 0
+    UNIQUE (conversation_id, message_id)
 );

@@ -22,14 +22,14 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
-class Migration148Test : BaseDatabaseTest() {
+class Migration149Test : BaseDatabaseTest() {
     @Test
     fun `both receipt schema versions upgrade without losing events or required message effects`() = runTest(dispatcher) {
-        for (oldVersion in listOf(147L, 148L)) {
+        for (oldVersion in listOf(148L, 149L)) {
             val database = createDatabase(UserIDEntity("upgrade-$oldVersion", "wire.test"), encryptedDBSecret, true)
             try {
-                var receiptSchema = File("src/commonMain/db_user/migrations/146.sqm").readText()
-                if (oldVersion == 148L) {
+                var receiptSchema = File("src/commonMain/db_user/migrations/147.sqm").readText()
+                if (oldVersion == 149L) {
                     for (column in listOf("message_id", "conversation_value", "conversation_domain")) {
                         receiptSchema = receiptSchema.replace("$column TEXT NOT NULL", "$column TEXT")
                     }

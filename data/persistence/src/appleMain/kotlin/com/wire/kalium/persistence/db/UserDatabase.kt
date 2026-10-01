@@ -23,7 +23,6 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
-import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
@@ -47,14 +46,14 @@ actual fun userDatabaseBuilder(
                 null,
                 null
             )
-            databaseDriver(platformDatabaseData.storageData.storePath, FileNameUtil.userDBName(userId), UserDatabase.Schema.synchronous()) {
+            databaseDriver(platformDatabaseData.storageData.storePath, FileNameUtil.userDBName(userId), UserDatabaseSchema.synchronous()) {
                 isWALEnabled = enableWAL
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
         }
 
         StorageData.InMemory ->
-            databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema.synchronous()) {
+            databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabaseSchema.synchronous()) {
                 isWALEnabled = false
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
@@ -87,7 +86,7 @@ actual fun userDatabaseDriverByPath(
     enableWAL: Boolean
 ): SqlDriver {
     return NativeSqliteDriver(
-        UserDatabase.Schema.synchronous(),
+        UserDatabaseSchema.synchronous(),
         path
     )
 }
@@ -104,7 +103,7 @@ fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(userId) {
-    val rawDriver = databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema.synchronous()) {
+    val rawDriver = databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabaseSchema.synchronous()) {
         isWALEnabled = false
     }
 

@@ -147,6 +147,7 @@ class SyncMeetingsUseCaseTest {
         title = "Meeting Title",
         startTime = Instant.parse("2026-08-01T12:00:00.000Z"),
         endTime = Instant.parse("2026-08-01T13:00:00.000Z"),
+        tzid = "Europe/Berlin",
         recurrence = null
     )
 }

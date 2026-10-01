@@ -95,9 +95,6 @@ internal class MeetingDaoImpl(
                 meetingsQueries.insertGeneratedOccurrences(
                     meetings = meetings,
                     limit = generateOccurrencesWindow,
-                    shouldRegenerateOccurrences = meetings.associate {
-                        it.meetingId to (it.meetingId in meetingIdsRequiringOccurrenceRefresh)
-                    },
                 )
 
                 if (removeMeetingsAbsentFromUpsertList) {
@@ -123,7 +120,6 @@ internal class MeetingDaoImpl(
                     meetingsQueries.insertGeneratedOccurrences(
                         meetings = meetings,
                         limit = generateOccurrencesWindow,
-                        shouldRegenerateOccurrences = meetings.associate { it.meetingId to false },
                     )
                 }
             }
@@ -165,9 +161,17 @@ internal class MeetingDaoImpl(
     }
 
     override suspend fun getNextUnfinishedMeetingOccurrenceDetailsId(meetingId: QualifiedIDEntity, from: Instant): String? =
-        withContext(readDispatcher.value) {
-            meetingsQueries.selectNextUnfinishedMeetingOccurrenceDetailsId(meetingId = meetingId, fromDate = from)
-                .awaitAsOneOrNull()
+        withContext(writeDispatcher.value) {
+            meetingsQueries.transactionWithResult {
+                val meeting = meetingsQueries.selectMeetingByIds(listOf(meetingId), MeetingMapper::fromViewToModel)
+                    .awaitAsOneOrNull() ?: return@transactionWithResult null
+                meetingsQueries.insertGeneratedOccurrences(
+                    meetings = listOf(meeting),
+                    limit = GenerationLimit.Count(1, from = from, includeOngoing = true),
+                )
+                meetingsQueries.selectNextUnfinishedMeetingOccurrenceDetailsId(meetingId = meetingId, fromDate = from)
+                    .awaitAsOneOrNull()
+            }
         }
 
     override suspend fun getMeeting(meetingId: QualifiedIDEntity): MeetingEntity? = withContext(readDispatcher.value) {
@@ -198,7 +202,7 @@ private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
         title = meeting.title,
         start_date = meeting.startTime,
         end_date = meeting.endTime,
-        trial = meeting.trial,
+        tzid = meeting.tzid,
         recurrence_frequency = meeting.recurrence?.frequency,
         recurrence_interval = meeting.recurrence?.interval,
         recurrence_end_date = meeting.recurrence?.until,
@@ -208,32 +212,29 @@ private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
 internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
     meetings: List<MeetingEntity>,
     limit: GenerationLimit,
-    shouldRegenerateOccurrences: Map<QualifiedIDEntity, Boolean>,
-): Int {
-    val lastGeneratedStarts = meetings.mapNotNull { meeting ->
-        when (shouldRegenerateOccurrences[meeting.meetingId]) {
-            true -> null
-            else -> selectLastGeneratedOccurrenceStart(meeting.meetingId).awaitAsOneOrNull()?.let { meeting.meetingId to it }
-        }
-    }.toMap()
-
-    return MeetingOccurrencesGenerator.generate(
+) {
+    // Cached rows can cover different date ranges. Recompute the requested range and retain existing IDs.
+    val occurrences = MeetingOccurrencesGenerator.generate(
         meetings = meetings,
-        lastGeneratedStarts = lastGeneratedStarts,
+        lastGeneratedStarts = emptyMap(),
         limit = limit,
-    ).onEach { occurrence ->
-        insertMeetingOccurrence(
-            occurrence_id = occurrence.occurrenceId,
-            meeting_id = occurrence.meetingId,
-            occurrence_start = occurrence.occurrenceStart,
-            occurrence_end = occurrence.occurrenceEnd
-        )
-    }.size
+    )
+    occurrences.forEach { occurrence ->
+        if (selectMeetingOccurrenceIdByStart(occurrence.meetingId, occurrence.occurrenceStart).awaitAsOneOrNull() == null) {
+            insertMeetingOccurrence(
+                occurrence_id = occurrence.occurrenceId,
+                meeting_id = occurrence.meetingId,
+                occurrence_start = occurrence.occurrenceStart,
+                occurrence_end = occurrence.occurrenceEnd
+            )
+        }
+    }
 }
 
 private fun Meeting.hasSameScheduleAs(meeting: MeetingEntity): Boolean =
     start_date.isSameStoredInstantAs(meeting.startTime) &&
             end_date.isSameStoredInstantAs(meeting.endTime) &&
+            tzid == meeting.tzid &&
             recurrence_frequency == meeting.recurrence?.frequency &&
             recurrence_interval == meeting.recurrence?.interval &&
             recurrence_end_date.isSameStoredInstantAs(meeting.recurrence?.until)

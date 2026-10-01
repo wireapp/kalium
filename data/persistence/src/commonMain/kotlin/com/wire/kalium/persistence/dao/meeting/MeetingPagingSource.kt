@@ -116,23 +116,17 @@ internal class MeetingPagingSource(
                 .toInt()
         }
 
-        if (targetCount <= count) return count
-
         currentMeetingQuery = null
-        val generatedCount = withContext(writeContext) {
+        return withContext(writeContext) {
             meetingsQueries.transactionWithResult {
-                val existingCount = countMeetingOccurrences()
-                val missingCount = (targetCount - existingCount).coerceAtLeast(0)
-                if (missingCount <= 0) return@transactionWithResult 0
                 val recurringMeetings = meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).awaitAsList()
                 meetingsQueries.insertGeneratedOccurrences(
                     meetings = recurringMeetings,
-                    limit = MeetingOccurrencesGenerator.GenerationLimit.Count(missingCount),
-                    shouldRegenerateOccurrences = recurringMeetings.associate { it.meetingId to false },
+                    limit = MeetingOccurrencesGenerator.GenerationLimit.Count(targetCount, from = parameters.from),
                 )
+                countMeetingOccurrences()
             }
         }
-        return count + generatedCount
     }
 
     private suspend fun countMeetingOccurrences(): Int =

@@ -36,15 +36,15 @@ class MessageTimelineListMigrationTest {
         try {
             JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}").use { driver ->
                 object : SuspendingTransacterImpl(driver) {}.transaction {
-                    UserDatabase.Schema.awaitMigrate(driver, 2, 143)
+                    UserDatabase.Schema.awaitMigrate(driver, 2, 144)
                 }
                 assertEquals(emptyMap(), driver.timelineSchema())
-                UserDatabase.Schema.awaitMigrate(driver, 143, 144)
+                UserDatabase.Schema.awaitMigrate(driver, 144, 145)
                 assertEquals(mapOf("conversation_list_recency" to "index"), driver.timelineSchema())
             }
-            // Reopen an installation that has already applied migration 143.
+            // Reopen an installation that has already applied migration 144.
             JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}").use { driver ->
-                UserDatabase.Schema.awaitMigrate(driver, 144, UserDatabase.Schema.version)
+                UserDatabase.Schema.awaitMigrate(driver, 145, UserDatabase.Schema.version)
                 val expected = mapOf(
                     "conversation_list_recency" to "index",
                     "idx_msg_conv_date_id_desc" to "index",

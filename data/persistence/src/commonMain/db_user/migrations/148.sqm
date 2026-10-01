@@ -1,3 +1,1 @@
--- Existing event rows and canonical message effects are sufficient for replay.
--- Preserve migrations 146/147 so databases from either receipt version can upgrade.
-DROP TABLE IF EXISTS NotificationReceipts;
+-- Reserved schema version: the former optional-message receipt change is obsolete.

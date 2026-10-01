@@ -18,6 +18,9 @@
 
 package com.wire.kalium.util
 
+import kotlinx.datetime.DateTimePeriod
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
 import kotlin.time.Instant
 
 actual open class PlatformDateTimeUtil actual constructor() {
@@ -39,4 +42,15 @@ actual open class PlatformDateTimeUtil actual constructor() {
      */
     actual fun fromInstantToSimpleDateTimeString(instant: Instant): String =
         instant.toString() // TODO:"Implement own JS method"
+}
+
+actual open class PlatformTzidUtil actual constructor() {
+    actual fun isTimeZoneSupported(tzid: String): Boolean = toTimeZoneOrNull(tzid) != null
+    actual fun plusDaysOrNull(instant: Instant, days: Int, tzid: String): Instant? = toTimeZoneOrNull(tzid)?.let { timeZone ->
+        instant.plus(DateTimePeriod(days = days), timeZone)
+    }
+    private fun toTimeZoneOrNull(tzid: String): TimeZone? {
+        ensureJsTimezoneDataLoaded()
+        return runCatching { TimeZone.of(tzid) }.getOrNull()
+    }
 }

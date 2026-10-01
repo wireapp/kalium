@@ -1310,7 +1310,7 @@ class MeetingRepositoryTest {
         title = "Meeting 1",
         startTime = Instant.parse("2026-06-01T10:00:00Z"),
         endTime = Instant.parse("2026-06-01T11:00:00Z"),
-        trial = false,
+        tzid = "Europe/Berlin",
         recurrence = null,
     )
     private val MEETING_OCCURRENCE_DETAILS = MeetingOccurrenceDetailsEntity(
@@ -1332,6 +1332,7 @@ class MeetingRepositoryTest {
         title = "Meeting 1",
         startTime = Instant.parse("2026-06-01T10:00:00Z"),
         endTime = Instant.parse("2026-06-01T11:00:00Z"),
+        tzid = "Europe/Berlin",
         recurrence = Meeting.Recurrence(
             frequency = Meeting.Recurrence.Frequency.WEEKLY,
             interval = 1L,
@@ -1357,7 +1358,7 @@ class MeetingRepositoryTest {
         title = title,
         startTime = Instant.parse("2026-06-01T10:00:00Z"),
         endTime = Instant.parse("2026-06-01T11:00:00Z"),
-        trial = false,
+        tzid = "Europe/Berlin",
         recurrence = recurrence,
     )
 
@@ -1381,7 +1382,7 @@ class MeetingRepositoryTest {
         title = "Meeting 1",
         startTime = Instant.parse("2026-06-01T10:00:00Z"),
         endTime = Instant.parse("2026-06-01T11:00:00Z"),
-        trial = false,
+        tzid = "Europe/Berlin",
         recurrence = recurrence,
         conversation = ConversationRepositoryTest.CONVERSATION_RESPONSE.copy(
             id = conversationId,

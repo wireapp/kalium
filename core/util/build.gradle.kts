@@ -45,6 +45,12 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(libs.annotation)
+                implementation(libs.threetenbp)
+            }
+        }
+        val jsMain by getting {
+            dependencies {
+                implementation(npm("@js-joda/timezone", libs.versions.jsJodaTimezone.get()))
             }
         }
         val jvmMain by getting {

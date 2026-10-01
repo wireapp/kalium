@@ -9099,7 +9099,7 @@ class NotificationProcessorNativeTest {
             for ((isMLS, readState) in variants) {
                 val pendingProposal = membership && isMLS && readState
                 val path = (if (isMLS) "mls" else "proteus") + if (mlsIgnores && isMLS) if (readState) "-old" else "-own" else if (pendingProposal) "-pending" else if (creation && readState) "-fetched" else if (readState) "-read" else ""
-                val fixture = Fixture(isMLS, "https://localhost:18443/$path/", apiVersion = if (meetings || meetingConversation) 16 else 8,
+                val fixture = Fixture(isMLS, "https://localhost:18443/$path/", apiVersion = if (meetings || meetingConversation) 17 else 8,
                     senderId = if (selfConversations || readState && !membership && !creation && !recovery && !reset && !migration && !mlsIgnores && !conversationCleanup && !identity && !federation && !meetingConversation && !acceptedConnections && !e2eiSettings && !mlsSettings && !x509 && !roomSettings && !accessChanges && !memberRoles) SELF else SENDER, newConversation = creation || oneOnOne || meetingConversation || selfConversations || (migration && isMLS && readState), x509 = x509 && isMLS)
                 try {
                     fixture.prepare()
@@ -10333,9 +10333,16 @@ class NotificationProcessorNativeTest {
 
         fun meetingDTO(id: com.wire.kalium.network.api.model.MeetingId) =
             com.wire.kalium.network.api.authenticated.meeting.MeetingDTO(
-                id, CONVERSATION_ID.toApi(), THIRD.toApi(), TIME, TIME, "Fixture meeting",
-                meetingStart, meetingStart + 3600.seconds, false,
-                com.wire.kalium.network.api.authenticated.meeting.MeetingRecurrenceDTO(
+                meetingId = id,
+                conversationId = CONVERSATION_ID.toApi(),
+                creatorId = THIRD.toApi(),
+                createdAt = TIME,
+                updatedAt = TIME,
+                title = "Fixture meeting",
+                startTime = meetingStart,
+                endTime = meetingStart + 3600.seconds,
+                tzid = "America/New_York",
+                recurrence = com.wire.kalium.network.api.authenticated.meeting.MeetingRecurrenceDTO(
                     com.wire.kalium.network.api.authenticated.meeting.MeetingFrequencyDTO.DAILY, 1, meetingStart + 604800.seconds))
 
         fun meetingEvent(type: String, id: String = "meeting") = EventResponseToStore("meeting-$type-$id", """
@@ -10352,6 +10359,7 @@ class NotificationProcessorNativeTest {
             val id = QualifiedIDEntity("meeting", SELF.domain)
             val meeting = checkNotNull(db.meetingDao.getMeeting(id))
             assertEquals("Fixture meeting", meeting.title)
+            assertEquals("America/New_York", meeting.tzid)
             assertEquals(THIRD.toDao(), meeting.creatorId)
             assertNotNull(db.userDAO.getUserDetailsByQualifiedID(THIRD.toDao()))
             assertNotNull(db.conversationDAO.getConversationById(CONVERSATION_ID))

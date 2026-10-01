@@ -1,0 +1,3 @@
+-- Existing event rows and canonical message effects are sufficient for replay.
+-- Preserve migrations 147/148 so databases from either receipt version can upgrade.
+DROP TABLE IF EXISTS NotificationReceipts;

@@ -216,6 +216,7 @@ extendedKeyUsage=serverAuth
             proposal_requests = []
             app_phase = False
             meeting_requests = []
+            meeting_api_requests = []
 
             class Handler(BaseHTTPRequestHandler):
                 def authorized(self, request_path):
@@ -243,7 +244,9 @@ extendedKeyUsage=serverAuth
                     self.end_headers()
 
                 def do_GET(self):
-                    request_path = self.path.replace("/v16/", "/v8/") if meeting_mode else self.path
+                    if meeting_mode:
+                        meeting_api_requests.append(["GET", self.path])
+                    request_path = self.path.replace("/v17/", "/v8/").replace("/v16/", "/v8/") if meeting_mode else self.path
                     connection_account = next((item for item in accounts if request_path.startswith(f"/{item['route']}/v8/users/example.com/")), None)
                     if (options.connection_events or options.sent_connection_events or options.accepted_connection_events or options.session_refresh_events) and connection_account is not None:
                         if not self.authorized(request_path):
@@ -314,6 +317,7 @@ extendedKeyUsage=serverAuth
                         meeting_id = request_path.rsplit("/", 1)[-1]
                         meeting = dict(meeting_account["meetingMetadata"])
                         meeting["qualified_id"] = {"id": meeting_id, "domain": "example.com"}
+                        assert meeting["tzid"] == "America/New_York" and "trial" not in meeting
                         body = json.dumps(meeting).encode()
                         self.send_response(200)
                         self.send_header("Content-Type", "application/json")
@@ -345,7 +349,9 @@ extendedKeyUsage=serverAuth
                     requests.append(account["route"])
 
                 def do_POST(self):
-                    request_path = self.path.replace("/v16/", "/v8/") if meeting_mode else self.path
+                    if meeting_mode:
+                        meeting_api_requests.append(["POST", self.path])
+                    request_path = self.path.replace("/v17/", "/v8/").replace("/v16/", "/v8/") if meeting_mode else self.path
                     if options.session_refresh_events:
                         account = next((item for item in accounts if urlsplit(request_path).path == f"/{item['route']}/v8/access"), None)
                         if account is not None:
@@ -523,6 +529,8 @@ extendedKeyUsage=serverAuth
                     assert [item[1] for item in meeting_requests if item[0] == account["route"]] == [
                         "meeting", "meeting", "meeting", "removed-meeting"]
                     assert account["route"] in profile_requests
+            if meeting_mode:
+                assert meeting_api_requests and all("/v17/" in path for _, path in meeting_api_requests), meeting_api_requests
             if options.meeting_conversation_events:
                 assert app_output.count("APP_MEETING_STATE_PASSED") == 3
                 assert app_output.count("APP_CREATION_STATE_PASSED") == 3
@@ -599,6 +607,7 @@ extendedKeyUsage=serverAuth
                 "success": True, "authenticatedREST": requests, "assetDownloads": asset_requests,
                 "conversationCleanupAndAppReopen": options.conversation_cleanup_events,
                 "meetingRequests": meeting_requests,
+                "meetingApiRequests": meeting_api_requests,
                 "connectionStateAndAppAcknowledgement": options.connection_events,
                 "sentConnectionMetadataAndAppReads": options.sent_connection_events,
                 "pendingConnectionCreationAndAppReads": options.sent_connection_events,

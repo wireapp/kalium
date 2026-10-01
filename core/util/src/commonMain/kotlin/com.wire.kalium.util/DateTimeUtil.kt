@@ -143,3 +143,11 @@ object DateTimeUtil : PlatformDateTimeUtil() {
     fun Instant.asStartOfDay(timeZone: TimeZone = TimeZone.currentSystemDefault()) =
         this.toLocalDateTime(timeZone).date.atStartOfDayIn(timeZone)
 }
+
+/** Calendar-day arithmetic in the meeting's IANA zone. Unsupported IDs return null. */
+expect open class PlatformTzidUtil() {
+    fun isTimeZoneSupported(tzid: String): Boolean
+    fun plusDaysOrNull(instant: Instant, days: Int, tzid: String): Instant?
+}
+
+object TzidUtil : PlatformTzidUtil()

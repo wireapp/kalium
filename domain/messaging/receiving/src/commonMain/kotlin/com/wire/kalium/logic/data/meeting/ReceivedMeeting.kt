@@ -28,7 +28,7 @@ fun MeetingDTO.toMeetingEntity(): MeetingEntity? {
         title = title,
         startTime = startTime,
         endTime = endTime,
-        trial = trial,
+        tzid = tzid,
         recurrence = mappedRecurrence,
     )
 }

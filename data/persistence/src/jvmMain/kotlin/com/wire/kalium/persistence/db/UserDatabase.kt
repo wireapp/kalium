@@ -23,7 +23,6 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.CoroutineDispatcher
 import java.io.File
@@ -50,7 +49,7 @@ actual fun userDatabaseBuilder(
         throw NotImplementedError("Encrypted DB is not supported on JVM")
     }
 
-    val schema = UserDatabase.Schema.synchronous()
+    val schema = UserDatabaseSchema.synchronous()
     val databasePath = storageData.file.resolve(DATABASE_NAME)
 
     // Make sure all intermediate directories exist
@@ -86,7 +85,7 @@ actual fun userDatabaseDriverByPath(
     path: String,
     passphrase: UserDBSecret?,
     enableWAL: Boolean
-): SqlDriver = databaseDriver(path) {
+): SqlDriver = databaseDriver("jdbc:sqlite:$path") {
     isWALEnabled = enableWAL
     areForeignKeyConstraintsEnforced = true
 }
@@ -120,7 +119,7 @@ fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(userId) {
-    val rawDriver = databaseDriver(uri = JdbcSqliteDriver.IN_MEMORY, schema = UserDatabase.Schema.synchronous()) {
+    val rawDriver = databaseDriver(uri = JdbcSqliteDriver.IN_MEMORY, schema = UserDatabaseSchema.synchronous()) {
         isWALEnabled = false
         areForeignKeyConstraintsEnforced = true
     }
