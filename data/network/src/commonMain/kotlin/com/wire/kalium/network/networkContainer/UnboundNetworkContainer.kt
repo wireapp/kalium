@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.networkContainer
 
+import com.wire.kalium.network.HttpTrafficObserver
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
@@ -60,7 +61,8 @@ class UnboundNetworkContainerCommon(
     ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?,
-    val developmentApiEnabled: Boolean
+    val developmentApiEnabled: Boolean,
+    httpTrafficObserver: HttpTrafficObserver? = null,
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
         userAgent,
@@ -68,7 +70,8 @@ class UnboundNetworkContainerCommon(
             certificatePinning = certificatePinning,
             proxyCredentials = null,
             serverConfigDTOApiProxy = null,
-            ignoreSSLCertificates = ignoreSSLCertificates
+            ignoreSSLCertificates = ignoreSSLCertificates,
+            httpTrafficObserver = httpTrafficObserver,
         )
     ) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)

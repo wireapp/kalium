@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 @file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
+@file:OptIn(InternalKaliumApi::class)
 
 package com.wire.kalium.logic.feature.auth
 
@@ -48,6 +49,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.util.InternalKaliumApi
 
 internal class AuthenticationScopeProvider internal constructor(
     private val userAgent: String
@@ -93,7 +95,8 @@ public class AuthenticationScope internal constructor(
             userAgent = userAgent,
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
             certificatePinning = kaliumConfigs.certPinningConfig,
-            mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) }
+            mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
+            httpTrafficObserver = kaliumConfigs.httpTrafficObserver,
         )
     }
 

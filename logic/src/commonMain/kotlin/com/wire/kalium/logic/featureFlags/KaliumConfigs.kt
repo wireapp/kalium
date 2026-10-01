@@ -16,11 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:OptIn(InternalKaliumApi::class)
+
 package com.wire.kalium.logic.featureFlags
 
 import com.wire.kalium.logic.util.KaliumMockWebsocket
+import com.wire.kalium.network.HttpTrafficObserver
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.utils.TestRequestHandler
+import com.wire.kalium.util.InternalKaliumApi
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
@@ -72,5 +76,8 @@ public data class KaliumConfigs(
      * Should NOT be set in production mobile/web clients.
      */
     val callConfigTransformer: ((String) -> String)? = null,
-    val drivePermissionsEnabled: Boolean = false
+    val drivePermissionsEnabled: Boolean = false,
+    // Opt-in hook to observe real HTTP traffic (including bodies) for debugging purposes.
+    // See HttpTrafficObserver's documentation for how this differs from KaliumHttpLogger.
+    val httpTrafficObserver: HttpTrafficObserver? = null,
 )
