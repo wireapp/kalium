@@ -49,7 +49,7 @@ class HttpTrafficObserverMockEngineTest {
         }
         val engine = MockEngine { respond("mock response") }
         try {
-            for (version in 0..16) {
+            for (version in 0..17) {
                 val config = TEST_BACKEND_CONFIG.copy(metaData = TEST_BACKEND_CONFIG.metaData.copy(commonApiVersion = ApiVersionDTO.Valid(version)))
                 val manager = object : SessionManager by TestSessionManagerV0() {
                     override fun serverConfig() = config
