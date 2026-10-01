@@ -59,22 +59,6 @@ jobs:
           }
         ]
 
-  publish-maven-central:
-    name: Publish Maven Central
-    needs: build
-    permissions:
-      contents: read # required for actions/checkout in the reusable workflow
-    uses: ./.github/workflows/publish-maven-central.yml
-    with:
-      tag-name: ${{ github.ref_name }}
-      publishing-type: AUTOMATIC
-    secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
-      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
-      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-
   publish-wire-maven:
     name: Publish Wire Maven
     needs: build
@@ -117,9 +101,14 @@ jobs:
           echo "KALIUM_PUBLISH_VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Publish Gradle publications to local staging repository
+        env:
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.PGP_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.PGP_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
         run: |
           ./gradlew publishAllPublicationsToMavenCentralStagingRepository \
-            -Pkalium.publish.version="$KALIUM_PUBLISH_VERSION"
+            -Pkalium.publish.version="$KALIUM_PUBLISH_VERSION" \
+            -Pkalium.mavenCentral.signingRequired=true
 
       - name: Upload to Wire S3
         run: |
