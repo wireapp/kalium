@@ -4,6 +4,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
+import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -208,6 +210,41 @@ class BackupDataSourceTest {
             }
         }
         assertTrue(messageMap.isEmpty(), "Not all messages were found in the export")
+    }
+
+    @Test
+    fun givenPartiallyRestoredReactionPage_whenRetrying_thenExistingRowsAreIgnoredAndMissingRowsAreInserted() = runTest {
+        val conversation = createTestConversation("1")
+        val message = createTestMessage(conversation.id, "message", userId)
+        subject.insertUsers(listOf(createTestUser(userId.value)))
+        subject.insertConversations(listOf(conversation))
+        subject.insertMessages(listOf(message))
+
+        subject.insertReactions(
+            listOf(
+                MessageReactions(
+                    messageId = message.id,
+                    conversationId = conversation.id,
+                    reactions = listOf(MessageReactionWithUsers("existing", listOf(userId))),
+                )
+            )
+        )
+        subject.insertReactions(
+            listOf(
+                MessageReactions(
+                    messageId = message.id,
+                    conversationId = conversation.id,
+                    reactions = listOf(
+                        MessageReactionWithUsers("existing", listOf(userId)),
+                        MessageReactionWithUsers("new", listOf(userId)),
+                    ),
+                )
+            )
+        )
+
+        val result = subject.getReactions().first().data.single().reactions.map { it.emoji }
+
+        assertContentEquals(listOf("existing", "new"), result.sorted())
     }
 
     private fun createTestUser(id: String) = TestUser.OTHER.copy(id = UserId(id, userId.domain))

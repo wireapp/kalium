@@ -31,6 +31,7 @@ import kotlin.time.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertFails
 import kotlin.test.assertTrue
 
 class ReactionDAOTest : BaseDatabaseTest() {
@@ -51,7 +52,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAnReactionIsInserted_whenGettingReactions_thenTheReactionShouldBeReturned() = runTest {
+    fun givenAnReactionIsInserted_whenGettingReactions_thenTheReactionShouldBeReturned() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
@@ -68,7 +69,67 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAnReactionIsInsertedAndThenDeleted_whenGettingReactions_thenTheReactionShouldNotBeReturned() = runTest {
+    fun givenExistingReaction_whenInsertingBackupPage_thenDuplicateIsIgnoredAndRemainingReactionsAreInserted() = runTest(dispatcher) {
+        insertTestUsers()
+        conversationDAO.insertConversation(TEST_CONVERSATION)
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
+        reactionDAO.insertReaction(
+            TEST_MESSAGE.id,
+            TEST_MESSAGE.conversationId,
+            SELF_USER_ID,
+            Instant.UNIX_FIRST_DATE,
+            "existing",
+        )
+
+        reactionDAO.insertOrIgnoreReactions(
+            reactions = listOf(
+                MessageReactionsEntity(
+                    messageId = TEST_MESSAGE.id,
+                    conversationId = TEST_MESSAGE.conversationId,
+                    reactions = listOf(
+                        MessageReactionUserEntity("existing", SELF_USER_ID),
+                        MessageReactionUserEntity("new", SELF_USER_ID),
+                    ),
+                )
+            ),
+            instant = Instant.UNIX_FIRST_DATE,
+        )
+
+        val result = reactionDAO.getReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID)
+
+        assertContentEquals(setOf("existing", "new").sorted(), result.sorted())
+    }
+
+    @Test
+    fun givenInvalidReactionLateInBackupPage_whenInserting_thenWholePageIsRolledBack() = runTest(dispatcher) {
+        insertTestUsers()
+        conversationDAO.insertConversation(TEST_CONVERSATION)
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
+        val missingUserId = newUserEntity("missingUser").id
+
+        assertFails {
+            reactionDAO.insertOrIgnoreReactions(
+                reactions = listOf(
+                    MessageReactionsEntity(
+                        messageId = TEST_MESSAGE.id,
+                        conversationId = TEST_MESSAGE.conversationId,
+                        reactions = listOf(
+                            MessageReactionUserEntity("valid", SELF_USER_ID),
+                            MessageReactionUserEntity("invalid", missingUserId),
+                        ),
+                    )
+                ),
+                instant = Instant.UNIX_FIRST_DATE,
+            )
+        }
+
+        val result = reactionDAO.getReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID)
+
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun givenAnReactionIsInsertedAndThenDeleted_whenGettingReactions_thenTheReactionShouldNotBeReturned() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
@@ -86,7 +147,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMultipleUsersAndReactions_whenGettingReactionsForUser_thenOnlyReactionsFromUserShouldBeReturned() = runTest {
+    fun givenMultipleUsersAndReactions_whenGettingReactionsForUser_thenOnlyReactionsFromUserShouldBeReturned() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
@@ -108,7 +169,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMultipleMessagesAndReactions_whenGettingReactionsForMessage_thenOnlyReactionsFromSpecifiedMessageIdAreReturned() = runTest {
+    fun givenMultipleMessagesAndReactions_whenGettingReactionsForMessage_thenOnlyReactionsFromSpecifiedMessageIdAreReturned() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
@@ -131,7 +192,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesWithSameId_whenGettingReactionsForMessage_thenOnlyReactionsFromSpecifiedConversationAreReturned() = runTest {
+    fun givenMessagesWithSameId_whenGettingReactionsForMessage_thenOnlyReactionsFromSpecifiedConversationAreReturned() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         val wantedConversationId = TEST_CONVERSATION.id.copy(value = "wantedConversation")
@@ -155,7 +216,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenInitiallyInsertedReaction_whenUpdatingReactionsOfUserWithoutInitiallyInserted_thenInitiallyInsertedIsDeleted() = runTest {
+    fun givenInitiallyInsertedReaction_whenUpdatingReactionsOfUserWithoutInitiallyInserted_thenInitiallyInsertedIsDeleted() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
@@ -175,7 +236,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenInitiallyInsertedReaction_whenUpdatingReactionsOfUserWithInitiallyInserted_thenInitiallyInsertedIsKept() = runTest {
+    fun givenInitiallyInsertedReaction_whenUpdatingReactionsOfUserWithInitiallyInserted_thenInitiallyInsertedIsKept() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)

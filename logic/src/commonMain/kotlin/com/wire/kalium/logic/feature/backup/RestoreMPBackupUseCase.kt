@@ -17,10 +17,9 @@
  */
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.backup.ingest.ImportDataPager
 import com.wire.backup.ingest.ImportResultPager
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
@@ -34,16 +33,17 @@ import com.wire.kalium.logic.feature.backup.mapper.toUser
 import com.wire.kalium.logic.feature.backup.provider.ImportResult
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProviderImpl
+import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import kotlinx.coroutines.withContext
 import okio.IOException
 import okio.Path
@@ -98,13 +98,7 @@ internal class RestoreMPBackupUseCaseImpl(
             )
 
             when (val result = importer.importFromFile(backupFilePath.toString(), password)) {
-                is ImportResult.Success -> {
-                    persistBackupData(result.pager) { currentPage, totalPages ->
-                        onProgress(currentPage.toFloat() / totalPages)
-                    }
-                    refreshRestoredConversationMetadata()
-                    RestoreBackupResult.Success
-                }
+                is ImportResult.Success -> restoreImportedData(result.pager, onProgress)
 
                 ImportResult.Failure.MissingOrWrongPassphrase -> RestoreBackupResult.Failure(
                     RestoreBackupResult.BackupRestoreFailure.InvalidPassword
@@ -130,8 +124,10 @@ internal class RestoreMPBackupUseCaseImpl(
                 RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("IO error: ${e.message}")
             )
         } finally {
-            runCatching { kaliumFileSystem.deleteContents(backupWorkDir) }
-                .onFailure { kaliumLogger.e("Failed to clean backup restore work directory", it) }
+            withContext(NonCancellable) {
+                runCatching { kaliumFileSystem.deleteContents(backupWorkDir) }
+                    .onFailure { kaliumLogger.e("Failed to clean backup restore work directory", it) }
+            }
         }
     }
 
@@ -150,57 +146,108 @@ internal class RestoreMPBackupUseCaseImpl(
         }
     }
 
-    private suspend fun persistBackupData(resultData: ImportResultPager, onProgress: (Int, Int) -> Unit) {
-        resultData.use { pager ->
-
-            var processedPageCount = 0
-
-            pager.persistUsers { onProgress(processedPageCount++, pager.totalPagesCount) }
-            pager.persistConversations { onProgress(processedPageCount++, pager.totalPagesCount) }
-            pager.persistMessages { onProgress(processedPageCount++, pager.totalPagesCount) }
-            pager.persistReactions { onProgress(processedPageCount++, pager.totalPagesCount) }
-        }
-    }
-
-    private suspend fun ImportResultPager.persistUsers(onPageProcessed: () -> Unit) {
-        usersPager.pages().forEach { page ->
-            backupRepository.insertUsers(page.mapNotNull { it.toUser() })
-                .onFailure { error ->
-                    kaliumLogger.e("Restore users error: $error")
-                }
-            onPageProcessed()
-        }
-    }
-
-    private suspend fun ImportResultPager.persistConversations(onPageProcessed: () -> Unit) {
-        conversationsPager.pages().forEach { page ->
-            val conversations = page.mapNotNull { it.toConversation() }
-
-            backupRepository.insertConversations(conversations)
-                .onFailure { error ->
-                    kaliumLogger.e("Restore conversations error: $error")
-                }
-
-            onPageProcessed()
-        }
-    }
-
-    @Suppress("MagicNumber")
-    private suspend fun ImportResultPager.persistMessages(onPageProcessed: () -> Unit) {
-        messagesPager.pages().asFlow().buffer(10)
-            .collect { page ->
-                backupRepository.insertMessages(page.mapNotNull { it.toMessage(selfUserId) })
-                    .onFailure { error ->
-                        kaliumLogger.e("Restore messages error: $error")
-                    }
-                onPageProcessed()
+    private suspend fun restoreImportedData(
+        pager: ImportResultPager,
+        onProgress: (Float) -> Unit,
+    ): RestoreBackupResult {
+        val failure = persistBackupData(pager) { currentPage, totalPages ->
+            val progress = if (totalPages == 0) 1f else currentPage.toFloat() / totalPages
+            withContext(dispatchers.main) {
+                onProgress(progress.coerceIn(0f, 1f))
             }
+        }
+        if (failure != null) {
+            kaliumLogger.e("Failed to persist backup data: $failure")
+            return RestoreBackupResult.Failure(
+                RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Failed to persist backup data")
+            )
+        }
+        currentCoroutineContext().ensureActive()
+        refreshRestoredConversationMetadata()
+        return RestoreBackupResult.Success
     }
 
-    @Suppress("MagicNumber")
-    private suspend fun ImportResultPager.persistReactions(onPageProcessed: () -> Unit) {
-        reactionsPager.pages().asFlow().buffer(10)
-            .collect { page ->
+    private suspend fun persistBackupData(
+        resultData: ImportResultPager,
+        onProgress: suspend (Int, Int) -> Unit,
+    ): CoreFailure? {
+        resultData.use { pager ->
+            var processedPageCount = 0
+            val onPageProcessed: suspend () -> Unit = {
+                processedPageCount++
+                onProgress(processedPageCount, pager.totalPagesCount)
+            }
+
+            val failure = pager.persistUsers(onPageProcessed)
+                ?: pager.persistConversations(onPageProcessed)
+                ?: pager.persistMessages(onPageProcessed)
+                ?: pager.persistReactions(onPageProcessed)
+            if (failure == null) {
+                currentCoroutineContext().ensureActive()
+                if (processedPageCount == 0 || processedPageCount < pager.totalPagesCount) {
+                    onProgress(1, 1)
+                }
+            }
+            return failure
+        }
+    }
+
+    private suspend fun ImportResultPager.persistUsers(onPageProcessed: suspend () -> Unit): CoreFailure? {
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            if (!usersPager.hasMorePages()) break
+            currentCoroutineContext().ensureActive()
+            val page = usersPager.nextPage()
+            val result = withContext(NonCancellable) {
+                backupRepository.insertUsers(page.mapNotNull { it.toUser() })
+            }
+            currentCoroutineContext().ensureActive()
+            result.fold({ return it }, {})
+            onPageProcessed()
+        }
+        return null
+    }
+
+    private suspend fun ImportResultPager.persistConversations(onPageProcessed: suspend () -> Unit): CoreFailure? {
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            if (!conversationsPager.hasMorePages()) break
+            currentCoroutineContext().ensureActive()
+            val page = conversationsPager.nextPage()
+            val conversations = page.mapNotNull { it.toConversation() }
+            val result = withContext(NonCancellable) {
+                backupRepository.insertConversations(conversations)
+            }
+            currentCoroutineContext().ensureActive()
+            result.fold({ return it }, {})
+            onPageProcessed()
+        }
+        return null
+    }
+
+    private suspend fun ImportResultPager.persistMessages(onPageProcessed: suspend () -> Unit): CoreFailure? {
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            if (!messagesPager.hasMorePages()) break
+            currentCoroutineContext().ensureActive()
+            val page = messagesPager.nextPage()
+            val result = withContext(NonCancellable) {
+                backupRepository.insertMessages(page.mapNotNull { it.toMessage(selfUserId) })
+            }
+            currentCoroutineContext().ensureActive()
+            result.fold({ return it }, {})
+            onPageProcessed()
+        }
+        return null
+    }
+
+    private suspend fun ImportResultPager.persistReactions(onPageProcessed: suspend () -> Unit): CoreFailure? {
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            if (!reactionsPager.hasMorePages()) break
+            currentCoroutineContext().ensureActive()
+            val page = reactionsPager.nextPage()
+            val result = withContext(NonCancellable) {
                 backupRepository.insertReactions(
                     reactions = page.mapNotNull { reaction ->
                         val conversationId = reaction.conversationId
@@ -220,16 +267,12 @@ internal class RestoreMPBackupUseCaseImpl(
                             }
                         )
                     }
-                ).onFailure { error ->
-                    kaliumLogger.e("Restore reactions error: $error")
-                }
-                onPageProcessed()
+                )
             }
-    }
-}
-
-private fun <T> ImportDataPager<T>.pages(): Sequence<Array<T>> = sequence {
-    while (hasMorePages()) {
-        yield(nextPage())
+            currentCoroutineContext().ensureActive()
+            result.fold({ return it }, {})
+            onPageProcessed()
+        }
+        return null
     }
 }

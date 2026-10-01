@@ -26,6 +26,7 @@ import com.wire.backup.data.BackupUser
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -64,6 +65,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import okio.IOException
+import okio.Path
+import okio.buffer
+import okio.use
 import okio.Path.Companion.toPath
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -71,11 +75,13 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.assertFailsWith
 
@@ -99,14 +105,19 @@ class RestoreMPBackupUseCaseTest {
 
         val (arrangement, useCase) = Arrangement(backgroundScope)
             .withSuccessImport()
+            .withImporterWorkFile()
             .arrange()
+        val progress = mutableListOf<Float>()
 
-        useCase(arrangement.storedPath, null) {}
+        assertEquals(RestoreBackupResult.Success, useCase(arrangement.storedPath, null, progress::add))
 
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+        verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
+        assertEquals(listOf(0.25f, 0.5f, 0.75f, 1f), progress)
+        assertFalse(arrangement.fileSystem.exists(arrangement.importerWorkFile))
     }
 
     @Test
@@ -202,6 +213,128 @@ class RestoreMPBackupUseCaseTest {
     }
 
     @Test
+    fun givenCancellationDuringPagePersistence_whenPageFinishes_thenNoNextPageIsPersisted() = runTest {
+        val pageStarted = CompletableDeferred<Unit>()
+        val finishPage = CompletableDeferred<Unit>()
+        var insertedPageCount = 0
+        val (arrangement, useCase) = Arrangement(backgroundScope)
+            .withSuccessImport()
+            .withImporterWorkFile()
+            .withUsersPages(
+                arrayOf(testUser.toBackupUser()),
+                arrayOf(testUser.toBackupUser()),
+            )
+            .withUsersInsertAction {
+                insertedPageCount++
+                pageStarted.complete(Unit)
+                finishPage.await()
+            }
+            .arrange()
+
+        val restoreJob = launch {
+            useCase(arrangement.storedPath, null) {}
+        }
+        pageStarted.await()
+
+        restoreJob.cancel()
+        assertFalse(restoreJob.isCompleted)
+        finishPage.complete(Unit)
+        restoreJob.join()
+
+        runCurrent()
+        assertEquals(0, arrangement.refreshCalls)
+        assertTrue(restoreJob.isCancelled)
+        assertEquals(1, insertedPageCount)
+        verify(VerifyMode.exactly(1)) { arrangement.usersPager.nextPage() }
+        verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertConversations(any()) }
+        assertFalse(arrangement.fileSystem.exists(arrangement.importerWorkFile))
+    }
+
+    @Test
+    fun givenCancellationDuringFinalPagePersistence_whenPageFinishes_thenCancellationWinsOverSuccess() = runTest {
+        val pageStarted = CompletableDeferred<Unit>()
+        val finishPage = CompletableDeferred<Unit>()
+        val progress = mutableListOf<Float>()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
+            .withSuccessImport()
+            .withReactionsInsertAction {
+                pageStarted.complete(Unit)
+                finishPage.await()
+            }
+            .arrange()
+
+        val restoreJob = launch {
+            useCase(arrangement.storedPath, null, progress::add)
+        }
+        pageStarted.await()
+
+        restoreJob.cancel()
+        finishPage.complete(Unit)
+        restoreJob.join()
+
+        runCurrent()
+        assertEquals(0, arrangement.refreshCalls)
+        assertTrue(restoreJob.isCancelled)
+        assertEquals(listOf(0.25f, 0.5f, 0.75f), progress)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+    }
+
+    @Test
+    fun givenCancellationDuringConversationPersistence_whenPageFinishes_thenMessagesDoNotStart() = runTest {
+        val pageStarted = CompletableDeferred<Unit>()
+        val finishPage = CompletableDeferred<Unit>()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
+            .withSuccessImport()
+            .withConversationsInsertAction {
+                pageStarted.complete(Unit)
+                finishPage.await()
+            }
+            .arrange()
+
+        val restoreJob = launch { useCase(arrangement.storedPath, null) {} }
+        pageStarted.await()
+
+        restoreJob.cancel()
+        finishPage.complete(Unit)
+        restoreJob.join()
+
+        runCurrent()
+        assertEquals(0, arrangement.refreshCalls)
+        assertTrue(restoreJob.isCancelled)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any()) }
+    }
+
+    @Test
+    fun givenCancellationDuringMessagePersistence_whenPageFinishes_thenReactionsDoNotStart() = runTest {
+        val pageStarted = CompletableDeferred<Unit>()
+        val finishPage = CompletableDeferred<Unit>()
+        val (arrangement, useCase) = Arrangement(backgroundScope)
+            .withSuccessImport()
+            .apply { messagePageCount = 2 }
+            .withMessagesInsertAction {
+                pageStarted.complete(Unit)
+                finishPage.await()
+            }
+            .arrange()
+
+        val restoreJob = launch { useCase(arrangement.storedPath, null) {} }
+        pageStarted.await()
+
+        restoreJob.cancel()
+        finishPage.complete(Unit)
+        restoreJob.join()
+
+        runCurrent()
+        assertEquals(0, arrangement.refreshCalls)
+        assertTrue(restoreJob.isCancelled)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verify(VerifyMode.exactly(1)) { arrangement.messagesPager.nextPage() }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
+    }
+
+    @Test
     fun givenBackupContainsUsersWithEmptyDomain_whenRestoring_thenMalformedUserIsSkipped() = runTest {
         val malformedBackupUser = testUser.toBackupUser().copy(
             id = BackupQualifiedId("participant-malformed", "")
@@ -250,31 +383,41 @@ class RestoreMPBackupUseCaseTest {
     }
 
     @Test
-    fun givenMessagePageWriteFails_whenRestoring_thenContinueWithNextPageAndReportSuccess() = runTest {
+    fun givenMessagePageWriteFails_whenRestoring_thenStopAndReportFailure() = runTest {
         val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().withMessageWriteFailure().arrange()
         val result = useCase(arrangement.storedPath, null) {}
-        assertEquals(RestoreBackupResult.Success, result)
-        verifySuspend(VerifyMode.exactly(2)) { arrangement.backupRepository.insertMessages(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+        assertTrue(result is RestoreBackupResult.Failure)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verify(VerifyMode.exactly(1)) { arrangement.messagesPager.nextPage() }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
+        runCurrent()
+        assertEquals(0, arrangement.refreshCalls)
     }
 
     @Test
-    fun givenUserPageWriteFails_whenRestoring_thenContinueAndReportSuccess() = runTest {
+    fun givenUserPageWriteFails_whenRestoring_thenStopAndReportFailure() = runTest {
         val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().withUserWriteFailure().arrange()
         val result = useCase(arrangement.storedPath, null) {}
-        assertEquals(RestoreBackupResult.Success, result)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+        assertEquals(
+            RestoreBackupResult.Failure(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Failed to persist backup data")),
+            result,
+        )
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertConversations(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
+        runCurrent()
+        assertEquals(0, arrangement.refreshCalls)
     }
 
     @Test
-    fun givenConversationPageWriteFails_whenRestoring_thenContinueAndReportSuccess() = runTest {
+    fun givenConversationPageWriteFails_whenRestoring_thenStopAndReportFailure() = runTest {
         val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().withConversationWriteFailure().arrange()
         val result = useCase(arrangement.storedPath, null) {}
-        assertEquals(RestoreBackupResult.Success, result)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+        assertTrue(result is RestoreBackupResult.Failure)
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertReactions(any()) }
+        runCurrent()
+        assertEquals(0, arrangement.refreshCalls)
     }
 
     @Test
@@ -323,6 +466,47 @@ class RestoreMPBackupUseCaseTest {
         assertEquals(1, arrangement.refreshCalls)
     }
 
+    @Test
+    fun givenReactionPageWriteFails_whenRestoring_thenReportFailureWithoutRefreshingMetadata() = runTest {
+        val (arrangement, useCase) = Arrangement(backgroundScope)
+            .withSuccessImport()
+            .withReactionsInsertAction { throw IOException("reaction write failed") }
+            .arrange()
+        val progress = mutableListOf<Float>()
+
+        assertTrue(useCase(arrangement.storedPath, null, progress::add) is RestoreBackupResult.Failure)
+
+        assertEquals(listOf(0.25f, 0.5f, 0.75f), progress)
+        verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
+        runCurrent()
+        assertEquals(0, arrangement.refreshCalls)
+    }
+
+    @Test
+    fun givenCleanupFails_whenRestoreSucceeds_thenSuccessIsPreserved() = runTest {
+        val (arrangement, useCase) = Arrangement(backgroundScope).withSuccessImport().withCleanupFailure().arrange()
+
+        assertEquals(RestoreBackupResult.Success, useCase(arrangement.storedPath, null) {})
+        verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
+    }
+
+    @Test
+    fun givenCleanupFails_whenRestoreFails_thenOriginalFailureIsPreserved() = runTest {
+        val (arrangement, useCase) = Arrangement(backgroundScope).withParsingFailure().withCleanupFailure().arrange()
+
+        assertEquals(
+            RestoreBackupResult.Failure(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Parsing failure")),
+            useCase(arrangement.storedPath, null) {},
+        )
+    }
+
+    @Test
+    fun givenCleanupFails_whenRestoreIsCancelled_thenCancellationIsPreserved() = runTest {
+        val (arrangement, useCase) = Arrangement(backgroundScope).withCancellation().withCleanupFailure().arrange()
+
+        assertFailsWith<CancellationException> { useCase(arrangement.storedPath, null) {} }
+    }
+
     private inner class Arrangement(private val userSessionScope: CoroutineScope) {
         var refresh: suspend () -> Unit = {}
         var waitForSync: suspend () -> Unit = {}
@@ -343,6 +527,13 @@ class RestoreMPBackupUseCaseTest {
         var conversationsInsertStubConfigured = false
         var messagesInsertStubConfigured = false
         var messagePageCount = 1
+        val fileSystem = FakeKaliumFileSystem()
+        var usersInsertAction: suspend () -> Unit = {}
+        var conversationsInsertAction: suspend () -> Unit = {}
+        var messagesInsertAction: suspend () -> Unit = {}
+        var reactionsInsertAction: suspend () -> Unit = {}
+        var importerAction: suspend () -> Unit = {}
+        var cleanupFails = false
 
         suspend fun withUserWriteFailure() = apply {
             usersInsertStubConfigured = true
@@ -364,11 +555,31 @@ class RestoreMPBackupUseCaseTest {
         }
 
         val storedPath = "testPath/backupFile.zip".toPath()
+        val importerWorkDir = fileSystem.tempFilePath("${storedPath.name}-restore-workdir")
+        val importerWorkFile = "$importerWorkDir/importer.tmp".toPath()
+
+        fun withImporterWorkFile() = apply {
+            importerAction = {
+                fileSystem.createDirectories(importerWorkDir)
+                fileSystem.sink(importerWorkFile).buffer().use { it.writeUtf8("restore work") }
+            }
+        }
+
+        fun withCleanupFailure() = apply { cleanupFails = true }
+
+        fun withUsersInsertAction(action: suspend () -> Unit) = apply { usersInsertAction = action }
+
+        fun withConversationsInsertAction(action: suspend () -> Unit) = apply { conversationsInsertAction = action }
+
+        fun withMessagesInsertAction(action: suspend () -> Unit) = apply { messagesInsertAction = action }
+
+        fun withReactionsInsertAction(action: suspend () -> Unit) = apply { reactionsInsertAction = action }
 
         suspend fun withSuccessImport() = apply {
-            everySuspend { importer.importFromFile(any(), any()) } returns (
+            everySuspend { importer.importFromFile(any(), any()) } calls {
+                importerAction()
                 ImportResult.Success(resultPager)
-            )
+            }
         }
 
         suspend fun withInvalidPassword() = apply {
@@ -378,9 +589,10 @@ class RestoreMPBackupUseCaseTest {
         }
 
         suspend fun withParsingFailure() = apply {
-            everySuspend { importer.importFromFile(any(), any()) } returns (
+            everySuspend { importer.importFromFile(any(), any()) } calls {
+                importerAction()
                 ImportResult.Failure.ParsingFailure
-            )
+            }
         }
 
         suspend fun withUnzipFailure() = apply {
@@ -446,18 +658,35 @@ class RestoreMPBackupUseCaseTest {
 
             every { importerProvider.providePeekImporter() } returns (importer)
             every { importerProvider.provideImporter(any(), any()) } returns (importer)
-            every { kaliumFileSystem.tempFilePath(any()) } returns "testPath/restore-workdir".toPath()
+            every { kaliumFileSystem.tempFilePath(any()) } returns importerWorkDir
+            var cleanupCalls = 0
+            every { kaliumFileSystem.deleteContents(any(), any()) } calls { invocation ->
+                if (cleanupCalls++ > 0 && cleanupFails) throw IOException("cleanup failed")
+                fileSystem.deleteContents(invocation.args[0] as Path, invocation.args[1] as Boolean)
+            }
 
             if (!usersInsertStubConfigured) {
-                everySuspend { backupRepository.insertUsers(any()) } returns (Unit.right())
+                everySuspend { backupRepository.insertUsers(any()) } calls {
+                    usersInsertAction()
+                    Unit.right()
+                }
             }
             if (!conversationsInsertStubConfigured) {
-                everySuspend { backupRepository.insertConversations(any()) } returns (Unit.right())
+                everySuspend { backupRepository.insertConversations(any()) } calls {
+                    conversationsInsertAction()
+                    Unit.right()
+                }
             }
             if (!messagesInsertStubConfigured) {
-                everySuspend { backupRepository.insertMessages(any()) } returns (Unit.right())
+                everySuspend { backupRepository.insertMessages(any()) } calls {
+                    messagesInsertAction()
+                    Unit.right()
+                }
             }
-            everySuspend { backupRepository.insertReactions(any()) } returns (Unit.right())
+            everySuspend { backupRepository.insertReactions(any()) } calls {
+                reactionsInsertAction()
+                Unit.right()
+            }
 
             val usersHasMorePagesValues = MutableList(usersPages.size) { true } + false
             var usersHasMorePagesIndex = 0
@@ -481,7 +710,7 @@ class RestoreMPBackupUseCaseTest {
             every { resultPager.conversationsPager } returns (conversationsPager)
             every { resultPager.messagesPager } returns (messagesPager)
             every { resultPager.reactionsPager } returns (reactionsPager)
-            every { resultPager.totalPagesCount } returns (1)
+            every { resultPager.totalPagesCount } returns (usersPages.size + messagePageCount + 2)
 
             return this to RestoreMPBackupUseCaseImpl(
                 selfUserId = selfUserId,
