@@ -97,6 +97,9 @@ public class AppleAccountRuntime private constructor(
     internal lateinit var sessionManager: ExistingAccountSessionManager
         private set
 
+    internal lateinit var invalidateReceiving: () -> Unit
+        private set
+
     private var openedDatabase: UserDatabaseBuilder? = null
     private var sqlDispatcher: CloseableCoroutineDispatcher? = null
     private var openedNetwork: AuthenticatedNetworkContainer? = null
@@ -108,6 +111,7 @@ public class AppleAccountRuntime private constructor(
     @Suppress("LongMethod", "TooGenericExceptionCaught")
     private suspend fun open(rootPath: String, keychainConfig: ApplePersistenceConfig, userAgent: String, pins: CertificatePinning) {
         val userId = prepared.userId
+        invalidateReceiving = { ApplePreparedAccountStore(rootPath, userId).invalidate(lease, prepared.clientId) }
         val root = appleAccountPath(rootPath, userId)
         val preferences = GlobalPrefProvider(keychainConfig)
         val session = ExistingAccountSessionManager(

@@ -72,6 +72,8 @@ public data class KaliumNSEResult(
     public val failureReason: String? = null,
     public val presentationReason: String? = null,
     public val callSignalsPending: Boolean = false,
+    /** Content-free reason; Events retains the unprocessed suffix for app incremental sync. */
+    public val appWorkPending: String? = null,
 )
 
 public enum class KaliumNSEStatus { SUCCESS, FAILED }
@@ -150,6 +152,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             KaliumNSEStatus.SUCCESS, message?.shouldNotify == true, message?.messageId,
             message?.conversationValue, message?.conversationDomain, message?.text?.takeIf { canPreview },
             callSignalsPending = result.callSignalsPending,
+            appWorkPending = result.appWorkPending?.name,
             presentationReason = result.presentationReason ?: when {
                 message == null -> "NO_MESSAGE_CANDIDATE"
                 !message.shouldNotify -> message.suppressionReason ?: "NOT_ELIGIBLE"

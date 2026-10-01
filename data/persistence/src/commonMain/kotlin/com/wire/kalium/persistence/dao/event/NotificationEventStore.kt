@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.event
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -39,6 +40,14 @@ class NotificationEventStore internal constructor(
         }.awaitAsOneOrNull()
     }
 
+    /** Read-only terminal-account preflight; never advances the processing cursor. */
+    suspend fun pendingAfter(afterId: Long, pageSize: Long = 100): List<EventEntity> = withContext(readDispatcher.value) {
+        require(pageSize in 1..MAX_PENDING_PAGE_SIZE)
+        database.eventsQueries.selectUnprocessedEventsAfter(afterId, pageSize) { id, eventId, processed, payload, transient, live ->
+            EventEntity(id, eventId, processed != 0L, payload, transient, live != 0L)
+        }.awaitAsList()
+    }
+
     suspend fun storePage(expectedCursor: String?, events: List<NewEventEntity>) = withContext(writeDispatcher.value) {
         require(events.all { !it.isLive && it.eventId.isNotBlank() })
         require(events.map { it.eventId }.distinct().size == events.size)
@@ -58,6 +67,8 @@ class NotificationEventStore internal constructor(
     }
 
     companion object {
+        private const val MAX_PENDING_PAGE_SIZE = 1000L
+
         // Existing app key: this is the fetched/stored cursor despite its historical name.
         const val FETCH_CURSOR_KEY = "last_processed_event_id"
     }

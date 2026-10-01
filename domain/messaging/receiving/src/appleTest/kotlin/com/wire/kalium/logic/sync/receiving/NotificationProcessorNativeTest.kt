@@ -253,6 +253,33 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun nonHeadInvalidationPreemptsBlockedWorkOfflineWithoutAcknowledgingQueue() = runTest {
+        for (deleted in listOf(false, true)) for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
+            withFixture(mls) { fixture ->
+                val blocked = fixture.plainEvent("blocked", """{"type":"user.legalhold-enable","id":"${SELF.value}"}""")
+                val terminal = if (deleted) fixture.userDelete(SELF) else fixture.clientRemove(CLIENT)
+                val text = fixture.event("tail", fixture.encrypt("tail"))
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    runtime.database.notificationEventStore.storePage(null, listOf(blocked, terminal, text).map {
+                        NewEventEntity(it.id, it.payload, it.transient, false)
+                    })
+                })
+                // Any remote acquisition fails; the terminal decision must be entirely local.
+                val offline = object : NotificationApi by PageApi(emptyList()) {
+                    override suspend fun getAllNotifications(size: Int, client: String) = error("Network unavailable")
+                    override suspend fun notificationsByBatch(size: Int, client: String, since: String) = error("Auth unavailable")
+                }
+                assertIs<Either.Right<*>>(fixture.receive(emptyList(), text.id, api = offline))
+                assertEquals(NotificationAppWork.ACCOUNT_INVALIDATION, fixture.receivedAppWork)
+                assertEquals("3", fixture.sqlValue("SELECT COUNT(*) FROM Events WHERE is_processed = 0"))
+                assertEquals("0", fixture.sqlValue("SELECT COUNT(*) FROM Message WHERE id = 'tail'"))
+                assertIs<Either.Left<*>>(fixture.open { error("Invalidated account reopened") })
+            }
+        }
+    }
+
+    @Test
     fun sentConnectionMetadataProteus() = sentConnectionMetadata(false)
 
     @Test
@@ -3411,88 +3438,44 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun terminalIdentityEventsKeepQueuePending() = runTest {
+    fun terminalIdentityEventsRetainRecoveryStoresAndBlockReceiving() = runTest {
         for (mls in listOf(false, true)) for (currentClient in listOf(false, true)) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 val terminal = if (currentClient) fixture.clientRemove(CLIENT) else fixture.userDelete(SELF)
                 val event = fixture.batch("notification", fixture.event("prefix", fixture.encrypt("prefix")), terminal,
                     fixture.event("after-terminal", fixture.encrypt("after-terminal")))
                 val tail = fixture.event("tail", fixture.encrypt("tail"))
-                val next = fixture.encrypt("next")
+                val account = appleAccountPath(fixture.root, SELF)
+                val file = "$account/storage/files/terminal-retained.bin".toPath()
+                FileSystem.SYSTEM.createDirectories(checkNotNull(file.parent))
+                FileSystem.SYSTEM.write(file) { writeUtf8("retained fixture asset") }
                 fixture.releasePrepared()
-                repeat(2) { assertIs<Either.Left<*>>(fixture.receive(listOf(event, tail), event.id)) }
-                assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
-                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
-                    assertNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
-                    assertNull(runtime.database.messageDAO.getMessageById("after-terminal", CONVERSATION_ID))
-                    assertNull(runtime.database.messageDAO.getMessageById("tail", CONVERSATION_ID))
-                    assertTrue(runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).isEmpty())
-                    assertEquals(CLIENT, ClientRegistrationStorageImpl(runtime.database.metadataDAO).getRegisteredClientId())
-                })
-                assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
+                assertIs<Either.Right<*>>(fixture.receive(listOf(event, tail), event.id))
+                assertEquals(NotificationAppWork.ACCOUNT_INVALIDATION, fixture.receivedAppWork)
+                repeat(2) {
+                    assertEquals(Either.Left(AccountRuntimeFailure.NOT_PREPARED), fixture.receive(emptyList(), event.id))
+                }
+                val lease = assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(fixture.root).tryAcquire(SELF)).value
+                try {
+                    val database = com.wire.kalium.persistence.db.existingUserDatabaseBuilder(
+                        "$account/storage", SELF.toDao(), Dispatchers.Default)
+                    try {
+                        assertFalse(checkNotNull(database.eventDAO.getEventById(event.id)).isProcessed)
+                        assertFalse(checkNotNull(database.eventDAO.getEventById(tail.id)).isProcessed)
+                        for (id in listOf("prefix", "after-terminal", "tail")) {
+                            assertNull(database.messageDAO.getMessageById(id, CONVERSATION_ID))
+                        }
+                        assertTrue(database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).isEmpty())
+                        assertEquals(CLIENT, ClientRegistrationStorageImpl(database.metadataDAO).getRegisteredClientId())
+                        assertTrue(FileSystem.SYSTEM.exists(file))
+                        assertTrue(FileSystem.SYSTEM.exists("$account/proteus".toPath()))
+                        if (mls) assertTrue(FileSystem.SYSTEM.exists("$account/mls/$CLIENT/keystore/keystore".toPath()))
+                    } finally { database.close() }
+                } finally { lease.release() }
             }
         }
     }
 
-    @Test
-    fun terminalCleanupLosesExistingRetryPrerequisites() = runTest {
-        for (mls in listOf(false, true)) for (stage in listOf("readiness", "crypto", "storage")) {
-            withContext(Dispatchers.Default) {
-                withFixture(mls) { fixture ->
-                    val event = fixture.batch("notification", fixture.event("prefix", fixture.encrypt("prefix")),
-                        fixture.clientRemove(CLIENT))
-                    val tail = fixture.event("tail", fixture.encrypt("tail"))
-                    fixture.releasePrepared()
-                    // First establish the actual ordered pending queue and known closed native handles.
-                    assertIs<Either.Left<*>>(fixture.receive(listOf(event, tail), event.id))
-                    val account = appleAccountPath(fixture.root, SELF)
-                    val file = "$account/storage/files/terminal-retained.bin".toPath()
-                    val lease = assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(fixture.root).tryAcquire(SELF)).value
-                    try {
-                        FileSystem.SYSTEM.createDirectories(checkNotNull(file.parent))
-                        FileSystem.SYSTEM.write(file) { writeUtf8("retained account asset") }
-                        when (stage) {
-                            "readiness" -> ApplePreparedAccountStore(fixture.root, SELF).revoke(lease)
-                            "crypto" -> FileSystem.SYSTEM.deleteRecursively("$account/proteus".toPath())
-                            "storage" -> {
-                                val database = com.wire.kalium.persistence.db.existingUserDatabaseBuilder(
-                                    "$account/storage", SELF.toDao(), Dispatchers.Default)
-                                assertTrue(database.nuke())
-                            }
-                        }
-                    } finally {
-                        lease.release()
-                    }
-                    repeat(2) {
-                        val expected = if (stage == "readiness") AccountRuntimeFailure.NOT_PREPARED else AccountRuntimeFailure.STORAGE
-                        assertEquals(Either.Left(expected), fixture.open { kotlin.test.fail("Interrupted cleanup must not enter receiving") })
-                    }
-                    val inspectionLease = assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(fixture.root).tryAcquire(SELF)).value
-                    try {
-                        if (stage == "storage") {
-                            // Full wipe removes the existing Events queue together with account assets.
-                            assertFalse(FileSystem.SYSTEM.exists("$account/storage".toPath()))
-                        } else {
-                            val database = com.wire.kalium.persistence.db.existingUserDatabaseBuilder(
-                                "$account/storage", SELF.toDao(), Dispatchers.Default)
-                            try {
-                                assertFalse(checkNotNull(database.eventDAO.getEventById(event.id)).isProcessed)
-                                assertFalse(checkNotNull(database.eventDAO.getEventById(tail.id)).isProcessed)
-                                assertEquals(CLIENT, ClientRegistrationStorageImpl(database.metadataDAO).getRegisteredClientId())
-                                assertTrue(FileSystem.SYSTEM.exists(file))
-                                if (stage == "crypto" && mls) assertTrue(FileSystem.SYSTEM.exists("$account/mls/$CLIENT/keystore/keystore".toPath()))
-                            } finally {
-                                database.close()
-                            }
-                        }
-                    } finally {
-                        inspectionLease.release()
-                    }
-                }
-            }
-        }
-    }
 
     @Test
     fun conversationClearQueuesAndPreservesFilesProteus() = conversationCleanup(false, CleanupMode.CLEAR)
@@ -9638,6 +9621,7 @@ class NotificationProcessorNativeTest {
         private val basicSelf: Boolean = false,
     ) {
         var receivedCalls: List<ReceivedCallResult> = emptyList()
+        var receivedAppWork: NotificationAppWork? = null
         var receivedCallEvents: List<ReceivedCallEvent> = emptyList()
         private val config = ApplePersistenceConfig(keychainService)
         private val account = appleAccountPath(root, SELF)
@@ -11030,6 +11014,7 @@ class NotificationProcessorNativeTest {
             NotificationProcessor(
                 runtime.database, api, CLIENT, SELF, proteus, mls,
                 diagnostics = diagnostics,
+                invalidateReceiving = { runtime.invalidateReceiving() },
                 evaluateCalls = { events ->
                     receivedCallEvents = events
                     evaluateCallingEvents(events, SELF, CLIENT, runtime.database)
@@ -11098,7 +11083,7 @@ class NotificationProcessorNativeTest {
                         else NetworkResponse.Success(fetchProfiles(), emptyMap(), 200)
                     } catch (failure: KaliumException) { NetworkResponse.Error(failure) }
                 },
-            ).process(target).also { receivedCalls = it.calls }.message
+            ).process(target).also { receivedCalls = it.calls; receivedAppWork = it.appWorkPending }.message
         }
 
         suspend fun decryptAndCheck(cipher: ByteArray, value: String, protocolMLS: Boolean = mlsEnabled) = open { runtime ->
@@ -11145,7 +11130,7 @@ class NotificationProcessorNativeTest {
             }
         }
 
-        private fun sqlValue(statement: String): String? {
+        fun sqlValue(statement: String): String? {
             val driver = databaseDriver("$account/storage", FileNameUtil.userDBName(SELF.toDao()), UserDatabase.Schema.synchronous()) {
                 isWALEnabled = true
                 useGradleSafeSqliterLogging = true

@@ -43,6 +43,68 @@ class ApplePreparedAccountStoreTest {
     private val userId = UserId("prepared-user", "example.com")
 
     @Test
+    fun `invalidated client cannot be republished but a new registration can`() = runTest {
+        withStore { root, store, lease ->
+            FileSystem.SYSTEM.createDirectories(appleAccountPath(root, userId).toPath())
+            store.publish(lease, prepared())
+            store.invalidate(lease, prepared().clientId)
+            assertNull(ApplePreparedAccountStore(root, userId).read(lease))
+            store.publish(lease, prepared())
+            assertNull(store.read(lease))
+            val newClient = prepared().copy(clientId = "new-client")
+            store.publish(lease, newClient)
+            assertEquals(newClient, store.read(lease))
+        }
+    }
+
+    @Test
+    fun `old host readiness cannot authorize new durable effects`() = runTest {
+        withStore { root, store, lease ->
+            val account = appleAccountPath(root, userId).toPath()
+            FileSystem.SYSTEM.createDirectories(account)
+            FileSystem.SYSTEM.write(account / "notification-extension-ready.json") {
+                writeUtf8(Json { encodeDefaults = true }.encodeToString(prepared().copy(formatVersion = 1)))
+            }
+            assertNull(store.read(lease))
+            // Preparing the existing registered client publishes the new contract;
+            // no credentials, account storage, or registration is reset.
+            store.publish(lease, prepared())
+            assertEquals(prepared(), store.read(lease))
+        }
+    }
+
+    @Test
+    fun `failed replacement publish cannot uncover old readiness`() = runTest {
+        withStore { root, store, lease ->
+            val account = appleAccountPath(root, userId).toPath()
+            FileSystem.SYSTEM.createDirectories(account)
+            store.publish(lease, prepared())
+            store.invalidate(lease, prepared().clientId)
+            // Model an old readiness file left by a failed revoke.
+            FileSystem.SYSTEM.write(account / "notification-extension-ready.json") {
+                writeUtf8(Json { encodeDefaults = true }.encodeToString(prepared()))
+            }
+            assertFailsWith<IllegalArgumentException> {
+                store.publish(lease, prepared().copy(clientId = "replacement".repeat(4000)))
+            }
+            assertNull(ApplePreparedAccountStore(root, userId).read(lease))
+            val replacement = prepared().copy(clientId = "replacement")
+            store.publish(lease, replacement)
+            assertEquals(replacement, store.read(lease))
+        }
+    }
+
+    @Test
+    fun `invalidation barrier survives failed readiness unlink`() = runTest {
+        withStore { root, store, lease ->
+            FileSystem.SYSTEM.createDirectories((appleAccountPath(root, userId) + "/notification-extension-ready.json").toPath())
+            assertFailsWith<IOException> { store.invalidate(lease, prepared().clientId) }
+            assertNull(store.read(lease))
+            assertFailsWith<IOException> { store.publish(lease, prepared()) }
+        }
+    }
+
+    @Test
     fun `missing readiness can be read and revoked without creating account storage`() = runTest {
         withStore { root, store, lease ->
             assertNull(store.read(lease))
@@ -76,8 +138,8 @@ class ApplePreparedAccountStoreTest {
             val good = json.encodeToString(prepared())
             for (invalid in listOf(
                 "{",
-                good.replace("\"format_version\":1,", ""),
-                json.encodeToString(prepared().copy(formatVersion = 2)),
+                good.replace("\"format_version\":${prepared().formatVersion},", ""),
+                json.encodeToString(prepared().copy(formatVersion = prepared().formatVersion + 1)),
                 json.encodeToString(prepared().copy(userId = UserId("other", userId.domain))),
                 json.encodeToString(prepared().copy(coreCryptoVersion = "other-version")),
                 json.encodeToString(prepared().copy(userSchemaVersion = -1)),
@@ -115,6 +177,7 @@ class ApplePreparedAccountStoreTest {
         withStore { root, store, lease ->
             val other = ApplePreparedAccountStore(root, UserId("other", userId.domain))
             assertFailsWith<IllegalArgumentException> { other.revoke(lease) }
+            assertFailsWith<IllegalArgumentException> { other.invalidate(lease, "client") }
             val otherRoot = ApplePreparedAccountStore("$root-other", userId)
             assertFailsWith<IllegalArgumentException> { otherRoot.revoke(lease) }
             lease.release()

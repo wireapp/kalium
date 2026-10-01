@@ -84,9 +84,11 @@ class NotificationProcessor(
     private val apiVersion: Int = 6,
     private val selfApi: com.wire.kalium.network.api.base.authenticated.self.SelfApi? = null,
     private val hasMLSCredential: suspend (com.wire.kalium.cryptography.MLSCiphersuite) -> Boolean = { false },
+    private val invalidateReceiving: suspend () -> Unit = { error("Account invalidation is unavailable") },
     private val evaluateCalls: (suspend (List<ReceivedCallEvent>) -> List<ReceivedCallResult>)? = null,
     private val diagnostics: ReceivingDiagnostics? = null,
 ) {
+    private var accountInvalidated = false
     private val unpacker = ProteusMessageUnpackerImpl(selfUserId)
     private val events = database.notificationEventStore
     private val previewImages = ReceivedLinkPreviewImages(options.linkPreviewEnabled, assetApi, assetDirectory)
@@ -104,6 +106,7 @@ class NotificationProcessor(
     private suspend fun processEvents(targetId: String): ReceivedNotificationResult {
         require(targetId.isNotBlank())
         diagnostics?.stage = "LOAD_QUEUE"
+        terminalAccountResult()?.let { return it }
         previewImages.cleanupAbandoned(database.assetDAO)
         if (database.eventDAO.getEventById(targetId)?.isProcessed == true) return withPendingCalls(null, "ALREADY_PROCESSED")
         database.eventDAO.setAllUnprocessedEventsAsPending()
@@ -137,10 +140,25 @@ class NotificationProcessor(
                 }
                 diagnostics?.stage = "STORE_PAGE"
                 events.storePage(cursor, page.notifications.map { NewEventEntity(it.id, it.payload, it.transient, false) })
+                terminalAccountResult()?.let { return it }
                 canFetch = page.hasMore
             }
         }
         return withPendingCalls(targetMessage)
+    }
+
+    private suspend fun terminalAccountResult(): ReceivedNotificationResult? {
+        if (!accountInvalidated && pendingAccountInvalidation(database, selfUserId, clientId) == null) return null
+        if (!accountInvalidated) {
+            invalidateReceiving()
+            accountInvalidated = true
+            com.wire.kalium.common.logger.kaliumLogger.i("NSE_EVENT stage=account_invalidated")
+        }
+        return ReceivedNotificationResult(
+            null,
+            presentationReason = "APP_WORK_PENDING",
+            appWorkPending = NotificationAppWork.ACCOUNT_INVALIDATION
+        )
     }
 
     private suspend fun withPendingCalls(message: ReceivedMessageResult?, reason: String? = null): ReceivedNotificationResult {

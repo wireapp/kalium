@@ -65,5 +65,6 @@ public suspend fun AppleAccountRuntime.notificationProcessor(
         },
         evaluateCalls = { events -> evaluateCallingEvents(events, prepared.userId, prepared.clientId, database) },
         diagnostics = diagnostics,
+        invalidateReceiving = { invalidateReceiving() },
     )
 }

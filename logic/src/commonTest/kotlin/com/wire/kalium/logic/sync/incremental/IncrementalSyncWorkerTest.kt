@@ -44,11 +44,11 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -57,6 +57,67 @@ import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 
 class IncrementalSyncWorkerTest {
+
+    @Test
+    fun terminalAccountEventBehindBlockedPageLogsOutBeforeNetworkAndKeepsQueue() = runTest(TestKaliumDispatcher.default) {
+        for (deleted in listOf(false, true)) {
+            val fixture = Arrangement()
+            val database = fixture.database.builder
+            val user = QualifiedID("terminal-self", "example.test")
+            val blocked = """[{"type":"user.legalhold-enable","id":"${user.value}"}]"""
+            val terminal = if (deleted)
+                """[{"type":"user.delete","id":"${user.value}","qualified_id":{"id":"${user.value}","domain":"${user.domain}"}}]"""
+            else """[{"type":"user.client-remove","client":{"id":"current"}}]"""
+            val events = (0..100).map {
+                com.wire.kalium.persistence.dao.event.NewEventEntity("blocked-$it", blocked, false, false)
+            } + com.wire.kalium.persistence.dao.event.NewEventEntity("terminal", terminal, false, false)
+            database.notificationEventStore.storePage(null, events)
+            val invalidated = CompletableDeferred<Unit>()
+            val (_, worker) = fixture.arrange(consumeInvalidation = {
+                val result = com.wire.kalium.logic.sync.receiving.pendingAccountInvalidation(database, user, "current")
+                assertEquals(if (deleted) com.wire.kalium.logic.sync.receiving.PendingAccountInvalidation.DELETED_ACCOUNT
+                    else com.wire.kalium.logic.sync.receiving.PendingAccountInvalidation.REMOVED_CLIENT, result)
+                invalidated.complete(Unit)
+                result != null
+            })
+            val job = launch { worker.processEventsFlow().collect() }
+            invalidated.await()
+            job.cancel(); job.join()
+            verifySuspend(VerifyMode.not) { fixture.eventGatherer.gatherEvents() }
+            assertEquals("blocked-0", database.notificationEventStore.nextPending()?.eventId)
+            assertEquals(false, database.eventDAO.getEventById("terminal")?.isProcessed)
+        }
+    }
+
+    @Test
+    fun terminalPreflightIgnoresOtherClientAndQualifiedUserAndProcessedEvents() = runTest(TestKaliumDispatcher.default) {
+        val fixture = Arrangement()
+        val database = fixture.database.builder
+        val user = QualifiedID("self", "one.example")
+        val events = listOf(
+            """[{"type":"user.client-remove","client":{"id":"other"}}]""",
+            """[{"type":"user.delete","id":"self","qualified_id":{"id":"self","domain":"two.example"}}]""",
+            """[{"type":"user.client-remove","client":{"id":"current"}}]""",
+        ).mapIndexed { i, payload -> com.wire.kalium.persistence.dao.event.NewEventEntity("event-$i", payload, false, false) }
+        database.notificationEventStore.storePage(null, events)
+        database.eventDAO.markEventAsProcessed("event-2")
+        assertEquals(null, com.wire.kalium.logic.sync.receiving.pendingAccountInvalidation(database, user, "current"))
+        assertEquals("event-0", database.notificationEventStore.nextPending()?.eventId)
+    }
+
+    @Test
+    fun pendingAccountInvalidationRunsBeforeAnyNetworkGathering() = runTest {
+        val invalidated = CompletableDeferred<Unit>()
+        val (arrangement, worker) = Arrangement().arrange(consumeInvalidation = {
+            invalidated.complete(Unit)
+            true
+        })
+        val job = launch { worker.processEventsFlow().collect() }
+        invalidated.await()
+        job.cancel()
+        job.join()
+        verifySuspend(VerifyMode.not) { arrangement.eventGatherer.gatherEvents() }
+    }
 
     @Test
     fun givenGathererEmitsEvent_whenPerformingIncrementalSync_thenProcessorShouldReceiveTheEvent() = runTest(TestKaliumDispatcher.default) {
@@ -279,11 +340,11 @@ class IncrementalSyncWorkerTest {
             everySuspend { eventRepository.setEventsAsProcessed(any()) } returns result
         }
 
-        suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
+        suspend fun arrange(consumeInvalidation: suspend () -> Boolean = { false }, block: suspend Arrangement.() -> Unit = {}) = let {
             block()
             withTransactionReturning(Either.Right(Unit))
             this to IncrementalSyncWorkerImpl(
-                eventGatherer, eventProcessor, cryptoTransactionProvider, database.builder, eventRepository
+                eventGatherer, eventProcessor, cryptoTransactionProvider, database.builder, eventRepository, consumePendingAccountInvalidation = consumeInvalidation
             )
         }
     }

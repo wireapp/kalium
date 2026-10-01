@@ -10,6 +10,8 @@ data class ReceivedNotificationResult(
     val calls: List<ReceivedCallResult> = emptyList(),
     val presentationReason: String? = null,
     val callSignalsPending: Boolean = false,
+    /** Retained ordered Events work, consumed by the existing app incremental sync. */
+    val appWorkPending: NotificationAppWork? = null,
 )
 
 enum class ReceivedCallType { INCOMING, MISSED, CLOSED }

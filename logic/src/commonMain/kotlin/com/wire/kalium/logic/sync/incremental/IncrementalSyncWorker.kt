@@ -49,6 +49,7 @@ internal interface IncrementalSyncWorker {
     suspend fun processEventsFlow(): Flow<EventSource>
 }
 
+@Suppress("LongParameterList") // Dependencies belong to the existing account-owned sync worker.
 internal class IncrementalSyncWorkerImpl(
     private val eventGatherer: EventGatherer,
     private val eventProcessor: EventProcessor,
@@ -56,6 +57,7 @@ internal class IncrementalSyncWorkerImpl(
     private val databaseBuilder: UserDatabaseBuilder,
     private val eventRepository: EventRepository,
     logger: KaliumLogger = kaliumLogger,
+    private val consumePendingAccountInvalidation: suspend () -> Boolean = { false },
 ) : IncrementalSyncWorker {
 
     private val logger = logger.withFeatureId(SYNC)
@@ -63,6 +65,8 @@ internal class IncrementalSyncWorkerImpl(
     override suspend fun processEventsFlow(): Flow<EventSource> = channelFlow {
         // We start as PENDING
         send(EventSource.PENDING)
+        // Removed credentials may never connect; the existing logout owner runs first.
+        if (consumePendingAccountInvalidation()) kotlinx.coroutines.awaitCancellation()
 
         kaliumLogger.d("$TAG gatherEvents starting...")
         eventGatherer.gatherEvents()

@@ -23,6 +23,7 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
@@ -1621,6 +1622,21 @@ public class UserSessionScope internal constructor(
             userStorage.database,
             eventRepository,
             userScopedLogger,
+            consumePendingAccountInvalidation = {
+                val client = clientRepository.currentClientId().getOrNull()
+                val pending = client?.let {
+                    com.wire.kalium.logic.sync.receiving.pendingAccountInvalidation(userStorage.database, userId, it.value)
+                }
+                if (pending != null) {
+                    logout(
+                        if (pending == com.wire.kalium.logic.sync.receiving.PendingAccountInvalidation.DELETED_ACCOUNT)
+                            com.wire.kalium.logic.data.logout.LogoutReason.DELETED_ACCOUNT
+                        else com.wire.kalium.logic.data.logout.LogoutReason.REMOVED_CLIENT,
+                        waitUntilCompletes = false,
+                    )
+                }
+                pending != null
+            },
         )
     }
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl

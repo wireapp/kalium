@@ -65,6 +65,21 @@ public data class PreparedAccount(
 public class ApplePreparedAccountStore(private val rootPath: String, private val userId: UserId) {
     private val rootAccountPath = appleAccountPath(rootPath, userId)
     private val path = "$rootAccountPath/$FILE_NAME".toPath()
+    private val invalidatedPath = "$rootAccountPath/notification-extension-invalidated-client".toPath()
+
+    /** Durable barrier; only registering a different client permits publishing again. */
+    public fun invalidate(lease: AccountRuntimeLease, clientId: String) {
+        lease.requireHeld(rootPath, userId)
+        require(clientId.isNotBlank())
+        val temporary = "$invalidatedPath.${NSUUID.UUID().UUIDString}.tmp".toPath()
+        try {
+            FileSystem.SYSTEM.write(temporary, mustCreate = true) { writeUtf8(clientId) }
+            FileSystem.SYSTEM.atomicMove(temporary, invalidatedPath)
+            revoke(lease)
+        } finally {
+            unlink(temporary.toString())
+        }
+    }
 
     public fun revoke(lease: AccountRuntimeLease) {
         lease.requireHeld(rootPath, userId)
@@ -76,6 +91,7 @@ public class ApplePreparedAccountStore(private val rootPath: String, private val
     @Suppress("ReturnCount")
     public fun read(lease: AccountRuntimeLease): PreparedAccount? {
         lease.requireHeld(rootPath, userId)
+        if (FileSystem.SYSTEM.exists(invalidatedPath)) return null
         val metadata = FileSystem.SYSTEM.metadataOrNull(path) ?: return null
         if (!metadata.isRegularFile || (metadata.size ?: MAX_READINESS_BYTES) > MAX_READINESS_BYTES) return null
         val encoded = FileSystem.SYSTEM.read(path) { readUtf8() }
@@ -90,6 +106,15 @@ public class ApplePreparedAccountStore(private val rootPath: String, private val
     public fun publish(lease: AccountRuntimeLease, prepared: PreparedAccount) {
         lease.requireHeld(rootPath, userId)
         require(prepared.isCompatible(lease.accountId)) { "Prepared account identity or compatibility mismatch" }
+        if (FileSystem.SYSTEM.exists(invalidatedPath)) {
+            val invalidated = FileSystem.SYSTEM.read(invalidatedPath) { readUtf8() }
+            if (invalidated == prepared.clientId) {
+                // Allow the app scope to resume and consume its queued logout event, but
+                // never republish the removed client's credentials to the extension.
+                revoke(lease)
+                return
+            }
+        }
         val encoded = json.encodeToString(prepared)
         require(encoded.encodeToByteArray().size <= MAX_READINESS_BYTES) { "Prepared account configuration is too large" }
         val temporary = "$rootAccountPath/.$FILE_NAME.${NSUUID.UUID().UUIDString}.tmp".toPath()
@@ -97,6 +122,9 @@ public class ApplePreparedAccountStore(private val rootPath: String, private val
             // Okio checks writes and closes before the final name can become visible.
             FileSystem.SYSTEM.write(temporary, mustCreate = true) { writeUtf8(encoded) }
             FileSystem.SYSTEM.atomicMove(temporary, path)
+            // Publish the replacement first. A failed write must never uncover stale
+            // readiness left behind by an interrupted revocation.
+            FileSystem.SYSTEM.delete(invalidatedPath, mustExist = false)
         } finally {
             // Temporary files are never considered readiness. Preserve the original failure.
             unlink(temporary.toString())
@@ -113,4 +141,6 @@ public class ApplePreparedAccountStore(private val rootPath: String, private val
 @InternalKaliumApi
 public fun appleAccountPath(rootPath: String, userId: UserId): String = "$rootPath/${userId.domain}/${userId.value}"
 
-private const val PREPARED_ACCOUNT_FORMAT = 1
+// Format 2 requires the offline terminal-account consumer before network gathering.
+// Sharing the SQL schema alone does not establish this app capability.
+private const val PREPARED_ACCOUNT_FORMAT = 2
