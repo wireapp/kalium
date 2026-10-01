@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -42,7 +41,6 @@ internal class MLSClientManagerImpl internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val syncStateObserver: SyncStateObserver,
-    private val slowSyncRepository: Lazy<SlowSyncRepository>,
     private val clientRepository: Lazy<ClientRepository>,
     private val registerMLSClient: Lazy<RegisterMLSClientUseCase>,
     private val userCoroutineScope: CoroutineScope,
@@ -64,12 +62,11 @@ internal class MLSClientManagerImpl internal constructor(
                 userCoroutineScope.async {
                     currentClientIdProvider().flatMap { clientId ->
                         kaliumLogger.i("No existing MLS Client, registering..")
+                        // RegisterMLSClientUseCase forces the post-registration slow sync itself, before
+                        // uploading key packages, so that a failed upload cannot leave the client registered
+                        // without a pending sync. Do not clear the completion instant again here.
                         registerMLSClient.value(clientId).onSuccess { mlsClientRegistrationResult ->
                             kaliumLogger.i("Registering mls client result: $mlsClientRegistrationResult")
-                            if (mlsClientRegistrationResult is RegisterMLSClientResult.Success) {
-                                kaliumLogger.i("Triggering slow sync after enabling MLS")
-                                slowSyncRepository.value.clearLastSlowSyncCompletionInstant()
-                            }
                         }
                     }
                 }.await()

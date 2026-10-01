@@ -95,10 +95,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
-                    refreshConversationMetadataIfPendingAfterReset(
+                    refreshConversationMetadataIfNeeded(
                         transactionContext = transactionContext,
                         conversation = conversation,
-                        currentPublicKeys = mlsPublicKeys
+                        currentPublicKeys = mlsPublicKeys,
+                        allowJoinByExternalCommit = allowJoinByExternalCommit
                     ).flatMap { refreshedConversation ->
                         joinOrEstablishMLSGroupAndRetry(
                             transactionContext,
@@ -111,26 +112,38 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             })
         }
 
-    private suspend fun refreshConversationMetadataIfPendingAfterReset(
+    private suspend fun refreshConversationMetadataIfNeeded(
         transactionContext: CryptoTransactionContext,
         conversation: Conversation,
-        currentPublicKeys: MLSPublicKeys?
+        currentPublicKeys: MLSPublicKeys?,
+        allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, RefreshedConversation> {
         val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
             ?: return Either.Right(RefreshedConversation(conversation, currentPublicKeys))
+        // MLS migration can leave local epoch-zero metadata marked as established even
+        // though this client missed the group. Refresh it before choosing establish vs external commit.
+        val requiresAuthoritativeMetadata = protocol.groupState ==
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET ||
+            (
+                allowJoinByExternalCommit &&
+                    protocol.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED &&
+                    protocol.epoch == 0UL
+                )
 
         return when {
-            protocol.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET ->
+            !requiresAuthoritativeMetadata ->
                 Either.Right(RefreshedConversation(conversation, currentPublicKeys))
 
             conversation.type == Conversation.Type.OneOnOne -> {
                 logger.d("Refreshing oneOnOne conversation metadata before rejoining ${conversation.id.toLogString()}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
-                    fetchMLSOneToOneConversation(transactionContext, members.first()).map { refreshedConversation ->
-                        RefreshedConversation(
-                            conversation = refreshedConversation,
-                            publicKeys = refreshedConversation.mlsPublicKeys ?: currentPublicKeys
-                        )
+                    getOtherMember(conversation.id, members).flatMap { otherMember ->
+                        fetchMLSOneToOneConversation(transactionContext, otherMember).map { refreshedConversation ->
+                            RefreshedConversation(
+                                conversation = refreshedConversation,
+                                publicKeys = refreshedConversation.mlsPublicKeys ?: currentPublicKeys
+                            )
+                        }
                     }
                 }
             }
@@ -178,9 +191,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         )
                         // Re-fetch the current epoch and try again
                         if (conversation.type == Conversation.Type.OneOnOne) {
-                            conversationRepository.getConversationMembers(conversation.id).flatMap {
-                                fetchMLSOneToOneConversation(transactionContext, it.first()).map {
-                                    it.mlsPublicKeys
+                            conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
+                                getOtherMember(conversation.id, members).flatMap { otherMember ->
+                                    fetchMLSOneToOneConversation(transactionContext, otherMember).map {
+                                        it.mlsPublicKeys
+                                    }
                                 }
                             }
                         } else {
@@ -318,6 +333,19 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
         }
     }
+
+    private fun getOtherMember(
+        conversationId: ConversationId,
+        members: List<UserId>
+    ): Either<CoreFailure, UserId> = members.singleOrNull { it != selfUserId }
+        ?.let { Either.Right(it) }
+        ?: Either.Left(
+            CoreFailure.Unknown(
+                IllegalStateException(
+                    "Expected exactly one other member in one-on-one conversation ${conversationId.toLogString()}"
+                )
+            )
+        )
 
     private fun Conversation.logData(
         failure: CoreFailure? = null

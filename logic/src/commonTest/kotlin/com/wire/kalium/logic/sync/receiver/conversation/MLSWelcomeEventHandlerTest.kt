@@ -107,7 +107,7 @@ class MLSWelcomeEventHandlerTest {
     @Test
     fun givenProcessingOfWelcomeSucceeds_thenShouldFetchConversationIfUnknown() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success(1, refilled = false))
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -124,7 +124,7 @@ class MLSWelcomeEventHandlerTest {
     @Test
     fun givenProcessingOfWelcomeSucceeds_thenShouldMarkConversationAsEstablished() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success(1, refilled = false))
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -144,7 +144,7 @@ class MLSWelcomeEventHandlerTest {
     @Test
     fun givenProcessingOfWelcomeForOneOnOneSucceeds_thenShouldResolveConversation() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success(1, refilled = false))
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -162,7 +162,7 @@ class MLSWelcomeEventHandlerTest {
     @Test
     fun givenProcessingOfWelcomeForGroupSucceeds_thenShouldNotResolveConversation() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success(1, refilled = false))
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -229,7 +229,7 @@ class MLSWelcomeEventHandlerTest {
     @Test
     fun givenAllSucceeds_whenHandlingEvent_thenShouldAttemptToRefillKeyPackages() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success(1, refilled = false))
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
@@ -294,7 +294,7 @@ class MLSWelcomeEventHandlerTest {
                 )
             )
             withMLSConversationExists(true)
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success(1, refilled = false))
         }
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
@@ -325,7 +325,7 @@ class MLSWelcomeEventHandlerTest {
                 )
             )
             withJoinExistingMLSConversationReturning(Either.Right(Unit))
-            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success(1, refilled = false))
         }
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()

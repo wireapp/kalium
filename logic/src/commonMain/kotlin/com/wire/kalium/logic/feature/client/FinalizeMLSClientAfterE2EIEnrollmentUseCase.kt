@@ -21,14 +21,12 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.left
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
 
 /**
- * Registers the MLS client after E2EI enrollment and unblocks client registration before forcing slow sync to run again.
+ * Registers the MLS client after E2EI enrollment and unblocks client registration.
+ * The post-registration slow sync is forced by [RegisterMLSClientUseCase] itself.
  */
 public interface FinalizeMLSClientAfterE2EIEnrollmentUseCase {
     public suspend fun invoke()
@@ -38,7 +36,6 @@ internal class FinalizeMLSClientAfterE2EIEnrollmentUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val registerMLSClient: RegisterMLSClientUseCase,
-    private val slowSyncRepository: SlowSyncRepository
 ) : FinalizeMLSClientAfterE2EIEnrollmentUseCase {
     override suspend fun invoke() {
         currentClientIdProvider()
@@ -50,10 +47,8 @@ internal class FinalizeMLSClientAfterE2EIEnrollmentUseCaseImpl(
                         CoreFailure.Unknown(IllegalStateException("E2EI certificate is still required after enrollment")).left()
                 }
             }.flatMap {
+            // RegisterMLSClientUseCase already forced the post-registration slow sync.
             clientRepository.clearClientRegistrationBlockedByE2EI()
-        }.map {
-            kaliumLogger.i("Clearing last slow sync completion instant after finalizing MLS client enrollment")
-            slowSyncRepository.clearLastSlowSyncCompletionInstant()
         }
     }
 }

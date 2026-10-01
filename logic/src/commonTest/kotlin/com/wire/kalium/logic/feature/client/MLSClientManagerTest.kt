@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
@@ -93,29 +92,6 @@ class MLSClientManagerTest {
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.registerMLSClient.invoke(any())
             }
-
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
-            }
-        }
-
-    @Test
-    fun givenE2EIIsRequired_whenObservingSyncFinishes_thenSlowSyncIsNotCleared() =
-        testScope.runTest {
-            val (arrangement, mlsClientManager) = Arrangement()
-                .withIsAllowedToRegisterMLSClient(true)
-                .withHasRegisteredMLSClient(Either.Right(false))
-                .withCurrentClientId(Either.Right(TestClient.CLIENT_ID))
-                .withRegisterMLSClientE2EIRequired()
-                .withSyncStates(Unit.right())
-                .arrange(testScope)
-
-            mlsClientManager.invoke()
-            advanceUntilIdle()
-
-            verifySuspend(VerifyMode.not) {
-                arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
-            }
         }
 
     @Test
@@ -154,7 +130,6 @@ class MLSClientManagerTest {
     private class Arrangement {
 
         val syncStateObserver: SyncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
-        var slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
         var clientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
         val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
         val isAllowedToRegisterMLSClient = mock<IsAllowedToRegisterMLSClientUseCase>(mode = MockMode.autoUnit)
@@ -178,12 +153,6 @@ class MLSClientManagerTest {
             } returns Either.Right(RegisterMLSClientResult.Success)
         }
 
-        suspend fun withRegisterMLSClientE2EIRequired() = apply {
-            everySuspend {
-                registerMLSClient.invoke(any())
-            } returns Either.Right(RegisterMLSClientResult.E2EICertificateRequired)
-        }
-
         suspend fun withIsAllowedToRegisterMLSClient(enabled: Boolean) = apply {
             everySuspend {
                 isAllowedToRegisterMLSClient()
@@ -195,18 +164,14 @@ class MLSClientManagerTest {
             } returns result
         }
 
-        fun arrange(testScope: TestScope) = apply {
-            everySuspend { slowSyncRepository.clearLastSlowSyncCompletionInstant() } returns Unit
-        }.let {
+        fun arrange(testScope: TestScope) =
             this to MLSClientManagerImpl(
                 clientIdProvider,
                 isAllowedToRegisterMLSClient,
                 syncStateObserver,
-                lazy { slowSyncRepository },
                 lazy { clientRepository },
                 lazy { registerMLSClient },
                 testScope
             )
-        }
     }
 }

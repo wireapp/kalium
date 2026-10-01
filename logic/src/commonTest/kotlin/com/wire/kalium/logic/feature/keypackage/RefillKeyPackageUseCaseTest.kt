@@ -19,12 +19,14 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.keypackage.MLSMembershipAuditRepository
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
@@ -70,6 +72,8 @@ class RefillKeyPackageUseCaseTest {
         }
 
         assertIs<RefillKeyPackagesResult.Success>(actual)
+        assertEquals(keyPackageCount, actual.availableCountBeforeRefill)
+        assertEquals(true, actual.refilled)
     }
 
     @Test
@@ -86,6 +90,69 @@ class RefillKeyPackageUseCaseTest {
         val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
 
         assertIs<RefillKeyPackagesResult.Success>(actual)
+        assertEquals(keyPackageCount, actual.availableCountBeforeRefill)
+        assertEquals(false, actual.refilled)
+    }
+
+    @Test
+    fun givenNoAvailableKeyPackages_whenRefilling_thenAuditIsMarkedRequiredBeforeUpload() = runTest {
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT)
+            .withKeyPackageCount(0)
+            .withAuditMarkedRequired()
+            .withUploadKeyPackagesSuccessful()
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsMembershipAuditRepository.markAuditRequired()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), any(), any())
+        }
+        assertEquals(RefillKeyPackagesResult.Success(0, refilled = true), actual)
+    }
+
+    @Test
+    fun givenNoAvailableKeyPackagesAndAuditCannotBePersisted_whenRefilling_thenUploadIsNotAttempted() = runTest {
+        val storageFailure = StorageFailure.Generic(IllegalStateException("storage failure"))
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT)
+            .withKeyPackageCount(0)
+            .withAuditMarkingFailed(storageFailure)
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), any(), any())
+        }
+        assertEquals(RefillKeyPackagesResult.Failure(storageFailure), actual)
+    }
+
+    @Test
+    fun givenNoAvailableKeyPackagesAndUploadFails_whenRefilling_thenAuditMarkerIsNotCleared() = runTest {
+        val networkFailure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT)
+            .withKeyPackageCount(0)
+            .withAuditMarkedRequired()
+            .withUploadKeyPackagesFailed(networkFailure)
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsMembershipAuditRepository.clearAuditRequired()
+        }
+        assertEquals(RefillKeyPackagesResult.Failure(networkFailure), actual)
     }
 
     @Test
@@ -109,6 +176,7 @@ class RefillKeyPackageUseCaseTest {
         val keyPackageRepository: KeyPackageRepository = mock()
         val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock()
         val currentClientIdProvider: CurrentClientIdProvider = mock()
+        val mlsMembershipAuditRepository: MLSMembershipAuditRepository = mock()
 
         private var refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository,
@@ -116,6 +184,7 @@ class RefillKeyPackageUseCaseTest {
             currentClientIdProvider,
             TestUser.SELF.id,
             NoOpCryptoStateChangeHookNotifier,
+            mlsMembershipAuditRepository,
         )
 
         fun withDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
@@ -149,6 +218,24 @@ class RefillKeyPackageUseCaseTest {
             everySuspend {
                 keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), any())
             } returns Either.Right(Unit)
+        }
+
+        suspend fun withUploadKeyPackagesFailed(failure: NetworkFailure) = apply {
+            everySuspend {
+                keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), any())
+            } returns Either.Left(failure)
+        }
+
+        suspend fun withAuditMarkedRequired() = apply {
+            everySuspend {
+                mlsMembershipAuditRepository.markAuditRequired()
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withAuditMarkingFailed(failure: StorageFailure) = apply {
+            everySuspend {
+                mlsMembershipAuditRepository.markAuditRequired()
+            } returns Either.Left(failure)
         }
 
         suspend fun withGetAvailableKeyPackagesFailing(failure: NetworkFailure) = apply {

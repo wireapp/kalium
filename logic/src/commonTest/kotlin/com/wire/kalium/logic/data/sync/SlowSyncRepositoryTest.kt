@@ -62,6 +62,29 @@ class SlowSyncRepositoryTest {
     }
 
     @Test
+    fun givenLastInstantWasNeverSet_whenGettingLastInstantOneShot_thenItIsNull() = runTest(testDispatcher) {
+        assertNull(slowSyncRepository.getLastSlowSyncCompletionInstant())
+    }
+
+    @Test
+    fun givenInstantIsUpdated_whenGettingLastInstantOneShot_thenShouldReturnTheNewState() = runTest(testDispatcher) {
+        val instant = DateTimeUtil.currentInstant()
+
+        slowSyncRepository.setLastSlowSyncCompletionInstant(instant)
+
+        assertEquals(instant, slowSyncRepository.getLastSlowSyncCompletionInstant())
+    }
+
+    @Test
+    fun givenInstantIsCleared_whenGettingLastInstantOneShot_thenItIsNullAgain() = runTest(testDispatcher) {
+        slowSyncRepository.setLastSlowSyncCompletionInstant(DateTimeUtil.currentInstant())
+
+        slowSyncRepository.clearLastSlowSyncCompletionInstant()
+
+        assertNull(slowSyncRepository.getLastSlowSyncCompletionInstant())
+    }
+
+    @Test
     fun givenVersionIsUpdated_whenGettingTheLastSlowSyncVersion_thenShouldReturnTheNewState() = runTest(testDispatcher) {
         val version = 2
 

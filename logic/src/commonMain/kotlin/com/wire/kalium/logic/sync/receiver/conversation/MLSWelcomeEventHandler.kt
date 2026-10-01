@@ -158,7 +158,7 @@ internal class MLSWelcomeEventHandlerImpl(
                             false
                         }
 
-                        RefillKeyPackagesResult.Success -> {
+                        is RefillKeyPackagesResult.Success -> {
                             true
                         }
                     }
