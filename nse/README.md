@@ -230,3 +230,13 @@ cover SQL/native/marker gaps, ownership, cancellation, failed writes and ordered
 replay. X.509 scenarios use the local fixture server. Separate native artifact
 probes document limitations; a passing simulator or extension-mode link is not
 proof of signed-device or AVS extension safety.
+
+## Durable subgroup proposals
+
+The app proposal scheduler now persists subgroup deadlines in account Metadata,
+observes them when sync is LIVE, and uses its existing native transaction and MLS
+transport. Successful outer native commit precedes conditional acknowledgement.
+Recoverable failures retry while that owner is active; cancellation retains work
+for the next owner. A newly scheduled record cannot be erased by an old ACK.
+This does not restore missing subgroup mappings/native groups or enable an NSE
+subgroup consumer; background subgroup support remains separate.

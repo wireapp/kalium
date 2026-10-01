@@ -18,35 +18,42 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.distinct
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.message.PendingSubconversationProposal
+import com.wire.kalium.logic.data.message.PendingSubconversationProposals
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.common.functional.distinct
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationNotFound
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
-import kotlin.time.Instant
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Schedule pending MLS proposals in a conversation to be committed at a given
@@ -68,11 +75,13 @@ internal interface PendingProposalScheduler {
 
 }
 
+@Suppress("LongParameterList") // Reuses the account owner and its durable proposal store.
 internal class PendingProposalSchedulerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val mlsConversationRepository: Lazy<MLSConversationRepository>,
     private val subconversationRepository: Lazy<SubconversationRepository>,
     private val transactionProvider: CryptoTransactionProvider,
+    private val subgroupProposals: PendingSubconversationProposals,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     parentContext: CoroutineContext = SupervisorJob(),
 ) : PendingProposalScheduler {
@@ -95,41 +104,74 @@ internal class PendingProposalSchedulerImpl(
         }
     }
 
-    private suspend fun startCommittingPendingProposals() {
+    private suspend fun startCommittingPendingProposals() = kotlinx.coroutines.coroutineScope {
         kaliumLogger.d("Start listening for pending proposals to commit")
-        timers().cancellable().collect { groupID ->
-            kaliumLogger.d("Committing pending proposals in ${groupID.toLogString()}")
-            transactionProvider.transaction("PendingProposalScheduler") { transactionContext ->
-                transactionContext.wrapInMLSContext { mlsContext ->
-                    mlsConversationRepository.value.commitPendingProposals(mlsContext, groupID)
-                }
-            }
-                .onFailure {
-                    kaliumLogger.e("Failed to commit pending proposals in ${groupID.toLogString()}: $it")
-                    if (it.isUnrecoverableProposalFailure()) {
-                        kaliumLogger.w(
-                            "Clearing stale proposal timer for ${groupID.toLogString()} due to unrecoverable failure"
-                        )
-                        mlsConversationRepository.value.clearProposalTimer(groupID)
-                    }
-                }
+        timers().cancellable().collect { scheduled ->
+            if (scheduled.subgroup == null) consumeScheduled(scheduled)
+            else launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { consumeScheduled(scheduled) }
         }
     }
 
+    @Suppress("CyclomaticComplexMethod", "NestedBlockDepth", "LoopWithTooManyJumpStatements", "TooGenericExceptionCaught")
+    // Keep retry, native commit and conditional ACK in one cancellation-aware loop.
+    private suspend fun consumeScheduled(scheduled: ScheduledProposal) {
+        val record = scheduled.subgroup
+        while (true) {
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            try {
+                if (record != null && !subgroupProposals.isCurrent(record)) break
+                val result = transactionProvider.transaction("PendingProposalScheduler") { transactionContext ->
+                    // Recheck after waiting for the account's native transaction owner.
+                    if (record != null && !subgroupProposals.isCurrent(record)) return@transaction Either.Right(Unit)
+                    transactionContext.wrapInMLSContext { mlsContext ->
+                        mlsConversationRepository.value.commitPendingProposals(mlsContext, scheduled.timer.groupID)
+                    }
+                }
+                if (result is Either.Right) {
+                    // This callback is outside the native transaction: commit succeeded.
+                    record?.let { subgroupProposals.acknowledge(it) }
+                    break
+                }
+                val failure = (result as Either.Left).value
+                if (failure.isUnrecoverableProposalFailure()) {
+                    if (record != null) subgroupProposals.acknowledge(record)
+                    else mlsConversationRepository.value.clearProposalTimer(scheduled.timer.groupID)
+                    break
+                }
+                if (record == null) break // Preserve the parent conversation scheduler policy.
+                kaliumLogger.w("MLS_SUBGROUP_PROPOSAL stage=retry")
+                delay(5.seconds)
+            } catch (failure: Exception) {
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                if (record == null) throw failure
+                // SQL/transport exceptions retain the record and do not kill its consumer.
+                kaliumLogger.w("MLS_SUBGROUP_PROPOSAL stage=retry")
+                delay(5.seconds)
+            }
+        }
+    }
+
+    private data class ScheduledProposal(val timer: ProposalTimer, val subgroup: PendingSubconversationProposal? = null)
+
     private suspend fun timers() = channelFlow {
-        mlsConversationRepository.value.observeProposalTimers()
+        merge(
+            mlsConversationRepository.value.observeProposalTimers().map { ScheduledProposal(it) },
+            subgroupProposals.observe().flatMapConcat { records -> records.asFlow() }
+                .map { ScheduledProposal(ProposalTimer(it.group, it.deadline), it) },
+        )
             .distinct()
             .cancellable()
-            .collect { timer ->
+            .collect { scheduled ->
+                val timer = scheduled.timer
                 ensureActive()
                 launch {
                     val secondsUntilFiring = timer.timestamp.minus(DateTimeUtil.currentInstant())
                     if (secondsUntilFiring.inWholeSeconds > 0) {
                         delay(secondsUntilFiring)
                         ensureActive()
-                        send(timer.groupID)
+                        send(scheduled)
                     } else {
-                        send(timer.groupID)
+                        send(scheduled)
                     }
                 }
             }
@@ -137,10 +179,12 @@ internal class PendingProposalSchedulerImpl(
 
     override suspend fun scheduleCommit(groupID: GroupID, date: Instant) {
         kaliumLogger.d("Scheduling to commit pending proposals in ${groupID.toLogString()} at $date")
-        mlsConversationRepository.value.setProposalTimer(
-            ProposalTimer(groupID, date),
-            inMemory = subconversationRepository.value.containsSubconversation(groupID)
-        )
+        if (subconversationRepository.value.containsSubconversation(groupID)) {
+            subgroupProposals.schedule(groupID, date)
+            kaliumLogger.d("MLS_SUBGROUP_PROPOSAL stage=persisted")
+        } else {
+            mlsConversationRepository.value.setProposalTimer(ProposalTimer(groupID, date), inMemory = false)
+        }
     }
 
 }

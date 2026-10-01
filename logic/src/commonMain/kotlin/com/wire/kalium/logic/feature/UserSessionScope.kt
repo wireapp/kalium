@@ -1789,6 +1789,7 @@ public class UserSessionScope internal constructor(
             lazy { mlsConversationRepository },
             lazy { subconversationRepository },
             cryptoTransactionProvider,
+            com.wire.kalium.logic.data.message.PendingSubconversationProposalsImpl(userStorage.database.metadataDAO),
             parentContext = coroutineContext,
         )
 
