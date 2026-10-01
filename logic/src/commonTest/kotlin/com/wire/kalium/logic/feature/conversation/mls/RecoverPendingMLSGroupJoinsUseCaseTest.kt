@@ -18,6 +18,9 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -80,7 +83,48 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
         useCase()
 
-        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) }
+        verifySuspend(VerifyMode.not) {
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any())
+            arrangement.conversationRepository.setConversationDeletedLocally(any(), any())
+        }
+    }
+
+    @Test
+    fun givenLegacyRecoveryFailsWithBackendConflict_whenInvoked_thenAcknowledgesPendingConversation() = runTest {
+        val pendingConversationIds = listOf(TestConversation.ID)
+        val failure = MLSFailure.FederatedBackendConflict(listOf("backend-a.example", "backend-b.example"))
+        val (arrangement, useCase) = Arrangement()
+            .withSyncWaitResult(Either.Right(Unit))
+            .withPendingConversationIds(pendingConversationIds)
+            .withJoinResult(Either.Left(failure))
+            .withMarkingConversationDeletedLocallySucceeding()
+            .arrange()
+
+        useCase()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(eq(pendingConversationIds))
+        }
+    }
+
+    @Test
+    fun givenDirectConflictAndDeletionFails_whenInvoked_thenStopsPendingRecovery() = runTest {
+        val pendingConversationIds = listOf(TestConversation.ID)
+        val failure = NetworkFailure.FederatedBackendFailure.ConflictingBackends(listOf("backend-a.example", "backend-b.example"))
+        val (arrangement, useCase) = Arrangement()
+            .withSyncWaitResult(Either.Right(Unit))
+            .withPendingConversationIds(pendingConversationIds)
+            .withJoinResult(Either.Left(failure))
+            .withMarkingConversationDeletedLocallyFailing()
+            .arrange()
+
+        useCase()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.setConversationDeletedLocally(TestConversation.ID, true)
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(eq(pendingConversationIds))
+        }
     }
 
     @Test
@@ -165,6 +209,18 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         suspend fun withConversationPendingCreation() = withConversationGroupState(
             Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION
         )
+
+        suspend fun withMarkingConversationDeletedLocallySucceeding() = apply {
+            everySuspend {
+                conversationRepository.setConversationDeletedLocally(any(), eq(true))
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withMarkingConversationDeletedLocallyFailing() = apply {
+            everySuspend {
+                conversationRepository.setConversationDeletedLocally(any(), eq(true))
+            } returns Either.Left(StorageFailure.DataNotFound)
+        }
 
         private suspend fun withConversationGroupState(groupState: Conversation.ProtocolInfo.MLSCapable.GroupState) = apply {
             val conversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO.copy(groupState = groupState))

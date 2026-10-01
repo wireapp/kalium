@@ -29,6 +29,11 @@ internal sealed interface MLSTransportFailure {
     ) : MLSTransportFailure
 
     @Serializable
+    data class FederatedBackendConflict(
+        @SerialName("domains") val domains: List<String>
+    ) : MLSTransportFailure
+
+    @Serializable
     data class Other(
         @SerialName("message") val message: String
     ) : MLSTransportFailure
@@ -38,6 +43,7 @@ object MLSTransportFailureSerialization {
     fun parseString(string: String): MLSFailure {
         return when (val failure = KtxSerializer.json.decodeFromString<MLSTransportFailure>(string)) {
             is MLSTransportFailure.MessageRejected -> MLSFailure.MessageRejected(failure.reason)
+            is MLSTransportFailure.FederatedBackendConflict -> MLSFailure.FederatedBackendConflict(failure.domains)
             is MLSTransportFailure.Other -> MLSFailure.Other(failure.message)
         }
     }
@@ -46,6 +52,10 @@ object MLSTransportFailureSerialization {
         val transportFailure = when (val failure = failure.wrapNetworkMlsFailureIfApplicable()) {
             is MLSFailure.MessageRejected -> {
                 MLSTransportFailure.MessageRejected(failure.cause)
+            }
+
+            is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
+                MLSTransportFailure.FederatedBackendConflict(failure.domains)
             }
 
             else -> MLSTransportFailure.Other(failure.toString())

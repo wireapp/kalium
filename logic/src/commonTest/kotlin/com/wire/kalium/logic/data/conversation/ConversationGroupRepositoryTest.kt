@@ -552,6 +552,35 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
+    fun givenMLSGroupEstablishFailsWithBackendConflict_whenCreatingConversation_thenReturnsTerminalFailure() = runTest {
+        val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
+        val domains = listOf("backend-a.example", "backend-b.example")
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(conversationResponse, emptyMap(), 201)))
+            .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
+            .withInsertConversationSuccess()
+            .withMlsConversationEstablishFailure(MLSFailure.FederatedBackendConflict(domains))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withConversationAppsAccessIfEnabled()
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversationWithPendingResult(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID),
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
+        )
+
+        val failure = assertIs<CreateGroupConversationResult.Failure>(result)
+        assertEquals(NetworkFailure.FederatedBackendFailure.ConflictingBackends(domains), failure.cause)
+        assertEquals(conversationResponse.id.toModel(), failure.conversationId)
+        verifySuspend(VerifyMode.not) {
+            arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(any())
+        }
+    }
+
+    @Test
     fun givenMLSProtocolIsUsedAndSomeUsersHaveNoKeyPackages_whenCallingCreateGroupConversation_thenMissingKeyPackagesSystemMessageIsPersisted() =
         runTest {
             val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)

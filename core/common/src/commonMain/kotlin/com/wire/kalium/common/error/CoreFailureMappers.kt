@@ -55,12 +55,6 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
                             Either.Left(NetworkFailure.FederatedBackendFailure.ConflictingBackends(errorResponse.nonFederatingBackends))
                         }
 
-                        is FederationErrorResponse.ConflictWithMissingUsers -> {
-                            Either.Left(
-                                NetworkFailure.FederatedBackendFailure.ConflictingBackendsWithMissingUsers(errorResponse.missingUsers)
-                            )
-                        }
-
                         is FederationErrorResponse.Unreachable -> {
                             Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(errorResponse.unreachableBackends))
                         }

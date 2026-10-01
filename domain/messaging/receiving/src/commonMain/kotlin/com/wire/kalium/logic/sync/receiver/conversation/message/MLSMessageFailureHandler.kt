@@ -84,7 +84,7 @@ object MLSMessageFailureHandler {
             is CoreFailure.MissingKeyPackages,
             NetworkFailure.FeatureNotSupported,
             is NetworkFailure.FederatedBackendFailure.ConflictingBackends,
-            is NetworkFailure.FederatedBackendFailure.ConflictingBackendsWithMissingUsers,
+            is MLSFailure.FederatedBackendConflict,
             is NetworkFailure.FederatedBackendFailure.FailedDomains,
             is NetworkFailure.FederatedBackendFailure.FederationDenied,
             is NetworkFailure.FederatedBackendFailure.FederationNotEnabled,

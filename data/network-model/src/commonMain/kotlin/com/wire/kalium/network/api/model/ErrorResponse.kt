@@ -56,11 +56,6 @@ sealed interface FederationErrorResponse : APIErrorResponseBody {
     ) : FederationErrorResponse
 
     @Serializable
-    data class ConflictWithMissingUsers(
-        @SerialName("missing_users") val missingUsers: List<QualifiedID>
-    ) : FederationErrorResponse
-
-    @Serializable
     data class Unreachable(
         @SerialName("unreachable_backends") val unreachableBackends: List<String> = emptyList()
     ) : FederationErrorResponse
