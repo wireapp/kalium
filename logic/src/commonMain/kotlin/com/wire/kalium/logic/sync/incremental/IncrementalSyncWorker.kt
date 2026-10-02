@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
@@ -27,7 +30,10 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.NonCancellable
@@ -58,9 +64,57 @@ internal class IncrementalSyncWorkerImpl(
     private val eventRepository: EventRepository,
     logger: KaliumLogger = kaliumLogger,
     private val consumePendingAccountInvalidation: suspend () -> Boolean = { false },
+    private val recordMLSReceipts: (suspend (CryptoTransactionContext, List<EventEnvelope>) -> Unit)? = null,
+    private val werePayloadEffectsProcessed: (suspend (CryptoTransactionContext, EventEnvelope) -> Boolean)? = null,
+    private val acknowledgeMLSRecovery: (suspend (List<String>) -> Unit)? = null,
 ) : IncrementalSyncWorker {
 
     private val logger = logger.withFeatureId(SYNC)
+
+    private suspend fun processEnvelope(
+        context: CryptoTransactionContext,
+        envelope: EventEnvelope,
+    ): Either<CoreFailure, String?> {
+        val effectsProcessed = context is DurableMLSReceiveContext && werePayloadEffectsProcessed != null &&
+            !eventProcessor.disableEventProcessing && envelope.event is Event.Conversation &&
+            werePayloadEffectsProcessed.invoke(context, envelope)
+        // Conversation replay can overwrite canonical state restored by a later recovery.
+        // Other event families retain normal replay: e.g. connections schedule resolution after Live,
+        // and a receipt cannot prove that another scope completed that work before a restart.
+        if (effectsProcessed && envelope.event !is Event.Conversation.NewMessage) return Either.Right(envelope.event.id)
+        // SQL effects are committed, but an outer Proteus rollback still requires native decryption.
+        val eventContext = if (effectsProcessed) DurableMLSReceiveContext(context, effectsAlreadyPersisted = true) else context
+        return eventProcessor.processEvent(eventContext, envelope)
+    }
+
+    private fun queueEventId(context: CryptoTransactionContext, envelope: EventEnvelope, handledId: String): String =
+        if (context is DurableMLSReceiveContext) envelope.payloadIdentity?.eventId ?: handledId else handledId
+
+    private suspend fun processBatch(
+        context: CryptoTransactionContext,
+        envelopes: List<EventEnvelope>,
+        processed: MutableList<EventEnvelope>,
+    ): Either<CoreFailure, MutableList<String>> = if (context is DurableMLSReceiveContext) {
+        envelopes.foldToEitherWhileRight(mutableListOf<String>()) { envelope, acc ->
+            processEnvelope(context, envelope).map { eventId ->
+                if (eventId != null) {
+                    processed += envelope
+                    acc += queueEventId(context, envelope, eventId)
+                }
+                acc
+            }
+        }
+    } else {
+        // Preserve the legacy receive path: process the entire batch before collecting failures.
+        // Durable Apple recovery must stop at the first failure.
+        envelopes.map { envelope -> eventProcessor.processEvent(context, envelope) }
+            .foldToEitherWhileRight(mutableListOf<String>()) { eventEither, acc ->
+                eventEither.map { eventId ->
+                    eventId?.let(acc::add)
+                    acc
+                }
+            }
+    }
 
     override suspend fun processEventsFlow(): Flow<EventSource> = channelFlow {
         // We start as PENDING
@@ -81,17 +135,18 @@ internal class IncrementalSyncWorkerImpl(
                 withContext(NonCancellable) {
                     val envelopes = streamData.eventList
                     kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
-                    transactionProvider.transaction("processEvents") { context ->
+                    transactionProvider.transaction("processEvents") { transactionContext ->
+                        val context = if (recordMLSReceipts != null && acknowledgeMLSRecovery != null) {
+                            DurableMLSReceiveContext(transactionContext)
+                        } else transactionContext
+                        val processed = mutableListOf<EventEnvelope>()
                         databaseBuilder.dbInvalidationController.runMuted {
-                            envelopes.map { envelope -> eventProcessor.processEvent(context, envelope) }
-                                .foldToEitherWhileRight(mutableListOf<String>()) { eventEither, acc ->
-                                    eventEither.map { eventId ->
-                                        eventId?.let(acc::add)
-                                        acc
-                                    }
-                                }
+                            processBatch(context, envelopes, processed)
                                 .flatMap { eventIds ->
-                                    eventProcessor.flushPendingSideEffects().map { eventIds }
+                                    eventProcessor.flushPendingSideEffects().map {
+                                        recordMLSReceipts?.invoke(context, processed)
+                                        eventIds
+                                    }
                                 }
                                 .onFailure { throw KaliumSyncException("Processing failed", it) }
                         }
@@ -102,10 +157,14 @@ internal class IncrementalSyncWorkerImpl(
                                 return@onSuccess
                             }
 
-                            eventRepository.setEventsAsProcessed(eventIds)
-                                .onSuccess {
-                                    logger.i("${eventIds.size} events set as processed")
-                                }
+                            if (acknowledgeMLSRecovery != null) {
+                                // The Apple store atomically marks rows and retires recovery receipts.
+                                acknowledgeMLSRecovery.invoke(eventIds)
+                                logger.i("${eventIds.size} events set as processed")
+                            } else {
+                                eventRepository.setEventsAsProcessed(eventIds)
+                                    .onSuccess { logger.i("${eventIds.size} events set as processed") }
+                            }
                         }
                         .onFailure {
                             throw KaliumSyncException("Processing failed", it)

@@ -624,11 +624,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
+import com.wire.kalium.logic.sync.receiving.MLSReceiveRecovery
+import com.wire.kalium.logic.sync.receiving.MLSReceiveRecoveryStore
+import com.wire.kalium.logic.sync.receiver.conversation.message.AppMLSReceiveRecovery
+import com.wire.kalium.logic.sync.receiver.conversation.message.recoveryOrThrow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withTimeout
 import okio.Path.Companion.toPath
 
-@Suppress("LongParameterList", "LargeClass")
+@Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 public class UserSessionScope internal constructor(
     userAgent: String,
     internal val userId: UserId,
@@ -647,6 +652,7 @@ public class UserSessionScope internal constructor(
     private val platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
+    private val enableDurableMLSReceiveRecovery: Boolean = false,
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
@@ -674,6 +680,7 @@ public class UserSessionScope internal constructor(
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
         override fun invoke() {
             _clientId = null
+            appMLSReceiveRecovery = null
         }
     }
 
@@ -1614,7 +1621,39 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    private val incrementalSyncWorker: IncrementalSyncWorker by lazy {
+    private var appMLSReceiveRecovery: AppMLSReceiveRecovery? = null
+    private val receiveRecoveryMutex = Mutex()
+
+    // Apple constructs this scope only while holding the account lease. One cached coordinator
+    // shares its operation index across handlers and batches for this registered client.
+    private suspend fun receiveRecovery(): AppMLSReceiveRecovery? {
+        if (!enableDurableMLSReceiveRecovery) return null
+        return receiveRecoveryMutex.withLock {
+            appMLSReceiveRecovery ?: AppMLSReceiveRecovery(
+                recovery = MLSReceiveRecovery(
+                    MLSReceiveRecoveryStore(
+                        userStorage.database.metadataDAO,
+                        userStorage.database.notificationEventStore,
+                        clientId().recoveryOrThrow().value,
+                    ),
+                    authenticatedNetworkContainer.conversationApi,
+                    userId,
+                ) { context, groupId, groupInfo ->
+                    check(context.joinByExternalCommit(groupInfo) == groupId) { "External join changed the MLS group" }
+                    context.conversationEpoch(groupId)
+                },
+                conversations = conversationRepository,
+                mlsConversations = mlsConversationRepository,
+                persistMessage = persistMessage,
+                selfUserId = userId,
+                selfTeamId = selfTeamId,
+            ).also { appMLSReceiveRecovery = it }
+        }
+    }
+
+    private val incrementalSyncWorker: IncrementalSyncWorker by lazy { createIncrementalSyncWorker() }
+
+    internal fun createIncrementalSyncWorker(eventGatherer: EventGatherer = this.eventGatherer): IncrementalSyncWorker =
         IncrementalSyncWorkerImpl(
             eventGatherer,
             eventProcessor,
@@ -1637,8 +1676,17 @@ public class UserSessionScope internal constructor(
                 }
                 pending != null
             },
+            recordMLSReceipts = if (enableDurableMLSReceiveRecovery) {
+                { context, events -> receiveRecovery()?.recordProcessed(context, events) }
+            } else null,
+            werePayloadEffectsProcessed = if (enableDurableMLSReceiveRecovery) {
+                { context, envelope -> receiveRecovery()?.wereEffectsProcessed(context, envelope) == true }
+            } else null,
+            acknowledgeMLSRecovery = if (enableDurableMLSReceiveRecovery) {
+                { eventIds -> receiveRecovery()?.acknowledge(eventIds) }
+            } else null,
         )
-    }
+
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
         get() = IncrementalSyncRecoveryHandlerImpl(
             restartSlowSyncProcessForRecoveryUseCase,
@@ -1691,7 +1739,7 @@ public class UserSessionScope internal constructor(
             apiMigrations
         )
 
-    private val eventRepository: EventRepository = EventDataSource(
+    internal val eventRepository: EventRepository = EventDataSource(
         notificationApi = authenticatedNetworkContainer.notificationApi,
         metadataDAO = userStorage.database.metadataDAO,
         eventDAO = userStorage.database.eventDAO,
@@ -2024,6 +2072,9 @@ public class UserSessionScope internal constructor(
             userId,
             staleEpochVerifier,
             resetMlsConversation,
+            receiveRecovery = if (enableDurableMLSReceiveRecovery) {
+                { context, event, wrongEpoch -> receiveRecovery()?.handle(context, event, wrongEpoch) == true }
+            } else null,
         )
 
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator

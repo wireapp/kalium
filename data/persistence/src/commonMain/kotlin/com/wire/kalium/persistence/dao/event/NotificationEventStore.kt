@@ -48,6 +48,25 @@ class NotificationEventStore internal constructor(
         }.awaitAsList()
     }
 
+    /** Scan past deferred rows without acknowledging them or moving the fetch cursor. */
+    suspend fun nextPendingAfter(afterId: Long): EventEntity? = withContext(readDispatcher.value) {
+        database.eventsQueries.selectUnprocessedEventAfter(afterId) { id, eventId, processed, payload, transient, live ->
+            EventEntity(id, eventId, processed != 0L, payload, transient, live != 0L)
+        }.awaitAsOneOrNull()
+    }
+
+    suspend fun deferredUntil(eventId: String): Long? = withContext(readDispatcher.value) {
+        database.metadataQueries.selectValueByKey(DEFERRED_PREFIX + eventId).awaitAsOneOrNull()?.toLong()
+    }
+
+    /** A scheduling hint only. The original event remains the source of truth. */
+    suspend fun defer(eventId: String, untilEpochMillis: Long) = withContext(writeDispatcher.value) {
+        database.transaction {
+            check(database.eventsQueries.getById(eventId).awaitAsOneOrNull() != null)
+            database.metadataQueries.insertValue(DEFERRED_PREFIX + eventId, untilEpochMillis.toString())
+        }
+    }
+
     /** Acknowledge received events and retire their operation records in the same SQL commit. */
     suspend fun markProcessed(
         eventIds: List<String>,
@@ -62,7 +81,10 @@ class NotificationEventStore internal constructor(
                     "Cannot retire an operation without its event"
                 }
             }
-            eventIds.forEach { database.eventsQueries.markEventAsProcessed(it) }
+            eventIds.forEach {
+                database.eventsQueries.markEventAsProcessed(it)
+                database.metadataQueries.deleteValue(DEFERRED_PREFIX + it)
+            }
             metadataKeysByEvent.values.flatten().distinct().forEach { database.metadataQueries.deleteValue(it) }
         }
     }
@@ -87,6 +109,7 @@ class NotificationEventStore internal constructor(
 
     companion object {
         private const val MAX_PENDING_PAGE_SIZE = 1000L
+        private const val DEFERRED_PREFIX = "nse-deferred-v1:"
 
         // Existing app key: this is the fetched/stored cursor despite its historical name.
         const val FETCH_CURSOR_KEY = "last_processed_event_id"

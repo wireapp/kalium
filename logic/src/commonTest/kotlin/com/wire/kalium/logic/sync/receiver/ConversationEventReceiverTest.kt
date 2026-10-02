@@ -38,6 +38,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
@@ -96,6 +97,18 @@ class ConversationEventReceiverTest {
         }
 
         result.shouldSucceed()
+    }
+
+    @Test
+    fun givenNewMLSMessageHandlerFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
+        val event = TestEvent.newMLSMessageEvent(Instant.DISTANT_FUTURE)
+        val (arrangement, receiver) = Arrangement().arrange {
+            everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), eq(event), any()) } returns Either.Left(failure)
+        }
+
+        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+        receiver.onEvent(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
+            .shouldFail { assertEquals(failure, it) }
     }
 
     @Test
@@ -215,6 +228,18 @@ class ConversationEventReceiverTest {
             arrangement.mlsWelcomeEventHandler.handle(any(), eq(mlsWelcomeEvent))
         }
         result.shouldSucceed()
+    }
+
+    @Test
+    fun givenMLSWelcomeHandlerFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
+        val event = TestEvent.newMLSWelcomeEvent()
+        val (arrangement, receiver) = Arrangement().arrange {
+            everySuspend { mlsWelcomeEventHandler.handle(any(), eq(event)) } returns Either.Left(failure)
+        }
+
+        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+        receiver.onEvent(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
+            .shouldFail { assertEquals(failure, it) }
     }
 
     @Test
@@ -554,7 +579,7 @@ class ConversationEventReceiverTest {
 
         private suspend fun withDefaultSuccessfulHandlers() {
             everySuspend { newMessageEventHandler.handleNewProteusMessage(any(), any(), any()) } returns Unit
-            everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), any(), any()) } returns Unit
+            everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), any(), any()) } returns Either.Right(Unit)
             everySuspend { newMessageEventHandler.flushPendingSideEffects() } returns Unit
             everySuspend { newConversationEventHandler.handle(any(), any()) } returns Unit
             everySuspend { deletedConversationEventHandler.handle(any(), any()) } returns Unit

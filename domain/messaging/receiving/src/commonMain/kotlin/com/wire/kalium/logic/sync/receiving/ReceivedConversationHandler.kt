@@ -107,6 +107,14 @@ internal class ReceivedConversationHandler(
         return update
     }
 
+    suspend fun recovered(response: ConversationResponse, context: MlsCoreCryptoContext): ReceivedPayload {
+        val id = response.id.toModel()
+        val groupId = checkNotNull(response.groupId)
+        stageFetched(response, context)
+        established(id, groupId, context.conversationEpoch(groupId))
+        return ReceivedPayload.Creation(checkNotNull(staged[id]))
+    }
+
     suspend fun acceptedConnection(connection: com.wire.kalium.persistence.dao.ConnectionEntity) {
         val id = connection.qualifiedConversationId.toModel()
         val current = conversation(id) ?: return

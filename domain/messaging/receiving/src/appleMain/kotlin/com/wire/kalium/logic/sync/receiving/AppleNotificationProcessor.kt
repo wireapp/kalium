@@ -24,14 +24,11 @@ public suspend fun AppleAccountRuntime.notificationProcessor(
     diagnostics: ReceivingDiagnostics? = null,
 ): NotificationProcessor {
     check(prepared.nomadServiceUrl == null) { "Nomad receiving hooks are not implemented" }
+    val rejoin = ReceivedMLSRejoin(network.mlsMessageApi, database.metadataDAO, diagnostics)
     val mls = mlsCoreCrypto?.mlsClient(
         CryptoQualifiedClientId(prepared.clientId, prepared.userId.toCrypto()),
         checkNotNull(mlsCipherSuite).toCrypto(),
-        object : com.wire.kalium.cryptography.MLSTransporter {
-            override suspend fun sendCommitBundle(commitBundle: com.wire.kalium.cryptography.CommitBundle) {
-                error("NSE MLS commits require replayable response handling")
-            }
-        },
+        rejoin,
         object : MLSEpochObserver {
             override suspend fun onEpochChange(groupId: MLSGroupId, epoch: ULong) {
                 // Required epoch work is checked synchronously in the receiving transaction.
@@ -41,6 +38,7 @@ public suspend fun AppleAccountRuntime.notificationProcessor(
         processingScope,
     )
     return NotificationProcessor(
+        isolateConversations = true,
         database = database,
         notificationApi = network.notificationApi,
         clientId = prepared.clientId,
@@ -66,5 +64,11 @@ public suspend fun AppleAccountRuntime.notificationProcessor(
         evaluateCalls = { events -> evaluateCallingEvents(events, prepared.userId, prepared.clientId, database) },
         diagnostics = diagnostics,
         invalidateReceiving = { invalidateReceiving() },
+        recovery = if (mls == null) null else MLSReceiveRecovery(
+            MLSReceiveRecoveryStore(database.metadataDAO, database.notificationEventStore, prepared.clientId),
+            network.conversationApi,
+            prepared.userId,
+            rejoin::join,
+        ),
     )
 }

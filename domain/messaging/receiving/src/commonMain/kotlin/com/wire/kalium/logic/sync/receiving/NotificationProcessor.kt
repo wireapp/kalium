@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.cryptography.RequireConfirmedCryptoRollback
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MLSClient
@@ -45,7 +47,11 @@ import com.wire.kalium.logic.data.event.newMessage
 import com.wire.kalium.logic.data.event.updateUserProperties
 import com.wire.kalium.logic.data.event.userUpdate
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import kotlin.time.Clock
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageFailureResolution
@@ -87,6 +93,10 @@ class NotificationProcessor(
     private val invalidateReceiving: suspend () -> Unit = { error("Account invalidation is unavailable") },
     private val evaluateCalls: (suspend (List<ReceivedCallEvent>) -> List<ReceivedCallResult>)? = null,
     private val diagnostics: ReceivingDiagnostics? = null,
+    private val recovery: MLSReceiveRecovery? = null,
+    // Opted in only by the Apple NSE factory. Existing consumers retain prefix processing.
+    private val isolateConversations: Boolean = false,
+    private val nowEpochMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) {
     private var accountInvalidated = false
     private val unpacker = ProteusMessageUnpackerImpl(selfUserId)
@@ -96,7 +106,7 @@ class NotificationProcessor(
     /** Only the target can return content. Unsupported earlier events remain unprocessed. */
     @Suppress("TooGenericExceptionCaught")
     suspend fun process(targetId: String): ReceivedNotificationResult = try {
-        processEvents(targetId)
+        if (isolateConversations) processIsolatedEvents(targetId) else processEvents(targetId)
     } catch (failure: Throwable) {
         if (failure !is kotlinx.coroutines.CancellationException) diagnostics?.failed(failure)
         throw failure
@@ -121,7 +131,8 @@ class NotificationProcessor(
                 currentCoroutineContext().ensureActive()
                 diagnostics?.stage = "MARK_PROCESSED"
                 CallSignalJournal(database).committed(effects.calls)
-                database.eventDAO.markEventAsProcessed(next.eventId)
+                if (recovery == null) database.eventDAO.markEventAsProcessed(next.eventId)
+                else recovery.acknowledge(listOf(next.eventId))
                 if (next.eventId == targetId) {
                     targetMessage = effects.message
                     break
@@ -161,6 +172,120 @@ class NotificationProcessor(
         )
     }
 
+    /** NSE-only scan: a deferred row remains pending while unrelated messages may pass it. */
+    @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod", "LoopWithTooManyJumpStatements")
+    private suspend fun processIsolatedEvents(targetId: String): ReceivedNotificationResult {
+        require(targetId.isNotBlank())
+        diagnostics?.stage = "LOAD_QUEUE"
+        terminalAccountResult()?.let { return it }
+        previewImages.cleanupAbandoned(database.assetDAO)
+        if (database.eventDAO.getEventById(targetId)?.isProcessed == true) {
+            return if (events.nextPending() != null) withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
+            else withPendingCalls(null, "ALREADY_PROCESSED")
+        }
+        database.eventDAO.setAllUnprocessedEventsAsPending()
+        var scannedId = 0L
+        var canFetch = true
+        val deferred = mutableSetOf<NotificationDependency>()
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val next = events.nextPendingAfter(scannedId)
+            if (next == null) {
+                check(canFetch) { "Target notification was not found" }
+                diagnostics?.fetching()
+                val cursor = events.cursor()
+                val page = wrapApiRequest {
+                    if (cursor == null) notificationApi.getAllNotifications(PAGE_SIZE, clientId)
+                    else notificationApi.notificationsByBatch(PAGE_SIZE, clientId, cursor)
+                }.orThrow()
+                check(!page.hasMore || page.notifications.isNotEmpty()) { "Notification page did not advance" }
+                check(page.notifications.lastOrNull()?.id != cursor || page.notifications.isEmpty()) {
+                    "Notification cursor did not advance"
+                }
+                events.storePage(cursor, page.notifications.map { NewEventEntity(it.id, it.payload, it.transient, false) })
+                terminalAccountResult()?.let { return it }
+                canFetch = page.hasMore
+                continue
+            }
+            scannedId = next.id
+            val payload = EventResponseToStore(next.eventId, next.payload, next.transient).toEventResponse().payload
+            check(!payload.isNullOrEmpty()) { "A payload is required" }
+            val dependencies = dependencies(payload)
+            if (deferred.isNotEmpty() && dependencies == null) return withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
+            val retryIn = (events.deferredUntil(next.eventId) ?: 0L) - nowEpochMillis()
+            val coolingDown = retryIn in 1..DEFERRED_RETRY_MILLIS
+            if (dependencies != null && (coolingDown || dependencies.any { it in deferred })) {
+                deferred += dependencies
+                if (next.eventId == targetId) return withoutPresentation(null, "DEFERRED_CONVERSATION")
+                continue
+            }
+            diagnostics?.beginEvent(next.eventId == targetId, next.eventId)
+            val effects = try {
+                processIsolatedNotification(next, dependencies != null, deferred.isNotEmpty())
+            } catch (_: DeferredNotification) {
+                // The strict native boundary restores this control signal only after confirmed rollback.
+                // A commit or rollback failure stops the whole receive attempt.
+                currentCoroutineContext().ensureActive()
+                events.defer(next.eventId, nowEpochMillis() + DEFERRED_RETRY_MILLIS)
+                deferred += checkNotNull(dependencies)
+                if (next.eventId == targetId) return withoutPresentation(null, "DEFERRED_CONVERSATION")
+                continue
+            } catch (_: NotificationOrderingBarrier) {
+                return withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
+            }
+            currentCoroutineContext().ensureActive()
+            diagnostics?.stage = "MARK_PROCESSED"
+            CallSignalJournal(database).committed(effects.calls)
+            if (recovery == null) events.markProcessed(listOf(next.eventId), emptyMap())
+            else recovery.acknowledge(listOf(next.eventId))
+            if (next.eventId == targetId) {
+                return if (deferred.isEmpty()) withPendingCalls(effects.message)
+                else withoutPresentation(effects.message, "DEFERRED_PRESENTATION_POLICY")
+            }
+        }
+    }
+
+    /** An opaque MLS payload may hide a buffered self-control (availability or call rejection).
+     * Independent canonical writes are safe; alerts and AVS evaluation need the complete prefix.
+     */
+    private suspend fun withoutPresentation(message: ReceivedMessageResult?, reason: String) = ReceivedNotificationResult(
+        message = message?.copy(shouldNotify = false, mayPreview = false, text = null, suppressionReason = reason),
+        presentationReason = reason,
+        callSignalsPending = CallSignalJournal(database).signals().any { it.submittedGeneration == null },
+    )
+
+    private suspend fun processIsolatedNotification(
+        event: EventEntity,
+        canDefer: Boolean,
+        crossesGap: Boolean,
+    ): NotificationEffectsResult = withContext(RequireConfirmedCryptoRollback) {
+        try {
+            processNotification(event, canDefer, crossesGap)
+        } catch (failure: ProteusException) {
+            // ProteusClient wraps non-Proteus callback errors exactly once. Do not traverse
+            // arbitrary cause chains: a native failure must never become a local deferral.
+            val callback = failure.cause
+            val wrappedCallback = failure.code == ProteusException.Code.UNKNOWN_ERROR && failure.intCode == null
+            if (wrappedCallback && callback is DeferredNotification) throw callback
+            if (wrappedCallback && callback is NotificationOrderingBarrier) throw callback
+            throw failure
+        }
+    }
+
+    @Suppress("ReturnCount") // Every unknown dependency fails closed before any speculative transaction.
+    private suspend fun dependencies(payload: List<EventContentDTO>): Set<NotificationDependency>? {
+        val dependencies = notificationDependencies(payload)?.toMutableSet() ?: return null
+        dependencies.filterIsInstance<NotificationDependency.Conversation>().forEach { dependency ->
+            val conversation = database.conversationDAO.getConversationById(dependency.id.toModel().toDao()) ?: return null
+            // Unknown and self conversations cannot prove independence from other conversations.
+            if (conversation.type == ConversationEntity.Type.SELF) return null
+            (conversation.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.let {
+                dependencies += NotificationDependency.MLSGroup(it.groupId)
+            }
+        }
+        return dependencies
+    }
+
     private suspend fun withPendingCalls(message: ReceivedMessageResult?, reason: String? = null): ReceivedNotificationResult {
         diagnostics?.stage = "PRESENTATION"
         if (evaluateCalls == null) return ReceivedNotificationResult(message, presentationReason = reason)
@@ -181,7 +306,11 @@ class NotificationProcessor(
         return ReceivedNotificationResult(message, results, reason, pending.isNotEmpty())
     }
 
-    private suspend fun processNotification(event: EventEntity): NotificationEffectsResult {
+    private suspend fun processNotification(
+        event: EventEntity,
+        canDefer: Boolean = false,
+        crossesGap: Boolean = false,
+    ): NotificationEffectsResult {
         check(!event.isLive) { "Notification must be pending before processing" }
         val payload = EventResponseToStore(event.eventId, event.payload, event.transient).toEventResponse().payload
         check(!payload.isNullOrEmpty()) { "A payload is required" }
@@ -193,23 +322,26 @@ class NotificationProcessor(
                 // CoreCrypto 10.4 makes its whole transaction NonCancellable. Restore the owned
                 // attempt for our work; cancellation aborts SQL and then unwinds both native stores.
                 withContext(receivingContext) {
-                    decodeAndPersist(event.eventId, payload, proteusContext, mlsContext)
+                    decodeAndPersist(event.eventId, payload, proteusContext, mlsContext, canDefer, crossesGap)
                 }
             } else withContext(receivingContext) {
-                decodeAndPersist(event.eventId, payload, proteusContext = proteusContext)
+                decodeAndPersist(event.eventId, payload, proteusContext, canDefer = canDefer, crossesGap = crossesGap)
             }
         }
     }
 
+    @Suppress("LongMethod", "ThrowsCount") // Keep the pre-persistence failure boundary separate from writes and native commit.
     private suspend fun decodeAndPersist(
         eventId: String,
         payload: List<EventContentDTO>,
         proteusContext: ProteusCoreCryptoContext? = null,
         mlsContext: MlsCoreCryptoContext? = null,
+        canDefer: Boolean = false,
+        crossesGap: Boolean = false,
     ): NotificationEffectsResult {
         val users = MembershipUserLoader(database.userDAO, userDetailsApi, teamsApi, selfUserId)
         val conversations = ReceivedConversationHandler(database, selfUserId, users, conversationApi)
-        val mlsHandler = ReceivedMLSHandler(database, selfUserId, conversations)
+        val mlsHandler = ReceivedMLSHandler(database, selfUserId, conversations, recovery)
         val oneOnOnes = ReceivedOneOnOneHandler(selfUserId, conversations, users, mlsHandler)
         val configuration = ReceivedMLSConfigurationHandler(
             database = database,
@@ -222,15 +354,25 @@ class NotificationProcessor(
             mlsSupported = com.wire.kalium.logic.feature.user.isMLSApiSupported(apiVersion),
             hasCredential = hasMLSCredential,
         )
-        val decoded = decode(
-            eventId, payload, mlsHandler, users, conversations, oneOnOnes, configuration, proteusContext, mlsContext
-        ).toMutableList()
-        // Native proposals and their SQL deadlines are the existing durable handoff to
-        // the app scheduler. NSE must not send commits whose response cannot be replayed.
-        diagnostics?.stage = "MLS_VERIFICATION"
-        val verifications = mlsHandler.verificationUpdates()
-        diagnostics?.stage = "LOAD_PROFILES"
-        decoded += ReceivedPayload.Profiles(users.load(verifications.flatMap { it.identities.keys }.toSet()))
+        var deferrable = canDefer
+        val (decoded, verifications) = try {
+            val decoded = decode(
+                eventId, payload, mlsHandler, users, conversations, oneOnOnes, configuration, proteusContext, mlsContext,
+            ) { effects ->
+                if (effects.any { !it.canCrossNotificationGap() }) {
+                    deferrable = false
+                    if (crossesGap) throw NotificationOrderingBarrier()
+                }
+            }.toMutableList()
+            diagnostics?.stage = "MLS_VERIFICATION"
+            val verifications = mlsHandler.verificationUpdates()
+            diagnostics?.stage = "LOAD_PROFILES"
+            decoded += ReceivedPayload.Profiles(users.load(verifications.flatMap { it.identities.keys }.toSet()))
+            decoded to verifications
+        } catch (failure: KaliumSyncException) {
+            if (deferrable && failure.coreFailureCause.canDeferNotification()) throw DeferredNotification(failure)
+            throw failure
+        }
         diagnostics?.stage = "PERSIST"
         return try {
             NotificationEffects(
@@ -242,7 +384,16 @@ class NotificationProcessor(
                 previewImages = previewImages,
                 serverConfigLinks = serverConfigLinks,
                 callingEnabled = evaluateCalls != null,
-            ).persist(decoded, verifications)
+            ).persist(decoded, verifications).also {
+                if (mlsContext != null && recovery != null) {
+                    recovery.recordProcessed(
+                        mlsContext,
+                        payload.filterIsInstance<EventContentDTO.Conversation.NewMLSMessageDTO>()
+                            .map { message -> newMLSMessage(eventId, message) },
+                        payload.map { ReceivedPayloadIdentity(eventId, it) },
+                    )
+                }
+            }
         } finally {
             // SQL may have committed even when withContext reports cancellation. Preserve all
             // canonical references before deleting files from a failed or interrupted attempt.
@@ -261,9 +412,15 @@ class NotificationProcessor(
         configuration: ReceivedMLSConfigurationHandler,
         proteusContext: ProteusCoreCryptoContext? = null,
         mlsContext: MlsCoreCryptoContext? = null,
+        onDecoded: (List<ReceivedPayload>) -> Unit = {},
     ): List<ReceivedPayload> = payload.flatMapIndexed { index, content ->
         currentCoroutineContext().ensureActive()
         diagnostics?.decoding(content)
+        val effectsProcessed = mlsContext != null && recovery?.wereEffectsProcessed(
+            mlsContext, ReceivedPayloadIdentity(eventId, content)
+        ) == true
+        // The outer Proteus transaction can roll back after MLS commits. Advance it even on effects replay.
+        if (effectsProcessed && content !is EventContentDTO.Conversation.NewMessageDTO) return@flatMapIndexed emptyList()
         val metadataId = when (content) {
             is EventContentDTO.Conversation.ConversationRenameDTO -> content.qualifiedConversation
             is EventContentDTO.Conversation.ReceiptModeUpdate -> content.qualifiedConversation
@@ -283,7 +440,7 @@ class NotificationProcessor(
             conversations.fetchMissingConversation(metadataId.toModel(), mlsContext)
                 ?: return@flatMapIndexed emptyList()
         }
-        requiredMetadata + when (content) {
+        val decoded = requiredMetadata + when (content) {
             is EventContentDTO.Conversation.NewConversationDTO -> {
                 val event = newConversation(eventId, content, index)
                 conversations.create(event) + oneOnOnes.resolve(event.conversationId, metadataSystemMessageId(eventId, index), mlsContext)
@@ -303,7 +460,9 @@ class NotificationProcessor(
             is EventContentDTO.Conversation.NewMessageDTO -> {
                 check(content.data.recipient == clientId) { "Notification belongs to another client" }
                 val event = newMessage(eventId, content)
-                when (val result = unpacker.unpackProteusMessage(checkNotNull(proteusContext), event) { it }) {
+                val result = unpacker.unpackProteusMessage(checkNotNull(proteusContext), event) { it }
+                if (effectsProcessed) return@flatMapIndexed emptyList()
+                when (result) {
                     is Either.Right -> listOf(ReceivedPayload.Application(result.value))
                     is Either.Left -> if (
                         ProteusMessageFailureHandler.handleFailure(result.value) == ProteusMessageFailureResolution.Ignore
@@ -315,9 +474,11 @@ class NotificationProcessor(
             is EventContentDTO.Conversation.NewMLSMessageDTO -> {
                 diagnostics?.stage = "MLS_FETCH_CONVERSATION"
                 val context = checkNotNull(mlsContext)
+                val event = newMLSMessage(eventId, content)
+                mlsHandler.resume(context, event)?.let { return@flatMapIndexed it }
                 val metadata = conversations.fetchMissingConversation(content.qualifiedConversation.toModel(), context)
                     ?: return@flatMapIndexed emptyList()
-                metadata + mlsHandler.decrypt(context, newMLSMessage(eventId, content), metadataSystemMessageId(eventId, index))
+                metadata + mlsHandler.decrypt(context, event, metadataSystemMessageId(eventId, index))
             }
             is EventContentDTO.Conversation.DeletedConversationDTO -> listOf(
                 ReceivedPayload.Deletion(
@@ -482,9 +643,12 @@ class NotificationProcessor(
                 error("Notification contains unsupported required work")
             }
         }
+        onDecoded(decoded)
+        decoded
     }
 
     private companion object {
         const val PAGE_SIZE = 100
+        private const val DEFERRED_RETRY_MILLIS = 30_000L
     }
 }

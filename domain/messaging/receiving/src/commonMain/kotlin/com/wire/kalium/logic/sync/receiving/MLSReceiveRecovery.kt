@@ -33,6 +33,20 @@ class MLSReceiveRecovery(
     private val selfUserId: UserId,
     private val join: suspend (MlsCoreCryptoContext, String, ByteArray) -> ULong,
 ) {
+    /** Check before decrypting; only exact MLS payloads with committed effects can be bypassed. */
+    suspend fun wasProcessed(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): Boolean =
+        store.wasProcessed(context, event)
+
+    /** Call after every payload effect has finished, before the enclosing native transaction commits. */
+    suspend fun recordProcessed(
+        context: MlsCoreCryptoContext,
+        events: List<Event.Conversation.NewMLSMessage>,
+        payloads: List<ReceivedPayloadIdentity> = emptyList(),
+    ) = store.recordProcessed(context, events, payloads)
+
+    suspend fun wereEffectsProcessed(context: MlsCoreCryptoContext, payload: ReceivedPayloadIdentity): Boolean =
+        store.wereEffectsProcessed(context, payload)
+
     /** Ordinary receives only consult the owner's cached operation index; ciphertext decoding is lazy. */
     suspend fun resume(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): MLSReceiveRecoveryResult? {
         val operation = store.find(event.id) { Base64.decode(event.content) } ?: return null

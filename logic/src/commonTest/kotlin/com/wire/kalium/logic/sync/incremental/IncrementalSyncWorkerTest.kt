@@ -19,17 +19,21 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
+import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -37,6 +41,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.persistence.TestUserDatabase
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -120,6 +125,136 @@ class IncrementalSyncWorkerTest {
     }
 
     @Test
+    fun connectionReceiptDoesNotSuppressDeferredResolutionOnReplay() = runTest {
+        val event = TestEvent.newConnection(status = com.wire.kalium.logic.data.user.ConnectionState.ACCEPTED).wrapInEnvelope()
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
+            .withEventProcessorReturning(Either.Right(event.event.id))
+            .arrange(record = { _, _ -> }, acknowledge = {}, effectsProcessed = { _, _ -> true })
+
+        worker.processEventsFlow().collect()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(event)) }
+    }
+
+    @Test
+    fun receiptSkipsMetadataEffectsButStillPassesProteusToItsNativeHandler() = runTest {
+        val metadata = TestEvent.memberLeave(eventId = "metadata").wrapInEnvelope()
+        val proteus = TestEvent.newMessageEvent("encrypted").copy(id = "proteus").wrapInEnvelope()
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(metadata, proteus))))
+            .arrange(record = { _, _ -> }, acknowledge = { assertEquals(listOf("metadata", "proteus"), it) },
+                effectsProcessed = { _, _ -> true })
+        everySuspend { arrangement.eventProcessor.processEvent(any(), any()) } calls {
+            assertTrue((it.args[0] as DurableMLSReceiveContext).effectsAlreadyPersisted)
+            assertEquals(proteus, it.args[1])
+            Either.Right("proteus")
+        }
+
+        worker.processEventsFlow().collect()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), any()) }
+    }
+
+    @Test
+    fun recoveryReceiptsFollowFlushAndAtomicAcknowledgementFollowsOuterCommit() = runTest {
+        val prefix = TestEvent.newMLSMessageEvent(kotlin.time.Instant.DISTANT_PAST).copy(id = "prefix").wrapInEnvelope()
+        val proteus = TestEvent.newMessageEvent("encrypted").copy(id = "proteus").wrapInEnvelope()
+        val local = TestEvent.newMLSMessageEvent(kotlin.time.Instant.DISTANT_PAST).copy(id = "local-response").wrapInEnvelope()
+        val trigger = TestEvent.newMLSMessageEvent(kotlin.time.Instant.DISTANT_FUTURE).copy(id = "trigger").wrapInEnvelope()
+        val order = mutableListOf<String>()
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(prefix, proteus, local, trigger))))
+            .arrange(
+                record = { context, events ->
+                    assertTrue(context is DurableMLSReceiveContext)
+                    assertEquals(listOf(prefix, proteus, trigger), events)
+                    order += "receipt"
+                },
+                acknowledge = { ids ->
+                    assertEquals(listOf("prefix", "proteus", "trigger"), ids)
+                    order += "acknowledge"
+                },
+            )
+        everySuspend { arrangement.eventProcessor.processEvent(any(), any()) } calls {
+            assertTrue(it.args[0] is DurableMLSReceiveContext)
+            val event = (it.args[1] as EventEnvelope).event
+            Either.Right(event.id.takeUnless { id -> id == "local-response" })
+        }
+        everySuspend { arrangement.eventProcessor.flushPendingSideEffects() } calls {
+            order += "flush"
+            Either.Right(Unit)
+        }
+        everySuspend { arrangement.cryptoTransactionProvider.transaction<MutableList<String>>(any(), any()) } calls {
+            @Suppress("UNCHECKED_CAST")
+            val block = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, MutableList<String>>
+            block(arrangement.transactionContext).also { order += "outer commit" }
+        }
+
+        worker.processEventsFlow().collect()
+
+        assertEquals(listOf("flush", "receipt", "outer commit", "acknowledge"), order)
+        verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
+    }
+
+    @Test
+    fun outerCommitFailurePreservesReceiptsWithoutAcknowledgement() = runTest {
+        val event = TestEvent.newMLSMessageEvent(kotlin.time.Instant.DISTANT_PAST).wrapInEnvelope()
+        var recorded = false
+        var acknowledged = false
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
+            .withEventProcessorReturning(Either.Right(event.event.id))
+            .arrange(record = { _, _ -> recorded = true }, acknowledge = { acknowledged = true })
+        everySuspend { arrangement.cryptoTransactionProvider.transaction<MutableList<String>>(any(), any()) } calls {
+            @Suppress("UNCHECKED_CAST")
+            val block = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, MutableList<String>>
+            block(arrangement.transactionContext)
+            Either.Left(StorageFailure.DataNotFound)
+        }
+
+        assertFailsWith<KaliumSyncException> { worker.processEventsFlow().collect() }
+        assertTrue(recorded)
+        assertFalse(acknowledged)
+        verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
+    }
+
+    @Test
+    fun effectFailurePreventsReceiptAndAcknowledgement() = runTest {
+        val event = TestEvent.newMLSMessageEvent(kotlin.time.Instant.DISTANT_PAST).wrapInEnvelope()
+        var recorded = false
+        var acknowledged = false
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
+            .withEventProcessorReturning(Either.Right(event.event.id))
+            .arrange(record = { _, _ -> recorded = true }, acknowledge = { acknowledged = true })
+        everySuspend { arrangement.eventProcessor.flushPendingSideEffects() } returns Either.Left(StorageFailure.DataNotFound)
+
+        assertFailsWith<KaliumSyncException> { worker.processEventsFlow().collect() }
+        assertFalse(recorded)
+        assertFalse(acknowledged)
+    }
+
+    @Test
+    fun receiptFailureThrowsBeforeCryptoCallbackCanCommit() = runTest {
+        val event = TestEvent.newMLSMessageEvent(kotlin.time.Instant.DISTANT_PAST).wrapInEnvelope()
+        var callbackReturned = false
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(event))))
+            .withEventProcessorReturning(Either.Right(event.event.id))
+            .arrange(record = { _, _ -> error("receipt failed") }, acknowledge = {})
+        everySuspend { arrangement.cryptoTransactionProvider.transaction<MutableList<String>>(any(), any()) } calls {
+            @Suppress("UNCHECKED_CAST")
+            val block = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, MutableList<String>>
+            block(arrangement.transactionContext).also { callbackReturned = true }
+        }
+
+        assertFailsWith<IllegalStateException> { worker.processEventsFlow().collect() }
+        assertFalse(callbackReturned)
+        verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
+    }
+
+    @Test
     fun givenGathererEmitsEvent_whenPerformingIncrementalSync_thenProcessorShouldReceiveTheEvent() = runTest(TestKaliumDispatcher.default) {
         // Given
         val envelope = TestEvent.memberJoin().wrapInEnvelope()
@@ -132,7 +267,7 @@ class IncrementalSyncWorkerTest {
 
         // Then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.eventProcessor.processEvent(any(), eq(envelope))
+            arrangement.eventProcessor.processEvent(eq(arrangement.transactionContext), eq(envelope))
         }
     }
 
@@ -210,6 +345,46 @@ class IncrementalSyncWorkerTest {
     }
 
     @Test
+    fun givenFirstEventFails_whenLegacyReceive_thenLaterEventsAreStillProcessed() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val first = TestEvent.memberJoin().wrapInEnvelope()
+        val later = TestEvent.memberLeave().wrapInEnvelope()
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(first, later))))
+            .withEventProcessorFailingWith(failure)
+            .arrange()
+
+        val thrown = assertFailsWith<KaliumSyncException> { worker.processEventsFlow().collect() }
+
+        assertEquals(failure, thrown.coreFailureCause)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(first)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(later)) }
+        verifySuspend(VerifyMode.not) { arrangement.eventProcessor.flushPendingSideEffects() }
+        verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
+    }
+
+    @Test
+    fun givenFirstEventFails_whenDurableReceive_thenLaterEventAndProcessedMarkersAreSkipped() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val first = TestEvent.memberJoin().wrapInEnvelope()
+        val later = TestEvent.memberLeave().wrapInEnvelope()
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(first, later))))
+            .withEventProcessorFailingWith(failure)
+            .arrange(record = { _, _ -> }, acknowledge = {})
+
+        val resultException = assertFailsWith<KaliumSyncException> {
+            worker.processEventsFlow().collect()
+        }
+
+        assertEquals(failure, resultException.coreFailureCause)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(first)) }
+        verifySuspend(VerifyMode.not) { arrangement.eventProcessor.processEvent(any(), eq(later)) }
+        verifySuspend(VerifyMode.not) { arrangement.eventProcessor.flushPendingSideEffects() }
+        verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
+    }
+
+    @Test
     fun requiredProcessingAndFlushFailuresAbortTheGatheredCryptoCallback() = runTest {
         for (failOnFlush in listOf(false, true)) {
             val failure = StorageFailure.Generic(IllegalStateException("required write failed"))
@@ -249,6 +424,51 @@ class IncrementalSyncWorkerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.eventRepository.setEventsAsProcessed(eq(listOf(eventId)))
         }
+    }
+
+    @Test
+    fun failedProcessedMarkerDoesNotStopLegacyReceiveBeforeTheNextBatch() = runTest {
+        val first = TestEvent.memberJoin().wrapInEnvelope()
+        val later = TestEvent.memberLeave().wrapInEnvelope()
+        val failure = StorageFailure.Generic(IllegalStateException("marker write failed"))
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(
+                EventStreamData.NewEvents(listOf(first)),
+                EventStreamData.NewEvents(listOf(later)),
+            ))
+            .withEventProcessorReturning(Either.Right(first.event.id))
+            .withSetEventsAsProcessedReturning(Either.Left(failure))
+            .arrange()
+
+        worker.processEventsFlow().collect()
+
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.eventRepository.setEventsAsProcessed(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.eventProcessor.processEvent(any(), eq(later)) }
+    }
+
+    @Test
+    fun failedDurableAcknowledgementStopsBeforeTheNextBatch() = runTest {
+        val first = TestEvent.memberJoin().wrapInEnvelope()
+        val later = TestEvent.memberLeave().wrapInEnvelope()
+        val failure = StorageFailure.Generic(IllegalStateException("marker write failed"))
+        var acknowledgedIds: List<String>? = null
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(
+                EventStreamData.NewEvents(listOf(first)),
+                EventStreamData.NewEvents(listOf(later)),
+            ))
+            .withEventProcessorReturning(Either.Right(first.event.id))
+            .arrange(record = { _, _ -> }, acknowledge = {
+                acknowledgedIds = it
+                throw KaliumSyncException("Marking processed events failed", failure)
+            })
+
+        val thrown = assertFailsWith<KaliumSyncException> { worker.processEventsFlow().collect() }
+
+        assertEquals(failure, thrown.coreFailureCause)
+        assertEquals(listOf(first.event.id), acknowledgedIds)
+        verifySuspend(VerifyMode.not) { arrangement.eventProcessor.processEvent(any(), eq(later)) }
+        verifySuspend(VerifyMode.not) { arrangement.eventRepository.setEventsAsProcessed(any()) }
     }
 
     @Test
@@ -311,6 +531,7 @@ class IncrementalSyncWorkerTest {
         )
 
         init {
+            every { eventProcessor.disableEventProcessing } returns false
             runBlocking {
                 withEventProcessorSucceeding()
                 withSetEventsAsProcessedReturning(Either.Right(Unit))
@@ -340,11 +561,19 @@ class IncrementalSyncWorkerTest {
             everySuspend { eventRepository.setEventsAsProcessed(any()) } returns result
         }
 
-        suspend fun arrange(consumeInvalidation: suspend () -> Boolean = { false }, block: suspend Arrangement.() -> Unit = {}) = let {
+        suspend fun arrange(
+            consumeInvalidation: suspend () -> Boolean = { false },
+            record: (suspend (CryptoTransactionContext, List<EventEnvelope>) -> Unit)? = null,
+            acknowledge: (suspend (List<String>) -> Unit)? = null,
+            effectsProcessed: (suspend (CryptoTransactionContext, EventEnvelope) -> Boolean)? = null,
+            block: suspend Arrangement.() -> Unit = {},
+        ) = let {
             block()
             withTransactionReturning(Either.Right(Unit))
             this to IncrementalSyncWorkerImpl(
-                eventGatherer, eventProcessor, cryptoTransactionProvider, database.builder, eventRepository, consumePendingAccountInvalidation = consumeInvalidation
+                eventGatherer, eventProcessor, cryptoTransactionProvider, database.builder, eventRepository,
+                recordMLSReceipts = record, acknowledgeMLSRecovery = acknowledge, werePayloadEffectsProcessed = effectsProcessed,
+                consumePendingAccountInvalidation = consumeInvalidation,
             )
         }
     }

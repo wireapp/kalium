@@ -37,6 +37,10 @@ import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.GetMessageByIdUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.sync.incremental.EventGatherer
+import com.wire.kalium.logic.sync.incremental.EventStreamData
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.collect
 import com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwner
@@ -121,6 +125,41 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
             )
             try {
                 var session = logic.openSessionScope(user)
+                if (account["recoveryTakeover"]?.jsonPrimitive?.boolean == true) {
+                    val gatherer = object : EventGatherer {
+                        override suspend fun gatherEvents() = flow {
+                            val pending = session.eventRepository.observeEvents().first()
+                            assertTrue(pending.isNotEmpty())
+                            emit(EventStreamData.NewEvents(pending))
+                        }
+                    }
+                    session.createIncrementalSyncWorker(gatherer).processEventsFlow().collect()
+                    assertTrue(session.eventRepository.observeEvents().first().isEmpty())
+                    val conversationId = ConversationId("conversation", user.domain)
+                    suspend fun verifyMessages() {
+                        for (id in account.getValue("messageIds").jsonArray.map { it.jsonPrimitive.content }) {
+                            val stored = assertIs<GetMessageByIdUseCase.Result.Success>(session.messages.getMessageById(conversationId, id)).message
+                            assertEquals(id, assertIs<MessageContent.Text>(assertIs<Message.Regular>(stored).content).value)
+                        }
+                        assertIs<GetMessageByIdUseCase.Result.Success>(session.messages.getMessageById(
+                            conversationId, account.getValue("recoveryWarningId").jsonPrimitive.content))
+                        val members = assertIs<Either.Right<List<UserId>>>(
+                            session.conversations.conversationRepository.getConversationMembers(conversationId)).value
+                        assertEquals(setOf(user, UserId(account.getValue("senderValue").jsonPrimitive.content, user.domain)), members.toSet())
+                    }
+                    verifyMessages()
+                    logic.releaseSessionScope(user)
+                    assertIs<Either.Right<*>>(AppleAccountRuntime.use(root, user, keychain, "recovery-takeover-check", emptyMap()) { runtime ->
+                        for (id in listOf("notification", "following")) {
+                            assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(id)).isProcessed)
+                        }
+                        assertTrue(runtime.database.metadataDAO.valuesByKeyRange("mls_receive_recovery_v2:", "mls_receive_recovery_v2;").isEmpty())
+                    })
+                    session = logic.openSessionScope(user)
+                    verifyMessages()
+                    println("APP_RECOVERY_DURABLE_WORKER_TAKEOVER_PASSED")
+                    continue
+                }
                 if (stress) {
                     val gate = args[2]
                     val resumed = args.getOrNull(3) == "app-resume"

@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
@@ -41,6 +43,13 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
 
+/** Returns true when a durable receipt or recovery has handled this MLS payload. */
+internal typealias MLSReceiveRecoveryHandler = suspend (
+    CryptoTransactionContext,
+    Event.Conversation.NewMLSMessage,
+    Boolean
+) -> Boolean
+
 internal interface NewMessageEventHandler {
     suspend fun handleNewProteusMessage(
         transactionContext: CryptoTransactionContext,
@@ -52,7 +61,7 @@ internal interface NewMessageEventHandler {
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMLSMessage,
         deliveryInfo: EventDeliveryInfo
-    )
+    ): Either<CoreFailure, Unit>
 
     suspend fun flushPendingSideEffects()
 }
@@ -68,6 +77,7 @@ internal class NewMessageEventHandlerImpl(
     private val selfUserId: UserId,
     private val staleEpochVerifier: StaleEpochVerifier,
     private val resetMLSConversation: ResetMLSConversationUseCase,
+    private val receiveRecovery: MLSReceiveRecoveryHandler? = null,
 ) : NewMessageEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -78,8 +88,9 @@ internal class NewMessageEventHandlerImpl(
         deliveryInfo: EventDeliveryInfo
     ) {
         val eventLogger = logger.createEventProcessingLogger(event)
+        val effectsProcessed = (transactionContext as? DurableMLSReceiveContext)?.effectsAlreadyPersisted == true
         proteusMessageUnpacker.unpackProteusMessage(transactionContext.proteus, event) {
-            processApplicationMessage(transactionContext, it, deliveryInfo)
+            processApplicationMessage(transactionContext, it, deliveryInfo, effectsProcessed)
             it
         }.onSuccess {
             eventLogger.logSuccess(
@@ -87,6 +98,7 @@ internal class NewMessageEventHandlerImpl(
                 "messageType" to it.messageTypeDescription,
             )
         }.onFailure {
+            if (effectsProcessed) return@onFailure
             val logMap = mapOf(
                 "event" to event.toLogMap(),
                 "errorInfo" to "$it",
@@ -137,39 +149,36 @@ internal class NewMessageEventHandlerImpl(
         )
     }
 
+    @Suppress("ReturnCount") // Receipt replay and successful recovery terminate before normal message effects.
     override suspend fun handleNewMLSMessage(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.NewMLSMessage,
         deliveryInfo: EventDeliveryInfo
-    ) {
+    ): Either<CoreFailure, Unit> {
+        val recovery = receiveRecovery.takeIf { transactionContext is DurableMLSReceiveContext }
+        if (recovery?.invoke(transactionContext, event, false) == true) return Either.Right(Unit)
         var eventLogger = logger.createEventProcessingLogger(event)
-        transactionContext.wrapInMLSContext { mlsMessageUnpacker.unpackMlsMessage(it, event) }
-            .onFailure {
-                when (MLSMessageFailureHandler.handleFailure(it)) {
+        val unpackResult = transactionContext.wrapInMLSContext { mlsMessageUnpacker.unpackMlsMessage(it, event) }
+        val result: Either<CoreFailure, Unit> = when (unpackResult) {
+            is Either.Left -> {
+                val failure = unpackResult.value
+                if (failure is MLSFailure.WrongEpoch && event.subconversationId == null &&
+                    recovery?.invoke(transactionContext, event, true) == true
+                ) return Either.Right(Unit)
+                when (MLSMessageFailureHandler.handleFailure(failure)) {
                     is MLSMessageFailureResolution.Ignore -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
+                        eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
+                        Either.Right(Unit)
                     }
 
                     is MLSMessageFailureResolution.InformUser -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
-                        // messages from subconversations should not send a system message
-                        if (event.subconversationId == null) {
-                            applicationMessageHandler.handleDecryptionError(
-                                eventId = event.id,
-                                conversationId = event.conversationId,
-                                messageInstant = event.messageInstant,
-                                senderUserId = event.senderUserId,
-                                senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                                content = MessageContent.FailedDecryption(
-                                    isDecryptionResolved = false,
-                                    senderUserId = event.senderUserId
-                                )
-                            )
-                        }
+                        eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
+                        persistMLSDecryptionFailure(event)
+                        Either.Right(Unit)
                     }
 
                     is MLSMessageFailureResolution.OutOfSync -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+                        eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
                         staleEpochVerifier.verifyEpoch(
                             transactionContext,
                             event.conversationId,
@@ -179,11 +188,13 @@ internal class NewMessageEventHandlerImpl(
                     }
 
                     MLSMessageFailureResolution.ResetConversation -> {
-                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
-                        resetMLSConversation(event.conversationId, transactionContext)
+                        eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
+                        resetMLSConversation(event.conversationId, transactionContext).toEither()
                     }
                 }
-            }.onSuccess { batchResult ->
+            }
+            is Either.Right -> {
+                val batchResult = unpackResult.value
                 batchResult.forEach { message ->
                     if (message is MessageUnpackResult.ApplicationMessage) {
                         processApplicationMessage(transactionContext, message, deliveryInfo)
@@ -196,18 +207,42 @@ internal class NewMessageEventHandlerImpl(
                     // reset the time for next messages, if this is a batch
                     eventLogger = logger.createEventProcessingLogger(event)
                 }
+                Either.Right(Unit)
             }
+        }
+        // Legacy callers performed recovery attempts without propagating their Either failures.
+        return if (transactionContext is DurableMLSReceiveContext) result else Either.Right(Unit)
+    }
+
+    private suspend fun persistMLSDecryptionFailure(event: Event.Conversation.NewMLSMessage) {
+        // Messages from subconversations should not send a system message.
+        if (event.subconversationId == null) {
+            applicationMessageHandler.handleDecryptionError(
+                eventId = event.id,
+                conversationId = event.conversationId,
+                messageInstant = event.messageInstant,
+                senderUserId = event.senderUserId,
+                senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+                content = MessageContent.FailedDecryption(
+                    isDecryptionResolved = false,
+                    senderUserId = event.senderUserId
+                )
+            )
+        }
     }
 
     private suspend fun processApplicationMessage(
         transactionContext: CryptoTransactionContext,
         it: MessageUnpackResult.ApplicationMessage,
-        deliveryInfo: EventDeliveryInfo
+        deliveryInfo: EventDeliveryInfo,
+        effectsAlreadyPersisted: Boolean = false,
     ) {
         if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
             legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
         }
-        handleSuccessfulResult(transactionContext, it)
+        // Receipts cover persisted content, not legal-hold work buffered until Live, confirmations,
+        // or self-deletion scheduled in another scope. Restore those continuations on Proteus replay.
+        if (!effectsAlreadyPersisted) handleSuccessfulResult(transactionContext, it)
         onMessageInserted(it)
     }
 

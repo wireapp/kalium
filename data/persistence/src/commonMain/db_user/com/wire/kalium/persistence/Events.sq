@@ -57,3 +57,9 @@ SELECT * FROM Events
 WHERE is_processed = 0 AND id > :afterId
 ORDER BY id ASC
 LIMIT :pageSize;
+
+selectUnprocessedEventAfter:
+SELECT * FROM Events
+WHERE is_processed = 0 AND id > :afterId
+ORDER BY id ASC
+LIMIT 1;

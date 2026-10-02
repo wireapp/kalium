@@ -39,6 +39,7 @@ internal class ReceivedMLSHandler(
     private val database: UserDatabaseBuilder,
     private val selfUserId: UserId,
     private val conversations: ReceivedConversationHandler,
+    private val recovery: MLSReceiveRecovery? = null,
 ) {
     private val mapper = ProtoContentMapperImpl(selfUserId = selfUserId)
     private val welcomed = mutableSetOf<ConversationId>()
@@ -50,7 +51,31 @@ internal class ReceivedMLSHandler(
     private val wipedGroups = mutableSetOf<String>()
     private val verifications = linkedMapOf<String, MLSVerification>()
 
-    @Suppress("CyclomaticComplexMethod", "LongMethod")
+    suspend fun resume(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage): List<ReceivedPayload>? {
+        val receiver = recovery ?: return null
+        return if (receiver.wasProcessed(context, event)) emptyList() else {
+            check(event.conversationId !in removed) { "Account no longer belongs to the MLS group" }
+            receiver.resume(context, event)?.let { recovered(context, event, it) }
+        }
+    }
+
+    private suspend fun recovered(
+        context: MlsCoreCryptoContext,
+        event: Event.Conversation.NewMLSMessage,
+        result: MLSReceiveRecoveryResult,
+    ): List<ReceivedPayload> {
+        val metadata = conversations.recovered(result.response, context)
+        val groupId = result.operation.groupId
+        snapshotVerification(context, event.conversationId, groupId, result.warningId, event.messageInstant)
+        touchedGroups += groupId
+        decryptedConversations += event.conversationId
+        return listOf(
+            metadata,
+            ReceivedPayload.System(mlsEpochWarningMessage(result.warningId, event.conversationId, selfUserId, event.messageInstant))
+        )
+    }
+
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount")
     suspend fun decrypt(context: MlsCoreCryptoContext, event: Event.Conversation.NewMLSMessage, payloadId: String): List<ReceivedPayload> {
         check(event.subconversationId == null) { "Subconversation receiving is not implemented" }
         check(event.conversationId !in removed) { "Account no longer belongs to the MLS group" }
@@ -81,6 +106,9 @@ internal class ReceivedMLSHandler(
         // MLS decryption and the lifecycle state above determine whether receiving can continue.
         val epoch = context.conversationEpoch(protocol.groupId)
         val result = decryptMLSMessage(context, Base64.decode(event.content), GroupID(protocol.groupId))
+        if (result is Either.Left && result.value == MLSFailure.WrongEpoch) {
+            recovery?.recover(context, event, protocol.groupId)?.let { return recovered(context, event, it) }
+        }
         val staleCommit = result is Either.Left && result.value == MLSFailure.StaleCommit
         val noBundles = result is Either.Left && result.value in listOf(
             MLSFailure.StaleCommit, MLSFailure.StaleProposal, MLSFailure.DuplicateMessage,

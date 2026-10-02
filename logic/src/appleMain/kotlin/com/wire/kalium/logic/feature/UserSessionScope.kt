@@ -75,6 +75,7 @@ internal fun UserSessionScope(
         clientConfig,
         platformUserStorageProperties,
         networkStateObserver,
-        logoutCallback
+        logoutCallback,
+        enableDurableMLSReceiveRecovery = true,
     )
 }

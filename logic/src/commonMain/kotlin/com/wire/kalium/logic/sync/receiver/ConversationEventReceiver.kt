@@ -38,6 +38,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
@@ -86,8 +87,8 @@ internal class ConversationEventReceiverImpl(
             }
 
             is Event.Conversation.NewMLSMessage -> {
-                newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
-                Either.Right(Unit)
+                val result = newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
+                if (transactionContext is DurableMLSReceiveContext) result else Either.Right(Unit)
             }
 
             is Event.Conversation.NewConversation -> {
@@ -110,8 +111,8 @@ internal class ConversationEventReceiverImpl(
             }
 
             is Event.Conversation.MLSWelcome -> {
-                mlsWelcomeHandler.handle(transactionContext, event)
-                Either.Right(Unit)
+                val result = mlsWelcomeHandler.handle(transactionContext, event)
+                if (transactionContext is DurableMLSReceiveContext) result else Either.Right(Unit)
             }
 
             is Event.Conversation.RenamedConversation -> {

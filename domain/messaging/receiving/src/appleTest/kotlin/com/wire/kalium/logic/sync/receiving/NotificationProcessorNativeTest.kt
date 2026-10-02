@@ -167,6 +167,248 @@ import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSUUID
 
 class NotificationProcessorNativeTest {
+    @Test
+    fun isolatedNSEDoesNotAlertAcrossAnOpaqueSelfAvailabilityPayload() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.seedProteusConversation()
+                val unavailable = QualifiedIDEntity("unavailable", "federated.example")
+                fixture.seedPendingIsolatedRecovery("combined", unavailable)
+                val failure = fixture.event("failure", byteArrayOf(1), conversationId = unavailable)
+                val availability = fixture.event("availability", fixture.encrypt("availability",
+                    MessageContent.Availability(UserAvailabilityStatus.AWAY), protocolMLS = false),
+                    protocolMLS = false, conversationId = DELETE_TARGET)
+                val selfPayload: List<EventContentDTO> = availability.toEventResponse().payload.orEmpty().map {
+                    (it as EventContentDTO.Conversation.NewMessageDTO).copy(qualifiedFrom = SELF.toApi())
+                }
+                val selfAvailability = availability.copy(payload = KtxSerializer.json.encodeToString(selfPayload))
+                val target = fixture.event("target", fixture.encrypt("target"))
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    CallSignalJournal(runtime.database).append(ReceivedCallEvent(
+                        fixture.callContent().value, CONVERSATION_ID, SENDER.toDao(), SENDER_CLIENT,
+                        Clock.System.now(), true, true, "pending-call"
+                    ))
+                })
+                val result = fixture.receive(listOf(fixture.batch("combined", failure, selfAvailability), target), "target",
+                    isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })
+                val received = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
+                assertEquals("target", received.messageId)
+                assertFalse(received.shouldNotify)
+                assertFalse(received.mayPreview)
+                assertNull(received.text)
+                assertTrue(fixture.receivedCalls.isEmpty())
+                assertTrue(fixture.receivedCallEvents.isEmpty())
+                // A duplicate target must not evaluate queued calls while the earlier hole remains.
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "target",
+                    api = PageApi(emptyMap()), isolateConversations = true)).value)
+                assertTrue(fixture.receivedCallEvents.isEmpty())
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("combined")).isProcessed)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("target")).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("target", CONVERSATION_ID))
+                    assertNull(CallSignalJournal(runtime.database).signals().single().submittedGeneration)
+                    // The alert must be withheld even though the earlier AWAY control has not run.
+                    assertEquals(UserAvailabilityStatusEntity.NONE,
+                        runtime.database.userDAO.getUserDetailsByQualifiedID(SELF.toDao())?.availabilityStatus)
+                })
+            }
+        }
+    }
+
+    @Test
+    fun isolatedNSERollsBackDecryptedCommitAndRetriesAfterPrePersistenceFailure() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.seedProteusConversation()
+                val commit = fixture.event("commit", fixture.addThird(seedProfile = false))
+                val following = fixture.event("following", fixture.encrypt("following"))
+                val target = fixture.event("target", fixture.encrypt("target", protocolMLS = false),
+                    protocolMLS = false, conversationId = DELETE_TARGET)
+                fixture.releasePrepared()
+                val result = fixture.receive(listOf(commit, following, target), "target", isolateConversations = true,
+                    nowEpochMillis = { 1_000L }, decorateMLSContext = { context ->
+                        object : MlsCoreCryptoContext by context {
+                            override suspend fun getGroupState(groupId: String): com.wire.kalium.cryptography.E2EIConversationState {
+                                assertTrue(context.conversationEpoch(groupId) > 1uL)
+                                throw com.wire.kalium.logic.sync.KaliumSyncException("Injected pre-persistence failure",
+                                    com.wire.kalium.common.error.NetworkFailure.NoNetworkConnection(null))
+                            }
+                        }
+                    })
+                val received = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
+                assertEquals("target", received.messageId)
+                assertFalse(received.shouldNotify)
+                assertNull(received.text)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("commit")).isProcessed)
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("following")).isProcessed)
+                    assertNull(runtime.database.messageDAO.getMessageById("following", CONVERSATION_ID))
+                    assertEquals(31_000L, runtime.database.notificationEventStore.deferredUntil("commit"))
+                })
+                val resumed = fixture.receive(emptyList(), "following", api = PageApi(emptyMap()),
+                    isolateConversations = true, nowEpochMillis = { 32_000L })
+                assertEquals("following", assertIs<Either.Right<ReceivedMessageResult?>>(resumed).value?.text)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("commit")).isProcessed)
+                    assertNull(runtime.database.notificationEventStore.deferredUntil("commit"))
+                })
+            }
+        }
+    }
+
+    @Test
+    fun isolatedNSECancellationKeepsTheNextEventPending() = runTest {
+        for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
+            withFixture(mls) { fixture ->
+                val first = fixture.event("first", fixture.encrypt("first"))
+                val target = fixture.event("target", fixture.encrypt("target"))
+                fixture.releasePrepared()
+                assertFailsWith<CancellationException> {
+                    fixture.receive(listOf(first, target), "target", interruption = Interruption.CANCEL_BEFORE_COMMIT,
+                        isolateConversations = true)
+                }
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("target")).isProcessed)
+                    assertNull(runtime.database.notificationEventStore.deferredUntil("first"))
+                    assertNull(runtime.database.messageDAO.getMessageById("target", CONVERSATION_ID))
+                })
+                assertEquals("target", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "target",
+                    api = PageApi(emptyMap()), isolateConversations = true)).value?.text)
+            }
+        }
+    }
+
+    @Test
+    fun isolatedNSEDefersFederationAndReachesProteusAcrossPagesAndRestart() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.seedProteusConversation()
+                val missing = QualifiedIDEntity("unavailable", "federated.example")
+                fixture.seedPendingIsolatedRecovery("blocked", missing)
+                val failed = fixture.event("blocked", byteArrayOf(1), conversationId = missing)
+                val blockedLater = fixture.event("blocked-later", byteArrayOf(2), conversationId = missing)
+                val target = fixture.event("target", fixture.encrypt("target", protocolMLS = false),
+                    protocolMLS = false, conversationId = DELETE_TARGET)
+                val following = fixture.event("following", fixture.encrypt("following", protocolMLS = false),
+                    protocolMLS = false, conversationId = DELETE_TARGET)
+                fixture.releasePrepared()
+                val api = PageApi(mapOf(null to pageResponse(listOf(failed, blockedLater), true),
+                    "blocked-later" to pageResponse(listOf(target, following))))
+                var fetches = 0
+                val result = fixture.receive(emptyList(), "target", api = api, recoveryFactory = { fixture.unavailableRecovery(it) { fetches++ } },
+                    isolateConversations = true, nowEpochMillis = { 1_000L })
+                val received = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
+                assertEquals("target", received.messageId)
+                assertFalse(received.shouldNotify)
+                assertNull(received.text)
+                assertEquals(listOf(null, "blocked-later"), api.requests)
+                assertEquals(1, fetches)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("blocked")).isProcessed)
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("blocked-later")).isProcessed)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("target")).isProcessed)
+                    assertEquals(31_000L, runtime.database.notificationEventStore.deferredUntil("blocked"))
+                    assertEquals("following", runtime.database.notificationEventStore.cursor())
+                })
+                // receive() reopens both native stores and SQL, rebuilding dependency state from pending rows.
+                val restarted = fixture.receive(emptyList(), "following", api = PageApi(emptyMap()),
+                    recoveryFactory = { fixture.unavailableRecovery(it) { fetches++ } }, isolateConversations = true, nowEpochMillis = { 2_000L })
+                val receivedAfterRestart = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(restarted).value)
+                assertEquals("following", receivedAfterRestart.messageId)
+                assertFalse(receivedAfterRestart.shouldNotify)
+                assertNull(receivedAfterRestart.text)
+                assertEquals(1, fetches)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "blocked", api = PageApi(emptyMap()),
+                    recoveryFactory = { fixture.unavailableRecovery(it) { fetches++ } }, isolateConversations = true, nowEpochMillis = { 32_000L })).value)
+                assertEquals(2, fetches)
+            }
+        }
+    }
+
+    @Test
+    fun isolatedNSEPreservesMultiPayloadAndSharedProteusSessionDependencies() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.seedProteusConversation()
+                val another = QualifiedIDEntity("another-proteus", SELF.domain)
+                fixture.seedProteusConversation(another)
+                val failed = fixture.event("blocked-mls", byteArrayOf(1),
+                    conversationId = QualifiedIDEntity("unavailable", "federated.example"))
+                val first = fixture.event("first", fixture.encrypt("first", protocolMLS = false),
+                    protocolMLS = false, conversationId = DELETE_TARGET)
+                val later = fixture.event("later", fixture.encrypt("later", protocolMLS = false),
+                    protocolMLS = false, conversationId = another)
+                val target = fixture.event("target", fixture.encrypt("target"))
+                val combined = fixture.batch("combined", failed, first)
+                fixture.seedPendingIsolatedRecovery("combined", QualifiedIDEntity("unavailable", "federated.example"))
+                fixture.releasePrepared()
+                val result = fixture.receive(listOf(combined, later, target), "target", isolateConversations = true,
+                    recoveryFactory = { fixture.unavailableRecovery(it) })
+                val received = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
+                assertEquals("target", received.messageId)
+                assertFalse(received.shouldNotify)
+                assertNull(received.text)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("combined")).isProcessed)
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("later")).isProcessed)
+                    assertNull(runtime.database.messageDAO.getMessageById("first", DELETE_TARGET))
+                    assertNull(runtime.database.messageDAO.getMessageById("later", another))
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("target")).isProcessed)
+                })
+            }
+        }
+    }
+
+    @Test
+    fun isolatedNSEStopsAtAccountEventsAndEncryptedCrossConversationEffects() = runTest {
+        for (encrypted in listOf(false, true)) withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.seedProteusConversation()
+                val failed = fixture.event("blocked", byteArrayOf(1),
+                    conversationId = QualifiedIDEntity("unavailable", "federated.example"))
+                fixture.seedPendingIsolatedRecovery("blocked", QualifiedIDEntity("unavailable", "federated.example"))
+                val barrier = if (encrypted) fixture.event("barrier",
+                    fixture.encrypt("barrier", MessageContent.DataTransfer(MessageContent.DataTransfer.TrackingIdentifier("changed")),
+                        protocolMLS = false), protocolMLS = false, conversationId = DELETE_TARGET)
+                else fixture.newClient()
+                val target = fixture.event("target", fixture.encrypt("target"))
+                fixture.releasePrepared()
+                val result = fixture.receive(listOf(failed, barrier, target), "target", isolateConversations = true,
+                    recoveryFactory = { fixture.unavailableRecovery(it) })
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    for (id in listOf("blocked", barrier.id, "target")) {
+                        assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(id)).isProcessed)
+                    }
+                    assertNull(runtime.database.messageDAO.getMessageById("target", CONVERSATION_ID))
+                    assertTrue(runtime.database.userConfigDAO.getTrackingIdentifier() != "changed")
+                })
+            }
+        }
+    }
+
+    @Test
+    fun isolatedNSEDoesNotContinueAfterSQLOrCommitOrAcknowledgementFailure() = runTest {
+        for (interruption in listOf(Interruption.DELIVERY, Interruption.MARKER, Interruption.AFTER_COMMIT)) {
+            withContext(Dispatchers.Default) {
+                withFixture(false) { fixture ->
+                    val first = fixture.event("first", fixture.encrypt("first"))
+                    val target = fixture.event("target", fixture.encrypt("target"))
+                    fixture.releasePrepared()
+                    assertIs<Either.Left<*>>(fixture.receive(listOf(first, target), "target", interruption = interruption,
+                        isolateConversations = true))
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("first")).isProcessed)
+                        assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("target")).isProcessed)
+                        assertNull(runtime.database.notificationEventStore.deferredUntil("first"))
+                        assertNull(runtime.database.messageDAO.getMessageById("target", CONVERSATION_ID))
+                    })
+                }
+            }
+        }
+    }
+
     /** Separate simulator processes share only prepared stores and this synthetic event manifest. */
     fun runMLSStress(args: Array<String>) = kotlinx.coroutines.runBlocking {
         withContext(Dispatchers.Default) {
@@ -254,7 +496,7 @@ class NotificationProcessorNativeTest {
 
     @Test
     fun nonHeadInvalidationPreemptsBlockedWorkOfflineWithoutAcknowledgingQueue() = runTest {
-        for (deleted in listOf(false, true)) for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
+        for (isolated in listOf(false, true)) for (deleted in listOf(false, true)) for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 val blocked = fixture.plainEvent("blocked", """{"type":"user.legalhold-enable","id":"${SELF.value}"}""")
                 val terminal = if (deleted) fixture.userDelete(SELF) else fixture.clientRemove(CLIENT)
@@ -270,7 +512,24 @@ class NotificationProcessorNativeTest {
                     override suspend fun getAllNotifications(size: Int, client: String) = error("Network unavailable")
                     override suspend fun notificationsByBatch(size: Int, client: String, since: String) = error("Auth unavailable")
                 }
-                assertIs<Either.Right<*>>(fixture.receive(emptyList(), text.id, api = offline))
+                assertIs<Either.Right<*>>(fixture.receive(emptyList(), text.id, api = offline, isolateConversations = isolated))
+                assertEquals(NotificationAppWork.ACCOUNT_INVALIDATION, fixture.receivedAppWork)
+                assertEquals("3", fixture.sqlValue("SELECT COUNT(*) FROM Events WHERE is_processed = 0"))
+                assertEquals("0", fixture.sqlValue("SELECT COUNT(*) FROM Message WHERE id = 'tail'"))
+                assertIs<Either.Left<*>>(fixture.open { error("Invalidated account reopened") })
+            }
+        }
+    }
+
+    @Test
+    fun isolatedNSEPreflightsFetchedTerminalEventsBeforeBlockedWork() = runTest {
+        for (deleted in listOf(false, true)) withContext(Dispatchers.Default) {
+            withFixture(false) { fixture ->
+                val blocked = fixture.plainEvent("blocked", """{"type":"user.legalhold-enable","id":"${SELF.value}"}""")
+                val terminal = if (deleted) fixture.userDelete(SELF) else fixture.clientRemove(CLIENT)
+                val text = fixture.event("tail", fixture.encrypt("tail"))
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.receive(listOf(blocked, terminal, text), text.id, isolateConversations = true))
                 assertEquals(NotificationAppWork.ACCOUNT_INVALIDATION, fixture.receivedAppWork)
                 assertEquals("3", fixture.sqlValue("SELECT COUNT(*) FROM Events WHERE is_processed = 0"))
                 assertEquals("0", fixture.sqlValue("SELECT COUNT(*) FROM Message WHERE id = 'tail'"))
@@ -3939,6 +4198,258 @@ class NotificationProcessorNativeTest {
     @Test
     fun pendingRejoinAfterCatchingUpInvalidatesEarlierDecryptionInTheBatch() = externalRejoinCheckpoint(
         abort = false, useRecoveryStore = true, catchUpBeforeRejoin = true)
+
+    @Test
+    fun recoveryPayloadReceiptsSurviveReopenAndSeparateEventAcknowledgments() = recoveryPayloadReceipts(abort = false)
+
+    @Test
+    fun recoveryPayloadReceiptsCannotBypassDecryptionAfterNativeRollback() = recoveryPayloadReceipts(abort = true)
+
+    @Test
+    fun pendingRecoveryCannotBeAcknowledgedAsAnUnavailableConversation() = runTest {
+        withContext(Dispatchers.Default) {
+            for ((status, label) in listOf(404 to "no-conversation", 403 to "access-denied")) withFixture(true) { fixture ->
+                val ciphertext = fixture.encrypt("notification")
+                val event = fixture.event("notification", ciphertext)
+                val failure = KaliumException.InvalidRequestError(GenericAPIErrorResponse(status, label, "Unavailable"))
+                var ordinaryFetches = 0
+                var recoveryFetches = 0
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT)
+                        .begin(event.id, GROUP_ID, ciphertext)
+                    fixture.sql("DELETE FROM Conversation")
+                })
+                val result = fixture.receive(listOf(event), event.id,
+                    fetchConversation = { ordinaryFetches++; throw failure },
+                    recoveryFactory = { runtime ->
+                        val api = object : ConversationApi by runtime.network.conversationApi {
+                            override suspend fun fetchConversationDetails(conversationId: com.wire.kalium.network.api.model.ConversationId)
+                                : NetworkResponse<ConversationResponse> {
+                                recoveryFetches++
+                                return NetworkResponse.Error(failure)
+                            }
+                        }
+                        MLSReceiveRecovery(
+                            MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT),
+                            api, SELF,
+                        ) { _, _, _ -> error("Unavailable recovery must not send a commit") }
+                    })
+                assertIs<Either.Left<*>>(result)
+                assertEquals(0, ordinaryFetches)
+                assertEquals(1, recoveryFetches)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertNotNull(MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT)
+                        .find(event.id) { ciphertext })
+                })
+            }
+        }
+    }
+
+    @Test
+    fun nseRecoveryReplaysCaughtUpBatchAfterMarkerFailureWithoutAnotherJoin() = recoveryBatchReplay(false)
+
+    @Test
+    fun recoveryReplayPreservesCanonicalMembershipAfterHistoricalLeave() = recoveryBatchReplay(true)
+
+    @Test
+    fun recoveryEffectsReplayStillDecryptsProteusAfterOuterRollback() = recoveryBatchReplay(true, proteusRollback = true)
+
+    fun exportRecoveryTakeover() = recoveryBatchReplay(true, proteusRollback = true, exportTakeover = true)
+
+    private fun recoveryBatchReplay(historicalLeave: Boolean, proteusRollback: Boolean = false, exportTakeover: Boolean = false) = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true, deleteStorage = !exportTakeover) { fixture ->
+                val firstCommit = fixture.commit()
+                val secondCommit = fixture.commit()
+                val trigger = fixture.encrypt("trigger")
+                val prefix = fixture.encrypt("prefix")
+                val groupInfo = checkNotNull(fixture.transport.bundle).groupInfoBundle.payload.drop(4).toByteArray()
+                val proteusPayload = if (proteusRollback) listOf(fixture.event("proteus-prefix",
+                    fixture.encrypt("proteus-prefix", protocolMLS = false), protocolMLS = false)) else emptyList()
+                var proteusDecryptions = 0
+                val observeProteus: (ProteusCoreCryptoContext) -> ProteusCoreCryptoContext = { context ->
+                    object : ProteusCoreCryptoContext by context {
+                        override suspend fun <T : Any> decryptMessage(sessionId: CryptoSessionId, message: ByteArray,
+                            handleDecryptedMessage: suspend (ByteArray) -> T): T = context.decryptMessage(sessionId, message) {
+                            proteusDecryptions++
+                            handleDecryptedMessage(it)
+                        }
+                    }
+                }
+                val payloads = proteusPayload + listOf(fixture.event("prefix", prefix)) +
+                    (if (historicalLeave) listOf(fixture.memberLeave(member = SENDER)) else emptyList()) +
+                    fixture.event("trigger", trigger)
+                val notification = fixture.batch("notification", *payloads.toTypedArray())
+                var joins = 0
+                var metadataReads = 0
+                val transporter = object : MLSTransporter {
+                    override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
+                        joins++
+                        checkNotNull(fixture.senderMLS).transaction { it.decryptMessage(GROUP_ID, commitBundle.commit) }
+                    }
+                }
+                val recoveryFactory: (AppleAccountRuntime) -> MLSReceiveRecovery = { runtime ->
+                    val api = object : ConversationApi by runtime.network.conversationApi {
+                        override suspend fun fetchConversationDetails(conversationId: com.wire.kalium.network.api.model.ConversationId)
+                            : NetworkResponse<ConversationResponse> {
+                            metadataReads++
+                            return NetworkResponse.Success(fixture.creationResponse().copy(epoch = 3uL), emptyMap(), 200)
+                        }
+                        override suspend fun fetchGroupInfo(conversationId: com.wire.kalium.network.api.model.QualifiedID) =
+                            NetworkResponse.Success(groupInfo, emptyMap(), 200)
+                    }
+                    MLSReceiveRecovery(
+                        MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT),
+                        api, SELF,
+                    ) { context, groupId, info ->
+                        assertEquals(groupId, context.joinByExternalCommit(info))
+                        context.conversationEpoch(groupId)
+                    }
+                }
+                fixture.releasePrepared()
+                val operation = assertIs<Either.Right<PendingMLSReceiveRecovery>>(fixture.open { runtime ->
+                    checkNotNull(fixture.openMLS(runtime)).transaction { context ->
+                        context.decryptMessage(GROUP_ID, firstCommit)
+                        context.decryptMessage(GROUP_ID, secondCommit)
+                    }
+                    MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT)
+                        .begin(notification.id, GROUP_ID, trigger)
+                }).value
+                assertIs<Either.Left<*>>(fixture.receive(
+                    listOf(notification), notification.id, if (proteusRollback) Interruption.AFTER_COMMIT else Interruption.MARKER,
+                    decorateProteusContext = observeProteus, recoveryFactory = recoveryFactory, mlsTransport = transporter))
+                assertEquals(1, joins)
+                assertEquals(1, metadataReads)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(notification.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
+                    assertNotNull(runtime.database.messageDAO.getMessageById("mls-recovery:${operation.id}", CONVERSATION_ID))
+                    assertEquals(setOf(SELF.toDao(), SENDER.toDao()),
+                        runtime.database.memberDAO.getConversationMembers(CONVERSATION_ID).toSet())
+                    assertEquals(4uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
+                    if (!proteusRollback) fixture.sql("DROP TRIGGER interrupt_receive")
+                })
+                if (exportTakeover) {
+                    val following = fixture.event("following", fixture.encrypt("following"))
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        runtime.database.eventDAO.insertEvents(listOf(NewEventEntity(following.id, following.payload, false, false)))
+                    })
+                    val manifest = JsonObject(fixture.manifest(notification, byteArrayOf(), byteArrayOf(),
+                        listOf("prefix", "proteus-prefix", "following")) + mapOf(
+                        "recoveryTakeover" to JsonPrimitive(true),
+                        "recoveryWarningId" to JsonPrimitive("mls-recovery:${operation.id}"),
+                    ))
+                    val path = "${NSTemporaryDirectory()}kalium-nse-recovery-takeover.json"
+                    FileSystem.SYSTEM.write(path.toPath()) { writeUtf8(JsonArray(listOf(manifest)).toString()) }
+                    println("NSE_RECOVERY_TAKEOVER_MANIFEST=$path")
+                    return@withFixture
+                }
+                assertIs<Either.Right<*>>(fixture.receive(
+                    emptyList(), notification.id, decorateProteusContext = observeProteus,
+                    recoveryFactory = recoveryFactory, mlsTransport = transporter))
+                assertEquals(1, joins)
+                assertEquals(1, metadataReads)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(notification.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
+                    assertNotNull(runtime.database.messageDAO.getMessageById("mls-recovery:${operation.id}", CONVERSATION_ID))
+                    assertEquals(setOf(SELF.toDao(), SENDER.toDao()),
+                        runtime.database.memberDAO.getConversationMembers(CONVERSATION_ID).toSet())
+                })
+                if (proteusRollback) assertEquals(2, proteusDecryptions, "Both attempts must decrypt after the outer rollback")
+                val following = fixture.event("following", fixture.encrypt("following"))
+                val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(
+                    listOf(following), following.id, api = PageApi(mapOf(notification.id to pageResponse(listOf(following)))),
+                    recoveryFactory = recoveryFactory, mlsTransport = transporter)).value
+                assertEquals("following", result?.text)
+                assertEquals(1, joins)
+            }
+        }
+    }
+
+    @Suppress("LongMethod")
+    private fun recoveryPayloadReceipts(abort: Boolean) = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val firstCommit = fixture.commit()
+                val secondCommit = fixture.commit()
+                val trigger = fixture.encrypt("trigger")
+                val prefix = fixture.encrypt("prefix")
+                fun payload(id: String, bytes: ByteArray) = com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage(
+                    id, CONVERSATION_ID.toModel(), null, SENDER, TIME, Base64.encode(bytes))
+                val earlierEvent = payload("earlier-event", prefix)
+                val recoveryEvent = payload("recovery-event", trigger)
+                val groupInfo = checkNotNull(fixture.transport.bundle).groupInfoBundle.payload.drop(4).toByteArray()
+                val transporter = object : MLSTransporter {
+                    override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
+                        checkNotNull(fixture.senderMLS).transaction { it.decryptMessage(GROUP_ID, commitBundle.commit) }
+                    }
+                }
+                fixture.releasePrepared()
+                val result = fixture.open { runtime ->
+                    runtime.database.eventDAO.insertEvents(listOf(earlierEvent, recoveryEvent).map {
+                        NewEventEntity(it.id, "[]", false, false)
+                    })
+                    val store = MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT)
+                    val operation = store.begin(recoveryEvent.id, GROUP_ID, trigger)
+                    checkNotNull(fixture.openMLS(runtime, transporter)).transaction { context ->
+                        assertFalse(store.wasProcessed(context, earlierEvent))
+                        context.decryptMessage(GROUP_ID, firstCommit)
+                        context.decryptMessage(GROUP_ID, secondCommit)
+                        assertIs<MLSDecryptResult.Success>(context.decryptMessage(GROUP_ID, prefix))
+                        assertEquals(GROUP_ID, context.joinByExternalCommit(groupInfo))
+                        store.complete(context, operation)
+                        // As in receiving, SQL effects finish before the native transaction commits.
+                        runtime.database.messageDAO.insertOrIgnoreMessage(storedText("prefix"))
+                        store.recordProcessed(context, listOf(earlierEvent, recoveryEvent))
+                        if (abort) error("Abort after SQL receipts, before native commit")
+                    }
+                }
+                if (abort) assertIs<Either.Left<*>>(result) else assertIs<Either.Right<*>>(result)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val store = MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
+                    checkNotNull(fixture.openMLS(runtime)).transaction { context ->
+                        assertEquals(!abort, store.wasProcessed(context, earlierEvent))
+                        assertEquals(!abort, store.wasProcessed(context, recoveryEvent))
+                        assertFalse(store.wasProcessed(context, earlierEvent.copy(content = Base64.encode(trigger))))
+                        if (abort) {
+                            assertEquals(1uL, context.conversationEpoch(GROUP_ID))
+                            context.decryptMessage(GROUP_ID, firstCommit)
+                            context.decryptMessage(GROUP_ID, secondCommit)
+                            assertIs<MLSDecryptResult.Success>(context.decryptMessage(GROUP_ID, prefix))
+                        } else {
+                            val failure = assertFailsWith<Exception> { context.decryptMessage(GROUP_ID, prefix) }
+                            assertIs<MLSFailure.Other>(com.wire.kalium.common.error.commonizeMLSException(failure).failure)
+                        }
+                    }
+                    if (!abort) store.acknowledge(listOf(recoveryEvent.id))
+                })
+                if (!abort) {
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        val store = MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT)
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(recoveryEvent.id)).isProcessed)
+                        assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(earlierEvent.id)).isProcessed)
+                        checkNotNull(fixture.openMLS(runtime)).transaction { context ->
+                            assertTrue(store.wasProcessed(context, earlierEvent))
+                            assertFalse(store.wasProcessed(context, recoveryEvent))
+                        }
+                        store.acknowledge(listOf(earlierEvent.id))
+                    })
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        val store = MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT)
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(earlierEvent.id)).isProcessed)
+                        checkNotNull(fixture.openMLS(runtime)).transaction { context ->
+                            assertFalse(store.wasProcessed(context, earlierEvent))
+                            assertFalse(store.wasProcessed(context, recoveryEvent))
+                        }
+                    })
+                }
+            }
+        }
+    }
 
     private fun externalRejoinCheckpoint(
         abort: Boolean,
@@ -9797,13 +10308,13 @@ class NotificationProcessorNativeTest {
         }
     }
 
-    private suspend fun withFixture(mls: Boolean, senderId: UserId = SENDER, newConversation: Boolean = false, x509: Boolean = false, basicSelf: Boolean = false, block: suspend (Fixture) -> Unit) {
+    private suspend fun withFixture(mls: Boolean, senderId: UserId = SENDER, newConversation: Boolean = false, x509: Boolean = false, basicSelf: Boolean = false, deleteStorage: Boolean = true, block: suspend (Fixture) -> Unit) {
         val fixture = Fixture(mls, senderId = senderId, newConversation = newConversation, x509 = x509, basicSelf = basicSelf)
         try {
             fixture.prepare()
             block(fixture)
         } finally {
-            fixture.close()
+            fixture.close(deleteStorage)
         }
     }
 
@@ -10736,6 +11247,32 @@ class NotificationProcessorNativeTest {
             assertNotNull(database.messageDAO.getMessageById("history", DELETE_TARGET))
         }
 
+        suspend fun seedPendingIsolatedRecovery(eventId: String, id: QualifiedIDEntity) {
+            val database = userDatabaseBuilder(
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default
+            )
+            try {
+                val source = checkNotNull(database.conversationDAO.getConversationById(CONVERSATION_ID))
+                val protocol = source.protocolInfo as ConversationEntity.ProtocolInfo.MLS
+                database.conversationDAO.insertConversation(source.copy(id = id, protocolInfo = protocol.copy(groupId = "blocked-group")))
+                MLSReceiveRecoveryStore(database.metadataDAO, database.notificationEventStore, CLIENT)
+                    .begin(eventId, "blocked-group", byteArrayOf(1))
+            } finally { database.close() }
+        }
+
+        fun unavailableRecovery(runtime: AppleAccountRuntime, onFetch: () -> Unit = {}): MLSReceiveRecovery = MLSReceiveRecovery(
+            MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT),
+            object : ConversationApi by runtime.network.conversationApi {
+                override suspend fun fetchConversationDetails(conversationId: com.wire.kalium.network.api.model.ConversationId)
+                    : NetworkResponse<ConversationResponse> {
+                    onFetch()
+                    return NetworkResponse.Error(com.wire.kalium.network.exceptions.FederationError(
+                        com.wire.kalium.network.api.model.FederationErrorResponse.Generic(
+                            533, "backend unavailable", "federation-remote-error", null)))
+                }
+            }, SELF,
+        ) { _, _, _ -> error("Unavailable federation must not send a commit") }
+
         suspend fun seedProteusConversation(id: QualifiedIDEntity = DELETE_TARGET) {
             val database = userDatabaseBuilder(
                 PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default
@@ -11175,6 +11712,10 @@ class NotificationProcessorNativeTest {
             hasCredential: (suspend (com.wire.kalium.cryptography.MLSCiphersuite) -> Boolean)? = null,
             transactionCheckpoint: suspend (String) -> Unit = {},
             diagnostics: ReceivingDiagnostics? = null,
+            recoveryFactory: ((AppleAccountRuntime) -> MLSReceiveRecovery)? = null,
+            isolateConversations: Boolean = false,
+            nowEpochMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+            mlsTransport: MLSTransporter? = null,
         ) = open { runtime ->
             if (interruption in listOf(Interruption.DELIVERY, Interruption.MARKER, Interruption.SECOND_MESSAGE)) {
                 val trigger = when (interruption) {
@@ -11196,7 +11737,7 @@ class NotificationProcessorNativeTest {
                     com.wire.kalium.logic.data.conversation.sendMLSCommitBundle(api, commitBundle)
                 }
             } }
-            val mls = openMLS(runtime, commitTransport ?: transport)?.let { realMLS ->
+            val mls = openMLS(runtime, mlsTransport ?: commitTransport ?: transport)?.let { realMLS ->
                 object : MLSClient by realMLS {
                     override suspend fun <R> transaction(name: String, block: suspend (MlsCoreCryptoContext) -> R): R =
                         realMLS.transaction(name) { context ->
@@ -11214,6 +11755,9 @@ class NotificationProcessorNativeTest {
                 runtime.database, api, CLIENT, SELF, proteus, mls,
                 diagnostics = diagnostics,
                 invalidateReceiving = { runtime.invalidateReceiving() },
+                isolateConversations = isolateConversations,
+                nowEpochMillis = nowEpochMillis,
+                recovery = recoveryFactory?.invoke(runtime),
                 evaluateCalls = { events ->
                     receivedCallEvents = events
                     evaluateCallingEvents(events, SELF, CLIENT, runtime.database)
@@ -12116,6 +12660,7 @@ fun runSwiftReceivingFixture(args: Array<String>) {
         "export-ordinary" -> fixture.exportPreparedAccountsForSwift(ordinary = true)
         "export-membership" -> fixture.exportPreparedAccountsForSwift(membership = true)
         "export-creation" -> fixture.exportPreparedAccountsForSwift(creation = true)
+        "export-recovery-takeover" -> fixture.exportRecoveryTakeover()
         "export-recovery" -> fixture.exportPreparedAccountsForSwift(recovery = true)
         "export-reset" -> fixture.exportPreparedAccountsForSwift(reset = true)
         "export-content" -> fixture.exportPreparedAccountsForSwift(content = true)

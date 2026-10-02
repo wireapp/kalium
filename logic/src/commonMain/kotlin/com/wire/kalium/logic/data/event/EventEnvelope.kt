@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.event
 
+import com.wire.kalium.logic.sync.receiving.ReceivedPayloadIdentity
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.util.serialization.toJsonElement
 
@@ -26,7 +27,8 @@ import com.wire.kalium.util.serialization.toJsonElement
  */
 internal data class EventEnvelope(
     val event: Event,
-    val deliveryInfo: EventDeliveryInfo
+    val deliveryInfo: EventDeliveryInfo,
+    val payloadIdentity: ReceivedPayloadIdentity? = null,
 ) {
     override fun toString(): String {
         return super.toString()
