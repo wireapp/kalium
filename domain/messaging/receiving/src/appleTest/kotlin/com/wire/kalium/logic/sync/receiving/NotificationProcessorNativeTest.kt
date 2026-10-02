@@ -9514,7 +9514,11 @@ class NotificationProcessorNativeTest {
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
                 val api = PageApi(mapOf(null to pageResponse(listOf(earlier), true), "earlier" to pageResponse(listOf(target, later))))
-                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification", api = api)).value?.text)
+                val result = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(
+                    fixture.receive(emptyList(), "notification", api = api)).value)
+                assertEquals("first", result.text)
+                assertEquals("Fixture", result.senderName)
+                assertEquals("Fixture", result.conversationName)
                 assertEquals(listOf(null, "earlier"), api.requests)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertEquals("later", runtime.database.notificationEventStore.cursor())

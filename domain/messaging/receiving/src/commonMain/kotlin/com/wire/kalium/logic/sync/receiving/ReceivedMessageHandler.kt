@@ -497,6 +497,8 @@ internal class ReceivedMessageHandler(
                 text,
                 notify,
                 mayPreview,
+                conversationName = conversation.name,
+                senderName = data.users.getNameAndHandle(message.senderUserId)?.name,
                 suppressionReason = reason,
                 previewPolicyReason = if (mayPreview) null else
                     "expiry=${message.expireAfterMs != null};mls=${conversation.mlsVerificationStatus.name};" +
