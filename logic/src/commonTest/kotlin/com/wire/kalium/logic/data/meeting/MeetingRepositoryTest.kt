@@ -72,6 +72,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -95,6 +96,8 @@ class MeetingRepositoryTest {
         val meetingDTO = meetingDTO(creatorId = creatorId.toApi())
         val (arrangement, repository) = Arrangement()
             .withFetchMeetingsSuccess(listOf(meetingDTO))
+            .withFetchConversationsSuccess()
+            .withPersistConversationsSuccess()
             .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
             .withFetchUsersIfUnknownSuccess(setOf(creatorId))
             .arrange()
@@ -103,7 +106,7 @@ class MeetingRepositoryTest {
         val expectedMeetingEntity = requireNotNull(arrangement.meetingMapper.fromApiToDao(meetingDTO))
         val expectedMeeting = arrangement.meetingMapper.fromDaoToModel(expectedMeetingEntity)
 
-        val result = repository.fetchAndPersistMeetings(generateOccurrencesFrom, generateOccurrencesUntil)
+        val result = repository.fetchAndPersistMeetings(arrangement.transactionContext, generateOccurrencesFrom, generateOccurrencesUntil)
 
         assertTrue(result.isRight())
         assertContentEquals(listOf(expectedMeeting), result.getOrNull())
@@ -118,7 +121,7 @@ class MeetingRepositoryTest {
     }
 
     @Test
-    fun whenFetchAndPersistMeetings_thenCreatorsArePreparedOnceBeforePersistingMeetings() = runTest {
+    fun whenFetchAndPersistMeetings_thenCreatorsAndConversationsArePreparedOnceBeforePersistingMeetings() = runTest {
         val creatorId = UserId("user1", "domain")
         val meetings = listOf(
             meetingDTO(
@@ -129,30 +132,70 @@ class MeetingRepositoryTest {
             ),
             meetingDTO(
                 meetingId = NetworkMeetingId("meeting2", "domain"),
-                conversationId = ApiConversationId("conversation2", "domain"),
+                conversationId = ApiConversationId("conversation1", "domain"),
                 creatorId = creatorId.toApi(),
                 title = "Meeting 2"
             )
         )
         val (arrangement, repository) = Arrangement()
             .withFetchMeetingsSuccess(meetings)
+            .withFetchConversationsSuccess()
+            .withPersistConversationsSuccess()
             .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
             .withFetchUsersIfUnknownSuccess(setOf(creatorId))
             .arrange()
         val expectedMeetingEntities = meetings.map { requireNotNull(arrangement.meetingMapper.fromApiToDao(it)) }
 
-        val result = repository.fetchAndPersistMeetings()
+        val result = repository.fetchAndPersistMeetings(arrangement.transactionContext)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exhaustiveOrder) {
             arrangement.userRepository.insertOrIgnoreIncompleteUsers(userIds = listOf(creatorId))
             arrangement.userRepository.fetchUsersIfUnknownByIds(ids = setOf(creatorId))
+            arrangement.conversationRepository.fetchConversationListDetails(meetings.map { it.conversationId.toModel() }.distinct())
+            arrangement.persistConversations(
+                arrangement.transactionContext, listOf(ConversationRepositoryTest.CONVERSATION_RESPONSE), false, any()
+            )
             arrangement.meetingDao.upsertMeetings(
                 meetings = expectedMeetingEntities,
                 generateOccurrencesWindow = any(),
                 removeMeetingsAbsentFromUpsertList = true,
             )
         }
+    }
+
+    @Test
+    fun givenEmptyMeetingResponse_whenFetching_thenRemoveStaleMeetingsWithoutFetchingConversations() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingsSuccess(emptyList())
+            .arrange()
+
+        val result = repository.fetchAndPersistMeetings(arrangement.transactionContext)
+
+        assertEquals(Either.Right(emptyList()), result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.upsertMeetings(emptyList(), any(), true)
+        }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.fetchConversationListDetails(any()) }
+    }
+
+    @Test
+    fun givenOnlyUnsupportedMeetings_whenFetching_thenRemoveStaleMeetingsWithoutFetchingConversations() = runTest {
+        val unsupported = meetingDTO(
+            recurrence = MeetingRecurrenceDTO(frequency = MeetingFrequencyDTO.WEEKLY, interval = 7L, until = null)
+        )
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingsSuccess(listOf(unsupported))
+            .arrange()
+
+        val result = repository.fetchAndPersistMeetings(arrangement.transactionContext)
+
+        assertEquals(Either.Right(emptyList()), result)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.upsertMeetings(emptyList(), any(), true)
+        }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.fetchConversationListDetails(any()) }
     }
 
     @Test
@@ -1135,6 +1178,12 @@ class MeetingRepositoryTest {
         internal val meetingMapper = MapperProvider.meetingMapper()
         internal val conversationMapper = MapperProvider.conversationMapper(selfUserId)
         internal val idMapper = MapperProvider.idMapper()
+
+        internal fun withFetchConversationsSuccess() = apply {
+            everySuspend { conversationRepository.fetchConversationListDetails(any()) } returns Either.Right(
+                ConversationResponseDTO(listOf(ConversationRepositoryTest.CONVERSATION_RESPONSE), emptyList(), emptyList())
+            )
+        }
 
         internal fun withFetchMeetingsSuccess(result: List<MeetingDTO>) = apply {
             everySuspend { meetingApi.fetchMeetings() } returns NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value)

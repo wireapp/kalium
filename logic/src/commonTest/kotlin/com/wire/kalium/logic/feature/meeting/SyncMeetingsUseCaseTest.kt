@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.IsMeetingsEnabledUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
@@ -74,7 +73,7 @@ class SyncMeetingsUseCaseTest {
         val result = useCase()
 
         assertIs<Either.Right<Unit>>(result)
-        verifySuspend(VerifyMode.not) { arrangement.meetingRepository.fetchAndPersistMeetings() }
+        verifySuspend(VerifyMode.not) { arrangement.meetingRepository.fetchAndPersistMeetings(arrangement.transactionContext) }
     }
 
     @Test
@@ -111,12 +110,11 @@ class SyncMeetingsUseCaseTest {
         val result = useCase()
 
         assertIs<Either.Right<Unit>>(result)
-        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingRepository.fetchAndPersistMeetings() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingRepository.fetchAndPersistMeetings(arrangement.transactionContext) }
     }
 
     inner class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         internal val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
-        internal val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         internal val isMeetingsEnabledUseCase = mock<IsMeetingsEnabledUseCase>(mode = MockMode.autoUnit)
 
         internal fun withMeetingsEnabled(enabled: Boolean) = apply {
@@ -124,11 +122,11 @@ class SyncMeetingsUseCaseTest {
         }
 
         internal fun withFetchMeetingsFailed(failure: CoreFailure) = apply {
-            everySuspend { meetingRepository.fetchAndPersistMeetings() } returns Either.Left(failure)
+            everySuspend { meetingRepository.fetchAndPersistMeetings(transactionContext) } returns Either.Left(failure)
         }
 
         internal fun withFetchMeetingsSuccessful(list: List<Meeting>) = apply {
-            everySuspend { meetingRepository.fetchAndPersistMeetings() } returns Either.Right(list)
+            everySuspend { meetingRepository.fetchAndPersistMeetings(transactionContext) } returns Either.Right(list)
         }
 
         internal suspend fun arrange() = this to SyncMeetingsUseCaseImpl(

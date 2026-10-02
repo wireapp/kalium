@@ -27,9 +27,10 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.feature.user.IsMeetingsEnabledUseCase
 
-internal interface SyncMeetingsUseCase {
-    suspend fun isEnabled(): Boolean
-    suspend operator fun invoke(): Either<CoreFailure, Unit>
+/** Synchronizes the current user's meetings from the backend when meetings are enabled. */
+public interface SyncMeetingsUseCase {
+    public suspend fun isEnabled(): Boolean
+    public suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
 /**
@@ -46,7 +47,7 @@ internal class SyncMeetingsUseCaseImpl(
     override suspend operator fun invoke(): Either<CoreFailure, Unit> = when (isEnabled()) {
         false -> Either.Right(Unit)
         true -> transactionProvider.transaction("SyncMeetings") {
-            meetingRepository.fetchAndPersistMeetings().map {}
+            meetingRepository.fetchAndPersistMeetings(it).map {}
         }.flatMapLeft {
             when (it) {
                 is NetworkFailure.FeatureNotSupported -> Either.Right(Unit)
