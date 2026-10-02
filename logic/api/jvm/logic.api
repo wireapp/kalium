@@ -946,6 +946,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getMigrateFromPersonalToTeam ()Lcom/wire/kalium/logic/feature/user/migration/MigrateFromPersonalToTeamUseCase;
 	public final fun getMultiPlatformBackup ()Lcom/wire/kalium/logic/feature/backup/MultiPlatformBackupScope;
 	public final fun getObserveAnalyticsTrackingIdentifierStatus ()Lcom/wire/kalium/logic/feature/analytics/ObserveAnalyticsTrackingIdentifierStatusUseCase;
+	public final fun getObserveApiVersionChange ()Lcom/wire/kalium/logic/feature/server/ObserveApiVersionChangeUseCase;
 	public final fun getObserveE2EIRequired ()Lcom/wire/kalium/logic/feature/user/ObserveE2EIRequiredUseCase;
 	public final fun getObserveFileSharingStatus ()Lcom/wire/kalium/logic/feature/user/ObserveFileSharingStatusUseCase;
 	public final fun getObserveGuestRoomLinkFeatureFlag ()Lcom/wire/kalium/logic/feature/user/guestroomlink/ObserveGuestRoomLinkFeatureFlagUseCase;
@@ -6442,6 +6443,10 @@ public final class com/wire/kalium/logic/feature/server/IsCrossBackendLoginBlock
 	public final fun getId ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/server/ObserveApiVersionChangeUseCase {
+	public abstract fun invoke ()Lkotlinx/coroutines/flow/Flow;
 }
 
 public final class com/wire/kalium/logic/feature/server/ServerConfigForAccountUseCase {
