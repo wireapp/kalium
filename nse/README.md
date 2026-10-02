@@ -5,6 +5,14 @@ library receives supported Proteus/MLS events, persists shared app state and
 returns a notification decision. It is a development integration: real host/APNs,
 entitlement and signed-device lifecycle validation remain separate work.
 
+## Building the XCFramework
+
+`assembleKaliumNSEDebugXCFramework` and `assembleKaliumNSEReleaseXCFramework`
+include device ARM64 and simulator ARM64 by default. Pass
+`-Pwire.ios.simulatorOnly=true` or `-Pwire.ios.deviceOnly=true` to assemble only
+that platform and avoid linking the other slice. Both flags together are invalid.
+The targets remain available for other Gradle tasks.
+
 ## Integrating with an iOS host
 
 Prepare the account through the app before using the receiver. App and NSE must

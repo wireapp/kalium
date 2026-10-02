@@ -31,12 +31,31 @@ kotlin {
     explicitApi()
     compilerOptions.optIn.add("com.wire.kalium.util.InternalKaliumApi")
     val framework = XCFramework("KaliumNSE")
+    val simulatorOnlyXcFramework = providers
+        .gradleProperty("wire.ios.simulatorOnly")
+        .map(String::toBooleanStrict)
+        .getOrElse(false)
+    val deviceOnlyXcFramework = providers
+        .gradleProperty("wire.ios.deviceOnly")
+        .map(String::toBooleanStrict)
+        .getOrElse(false)
+    require(!(simulatorOnlyXcFramework && deviceOnlyXcFramework)) {
+        "Select either simulator-only or device-only XCFrameworks"
+    }
+
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
+        val includeInXcFramework = when {
+            simulatorOnlyXcFramework -> target.name == "iosSimulatorArm64"
+            deviceOnlyXcFramework -> target.name == "iosArm64"
+            else -> true
+        }
         target.binaries.framework {
             baseName = "KaliumNSE"
             freeCompilerArgs += "-Xbinary=bundleId=com.wire.kalium.nse"
             linkerOpts("-lsqlite3", "-framework", "Security", "-application_extension")
-            framework.add(this)
+            if (includeInXcFramework) {
+                framework.add(this)
+            }
         }
     }
     sourceSets {

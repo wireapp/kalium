@@ -176,13 +176,16 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         val removals = runtime.database.messageDAO.observeNotificationRemovalCandidates(
             request.deliveredNotifications.map { it.messageId }.distinct()
         ).first().toSet()
-        return result.copy(notificationIdentifiersToRemove = request.deliveredNotifications.filter {
-            it.messageKey() in removals
-        }.map { it.identifier })
+        return result.copy(
+            notificationIdentifiersToRemove = request.deliveredNotifications.filter {
+                it.messageKey() in removals
+            }.map { it.identifier }
+        )
     }
 
     private fun KaliumNSEDeliveredNotification.messageKey() = NotificationMessageKey(
-        messageId, QualifiedIDEntity(conversationValue, conversationDomain)
+        messageId,
+        QualifiedIDEntity(conversationValue, conversationDomain)
     )
 
     @Suppress("CyclomaticComplexMethod") // Maps optional receiving fields to the public result.
