@@ -33,7 +33,7 @@ class KaliumNSELoggingTest {
                 kaliumLogger.i("first-entry")
                 assertTrue(logger.flush(2_000))
                 assertTrue(logger.configure(root.toString(), true))
-                kaliumLogger.i("second-entry")
+                kaliumLogger.v("second-entry")
                 assertTrue(logger.flush(2_000))
                 assertTrue(logger.configure(root.toString(), false))
                 kaliumLogger.i("ignored-entry")
@@ -43,7 +43,9 @@ class KaliumNSELoggingTest {
 
                 val text = FileSystem.SYSTEM.read(root / "logs" / "wire_logs-nse.log") { readUtf8() }
                 assertEquals(1, text.lines().count { "first-entry" in it })
-                assertEquals(1, text.lines().count { "second-entry" in it })
+                val verbose = text.lines().single { "second-entry" in it }
+                kotlin.time.Instant.parse(verbose.substringBefore(' '))
+                assertTrue(verbose.substringAfter(' ').startsWith("Verbose: ("))
                 assertFalse("disabled-entry" in text)
                 assertFalse("ignored-entry" in text)
                 assertFalse("wrong-root-entry" in text)

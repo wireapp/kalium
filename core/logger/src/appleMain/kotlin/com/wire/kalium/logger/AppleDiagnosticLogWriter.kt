@@ -24,11 +24,11 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import okio.FileSystem
-import platform.Foundation.NSDate
 import platform.Foundation.NSLock
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_queue_create
 import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Clock
 
 /**
  * Opt-in, app-lifetime file writer shared by Apple hosts. The host owns preferences and logger configuration.
@@ -65,7 +65,7 @@ public class AppleDiagnosticLogWriter(
             val characters = message.length.toLong() + tag.length
             if (!enabled || pendingEntries >= MAX_PENDING_ENTRIES) return@locked
             if (characters > MAX_ENTRY_CHARACTERS || pendingCharacters + characters > MAX_PENDING_CHARACTERS) return@locked
-            val timestamp = NSDate().toString()
+            val timestamp = Clock.System.now().toString()
             val acceptedGeneration = generation
             pendingEntries++
             pendingCharacters += characters.toInt()

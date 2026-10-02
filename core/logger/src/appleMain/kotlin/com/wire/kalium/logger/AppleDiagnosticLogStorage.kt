@@ -18,7 +18,10 @@
 
 package com.wire.kalium.logger
 
+import co.touchlab.kermit.DefaultFormatter
+import co.touchlab.kermit.Message
 import co.touchlab.kermit.Severity
+import co.touchlab.kermit.Tag
 import kotlinx.cinterop.ExperimentalForeignApi
 import okio.FileSystem
 import okio.IOException
@@ -64,7 +67,8 @@ internal class AppleDiagnosticLogStorage(
         requireRegularOrMissing(active)
         if ((fileSystem.metadataOrNull(active)?.size ?: 0) >= maxFileBytes) rotate()
         fileSystem.appendingSink(active).buffer().use { sink ->
-            sink.writeUtf8("$timestamp ${severity.name} [$tag] $message\n")
+            val formatted = DefaultFormatter.formatMessage(severity, Tag(tag), Message(message))
+            sink.writeUtf8("$timestamp $formatted\n")
             throwable?.let { sink.writeUtf8(it.stackTraceToString() + "\n") }
         }
     }

@@ -1,6 +1,7 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.nse
 
+import co.touchlab.kermit.OSLogWriter
 import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logger.AppleDiagnosticLogWriter
 import com.wire.kalium.logger.KaliumLogLevel
@@ -31,7 +32,7 @@ internal class NSEProcessLogger {
             val writer = AppleDiagnosticLogWriter(rootPath, streamName = "nse")
             val config = KaliumLogger.Config(
                 initialLevel = KaliumLogLevel.DISABLED,
-                initialLogWriterList = listOf(co.touchlab.kermit.platformLogWriter(), writer),
+                initialLogWriterList = listOf(OSLogWriter(subsystem = "com.wire.prism.ios.nse", category = "Kalium"), writer),
             )
             Installed(rootPath, writer, config).also {
                 CoreLogger.init(config)
@@ -39,7 +40,7 @@ internal class NSEProcessLogger {
             }
         }
         current.writer.updateLoggingEnabled(enabled)
-        current.config.logLevel = if (enabled) KaliumLogLevel.INFO else KaliumLogLevel.DISABLED
+        current.config.logLevel = if (enabled) KaliumLogLevel.VERBOSE else KaliumLogLevel.DISABLED
         true
     }
 

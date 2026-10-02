@@ -58,7 +58,9 @@ class AppleDiagnosticLogWriterTest {
             writer.log(Severity.Info, "ignored", "test", null)
             writer.flushLogs()
             val contents = fs.read(root / "logs" / "wire_logs.log") { readUtf8() }
-            assertTrue(contents.matches(Regex("(?s).* Warn \\[test\\] accepted\n" + Regex.escape(failure.stackTraceToString()) + "\n")))
+            val timestamp = contents.substringBefore(' ')
+            kotlin.time.Instant.parse(timestamp)
+            assertEquals("Warn: (test) accepted\n" + failure.stackTraceToString() + "\n", contents.substringAfter(' '))
             assertFalse("ignored" in contents)
             assertFalse(AppleDiagnosticLogWriter(root.toString()).isLoggingEnabled)
         }
@@ -235,7 +237,7 @@ class AppleDiagnosticLogWriterTest {
                     val contents = fs.read(file) { readUtf8() }
                     assertTrue(contents.endsWith("\n"))
                     assertTrue(contents.lineSequence().filter { it.isNotEmpty() }.all {
-                        it.contains(" Info [concurrent] ")
+                        it.contains(" Info: (concurrent) ")
                     })
                 }
             }
