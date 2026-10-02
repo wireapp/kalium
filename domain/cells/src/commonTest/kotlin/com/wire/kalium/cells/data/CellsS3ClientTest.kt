@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.data.model.CellNodeDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -39,10 +38,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
-import okio.FileSystem
 import okio.ForwardingFileSystem
 import okio.Path.Companion.toPath
-import okio.SYSTEM
 import okio.Source
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
@@ -97,11 +94,11 @@ class CellsS3ClientTest {
     }
 
     @Test
-    fun givenRetryableServerResponses_whenUploading_thenRetriesWithFreshSignatures() = runTest {
+    fun givenRetryableServerResponses_whenUploading_thenRetriesWithoutRefreshingTheAccessToken() = runTest {
         val uploadBytes = "hello cells".encodeToByteArray()
         val (fileSystem, uploadPath) = createUploadFile(uploadBytes)
         var requestCount = 0
-        var credentialsCount = 0
+        val credentialsProvider = FakeS3CredentialsProvider()
         val authorizationHeaders = mutableListOf<String>()
         val requestBodies = mutableListOf<ByteArray>()
         val progressUpdates = mutableListOf<Long>()
@@ -125,19 +122,17 @@ class CellsS3ClientTest {
         )
         val client = createClient(
             httpClient = httpClient,
-            credentialsProvider = {
-                credentialsCount++
-                S3Credentials("access-token-$credentialsCount", "gateway-secret")
-            },
+            credentialsProvider = credentialsProvider,
             fileSystem = fileSystem,
         )
 
         client.upload(uploadPath, cellNode(path = "upload.txt")) { progressUpdates += it }
 
         assertEquals(EXPECTED_ATTEMPTS, requestCount)
-        assertEquals(EXPECTED_ATTEMPTS, credentialsCount)
-        authorizationHeaders.forEachIndexed { index, authorization ->
-            assertContains(authorization, "Credential=access-token-${index + 1}/")
+        assertEquals(1, credentialsProvider.credentialsCount)
+        assertEquals(0, credentialsProvider.refreshCount)
+        authorizationHeaders.forEach { authorization ->
+            assertContains(authorization, "Credential=$TEST_ACCESS_TOKEN/")
         }
         requestBodies.forEach { assertTrue(it.contentEquals(uploadBytes)) }
         assertEquals(uploadBytes.size.toLong(), progressUpdates.last())
@@ -818,66 +813,11 @@ class CellsS3ClientTest {
         assertContentEquals(firstChunk + secondChunk, sink.readByteArray())
     }
 
-    private fun createClient(
-        httpClient: HttpClient,
-        fileSystem: FileSystem = FileSystem.SYSTEM,
-        endpoint: String = TEST_ENDPOINT,
-        credentialsProvider: suspend () -> S3Credentials = { TEST_CREDENTIALS },
-        config: CellsS3ClientConfig = fixedDateConfig(),
-    ): CellsS3Client = CellsS3Client(
-        httpClient = httpClient,
-        endpointProvider = { endpoint },
-        credentialsProvider = credentialsProvider,
-        fileSystem = fileSystem,
-        config = config,
-    )
-
-    private fun createUploadFile(bytes: ByteArray): Pair<FakeFileSystem, okio.Path> {
-        val fileSystem = FakeFileSystem()
-        val path = "/upload.txt".toPath()
-        fileSystem.write(path) {
-            write(bytes)
-        }
-        return fileSystem to path
-    }
-
-    private fun cellNode(path: String): CellNodeDTO = CellNodeDTO(
-        uuid = "node-uuid",
-        versionId = "version-uuid",
-        path = path,
-        modified = null,
-        size = null,
-        contentUrl = null,
-        contentUrlExpiresAt = null,
-        contentHash = null,
-        mimeType = null,
-        ownerUserId = null,
-        userHandle = null,
-        conversationId = null,
-        publicLinkId = null,
-    )
-
-    private fun fixedDateConfig(): CellsS3ClientConfig = CellsS3ClientConfig(
-        dateProvider = { AwsSigningDate(date = "20260701", dateTime = "20260701T120102Z") },
-    )
-
-    private fun fixedDateConfig(
-        maxRegularUploadSize: Long,
-        multipartChunkSize: Long = DEFAULT_TEST_MULTIPART_CHUNK_SIZE,
-    ): CellsS3ClientConfig = CellsS3ClientConfig(
-        dateProvider = { AwsSigningDate(date = "20260701", dateTime = "20260701T120102Z") },
-        maxRegularUploadSize = maxRegularUploadSize,
-        multipartChunkSize = multipartChunkSize,
-    )
-
     private companion object {
-        const val TEST_ENDPOINT = "https://cells.example.test"
         const val EXPECTED_ATTEMPTS = 3
         const val TEST_DOWNLOAD_SIZE = 20 * 1024
         const val TEST_STREAM_CHUNK_SIZE = 1024
         val STREAM_ASSERTION_TIMEOUT_MILLIS = 5_000L.milliseconds
         const val PARTIAL_SINK_WRITE_SIZE = 3L
-        const val DEFAULT_TEST_MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024L
-        val TEST_CREDENTIALS = S3Credentials("access-token", "gateway-secret")
     }
 }
