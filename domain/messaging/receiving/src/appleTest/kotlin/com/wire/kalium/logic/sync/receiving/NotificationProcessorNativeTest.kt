@@ -7712,6 +7712,7 @@ class NotificationProcessorNativeTest {
                     "qualified_conversation":{"id":"missing-conversation","domain":"example.com"},
                     "qualified_from":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},
                     "from":"${SENDER.value}","time":"$TIME","subconv":null,"data":$data}""")
+                val protocol = stale("protocol", "conversation.protocol-update", """{"protocol":"mixed"}""")
                 val join = stale("join", "conversation.member-join", """{"user_ids":[],"users":[]}""")
                 val welcome = stale("welcome", "conversation.mls-welcome", "\"AA==\"")
                 val message = stale("message", "conversation.mls-message-add", "\"AA==\"")
@@ -7720,7 +7721,7 @@ class NotificationProcessorNativeTest {
                     """{"qualified_user_ids":[{"id":"${SELF.value}","domain":"${SELF.domain}"}],"reason":"removed"}""")
                 val tail = fixture.event("text", fixture.encrypt("first"))
                 fixture.releasePrepared()
-                val result = fixture.receive(listOf(join, welcome, rename, message, leave, tail), tail.id, fetchConversation = {
+                val result = fixture.receive(listOf(protocol, join, welcome, rename, message, leave, tail), tail.id, fetchConversation = {
                     throw KaliumException.InvalidRequestError(
                         GenericAPIErrorResponse(code = status, label = label, message = "private response")
                     )
@@ -7728,7 +7729,7 @@ class NotificationProcessorNativeTest {
                 if (status == 404 || (status == 403 && label == "access-denied")) {
                     assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
-                        for (event in listOf(join, welcome, rename, message, leave, tail)) {
+                        for (event in listOf(protocol, join, welcome, rename, message, leave, tail)) {
                             assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
                         }
                     })
@@ -7930,7 +7931,6 @@ class NotificationProcessorNativeTest {
                 fixture.releasePrepared()
                 fixture.sql("UPDATE User SET name = NULL WHERE qualified_id = '${SENDER.toDao()}'")
                 assertIs<Either.Left<*>>(fixture.receive(page, "notification"))
-                assertIs<Either.Left<*>>(fixture.receive(emptyList(), "notification", fetchProfiles = { ListUsersDTO(usersFound = emptyList()) }))
                 val profiles = KtxSerializer.json.decodeFromString<ListUsersDTO>(
                     """{"found":[{"qualified_id":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},
                     "id":"${SENDER.value}","name":"Fetched sender","handle":"sender","accent_id":0,
@@ -7946,6 +7946,27 @@ class NotificationProcessorNativeTest {
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification", fetchProfiles = { profiles })).value?.text)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     assertEquals("Fetched sender", runtime.database.userDAO.getUserDetailsByQualifiedID(SENDER.toDao())?.name)
+                })
+                fixture.verifyStoredAndNext(next, "first")
+            }
+        }
+    }
+
+    @Test
+    fun creationStoresUnreachableProfilesAsIncomplete() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true, newConversation = true) { fixture ->
+                val page = fixture.creationPage(true)
+                val next = fixture.encrypt("next")
+                fixture.releasePrepared()
+                fixture.sql("UPDATE User SET name = NULL WHERE qualified_id = '${SENDER.toDao()}'")
+                val result = fixture.receive(page, "notification", fetchProfiles = {
+                    ListUsersDTO(usersFound = emptyList(), usersFailed = listOf(SENDER.toApi()))
+                })
+                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
+                    assertNull(checkNotNull(runtime.database.userDAO.getUserDetailsByQualifiedID(SENDER.toDao())).name)
                 })
                 fixture.verifyStoredAndNext(next, "first")
             }

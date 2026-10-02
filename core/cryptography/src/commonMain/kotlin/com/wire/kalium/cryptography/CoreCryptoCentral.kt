@@ -137,3 +137,9 @@ expect suspend fun coreCryptoCentral(
     rootDir: String,
     passphrase: ByteArray,
 ): CoreCryptoCentral
+
+/**
+ * Opening failed and closing the native resources it had already opened also failed.
+ * Other opening failures leave no native resources behind and can be retried.
+ */
+class CoreCryptoOpenCleanupException(cause: Throwable) : Exception("CoreCrypto open cleanup failed", cause)

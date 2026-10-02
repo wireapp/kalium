@@ -119,17 +119,13 @@ internal class MembershipUserLoader(
         val known = users.getUsersDetailsByQualifiedIDList(ids.map { it.toDao() })
         val missing = ids.filterNot { id -> id in loaded || known.any { it.id == id.toDao() && !it.name.isNullOrBlank() } }
         if (missing.isEmpty()) return UserProfiles()
-        val profiles = missing.chunked(USER_BATCH_SIZE).flatMap { chunk ->
-            val response = wrapApiRequest {
-                checkNotNull(api) { "Membership profiles require authenticated transport" }
-                    .getMultipleUsers(ListUserRequest.qualifiedIds(chunk.map { it.toApi() }))
-            }.orThrow()
-            check(response.usersFailed.isEmpty() && response.usersFound.map { it.id.toModel() }.toSet().containsAll(chunk)) {
-                "Required membership profiles were not returned"
-            }
-            response.usersFound
-        }
-        return map(profiles)
+        val transport = checkNotNull(api) { "Membership profiles require authenticated transport" }
+        val response = fetchUserProfiles(missing.toSet(), selfUserId, transport).orThrow()
+        // Like the app, store users that could not be fetched (e.g. from an unreachable backend) as incomplete.
+        val found = response.usersFound.map { it.id.toModel() }.toSet()
+        val incomplete = missing.filterNot { it in found }.map { it.toApi().toIncompleteUserEntity() }
+        incomplete.forEach { if (user(it.id.toModel()) == null) loaded[it.id.toModel()] = it }
+        return map(response.usersFound).copy(incomplete = incomplete)
     }
 
     private suspend fun map(
@@ -154,9 +150,5 @@ internal class MembershipUserLoader(
                 loaded[id] = profile.copy(activeOneOnOneConversationId = user(id)?.activeOneOnOneConversationId)
             }
         }
-    }
-
-    private companion object {
-        const val USER_BATCH_SIZE = 100
     }
 }

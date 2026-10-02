@@ -23,9 +23,12 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.session.StoreSessionParam
+import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.userstorage.di.UserStorageProvider
@@ -94,7 +97,12 @@ internal abstract class UserSessionScopeProviderCommon(
         clearLocalData: suspend () -> Unit,
     ): Boolean {
         prepare()
-        get(userId)?.stopAccountWork()
+        try {
+            get(userId)?.stopAccountWork()
+        } catch (timeout: TimeoutCancellationException) {
+            // Don't let a stuck account worker block logout.
+            kaliumLogger.w("Account work did not stop within ${LogoutUseCaseImpl.SCOPE_DRAIN_TIMEOUT_MS}ms; logging out anyway", timeout)
+        }
         clearLocalData()
         delete(userId)
         return true

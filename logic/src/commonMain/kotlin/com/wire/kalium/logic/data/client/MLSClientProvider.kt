@@ -32,6 +32,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CoreCryptoCentral
+import com.wire.kalium.cryptography.CoreCryptoOpenCleanupException
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.MLSClient
@@ -170,10 +171,10 @@ internal class MLSClientProviderImpl(
                 val cc = try {
                     coreCryptoCentralFactory(rootDir, dbSecret.passphrase)
                 } catch (e: CancellationException) {
-                    openFailure = e
                     throw e
-                } catch (e: Throwable) {
-                    openFailure = e
+                } catch (e: Exception) {
+                    // Only a failed cleanup can leave native resources open. Other failures can be retried.
+                    if (e is CoreCryptoOpenCleanupException) openFailure = e
                     val logMap = mapOf(
                         "exception" to e,
                         "message" to e.message,

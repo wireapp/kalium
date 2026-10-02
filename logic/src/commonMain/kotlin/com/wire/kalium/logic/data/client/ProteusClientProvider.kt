@@ -28,6 +28,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CoreCryptoCentral
+import com.wire.kalium.cryptography.CoreCryptoOpenCleanupException
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
@@ -130,9 +131,9 @@ internal class ProteusClientProviderImpl(
                 rootDir = rootProteusPath,
                 passphrase = dbSecret.passphrase,
             )
-        } catch (e: Throwable) {
-            // Native opening may have allocated a handle before failing to return it.
-            openFailure = e
+        } catch (e: Exception) {
+            // Only a failed cleanup can leave native resources open. Other failures can be retried.
+            if (e is CoreCryptoOpenCleanupException) openFailure = e
             val logMap = mapOf(
                 "userId" to userId.value.obfuscateId(),
                 "exception" to e,

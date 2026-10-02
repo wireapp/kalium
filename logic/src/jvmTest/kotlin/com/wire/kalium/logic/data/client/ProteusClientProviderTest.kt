@@ -24,9 +24,13 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import java.nio.file.Paths
 import kotlin.io.encoding.Base64
+import kotlin.io.path.createDirectories
 import kotlin.io.path.createDirectory
 import kotlin.io.path.createFile
+import kotlin.io.path.deleteExisting
 import kotlin.io.path.exists
+import kotlin.test.assertFails
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 
 class ProteusClientProviderTest {
@@ -44,6 +48,20 @@ class ProteusClientProviderTest {
         } catch (e: ProteusStorageMigrationException) {
             verifySuspend(mode = VerifyMode.exactly(1)) { arrangement.proteusMigrationRecoveryHandler.clearClientData(any()) }
         }
+    }
+
+    @Test
+    fun givenNativeOpenFailed_whenRetrying_thenOpensAndCleansUp() = runTest {
+        val (arrangement, proteusClientProvider) = Arrangement().arrange()
+        // A directory in place of the keystore makes CoreCrypto fail to open it.
+        val keystore = Paths.get(arrangement.rootProteusPath, Arrangement.KEYSTORE_NAME).createDirectories()
+
+        assertFails { proteusClientProvider.getOrCreate() }
+
+        keystore.deleteExisting()
+        proteusClientProvider.getOrCreate()
+        proteusClientProvider.clearLocalFiles()
+        assertFalse(Paths.get(arrangement.rootProteusPath).exists())
     }
 
     @Test

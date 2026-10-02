@@ -1,6 +1,7 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.map
@@ -177,8 +178,8 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
     }.getOrDefault(false)
 
     companion object {
-        private const val MAX_SIGNALS = 4096
-        private const val KEY = "apple_call_signal_journal_v1"
+        internal const val MAX_SIGNALS = 4096
+        internal const val KEY = "apple_call_signal_journal_v1"
         private const val MILLISECONDS_PER_SECOND = 1000L
         private const val RETENTION_MS = 24 * 60 * 60 * MILLISECONDS_PER_SECOND
 
@@ -201,8 +202,9 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
                 it.submittedGeneration == null || now - it.storedAtMillis < RETENTION_MS ||
                     (it.conversationValue to it.conversationDomain) in activeConversations
             }
-            // Fail the receive transaction instead of silently evicting undelivered work.
-            check(retained.size < MAX_SIGNALS) { "Call signal journal capacity exceeded" }
+            // A full journal must not block receiving, so drop the oldest signals instead.
+            val dropped = (retained.size - MAX_SIGNALS + 1).coerceAtLeast(0)
+            if (dropped > 0) kaliumLogger.w("Call signal journal is full; dropping $dropped oldest signals")
             val record = CallSignalRecord(
                 Uuid.random().toString(), event.messageId, event.conversationId.value, event.conversationId.domain,
                 event.senderId.value, event.senderId.domain, event.senderClientId, event.payload,
@@ -211,7 +213,7 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
             write(
                 metadata,
                 state.copy(
-                    signals = retained + record,
+                    signals = retained.drop(dropped) + record,
                 presentations = state.presentations.filter { it.ringing || now - it.startTimeMillis < RETENTION_MS }
                 )
             )

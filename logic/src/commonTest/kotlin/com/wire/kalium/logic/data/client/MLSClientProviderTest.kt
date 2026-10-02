@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CoreCryptoCentral
+import com.wire.kalium.cryptography.CoreCryptoOpenCleanupException
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
@@ -58,6 +59,7 @@ import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.test.assertIs
 import kotlinx.coroutines.CoroutineScope
@@ -200,13 +202,30 @@ class MLSClientProviderTest {
         }
 
     @Test
-    fun givenNativeOpenFailed_whenClosing_thenCleanupRemainsUncertain() = runTest(testDispatchers.io) {
+    fun givenNativeOpenCleanupFailed_whenClosing_thenCleanupRemainsUncertain() = runTest(testDispatchers.io) {
         val (_, provider) = Arrangement(this).arrange {
             withPassphraseStorage()
-            factoryFailure = IllegalStateException("Native partial open failed")
+            factoryFailure = CoreCryptoOpenCleanupException(IllegalStateException("Native partial open failed"))
         }
         provider.getCoreCrypto(TestClient.CLIENT_ID).shouldFail()
-        repeat(2) { assertFailsWith<IllegalStateException> { provider.close() } }
+        provider.getCoreCrypto(TestClient.CLIENT_ID).shouldFail()
+        repeat(2) { assertFailsWith<CoreCryptoOpenCleanupException> { provider.close() } }
+    }
+
+    @Test
+    fun givenNativeOpenFailed_whenRetrying_thenOpensAndCleansUp() = runTest(testDispatchers.io) {
+        val (arrangement, provider) = Arrangement(this).arrange {
+            withPassphraseStorage()
+            factoryFailure = IllegalStateException("Keystore is temporarily unavailable")
+        }
+        provider.getCoreCrypto(TestClient.CLIENT_ID).shouldFail()
+
+        arrangement.factoryFailure = null
+        provider.getCoreCrypto(TestClient.CLIENT_ID).shouldSucceed { assertEquals(arrangement.coreCryptoCentral, it) }
+        provider.clearLocalFiles()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.coreCryptoCentral.close() }
+        assertFalse(FileUtil.isDirectoryNonEmpty(arrangement.rootKeyStorePath))
     }
 
     @Test

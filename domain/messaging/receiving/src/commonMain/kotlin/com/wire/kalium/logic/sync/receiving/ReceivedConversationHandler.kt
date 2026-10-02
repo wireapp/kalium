@@ -204,10 +204,7 @@ internal class ReceivedConversationHandler(
     ): List<ReceivedPayload> {
         val id = content.qualifiedConversation.toModel()
         val result = wrapApiRequest { checkNotNull(api).fetchConversationDetails(content.qualifiedConversation) }
-        if (result is Either.Left &&
-            ((result.value as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError)
-                ?.isConversationNotFound() == true
-        ) return emptyList()
+        if (rememberUnavailable(id, result)) return emptyList()
         val response = result.orThrow()
         check(response.id.toModel() == id) { "Required conversation metadata was not returned" }
         val current = conversation(id)

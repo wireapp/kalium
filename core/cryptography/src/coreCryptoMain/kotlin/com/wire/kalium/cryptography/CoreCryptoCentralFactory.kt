@@ -46,7 +46,11 @@ actual suspend fun coreCryptoCentral(
         setMaxLogLevel(CoreCryptoLogLevel.WARN)
         CoreCrypto(database)
     } catch (exception: Exception) {
-        database.close()
+        try {
+            database.close()
+        } catch (closeFailure: Exception) {
+            throw CoreCryptoOpenCleanupException(exception).apply { addSuppressed(closeFailure) }
+        }
         throw exception
     }
 
