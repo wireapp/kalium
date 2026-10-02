@@ -498,6 +498,7 @@ internal class ReceivedMessageHandler(
                 notify,
                 mayPreview,
                 conversationName = conversation.name,
+                isGroupConversation = conversation.type.isGroup,
                 senderName = data.users.getNameAndHandle(message.senderUserId)?.name,
                 suppressionReason = reason,
                 previewPolicyReason = if (mayPreview) null else
@@ -549,6 +550,7 @@ data class ReceivedMessageResult(
     val senderName: String? = null,
     val suppressionReason: String? = null,
     val previewPolicyReason: String? = null,
+    val isGroupConversation: Boolean = false,
 )
 
 enum class ReceivedNotificationType { MESSAGE, CONVERSATION_DELETED, CONNECTION_REQUEST }

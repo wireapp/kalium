@@ -9506,6 +9506,26 @@ class NotificationProcessorNativeTest {
         }
     }
 
+    @Test
+    fun groupNotificationRetainsConversationType() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(false) { fixture ->
+                val event = fixture.event("group-message", fixture.encrypt("hello group"))
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val conversation = checkNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
+                    runtime.database.conversationDAO.insertConversation(conversation.copy(type = ConversationEntity.Type.GROUP))
+                })
+                val result = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(
+                    fixture.receive(listOf(event), event.id)).value)
+                assertTrue(result.isGroupConversation)
+                assertEquals("hello group", result.text)
+                assertEquals("Fixture", result.senderName)
+                assertEquals("Fixture", result.conversationName)
+            }
+        }
+    }
+
     private fun paginatedReceiving(mls: Boolean) = runTest {
         withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
@@ -9518,6 +9538,7 @@ class NotificationProcessorNativeTest {
                 val result = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(
                     fixture.receive(emptyList(), "notification", api = api)).value)
                 assertEquals("first", result.text)
+                assertFalse(result.isGroupConversation)
                 assertEquals("Fixture", result.senderName)
                 assertEquals("Fixture", result.conversationName)
                 assertEquals(listOf(null, "earlier"), api.requests)

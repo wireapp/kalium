@@ -93,6 +93,7 @@ public data class KaliumNSEResult(
     public val appWorkPending: String? = null,
     /** Actual UNNotificationRequest identifiers, reconciled after successful receiving. */
     public val notificationIdentifiersToRemove: List<String> = emptyList(),
+    public val isGroupConversation: Boolean = false,
 )
 
 public enum class KaliumNSEStatus { SUCCESS, FAILED }
@@ -208,6 +209,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             contentType = contentType,
             conversationName = message?.conversationName?.takeIf { canPreview },
             senderName = message?.senderName?.takeIf { canPreview },
+            isGroupConversation = canPreview && message?.isGroupConversation == true,
             calls = result.calls.map { call ->
                 KaliumNSECall(
                     type = when (call.type) {
