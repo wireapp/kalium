@@ -24,7 +24,12 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.data.notification.toLocalNotificationMessageAuthor
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import kotlinx.coroutines.flow.firstOrNull
 
 internal interface MeetingDeleteEventHandler {
     suspend fun handle(event: Event.Meeting.Delete): Either<StorageFailure, Unit>
@@ -32,9 +37,27 @@ internal interface MeetingDeleteEventHandler {
 
 internal class MeetingDeleteEventHandlerImpl(
     private val meetingRepository: MeetingRepository,
+    private val userRepository: UserRepository,
+    private val notificationEventsManager: NotificationEventsManager,
 ) : MeetingDeleteEventHandler {
     override suspend fun handle(event: Event.Meeting.Delete): Either<StorageFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
+
+        meetingRepository.getMeeting(event.meetingId).onSuccess { meeting ->
+            notificationEventsManager.scheduleMeetingNotification(
+                LocalNotification.Meeting.Cancel(
+                    eventId = event.id,
+                    meetingId = meeting.meetingId,
+                    conversationId = meeting.conversationId,
+                    meetingTitle = meeting.title,
+                    author = event.senderUserId?.let {
+                        userRepository.observeUser(it).firstOrNull()?.toLocalNotificationMessageAuthor()
+                    },
+                    time = event.dateTime,
+                )
+            )
+        }
+
         return meetingRepository.deleteMeetingLocally(event.meetingId)
             .onSuccess { eventLogger.logSuccess() }
             .onFailure { eventLogger.logFailure(it) }
