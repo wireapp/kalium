@@ -3048,7 +3048,7 @@ public class UserSessionScope internal constructor(
             persistConversations = persistConversationsUseCase,
         )
 
-    private val syncMeetingsUseCase: SyncMeetingsUseCase
+    public val syncMeetingsUseCase: SyncMeetingsUseCase
         get() = SyncMeetingsUseCaseImpl(
             meetingRepository = meetingRepository,
             isMeetingsEnabledUseCase = isMeetingsEnabled,
