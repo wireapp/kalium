@@ -2,6 +2,7 @@
 package com.wire.kalium.nse
 
 import co.touchlab.kermit.OSLogWriter
+import co.touchlab.kermit.Severity
 import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.logger.AppleDiagnosticLogWriter
 import com.wire.kalium.logger.KaliumLogLevel
@@ -15,6 +16,11 @@ public object KaliumNSELogging {
 
     /** Returns false if another root already owns this process's logger. */
     public fun configure(rootPath: String, enabled: Boolean): Boolean = processLogger.configure(rootPath, enabled)
+
+    /** Mirrors an already sanitized native message to the opt-in file only; Swift owns OSLog. */
+    public fun recordNative(message: String, isError: Boolean) {
+        processLogger.recordNative(message, isError)
+    }
 
     /** Best effort: completion must not wait indefinitely for another process's export. */
     @Throws(CancellationException::class)
@@ -42,6 +48,11 @@ internal class NSEProcessLogger {
         current.writer.updateLoggingEnabled(enabled)
         current.config.logLevel = if (enabled) KaliumLogLevel.VERBOSE else KaliumLogLevel.DISABLED
         true
+    }
+
+    fun recordNative(message: String, isError: Boolean) {
+        val writer = locked { installed?.writer } ?: return
+        writer.log(if (isError) Severity.Error else Severity.Info, message, "Notifications", null)
     }
 
     suspend fun flush(timeoutMilliseconds: Long): Boolean {
