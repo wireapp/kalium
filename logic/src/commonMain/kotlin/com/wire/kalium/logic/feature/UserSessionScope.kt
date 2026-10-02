@@ -600,6 +600,7 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
+import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
@@ -2932,6 +2933,16 @@ public class UserSessionScope internal constructor(
 
     /** Resume NSE-committed signaling using this session's existing full calling engine. */
     public suspend fun resumePendingCallSignals(): Unit = callManager.value.replayPendingSignals()
+
+    /** Register the identities of delivered Apple alerts before observing their canonical state. */
+    public suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>): Unit =
+        userStorage.database.messageDAO.rememberNotificationMessages(messages)
+
+    /** Uses the existing account database owner, also observing sync performed by the app. */
+    public fun observeNotificationRemovalCandidates(
+        messageIds: List<String>,
+    ): Flow<List<NotificationMessageKey>> =
+        userStorage.database.messageDAO.observeNotificationRemovalCandidates(messageIds)
 
     public fun observeCallPresentations(): Flow<List<CallPresentationRecord>> = CallSignalJournal(
         userStorage.database

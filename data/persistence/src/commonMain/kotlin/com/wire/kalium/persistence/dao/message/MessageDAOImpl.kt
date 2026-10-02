@@ -57,6 +57,7 @@ import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.time.Instant
@@ -444,6 +445,25 @@ internal class MessageDAOImpl internal constructor(
                     .awaitAsList()
             ).associateBy { it.conversationId }
         }
+
+    override suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>) {
+        if (messages.isEmpty()) return
+        withContext(writeDispatcher.value) {
+            notificationQueries.transaction {
+                messages.distinct().forEach {
+                    notificationQueries.rememberNotificationMessage(it.messageId, it.conversationId)
+                }
+            }
+        }
+    }
+
+    override fun observeNotificationRemovalCandidates(messageIds: List<String>): Flow<List<NotificationMessageKey>> =
+        if (messageIds.isEmpty()) flowOf(emptyList()) else
+        notificationQueries.getNotificationRemovalCandidates(messageIds, ::NotificationMessageKey)
+            .asFlow()
+            .mapToList()
+            .distinctUntilChanged()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): List<NotificationMessageEntity> =
         withContext(readDispatcher.value) {

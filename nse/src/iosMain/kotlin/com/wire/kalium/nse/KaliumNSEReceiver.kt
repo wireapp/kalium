@@ -19,13 +19,21 @@ package com.wire.kalium.nse
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
+import com.wire.kalium.logic.sync.receiving.ReceivedCallType
+import com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult
+import com.wire.kalium.logic.sync.receiving.ReceivedNotificationType
 import com.wire.kalium.logic.sync.receiving.ReceivingDiagnostics
+import com.wire.kalium.logic.sync.receiving.ReceivingOptions
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.kmmSettings.AppleKeychainAccessibility
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.first
 
 /** Shared configuration must exactly match app preparation, including the canonical App Group root. */
 public data class KaliumNSEConfiguration(
@@ -53,6 +61,15 @@ public data class KaliumNSERequest(
     /** The host must derive this from the user's notification privacy setting. */
     public val showMessageContent: Boolean,
     public val budgetMilliseconds: Long,
+    /** The host supplies only delivered message alerts belonging to this request's account. */
+    public val deliveredNotifications: List<KaliumNSEDeliveredNotification> = emptyList(),
+)
+
+public data class KaliumNSEDeliveredNotification(
+    public val identifier: String,
+    public val conversationValue: String,
+    public val conversationDomain: String,
+    public val messageId: String,
 )
 
 /** SUCCESS without an alert is distinct from failure. The Swift host owns its single system completion callback. */
@@ -74,6 +91,8 @@ public data class KaliumNSEResult(
     public val callSignalsPending: Boolean = false,
     /** Content-free reason; Events retains the unprocessed suffix for app incremental sync. */
     public val appWorkPending: String? = null,
+    /** Actual UNNotificationRequest identifiers, reconciled after successful receiving. */
+    public val notificationIdentifiersToRemove: List<String> = emptyList(),
 )
 
 public enum class KaliumNSEStatus { SUCCESS, FAILED }
@@ -117,36 +136,62 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 configuration.certificatePins,
                 diagnostics = diagnostics,
             ) { runtime ->
-                runtime.notificationProcessor(
-                    com.wire.kalium.logic.sync.receiving.ReceivingOptions(
+                runtime.database.messageDAO.rememberNotificationMessages(request.deliveredNotifications.map { it.messageKey() })
+                val received = runtime.notificationProcessor(
+                    ReceivingOptions(
                         guestRoomLink = configuration.guestRoomLink,
                         selfDeletingMessages = configuration.selfDeletingMessages,
                         drivePermissionsEnabled = configuration.drivePermissionsEnabled,
                         linkPreviewEnabled = configuration.linkPreviewEnabled,
                         fileRestrictionState = configuration.allowedFileExtensions?.let {
-                            com.wire.kalium.logic.featureFlags.BuildFileRestrictionState.AllowSome(it)
-                        } ?: com.wire.kalium.logic.featureFlags.BuildFileRestrictionState.NoRestriction
+                            BuildFileRestrictionState.AllowSome(it)
+                        } ?: BuildFileRestrictionState.NoRestriction
                     ),
                     diagnostics = diagnostics,
                 ).process(request.notificationId)
+                reconcileNotifications(runtime, received, request)
             }
             when (result) {
                 is Either.Left -> failure(result.value.name)
-                is Either.Right -> success(result.value, request.showMessageContent)
+                is Either.Right -> result.value
             }
         } ?: failure("TIMEOUT")
         diagnostics.record(outcome.status.name, outcome.failureReason, outcome.shouldNotify)
         return outcome
     }
 
+    private suspend fun reconcileNotifications(
+        runtime: AppleAccountRuntime,
+        received: ReceivedNotificationResult,
+        request: KaliumNSERequest,
+    ): KaliumNSEResult {
+        val result = success(received, request.showMessageContent)
+        if (result.shouldNotify && result.contentType == KaliumNSEContentType.MESSAGE) {
+            val message = checkNotNull(received.message)
+            runtime.database.messageDAO.rememberNotificationMessages(
+                listOf(NotificationMessageKey(message.messageId, QualifiedIDEntity(message.conversationValue, message.conversationDomain)))
+            )
+        }
+        val removals = runtime.database.messageDAO.observeNotificationRemovalCandidates(
+            request.deliveredNotifications.map { it.messageId }.distinct()
+        ).first().toSet()
+        return result.copy(notificationIdentifiersToRemove = request.deliveredNotifications.filter {
+            it.messageKey() in removals
+        }.map { it.identifier })
+    }
+
+    private fun KaliumNSEDeliveredNotification.messageKey() = NotificationMessageKey(
+        messageId, QualifiedIDEntity(conversationValue, conversationDomain)
+    )
+
     @Suppress("CyclomaticComplexMethod") // Maps optional receiving fields to the public result.
-    private fun success(result: com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult, showContent: Boolean): KaliumNSEResult {
+    private fun success(result: ReceivedNotificationResult, showContent: Boolean): KaliumNSEResult {
         val message = result.message
         val canPreview = showContent && message?.shouldNotify == true && message.mayPreview
         val contentType = when (message?.type) {
-            com.wire.kalium.logic.sync.receiving.ReceivedNotificationType.CONVERSATION_DELETED -> KaliumNSEContentType.CONVERSATION_DELETED
-            com.wire.kalium.logic.sync.receiving.ReceivedNotificationType.CONNECTION_REQUEST -> KaliumNSEContentType.CONNECTION_REQUEST
-            com.wire.kalium.logic.sync.receiving.ReceivedNotificationType.MESSAGE, null -> KaliumNSEContentType.MESSAGE
+            ReceivedNotificationType.CONVERSATION_DELETED -> KaliumNSEContentType.CONVERSATION_DELETED
+            ReceivedNotificationType.CONNECTION_REQUEST -> KaliumNSEContentType.CONNECTION_REQUEST
+            ReceivedNotificationType.MESSAGE, null -> KaliumNSEContentType.MESSAGE
         }
         return KaliumNSEResult(
             KaliumNSEStatus.SUCCESS, message?.shouldNotify == true, message?.messageId,
@@ -166,9 +211,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             calls = result.calls.map { call ->
                 KaliumNSECall(
                     type = when (call.type) {
-                        com.wire.kalium.logic.sync.receiving.ReceivedCallType.INCOMING -> KaliumNSECallType.INCOMING
-                        com.wire.kalium.logic.sync.receiving.ReceivedCallType.MISSED -> KaliumNSECallType.MISSED
-                        com.wire.kalium.logic.sync.receiving.ReceivedCallType.CLOSED -> KaliumNSECallType.CLOSED
+                        ReceivedCallType.INCOMING -> KaliumNSECallType.INCOMING
+                        ReceivedCallType.MISSED -> KaliumNSECallType.MISSED
+                        ReceivedCallType.CLOSED -> KaliumNSECallType.CLOSED
                     },
                     conversationValue = call.conversationValue,
                     conversationDomain = call.conversationDomain,

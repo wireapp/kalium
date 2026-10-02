@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.memScoped
@@ -12472,6 +12473,10 @@ class NotificationProcessorNativeTest {
 
         suspend fun verifyReadState(runtime: AppleAccountRuntime) {
             val db = runtime.database
+            assertEquals(
+                listOf(NotificationMessageKey("read-me", DELETE_TARGET)),
+                db.messageDAO.observeNotificationRemovalCandidates(listOf("read-me")).first()
+            )
             assertEquals(TIME, db.conversationDAO.getConversationLastReadDate(DELETE_TARGET))
             assertEquals(0L, db.messageDAO.getConversationUnreadEventsCount(DELETE_TARGET))
             assertNull(db.messageDAO.getMessageById("read-me", DELETE_TARGET)?.selfDeletionEndDate)

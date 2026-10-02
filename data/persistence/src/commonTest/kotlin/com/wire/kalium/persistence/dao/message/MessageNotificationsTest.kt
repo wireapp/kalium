@@ -23,6 +23,8 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
+import app.cash.turbine.test
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.test.Test
@@ -32,6 +34,34 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.hours
 
 class MessageNotificationsTest : BaseMessageTest() {
+
+    @Test
+    fun deliveredAlertsAreRemovedOnlyForDeletedOrReadMessages() = runTest {
+        insertInitialData()
+        val older = OTHER_MESSAGE.copy(id = "older")
+        val newer = older.copy(id = "newer", date = older.date + 1.hours)
+        val deleted = older.copy(id = "deleted")
+        val expired = older.copy(id = "expired", expireAfterMs = 1000)
+        val otherConversation = older.copy(conversationId = TEST_CONVERSATION_2.id)
+        messageDAO.insertOrIgnoreMessages(listOf(older, newer, deleted, expired, otherConversation))
+        val ids = listOf("older", "newer", "deleted", "expired", "missing")
+        messageDAO.observeNotificationRemovalCandidates(ids).test {
+            assertEquals(emptyList(), awaitItem())
+            messageDAO.markMessageAsDeleted(deleted.id, deleted.conversationId)
+            assertEquals(listOf(NotificationMessageKey(deleted.id, deleted.conversationId)), awaitItem())
+            messageDAO.markMessageAsDeleted(expired.id, expired.conversationId)
+            messageDAO.deleteMessage(expired.id, expired.conversationId)
+            conversationDAO.updateReadDatesAndGetHasUnreadEvents(mapOf(older.conversationId to older.date))
+            assertEquals(
+                setOf(NotificationMessageKey(deleted.id, deleted.conversationId), NotificationMessageKey(older.id, older.conversationId)),
+                awaitItem().toSet()
+            )
+            cancelAndIgnoreRemainingEvents()
+        }
+        // A fresh observer recovers the same removals after a previous host attempt ended.
+        assertEquals(setOf("older", "deleted"), messageDAO.observeNotificationRemovalCandidates(ids).first().map { it.messageId }.toSet())
+        assertEquals(emptyList(), messageDAO.observeNotificationRemovalCandidates(emptyList()).first())
+    }
 
     @Test
     fun givenConversationLastNotifiedDateIsNull_whenNewMessageInserted_thenNotificationPropagated() = runTest {

@@ -36,6 +36,12 @@ enum class InsertMessageResult {
 
 @Suppress("TooManyFunctions")
 interface MessageDAO {
+    /** Apple notification identities follow canonical message IDs through edits; Android does not register alerts here. */
+    suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>)
+
+    /** Canonical deletion/read state for existing delivered alerts; never infers expiry from missing rows. */
+    fun observeNotificationRemovalCandidates(messageIds: List<String>): Flow<List<NotificationMessageKey>>
+
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
     suspend fun updateAssetTransferStatus(transferStatus: AssetTransferStatusEntity, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
@@ -238,3 +244,6 @@ data class ReceivedMessage(
     val updateConversationOrder: Boolean,
     val enqueueDelivery: Boolean,
 )
+
+/** Message identities are scoped to a conversation and this DAO's account. */
+data class NotificationMessageKey(val messageId: String, val conversationId: QualifiedIDEntity)

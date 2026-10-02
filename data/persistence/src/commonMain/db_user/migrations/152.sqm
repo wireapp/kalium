@@ -1,0 +1,11 @@
+CREATE TABLE MessageNotificationIdentity (
+    notification_message_id TEXT NOT NULL,
+    conversation_id TEXT NOT NULL,
+    current_message_id TEXT NOT NULL,
+    PRIMARY KEY (notification_message_id, conversation_id),
+    FOREIGN KEY (current_message_id, conversation_id) REFERENCES Message(id, conversation_id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- Keep FK checks bounded on every platform, including accounts with many historical alerts.
+CREATE INDEX message_notification_identity_current ON MessageNotificationIdentity(current_message_id, conversation_id);
