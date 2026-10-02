@@ -33,6 +33,9 @@ import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 internal interface ServerConfigRepository {
@@ -60,6 +63,7 @@ internal interface ServerConfigRepository {
      * Return the server links and metadata for the given userId
      */
     suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig>
+    fun observeCommonApiVersion(links: ServerConfig.Links): Flow<Int?>
     suspend fun commonApiVersion(domain: String): Either<CoreFailure, Int>
     suspend fun getTeamUrlForUser(userId: UserId): String?
 }
@@ -105,6 +109,11 @@ internal class ServerConfigDataSource(
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest { serverConfigurationDAO.configForUser(userId.toDao()) }
             .map { serverConfigMapper.fromEntity(it) }
+
+    override fun observeCommonApiVersion(links: ServerConfig.Links): Flow<Int?> =
+        serverConfigurationDAO.getServerConfigByLinksFlow(serverConfigMapper.toEntity(links))
+            .map { it?.metaData?.apiVersion }
+            .distinctUntilChanged()
 
     override suspend fun commonApiVersion(domain: String): Either<CoreFailure, Int> = wrapStorageRequest {
         serverConfigurationDAO.getCommonApiVersion(domain)
