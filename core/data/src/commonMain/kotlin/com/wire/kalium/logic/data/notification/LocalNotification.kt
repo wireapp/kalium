@@ -19,30 +19,76 @@
 package com.wire.kalium.logic.data.notification
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserAssetId
 import kotlinx.datetime.Instant
 
 /**
- * Kalium local data classes that contains all the necessary data for displaying Message Notifications,
+ * Kalium local data classes that contains all the necessary data for displaying Notifications,
  * and suppose to be mapped (in platform side) into platform-specific objects to show the notification
  */
 sealed class LocalNotification(open val conversationId: ConversationId) {
-    data class Conversation(
-        val id: ConversationId,
-        val conversationName: String?,
-        val messages: List<LocalNotificationMessage>,
-        val isOneToOneConversation: Boolean,
-        val isReplyAllowed: Boolean = false
-    ) : LocalNotification(id)
-
-    data class UpdateMessage(
+    sealed class Meeting(
         override val conversationId: ConversationId,
-        val messageId: String,
-        val action: LocalNotificationUpdateMessageAction
-    ) : LocalNotification(conversationId)
+    ) : LocalNotification(conversationId) {
+        abstract val meetingId: MeetingId
+        abstract val eventId: String
+        abstract val meetingTitle: String
+        abstract val author: LocalNotificationMessageAuthor?
+        abstract val time: Instant
 
-    data class ConversationSeen(override val conversationId: ConversationId) : LocalNotification(conversationId)
+        data class Invite(
+            override val eventId: String,
+            override val meetingId: MeetingId,
+            override val conversationId: ConversationId,
+            override val meetingTitle: String,
+            override val author: LocalNotificationMessageAuthor?,
+            override val time: Instant,
+            val startTime: Instant,
+            val endTime: Instant,
+        ) : Meeting(conversationId)
+
+        data class Update(
+            override val eventId: String,
+            override val meetingId: MeetingId,
+            override val conversationId: ConversationId,
+            override val meetingTitle: String,
+            override val author: LocalNotificationMessageAuthor?,
+            override val time: Instant,
+            val startTime: Instant,
+            val endTime: Instant,
+        ) : Meeting(conversationId)
+
+        data class Cancel(
+            override val eventId: String,
+            override val meetingId: MeetingId,
+            override val conversationId: ConversationId,
+            override val meetingTitle: String,
+            override val author: LocalNotificationMessageAuthor?,
+            override val time: Instant,
+        ) : Meeting(conversationId)
+
+    }
+
+    sealed class Conversation(override val conversationId: ConversationId) : LocalNotification(conversationId) {
+        data class NewMessages(
+            val id: ConversationId,
+            val conversationName: String?,
+            val messages: List<LocalNotificationMessage>,
+            val isOneToOneConversation: Boolean,
+            val isReplyAllowed: Boolean = false
+        ) : Conversation(id)
+
+        data class UpdateMessage(
+            override val conversationId: ConversationId,
+            val messageId: String,
+            val action: LocalNotificationUpdateMessageAction
+        ) : Conversation(conversationId)
+
+        data class Seen(override val conversationId: ConversationId) : Conversation(conversationId)
+    }
 }
 
 sealed class LocalNotificationUpdateMessageAction {
@@ -104,6 +150,7 @@ sealed class LocalNotificationMessage(
 }
 
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: UserAssetId?)
+fun User.toLocalNotificationMessageAuthor() = LocalNotificationMessageAuthor(name = this.name ?: "", imageUri = this.previewPicture)
 
 enum class LocalNotificationCommentType {
     PICTURE, FILE, REACTION, MISSED_CALL, LOCATION, NOT_SUPPORTED_YET
