@@ -1696,6 +1696,10 @@ abstract interface com.wire.kalium.logic.feature.selfDeletingMessages/PersistNew
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.message/SelfDeletionTimer) // com.wire.kalium.logic.feature.selfDeletingMessages/PersistNewSelfDeletionTimerUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.message.SelfDeletionTimer){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.server/ObserveApiVersionChangeUseCase { // com.wire.kalium.logic.feature.server/ObserveApiVersionChangeUseCase|null[0]
+    abstract fun invoke(): kotlinx.coroutines.flow/Flow<kotlin/Boolean> // com.wire.kalium.logic.feature.server/ObserveApiVersionChangeUseCase.invoke|invoke(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.service/GetServiceByIdUseCase { // com.wire.kalium.logic.feature.service/GetServiceByIdUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.service/ServiceId): com.wire.kalium.logic.data.service/ServiceDetails? // com.wire.kalium.logic.feature.service/GetServiceByIdUseCase.invoke|invoke(com.wire.kalium.logic.data.service.ServiceId){}[0]
 }
@@ -5393,6 +5397,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-multiPlatformBackup>(): com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope // com.wire.kalium.logic.feature/UserSessionScope.multiPlatformBackup.<get-multiPlatformBackup>|<get-multiPlatformBackup>(){}[0]
     final val observeAnalyticsTrackingIdentifierStatus // com.wire.kalium.logic.feature/UserSessionScope.observeAnalyticsTrackingIdentifierStatus|{}observeAnalyticsTrackingIdentifierStatus[0]
         final fun <get-observeAnalyticsTrackingIdentifierStatus>(): com.wire.kalium.logic.feature.analytics/ObserveAnalyticsTrackingIdentifierStatusUseCase // com.wire.kalium.logic.feature/UserSessionScope.observeAnalyticsTrackingIdentifierStatus.<get-observeAnalyticsTrackingIdentifierStatus>|<get-observeAnalyticsTrackingIdentifierStatus>(){}[0]
+    final val observeApiVersionChange // com.wire.kalium.logic.feature/UserSessionScope.observeApiVersionChange|{}observeApiVersionChange[0]
+        final fun <get-observeApiVersionChange>(): com.wire.kalium.logic.feature.server/ObserveApiVersionChangeUseCase // com.wire.kalium.logic.feature/UserSessionScope.observeApiVersionChange.<get-observeApiVersionChange>|<get-observeApiVersionChange>(){}[0]
     final val observeE2EIRequired // com.wire.kalium.logic.feature/UserSessionScope.observeE2EIRequired|{}observeE2EIRequired[0]
         final fun <get-observeE2EIRequired>(): com.wire.kalium.logic.feature.user/ObserveE2EIRequiredUseCase // com.wire.kalium.logic.feature/UserSessionScope.observeE2EIRequired.<get-observeE2EIRequired>|<get-observeE2EIRequired>(){}[0]
     final val observeFileSharingStatus // com.wire.kalium.logic.feature/UserSessionScope.observeFileSharingStatus|{}observeFileSharingStatus[0]
