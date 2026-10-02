@@ -77,6 +77,8 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.encodeBase64
 import kotlinx.cinterop.COpaquePointer
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
@@ -120,6 +122,7 @@ internal class CallManagerImpl internal constructor(
 ) : CallManager {
     private val tagWithUserId = "$TAG(${selfUserId.toLogString()})"
     private val job = SupervisorJob()
+    private val callingReady = CompletableDeferred<Unit>(job)
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper)
     private val callHelper = CallHelperImpl(userConfigRepository, callRepository)
@@ -285,43 +288,67 @@ internal class CallManagerImpl internal constructor(
         isMeeting: Boolean
     ) {
         callingLogger.d("$tagWithUserId: starting call for conversationId: ${conversationId.toLogString()}..")
-        val isCameraOn = callType == CallType.VIDEO
-        val type = callMapper.toConversationType(conversationTypeCalling)
+        var rowCreated = false
+        var joinedMls = false
+        try {
+            // Obtain the account's handle before writing a row, so a failed engine
+            // initialization leaves no STARTED call behind. Then wait for AVS readiness,
+            // because AVS parks a START it receives before configuration is ready.
+            val handle = deferredHandle.await()
+            callingReady.await()
 
-        callRepository.createCall(
-            conversationId = conversationId,
-            type = type,
-            status = CallStatus.STARTED,
-            isMuted = false,
-            isCameraOn = isCameraOn,
-            isCbrEnabled = isAudioCbr,
-            callerId = selfUserId
-        )
+            callRepository.createCall(
+                conversationId = conversationId,
+                type = callMapper.toConversationType(conversationTypeCalling),
+                status = CallStatus.STARTED,
+                isMuted = false,
+                isCameraOn = callType == CallType.VIDEO,
+                isCbrEnabled = isAudioCbr,
+                callerId = selfUserId
+            )
+            rowCreated = true
 
-        withCalling { handle ->
-            val avsCallType = callMapper.toCallTypeCalling(callType)
-            val startAvs = suspend {
-                avs.startCall(
+            val startAvs: suspend () -> Unit = {
+                val result = avs.startCall(
                     handle = handle,
                     conversationId = federatedIdMapper.parseToFederatedId(conversationId),
-                    callType = avsCallType.avsValue,
+                    callType = callMapper.toCallTypeCalling(callType).avsValue,
                     conversationType = conversationTypeCalling.avsValue,
                     audioCbr = isAudioCbr,
                     meeting = isMeeting
                 )
+                if (result != 0) throw CallStartException("AVS rejected startup: $result")
                 callingLogger.d("$tagWithUserId: wcall_start() called -> ${conversationId.toLogString()}")
             }
 
             if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.joinMlsConference(
                     conversationId = conversationId,
-                    onJoined = startAvs,
+                    onJoined = {
+                        joinedMls = true
+                        startAvs()
+                    },
                     onEpochChange = { conversation, epochInfo -> updateEpochInfo(conversation, epochInfo) }
-                )
+                ).fold({ throw CallStartException("MLS conference join failed: $it") }, {})
             } else {
                 startAvs()
             }
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+            if (failure is CancellationException) throw failure
+            rollbackStartup(conversationId, rowCreated, joinedMls, failure)
+            throw failure as? CallStartException ?: CallStartException("Call startup failed", failure)
         }
+    }
+
+    /**
+     * AVS sends no close callback for a start it rejected, so the partial state
+     * this attempt created is closed here.
+     */
+    private suspend fun rollbackStartup(conversationId: ConversationId, rowCreated: Boolean, joinedMls: Boolean, cause: Exception) {
+        runCatching {
+            if (rowCreated) callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
+            if (joinedMls) callRepository.leaveMlsConference(conversationId)
+        }.onFailure(cause::addSuppressed)
     }
 
     override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean) = withCalling { handle ->
@@ -789,6 +816,7 @@ internal class CallManagerImpl internal constructor(
     }
 
     private fun onCallingReady() {
+        callingReady.complete(Unit)
         callingLogger.i("$tagWithUserId: iOS calling ready")
     }
 

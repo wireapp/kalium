@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.call.CallStartException
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncStateObserver
@@ -65,20 +66,24 @@ public class StartCallUseCase internal constructor(
 
             val (callConversationType, isMeeting) = getCallConversationType(conversationId)
 
-            callManager.value.startCall(
-                conversationId = conversationId,
-                callType = callType,
-                conversationTypeCalling = callConversationType,
-                isAudioCbr = kaliumConfigs.forceConstantBitrateCalls,
-                isMeeting = isMeeting
-            )
-            return@withContext Result.Success
+            return@withContext try {
+                callManager.value.startCall(
+                    conversationId = conversationId,
+                    callType = callType,
+                    conversationTypeCalling = callConversationType,
+                    isAudioCbr = kaliumConfigs.forceConstantBitrateCalls,
+                    isMeeting = isMeeting
+                )
+                Result.Success
+            } catch (_: CallStartException) {
+                Result.StartFailure
+            }
         })
     }
 
     public sealed interface Result {
         /**
-         * Call started successfully
+         * Startup was submitted. Observe call state separately for connection and termination.
          */
         public data object Success : Result
 
@@ -86,5 +91,8 @@ public class StartCallUseCase internal constructor(
          * Failed to start a call as Sync is not yet performed
          */
         public data object SyncFailure : Result
+
+        /** Startup failed. Observe call state for any pending native termination. */
+        public data object StartFailure : Result
     }
 }

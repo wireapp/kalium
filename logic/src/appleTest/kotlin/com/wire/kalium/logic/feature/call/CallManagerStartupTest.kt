@@ -1,0 +1,204 @@
+/*
+ * Wire
+ * Copyright (C) 2026 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.logic.feature.call
+
+import com.wire.kalium.calling.AppleAvsBridge
+import com.wire.kalium.calling.AppleAvsCallbacks
+import com.wire.kalium.calling.ConversationTypeCalling
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.call.CallMetadata
+import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.call.CallType
+import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.framework.TestCall
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.util.KaliumDispatcher
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+import kotlin.time.Instant
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class CallManagerStartupTest {
+
+    @Test
+    fun acceptedStartKeepsRowStarted() = runTest {
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        val manager = f.manager()
+        manager.start()
+        assertEquals(CallStatus.STARTED, f.metadata?.callStatus)
+        verify(VerifyMode.exactly(1)) { f.avs.startCall(any(), any(), any(), any(), any(), any()) }
+        manager.cancelJobs()
+    }
+
+    @Test
+    fun rejectedNativeStartClosesRowWithoutEndingOrReleasingHandle() = runTest {
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        every { f.avs.startCall(any(), any(), any(), any(), any(), any()) } returns 5
+        val manager = f.manager()
+        assertFailsWith<CallStartException> { manager.start() }
+        assertEquals(CallStatus.CLOSED, f.metadata?.callStatus)
+        verify(VerifyMode.exactly(0)) { f.avs.endCall(any(), any()) }
+        verifySuspend(VerifyMode.exactly(0)) { f.avs.releaseUserHandle(any()) }
+        manager.cancelJobs()
+    }
+
+    @Test
+    fun missingHandleCreatesNoCallRow() = runTest {
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        every { f.avs.userHandle(any(), any(), any()) } returns null
+        val manager = f.manager()
+        assertFailsWith<CallStartException> { manager.start() }
+        assertNull(f.metadata)
+        verify(VerifyMode.exactly(0)) { f.avs.startCall(any(), any(), any(), any(), any(), any()) }
+        manager.cancelJobs()
+    }
+
+    @Test
+    fun mlsJoinRejectionNeverStartsAvs() = runTest {
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher(), mls = true)
+        everySuspend { f.repository.joinMlsConference(any(), any(), any()) } returns Either.Left(CoreFailure.Unknown(null))
+        val manager = f.manager()
+        assertFailsWith<CallStartException> { manager.start() }
+        assertEquals(CallStatus.CLOSED, f.metadata?.callStatus)
+        verify(VerifyMode.exactly(0)) { f.avs.startCall(any(), any(), any(), any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(0)) { f.repository.leaveMlsConference(any()) }
+        manager.cancelJobs()
+    }
+
+    @Test
+    fun nativeRejectionAfterMlsJoinLeavesConference() = runTest {
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher(), mls = true)
+        every { f.avs.startCall(any(), any(), any(), any(), any(), any()) } returns -1
+        val manager = f.manager()
+        assertFailsWith<CallStartException> { manager.start() }
+        verifySuspend(VerifyMode.exactly(1)) { f.repository.leaveMlsConference(CONVERSATION) }
+        assertEquals(CallStatus.CLOSED, f.metadata?.callStatus)
+        manager.cancelJobs()
+    }
+
+    @Test
+    fun startWaitsForReadinessBeforeCreatingRow() = runTest {
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher(), ready = false)
+        val manager = f.manager()
+        val start = launch { manager.start() }
+        runCurrent()
+        assertNull(f.metadata)
+        verify(VerifyMode.exactly(0)) { f.avs.startCall(any(), any(), any(), any(), any(), any()) }
+        f.callbacks.onReady(0)
+        start.join()
+        assertEquals(CallStatus.STARTED, f.metadata?.callStatus)
+        verify(VerifyMode.exactly(1)) { f.avs.startCall(any(), any(), any(), any(), any(), any()) }
+        manager.cancelJobs()
+    }
+
+    private suspend fun CallManager.start() = startCall(CONVERSATION, CallType.AUDIO, ConversationTypeCalling.OneOnOne, false, false)
+
+    private class Fixture(
+        private val dispatcher: KaliumDispatcher,
+        private val mls: Boolean = false,
+        private val ready: Boolean = true
+    ) {
+        val avs = mock<AppleAvsBridge>(MockMode.autoUnit)
+        val repository = mock<CallRepository>(MockMode.autoUnit)
+        var metadata: CallMetadata? = null
+        lateinit var callbacks: AppleAvsCallbacks
+        private val client = mock<CurrentClientIdProvider>()
+        private val federated = mock<FederatedIdMapper>()
+        private val qualified = mock<QualifiedIdMapper>()
+        private val network = mock<NetworkStateObserver>()
+
+        init {
+            everySuspend { client() } returns ClientId("client").right()
+            everySuspend { federated.parseToFederatedId(any<QualifiedID>()) } calls {
+                val id = it.arg<QualifiedID>(0)
+                "${id.value}@${id.domain}"
+            }
+            every { qualified.fromStringToQualifiedID(any()) } returns CONVERSATION
+            every { avs.userHandle(any(), any(), any()) } calls {
+                callbacks = it.arg(2)
+                if (ready) callbacks.onReady(0)
+                HANDLE
+            }
+            every { avs.startCall(any(), any(), any(), any(), any(), any()) } returns 0
+            every { repository.getCallMetadata(any()) } calls { metadata }
+            everySuspend { repository.createCall(any(), any(), any(), any(), any(), any(), any()) } calls {
+                metadata = TestCall.oneOnOneCallMetadata().copy(
+                    callStatus = it.arg(2),
+                    protocol = if (mls) Conversation.ProtocolInfo.MLS(
+                        GroupID("group"), Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                        1uL, Instant.DISTANT_PAST, CipherSuite.fromTag(1)
+                    ) else Conversation.ProtocolInfo.Proteus
+                )
+            }
+            everySuspend { repository.updateCallStatusById(any(), any()) } calls {
+                metadata = metadata?.copy(callStatus = it.arg(1))
+            }
+            everySuspend { repository.joinMlsConference(any(), any(), any()) } calls {
+                it.arg<suspend () -> Unit>(1)()
+                Unit.right()
+            }
+            every { network.observeNetworkState() } returns MutableStateFlow(NetworkState.ConnectedWithInternet)
+        }
+
+        fun manager() = CallManagerImpl(
+            repository, client, mock(), mock(), CallMapperImpl(qualified), federated, qualified,
+            mock(), mock(MockMode.autoUnit), mock(MockMode.autoUnit), network, mock(), mock(), KaliumConfigs(),
+            mock(MockMode.autoUnit), mock(MockMode.autoUnit), mock(MockMode.autoUnit), UserId("self", "example.com"),
+            kaliumDispatchers = dispatcher, avs = avs
+        )
+    }
+
+    private companion object {
+        const val HANDLE = 42u
+        val CONVERSATION = ConversationId("call", "example.com")
+    }
+}

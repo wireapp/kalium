@@ -3013,6 +3013,13 @@ public final class com/wire/kalium/logic/feature/call/usecase/StartCallUseCase {
 public abstract interface class com/wire/kalium/logic/feature/call/usecase/StartCallUseCase$Result {
 }
 
+public final class com/wire/kalium/logic/feature/call/usecase/StartCallUseCase$Result$StartFailure : com/wire/kalium/logic/feature/call/usecase/StartCallUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/call/usecase/StartCallUseCase$Result$StartFailure;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/wire/kalium/logic/feature/call/usecase/StartCallUseCase$Result$Success : com/wire/kalium/logic/feature/call/usecase/StartCallUseCase$Result {
 	public static final field INSTANCE Lcom/wire/kalium/logic/feature/call/usecase/StartCallUseCase$Result$Success;
 	public fun equals (Ljava/lang/Object;)Z

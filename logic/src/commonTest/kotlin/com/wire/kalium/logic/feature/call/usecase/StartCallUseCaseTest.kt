@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
+import com.wire.kalium.logic.feature.call.CallStartException
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
@@ -33,17 +34,20 @@ import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.calls
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
+import kotlin.test.assertFailsWith
 
 class StartCallUseCaseTest {
 
@@ -177,6 +181,28 @@ class StartCallUseCaseTest {
         verifySuspend(VerifyMode.not) {
             arrangement.answerCall.invoke(any())
         }
+    }
+
+    @Test
+    fun rejectedNativeStartupReturnsFailure() = runTest {
+        val (arrangement, startCall) = Arrangement(testDispatcher())
+            .withWaitingForSyncSucceeding().withNoIncomingCall()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.OneOnOne).arrange()
+        everySuspend { arrangement.callManager.startCall(any(), any(), any(), any(), any()) } calls {
+            throw CallStartException("native rejection")
+        }
+        assertIs<StartCallUseCase.Result.StartFailure>(startCall(MockConversation.ID))
+    }
+
+    @Test
+    fun cancellationIsNotReportedAsStartupFailure() = runTest {
+        val (arrangement, startCall) = Arrangement(testDispatcher())
+            .withWaitingForSyncSucceeding().withNoIncomingCall()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.OneOnOne).arrange()
+        everySuspend { arrangement.callManager.startCall(any(), any(), any(), any(), any()) } calls {
+            throw CancellationException("cancelled")
+        }
+        assertFailsWith<CancellationException> { startCall(MockConversation.ID) }
     }
 
     private class Arrangement(dispatcher: KaliumDispatcher) {

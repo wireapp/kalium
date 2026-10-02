@@ -4092,6 +4092,12 @@ final class com.wire.kalium.logic.feature.call.usecase/StartCallUseCase { // com
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.call/CallType = ...): com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result // com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.call.CallType){}[0]
 
     sealed interface Result { // com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result|null[0]
+        final object StartFailure : com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result { // com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result.StartFailure|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result.StartFailure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result.StartFailure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result.StartFailure.toString|toString(){}[0]
+        }
+
         final object Success : com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result { // com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result.Success|null[0]
             final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
             final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.call.usecase/StartCallUseCase.Result.Success.hashCode|hashCode(){}[0]

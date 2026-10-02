@@ -62,3 +62,6 @@ internal interface CallManager {
     suspend fun setNetworkQualityInterval(intervalInSeconds: Int)
     suspend fun cancelJobs()
 }
+
+/** Startup failed. An accepted native call may still be completing termination. */
+internal class CallStartException(message: String, cause: Throwable? = null) : Exception(message, cause)
