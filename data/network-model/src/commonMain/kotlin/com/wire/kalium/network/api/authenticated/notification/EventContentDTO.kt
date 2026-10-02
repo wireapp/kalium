@@ -554,6 +554,7 @@ sealed class EventContentDTO {
         data class MeetingCreateDTO(
             @SerialName("qualified_id") val qualifiedMeetingId: MeetingId,
             @SerialName("time") val time: Instant,
+            @SerialName("qualified_from") val qualifiedFrom: UserId? = null,
         ) : Meeting()
 
         @Serializable
@@ -561,6 +562,7 @@ sealed class EventContentDTO {
         data class MeetingDeleteDTO(
             @SerialName("qualified_id") val qualifiedMeetingId: MeetingId,
             @SerialName("time") val time: Instant,
+            @SerialName("qualified_from") val qualifiedFrom: UserId? = null,
         ) : Meeting()
 
         @Serializable
@@ -568,6 +570,7 @@ sealed class EventContentDTO {
         data class MeetingUpdateDTO(
             @SerialName("qualified_id") val qualifiedMeetingId: MeetingId,
             @SerialName("time") val time: Instant,
+            @SerialName("qualified_from") val qualifiedFrom: UserId? = null,
         ) : Meeting()
 
         @Serializable
