@@ -39,4 +39,6 @@ internal open class FakeSlowSyncRepository(
     override fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus) {}
     override suspend fun setSlowSyncVersion(version: Int) {}
     override suspend fun getSlowSyncVersion(): Int? = null
+    override suspend fun setLastSlowSyncApiVersion(version: Int) {}
+    override suspend fun getLastSlowSyncApiVersion(): Int? = null
 }
