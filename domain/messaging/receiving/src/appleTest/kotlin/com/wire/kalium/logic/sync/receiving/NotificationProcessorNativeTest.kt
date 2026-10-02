@@ -3883,6 +3883,205 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun externalRejoinCannotDecryptPreviousEpochAfterReopen() = externalRejoinCheckpoint(abort = false)
+
+    @Test
+    fun externalRejoinAndCheckpointRollBackTogetherAfterRemoteCommit() = externalRejoinCheckpoint(abort = true)
+
+    @Test
+    fun externalRejoinReplayBecomesTooOldAfterThreeOrdinaryCommits() = externalRejoinCheckpoint(abort = false, advanceEpochs = true)
+
+    @Test
+    fun pendingRecoverySurvivesNativeRollbackWithoutACompletionToken() = externalRejoinCheckpoint(abort = true, useRecoveryStore = true)
+
+    @Test
+    fun uncertainRecoveryIntentWriteReloadsBeforeTheNextLookup() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(false) { fixture ->
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    var reads = 0
+                    var writes = 0
+                    val metadata = object : com.wire.kalium.persistence.dao.MetadataDAO by runtime.database.metadataDAO {
+                        override suspend fun valuesByKeyRange(fromInclusive: String, untilExclusive: String): Map<String, String> {
+                            reads++
+                            return runtime.database.metadataDAO.valuesByKeyRange(fromInclusive, untilExclusive)
+                        }
+
+                        override suspend fun insertValue(value: String, key: String) {
+                            runtime.database.metadataDAO.insertValue(value, key)
+                            writes++
+                            throw CancellationException("Interrupted after durable SQL write")
+                        }
+                    }
+                    val store = MLSReceiveRecoveryStore(metadata, runtime.database.notificationEventStore, CLIENT)
+                    val payload = "recovery-payload".encodeToByteArray()
+                    assertNull(store.find("recovery-event") { error("No outstanding intent") })
+                    assertFailsWith<CancellationException> { store.begin("recovery-event", GROUP_ID, payload) }
+                    val recovered = checkNotNull(store.find("recovery-event") { payload })
+                    assertEquals("recovery-event", recovered.eventId)
+                    assertEquals(GROUP_ID, recovered.groupId)
+                    assertEquals(recovered, store.begin("recovery-event", GROUP_ID, payload))
+                    assertEquals(2, reads)
+                    assertEquals(1, writes)
+                })
+            }
+        }
+    }
+
+    @Test
+    fun completedRecoverySurvivesReopenUntilItsQueueMarkerCommits() = externalRejoinCheckpoint(abort = false, useRecoveryStore = true)
+
+    @Test
+    fun completedRecoveryDoesNotProveARecreatedGroup() = externalRejoinCheckpoint(
+        abort = false, useRecoveryStore = true, replaceGroupBeforeAck = true)
+
+    @Test
+    fun pendingRejoinAfterCatchingUpInvalidatesEarlierDecryptionInTheBatch() = externalRejoinCheckpoint(
+        abort = false, useRecoveryStore = true, catchUpBeforeRejoin = true)
+
+    private fun externalRejoinCheckpoint(
+        abort: Boolean,
+        advanceEpochs: Boolean = false,
+        useRecoveryStore: Boolean = false,
+        replaceGroupBeforeAck: Boolean = false,
+        catchUpBeforeRejoin: Boolean = false,
+    ) = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val checkpoint = "known-recovery-trigger".encodeToByteArray()
+                val initialPrefix = fixture.encrypt("prefix")
+                val firstCommit = fixture.commit()
+                val secondCommit = fixture.commit()
+                val future = fixture.encrypt("future")
+                val prefix = if (catchUpBeforeRejoin) fixture.encrypt("caught-up-prefix") else initialPrefix
+                val wrappedGroupInfo = checkNotNull(fixture.transport.bundle).groupInfoBundle.payload
+                assertContentEquals(byteArrayOf(0, 1, 0, 4), wrappedGroupInfo.copyOfRange(0, 4))
+                val groupInfo = wrappedGroupInfo.copyOfRange(4, wrappedGroupInfo.size)
+                var posts = 0
+                val transporter = object : MLSTransporter {
+                    override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
+                        posts++
+                        checkNotNull(fixture.senderMLS).transaction { context ->
+                            assertIs<MLSDecryptResult.Success>(context.decryptMessage(GROUP_ID, commitBundle.commit))
+                        }
+                    }
+                }
+                fixture.releasePrepared()
+                val result = fixture.open { runtime ->
+                    val recovery = if (useRecoveryStore) {
+                        runtime.database.eventDAO.insertEvents(listOf(com.wire.kalium.persistence.dao.event.NewEventEntity(
+                            "recovery-event", "[]", false, false)))
+                        var reads = 0
+                        val metadata = object : com.wire.kalium.persistence.dao.MetadataDAO by runtime.database.metadataDAO {
+                            override suspend fun valuesByKeyRange(fromInclusive: String, untilExclusive: String): Map<String, String> {
+                                reads++
+                                return runtime.database.metadataDAO.valuesByKeyRange(fromInclusive, untilExclusive)
+                            }
+                        }
+                        MLSReceiveRecoveryStore(metadata, runtime.database.notificationEventStore, CLIENT).also { store ->
+                            repeat(100) { assertNull(store.find("ordinary-$it") { error("No pending event needs no payload") }) }
+                            assertEquals(1, reads)
+                        }
+                    } else null
+                    val operation = recovery?.begin("recovery-event", GROUP_ID, future)
+                    if (recovery != null) {
+                        assertFailsWith<IllegalStateException> { recovery.begin("recovery-event", "changed-group", future) }
+                        val otherClient = MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, "other")
+                        assertNull(otherClient.find("recovery-event") { error("Another client cannot see this intent") })
+                    }
+                    checkNotNull(fixture.openMLS(runtime, transporter)).transaction { context ->
+                        assertNull(context.readTransactionCheckpoint())
+                        if (operation != null) assertFalse(checkNotNull(recovery).isCompleted(context, operation))
+                        if (!catchUpBeforeRejoin) assertIs<MLSDecryptResult.Success>(context.decryptMessage(GROUP_ID, prefix))
+                        val before = assertFailsWith<Exception> { context.decryptMessage(GROUP_ID, future) }
+                        assertIs<MLSFailure.WrongEpoch>(com.wire.kalium.common.error.commonizeMLSException(before).failure)
+                        if (catchUpBeforeRejoin) {
+                            context.decryptMessage(GROUP_ID, firstCommit)
+                            context.decryptMessage(GROUP_ID, secondCommit)
+                            assertEquals(3uL, context.conversationEpoch(GROUP_ID))
+                            assertIs<MLSDecryptResult.Success>(context.decryptMessage(GROUP_ID, prefix))
+                        }
+                        assertEquals(GROUP_ID, context.joinByExternalCommit(groupInfo))
+                        assertEquals(4uL, context.conversationEpoch(GROUP_ID))
+                        if (operation == null) context.writeTransactionCheckpoint(checkpoint)
+                        else checkNotNull(recovery).complete(context, operation)
+                        if (abort) error("Abort native transaction after accepted external commit")
+                    }
+                }
+                if (abort) assertIs<Either.Left<*>>(result) else assertIs<Either.Right<*>>(result)
+                assertEquals(1, posts)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val recovery = if (useRecoveryStore) {
+                        MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT)
+                    } else null
+                    val operation = recovery?.let { assertNotNull(it.find("recovery-event") { future }) }
+                    checkNotNull(fixture.openMLS(runtime)).transaction { context ->
+                        if (abort) {
+                            assertNull(context.readTransactionCheckpoint())
+                            if (operation != null) assertFalse(checkNotNull(recovery).isCompleted(context, operation))
+                            assertEquals(1uL, context.conversationEpoch(GROUP_ID))
+                            assertIs<MLSDecryptResult.Success>(context.decryptMessage(GROUP_ID, prefix))
+                            return@transaction
+                        }
+                        if (operation == null) assertContentEquals(checkpoint, context.readTransactionCheckpoint())
+                        else assertTrue(checkNotNull(recovery).isCompleted(context, operation))
+                        val replay = assertFailsWith<Exception> { context.decryptMessage(GROUP_ID, future) }
+                        val mapped = com.wire.kalium.common.error.commonizeMLSException(replay).failure
+                        // CoreCrypto 10.5.1 deliberately reports a generic decryption failure
+                        // after an external rejoin replaces the previous epoch's secrets.
+                        // It is not the typed MessageEpochTooOld case and cannot be ignored globally.
+                        assertEquals(MLSFailure.Other("An application message failed to decrypt"), mapped)
+                        // If a pending operation rejoins after the group caught up, its
+                        // replacement keys also invalidate preceding successful work.
+                        val earlierReplay = assertFailsWith<Exception> { context.decryptMessage(GROUP_ID, prefix) }
+                        assertEquals(
+                            if (catchUpBeforeRejoin) MLSFailure.Other("An application message failed to decrypt")
+                            else MLSFailure.MessageEpochTooOld,
+                            com.wire.kalium.common.error.commonizeMLSException(earlierReplay).failure
+                        )
+                        assertEquals(4uL, context.conversationEpoch(GROUP_ID))
+                        if (replaceGroupBeforeAck) {
+                            context.wipeConversation(GROUP_ID)
+                            assertFalse(checkNotNull(recovery).isCompleted(context, checkNotNull(operation)))
+                            context.createConversation(GROUP_ID, Base64.decode(PROPOSAL_PUBLIC_KEY))
+                            assertEquals(0uL, context.conversationEpoch(GROUP_ID))
+                            assertFalse(recovery.isCompleted(context, operation))
+                        }
+                    }
+                    if (recovery != null) {
+                        assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("recovery-event")).isProcessed)
+                        if (!abort && !replaceGroupBeforeAck) {
+                            recovery.acknowledge(listOf("recovery-event"))
+                            assertTrue(checkNotNull(runtime.database.eventDAO.getEventById("recovery-event")).isProcessed)
+                            val reopened = MLSReceiveRecoveryStore(runtime.database.metadataDAO, runtime.database.notificationEventStore, CLIENT)
+                            assertNull(reopened.find("recovery-event") { future })
+                        }
+                    }
+                })
+                assertEquals(4uL, checkNotNull(fixture.senderMLS).transaction { it.conversationEpoch(GROUP_ID) })
+                if (!abort && !replaceGroupBeforeAck) {
+                    val following = fixture.encrypt("following")
+                    assertIs<Either.Right<*>>(fixture.decryptAndCheck(following, "following"))
+                }
+                if (advanceEpochs) repeat(3) { index ->
+                    val commit = fixture.commit()
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        checkNotNull(fixture.openMLS(runtime)).transaction { context ->
+                            context.decryptMessage(GROUP_ID, commit)
+                            assertEquals((5 + index).toULong(), context.conversationEpoch(GROUP_ID))
+                            val replay = assertFailsWith<Exception> { context.decryptMessage(GROUP_ID, future) }
+                            val failure = com.wire.kalium.common.error.commonizeMLSException(replay).failure
+                            if (index < 2) assertIs<MLSFailure.Other>(failure) else assertEquals(MLSFailure.MessageEpochTooOld, failure)
+                            assertContentEquals(checkpoint, context.readTransactionCheckpoint())
+                        }
+                    })
+                }
+            }
+        }
+    }
+
+    @Test
     fun mlsWrongEpochKeepsMetadataRecoveryAndLaterQueuePending() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->

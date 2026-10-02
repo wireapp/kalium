@@ -26,6 +26,10 @@ interface MetadataDAO {
     suspend fun deleteValue(key: String)
     fun valueByKeyFlow(key: String): Flow<String?>
     suspend fun valueByKey(key: String): String?
+
+    /** Read a key range through the existing primary-key index, without scanning unrelated metadata. */
+    suspend fun valuesByKeyRange(fromInclusive: String, untilExclusive: String): Map<String, String>
+
     suspend fun clear(keysToKeep: List<String>?)
     suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>)
     suspend fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T?

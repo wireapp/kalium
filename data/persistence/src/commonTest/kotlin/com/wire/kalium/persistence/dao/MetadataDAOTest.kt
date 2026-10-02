@@ -50,6 +50,17 @@ class MetadataDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun keyRangeLoadsEveryOperationWithoutIncludingAdjacentNamespaces() = runTest(dispatcher) {
+        val operations = (0..200).associate { "recovery:$it" to "operation-$it" }
+        val neighbors = mapOf("recovery" to "before", "recovery;" to "after", "recovery-other:1" to "other", "account" to "private")
+        (operations + neighbors).forEach { (key, value) -> metadataDAO.insertValue(value, key) }
+        assertEquals(operations, metadataDAO.valuesByKeyRange("recovery:", "recovery;"))
+        metadataDAO.deleteValue("recovery:100")
+        assertEquals(operations - "recovery:100", metadataDAO.valuesByKeyRange("recovery:", "recovery;"))
+        assertEquals(emptyMap(), metadataDAO.valuesByKeyRange("missing:", "missing;"))
+    }
+
+    @Test
     fun metadataFlowsReadEarlierWritesWithinReceivingTransaction() = runTest(dispatcher) {
         metadataDAO.insertValue(value1, key1)
         database.writeMessageEffects {

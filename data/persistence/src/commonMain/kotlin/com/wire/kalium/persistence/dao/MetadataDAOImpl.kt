@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -61,6 +62,11 @@ class MetadataDAOImpl internal constructor(
     override suspend fun valueByKey(key: String): String? = withContext(readDispatcher.value) {
         metadataQueries.selectValueByKey(key).awaitAsOneOrNull()
     }
+
+    override suspend fun valuesByKeyRange(fromInclusive: String, untilExclusive: String): Map<String, String> =
+        withContext(readDispatcher.value) {
+            metadataQueries.selectByKeyRange(fromInclusive, untilExclusive).awaitAsList().associate { it.key to it.stringValue }
+        }
 
     override suspend fun clear(keysToKeep: List<String>?) {
         withContext(writeDispatcher.value) {

@@ -46,6 +46,38 @@ import platform.Foundation.NSUUID
 
 class CoreCryptoCloseTest {
     @Test
+    fun transactionCheckpointCommitsRollsBackAndSurvivesReopen() = runTest {
+        val root = "${NSTemporaryDirectory()}/kalium-checkpoint-${NSUUID().UUIDString}"
+        val committed = "committed-recovery".encodeToByteArray()
+        var central = coreCryptoCentral(root, ByteArray(32) { 7 }) as CoreCryptoCentralImpl
+        try {
+            central.transaction("initial-checkpoint") {
+                kotlin.test.assertNull(it.getData())
+                it.setData(committed)
+                kotlin.test.assertContentEquals(committed, it.getData())
+            }
+            assertFailsWith<IllegalArgumentException> {
+                central.transaction("aborted-checkpoint") {
+                    it.setData("aborted-recovery".encodeToByteArray())
+                    throw IllegalArgumentException("Abort checkpoint and crypto transaction")
+                }
+            }
+            central.transaction("checkpoint-after-rollback") {
+                kotlin.test.assertContentEquals(committed, it.getData())
+            }
+            central.close()
+            central = coreCryptoCentral(root, ByteArray(32) { 7 }) as CoreCryptoCentralImpl
+            central.transaction("checkpoint-after-reopen") {
+                kotlin.test.assertContentEquals(committed, it.getData())
+            }
+        } finally {
+            central.close()
+            NSFileManager.defaultManager.removeItemAtPath(root, null)
+        }
+    }
+
+
+    @Test
     fun givenStoredPrekeys_whenReopeningProteus_thenAutomaticIdsDoNotRepeat() = runTest {
         val root = "${NSTemporaryDirectory()}/kalium-prekeys-${NSUUID().UUIDString}"
         val key = ByteArray(32) { 7 }

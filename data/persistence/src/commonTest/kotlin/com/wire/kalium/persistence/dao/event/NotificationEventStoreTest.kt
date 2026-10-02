@@ -27,6 +27,35 @@ import kotlin.test.assertNull
 
 class NotificationEventStoreTest : BaseDatabaseTest() {
     @Test
+    fun operationRetirementAndProcessedMarkerRollBackTogether() = runTest(dispatcher) {
+        val database = createDatabase(UserIDEntity("operation-ack", "wire.test"), encryptedDBSecret, true)
+        try {
+            val store = database.notificationEventStore
+            store.storePage(null, listOf(NewEventEntity("one", "[]", false, false), NewEventEntity("two", "[]", false, false)))
+            database.metadataDAO.insertValue("pending", "recovery-one")
+            database.metadataDAO.insertValue("unrelated", "keep")
+            val records = mapOf("one" to listOf("recovery-one"))
+            for (failure in listOf("UPDATE ON Events WHEN NEW.event_id = 'two'", "DELETE ON Metadata")) {
+                database.sqlDriver.execute(null, "CREATE TRIGGER fail_ack BEFORE $failure BEGIN SELECT RAISE(ABORT, 'failed'); END", 0)
+                assertFails { store.markProcessed(listOf("one", "two"), records) }
+                assertEquals(false, database.eventDAO.getEventById("one")?.isProcessed)
+                assertEquals(false, database.eventDAO.getEventById("two")?.isProcessed)
+                assertEquals("pending", database.metadataDAO.valueByKey("recovery-one"))
+                database.sqlDriver.execute(null, "DROP TRIGGER fail_ack", 0)
+            }
+            assertFails { store.markProcessed(listOf("missing"), mapOf("missing" to listOf("recovery-one"))) }
+            assertEquals("pending", database.metadataDAO.valueByKey("recovery-one"))
+            store.markProcessed(listOf("one", "two"), records)
+            assertEquals(true, database.eventDAO.getEventById("one")?.isProcessed)
+            assertEquals(true, database.eventDAO.getEventById("two")?.isProcessed)
+            assertNull(database.metadataDAO.valueByKey("recovery-one"))
+            assertEquals("unrelated", database.metadataDAO.valueByKey("keep"))
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
     fun completePagesIncludeUnknownPayloadsAndAdvanceTheCursorOnlyWithEveryRow() = runTest(dispatcher) {
         val userId = UserIDEntity("page", "wire.test")
         val database = createDatabase(userId, encryptedDBSecret, true)

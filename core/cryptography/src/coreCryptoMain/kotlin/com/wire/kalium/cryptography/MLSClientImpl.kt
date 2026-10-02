@@ -137,6 +137,10 @@ class MLSClientImpl private constructor(
 
     private fun mlsCoreCryptoContext(context: CoreCryptoContext) = object : MlsCoreCryptoContext {
 
+        override suspend fun readTransactionCheckpoint(): ByteArray? = context.getData()
+
+        override suspend fun writeTransactionCheckpoint(checkpoint: ByteArray) = context.setData(checkpoint)
+
         override fun getDefaultCipherSuite(): MLSCiphersuite = defaultCipherSuite.toCryptography()
 
         override suspend fun generateKeyPackages(

@@ -35,6 +35,21 @@ interface CryptoTransactionContext {
 interface MlsCoreCryptoContext {
 
     /**
+     * Read CoreCrypto's single application checkpoint for this keystore.
+     *
+     * This reads the native database. Callers should load it at a transaction boundary,
+     * not for every message. It is not scoped to a conversation or credential.
+     */
+    suspend fun readTransactionCheckpoint(): ByteArray?
+
+    /**
+     * Replace the keystore's application checkpoint in the current native transaction.
+     * It commits or rolls back with MLS state, independently of application SQL and HTTP.
+     * Callers own the versioned format and must keep it small; this is not a general key-value store.
+     */
+    suspend fun writeTransactionCheckpoint(checkpoint: ByteArray)
+
+    /**
      * Get the default ciphersuite for the client.
      * the Default ciphersuite is set when creating the mls client.
      */

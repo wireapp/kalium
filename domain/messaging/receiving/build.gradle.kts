@@ -79,7 +79,8 @@ kotlin {
             implementation(projects.domain.callingNotifications)
             implementation(projects.domain.usernetwork)
         }
-        appleTest.dependencies {
+        commonTest.dependencies {
+            implementation(projects.data.persistenceTest)
             implementation(libs.coroutines.test)
         }
     }
