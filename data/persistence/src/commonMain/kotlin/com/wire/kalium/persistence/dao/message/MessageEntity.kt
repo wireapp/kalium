@@ -149,7 +149,7 @@ sealed interface MessageEntity {
         CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_PROTOCOL_CHANGED_DURING_CALL,
         CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD, MULTIPART,
         CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED, CONVERSATION_APPS_ENABLED_CHANGED,
-        CELL_EDITOR_ACCESS, CELL_VIEWER_ACCESS,
+        CELL_EDITOR_ACCESS, CELL_VIEWER_ACCESS, NEW_CONVERSATION_APPS_ENABLED,
     }
 
     enum class MemberChangeType {
@@ -370,6 +370,7 @@ sealed class MessageEntityContent {
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
     data class ConversationProtocolChanged(val protocol: ConversationEntity.Protocol) : System()
+    data object NewConversationAppsEnabled : System()
     data class ConversationAppsAccessChanged(val isEnabled: Boolean) : System()
     data object ConversationProtocolChangedDuringACall : System()
     data object HistoryLostProtocolChanged : System()

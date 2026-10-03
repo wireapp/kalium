@@ -352,6 +352,9 @@ sealed interface MessageContent {
         val receiptMode: Boolean
     ) : System
 
+    /** Initial apps availability at conversation creation, not an attributed access-change action. */
+    data object NewConversationAppsEnabled : System
+
     data class ConversationAppsEnabledChanged(
         val isEnabled: Boolean
     ) : System
@@ -489,6 +492,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.MemberChange.RemovedFromTeam -> "MemberChange.RemovedFromTeam"
     is MessageContent.MissedCall -> "MissedCall"
     is MessageContent.NewConversationReceiptMode -> "NewConversationReceiptMode"
+    MessageContent.NewConversationAppsEnabled -> "NewConversationAppsEnabled"
     is MessageContent.ConversationCreated -> "ConversationCreated"
     is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
     is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd.${this.type}"

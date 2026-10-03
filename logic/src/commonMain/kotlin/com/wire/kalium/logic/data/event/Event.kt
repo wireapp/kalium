@@ -135,13 +135,15 @@ internal sealed class Event(open val id: String) {
             val access: Set<Access>,
             val accessRole: Set<AccessRole>,
             val qualifiedFrom: UserId,
+            val dateTime: Instant? = null,
         ) : Conversation(id, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.AccessUpdate",
                 idKey to id,
                 conversationIdKey to conversationId.toLogString(),
-                "qualifiedFrom" to qualifiedFrom.toLogString()
+                "qualifiedFrom" to qualifiedFrom.toLogString(),
+                timestampIsoKey to dateTime,
             )
         }
 

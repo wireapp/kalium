@@ -135,7 +135,8 @@ internal class NewConversationEventHandlerImpl(
                 conversationId = event.conversationId,
                 hasAppsAccessEnabled = event.conversation.hasAppsAccessEnabled(),
                 creatorId = event.senderUserId,
-                type = event.conversation.toConversationType(selfUserTeamId)
+                type = event.conversation.toConversationType(selfUserTeamId),
+                instant = event.dateTime,
             )
             newGroupConversationSystemMessagesCreator.conversationCellAccessStatus(
                 conversationId = event.conversationId,

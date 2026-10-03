@@ -52,6 +52,49 @@ import kotlinx.datetime.Instant
 class NewGroupConversationSystemMessagesCreatorTest {
 
     @Test
+    fun initialAppsNoticePreservesExplicitDateForGroupsAndChannels() = runTest {
+        listOf(ConversationEntity.Type.GROUP, ConversationEntity.Type.CHANNEL).forEach { type ->
+            val (arrangement, creator) = Arrangement().withPersistMessageSuccess().arrange()
+            val date = Instant.parse("2001-01-01T00:00:00Z")
+
+            creator.conversationAppsAccessIfEnabled(
+                eventId = "initial-apps",
+                conversationId = TestConversation.ID,
+                hasAppsAccessEnabled = true,
+                creatorId = TestUser.SELF.id,
+                type = type,
+                instant = date,
+            ).shouldSucceed()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.persistMessage(matches {
+                    it.content == MessageContent.NewConversationAppsEnabled && it.date == date &&
+                        it.id == "initial-apps" && it.senderUserId == TestUser.SELF.id
+                })
+            }
+        }
+    }
+
+    @Test
+    fun disabledAppsAndNonGroupConversationsDoNotProduceInitialAppsNotice() = runTest {
+        val (arrangement, creator) = Arrangement().withPersistMessageSuccess().arrange()
+        creator.conversationAppsAccessIfEnabled(
+            conversationId = TestConversation.ID,
+            hasAppsAccessEnabled = false,
+            creatorId = TestUser.SELF.id,
+            type = ConversationEntity.Type.GROUP,
+        ).shouldSucceed()
+        creator.conversationAppsAccessIfEnabled(
+            conversationId = TestConversation.ID,
+            hasAppsAccessEnabled = true,
+            creatorId = TestUser.SELF.id,
+            type = ConversationResponse.Type.ONE_TO_ONE,
+        ).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage(any()) }
+    }
+
+    @Test
     fun givenAGroupConversation_whenPersistingAndValid_ThenShouldCreateAStartedSystemMessage() = runTest {
         val (arrangement, sysMessageCreator) = Arrangement()
             .withPersistMessageSuccess()

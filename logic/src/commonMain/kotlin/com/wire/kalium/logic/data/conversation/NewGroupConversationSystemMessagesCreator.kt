@@ -82,7 +82,8 @@ internal interface NewGroupConversationSystemMessagesCreator {
         conversationId: ConversationId,
         hasAppsAccessEnabled: Boolean,
         creatorId: UserId,
-        type: ConversationEntity.Type
+        type: ConversationEntity.Type,
+        instant: Instant = Clock.System.now(),
     ): Either<CoreFailure, Unit>
 
     suspend fun conversationAppsAccessIfEnabled(
@@ -90,7 +91,8 @@ internal interface NewGroupConversationSystemMessagesCreator {
         conversationId: ConversationId,
         hasAppsAccessEnabled: Boolean,
         creatorId: UserId,
-        type: ConversationResponse.Type
+        type: ConversationResponse.Type,
+        instant: Instant = Clock.System.now(),
     ): Either<CoreFailure, Unit>
 }
 
@@ -304,13 +306,15 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         conversationId: ConversationId,
         hasAppsAccessEnabled: Boolean,
         creatorId: UserId,
-        type: ConversationEntity.Type
+        type: ConversationEntity.Type,
+        instant: Instant,
     ): Either<CoreFailure, Unit> = persistAppsAccessIfEnabled(
         eventId = eventId,
         conversationId = conversationId,
         hasAppsAccessEnabled = hasAppsAccessEnabled,
         creatorId = creatorId,
-        isGroup = type.isGroup
+        isGroup = type.isGroup,
+        instant = instant,
     )
 
     override suspend fun conversationAppsAccessIfEnabled(
@@ -318,13 +322,15 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         conversationId: ConversationId,
         hasAppsAccessEnabled: Boolean,
         creatorId: UserId,
-        type: ConversationResponse.Type
+        type: ConversationResponse.Type,
+        instant: Instant,
     ): Either<CoreFailure, Unit> = persistAppsAccessIfEnabled(
         eventId = eventId,
         conversationId = conversationId,
         hasAppsAccessEnabled = hasAppsAccessEnabled,
         creatorId = creatorId,
-        isGroup = type == ConversationResponse.Type.GROUP
+        isGroup = type == ConversationResponse.Type.GROUP,
+        instant = instant,
     )
 
     private suspend fun persistAppsAccessIfEnabled(
@@ -333,13 +339,14 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         hasAppsAccessEnabled: Boolean,
         creatorId: UserId,
         isGroup: Boolean,
+        instant: Instant,
     ): Either<CoreFailure, Unit> = if (hasAppsAccessEnabled && isGroup) {
         persistMessage(
             Message.System(
                 eventId,
-                MessageContent.ConversationAppsEnabledChanged(isEnabled = true),
+                MessageContent.NewConversationAppsEnabled,
                 conversationId,
-                Clock.System.now(),
+                instant,
                 creatorId,
                 Message.Status.Sent,
                 Message.Visibility.VISIBLE,

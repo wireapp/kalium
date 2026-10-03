@@ -427,6 +427,10 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
+            MessageEntityContent.NewConversationAppsEnabled -> {
+                /* No payload; the base message discriminator stores the initial enabled status. */
+            }
+
             is MessageEntityContent.ConversationAppsAccessChanged -> messagesQueries.insertSystemConversationAppsEnabledChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
@@ -496,6 +500,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.TeamMemberRemoved,
                 is MessageEntityContent.LegalHold,
                 is MessageEntityContent.NewConversationWithCellMessage,
+                MessageEntityContent.NewConversationAppsEnabled,
                 is MessageEntityContent.ConversationAppsAccessChanged,
                 is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage,
                 is MessageEntityContent.CellEditorAccessMessage,
@@ -608,6 +613,7 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.CellEditorAccessMessage -> MessageEntity.ContentType.CELL_EDITOR_ACCESS
         is MessageEntityContent.CellViewerAccessMessage -> MessageEntity.ContentType.CELL_VIEWER_ACCESS
 
+        MessageEntityContent.NewConversationAppsEnabled -> MessageEntity.ContentType.NEW_CONVERSATION_APPS_ENABLED
         is MessageEntityContent.ConversationAppsAccessChanged -> MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED
     }
 }

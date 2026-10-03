@@ -51,7 +51,8 @@ internal interface SystemMessageInserter {
         eventId: String = LocalId.generate(),
         conversationId: ConversationId,
         senderUserId: UserId,
-        isAppsAccessEnabled: Boolean
+        isAppsAccessEnabled: Boolean,
+        instant: Instant = Clock.System.now(),
     )
 }
 
@@ -147,14 +148,15 @@ internal class SystemMessageInserterImpl(
         eventId: String,
         conversationId: ConversationId,
         senderUserId: UserId,
-        isAppsAccessEnabled: Boolean
+        isAppsAccessEnabled: Boolean,
+        instant: Instant,
     ) {
         persistMessage(
             Message.System(
                 id = eventId,
                 content = MessageContent.ConversationAppsEnabledChanged(isAppsAccessEnabled),
                 conversationId = conversationId,
-                date = Clock.System.now(),
+                date = instant,
                 senderUserId = senderUserId,
                 status = Message.Status.Sent,
                 visibility = Message.Visibility.VISIBLE,

@@ -261,6 +261,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CELL_EDITOR_ACCESS -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CELL_VIEWER_ACCESS -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.NEW_CONVERSATION_APPS_ENABLED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> MessagePreviewEntityContent.Unknown
         }
     }
@@ -859,6 +860,7 @@ object MessageMapper {
                 receiptMode = conversationReceiptModeChanged ?: false
             )
 
+            MessageEntity.ContentType.NEW_CONVERSATION_APPS_ENABLED -> MessageEntityContent.NewConversationAppsEnabled
             MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED -> MessageEntityContent.ConversationAppsAccessChanged(
                 isEnabled = isConversationAppsEnabled ?: false
             )

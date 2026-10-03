@@ -21,6 +21,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
+import kotlinx.datetime.Instant
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,6 +32,29 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MessageSystemContentTest : BaseMessageTest() {
+
+    @Test
+    fun initialAppsNoticeRoundTripsWithoutBecomingAnAccessChangeOrUnreadEvent() = runTest {
+        insertInitialData()
+        val message = newSystemMessageEntity(
+            id = "initialApps",
+            conversationId = TEST_CONVERSATION_1.id,
+            senderUserId = OTHER_USER.id,
+            date = Instant.parse("2020-01-01T00:00:00Z"),
+            content = MessageEntityContent.NewConversationAppsEnabled,
+        )
+
+        messageDAO.insertOrIgnoreMessage(message)
+        messageDAO.insertOrIgnoreMessage(message)
+
+        val result = messageDAO.getMessageById(message.id, message.conversationId)
+        assertNotNull(result)
+        assertEquals(MessageEntityContent.NewConversationAppsEnabled, result.content)
+        assertEquals(message.date, result.date)
+        assertEquals(message.senderUserId, result.senderUserId)
+        assertEquals(0L, messageDAO.getConversationUnreadEventsCount(message.conversationId))
+        assertTrue(messageDAO.observeLastMessages().first().none { it.id == message.id })
+    }
 
     // ============================================================
     // MEMBER_CHANGE Tests (list_1 = member_change_list, enum_1 = member_change_type)
