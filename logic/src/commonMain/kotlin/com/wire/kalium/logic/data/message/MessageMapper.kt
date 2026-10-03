@@ -225,6 +225,7 @@ internal class MessageMapperImpl(
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> null
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> null
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> null
+            MessageEntity.ContentType.NEW_CONVERSATION_APPS_ENABLED -> null
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> null
             MessageEntity.ContentType.HISTORY_LOST -> null
             MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED -> null
@@ -336,6 +337,7 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
     is MessageEntityContent.CellEditorAccessMessage -> MessageContent.CellEditorAccessMessage
     is MessageEntityContent.CellViewerAccessMessage -> MessageContent.CellViewerAccessMessage
 
+    MessageEntityContent.NewConversationAppsEnabled -> MessageContent.NewConversationAppsEnabled
     is MessageEntityContent.ConversationAppsAccessChanged -> MessageContent.ConversationAppsEnabledChanged(isEnabled)
 }
 

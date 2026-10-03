@@ -194,7 +194,8 @@ class NewConversationEventHandlerTest {
                 eq(event.conversation.id.toModel()),
                 eq(event.conversation.hasAppsAccessEnabled()),
                 eq(event.senderUserId),
-                eq(event.conversation.toConversationType(teamId))
+                eq(event.conversation.toConversationType(teamId)),
+                eq(event.dateTime)
             )
         }
     }
@@ -447,7 +448,8 @@ class NewConversationEventHandlerTest {
                     any<ConversationId>(),
                     any<Boolean>(),
                     any<UserId>(),
-                    any<ConversationEntity.Type>()
+                    any<ConversationEntity.Type>(),
+                    any()
                 )
             } returns Unit.right()
 
@@ -537,7 +539,8 @@ class NewConversationEventHandlerTest {
                     any<ConversationId>(),
                     any<Boolean>(),
                     any<UserId>(),
-                    any<ConversationEntity.Type>()
+                    any<ConversationEntity.Type>(),
+                    any()
                 )
             } returns Unit.right()
         }

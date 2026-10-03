@@ -353,6 +353,7 @@ private fun TimelineRows.systemContent(): MessageEntityContent.System? = when (c
     MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessageEntityContent.NewConversationReceiptMode(system_boolean ?: false)
     MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED ->
         MessageEntityContent.ConversationReceiptModeChanged(system_boolean ?: false)
+    MessageEntity.ContentType.NEW_CONVERSATION_APPS_ENABLED -> MessageEntityContent.NewConversationAppsEnabled
     MessageEntity.ContentType.CONVERSATION_APPS_ENABLED_CHANGED ->
         MessageEntityContent.ConversationAppsAccessChanged(system_boolean ?: false)
     MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessageEntityContent.ConversationMessageTimerChanged(system_integer)

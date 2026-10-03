@@ -137,5 +137,6 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage
     MessageContent.CellEditorAccessMessage -> MessageEntityContent.CellEditorAccessMessage
     MessageContent.CellViewerAccessMessage -> MessageEntityContent.CellViewerAccessMessage
+    MessageContent.NewConversationAppsEnabled -> MessageEntityContent.NewConversationAppsEnabled
     is MessageContent.ConversationAppsEnabledChanged -> MessageEntityContent.ConversationAppsAccessChanged(isEnabled)
 }

@@ -449,6 +449,10 @@ sealed interface Message {
                     typeKey to "cellViewerAccessMessage"
                 )
 
+                MessageContent.NewConversationAppsEnabled -> mutableMapOf(
+                    typeKey to "newConversationAppsEnabled"
+                )
+
                 is MessageContent.ConversationAppsEnabledChanged -> mutableMapOf(
                     typeKey to "conversationAppsEnabledChanged",
                     "isEnabled" to "${content.isEnabled}"

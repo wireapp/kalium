@@ -220,7 +220,8 @@ class ConversationGroupRepositoryTest {
                 any(),
                 any(),
                 any(),
-                any<ConversationEntity.Type>()
+                any<ConversationEntity.Type>(),
+                any()
             )
         }
     }
@@ -2188,7 +2189,8 @@ class ConversationGroupRepositoryTest {
                     any(),
                     any(),
                     any(),
-                    any<ConversationEntity.Type>()
+                    any<ConversationEntity.Type>(),
+                    any()
                 )
             }.returns(Unit.right())
         }
