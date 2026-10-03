@@ -2299,6 +2299,7 @@ public final class com/wire/kalium/logic/feature/backup/ExtractCryptoStateResult
 public final class com/wire/kalium/logic/feature/backup/MultiPlatformBackupScope {
 	public final fun getCreate ()Lcom/wire/kalium/logic/feature/backup/CreateMPBackupUseCase;
 	public final fun getRestore ()Lcom/wire/kalium/logic/feature/backup/RestoreMPBackupUseCase;
+	public final fun restore (Lkotlinx/coroutines/CoroutineDispatcher;)Lcom/wire/kalium/logic/feature/backup/RestoreMPBackupUseCase;
 }
 
 public abstract class com/wire/kalium/logic/feature/backup/RestoreBackupResult {
