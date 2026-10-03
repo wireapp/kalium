@@ -3594,6 +3594,8 @@ final class com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope { // c
         final fun <get-create>(): com.wire.kalium.logic.feature.backup/CreateMPBackupUseCase // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.create.<get-create>|<get-create>(){}[0]
     final val restore // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.restore|{}restore[0]
         final fun <get-restore>(): com.wire.kalium.logic.feature.backup/RestoreMPBackupUseCase // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.restore.<get-restore>|<get-restore>(){}[0]
+
+    final fun restore(kotlinx.coroutines/CoroutineDispatcher): com.wire.kalium.logic.feature.backup/RestoreMPBackupUseCase // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.restore|restore(kotlinx.coroutines.CoroutineDispatcher){}[0]
 }
 
 final class com.wire.kalium.logic.feature.call.usecase.video/SetVideoSendStateUseCase { // com.wire.kalium.logic.feature.call.usecase.video/SetVideoSendStateUseCase|null[0]
