@@ -155,6 +155,9 @@ internal class MeetingDataSource(
                             userRepository.insertOrIgnoreIncompleteUsers(creatorIds.toList())
                             userRepository.fetchUsersIfUnknownByIds(creatorIds)
 
+                        }
+                        // Only a genuinely empty full response is an authoritative empty snapshot.
+                        if (meetingsToPersist.isNotEmpty() || meetings.isEmpty()) {
                             meetingDAO.upsertMeetings(
                                 meetings = meetingsToPersist,
                                 generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),

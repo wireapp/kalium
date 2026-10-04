@@ -1,0 +1,1 @@
+Reconcile cached meetings when a successful full meeting fetch returns an authoritative empty list. Preserve cached meetings on fetch failures and nonempty responses containing only unsupported recurrence types.

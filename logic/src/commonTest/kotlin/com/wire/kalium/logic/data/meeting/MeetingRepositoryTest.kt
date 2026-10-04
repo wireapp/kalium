@@ -90,6 +90,48 @@ import com.wire.kalium.network.api.model.UserId as ApiUserId
 class MeetingRepositoryTest {
 
     @Test
+    fun givenAuthoritativeEmptyFetch_whenPersistingMeetings_thenCachedMeetingsAreReconciledToEmpty() = runTest {
+        val (arrangement, repository) = Arrangement().withFetchMeetingsSuccess(emptyList()).arrange()
+        val from = Instant.parse("2026-05-01T00:00:00Z")
+        val until = Instant.parse("2026-07-01T00:00:00Z")
+
+        val result = repository.fetchAndPersistMeetings(from, until)
+
+        assertEquals(emptyList(), result.getOrNull())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.upsertMeetings(
+                meetings = emptyList(),
+                generateOccurrencesWindow = GenerationLimit.Window(from, until),
+                removeMeetingsAbsentFromUpsertList = true,
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
+            arrangement.userRepository.fetchUsersIfUnknownByIds(any())
+        }
+    }
+
+    @Test
+    fun givenFailedFullFetch_whenPersistingMeetings_thenCachedMeetingsAreNotReconciled() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        everySuspend { arrangement.meetingApi.fetchMeetings() } returns NetworkResponse.Error(TestNetworkException.generic)
+
+        assertIs<Either.Left<CoreFailure>>(repository.fetchAndPersistMeetings())
+
+        verifySuspend(VerifyMode.not) { arrangement.meetingDao.upsertMeetings(any(), any(), any()) }
+    }
+
+    @Test
+    fun givenOnlyUnsupportedRecurrences_whenPersistingMeetings_thenCachedMeetingsAreNotClearedAsAuthoritativeEmpty() = runTest {
+        val unsupported = meetingDTO(recurrence = MeetingRecurrenceDTO(MeetingFrequencyDTO.MONTHLY, 1L, null))
+        val (arrangement, repository) = Arrangement().withFetchMeetingsSuccess(listOf(unsupported)).arrange()
+
+        assertEquals(emptyList(), repository.fetchAndPersistMeetings().getOrNull())
+
+        verifySuspend(VerifyMode.not) { arrangement.meetingDao.upsertMeetings(any(), any(), any()) }
+    }
+
+    @Test
     fun whenFetchAndPersistMeetings_thenMeetingsAreFetchedAndPersistedWithNowDateTime() = runTest {
         val creatorId = UserId("user1", "domain")
         val meetingDTO = meetingDTO(creatorId = creatorId.toApi())
