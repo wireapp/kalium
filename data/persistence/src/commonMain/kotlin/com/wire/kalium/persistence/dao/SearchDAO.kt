@@ -57,14 +57,22 @@ private object UserSearchEntityMapper {
 }
 
 interface SearchDAO {
-    suspend fun getKnownContacts(): List<UserSearchEntity>
-    suspend fun searchList(query: String): List<UserSearchEntity>
-    suspend fun getKnownContactsExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity>
-    suspend fun searchListExcludingAConversation(conversationId: ConversationIDEntity, query: String): List<UserSearchEntity>
-    suspend fun handleSearch(searchQuery: String): List<UserSearchEntity>
-    suspend fun handleSearchExcludingAConversation(
+    suspend fun getKnownContacts(
+        excludeConversationId: ConversationIDEntity? = null,
+        onlyTeamId: String? = null,
+        onlyDomain: String? = null,
+    ): List<UserSearchEntity>
+    suspend fun searchByName(
         searchQuery: String,
-        conversationId: ConversationIDEntity
+        excludeConversationId: ConversationIDEntity? = null,
+        onlyTeamId: String? = null,
+        onlyDomain: String? = null,
+    ): List<UserSearchEntity>
+    suspend fun searchByHandle(
+        searchQuery: String,
+        excludeConversationId: ConversationIDEntity? = null,
+        onlyTeamId: String? = null,
+        onlyDomain: String? = null,
     ): List<UserSearchEntity>
 }
 
@@ -73,47 +81,45 @@ internal class SearchDAOImpl internal constructor(
     private val readDispatcher: ReadDispatcher,
 ) : SearchDAO {
 
-    override suspend fun getKnownContacts(): List<UserSearchEntity> = withContext(readDispatcher.value) {
-        searchQueries.selectAllConnectedUsers(mapper = UserSearchEntityMapper::map).awaitAsList()
-    }
-
-    override suspend fun searchList(query: String): List<UserSearchEntity> = withContext(readDispatcher.value) {
-        searchQueries.searchByName(query, mapper = UserSearchEntityMapper::map).awaitAsList()
-    }
-
-    override suspend fun getKnownContactsExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity> =
-        withContext(readDispatcher.value) {
-            searchQueries.selectAllConnectedUsersNotInConversation(
-                conversationId,
-                mapper = UserSearchEntityMapper::map
-            ).awaitAsList()
-        }
-
-    override suspend fun searchListExcludingAConversation(
-        conversationId: ConversationIDEntity,
-        query: String
+    override suspend fun getKnownContacts(
+        excludeConversationId: ConversationIDEntity?,
+        onlyTeamId: String?,
+        onlyDomain: String?,
     ): List<UserSearchEntity> = withContext(readDispatcher.value) {
-        searchQueries.searchMyNameExcludingAConversation(
-            query,
-            conversationId,
+        searchQueries.selectAllConnectedUsers(
+            excludeConversationId = excludeConversationId,
+            onlyTeamId = onlyTeamId,
+            onlyDomain = onlyDomain,
             mapper = UserSearchEntityMapper::map
         ).awaitAsList()
     }
 
-    override suspend fun handleSearch(searchQuery: String): List<UserSearchEntity> = withContext(readDispatcher.value) {
-        searchQueries.searchByHandle(
-            searchQuery,
-            mapper = UserSearchEntityMapper::map
-        ).awaitAsList()
-    }
-
-    override suspend fun handleSearchExcludingAConversation(
+    override suspend fun searchByName(
         searchQuery: String,
-        conversationId: ConversationIDEntity
+        excludeConversationId: ConversationIDEntity?,
+        onlyTeamId: String?,
+        onlyDomain: String?,
     ): List<UserSearchEntity> = withContext(readDispatcher.value) {
-        searchQueries.searchByHandleExcludingAConversation(
-            searchQuery,
-            conversationId,
+        searchQueries.searchByName(
+            searchQuery = searchQuery,
+            excludeConversationId = excludeConversationId,
+            onlyTeamId = onlyTeamId,
+            onlyDomain = onlyDomain,
+            mapper = UserSearchEntityMapper::map
+        ).awaitAsList()
+    }
+
+    override suspend fun searchByHandle(
+        searchQuery: String,
+        excludeConversationId: ConversationIDEntity?,
+        onlyTeamId: String?,
+        onlyDomain: String?,
+    ): List<UserSearchEntity> = withContext(readDispatcher.value) {
+        searchQueries.searchByHandle(
+            searchQuery = searchQuery,
+            excludeConversationId = excludeConversationId,
+            onlyTeamId = onlyTeamId,
+            onlyDomain = onlyDomain,
             mapper = UserSearchEntityMapper::map
         ).awaitAsList()
     }

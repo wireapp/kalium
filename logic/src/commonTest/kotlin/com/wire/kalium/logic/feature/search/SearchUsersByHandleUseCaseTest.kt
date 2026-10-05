@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.search
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
@@ -34,8 +35,6 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -58,9 +57,7 @@ class SearchUsersByHandleUseCaseTest {
         }
 
         val result = searchUseCase(
-            searchHandle = "",
-            excludingConversation = null,
-            customDomain = null
+            searchHandle = ""
         )
 
         assertEquals(
@@ -73,12 +70,15 @@ class SearchUsersByHandleUseCaseTest {
             actual = result.notConnected
         )
         verifySuspend(VerifyMode.not) {
-            arrangement.searchUserRepository.getKnownContacts(excludeConversation = null)
+            arrangement.searchUserRepository.getKnownContacts(searchUsersOptions = any())
         }
 
         verifySuspend(VerifyMode.not) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(
-                searchQuery = any(), domain = any(), maxResultSize = any(), searchUsersOptions = any()
+                searchQuery = any(),
+                domain = any(),
+                maxResultSize = any(),
+                searchUsersOptions = any()
             )
         }
     }
@@ -90,7 +90,7 @@ class SearchUsersByHandleUseCaseTest {
 
         val result = searchUseCase(
             searchHandle = "",
-            excludingConversation = conversationId,
+            excludingMembersOfConversation = conversationId,
             customDomain = null
         )
 
@@ -105,18 +105,21 @@ class SearchUsersByHandleUseCaseTest {
         )
 
         verifySuspend(VerifyMode.not) {
-            arrangement.searchUserRepository.getKnownContacts(excludeConversation = any())
+            arrangement.searchUserRepository.getKnownContacts(searchUsersOptions = any())
         }
 
         verifySuspend(VerifyMode.not) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(
-                searchQuery = any(), domain = any(), maxResultSize = any(), searchUsersOptions = any()
+                searchQuery = any(),
+                domain = any(),
+                maxResultSize = any(),
+                searchUsersOptions = any()
             )
         }
     }
 
     @Test
-    fun givenNonEmptySearchQueryAndNoExcludedConversation_whenInvokingSearch_thenSearchRemoteAndLocalNotExcludingAnyConversation() = runTest {
+    fun givenNoExcludedConversation_whenSearching_thenSearchesLocalAndRemote() = runTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchByHandle(
                 result = emptyList<UserSearchDetails>().right(),
@@ -127,9 +130,7 @@ class SearchUsersByHandleUseCaseTest {
         }
 
         val result = searchUseCase(
-            searchHandle = "searchQuery",
-            excludingConversation = null,
-            customDomain = null
+            searchHandle = "searchQuery"
         )
 
         assertEquals(
@@ -137,18 +138,18 @@ class SearchUsersByHandleUseCaseTest {
             actual = result.connected
         )
 
-        val expectedSearchUsersOptions = SearchUsersOptions(
-            conversationExcluded = ConversationMemberExcludedOptions.None,
-            selfUserIncluded = false
-        )
+        val expectedSearchUsersOptions = SearchUsersOptions.Default.copy(conversationMembersExcluded = null)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(
-                searchQuery = "searchquery", domain = any(), maxResultSize = any(), searchUsersOptions = expectedSearchUsersOptions
+                searchQuery = "searchquery",
+                domain = any(),
+                maxResultSize = any(),
+                searchUsersOptions = expectedSearchUsersOptions
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchLocalByHandle(handle = "searchquery", excludeMembersOfConversation = null)
+            arrangement.searchUserRepository.searchLocalByHandle(handle = "searchquery", searchUsersOptions = expectedSearchUsersOptions)
         }
     }
 
@@ -166,7 +167,7 @@ class SearchUsersByHandleUseCaseTest {
 
         val result = searchUseCase(
             searchHandle = "searchQuery",
-            excludingConversation = conversationId,
+            excludingMembersOfConversation = conversationId,
             customDomain = null
         )
 
@@ -175,64 +176,29 @@ class SearchUsersByHandleUseCaseTest {
             actual = result.connected
         )
 
-        val expectedSearchUsersOptions = SearchUsersOptions(
-            conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(conversationId),
-            selfUserIncluded = false
-        )
+        val expectedSearchUsersOptions = SearchUsersOptions.Default.copy(conversationMembersExcluded = conversationId)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(
-                searchQuery = "searchquery", domain = any(), maxResultSize = any(), searchUsersOptions = expectedSearchUsersOptions
+                searchQuery = "searchquery",
+                domain = any(),
+                maxResultSize = any(),
+                searchUsersOptions = expectedSearchUsersOptions
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchLocalByHandle(handle = "searchquery", excludeMembersOfConversation = conversationId)
+            arrangement.searchUserRepository.searchLocalByHandle(handle = "searchquery", searchUsersOptions = expectedSearchUsersOptions)
         }
     }
 
     @Test
-    fun givenEmptySearchQueryAndNoExcludedNotConnected_whenInvokingSearch_thenReturnEmptySearchResult() = runTest {
-        val (arrangement, searchUseCase) = Arrangement().arrange {
-            withGetKnownContacts(
-                result = emptyList<UserSearchDetails>().right(),
-            )
-        }
-
-        val result = searchUseCase(
-            searchHandle = "",
-            excludingConversation = null,
-            skipRemoteSearch = false,
-            customDomain = null
-        )
-
-        assertEquals(
-            expected = emptyList<UserSearchDetails>(),
-            actual = result.connected
-        )
-
-        assertEquals(
-            expected = emptyList<UserSearchDetails>(),
-            actual = result.notConnected
-        )
-        verifySuspend(VerifyMode.not) {
-            arrangement.searchUserRepository.getKnownContacts(excludeConversation = null)
-        }
-
-        verifySuspend(VerifyMode.not) {
-            arrangement.searchUserRepository.searchUserRemoteDirectory(
-                searchQuery = any(), domain = any(), maxResultSize = any(), searchUsersOptions = any()
-            )
-        }
-    }
-
-    @Test
-    fun givenEmptySearchQueryAndExcludedNotConnected_whenInvokingSearch_thenReturnEmptySearchResult() = runTest {
+    fun givenEmptySearchQueryAndSearchForOnlySelfTeamAndDomain_whenInvokingSearch_thenReturnEmptySearchResult() = runTest {
         val (arrangement, searchUseCase) = Arrangement().arrange { }
 
         val result = searchUseCase(
             searchHandle = "",
-            excludingConversation = null,
-            skipRemoteSearch = true,
+            excludingMembersOfConversation = null,
+            onlySelfTeamAndDomain = true,
             customDomain = null
         )
 
@@ -246,19 +212,25 @@ class SearchUsersByHandleUseCaseTest {
             actual = result.notConnected
         )
 
+        val expectedSearchUsersOptions = SearchUsersOptions.Default.copy(onlySelfTeamAndDomain = true)
+
         verifySuspend(VerifyMode.not) {
-            arrangement.searchUserRepository.getKnownContacts(excludeConversation = any())
+            arrangement.searchUserRepository.getKnownContacts(searchUsersOptions = expectedSearchUsersOptions)
         }
 
         verifySuspend(VerifyMode.not) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(
-                searchQuery = any(), domain = any(), maxResultSize = any(), searchUsersOptions = any()
+                searchQuery = any(),
+                domain = any(),
+                maxResultSize = any(),
+                searchUsersOptions = expectedSearchUsersOptions
             )
         }
     }
 
     @Test
-    fun givenNonEmptySearchQueryAndNotExcludedNotConnected_whenInvokingSearch_thenSearchRemoteAndLocal() = runTest {
+    fun givenNonEmptySearchQueryAndSearchForOnlySelfTeamAndDomain_whenInvokingSearch_thenSearchForOnlySelfTeamAndDomain() = runTest {
+        val conversationId = ConversationId("excluded", "domain")
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchByHandle(
                 result = emptyList<UserSearchDetails>().right(),
@@ -270,9 +242,9 @@ class SearchUsersByHandleUseCaseTest {
 
         val result = searchUseCase(
             searchHandle = "searchQuery",
-            excludingConversation = null,
-            skipRemoteSearch = false,
-            customDomain = null
+            excludingMembersOfConversation = conversationId,
+            onlySelfTeamAndDomain = true,
+            customDomain = "custom.example"
         )
 
         assertEquals(
@@ -280,51 +252,18 @@ class SearchUsersByHandleUseCaseTest {
             actual = result.connected
         )
 
-        val expectedSearchUsersOptions = SearchUsersOptions(
-            conversationExcluded = ConversationMemberExcludedOptions.None,
-            selfUserIncluded = false
-        )
+        val expectedSearchUsersOptions = SearchUsersOptions(conversationId, onlySelfTeamAndDomain = true)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(
-                searchQuery = "searchquery", domain = any(), maxResultSize = any(), searchUsersOptions = expectedSearchUsersOptions
+                searchQuery = "searchquery",
+                domain = "custom.example",
+                maxResultSize = any(),
+                searchUsersOptions = expectedSearchUsersOptions
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchLocalByHandle(handle = "searchquery", excludeMembersOfConversation = null)
-        }
-    }
-
-    @Test
-    fun givenNonEmptySearchQueryAndExcludedNotConnected_whenInvokingSearch_thenSearchLocalOnly() = runTest {
-        val (arrangement, searchUseCase) = Arrangement().arrange {
-            withSearchByHandle(
-                result = emptyList<UserSearchDetails>().right(),
-            )
-            withSearchUserRemoteDirectory(
-                result = UserSearchResult(emptyList()).right(),
-            )
-        }
-
-        val result = searchUseCase(
-            searchHandle = "searchQuery",
-            excludingConversation = null,
-            skipRemoteSearch = true,
-            customDomain = null
-        )
-
-        assertEquals(
-            expected = emptyList<UserSearchDetails>(),
-            actual = result.connected
-        )
-
-        verifySuspend(VerifyMode.exactly(0)) {
-            arrangement.searchUserRepository.searchUserRemoteDirectory(
-                searchQuery = "searchquery", domain = any(), maxResultSize = any(), searchUsersOptions = any()
-            )
-        }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchLocalByHandle(handle = "searchquery", excludeMembersOfConversation = null)
+            arrangement.searchUserRepository.searchLocalByHandle(handle = "searchquery", searchUsersOptions = expectedSearchUsersOptions)
         }
     }
 
@@ -334,7 +273,7 @@ class SearchUsersByHandleUseCaseTest {
             newOtherUser("remoteAndLocalUser1").copy(name = "updatedNewName"),
             newOtherUser("remoteUser2").copy(
                 teamId = TeamId("otherTeamId"),
-                connectionStatus = ConnectionState.SENT
+                connectionStatus = ConnectionState.PENDING
             ),
         )
 
@@ -349,7 +288,7 @@ class SearchUsersByHandleUseCaseTest {
                 newUserSearchDetails("localUser2")
             ),
             notConnected = listOf(
-                newUserSearchDetails("remoteUser2").copy(connectionStatus = ConnectionState.SENT),
+                newUserSearchDetails("remoteUser2").copy(connectionStatus = ConnectionState.PENDING),
             )
         )
 
@@ -366,7 +305,7 @@ class SearchUsersByHandleUseCaseTest {
 
         val result = searchUseCase(
             searchHandle = "searchQuery",
-            excludingConversation = null,
+            excludingMembersOfConversation = null,
             customDomain = null
         )
 
@@ -376,11 +315,14 @@ class SearchUsersByHandleUseCaseTest {
         )
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(
-                searchQuery = "searchquery", domain = any(), maxResultSize = any(), searchUsersOptions = any()
+                searchQuery = "searchquery",
+                domain = any(),
+                maxResultSize = any(),
+                searchUsersOptions = any()
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchLocalByHandle(handle = "searchquery", excludeMembersOfConversation = any())
+            arrangement.searchUserRepository.searchLocalByHandle(handle = "searchquery", searchUsersOptions = any())
         }
     }
 
@@ -401,7 +343,7 @@ class SearchUsersByHandleUseCaseTest {
 
         val result = searchUseCase(
             searchHandle = searchQuery,
-            excludingConversation = null,
+            excludingMembersOfConversation = null,
             customDomain = null
         )
 
@@ -411,11 +353,14 @@ class SearchUsersByHandleUseCaseTest {
         )
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(
-                searchQuery = cleanQuery, domain = any(), maxResultSize = any(), searchUsersOptions = any()
+                searchQuery = cleanQuery,
+                domain = any(),
+                maxResultSize = any(),
+                searchUsersOptions = any()
             )
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchLocalByHandle(handle = cleanQuery, excludeMembersOfConversation = any())
+            arrangement.searchUserRepository.searchLocalByHandle(handle = cleanQuery, searchUsersOptions = any())
         }
     }
 
@@ -483,7 +428,7 @@ class SearchUsersByHandleUseCaseTest {
         }
 
         fun withGetKnownContacts(result: Either<StorageFailure, List<UserSearchDetails>>) {
-            everySuspend { searchUserRepository.getKnownContacts(excludeConversation = any()) } returns result
+            everySuspend { searchUserRepository.getKnownContacts(searchUsersOptions = any()) } returns result
         }
 
         fun withSearchByHandle(
@@ -491,7 +436,7 @@ class SearchUsersByHandleUseCaseTest {
             searchQuery: String? = null
         ) {
             everySuspend {
-                searchUserRepository.searchLocalByHandle(handle = searchQuery ?: any(), excludeMembersOfConversation = any())
+                searchUserRepository.searchLocalByHandle(handle = searchQuery ?: any(), searchUsersOptions = any())
             } returns result
         }
     }

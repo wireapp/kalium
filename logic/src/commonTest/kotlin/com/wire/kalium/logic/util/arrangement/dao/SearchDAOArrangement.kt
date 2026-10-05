@@ -32,34 +32,26 @@ internal interface SearchDAOArrangement {
     val appDAO: AppDAO
 
     suspend fun withGetKnownContacts(
-        result: List<UserSearchEntity>
+        result: List<UserSearchEntity>,
+        excludeConversationId: (ConversationIDEntity?) -> Boolean = { true },
+        onlyTeamId: (String?) -> Boolean = { true },
+        onlyDomain: (String?) -> Boolean = { true }
     )
 
-    suspend fun withGetKnownContactsExcludingAConversation(
+    suspend fun withSearchByName(
         result: List<UserSearchEntity>,
-        conversationId: (ConversationIDEntity) -> Boolean = { true }
-    )
-
-    suspend fun withSearchList(
-        result: List<UserSearchEntity>,
-        query: (String) -> Boolean = { true }
-    )
-
-    suspend fun withSearchListExcludingAConversation(
-        result: List<UserSearchEntity>,
-        conversationId: (ConversationIDEntity) -> Boolean = { true },
-        query: (String) -> Boolean = { true }
+        query: (String) -> Boolean = { true },
+        excludeConversationId: (ConversationIDEntity?) -> Boolean = { true },
+        onlyTeamId: (String?) -> Boolean = { true },
+        onlyDomain: (String?) -> Boolean = { true }
     )
 
     suspend fun withSearchByHandle(
         result: List<UserSearchEntity>,
-        handle: (String) -> Boolean = { true }
-    )
-
-    suspend fun withSearchByHandleExcludingConversation(
-        result: List<UserSearchEntity>,
-        conversationId: (ConversationIDEntity) -> Boolean = { true },
-        handle: (String) -> Boolean = { true }
+        handle: (String) -> Boolean = { true },
+        excludeConversationId: (ConversationIDEntity?) -> Boolean = { true },
+        onlyTeamId: (String?) -> Boolean = { true },
+        onlyDomain: (String?) -> Boolean = { true }
     )
 }
 
@@ -69,58 +61,50 @@ internal class SearchDAOArrangementImpl : SearchDAOArrangement {
     override val appDAO: AppDAO = mock(mode = MockMode.autoUnit)
 
     override suspend fun withGetKnownContacts(
-        result: List<UserSearchEntity>
-    ) {
-        everySuspend {
-            searchDAO.getKnownContacts()
-        } returns result
-    }
-
-    override suspend fun withGetKnownContactsExcludingAConversation(
         result: List<UserSearchEntity>,
-        conversationId: (ConversationIDEntity) -> Boolean
+        excludeConversationId: (ConversationIDEntity?) -> Boolean,
+        onlyTeamId: (String?) -> Boolean,
+        onlyDomain: (String?) -> Boolean
     ) {
         everySuspend {
-            searchDAO.getKnownContactsExcludingAConversation(matches { conversationId(it) })
-        } returns result
-    }
-
-    override suspend fun withSearchList(result: List<UserSearchEntity>, query: (String) -> Boolean) {
-        everySuspend {
-            searchDAO.searchList(matches { query(it) })
-        } returns result
-    }
-
-    override suspend fun withSearchListExcludingAConversation(
-        result: List<UserSearchEntity>,
-        conversationId: (ConversationIDEntity) -> Boolean,
-        query: (String) -> Boolean
-    ) {
-        everySuspend {
-            searchDAO.searchListExcludingAConversation(
-                matches { conversationId(it) },
-                matches { query(it) }
+            searchDAO.getKnownContacts(
+                excludeConversationId = matches { excludeConversationId(it) },
+                onlyTeamId = matches { onlyTeamId(it) },
+                onlyDomain = matches { onlyDomain(it) }
             )
         } returns result
     }
 
-    override suspend fun withSearchByHandle(result: List<UserSearchEntity>, handle: (String) -> Boolean) {
+    override suspend fun withSearchByName(
+        result: List<UserSearchEntity>,
+        query: (String) -> Boolean,
+        excludeConversationId: (ConversationIDEntity?) -> Boolean,
+        onlyTeamId: (String?) -> Boolean,
+        onlyDomain: (String?) -> Boolean
+    ) {
         everySuspend {
-            searchDAO.handleSearch(
-                matches { handle(it) }
+            searchDAO.searchByName(
+                searchQuery = matches { query(it) },
+                excludeConversationId = matches { excludeConversationId(it) },
+                onlyTeamId = matches { onlyTeamId(it) },
+                onlyDomain = matches { onlyDomain(it) }
             )
         } returns result
     }
 
-    override suspend fun withSearchByHandleExcludingConversation(
+    override suspend fun withSearchByHandle(
         result: List<UserSearchEntity>,
-        conversationId: (ConversationIDEntity) -> Boolean,
-        handle: (String) -> Boolean
+        handle: (String) -> Boolean,
+        excludeConversationId: (ConversationIDEntity?) -> Boolean,
+        onlyTeamId: (String?) -> Boolean,
+        onlyDomain: (String?) -> Boolean
     ) {
         everySuspend {
-            searchDAO.handleSearchExcludingAConversation(
-                matches { handle(it) },
-                matches { conversationId(it) }
+            searchDAO.searchByHandle(
+                searchQuery = matches { handle(it) },
+                excludeConversationId = matches { excludeConversationId(it) },
+                onlyTeamId = matches { onlyTeamId(it) },
+                onlyDomain = matches { onlyDomain(it) }
             )
         } returns result
     }
