@@ -33,6 +33,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -68,6 +69,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
+import kotlin.collections.map
 import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
@@ -146,8 +148,9 @@ internal class MeetingDataSource(
     ): Either<CoreFailure, List<Meeting>> =
         wrapApiRequest {
             meetingApi.fetchMeetings()
-        }.flatMap { meetings ->
-            val meetingsToPersist = meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
+        }.map { meetings ->
+            meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
+        }.onSuccess { meetingsToPersist ->
             val creatorIds = meetingsToPersist.map { it.creatorId.toModel() }.toSet()
             if (creatorIds.isNotEmpty()) {
                 // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
@@ -162,15 +165,15 @@ internal class MeetingDataSource(
                 }
             }
 
-            return wrapStorageRequest {
+            wrapStorageRequest {
                 meetingDAO.upsertMeetings(
                     meetings = meetingsToPersist,
                     generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
                     removeMeetingsAbsentFromUpsertList = true,
                 )
-            }.map {
-                meetingsToPersist.map { meetingMapper.fromDaoToModel(it) }
             }
+        }.map {
+            it.map { meetingMapper.fromDaoToModel(it) }
         }
 
     override suspend fun fetchAndPersistMeeting(
