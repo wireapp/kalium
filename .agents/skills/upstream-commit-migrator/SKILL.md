@@ -5,7 +5,7 @@ description: "Adapt exactly the next first-parent commit from wireapp/kalium dev
 
 # Upstream commit migrator
 
-Port one upstream `develop` commit at a time. Preserve its behavior, but fit the implementation to Super Kalium's iOS work and accepted ADRs.
+Port one upstream `develop` commit at a time. Keep the implementation and tests as close as possible to the original upstream PR. Adapt only what Super Kalium's existing behavior, iOS/KMP support, accepted ADRs, or database compatibility requires.
 
 ## Repository contract
 
@@ -74,13 +74,21 @@ Do not skip the SHA in any outcome. For the last two outcomes, the PR may change
 
 ## Adapt and verify
 
-Preserve the upstream feature or fix unless a local ADR or later local behavior requires a different implementation. Prefer the smallest change that fits the existing code. Do not copy obsolete upstream architecture into the fork and do not cherry-pick blindly.
+Use the upstream implementation and test diff as the starting point. Preserve its names, control flow, structure, and test cases wherever the local code permits. Make the smallest required compatibility changes. Do not expand the feature, refactor adjacent code, introduce new abstractions, or add speculative hardening during the port.
 
-Update or add tests for the behavior when the upstream patch has tests or the local change needs regression coverage. Run verification that covers the affected modules and behavior. Fix failures caused by the migration. Keep unrelated failures separate and state them plainly.
+Keep test changes minimal:
+
+- Adapt upstream tests and reuse existing fork tests, helpers, and historical fixtures first. Extend an existing case when a small assertion covers the change.
+- Add tests beyond upstream only for a concrete regression risk introduced by the port that existing coverage does not exercise. Keep each case focused on observable behavior or a necessary failure boundary.
+- Remove duplicate coverage and tests that merely verify calls to mocks or copied fields when a retained behavior test already exercises the same path. Do not recreate upgrade cases already covered by historical fixtures.
+- Test the distinct platform or transaction behavior that changed. Do not repeat every protocol, platform, input variant, or interruption stage when existing tests already cover those mechanisms.
+- Keep fixtures and setup short. Reuse established helpers; avoid adding test infrastructure or Arrangement classes for a few calls.
+
+Run verification that covers the affected modules and behavior, including the existing regressions. Running more existing tests does not require adding more test code. Fix failures caused by the migration. Keep unrelated failures separate and state them plainly.
 
 After the code and tests are ready, replace the checkpoint with the selected full upstream SHA. The checkpoint change belongs in the same commit as the adaptation.
 
-Review the complete diff against `origin/develop`. Remove unrelated files, generated noise, and accidental changes. Confirm that the diff represents only the selected upstream commit and its checkpoint update.
+Review the complete diff against both `origin/develop` and the original upstream PR. Every change beyond upstream must address a required fork compatibility gap or an uncovered regression risk; remove it otherwise. Remove unrelated files, duplicate tests, generated noise, and accidental changes. Briefly explain material departures from upstream in the PR. Confirm that the diff represents only the selected upstream commit, necessary adaptations, and its checkpoint update.
 
 ## Preserve attribution
 
