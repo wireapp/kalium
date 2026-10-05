@@ -9654,7 +9654,7 @@ class NotificationProcessorNativeTest {
     @Test
     fun legalHoldMembershipPolicyMatrix() = runTest {
         withContext(Dispatchers.Default) {
-            for (scenario in listOf("other-leave", "self-leave", "noop", "absent-leave", "degraded", "pending")) {
+            for (scenario in listOf("other-leave", "self-leave", "noop", "absent-leave", "degraded", "pending", "pending-user")) {
                 withFixture(false) { fixture ->
                     val hold = scenario in listOf("other-leave", "self-leave", "degraded")
                     fixture.sql("UPDATE Conversation SET legal_hold_status = '${if (scenario == "degraded") "DEGRADED" else if (hold) "ENABLED" else "DISABLED"}'")
@@ -9672,11 +9672,12 @@ class NotificationProcessorNativeTest {
                             SENDER.toDao(), "legal-hold", com.wire.kalium.persistence.dao.client.DeviceTypeEntity.LegalHold,
                             com.wire.kalium.persistence.dao.client.ClientTypeEntity.LegalHold,
                             null, null, null, null, null, false, false))
-                        if (scenario == "pending") runtime.database.metadataDAO.insertValue("[{}]", "legal-hold-conversation-transitions-v1")
+                        if (scenario.startsWith("pending")) runtime.database.metadataDAO.insertValue("[{}]",
+                            if (scenario == "pending-user") "legal-hold-user-transitions-v1" else "legal-hold-conversation-transitions-v1")
                     })
                     val result = assertIs<Either.Right<ReceivedMessageResult?>>(
                         fixture.receive(listOf(membership, tail), "tail", isolateConversations = true))
-                    val needsApp = scenario in listOf("self-leave", "degraded", "pending")
+                    val needsApp = scenario in listOf("self-leave", "degraded", "pending", "pending-user")
                     assertEquals(if (needsApp) NotificationAppWork.LEGAL_HOLD else null, fixture.receivedAppWork, scenario)
                     assertEquals(if (needsApp) null else "tail", result.value?.text, scenario)
                     assertIs<Either.Right<*>>(fixture.open { runtime ->

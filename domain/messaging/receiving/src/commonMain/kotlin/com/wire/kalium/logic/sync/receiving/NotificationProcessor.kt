@@ -132,6 +132,9 @@ class NotificationProcessor(
             currentCoroutineContext().ensureActive()
             val next = events.nextPending()
             if (next != null) {
+                if (database.metadataDAO.hasPendingLegalHoldTransitions()) {
+                    return withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = NotificationAppWork.LEGAL_HOLD)
+                }
                 diagnostics?.beginEvent(next.eventId == targetId, next.eventId)
                 val effects = try {
                     processIsolatedNotification(next, canDefer = false, crossesGap = false)
@@ -218,6 +221,9 @@ class NotificationProcessor(
                 terminalAccountResult()?.let { return it }
                 canFetch = page.hasMore
                 continue
+            }
+            if (database.metadataDAO.hasPendingLegalHoldTransitions()) {
+                return withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = NotificationAppWork.LEGAL_HOLD)
             }
             scannedId = next.id
             val payload = EventResponseToStore(next.eventId, next.payload, next.transient).toEventResponse().payload

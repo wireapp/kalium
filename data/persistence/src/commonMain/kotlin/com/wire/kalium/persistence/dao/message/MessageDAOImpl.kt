@@ -620,7 +620,13 @@ internal class MessageDAOImpl internal constructor(
         messageId: String,
         newMembers: List<QualifiedIDEntity>
     ): Unit = withContext(writeDispatcher.value) {
-        queries.updateSystemMessageLegalHoldMembers(QualifiedIDListAdapter.encode(newMembers), messageId, conversationId)
+        queries.transaction {
+            val current = queries.selectById(messageId, conversationId, mapper::toEntityMessageFromView).awaitAsOneOrNull()
+            val content = current?.content as? MessageEntityContent.LegalHold
+            // Both live handlers and durable replay only add members. Preserve additions made since a replay plan was saved.
+            val members = (content?.memberUserIdList.orEmpty() + newMembers).distinct()
+            queries.updateSystemMessageLegalHoldMembers(QualifiedIDListAdapter.encode(members), messageId, conversationId)
+        }
     }
 
     override fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =

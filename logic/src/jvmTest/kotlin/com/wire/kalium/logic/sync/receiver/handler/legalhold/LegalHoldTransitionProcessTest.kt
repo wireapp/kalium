@@ -136,9 +136,10 @@ private suspend fun legalHoldProcessHandler(db: UserDatabaseBuilder, barrier: su
         barrier("after-notice")
         Either.Right(Unit)
     }, conversations, mock<MessageRepository>())
-    return LegalHoldHandlerImpl(OWNER, mock<FetchUsersClientsFromRemoteUseCase>(), mock<FetchSelfClientsFromRemoteUseCase>(),
+    return LegalHoldHandlerImpl(OWNER, mock<FetchUsersClientsFromRemoteUseCase>(),
         mock<ObserveLegalHoldStateForUserUseCase>(), members, mock<UserConfigRepository>(), conversations, notices,
-        LegalHoldTransitionJournal(db.metadataDAO),
+        LegalHoldTransitionJournal(db.metadataDAO), LegalHoldUserTransitionJournal(db.metadataDAO),
+        mock<com.wire.kalium.logic.data.client.LegalHoldClients>(),
         object : ObserveSyncStateUseCase {
             override fun invoke() = flowOf(SyncState.GatheringPendingEvents)
         })

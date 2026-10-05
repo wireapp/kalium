@@ -34,6 +34,21 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 internal interface LegalHoldSystemMessagesHandler {
+    suspend fun prepareUserTransition(
+        userId: UserId,
+        enabled: Boolean,
+        conversations: List<ConversationId>,
+        noticeId: String
+    ): List<LegalHoldUserTransitionJournal.Notice>
+
+    suspend fun handleUserTransition(
+        userId: UserId,
+        enabled: Boolean,
+        notices: List<LegalHoldUserTransitionJournal.Notice>,
+        instant: Instant,
+        noticeId: String
+    )
+
     suspend fun handleEnabledForUser(userId: UserId, systemMessageInstant: Instant)
     suspend fun handleDisabledForUser(userId: UserId, systemMessageInstant: Instant)
     suspend fun handleEnabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant, noticeId: String? = null)
@@ -46,6 +61,58 @@ internal class LegalHoldSystemMessagesHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
 ) : LegalHoldSystemMessagesHandler {
+
+    override suspend fun prepareUserTransition(
+        userId: UserId,
+        enabled: Boolean,
+        conversations: List<ConversationId>,
+        noticeId: String,
+    ): List<LegalHoldUserTransitionJournal.Notice> {
+        val last = if (userId == selfUserId || conversations.isEmpty()) emptyMap() else {
+            messageRepository.getLastMessagesForConversationIds(conversations).getOrFail {
+                throw KaliumSyncException("Legal hold user history read failed", it)
+            }
+        }
+        return conversations.map { conversation ->
+            val message = last[conversation]
+            val content = message?.content
+            val members = when {
+                enabled && content is MessageContent.LegalHold.ForMembers.Enabled -> content.members
+                !enabled && content is MessageContent.LegalHold.ForMembers.Disabled -> content.members
+                else -> null
+            }
+            LegalHoldUserTransitionJournal.Notice(
+                conversation,
+                if (members != null) checkNotNull(message).id else noticeId,
+                (members.orEmpty() + userId).distinct(),
+                members != null
+            )
+        }
+    }
+
+    override suspend fun handleUserTransition(
+        userId: UserId,
+        enabled: Boolean,
+        notices: List<LegalHoldUserTransitionJournal.Notice>,
+        instant: Instant,
+        noticeId: String,
+    ) {
+        for (notice in notices) {
+            val members = (notice.members + userId).distinct()
+            if (notice.update) {
+                messageRepository.updateLegalHoldMessageMembers(notice.messageId, notice.conversation, members).getOrFail {
+                    throw KaliumSyncException("Legal hold user notice update failed", it)
+                }
+            } else {
+                check(notice.messageId == noticeId)
+                val content = if (enabled) MessageContent.LegalHold.ForMembers.Enabled(members)
+                    else MessageContent.LegalHold.ForMembers.Disabled(members)
+                persistMessage(createSystemMessage(content, notice.conversation, instant, notice.messageId)).getOrFail {
+                    throw KaliumSyncException("Legal hold user notice persistence failed", it)
+                }
+            }
+        }
+    }
 
     override suspend fun handleEnabledForUser(userId: UserId, systemMessageInstant: Instant) = handleSystemMessagesForUser(
         userId = userId,

@@ -257,8 +257,6 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.channels.ChannelsScope
 import com.wire.kalium.logic.feature.client.ClientScope
-import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
-import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
@@ -563,6 +561,8 @@ import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventH
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.UserPropertiesEventHandler
+import com.wire.kalium.logic.data.client.LegalHoldClientsImpl
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldUserTransitionJournal
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldTransitionJournal
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandlerImpl
@@ -1096,12 +1096,18 @@ public class UserSessionScope internal constructor(
         LegalHoldHandlerImpl(
             selfUserId = userId,
             fetchUsersClientsFromRemote = fetchUsersClientsFromRemote,
-            fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
             observeLegalHoldStateForUser = observeLegalHoldStateForUser,
             membersHavingLegalHoldClient = membersHavingLegalHoldClient,
             userConfigRepository = userConfigRepository,
             conversationRepository = conversationRepository,
             transitions = LegalHoldTransitionJournal(userStorage.database.metadataDAO),
+            userTransitions = LegalHoldUserTransitionJournal(userStorage.database.metadataDAO),
+            legalHoldClients = LegalHoldClientsImpl(
+                userId,
+                userStorage.database.clientDAO,
+                authenticatedNetworkContainer.clientApi,
+                clientRemoteRepository
+            ),
             observeSyncState = observeSyncState,
             legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
         )
@@ -2322,11 +2328,6 @@ public class UserSessionScope internal constructor(
             selfTeamIdProvider = selfTeamId,
         )
 
-    private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase
-        get() = FetchSelfClientsFromRemoteUseCaseImpl(
-            clientRepository = clientRepository,
-            provideClientId = clientIdProvider
-        )
     private val fetchUsersClientsFromRemote: FetchUsersClientsFromRemoteUseCase
         get() = FetchUsersClientsFromRemoteUseCaseImpl(
             clientRemoteRepository = clientRemoteRepository,

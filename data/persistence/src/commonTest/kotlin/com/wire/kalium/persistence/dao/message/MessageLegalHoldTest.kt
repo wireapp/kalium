@@ -26,6 +26,17 @@ import kotlin.test.assertIs
 
 class MessageLegalHoldTest : BaseMessageTest() {
     @Test
+    fun replayPreservesMembersAddedAfterThePlanWasSaved() = runTest {
+        insertInitialData()
+        val savedPlan = listOf(OTHER_USER.id)
+        messageDAO.updateLegalHoldMessageMembers(CONVERSATION_ID, ORIGINAL_MESSAGE_ID, listOf(OTHER_USER_2.id))
+        repeat(2) { messageDAO.updateLegalHoldMessageMembers(CONVERSATION_ID, ORIGINAL_MESSAGE_ID, savedPlan) }
+        val content = messageDAO.getMessageById(ORIGINAL_MESSAGE_ID, CONVERSATION_ID)!!.content
+        assertIs<MessageEntityContent.LegalHold>(content)
+        assertEquals(listOf(OTHER_USER.id, OTHER_USER_2.id), content.memberUserIdList)
+    }
+
+    @Test
     fun givenLegalHoldMessageWasInserted_whenUpdatingMembersList_thenContentShouldHaveNewMembersList() = runTest {
         // given
         insertInitialData()

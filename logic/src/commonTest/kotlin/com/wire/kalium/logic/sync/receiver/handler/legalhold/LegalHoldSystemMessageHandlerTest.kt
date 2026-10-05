@@ -48,6 +48,30 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class LegalHoldSystemMessagesHandlerTest {
+    @Test
+    fun durableUserPlanRetainsPeerMergeTargetAcrossRetry() = runTest {
+        for (enabled in listOf(false, true)) {
+            val oldMembers = listOf(TestUser.OTHER_USER_ID_2)
+            val content = if (enabled) MessageContent.LegalHold.ForMembers.Enabled(oldMembers)
+                else MessageContent.LegalHold.ForMembers.Disabled(oldMembers)
+            val previous = testLegalHoldSystemMessage(content)
+            val (arrangement, handler) = Arrangement()
+                .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to previous))
+                .arrange()
+            val plan = handler.prepareUserTransition(TestUser.OTHER_USER_ID, enabled, listOf(TestConversation.CONVERSATION.id), "new-id")
+            kotlin.test.assertEquals(previous.id, plan.single().messageId)
+            kotlin.test.assertTrue(plan.single().update)
+            arrangement.withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
+            repeat(2) { handler.handleUserTransition(TestUser.OTHER_USER_ID, enabled, plan, Instant.UNIX_FIRST_DATE, "new-id") }
+            verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+            verifySuspend(VerifyMode.exactly(2)) {
+                arrangement.messageRepository.updateLegalHoldMessageMembers(
+                    matches { it == previous.id }, any(), matches { it == oldMembers + TestUser.OTHER_USER_ID }
+                )
+            }
+        }
+    }
+
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @BeforeTest

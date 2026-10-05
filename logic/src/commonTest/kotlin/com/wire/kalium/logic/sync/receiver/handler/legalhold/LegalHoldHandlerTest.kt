@@ -63,6 +63,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -1039,6 +1040,14 @@ class LegalHoldHandlerTest {
                 everySuspend { metadata.insertValue(any(), any()) } calls {
                     records[it.args[1] as String] = it.args[0] as String
                 }
+                everySuspend { conversationRepository.getConversationById(any()) } returns Either.Right(TestConversation.CONVERSATION)
+                everySuspend { legalHoldSystemMessagesHandler.prepareUserTransition(any(), any(), any(), any()) } returns emptyList()
+                everySuspend { legalHoldSystemMessagesHandler.handleUserTransition(any(), any(), any(), any(), any()) } calls {
+                    val user = it.args[0] as com.wire.kalium.logic.data.user.UserId
+                    val instant = it.args[3] as Instant
+                    if (it.args[1] as Boolean) legalHoldSystemMessagesHandler.handleEnabledForUser(user, instant)
+                    else legalHoldSystemMessagesHandler.handleDisabledForUser(user, instant)
+                }
                 withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
                 withFetchSelfClientsFromRemoteSuccess()
                 withDeleteLegalHoldRequestSuccess()
@@ -1053,13 +1062,20 @@ class LegalHoldHandlerTest {
             this to LegalHoldHandlerImpl(
                 selfUserId = TestUser.SELF.id,
                 fetchUsersClientsFromRemote = fetchUsersClientsFromRemote,
-                fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
                 observeLegalHoldStateForUser = observeLegalHoldStateForUser,
                 membersHavingLegalHoldClient = membersHavingLegalHoldClient,
                 conversationRepository = conversationRepository,
                 userConfigRepository = userConfigRepository,
                 legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
                 transitions = LegalHoldTransitionJournal(metadata),
+                userTransitions = LegalHoldUserTransitionJournal(metadata),
+                legalHoldClients = object : com.wire.kalium.logic.data.client.LegalHoldClients {
+                    override suspend fun isEnabled(userId: com.wire.kalium.logic.data.user.UserId) =
+                        observeLegalHoldStateForUser(userId).first() == LegalHoldState.Enabled
+                    override suspend fun refresh(userId: com.wire.kalium.logic.data.user.UserId) {
+                        if (userId == TestUser.SELF.id) fetchSelfClientsFromRemote() else fetchUsersClientsFromRemote(listOf(userId))
+                    }
+                },
                 observeSyncState = observeSyncState,
                 kaliumDispatcher = testDispatchers,
             )
