@@ -33,6 +33,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -68,10 +69,12 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
+import kotlin.collections.map
 import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
     suspend fun fetchAndPersistMeetings(
+        transactionContext: CryptoTransactionContext,
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
     ): Either<CoreFailure, List<Meeting>>
@@ -139,31 +142,38 @@ internal class MeetingDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : MeetingRepository {
     override suspend fun fetchAndPersistMeetings(
+        transactionContext: CryptoTransactionContext,
         generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant
     ): Either<CoreFailure, List<Meeting>> =
         wrapApiRequest {
             meetingApi.fetchMeetings()
-        }.flatMap { meetings ->
-            wrapStorageRequest {
-                meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
-                    .also { meetingsToPersist ->
-                        if (meetingsToPersist.isNotEmpty()) {
-                            val creatorIds = meetingsToPersist.map { it.creatorId.toModel() }.toSet()
-                            // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
-                            // foreign key constraint violation and try to fetch the user details from the server if possible
-                            userRepository.insertOrIgnoreIncompleteUsers(creatorIds.toList())
-                            userRepository.fetchUsersIfUnknownByIds(creatorIds)
-
-                            meetingDAO.upsertMeetings(
-                                meetings = meetingsToPersist,
-                                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
-                                removeMeetingsAbsentFromUpsertList = true,
-                            )
-                        }
-                    }
-                    .map { meetingMapper.fromDaoToModel(it) }
+        }.map { meetings ->
+            meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
+        }.onSuccess { meetingsToPersist ->
+            val creatorIds = meetingsToPersist.map { it.creatorId.toModel() }.toSet()
+            if (creatorIds.isNotEmpty()) {
+                // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
+                // foreign key constraint violation and try to fetch the user details from the server if possible
+                userRepository.insertOrIgnoreIncompleteUsers(creatorIds.toList())
+                userRepository.fetchUsersIfUnknownByIds(creatorIds)
             }
+            val conversationIds = meetingsToPersist.map { it.conversationId.toModel() }.distinct()
+            if (conversationIds.isNotEmpty()) {
+                conversationRepository.fetchConversationListDetails(conversationIds).flatMap {
+                    persistConversations(transactionContext, it.conversationsFound, false)
+                }
+            }
+
+            wrapStorageRequest {
+                meetingDAO.upsertMeetings(
+                    meetings = meetingsToPersist,
+                    generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
+                    removeMeetingsAbsentFromUpsertList = true,
+                )
+            }
+        }.map {
+            it.map { meetingMapper.fromDaoToModel(it) }
         }
 
     override suspend fun fetchAndPersistMeeting(
