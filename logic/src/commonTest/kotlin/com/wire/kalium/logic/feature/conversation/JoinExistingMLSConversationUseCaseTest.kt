@@ -300,6 +300,56 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     @Test
+    fun givenPendingWelcomeConversation_whenJoiningByExternalCommit_thenRefreshMetadataInsteadOfEstablishingNewGroup() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSequentially(
+                Arrangement.MLS_PENDING_WELCOME_GROUP_CONVERSATION,
+                Arrangement.MLS_PENDING_WELCOME_REFRESHED_GROUP_CONVERSATION
+            )
+            .withFetchConversationSuccessful()
+            .withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase(
+            arrangement.transactionContext,
+            Arrangement.MLS_PENDING_WELCOME_GROUP_CONVERSATION.id
+        ).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.fetchConversation(any(), eq(Arrangement.MLS_PENDING_WELCOME_GROUP_CONVERSATION.id), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), eq(Arrangement.GROUP_ID3), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenPendingWelcomeConversation_whenExternalCommitIsNotAllowed_thenMetadataIsNotRefreshed() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(Arrangement.MLS_PENDING_WELCOME_REFRESHED_GROUP_CONVERSATION)
+            .arrange()
+
+        joinExistingMLSConversationsUseCase(
+            arrangement.transactionContext,
+            Arrangement.MLS_PENDING_WELCOME_REFRESHED_GROUP_CONVERSATION.id,
+            allowJoinByExternalCommit = false
+        ).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.fetchConversation(any(), any(), any())
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
+        }
+    }
+
+    @Test
     fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true)
@@ -513,6 +563,26 @@ class JoinExistingMLSConversationUseCaseTest {
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id-pending-after-reset", "domain"))
+
+            val MLS_PENDING_WELCOME_GROUP_CONVERSATION = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID3,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id-pending-welcome", "domain"))
+
+            val MLS_PENDING_WELCOME_REFRESHED_GROUP_CONVERSATION = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID3,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE,
+                    epoch = 2UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id-pending-welcome", "domain"))
 
             val MLS_ESTABLISHED_GROUP_CONVERSATION = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(

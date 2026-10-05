@@ -215,6 +215,13 @@ internal interface ConversationRepository {
         groupState: GroupState
     ): Either<StorageFailure, Unit>
 
+    suspend fun updateMLSGroupIdAndState(
+        conversationId: ConversationId,
+        groupID: GroupID,
+        epoch: ULong,
+        groupState: GroupState
+    ): Either<StorageFailure, Unit>
+
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: Instant? = null): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
@@ -680,6 +687,16 @@ internal class ConversationDataSource internal constructor(
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.updateConversationGroupStateByConversationId(groupState.toDao(), conversationId.toDao())
+        }
+
+    override suspend fun updateMLSGroupIdAndState(
+        conversationId: ConversationId,
+        groupID: GroupID,
+        epoch: ULong,
+        groupState: GroupState
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateMLSGroupIdAndState(conversationId.toDao(), groupID.value, epoch.toLong(), groupState.toDao())
         }
 
     override suspend fun updateConversationNotificationDate(

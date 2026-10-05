@@ -66,6 +66,7 @@ class RegisterMLSClientUseCaseTest {
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
+                .withSetShouldJoinPendingMLSConversations(Either.Right(Unit))
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
                 .withUploadKeyPackagesSuccessful()
                 .withMLSTransaction<Unit>()
@@ -170,6 +171,7 @@ class RegisterMLSClientUseCaseTest {
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
+                .withSetShouldJoinPendingMLSConversations(Either.Right(Unit))
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
                 .withUploadKeyPackagesSuccessful()
                 .withMLSTransaction<Unit>()
@@ -197,6 +199,61 @@ class RegisterMLSClientUseCaseTest {
             }
         }
 
+    @Test
+    fun givenMLSClientIsRegistered_whenInvoked_thenPendingConversationsAreFlaggedBeforeUploadingKeyPackages() = runTest {
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = false)))
+            .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withSetShouldJoinPendingMLSConversations(Either.Right(Unit))
+            .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
+            .withUploadKeyPackagesSuccessful()
+            .withMLSTransaction<Unit>()
+            .arrange()
+
+        registerMLSClient(TestClient.CLIENT_ID).shouldSucceed()
+
+        verifySuspend(VerifyMode.order) {
+            arrangement.clientRepository.registerMLSClient(any(), any(), any())
+            arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(true)
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
+        }
+    }
+
+    @Test
+    fun givenMLSClientRegistrationFails_whenInvoked_thenPendingConversationsAreNotFlagged() = runTest {
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = false)))
+            .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
+            .withRegisterMLSClient(Either.Left(CoreFailure.Unknown(null)))
+            .arrange()
+
+        registerMLSClient(TestClient.CLIENT_ID).shouldFail()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(any())
+        }
+    }
+
+    @Test
+    fun givenFlaggingPendingConversationsFails_whenInvoked_thenKeyPackagesAreNotUploaded() = runTest {
+        val (arrangement, registerMLSClient) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = false)))
+            .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withSetShouldJoinPendingMLSConversations(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        registerMLSClient(TestClient.CLIENT_ID).shouldFail { assertIs<StorageFailure.DataNotFound>(it) }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), any(), any())
+        }
+    }
+
     private class Arrangement {
         val mlsClient: MLSClient = mock(mode = MockMode.autoUnit)
         val x509CredentialRef: CryptoCredentialRef = mock(mode = MockMode.autoUnit)
@@ -222,6 +279,12 @@ class RegisterMLSClientUseCaseTest {
         suspend fun withRegisterMLSClient(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
                 clientRepository.registerMLSClient(any(), any(), any())
+            } returns result
+        }
+
+        suspend fun withSetShouldJoinPendingMLSConversations(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
+                userConfigRepository.setShouldJoinPendingMLSConversations(any())
             } returns result
         }
 
