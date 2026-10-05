@@ -3427,29 +3427,29 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun relevantDegradedVerificationHidesText() = previewPolicyIsPrivate(mixed = false, ephemeral = false)
+    fun relevantDegradedVerificationShowsText() = previewPolicyMatchesAndroid(mixed = false, ephemeral = false)
 
     @Test
-    fun mixedDegradedVerificationHidesText() = previewPolicyIsPrivate(mixed = true, ephemeral = false)
+    fun mixedDegradedVerificationShowsText() = previewPolicyMatchesAndroid(mixed = true, ephemeral = false)
 
     @Test
-    fun ephemeralContentHidesText() = previewPolicyIsPrivate(mixed = false, ephemeral = true)
+    fun ephemeralContentHidesText() = previewPolicyMatchesAndroid(mixed = false, ephemeral = true)
 
-    private fun previewPolicyIsPrivate(mixed: Boolean, ephemeral: Boolean) = runTest {
+    private fun previewPolicyMatchesAndroid(mixed: Boolean, ephemeral: Boolean) = runTest {
         for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 if (mixed) fixture.sql("UPDATE Conversation SET protocol = 'MIXED'")
-                if (!ephemeral) {
-                    val column = if (mls) "verification_status" else "proteus_verification_status"
-                    fixture.sql("UPDATE Conversation SET $column = 'DEGRADED'")
-                }
+                val column = if (mls) "verification_status" else "proteus_verification_status"
+                fixture.sql("UPDATE Conversation SET $column = 'DEGRADED'")
                 val event = fixture.event("notification", fixture.encrypt("first",
                     expiresAfterMillis = if (ephemeral) 60_000L else null))
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
                 val result = checkNotNull(assertIs<Either.Right<ReceivedMessageResult?>>(
                     fixture.receive(listOf(event), event.id)).value)
-                assertFalse(result.mayPreview)
+                assertEquals(!ephemeral, result.mayPreview)
+                assertEquals("first", result.text)
+                if (!ephemeral) assertNull(result.previewPolicyReason)
                 assertTrue(result.shouldNotify)
                 fixture.verifyStoredAndNext(next, "first")
             }
@@ -3487,7 +3487,7 @@ class NotificationProcessorNativeTest {
                     fixture.verifyX509(runtime)
                 })
                 val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id)).value
-                assertFalse(checkNotNull(result).mayPreview)
+                assertTrue(checkNotNull(result).mayPreview)
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     fixture.verifyX509(runtime, revoked = true)
                     assertEquals(ConversationEntity.VerificationStatus.DEGRADED,
@@ -3981,8 +3981,8 @@ class NotificationProcessorNativeTest {
     @Test
     fun conversationDeletionMetadataDependenciesStayPending() = runTest {
         withContext(Dispatchers.Default) {
-            for (variant in listOf("prefix", "creation-after-prefix", "recreate", "mls")) {
-                withFixture(variant == "mls") { fixture ->
+            for (variant in listOf("prefix", "creation-after-prefix", "recreate")) {
+                withFixture(false) { fixture ->
                     fixture.sql("UPDATE Conversation SET type = 'GROUP' WHERE qualified_id = '$CONVERSATION_ID'")
                     val protected = storedText("protected")
                     fixture.seed(protected)
@@ -4004,6 +4004,100 @@ class NotificationProcessorNativeTest {
                         assertNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
                         assertNotNull(runtime.database.messageDAO.getMessageById("protected", CONVERSATION_ID))
                     })
+                }
+            }
+        }
+    }
+
+    @Test
+    fun mlsConversationDeletionUnblocksUnrelatedNotifications() = mlsConversationDeletionRoundTrip(null)
+
+    @Test
+    fun mlsConversationDeletionRetriesAfterSQLCommitNativeAbort() = mlsConversationDeletionRoundTrip(Interruption.BEFORE_COMMIT)
+
+    @Test
+    fun mlsConversationDeletionRetriesAfterNativeCommit() = mlsConversationDeletionRoundTrip(Interruption.AFTER_COMMIT)
+
+    @Test
+    fun mlsConversationDeletionRetriesAfterMarkerFailure() = mlsConversationDeletionRoundTrip(Interruption.MARKER)
+
+    @Test
+    fun mlsConversationDeletionRetriesAfterCancellation() = mlsConversationDeletionRoundTrip(Interruption.CANCEL_BEFORE_COMMIT)
+
+    private fun mlsConversationDeletionRoundTrip(interruption: Interruption?) = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.sql("UPDATE Conversation SET type = 'GROUP' WHERE qualified_id = '$CONVERSATION_ID'")
+                fixture.seedProteusConversation()
+                fixture.seedConversationCleanupFiles(CONVERSATION_ID)
+                val deleted = fixture.deletedConversationEvent(CONVERSATION_ID, sender = SELF)
+                val first = fixture.event("first", fixture.encrypt("first", protocolMLS = false),
+                    protocolMLS = false, conversationId = DELETE_TARGET)
+                val second = fixture.event("second", fixture.encrypt("second", protocolMLS = false),
+                    protocolMLS = false, conversationId = DELETE_TARGET)
+                fixture.releasePrepared()
+                val page = listOf(deleted, first, second)
+                if (interruption != null) {
+                    if (interruption == Interruption.CANCEL_BEFORE_COMMIT) {
+                        assertFailsWith<CancellationException> {
+                            fixture.receive(page, first.id, interruption, isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })
+                        }
+                    } else {
+                        assertIs<Either.Left<*>>(fixture.receive(page, first.id, interruption,
+                            isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) }))
+                    }
+                    // Each open closes its owner. This checks a fresh runtime, not an in-memory retry.
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
+                        assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(deleted.id)).isProcessed)
+                        assertNull(runtime.database.messageDAO.getMessageById(first.id, DELETE_TARGET))
+                        val rolledBack = interruption in listOf(Interruption.BEFORE_COMMIT, Interruption.CANCEL_BEFORE_COMMIT)
+                        assertEquals(rolledBack, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
+                    })
+                    if (interruption == Interruption.MARKER) fixture.sql("DROP TRIGGER interrupt_receive")
+                }
+                val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(page, first.id,
+                    isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })).value
+                assertEquals("first", result?.text)
+                assertEquals(true, result?.shouldNotify)
+                assertEquals("second", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), second.id,
+                    isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })).value?.text)
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), first.id,
+                    isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })).value)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    fixture.verifyConversationCleanup(runtime, CONVERSATION_ID, deleted = true)
+                    assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
+                    for (event in page) assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById(first.id, DELETE_TARGET))
+                    assertNotNull(runtime.database.messageDAO.getMessageById(second.id, DELETE_TARGET))
+                })
+            }
+        }
+    }
+
+    @Test
+    fun mlsConversationDeletionSupportsMixedMeetingsAndMissingNativeGroups() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mixed in listOf(false, true)) for (meeting in listOf(false, true)) for (missingNative in listOf(false, true)) {
+                withFixture(true) { fixture ->
+                    fixture.sql("UPDATE Conversation SET type = '${if (meeting) "MEETING" else "GROUP"}'" +
+                        ", protocol = '${if (mixed) "MIXED" else "MLS"}' WHERE qualified_id = '$CONVERSATION_ID'")
+                    val deleted = fixture.deletedConversationEvent(CONVERSATION_ID, meeting = meeting, sender = SELF)
+                    fixture.releasePrepared()
+                    if (missingNative) assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        checkNotNull(fixture.openMLS(runtime)).transaction { it.wipeConversation(GROUP_ID) }
+                    })
+                    val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(deleted), deleted.id,
+                        isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })).value
+                    assertEquals(ReceivedNotificationType.CONVERSATION_DELETED, result?.type)
+                    assertEquals(!meeting, result?.shouldNotify)
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
+                        assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(deleted.id)).isProcessed)
+                    })
+                    assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), deleted.id,
+                        isolateConversations = true, recoveryFactory = { fixture.unavailableRecovery(it) })).value)
                 }
             }
         }
@@ -9104,7 +9198,7 @@ class NotificationProcessorNativeTest {
                     }
                 )
                 val text = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), "notification")).value
-                assertFalse(checkNotNull(text).mayPreview)
+                assertTrue(checkNotNull(text).mayPreview)
                 assertIs<Either.Right<*>>(
                     fixture.open { runtime ->
                         assertEquals(
@@ -10918,10 +11012,10 @@ class NotificationProcessorNativeTest {
             sql("INSERT INTO PendingDeliveryConfirmations(conversation_id, message_id) VALUES('$target', 'remove-asset')")
         }
 
-        fun deletedConversationEvent(target: QualifiedIDEntity = DELETE_TARGET, meeting: Boolean = false) = plainEvent("delete-conversation",
+        fun deletedConversationEvent(target: QualifiedIDEntity = DELETE_TARGET, meeting: Boolean = false, sender: UserId = SENDER) = plainEvent("delete-conversation",
             """{"type":"conversation.${if (meeting) "delete-meeting" else "delete"}",
             "qualified_conversation":{"id":"${target.value}","domain":"${target.domain}"},
-            "qualified_from":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},"time":"$TIME"}"""
+            "qualified_from":{"id":"${sender.value}","domain":"${sender.domain}"},"time":"$TIME"}"""
         )
 
         suspend fun conversationCleanupEvent(mode: CleanupMode): EventResponseToStore {

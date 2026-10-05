@@ -74,6 +74,40 @@ class MLSReceiveRecoveryStore(
         operation
     }
 
+    /** Preserve the exact group before SQL deletion; acknowledgement alone retires this intent. */
+    suspend fun prepareDeletion(
+        payload: ReceivedPayloadIdentity,
+        groupId: String?,
+    ): Boolean = mutex.withLock {
+        val entries = load()
+        if (groupId == null && entries.deletions.values.none { it.eventId == payload.eventId }) return@withLock false
+        val receipt = effectReceipt(payload)
+        val key = prefix + DELETION + receipt.id
+        val previous = entries.deletions[key]
+        if (previous == null && groupId == null) return@withLock false
+        require(groupId == null || groupId.isNotBlank())
+        check(previous == null || groupId == null || previous.groupId == groupId) {
+            "Deletion operation belongs to a different MLS group"
+        }
+        val deletion = previous ?: PendingDeletion(receipt.eventId, receipt.payloadHash, checkNotNull(groupId))
+        if (previous == null) {
+            uncertainWrite {
+                metadata.insertValue(KtxSerializer.json.encodeToString(deletion), key)
+                pending = entries.copy(deletions = entries.deletions + (key to deletion))
+            }
+        }
+        true
+    }
+
+    /** Restore a pending wipe even when committed SQL effects already removed the conversation. */
+    suspend fun resumeDeletion(context: MlsCoreCryptoContext, payload: ReceivedPayloadIdentity): Boolean = mutex.withLock {
+        val entries = load()
+        if (entries.deletions.values.none { it.eventId == payload.eventId }) return@withLock false
+        val deletion = entries.deletions[prefix + DELETION + effectReceipt(payload).id] ?: return@withLock false
+        if (context.conversationExists(deletion.groupId)) context.wipeConversation(deletion.groupId)
+        true
+    }
+
     /** Read before a POST as well as on retry, so an unsupported native format never follows a new remote mutation. */
     suspend fun isCompleted(context: MlsCoreCryptoContext, operation: PendingMLSReceiveRecovery): Boolean = mutex.withLock {
         requirePending(operation)
@@ -151,11 +185,19 @@ class MLSReceiveRecoveryStore(
         val ids = eventIds.toSet()
         val operations = entries.operations.filterValues { it.eventId in ids }
         val receipts = entries.receipts.filterValues { it.eventId in ids }
-        val keysByEvent = (operations.map { it.value.eventId to it.key } + receipts.map { it.value.eventId to it.key })
+        val deletions = entries.deletions.filterValues { it.eventId in ids }
+        val keysByEvent = (
+            operations.map { it.value.eventId to it.key } + receipts.map { it.value.eventId to it.key } +
+                deletions.map { it.value.eventId to it.key }
+            )
             .groupBy({ it.first }, { it.second })
         uncertainWrite {
             events.markProcessed(eventIds, keysByEvent)
-            pending = PendingIndex(entries.operations - operations.keys, entries.receipts - receipts.keys)
+            pending = PendingIndex(
+                entries.operations - operations.keys,
+                entries.receipts - receipts.keys,
+                entries.deletions - deletions.keys,
+            )
         }
     }
 
@@ -163,8 +205,14 @@ class MLSReceiveRecoveryStore(
         pending?.let { return it }
         val operations = mutableMapOf<String, PendingMLSReceiveRecovery>()
         val receipts = mutableMapOf<String, PayloadReceipt>()
+        val deletions = mutableMapOf<String, PendingDeletion>()
         metadata.valuesByKeyRange(prefix, until).forEach { (key, value) ->
-            if (key.startsWith(prefix + PAYLOAD)) {
+            if (key.startsWith(prefix + DELETION)) {
+                val deletion = KtxSerializer.json.decodeFromString<PendingDeletion>(value)
+                check(deletion.eventId.isNotBlank() && deletion.groupId.isNotBlank() && HASH.matches(deletion.payloadHash))
+                check(key == prefix + DELETION + deletion.id) { "Deletion identity does not match its key" }
+                deletions[key] = deletion
+            } else if (key.startsWith(prefix + PAYLOAD)) {
                 val receipt = KtxSerializer.json.decodeFromString<PayloadReceipt>(value)
                 check(receipt.eventId.isNotBlank() && HASH.matches(receipt.payloadHash))
                 check(key == prefix + PAYLOAD + receipt.id) { "Payload receipt identity does not match its key" }
@@ -176,7 +224,7 @@ class MLSReceiveRecoveryStore(
                 operations[key] = operation
             }
         }
-        return PendingIndex(operations, receipts).also { pending = it }
+        return PendingIndex(operations, receipts, deletions).also { pending = it }
     }
 
     private suspend fun requirePending(operation: PendingMLSReceiveRecovery): PendingIndex = load().also {
@@ -234,7 +282,17 @@ class MLSReceiveRecoveryStore(
     private data class PendingIndex(
         val operations: Map<String, PendingMLSReceiveRecovery>,
         val receipts: Map<String, PayloadReceipt>,
+        val deletions: Map<String, PendingDeletion>,
     )
+
+    @Serializable
+    private data class PendingDeletion(
+        @SerialName("eventId") val eventId: String,
+        @SerialName("payloadHash") val payloadHash: String,
+        @SerialName("groupId") val groupId: String,
+    ) {
+        val id: String get() = PayloadReceipt(eventId, payloadHash).id
+    }
 
     @Serializable
     private data class PayloadReceipt(
@@ -264,6 +322,7 @@ class MLSReceiveRecoveryStore(
 
     private companion object {
         const val PAYLOAD = "payload:"
+        const val DELETION = "deletion:"
         const val FORMAT = "kalium.mls.receive-recovery.v1"
         val HASH = Regex("[0-9a-f]{64}")
     }

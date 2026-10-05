@@ -87,10 +87,12 @@ internal class ReceivedMessageHandler(
         event: com.wire.kalium.logic.data.event.Event.Conversation.DeletedConversation,
         requiredByEarlierPayload: Boolean,
         recreatedLater: Boolean,
+        preparedDeletionGroupId: String? = null,
     ) {
         val id = event.conversationId.toDao()
         val conversation = data.conversations.getConversationById(id) ?: return
-        check(conversation.protocolInfo !is ConversationEntity.ProtocolInfo.MLSCapable) {
+        val protocol = conversation.protocolInfo
+        check(protocol !is ConversationEntity.ProtocolInfo.MLSCapable || protocol.groupId == preparedDeletionGroupId) {
             "MLS conversation deletion requires its group identity after SQL deletion/native rollback"
         }
         check(!recreatedLater) { "Deletion and recreation in one notification require native plaintext replay" }
@@ -99,6 +101,9 @@ internal class ReceivedMessageHandler(
         }
         val sender = data.users.getNameAndHandle(event.senderUserId.toDao())
         data.assets.deleteConversationFiles(id, deleteFile)
+        (conversation.protocolInfo as? ConversationEntity.ProtocolInfo.MLSCapable)?.let {
+            data.conversations.clearProposalTimer(it.groupId)
+        }
         data.conversations.deleteConversationByQualifiedID(id)
         candidates += MessageCandidate(
             event.id, id,
@@ -470,16 +475,8 @@ internal class ReceivedMessageHandler(
                 message.senderUserId != selfUserId.toDao() && message.date > conversation.lastReadDate &&
                 (lastNotificationDate == null || message.date > lastNotificationDate) &&
                 data.messages.needsToBeNotified(message.id, conversationId)
-            val degraded = when (conversation.protocolInfo) {
-                is ConversationEntity.ProtocolInfo.MLS ->
-                    conversation.mlsVerificationStatus == ConversationEntity.VerificationStatus.DEGRADED
-                ConversationEntity.ProtocolInfo.Proteus ->
-                    conversation.proteusVerificationStatus == ConversationEntity.VerificationStatus.DEGRADED
-                is ConversationEntity.ProtocolInfo.Mixed ->
-                    conversation.mlsVerificationStatus == ConversationEntity.VerificationStatus.DEGRADED ||
-                        conversation.proteusVerificationStatus == ConversationEntity.VerificationStatus.DEGRADED
-            }
-            val mayPreview = message.expireAfterMs == null && !degraded
+            // Match Android: verification warnings affect reply eligibility, not message previews.
+            val mayPreview = message.expireAfterMs == null
             val text = (message.content as? MessageEntityContent.Text)?.messageBody
             val reason = if (notify) null else when {
                 message.content is MessageEntityContent.Multipart -> "MULTIPART"

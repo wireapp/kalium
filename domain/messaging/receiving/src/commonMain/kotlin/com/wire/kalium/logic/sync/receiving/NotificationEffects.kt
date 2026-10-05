@@ -155,6 +155,7 @@ internal class NotificationEffects(
                 when (received) {
                     is ReceivedPayload.Deletion -> messageHandler.deleteConversation(
                         received.event,
+                        preparedDeletionGroupId = received.preparedDeletionGroupId,
                         requiredByEarlierPayload = received.event.conversationId.toDao() in requiredEarlier,
                         recreatedLater = (lastCreationIndex[received.event.conversationId.toDao()] ?: -1) > index
                     )
@@ -475,7 +476,10 @@ internal sealed interface ReceivedPayload {
     data class NewClient(val client: com.wire.kalium.logic.data.client.Client) : ReceivedPayload
     data class UserDeleted(val userId: UserId) : ReceivedPayload
     data class TeamLeave(val event: Event.Team.MemberLeave) : ReceivedPayload
-    data class Deletion(val event: Event.Conversation.DeletedConversation) : ReceivedPayload
+    data class Deletion(
+        val event: Event.Conversation.DeletedConversation,
+        val preparedDeletionGroupId: String? = null,
+    ) : ReceivedPayload
     data class DecryptionFailure(val message: Message.Regular) : ReceivedPayload
     data class OneOnOne(val resolution: OneOnOneResolution) : ReceivedPayload
     data class ProtocolUpdate(

@@ -10,6 +10,9 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
+import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
@@ -19,15 +22,19 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.incremental.EventSource
+import com.wire.kalium.logic.sync.receiving.ReceivedPayloadIdentity
 import com.wire.kalium.logic.sync.receiving.MLSReceiveRecovery
 import com.wire.kalium.logic.sync.receiving.MLSReceiveRecoveryStore
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.event.NewEventEntity
 import com.wire.kalium.util.ConversationPersistenceApi
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -47,6 +54,80 @@ import kotlinx.coroutines.test.runTest
 
 @OptIn(ConversationPersistenceApi::class)
 class AppMLSReceiveRecoveryTest {
+    @Test
+    fun appResumesDeletionWithoutCanonicalConversationAndRetiresItAfterAcknowledgement() = withArrangement { arrangement ->
+        val envelope = arrangement.deletionEnvelope()
+        val identity = checkNotNull(envelope.payloadIdentity)
+        // A fresh store represents the NSE owner, whose SQL deletion survived native rollback.
+        val nseStore = arrangement.freshStore()
+        assertTrue(nseStore.prepareDeletion(identity, GROUP_ID))
+        arrangement.database.builder.notificationEventStore.storePage(
+            null, listOf(NewEventEntity(identity.eventId, "[]", false, false))
+        )
+        everySuspend { arrangement.mlsContext.conversationExists(GROUP_ID) } returns true
+        everySuspend { arrangement.mlsContext.wipeConversation(GROUP_ID) } returns Unit
+
+        assertFalse(arrangement.adapter.wereEffectsProcessed(arrangement.transactionContext, envelope))
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsContext.wipeConversation(GROUP_ID) }
+        verifySuspend(VerifyMode.not) { arrangement.conversations.getConversationProtocolInfo(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.mlsContext.readTransactionCheckpoint() }
+        arrangement.adapter.acknowledge(listOf(identity.eventId))
+        assertTrue(arrangement.database.builder.eventDAO.getEventById(identity.eventId)?.isProcessed == true)
+        assertFalse(arrangement.freshStore().prepareDeletion(identity, null))
+    }
+
+    @Test
+    fun appDeletionWithoutPendingIntentDoesNotTouchNativeState() = withArrangement { arrangement ->
+        assertFalse(arrangement.adapter.wereEffectsProcessed(arrangement.transactionContext, arrangement.deletionEnvelope()))
+
+        verifySuspend(VerifyMode.not) { arrangement.mlsContext.conversationExists(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.mlsContext.wipeConversation(any()) }
+    }
+
+    @Test
+    fun appLeavesPresentConversationWipeToOrdinaryDeletionHandler() = withArrangement { arrangement ->
+        val envelope = arrangement.deletionEnvelope()
+        arrangement.store.prepareDeletion(checkNotNull(envelope.payloadIdentity), GROUP_ID)
+        everySuspend { arrangement.conversations.getConversationById(any()) } returns Either.Right(TestConversation.CONVERSATION)
+
+        assertFalse(arrangement.adapter.wereEffectsProcessed(arrangement.transactionContext, envelope))
+
+        verifySuspend(VerifyMode.not) { arrangement.mlsContext.conversationExists(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.mlsContext.wipeConversation(any()) }
+        assertTrue(arrangement.store.prepareDeletion(checkNotNull(envelope.payloadIdentity), null))
+    }
+
+    @Test
+    fun appDeletionMatchesExactPayloadWithinOneEvent() = withArrangement { arrangement ->
+        val first = arrangement.deletionEnvelope()
+        val other = arrangement.deletionEnvelope("other-conversation")
+        arrangement.store.prepareDeletion(checkNotNull(first.payloadIdentity), GROUP_ID)
+        arrangement.store.prepareDeletion(checkNotNull(other.payloadIdentity), "other-group")
+        everySuspend { arrangement.mlsContext.conversationExists(GROUP_ID) } returns true
+        everySuspend { arrangement.mlsContext.wipeConversation(GROUP_ID) } returns Unit
+
+        assertFalse(arrangement.adapter.wereEffectsProcessed(arrangement.transactionContext, first))
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsContext.wipeConversation(GROUP_ID) }
+        verifySuspend(VerifyMode.not) { arrangement.mlsContext.conversationExists("other-group") }
+        verifySuspend(VerifyMode.not) { arrangement.mlsContext.wipeConversation("other-group") }
+        assertTrue(arrangement.store.prepareDeletion(checkNotNull(other.payloadIdentity), null))
+    }
+
+    @Test
+    fun appDeletionReplayWithAlreadyAbsentGroupKeepsIntentUntilAcknowledgement() = withArrangement { arrangement ->
+        val envelope = arrangement.deletionEnvelope()
+        val identity = checkNotNull(envelope.payloadIdentity)
+        arrangement.store.prepareDeletion(identity, GROUP_ID)
+        everySuspend { arrangement.mlsContext.conversationExists(GROUP_ID) } returns false
+
+        repeat(2) { assertFalse(arrangement.adapter.wereEffectsProcessed(arrangement.transactionContext, envelope)) }
+
+        verifySuspend(VerifyMode.not) { arrangement.mlsContext.wipeConversation(any()) }
+        assertTrue(arrangement.freshStore().prepareDeletion(identity, null))
+    }
+
     @Test
     fun ordinaryPreflightDoesNotReadCanonicalMetadataOrNativeCheckpoint() = withArrangement { arrangement ->
 
@@ -207,6 +288,29 @@ class AppMLSReceiveRecoveryTest {
             TestUser.SELF.id,
             SelfTeamIdProvider { Either.Right(null) },
         )
+
+        init {
+            everySuspend { conversations.getConversationById(any()) } returns Either.Left(StorageFailure.DataNotFound)
+        }
+
+        fun freshStore() = MLSReceiveRecoveryStore(database.builder.metadataDAO, database.builder.notificationEventStore, "client")
+
+        fun deletionEnvelope(conversationValue: String = event.conversationId.value): EventEnvelope {
+            val conversationId = event.conversationId.copy(value = conversationValue)
+            val deletion = Event.Conversation.DeletedConversation(
+                "delete-payload", conversationId, TestUser.SELF.id, Instant.DISTANT_PAST
+            )
+            return EventEnvelope(
+                deletion,
+                EventDeliveryInfo(EventSource.PENDING),
+                ReceivedPayloadIdentity(
+                    "delete-notification",
+                    EventContentDTO.Conversation.DeletedConversationDTO(
+                        conversationId.toApi(), TestUser.SELF.id.toApi(), Instant.DISTANT_PAST.toString()
+                    ),
+                ),
+            )
+        }
 
         suspend fun completeRecovery() {
             var checkpoint: ByteArray? = null
