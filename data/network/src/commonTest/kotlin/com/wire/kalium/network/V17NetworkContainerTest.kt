@@ -191,10 +191,23 @@ class V17NetworkContainerTest {
     }
 
     @Test
-    fun v17NegotiationRequiresDevelopmentApisEnabled() {
-        val server = VersionInfoDTO(listOf(16, 17), "wire.com", false, listOf(15))
-        assertEquals(ApiVersionDTO.Valid(15), BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = false).commonApiVersion)
-        assertEquals(ApiVersionDTO.Valid(17), BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = true).commonApiVersion)
+    fun v16AndV17NegotiationDoesNotRequireDevelopmentApisEnabled() {
+        for (version in listOf(16, 17)) {
+            val server = VersionInfoDTO(null, "wire.com", false, listOf(15, version))
+            val production = BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = false)
+            val development = BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = true)
+            assertEquals(ApiVersionDTO.Valid(version), production.commonApiVersion)
+            assertEquals(ApiVersionDTO.Valid(version), development.commonApiVersion)
+        }
+    }
+
+    @Test
+    fun v18NegotiationRequiresDevelopmentApisEnabled() {
+        val server = VersionInfoDTO(null, "wire.com", false, listOf(15, 16, 17, 18))
+        val production = BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = false)
+        val development = BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = true)
+        assertEquals(ApiVersionDTO.Valid(17), production.commonApiVersion)
+        assertEquals(ApiVersionDTO.Valid(18), development.commonApiVersion)
     }
 
     private fun authenticated(engine: HttpClientEngine? = null, version: Int = 17): AuthenticatedNetworkContainer {
