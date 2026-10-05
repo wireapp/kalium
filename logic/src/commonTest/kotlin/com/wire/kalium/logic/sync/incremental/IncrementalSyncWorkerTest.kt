@@ -50,6 +50,27 @@ import kotlin.test.assertFailsWith
 
 class IncrementalSyncWorkerTest {
     @Test
+    fun legalHoldRecoveryRunsAfterCleanupBeforeGatheringAndRetriesFailure() = runTest {
+        val order = mutableListOf<String>()
+        var fail = true
+        val fixture = Arrangement().withEventGathererReturning(flow { order += "gather" })
+        val (_, worker) = fixture.arrange(
+            consumeCleanup = { order += "cleanup" },
+            consumeLegalHold = {
+                order += "legalhold"
+                if (fail) error("History write interrupted")
+            },
+        )
+        assertFailsWith<IllegalStateException> { worker.processEventsFlow().collect() }
+        assertEquals(listOf("cleanup", "legalhold"), order)
+        verifySuspend(VerifyMode.not) { fixture.eventGatherer.gatherEvents() }
+        fail = false
+        order.clear()
+        worker.processEventsFlow().collect()
+        assertEquals(listOf("cleanup", "legalhold", "gather"), order)
+    }
+
+    @Test
     fun pendingCleanupCompletesBeforeGatheringEvenWithNoNewEvents() = runTest {
         val order = mutableListOf<String>()
         val (_, worker) = Arrangement()
@@ -247,10 +268,12 @@ class IncrementalSyncWorkerTest {
         fun arrange(
             consumeInvalidation: suspend () -> Boolean = { false },
             consumeCleanup: suspend () -> Unit = {},
+            consumeLegalHold: suspend () -> Unit = {},
         ) =
             this to IncrementalSyncWorkerImpl(
                 eventGatherer, batchProcessor, consumePendingAccountInvalidation = consumeInvalidation,
                 consumePendingConversationCleanup = consumeCleanup,
+                consumePendingLegalHoldTransitions = consumeLegalHold,
             )
     }
 }

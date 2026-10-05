@@ -563,6 +563,7 @@ import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventH
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.UserPropertiesEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldTransitionJournal
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
@@ -1100,6 +1101,7 @@ public class UserSessionScope internal constructor(
             membersHavingLegalHoldClient = membersHavingLegalHoldClient,
             userConfigRepository = userConfigRepository,
             conversationRepository = conversationRepository,
+            transitions = LegalHoldTransitionJournal(userStorage.database.metadataDAO),
             observeSyncState = observeSyncState,
             legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
         )
@@ -1683,6 +1685,7 @@ public class UserSessionScope internal constructor(
                 )
             },
             logger = userScopedLogger,
+            consumePendingLegalHoldTransitions = { legalHoldHandler.recoverPendingTransitions() },
             consumePendingConversationCleanup = {
                 if (enableDurableMLSReceiveRecovery) {
                     val cleanup = PendingConversationCleanup(userStorage.database) {

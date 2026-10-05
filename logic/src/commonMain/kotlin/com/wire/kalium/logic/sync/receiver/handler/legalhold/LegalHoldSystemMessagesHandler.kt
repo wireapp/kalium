@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrFail
+import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.common.functional.map
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -34,8 +36,8 @@ import kotlin.time.Instant
 internal interface LegalHoldSystemMessagesHandler {
     suspend fun handleEnabledForUser(userId: UserId, systemMessageInstant: Instant)
     suspend fun handleDisabledForUser(userId: UserId, systemMessageInstant: Instant)
-    suspend fun handleEnabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant)
-    suspend fun handleDisabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant)
+    suspend fun handleEnabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant, noticeId: String? = null)
+    suspend fun handleDisabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant, noticeId: String? = null)
 }
 
 internal class LegalHoldSystemMessagesHandlerImpl(
@@ -59,25 +61,26 @@ internal class LegalHoldSystemMessagesHandlerImpl(
         createNew = { MessageContent.LegalHold.ForMembers.Disabled(members = listOf(userId)) }
     )
 
-    override suspend fun handleEnabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant) =
-        handleSystemMessageForConversation(conversationId, Conversation.LegalHoldStatus.ENABLED, systemMessageInstant)
+    override suspend fun handleEnabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant, noticeId: String?) =
+        handleSystemMessageForConversation(conversationId, Conversation.LegalHoldStatus.ENABLED, systemMessageInstant, noticeId)
 
-    override suspend fun handleDisabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant) =
-        handleSystemMessageForConversation(conversationId, Conversation.LegalHoldStatus.DISABLED, systemMessageInstant)
+    override suspend fun handleDisabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant, noticeId: String?) =
+        handleSystemMessageForConversation(conversationId, Conversation.LegalHoldStatus.DISABLED, systemMessageInstant, noticeId)
 
     private suspend fun handleSystemMessageForConversation(
         conversationId: ConversationId,
         newStatus: Conversation.LegalHoldStatus,
-        instant: Instant = Clock.System.now()
+        instant: Instant = Clock.System.now(),
+        noticeId: String? = null
     ) {
         when (newStatus) {
             Conversation.LegalHoldStatus.DISABLED -> persistMessage(
-                createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversationId, instant)
-            )
+                createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversationId, instant, noticeId)
+            ).getOrFail { throw KaliumSyncException("Legal hold notice persistence failed", it) }
 
             Conversation.LegalHoldStatus.ENABLED -> persistMessage(
-                createSystemMessage(MessageContent.LegalHold.ForConversation.Enabled, conversationId, instant)
-            )
+                createSystemMessage(MessageContent.LegalHold.ForConversation.Enabled, conversationId, instant, noticeId)
+            ).getOrFail { throw KaliumSyncException("Legal hold notice persistence failed", it) }
 
             Conversation.LegalHoldStatus.DEGRADED,
             Conversation.LegalHoldStatus.UNKNOWN -> { /* do nothing */ }
@@ -116,9 +119,10 @@ internal class LegalHoldSystemMessagesHandlerImpl(
         content: MessageContent.LegalHold,
         conversationId: ConversationId,
         date: Instant = Clock.System.now(),
+        noticeId: String? = null,
     ): Message.System =
         Message.System(
-            id = Uuid.random().toString(),
+            id = noticeId ?: Uuid.random().toString(),
             content = content,
             conversationId = conversationId,
             date = date,

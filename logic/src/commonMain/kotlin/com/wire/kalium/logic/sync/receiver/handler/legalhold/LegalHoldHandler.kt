@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler.legalhold
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -34,8 +35,7 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCa
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
@@ -43,6 +43,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackRes
 import com.wire.kalium.logic.util.TriggerBuffer
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -54,6 +56,7 @@ import kotlin.time.Instant
 import kotlin.time.Duration.Companion.milliseconds
 
 internal interface LegalHoldHandler {
+    suspend fun recoverPendingTransitions()
     suspend fun handleEnable(legalHoldEnabled: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
     suspend fun handleDisable(legalHoldDisabled: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit>
     suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit>
@@ -68,7 +71,7 @@ internal interface LegalHoldHandler {
     suspend fun handleUserFetch(userId: UserId, userIsUnderLegalHold: Boolean): Either<CoreFailure, Unit>
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions") // Recovery shares the existing legal hold owner.
 internal class LegalHoldHandlerImpl internal constructor(
     private val selfUserId: UserId,
     private val fetchUsersClientsFromRemote: FetchUsersClientsFromRemoteUseCase,
@@ -78,9 +81,25 @@ internal class LegalHoldHandlerImpl internal constructor(
     private val userConfigRepository: UserConfigRepository,
     private val conversationRepository: ConversationRepository,
     private val legalHoldSystemMessagesHandler: LegalHoldSystemMessagesHandler,
+    private val transitions: LegalHoldTransitionJournal,
     observeSyncState: ObserveSyncStateUseCase,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : LegalHoldHandler {
+    private val transitionMutex = Mutex()
+
+    override suspend fun recoverPendingTransitions() = transitionMutex.withLock {
+        transitions.pending().forEach { record ->
+            when (val conversation = conversationRepository.getConversationById(record.subject)) {
+                is Either.Right -> applyConversationTransition(record)
+                is Either.Left -> if (conversation.value == StorageFailure.DataNotFound) {
+                    transitions.acknowledge(record)
+                } else {
+                    throw com.wire.kalium.logic.sync.KaliumSyncException("Legal hold recovery conversation read failed", conversation.value)
+                }
+            }
+        }
+    }
+
     private val scope = CoroutineScope(kaliumDispatcher.default)
 
     // FIXME: Sync Cyclic Dependency.
@@ -242,37 +261,54 @@ internal class LegalHoldHandlerImpl internal constructor(
     private suspend fun isUserUnderLegalHold(userId: UserId): Boolean =
         observeLegalHoldStateForUser(userId).firstOrNull() == LegalHoldState.Enabled
 
-    @Suppress("NestedBlockDepth")
+    private suspend fun applyConversationTransition(record: LegalHoldTransitionJournal.Transition, replay: Boolean = true): Boolean {
+        val status = if (record.enabled) Conversation.LegalHoldStatus.ENABLED else Conversation.LegalHoldStatus.DISABLED
+        val changed = conversationRepository.updateLegalHoldStatus(record.subject, status).getOrFail {
+            throw com.wire.kalium.logic.sync.KaliumSyncException("Legal hold state persistence failed", it)
+        }
+        if (!changed && !replay) {
+            transitions.acknowledge(record)
+            return false
+        }
+        if (record.enabled) legalHoldSystemMessagesHandler.handleEnabledForConversation(record.subject, record.timestamp, record.noticeId)
+        else legalHoldSystemMessagesHandler.handleDisabledForConversation(record.subject, record.timestamp, record.noticeId)
+        transitions.acknowledge(record)
+        return true
+    }
+
+    @Suppress("ReturnCount") // Preserve explicit required-history and unchanged-state exits.
     private suspend fun handleForConversation(
         conversationId: ConversationId,
         newStatus: Conversation.LegalHoldStatus,
         systemMessageInstant: Instant = Clock.System.now(),
-    ): Boolean =
-        if (newStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-            conversationRepository.observeLegalHoldStatus(conversationId).firstOrNull()?.getOrNull().let { currentStatus ->
-                if (currentStatus != newStatus) {
-                    val isChanged = when {
-                        currentStatus == Conversation.LegalHoldStatus.DEGRADED && newStatus == Conversation.LegalHoldStatus.ENABLED -> {
-                            true // in case it's already degraded we want to keep it, not change it to enabled but create system messages
-                        }
-
-                        else -> conversationRepository.updateLegalHoldStatus(conversationId, newStatus).getOrElse(false)
-                    }
-                    if (isChanged) { // if conversation legal hold status has changed, create system message for it
-                        when (newStatus) {
-                            Conversation.LegalHoldStatus.DISABLED ->
-                                legalHoldSystemMessagesHandler.handleDisabledForConversation(conversationId, systemMessageInstant)
-
-                            Conversation.LegalHoldStatus.ENABLED ->
-                                legalHoldSystemMessagesHandler.handleEnabledForConversation(conversationId, systemMessageInstant)
-
-                            else -> { /* do nothing */ }
-                        }
-                    }
-                    isChanged
-                } else false
-            }
-        } else false
+    ): Boolean = transitionMutex.withLock {
+        val key = LegalHoldTransitionJournal.conversationKey(conversationId)
+        val pending = transitions.find(key)
+        if (pending != null) {
+            applyConversationTransition(pending)
+            if (pending.enabled == (newStatus == Conversation.LegalHoldStatus.ENABLED)) return@withLock true
+        }
+        if (newStatus == Conversation.LegalHoldStatus.UNKNOWN) return@withLock false
+        val current = conversationRepository.observeLegalHoldStatus(conversationId).first().getOrFail {
+            throw com.wire.kalium.logic.sync.KaliumSyncException("Legal hold state read failed", it)
+        }
+        if (current == newStatus) return@withLock false
+        if (current == Conversation.LegalHoldStatus.DEGRADED && newStatus == Conversation.LegalHoldStatus.ENABLED) {
+            // This warning does not mutate status. Keep its existing policy until callers
+            // supply durable event identities; startup replay must not add another warning.
+            legalHoldSystemMessagesHandler.handleEnabledForConversation(conversationId, systemMessageInstant)
+            return@withLock true
+        }
+        val record = transitions.begin(key) {
+            LegalHoldTransitionJournal.Transition(
+                key,
+                conversationId,
+                newStatus == Conversation.LegalHoldStatus.ENABLED,
+                systemMessageInstant
+            )
+        }
+        applyConversationTransition(record, replay = false)
+    }
 
     private suspend fun handleConversationsForUser(userId: UserId) {
         conversationRepository.getConversationsByUserId(userId).map { conversations ->
