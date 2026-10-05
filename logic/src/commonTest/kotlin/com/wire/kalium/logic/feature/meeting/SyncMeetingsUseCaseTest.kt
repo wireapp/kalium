@@ -65,19 +65,19 @@ class SyncMeetingsUseCaseTest {
     }
 
     @Test
-    fun givenMeetingsDisabled_whenInvoking_thenSkipAndReturnUnit() = runTest {
+    fun givenMeetingsDisabled_whenInvoking_thenSkipAndReturnSuccess() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withMeetingsEnabled(false)
             .arrange()
 
         val result = useCase()
 
-        assertIs<Either.Right<Unit>>(result)
+        assertEquals(SyncMeetingsUseCase.Result.Success, result)
         verifySuspend(VerifyMode.not) { arrangement.meetingRepository.fetchAndPersistMeetings(arrangement.transactionContext) }
     }
 
     @Test
-    fun givenFeatureNotSupportedFailure_whenInvoking_thenSkipAndReturnUnit() = runTest {
+    fun givenFeatureNotSupportedFailure_whenInvoking_thenSkipAndReturnSuccess() = runTest {
         val (_, useCase) = Arrangement()
             .withMeetingsEnabled(true)
             .withFetchMeetingsFailed(NetworkFailure.FeatureNotSupported)
@@ -85,7 +85,7 @@ class SyncMeetingsUseCaseTest {
 
         val result = useCase()
 
-        assertIs<Either.Right<Unit>>(result)
+        assertEquals(SyncMeetingsUseCase.Result.Success, result)
     }
 
     @Test
@@ -97,11 +97,11 @@ class SyncMeetingsUseCaseTest {
 
         val result = useCase()
 
-        assertIs<Either.Left<NetworkFailure.NoNetworkConnection>>(result)
+        assertIs<NetworkFailure.NoNetworkConnection>(assertIs<SyncMeetingsUseCase.Result.Failure>(result).coreFailure)
     }
 
     @Test
-    fun givenSuccess_whenInvoking_thenExecuteRequestsAndReturnUnit() = runTest {
+    fun givenSuccess_whenInvoking_thenExecuteRequestsAndReturnSuccess() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withMeetingsEnabled(true)
             .withFetchMeetingsSuccessful(listOf(MEETING))
@@ -109,7 +109,7 @@ class SyncMeetingsUseCaseTest {
 
         val result = useCase()
 
-        assertIs<Either.Right<Unit>>(result)
+        assertEquals(SyncMeetingsUseCase.Result.Success, result)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingRepository.fetchAndPersistMeetings(arrangement.transactionContext) }
     }
 

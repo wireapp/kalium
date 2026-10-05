@@ -1,4 +1,4 @@
-`UserSessionScope.syncMeetingsUseCase` and `SyncMeetingsUseCase` made public so consumers can trigger meeting synchronization and check whether meetings are enabled.
+Added public `UserSessionScope.syncMeetingsUseCase` and `SyncMeetingsUseCase` so consumers can trigger meeting synchronization and check whether meetings are enabled. The use case returns `SyncMeetingsUseCase.Result.Success` or `Failure`, which includes the underlying `CoreFailure`.
 
   - ABI: additive.
   - Source: additive.
