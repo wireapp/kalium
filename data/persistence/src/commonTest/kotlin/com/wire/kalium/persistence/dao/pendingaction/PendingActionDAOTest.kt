@@ -96,6 +96,24 @@ class PendingActionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun ordinaryRecoveryActionRetainsItsExistingTimestampReplacementPolicy() = runTest(dispatcher) {
+        pendingActionDAO.upsert(actionType, user1, 200L)
+        pendingActionDAO.upsert(actionType, user1, 100L)
+        assertEquals(listOf(PendingActionEntity(user1, 100L)), pendingActionDAO.getByActionType(actionType))
+    }
+
+    @Test
+    fun staleReplayAndAcknowledgementPreserveNewerIntent() = runTest(dispatcher) {
+        val type = PendingActionType.CLEAR_CONVERSATION_CONTENT
+        pendingActionDAO.upsert(type, user1, 200L)
+        pendingActionDAO.upsert(type, user1, 100L)
+        pendingActionDAO.acknowledge(type, PendingActionEntity(user1, 100L))
+        assertEquals(listOf(PendingActionEntity(user1, 200L)), pendingActionDAO.getByActionType(type))
+        pendingActionDAO.acknowledge(type, PendingActionEntity(user1, 200L))
+        assertTrue(pendingActionDAO.getByActionType(type).isEmpty())
+    }
+
+    @Test
     fun givenNoPendingActions_whenGettingByType_thenReturnEmptyList() = runTest(dispatcher) {
         val result = pendingActionDAO.getByActionType(actionType)
 

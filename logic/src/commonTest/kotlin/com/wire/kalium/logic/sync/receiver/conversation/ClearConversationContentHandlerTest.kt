@@ -54,6 +54,22 @@ import kotlin.test.assertEquals
 class ClearConversationContentHandlerTest {
 
     @Test
+    fun NSEReplayUsesItsSnapshotInsteadOfClearingNewerEffectsAgain() = runTest {
+        val calls = mutableListOf<String>()
+        val hook = RecordingPersistenceEventHookNotifier()
+        val (arrangement, handler) = Arrangement(hookNotifier = hook).arrange(recoverNSEClear = { message, _ ->
+            calls += message.id
+            true
+        }) { withMessageSentInSelfConversation(false) }
+        handler.handle(arrangement.transactionContext, MESSAGE,
+            MessageContent.Cleared(CONVERSATION_ID, MESSAGE.date, false))
+        assertEquals(listOf(MESSAGE.id), calls)
+        assertEquals(0, hook.conversationClearCalls.size)
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.clearContent(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+    }
+
+    @Test
     fun givenMessageFromOtherUserAndNeedToRemove_whenMessageNotInSelfConversation_thenWholeConversationShouldNotBeDeleted() =
         runTest {
             // given
@@ -287,7 +303,10 @@ class ClearConversationContentHandlerTest {
             everySuspend { isMessageSentInSelfConversationUseCase(any()) } returns isSentInSelfConv
         }
 
-        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ClearConversationContentHandler> = run {
+        suspend fun arrange(
+            recoverNSEClear: suspend (Message.Signaling, MessageContent.Cleared) -> Boolean = { _, _ -> false },
+            block: suspend Arrangement.() -> Unit,
+        ): Pair<Arrangement, ClearConversationContentHandler> = run {
             val clearConversationContentHandler = ClearConversationContentHandlerImpl(
                 conversationRepository = conversationRepository,
                 selfUserId = TestUser.USER_ID,
@@ -295,6 +314,7 @@ class ClearConversationContentHandlerTest {
                 clearLocalConversationAssets = clearConversationAssetsLocally,
                 deleteConversation = deleteConversation,
                 persistenceEventHookNotifier = hookNotifier,
+                recoverNSEClear = recoverNSEClear,
             )
             withDeletingConversationSucceeding()
             withClearContentSucceeding()

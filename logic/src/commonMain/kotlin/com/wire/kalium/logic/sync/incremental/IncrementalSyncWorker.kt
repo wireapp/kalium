@@ -39,6 +39,7 @@ internal class IncrementalSyncWorkerImpl(
     private val batchProcessor: EventBatchProcessor,
     logger: KaliumLogger = kaliumLogger,
     private val consumePendingAccountInvalidation: suspend () -> Boolean = { false },
+    private val consumePendingConversationCleanup: suspend () -> Unit = {},
 ) : IncrementalSyncWorker {
     private val logger = logger.withFeatureId(SYNC)
 
@@ -46,6 +47,7 @@ internal class IncrementalSyncWorkerImpl(
         send(EventSource.PENDING)
         // Removed credentials may never connect; the existing logout owner runs first.
         if (consumePendingAccountInvalidation()) awaitCancellation()
+        consumePendingConversationCleanup()
 
         logger.d("$TAG gatherEvents starting...")
         eventGatherer.gatherEvents()

@@ -52,6 +52,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import kotlin.time.Clock
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageFailureHandler
@@ -118,6 +119,7 @@ class NotificationProcessor(
         require(targetId.isNotBlank())
         diagnostics?.stage = "LOAD_QUEUE"
         terminalAccountResult()?.let { return it }
+        cleanupConversations()
         previewImages.cleanupAbandoned(database.assetDAO)
         if (database.eventDAO.getEventById(targetId)?.isProcessed == true) return withPendingCalls(null, "ALREADY_PROCESSED")
         database.eventDAO.setAllUnprocessedEventsAsPending()
@@ -132,6 +134,7 @@ class NotificationProcessor(
                 currentCoroutineContext().ensureActive()
                 diagnostics?.stage = "MARK_PROCESSED"
                 CallSignalJournal(database).committed(effects.calls)
+                cleanupConversations()
                 if (recovery == null) database.eventDAO.markEventAsProcessed(next.eventId)
                 else recovery.acknowledge(listOf(next.eventId))
                 if (next.eventId == targetId) {
@@ -179,6 +182,7 @@ class NotificationProcessor(
         require(targetId.isNotBlank())
         diagnostics?.stage = "LOAD_QUEUE"
         terminalAccountResult()?.let { return it }
+        cleanupConversations()
         previewImages.cleanupAbandoned(database.assetDAO)
         if (database.eventDAO.getEventById(targetId)?.isProcessed == true) {
             return if (events.nextPending() != null) withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
@@ -237,6 +241,7 @@ class NotificationProcessor(
             currentCoroutineContext().ensureActive()
             diagnostics?.stage = "MARK_PROCESSED"
             CallSignalJournal(database).committed(effects.calls)
+            cleanupConversations()
             if (recovery == null) events.markProcessed(listOf(next.eventId), emptyMap())
             else recovery.acknowledge(listOf(next.eventId))
             if (next.eventId == targetId) {
@@ -285,6 +290,18 @@ class NotificationProcessor(
             }
         }
         return dependencies
+    }
+
+    private suspend fun cleanupConversations() {
+        val cleanup = PendingConversationCleanup(database, deleteFile)
+        cleanup.discardLegacyRequests()
+        if (database.pendingActionDAO.getByActionType(
+                PendingActionType.WIPE_MLS_GROUP
+            ).isEmpty()
+        ) return
+        val pending = if (mls != null) mls.transaction("nse-local-conversation-cleanup") { cleanup.wipePending(it) }
+            else cleanup.wipePending(null)
+        cleanup.committed(pending)
     }
 
     private suspend fun withPendingCalls(message: ReceivedMessageResult?, reason: String? = null): ReceivedNotificationResult {

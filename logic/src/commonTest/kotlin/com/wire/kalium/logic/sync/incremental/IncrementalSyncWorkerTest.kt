@@ -50,6 +50,30 @@ import kotlin.test.assertFailsWith
 
 class IncrementalSyncWorkerTest {
     @Test
+    fun pendingCleanupCompletesBeforeGatheringEvenWithNoNewEvents() = runTest {
+        val order = mutableListOf<String>()
+        val (_, worker) = Arrangement()
+            .withEventGathererReturning(flow { order += "gather" })
+            .arrange(consumeCleanup = { order += "cleanup" })
+        worker.processEventsFlow().collect()
+        assertEquals(listOf("cleanup", "gather"), order)
+    }
+
+    @Test
+    fun failedCleanupDoesNotAdvanceEventGatheringAndCanRetry() = runTest {
+        var attempts = 0
+        val fixture = Arrangement().withEventGathererReturning(flowOf(EventStreamData.IsUpToDate))
+        val (_, worker) = fixture.arrange(consumeCleanup = {
+            if (++attempts == 1) error("Native cleanup commit failed")
+        })
+        assertFailsWith<IllegalStateException> { worker.processEventsFlow().collect() }
+        verifySuspend(VerifyMode.not) { fixture.eventGatherer.gatherEvents() }
+        worker.processEventsFlow().collect()
+        assertEquals(2, attempts)
+        verifySuspend(VerifyMode.exactly(1)) { fixture.eventGatherer.gatherEvents() }
+    }
+
+    @Test
     fun terminalAccountEventBehindBlockedPageLogsOutBeforeNetworkAndKeepsQueue() = runTest(TestKaliumDispatcher.default) {
         for (deleted in listOf(false, true)) {
             val fixture = Arrangement()
@@ -220,9 +244,13 @@ class IncrementalSyncWorkerTest {
             everySuspend { batchProcessor.processBatch(any()) } calls { throw KaliumSyncException("Processing failed", failure) }
         }
 
-        fun arrange(consumeInvalidation: suspend () -> Boolean = { false }) =
+        fun arrange(
+            consumeInvalidation: suspend () -> Boolean = { false },
+            consumeCleanup: suspend () -> Unit = {},
+        ) =
             this to IncrementalSyncWorkerImpl(
                 eventGatherer, batchProcessor, consumePendingAccountInvalidation = consumeInvalidation,
+                consumePendingConversationCleanup = consumeCleanup,
             )
     }
 }

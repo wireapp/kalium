@@ -25,6 +25,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
@@ -450,6 +451,7 @@ import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.AvsSyncStateReporter
 import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
+import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
 import com.wire.kalium.logic.sync.SendPendingMessagesUseCase
@@ -572,6 +574,7 @@ import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiving.CallPresentationRecord
 import com.wire.kalium.logic.sync.receiving.CallSignalJournal
+import com.wire.kalium.logic.sync.receiving.PendingConversationCleanup
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -602,6 +605,7 @@ import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
@@ -1677,6 +1681,24 @@ public class UserSessionScope internal constructor(
                 )
             },
             logger = userScopedLogger,
+            consumePendingConversationCleanup = {
+                if (enableDurableMLSReceiveRecovery) {
+                    val cleanup = PendingConversationCleanup(userStorage.database) {
+                        kaliumFileSystem.delete(it.toPath(), mustExist = false)
+                    }
+                    cleanup.discardLegacyRequests()
+                    if (userStorage.database.pendingActionDAO.getByActionType(
+                            PendingActionType.WIPE_MLS_GROUP
+                        ).isNotEmpty()
+                    ) {
+                        cryptoTransactionProvider.transaction("pending-local-conversation-cleanup") { context ->
+                            Either.Right(cleanup.wipePending(context.mls))
+                        }.getOrFail {
+                            throw KaliumSyncException("Pending local conversation cleanup failed", it)
+                        }.let { cleanup.committed(it) }
+                    }
+                }
+            },
             consumePendingAccountInvalidation = {
                 val client = clientRepository.currentClientId().getOrNull()
                 val pending = client?.let {
@@ -2017,6 +2039,12 @@ public class UserSessionScope internal constructor(
                 conversations.clearConversationAssetsLocally,
                 deleteConversationUseCase,
                 currentPersistenceEventHookNotifier,
+                recoverNSEClear = { message, content ->
+                    enableDurableMLSReceiveRecovery &&
+                        PendingConversationCleanup(userStorage.database) {
+                            kaliumFileSystem.delete(it.toPath(), mustExist = false)
+                        }.recover(message.conversationId.toDao(), message.id, content.conversationId.toDao())
+                },
             ),
             DeleteForMeHandlerImpl(
                 userStorage.database.messageDAO,

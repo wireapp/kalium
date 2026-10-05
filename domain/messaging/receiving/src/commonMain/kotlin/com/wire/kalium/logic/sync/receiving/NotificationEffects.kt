@@ -192,6 +192,8 @@ internal class NotificationEffects(
                                     messages.getMessageById(leave.systemMessageId, leave.conversationId.toDao()) != null
                             },
                             isMLS = received.isMLS,
+                            requiredEarlier = requiredEarlier,
+                            recreatedLater = lastCreationIndex.filterValues { it > index }.keys,
                         )
                         if (calls != null && calls.size > previousCallCount) {
                             // A self-device signal may need another conversation's metadata on retry.

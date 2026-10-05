@@ -260,6 +260,19 @@ deleteAllMessages:
 -- @NotifyCustomKey Message
 DELETE FROM Message;
 
+selectMessageIdsThrough:
+SELECT id FROM Message WHERE conversation_id = :conversationId AND creation_date <= :through
+ORDER BY creation_date, id LIMIT :pageSize;
+
+deleteClearedMessage {
+-- @NotifyCustomKey message_list_:conversationId
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
+-- @NotifyCustomKey PendingDeliveryConfirmations
+DELETE FROM PendingDeliveryConfirmations WHERE conversation_id = :conversationId AND message_id = :messageId;
+DELETE FROM Message WHERE conversation_id = :conversationId AND id = :messageId;
+}
+
 deleteMessage:
 -- @NotifyCustomKey message_list_:conversation_id
 -- @NotifyCustomKey conversation_list_last_message

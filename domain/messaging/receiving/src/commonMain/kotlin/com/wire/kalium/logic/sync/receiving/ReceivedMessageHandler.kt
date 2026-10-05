@@ -55,14 +55,16 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.ReceivedMessage
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
+import com.wire.kalium.persistence.db.MessageEffectDAOs
 import kotlin.time.Clock
 import kotlinx.serialization.json.Json
 
 /** Ordered canonical effects. The caller owns one SQLite transaction for the whole notification. */
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ReceivedMessageHandler(
-    private val data: com.wire.kalium.persistence.db.MessageEffectDAOs,
+    private val data: MessageEffectDAOs,
     private val selfUserId: UserId,
     private val mlsEnabled: Boolean,
     private val persistMessage: PersistMessageUseCase,
@@ -135,6 +137,8 @@ internal class ReceivedMessageHandler(
         laterMessages: List<MessageUnpackResult.ApplicationMessage>,
         replayingSelfRemoval: Boolean,
         isMLS: Boolean,
+        requiredEarlier: Set<QualifiedIDEntity> = emptySet(),
+        recreatedLater: Set<QualifiedIDEntity> = emptySet(),
     ) {
         if (unpacked.content.messageContent is MessageContent.LegalHold ||
             unpacked.content.messageContent is MessageContent.InCallEmoji
@@ -161,7 +165,7 @@ internal class ReceivedMessageHandler(
             is MessageContent.ButtonAction, is MessageContent.ButtonActionConfirmation -> buttonAction(unpacked)
             is MessageContent.DeleteMessage -> delete(unpacked, content.messageId)
             is MessageContent.DeleteForMe -> deleteForMe(content, conversation)
-            is MessageContent.Cleared -> clear(unpacked, content, conversation)
+            is MessageContent.Cleared -> clear(unpacked, content, conversation, requiredEarlier, recreatedLater, laterMessages)
             is MessageContent.Reaction -> {
                 val current = data.messages.getMessageById(content.messageId, conversationId)
                 if (current != null) {
@@ -290,16 +294,32 @@ internal class ReceivedMessageHandler(
         unpacked: MessageUnpackResult.ApplicationMessage,
         content: MessageContent.Cleared,
         carrier: ConversationEntity,
+        requiredEarlier: Set<QualifiedIDEntity>,
+        recreatedLater: Set<QualifiedIDEntity>,
+        laterMessages: List<MessageUnpackResult.ApplicationMessage>,
     ) {
         val action = conversationClear(unpacked.senderUserId == selfUserId, isSelfConversation(carrier), content.needToRemoveLocally)
         if (action == ConversationClear.IGNORE) return
-        // The action and the notification's other effects commit together. Clearing belongs to the app;
-        // its consumer is intentionally a no-op for now, so content and files stay intact.
-        data.pendingActions.upsert(
-            actionType = if (action == ConversationClear.CONVERSATION) PendingActionType.DELETE_CONVERSATION_LOCALLY
-                else PendingActionType.CLEAR_CONVERSATION_CONTENT,
-            qualifiedId = content.conversationId.toDao(),
-            createdAt = unpacked.instant.toEpochMilliseconds(),
+        if (action == ConversationClear.CONVERSATION) {
+            val target = content.conversationId.toDao()
+            check(target != carrier.id && target !in requiredEarlier && target !in recreatedLater) {
+                "Local removal requires replayable conversation metadata"
+            }
+        }
+        // The account-owned cleanup consumer applies this cutoff, never newer content.
+        val type = if (action == ConversationClear.CONVERSATION) PendingActionType.DELETE_CONVERSATION_LOCALLY
+            else PendingActionType.CLEAR_CONVERSATION_CONTENT
+        val request = PendingActionEntity(
+            content.conversationId.toDao(),
+            minOf(content.time, unpacked.instant).toEpochMilliseconds()
+        )
+        data.pendingActions.upsert(type, request.qualifiedId, request.createdAt)
+        data.applyConversationCleanup(
+            type,
+            request,
+            deleteFile,
+            clearReplayKey(carrier.id, unpacked.content.messageUid, request.qualifiedId),
+            preserveConversation = laterMessages.any { it.conversationId.toDao() == request.qualifiedId },
         )
     }
 

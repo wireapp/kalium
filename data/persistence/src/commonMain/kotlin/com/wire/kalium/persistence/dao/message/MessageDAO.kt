@@ -36,6 +36,9 @@ enum class InsertMessageResult {
 
 @Suppress("TooManyFunctions")
 interface MessageDAO {
+    suspend fun getMessageIdsThrough(conversationId: QualifiedIDEntity, through: Instant, pageSize: Long): List<String>
+    suspend fun deleteClearedMessage(conversationId: QualifiedIDEntity, messageId: String)
+
     /** Apple notification identities follow canonical message IDs through edits; Android does not register alerts here. */
     suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>)
 

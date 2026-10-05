@@ -131,6 +131,13 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun getMessageIdsThrough(conversationId: QualifiedIDEntity, through: Instant, pageSize: Long): List<String> =
+        withContext(readDispatcher.value) { queries.selectMessageIdsThrough(conversationId, through, pageSize).awaitAsList() }
+
+    override suspend fun deleteClearedMessage(conversationId: QualifiedIDEntity, messageId: String) {
+        withContext(writeDispatcher.value) { queries.deleteClearedMessage(conversationId, messageId).await() }
+    }
+
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
             queries.deleteMessage(id, conversationsId)

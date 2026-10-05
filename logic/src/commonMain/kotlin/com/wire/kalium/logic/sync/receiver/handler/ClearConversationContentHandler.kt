@@ -44,6 +44,7 @@ internal interface ClearConversationContentHandler {
     )
 }
 
+@Suppress("LongParameterList") // Existing account-owned cleanup dependencies and recovery hook.
 internal class ClearConversationContentHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId,
@@ -51,6 +52,7 @@ internal class ClearConversationContentHandlerImpl(
     private val clearLocalConversationAssets: ClearConversationAssetsLocallyUseCase,
     private val deleteConversation: DeleteConversationUseCase,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
+    private val recoverNSEClear: suspend (Message.Signaling, MessageContent.Cleared) -> Boolean = { _, _ -> false },
 ) : ClearConversationContentHandler {
 
     override suspend fun handle(
@@ -63,6 +65,9 @@ internal class ClearConversationContentHandlerImpl(
 
         val action = conversationClear(isSelfSender, isMessageInSelfConversation, messageContent.needToRemoveLocally)
         if (action == ConversationClear.IGNORE) return
+        // NSE already applied an exact snapshot. The backup hook represents an unconditional
+        // conversation wipe and cannot safely describe a cutoff that preserved newer messages.
+        if (recoverNSEClear(message, messageContent)) return
 
         clearConversation(messageContent.conversationId)
 

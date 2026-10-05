@@ -23,9 +23,10 @@ enum class PendingActionType(val dbValue: String) {
     RESOLVE_ONE_ON_ONE_CONVERSATION("resolve_one_on_one_conversation"),
     JOIN_MLS_GROUP_CONVERSATION("join_mls_group_conversation"),
 
-    // NSE requests only. The app deliberately leaves these pending until cleanup is implemented.
+    // Consumed by PendingConversationCleanup in the app and NSE under account ownership.
     CLEAR_CONVERSATION_CONTENT("clear_conversation_content"),
-    DELETE_CONVERSATION_LOCALLY("delete_conversation_locally")
+    DELETE_CONVERSATION_LOCALLY("delete_conversation_locally"),
+    WIPE_MLS_GROUP("wipe_mls_group"),
 }
 
 data class PendingActionEntity(
@@ -38,4 +39,5 @@ interface PendingActionDAO {
     suspend fun getByActionType(actionType: PendingActionType): List<PendingActionEntity>
     suspend fun deleteByActionTypeAndIds(actionType: PendingActionType, qualifiedIds: List<QualifiedIDEntity>)
     suspend fun deleteByActionType(actionType: PendingActionType)
+    suspend fun acknowledge(actionType: PendingActionType, action: PendingActionEntity)
 }

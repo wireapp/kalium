@@ -14,7 +14,12 @@ upsert:
 INSERT INTO PendingActions(action_type, qualified_id, created_at)
 VALUES (?, ?, ?)
 ON CONFLICT(action_type, qualified_id) DO UPDATE SET
-    created_at = excluded.created_at;
+    created_at = CASE WHEN excluded.action_type IN ('clear_conversation_content', 'delete_conversation_locally', 'wipe_mls_group')
+        THEN MAX(PendingActions.created_at, excluded.created_at)
+        ELSE excluded.created_at END;
+
+acknowledge:
+DELETE FROM PendingActions WHERE action_type = ? AND qualified_id = ? AND created_at = ?;
 
 selectByActionType:
 SELECT qualified_id, created_at
