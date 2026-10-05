@@ -21,8 +21,7 @@ package com.wire.kalium.logic.feature.meeting
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.feature.user.IsMeetingsEnabledUseCase
@@ -30,7 +29,11 @@ import com.wire.kalium.logic.feature.user.IsMeetingsEnabledUseCase
 /** Synchronizes the current user's meetings from the backend when meetings are enabled. */
 public interface SyncMeetingsUseCase {
     public suspend fun isEnabled(): Boolean
-    public suspend operator fun invoke(): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(): Result
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val coreFailure: CoreFailure) : Result
+    }
 }
 
 /**
@@ -44,15 +47,23 @@ internal class SyncMeetingsUseCaseImpl(
 
     override suspend fun isEnabled(): Boolean = isMeetingsEnabledUseCase.invoke()
 
-    override suspend operator fun invoke(): Either<CoreFailure, Unit> = when (isEnabled()) {
-        false -> Either.Right(Unit)
+    override suspend operator fun invoke(): SyncMeetingsUseCase.Result = when (isEnabled()) {
+        false -> SyncMeetingsUseCase.Result.Success
         true -> transactionProvider.transaction("SyncMeetings") {
-            meetingRepository.fetchAndPersistMeetings(it).map {}
-        }.flatMapLeft {
-            when (it) {
-                is NetworkFailure.FeatureNotSupported -> Either.Right(Unit)
-                else -> Either.Left(it)
-            }
-        }
+            meetingRepository.fetchAndPersistMeetings(it)
+        }.fold(
+            { failure ->
+                when (failure) {
+                    is NetworkFailure.FeatureNotSupported -> SyncMeetingsUseCase.Result.Success
+                    else -> SyncMeetingsUseCase.Result.Failure(failure)
+                }
+            },
+            { SyncMeetingsUseCase.Result.Success }
+        )
     }
+}
+
+internal fun SyncMeetingsUseCase.Result.asEither() = when (this) {
+    is SyncMeetingsUseCase.Result.Success -> Either.Right(Unit)
+    is SyncMeetingsUseCase.Result.Failure -> Either.Left(coreFailure)
 }
