@@ -149,6 +149,15 @@ This is retryable delivery, not exactly-once native processing: `wcall_recv_msg`
 acknowledges enqueue and exposes no completion barrier. Recovery needs another
 push or host launch if the process dies before the platform reporting effect.
 
+Both AVS adapters resolve incoming callback references through the Call signal journal.
+The first ready start request matching the qualified conversation, caller, message second
+and caller client when supplied provides the stable presentation UUID. Repeated callbacks
+and new engine generations reuse that identity; an ended presentation stays ended.
+The NSE lookup is read-only. Only the full app engine changes ringing and termination state.
+AVS callbacks expose neither message ID nor session ID, so identical callback references
+cannot distinguish separate real calls; selection remains deterministic rather than advancing
+through tied signals.
+
 The sample [KaliumNSECallKitReporter.swift](host/KaliumNSECallKitReporter.swift)
 remains available for legacy hosts. Its payload differs from wire-android's host
 contract and must not be connected to the new parser.

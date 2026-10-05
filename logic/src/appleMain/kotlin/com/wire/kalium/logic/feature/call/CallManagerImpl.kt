@@ -58,6 +58,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -67,6 +68,7 @@ import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedC
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.sync.receiving.IncomingCallReference
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.logic.util.ServerTimeHandlerImpl
 import com.wire.kalium.messaging.sending.MessageSender
@@ -584,11 +586,7 @@ internal class CallManagerImpl internal constructor(
                     isCbrEnabled = kaliumConfigs.forceConstantBitrateCalls
                 )
                 val presentation = signalJournal?.incoming(
-                    target.value,
-                    target.domain,
-                    caller.value,
-                    caller.domain,
-                    messageTime.toLong(),
+                    IncomingCallReference(target.toDao(), caller.toDao(), clientId, messageTime.toLong()),
                     shouldRing,
                     video,
                     signalGeneration

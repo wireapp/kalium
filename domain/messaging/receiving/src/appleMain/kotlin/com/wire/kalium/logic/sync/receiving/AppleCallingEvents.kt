@@ -31,7 +31,8 @@ internal suspend fun evaluateCallingEvents(
 ): List<ReceivedCallResult> {
     if (events.isEmpty()) return emptyList()
     currentCoroutineContext().ensureActive()
-    val journal = CallSignalJournal(database).signals()
+    val signalJournal = CallSignalJournal(database)
+    val journal = signalJournal.signals()
     val messageIds = events.map { it.messageId }.toSet()
     journal.filter { it.messageId in messageIds }.forEach {
         platform.Foundation.NSLog("CALL_FLOW signal=${it.id} stage=durable_ready")
@@ -110,7 +111,14 @@ internal suspend fun evaluateCallingEvents(
         val name = if (!canPreview) null else if (conversation.type.isGroup) conversation.name else {
             database.userDAO.getNameAndHandle(QualifiedIDEntity(result.callerValue, result.callerDomain))?.name ?: conversation.name
         }
-        val source = journal.lastOrNull {
+        val source = if (result.type == ReceivedCallType.INCOMING) signalJournal.incomingSource(
+            IncomingCallReference(
+                QualifiedIDEntity(result.conversationValue, result.conversationDomain),
+                QualifiedIDEntity(result.callerValue, result.callerDomain),
+                result.callerClientId,
+                result.messageTimeSeconds,
+            )
+        ) else journal.lastOrNull {
             it.messageId in messageIds &&
                 (result.callerClientId == null || it.senderClientId == result.callerClientId) &&
                 it.conversationValue == result.conversationValue && it.conversationDomain == result.conversationDomain &&

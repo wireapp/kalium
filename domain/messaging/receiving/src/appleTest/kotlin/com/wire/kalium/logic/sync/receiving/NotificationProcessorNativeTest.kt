@@ -3171,6 +3171,39 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun sameSecondNSEAndFullEngineReferencesKeepTheFirstStartIdentity() = runTest {
+        for (mls in listOf(false, true)) withContext(Dispatchers.Default) {
+            withFixture(mls) { fixture ->
+                val now = Clock.System.now()
+                val time = kotlin.time.Instant.fromEpochMilliseconds(now.toEpochMilliseconds() / 1000 * 1000)
+                val notification = fixture.batch("notification",
+                    fixture.event("first-start", fixture.encrypt("first-start", fixture.callContent()), time = time),
+                    fixture.event("repeated-start", fixture.encrypt("repeated-start", fixture.callContent()), time = time))
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.receive(listOf(notification), notification.id))
+                val incoming = fixture.receivedCalls.filter { it.type == ReceivedCallType.INCOMING && it.shouldRing }
+                assertTrue(incoming.isNotEmpty())
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val journal = CallSignalJournal(runtime.database)
+                    val first = journal.signals().first()
+                    incoming.forEach { call ->
+                        val reference = IncomingCallReference(
+                            com.wire.kalium.persistence.dao.QualifiedIDEntity(call.conversationValue, call.conversationDomain),
+                            com.wire.kalium.persistence.dao.QualifiedIDEntity(call.callerValue, call.callerDomain),
+                            call.callerClientId, call.messageTimeSeconds,
+                        )
+                        assertEquals(first.id, call.handoffId)
+                        assertEquals(call.handoffId, journal.incoming(reference, true, false, "engine-one")?.id)
+                        assertEquals(call.handoffId, journal.incoming(reference, true, false, "engine-one")?.id)
+                        assertEquals(call.handoffId, journal.incoming(reference, true, false, "engine-two")?.id)
+                    }
+                    assertEquals(1, journal.presentations().size)
+                })
+            }
+        }
+    }
+
+    @Test
     fun callPresentationReplayPreservesTerminalTombstonesAndNextCallIdentity() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(false) { fixture ->
@@ -3181,8 +3214,8 @@ class NotificationProcessorNativeTest {
                     val journal = CallSignalJournal(runtime.database)
                     val original = journal.signals().single()
                     suspend fun incoming(generation: String, seconds: Long) = journal.incoming(
-                        CONVERSATION_ID.value, CONVERSATION_ID.domain, SENDER.value, SENDER.domain,
-                        seconds, true, false, generation)
+                        IncomingCallReference(CONVERSATION_ID, SENDER.toDao(), SENDER_CLIENT, seconds),
+                        true, false, generation)
                     val one = checkNotNull(incoming("engine-one", original.timeMillis / 1000))
                     journal.closed(CONVERSATION_ID.value, CONVERSATION_ID.domain, 5)
                     val next = journal.append(ReceivedCallEvent(original.payload, CONVERSATION_ID, SENDER.toDao(), SENDER_CLIENT,

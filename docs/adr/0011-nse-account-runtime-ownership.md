@@ -138,6 +138,12 @@ The [coverage table](../NSE_IMPLEMENTATION_STATUS.md#current-coverage) names rem
 native, backend and consumer dependencies. Terminal cleanup and destructive MLS replay cannot be enabled by discarding
 their required effects. Incoming calling uses the iOS branch’s presentation flow:
 collect committed signals through the target, evaluate one AVS batch after sync,
-and return its callbacks to the Swift CallKit reporter. As with ordinary alerts,
-interruption after processing can lose presentation; no durable call queue or
-exactly-once reporting is claimed. The host awaits reporting before completion.
+and return its callbacks to the Swift CallKit reporter. Committed signals are retained
+in the existing account Call signal journal for replay through the full app engine.
+Both AVS adapters use the journal's first ready start matching the incoming callback
+reference, including caller client when supplied. Native generations do not advance
+selection through tied starts. The NSE lookup is read-only; the full app engine owns
+ringing and termination, and replay preserves terminal presentations. Identical callback
+references cannot distinguish separate real calls because AVS exposes no message or
+session identity. As with ordinary alerts, interruption after processing can lose
+presentation; exactly-once reporting is not claimed. The host awaits reporting before completion.

@@ -16,6 +16,7 @@ import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvide
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.receiving.CallSignalStore
 import com.wire.kalium.logic.sync.receiving.CallSignalRecord
+import com.wire.kalium.logic.sync.receiving.IncomingCallReference
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import dev.mokkery.MockMode
@@ -109,7 +110,11 @@ class CallManagerIncomingLifecycleTest {
                             val index = signals.indexOfFirst { record -> record.id == it.arg<String>(0) }
                             signals[index] = signals[index].copy(submittedGeneration = it.arg(1))
                         }
-                        everySuspend { journal.incoming(any(), any(), any(), any(), any(), any(), any(), any()) } returns null
+                        val incomingReferences = Channel<IncomingCallReference>(Channel.UNLIMITED)
+                        everySuspend { journal.incoming(any(), any(), any(), any()) } calls {
+                            incomingReferences.send(it.arg(0))
+                            null
+                        }
                         everySuspend { journal.closed(any(), any(), any()) } returns null
                         manager.attachSignalJournal(journal)
                         try {
@@ -126,6 +131,10 @@ class CallManagerIncomingLifecycleTest {
                             }
                             receive(start, false, false, session, 0)
                             assertEquals(CallStatus.INCOMING, withTimeout(5000) { states.receive() })
+                            assertEquals(
+                                IncomingCallReference(conversation.toDao(), peer.toDao(), "def0", now.epochSeconds),
+                                withTimeout(5000) { incomingReferences.receive() },
+                            )
                             val end = when (termination) {
                                 "answer" -> start
                                 "reject" -> "REJECT"

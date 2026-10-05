@@ -3,6 +3,7 @@ package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -52,20 +53,23 @@ internal data class CallSignalJournalState(
     @SerialName("presentations") val presentations: List<CallPresentationRecord> = emptyList(),
 )
 
-/** Persistence boundary used by the full engine, independently of its native handle lifetime. */
+/** Native callback evidence; equal references can describe more than one stored start request. */
+data class IncomingCallReference(
+    val conversation: QualifiedIDEntity,
+    val caller: QualifiedIDEntity,
+    val callerClientId: String?,
+    val messageTimeSeconds: Long,
+)
+
+/** Durable signaling and presentation decisions, independently of the native handle lifetime. */
 interface CallSignalStore {
     suspend fun signals(): List<CallSignalRecord>
     suspend fun presentations(): List<CallPresentationRecord>
     suspend fun append(event: ReceivedCallEvent): CallSignalRecord
     suspend fun submitted(id: String, generation: String)
 
-    @Suppress("LongParameterList") // Mirrors the native incoming-call callback.
     suspend fun incoming(
-        conversationValue: String,
-        conversationDomain: String,
-        callerValue: String,
-        callerDomain: String,
-                         seconds: Long,
+        reference: IncomingCallReference,
         ring: Boolean,
         video: Boolean,
         generation: String
@@ -83,6 +87,10 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
     override suspend fun presentations(): List<CallPresentationRecord> = read(database.metadataDAO).presentations
     fun observePresentations() = database.metadataDAO.observeSerializable(KEY, CallSignalJournalState.serializer())
         .map { it?.presentations.orEmpty() }.distinctUntilChanged()
+
+    /** Read-only NSE lookup. The full engine alone changes ringing and termination state. */
+    suspend fun incomingSource(reference: IncomingCallReference): CallSignalRecord? =
+        read(database.metadataDAO).incomingSource(reference)
 
     override suspend fun append(event: ReceivedCallEvent): CallSignalRecord = database.writeMessageEffects {
         val record = append(metadata, event)
@@ -112,44 +120,51 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         )
     }
 
-    @Suppress("CyclomaticComplexMethod") // Keep presentation selection in one database transaction.
     override suspend fun incoming(
-        conversationValue: String,
-        conversationDomain: String,
-        callerValue: String,
-        callerDomain: String,
-        seconds: Long,
+        reference: IncomingCallReference,
         ring: Boolean,
         video: Boolean,
         generation: String,
     ): CallPresentationRecord? = database.writeMessageEffects {
         val state = read(metadata)
-        val current = state.presentations.lastOrNull {
-            it.conversationValue == conversationValue && it.conversationDomain == conversationDomain
-        }
-        val source = state.signals.firstOrNull {
-            it.incomingGeneration != generation && it.isStartRequest() &&
-                it.conversationValue == conversationValue && it.conversationDomain == conversationDomain &&
-                it.senderValue == callerValue && it.senderDomain == callerDomain && it.timeMillis / MILLISECONDS_PER_SECOND == seconds
-        }
-        // AVS can repeat an incoming callback for an existing call. Its first accepted
-        // signaling row supplies the stable CallKit UUID, never the conversation or sessid.
-        val existing = state.presentations.find { it.id == source?.id }
+        val source = state.incomingSource(reference) ?: return@writeMessageEffects null
+        val existing = state.presentations.find { it.id == source.id }
         val presentation = when {
-            !ring && current != null -> current.copy(ringing = false)
+            !ring && existing != null -> existing.copy(ringing = false)
             existing != null -> existing // A replay cannot resurrect a completed presentation.
-            source != null -> CallPresentationRecord(source.id, conversationValue, conversationDomain, source.timeMillis, ring, video)
-            else -> current
-        } ?: return@writeMessageEffects null
+            else -> CallPresentationRecord(
+                source.id,
+                source.conversationValue,
+                source.conversationDomain,
+                source.timeMillis,
+                ring,
+                video,
+            )
+        }
+        // Native close callbacks carry only the conversation. Keep incoming callback order,
+        // including replay, so closing an old replay cannot end a newer stored presentation.
         write(
             metadata,
             state.copy(
-            signals = state.signals.map { if (it.id == source?.id) it.copy(incomingGeneration = generation) else it },
-            presentations = state.presentations.filterNot { it.id == presentation.id } + presentation,
-        )
+                signals = state.signals.map { if (it.id == source.id) it.copy(incomingGeneration = generation) else it },
+                presentations = state.presentations.filterNot { it.id == presentation.id } + presentation,
+            )
         )
         presentation
     }
+
+    /**
+     * Both AVS adapters use the first ready start matching the callback evidence. Generations
+     * acknowledge native work, not a cursor through tied starts. AVS exposes neither message ID
+     * nor sessid, so identical references cannot distinguish separate real calls.
+     */
+    private fun CallSignalJournalState.incomingSource(reference: IncomingCallReference): CallSignalRecord? =
+        signals.firstOrNull {
+            it.ready && it.conversationValue == reference.conversation.value && it.conversationDomain == reference.conversation.domain &&
+                it.senderValue == reference.caller.value && it.senderDomain == reference.caller.domain &&
+                (reference.callerClientId == null || it.senderClientId == reference.callerClientId) &&
+                it.timeMillis / MILLISECONDS_PER_SECOND == reference.messageTimeSeconds && it.isStartRequest()
+        }
 
     override suspend fun closed(
         conversationValue: String,
