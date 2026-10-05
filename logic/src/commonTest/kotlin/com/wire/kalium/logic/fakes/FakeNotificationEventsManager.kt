@@ -49,4 +49,6 @@ internal open class FakeNotificationEventsManager : NotificationEventsManager {
     override suspend fun scheduleRegularNotificationChecking() {}
 
     override suspend fun observeRegularNotificationsChecking(): Flow<Unit> = emptyFlow()
+
+    override suspend fun scheduleMeetingNotification(notification: LocalNotification.Meeting) {}
 }
