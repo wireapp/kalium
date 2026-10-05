@@ -972,6 +972,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getSetNewUserTrackingIdentifier ()Lcom/wire/kalium/logic/feature/analytics/SetNewUserTrackingIdentifierUseCase;
 	public final fun getSyncExecutor ()Lcom/wire/kalium/logic/sync/SyncExecutor;
 	public final fun getSyncManager ()Lcom/wire/kalium/logic/sync/SyncStateObserver;
+	public final fun getSyncMeetingsUseCase ()Lcom/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase;
 	public final fun getTeam ()Lcom/wire/kalium/logic/feature/team/TeamScope;
 	public final fun getUsers ()Lcom/wire/kalium/logic/feature/user/UserScope;
 	public final fun isE2EIEnabled ()Lcom/wire/kalium/logic/feature/user/IsE2EIEnabledUseCase;
@@ -5376,6 +5377,32 @@ public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase {
 	public abstract fun invoke (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun isEnabled (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/SyncMeetingsUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase {

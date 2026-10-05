@@ -1467,6 +1467,32 @@ abstract interface com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenc
     abstract suspend fun invoke(kotlin/String): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.meeting/MeetingOccurrence?> // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase.invoke|invoke(kotlin.String){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase { // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase|null[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.invoke|invoke(){}[0]
+    abstract suspend fun isEnabled(): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.isEnabled|isEnabled(){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result { // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result { // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 abstract interface com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.meeting/UpsertMeeting): com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.meeting.UpsertMeeting){}[0]
 
@@ -5445,6 +5471,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-syncExecutor>(): com.wire.kalium.logic.sync/SyncExecutor // com.wire.kalium.logic.feature/UserSessionScope.syncExecutor.<get-syncExecutor>|<get-syncExecutor>(){}[0]
     final val syncManager // com.wire.kalium.logic.feature/UserSessionScope.syncManager|{}syncManager[0]
         final fun <get-syncManager>(): com.wire.kalium.logic.sync/SyncStateObserver // com.wire.kalium.logic.feature/UserSessionScope.syncManager.<get-syncManager>|<get-syncManager>(){}[0]
+    final val syncMeetingsUseCase // com.wire.kalium.logic.feature/UserSessionScope.syncMeetingsUseCase|{}syncMeetingsUseCase[0]
+        final fun <get-syncMeetingsUseCase>(): com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase // com.wire.kalium.logic.feature/UserSessionScope.syncMeetingsUseCase.<get-syncMeetingsUseCase>|<get-syncMeetingsUseCase>(){}[0]
     final val team // com.wire.kalium.logic.feature/UserSessionScope.team|{}team[0]
         final fun <get-team>(): com.wire.kalium.logic.feature.team/TeamScope // com.wire.kalium.logic.feature/UserSessionScope.team.<get-team>|<get-team>(){}[0]
     final val users // com.wire.kalium.logic.feature/UserSessionScope.users|{}users[0]
