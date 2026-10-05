@@ -29,6 +29,10 @@ data class ReceivedCallResult(
     val closeReason: Int? = null,
     val callerName: String? = null,
     val handoffId: String? = null,
+    val shouldNotify: Boolean = false,
+    val conversationName: String? = null,
+    val senderName: String? = null,
+    val isGroupConversation: Boolean = false,
 )
 
 data class ReceivedCallEvent(

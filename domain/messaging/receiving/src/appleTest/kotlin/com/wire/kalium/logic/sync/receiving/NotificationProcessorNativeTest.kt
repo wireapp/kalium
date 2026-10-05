@@ -3248,7 +3248,30 @@ class NotificationProcessorNativeTest {
                 assertIs<Either.Right<*>>(fixture.receive(listOf(start, end), end.id))
                 assertEquals(listOf(ReceivedCallType.MISSED), fixture.receivedCalls.map { it.type })
                 assertFalse(fixture.receivedCalls.single().shouldRing)
+                assertTrue(fixture.receivedCalls.single().shouldNotify)
+                val missedId = fixture.receivedCalls.single().handoffId
+                assertNotNull(missedId)
+                assertIs<Either.Right<*>>(fixture.receive(listOf(start, end), end.id))
+                assertEquals(missedId, fixture.receivedCalls.single().handoffId)
+                assertFalse(fixture.receivedCalls.single().shouldNotify)
                 fixture.verifyStoredAndNext(next, "first", listOf("first"))
+            }
+        }
+    }
+
+    @Test
+    fun readingDuringRingingDoesNotHideTheLaterMissedCall() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) for (dateColumn in listOf("last_read_date", "last_notified_date")) withFixture(mls) { fixture ->
+                val now = Clock.System.now()
+                val startTime = Instant.fromEpochMilliseconds(now.toEpochMilliseconds() - 10_000)
+                fixture.sql("UPDATE Conversation SET $dateColumn = ${now.toEpochMilliseconds() - 5_000}")
+                val start = fixture.event("start", fixture.encrypt("start", fixture.callContent()), time = startTime)
+                val end = fixture.event("end", fixture.encrypt("end", fixture.callContent("CONFEND")), time = now)
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.receive(listOf(start, end), end.id))
+                assertEquals(ReceivedCallType.MISSED, fixture.receivedCalls.single().type)
+                assertTrue(fixture.receivedCalls.single().shouldNotify)
             }
         }
     }
@@ -8526,6 +8549,26 @@ class NotificationProcessorNativeTest {
     @Test
     fun ordinaryMetadataMLS() = ordinaryMetadata(true)
 
+    @Test
+    fun systemMetadataIsPersistedWithoutAnAlert() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+                fixture.sql("UPDATE Conversation SET type = 'GROUP'")
+                val metadata = fixture.batch("notification", *fixture.metadataEvents().toTypedArray())
+                fixture.releasePrepared()
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(
+                    fixture.receive(listOf(metadata), metadata.id)
+                ).value)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    for (id in listOf("notification", "notification:1", "notification:2")) {
+                        assertIs<MessageEntity.System>(runtime.database.messageDAO.getMessageById(id, CONVERSATION_ID))
+                    }
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(metadata.id)).isProcessed)
+                })
+            }
+        }
+    }
+
     private fun ordinaryMetadata(mls: Boolean) = runTest {
         withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
@@ -9650,6 +9693,47 @@ class NotificationProcessorNativeTest {
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
                 assertTrue(offline.requests.isEmpty())
                 fixture.verifyStoredAndNext(next, "first", listOf("earlier", "first"))
+            }
+        }
+    }
+
+    @Test
+    fun `unknown future event is silent and acknowledged for both protocols`() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+                val unknown = fixture.unknownEvent("unknown", "conversation.future-event")
+                fixture.releasePrepared()
+
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(
+                    fixture.receive(listOf(unknown), unknown.id, isolateConversations = true)
+                ).value)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(unknown.id)).isProcessed)
+                    assertNull(runtime.database.messageDAO.getMessageById(unknown.id, CONVERSATION_ID))
+                })
+            }
+        }
+    }
+
+    @Test
+    fun `unknown future event does not block later text for both protocols`() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+                val unknown = fixture.unknownEvent("unknown", "conversation.future-event")
+                val target = fixture.event("target", fixture.encrypt("target"))
+                fixture.releasePrepared()
+
+                assertEquals(
+                    "target",
+                    assertIs<Either.Right<ReceivedMessageResult?>>(
+                        fixture.receive(listOf(unknown, target), target.id, isolateConversations = true)
+                    ).value?.text
+                )
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(unknown.id)).isProcessed)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(target.id)).isProcessed)
+                    assertNotNull(runtime.database.messageDAO.getMessageById(target.id, CONVERSATION_ID))
+                })
             }
         }
     }
@@ -11835,6 +11919,12 @@ class NotificationProcessorNativeTest {
             )
             return EventResponseToStore(id, KtxSerializer.json.encodeToString(listOf(content)), false)
         }
+
+        fun unknownEvent(id: String, type: String) = EventResponseToStore(
+            id,
+            JsonArray(listOf(JsonObject(mapOf("type" to JsonPrimitive(type))))).toString(),
+            false,
+        )
 
         fun metadataEvents(target: QualifiedIDEntity = CONVERSATION_ID): List<EventResponseToStore> = listOf(
             EventContentDTO.Conversation.ConversationRenameDTO(

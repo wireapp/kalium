@@ -116,6 +116,12 @@ public data class KaliumNSECall(
     /** Null when the host privacy preference or verification state suppresses names. */
     public val callerName: String?,
     public val handoffId: String? = null,
+    /** Eligible, first presentation of a missed call; never controls incoming CallKit delivery. */
+    public val shouldNotify: Boolean = false,
+    public val mayPreview: Boolean = false,
+    public val conversationName: String? = null,
+    public val senderName: String? = null,
+    public val isGroupConversation: Boolean = false,
 )
 
 /** Bounded prepared-account receiving. Unsupported earlier work stops the attempt and preserves its processed marker. */
@@ -189,7 +195,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     )
 
     @Suppress("CyclomaticComplexMethod") // Maps optional receiving fields to the public result.
-    private fun success(result: ReceivedNotificationResult, showContent: Boolean): KaliumNSEResult {
+    internal fun success(result: ReceivedNotificationResult, showContent: Boolean): KaliumNSEResult {
         val message = result.message
         val canPreview = showContent && message?.shouldNotify == true && message.mayPreview
         val contentType = when (message?.type) {
@@ -209,7 +215,8 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 message.text.isNullOrEmpty() -> "NO_TEXT"
                 else -> "TEXT"
             },
-            contentType = contentType,
+            // A typed system label is also preview content, even when its text is null.
+            contentType = contentType.takeIf { canPreview } ?: KaliumNSEContentType.MESSAGE,
             conversationName = message?.conversationName?.takeIf { canPreview },
             senderName = message?.senderName?.takeIf { canPreview },
             isGroupConversation = canPreview && message?.isGroupConversation == true,
@@ -231,6 +238,11 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     closeReason = call.closeReason,
                     callerName = call.callerName?.takeIf { showContent },
                     handoffId = call.handoffId,
+                    shouldNotify = call.shouldNotify,
+                    mayPreview = showContent && call.shouldNotify,
+                    conversationName = call.conversationName?.takeIf { showContent && call.shouldNotify },
+                    senderName = call.senderName?.takeIf { showContent && call.shouldNotify },
+                    isGroupConversation = showContent && call.shouldNotify && call.isGroupConversation,
                 )
             },
         )

@@ -544,6 +544,9 @@ class NotificationProcessor(
             is EventContentDTO.User.NewLegalHoldRequestDTO,
             is EventContentDTO.User.LegalHoldEnabledDTO,
             is EventContentDTO.User.LegalHoldDisabledDTO -> emptyList()
+            // Match the app event mapper: an event type introduced by a newer backend is
+            // acknowledged without effects so it cannot hold up later supported events.
+            is EventContentDTO.Unknown -> emptyList()
             // Typing is transient app UI state; it must not hold up durable receiving.
             is EventContentDTO.Conversation.ConversationTypingDTO -> emptyList()
             is EventContentDTO.Conversation.AccessUpdate ->

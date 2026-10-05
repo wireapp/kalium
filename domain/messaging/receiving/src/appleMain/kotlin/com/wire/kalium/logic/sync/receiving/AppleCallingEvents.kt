@@ -14,11 +14,13 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 private const val MILLISECONDS_PER_SECOND = 1000L
 
@@ -99,8 +101,9 @@ internal suspend fun evaluateCallingEvents(
         processor.close()
     }
     currentCoroutineContext().ensureActive()
-    val away = database.userDAO.getUserDetailsByQualifiedID(self.toDao())?.availabilityStatus ==
-        com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity.AWAY
+    val availability = database.userDAO.getUserDetailsByQualifiedID(self.toDao())?.availabilityStatus
+    // Android timestamps the missed-call message when the outcome is handled, not when ringing started.
+    val notificationTime = Clock.System.now()
     return results.map { result ->
         val conversation = database.conversationDAO.getConversationById(
             QualifiedIDEntity(result.conversationValue, result.conversationDomain)
@@ -111,6 +114,8 @@ internal suspend fun evaluateCallingEvents(
         val name = if (!canPreview) null else if (conversation.type.isGroup) conversation.name else {
             database.userDAO.getNameAndHandle(QualifiedIDEntity(result.callerValue, result.callerDomain))?.name ?: conversation.name
         }
+        // Missed callbacks do not include a client or signaling message ID. Pin them to the
+        // first matching row in the full journal, so pending-batch narrowing cannot move identity.
         val source = if (result.type == ReceivedCallType.INCOMING) signalJournal.incomingSource(
             IncomingCallReference(
                 QualifiedIDEntity(result.conversationValue, result.conversationDomain),
@@ -118,21 +123,74 @@ internal suspend fun evaluateCallingEvents(
                 result.callerClientId,
                 result.messageTimeSeconds,
             )
-        ) else journal.lastOrNull {
-            it.messageId in messageIds &&
-                (result.callerClientId == null || it.senderClientId == result.callerClientId) &&
-                it.conversationValue == result.conversationValue && it.conversationDomain == result.conversationDomain &&
-                it.senderValue == result.callerValue && it.senderDomain == result.callerDomain &&
-                it.timeMillis / MILLISECONDS_PER_SECOND == result.messageTimeSeconds
-        }
-        platform.Foundation.NSLog("CALL_FLOW call=${source?.id ?: "none"} stage=nse_decision type=${result.type} ring=${result.shouldRing}")
+        ) else callSignalSource(journal, messageIds, result)
+        val missedClaimed = result.type == ReceivedCallType.MISSED && source != null &&
+            CallSignalJournal(database).claimMissedNotification(source.id)
+        val shouldNotify = missedClaimed && missedCallShouldNotify(
+            conversation = conversation,
+            self = self,
+            caller = QualifiedIDEntity(result.callerValue, result.callerDomain),
+            notificationTime = notificationTime,
+            availability = availability,
+        )
+        val senderName = if (result.type == ReceivedCallType.MISSED) {
+            database.userDAO.getNameAndHandle(QualifiedIDEntity(result.callerValue, result.callerDomain))?.name
+        } else null
+        platform.Foundation.NSLog(
+            "CALL_FLOW call=${source?.id ?: "none"} stage=nse_decision type=${result.type} " +
+                "ring=${result.shouldRing} notify=$shouldNotify"
+        )
         result.copy(
-            callerName = name,
+            callerName = if (result.type == ReceivedCallType.MISSED) null else name,
             handoffId = source?.id,
-            shouldRing = result.shouldRing && !away && conversation != null &&
-                conversation.mutedStatus != ConversationEntity.MutedStatus.ALL_MUTED
+            shouldRing = result.shouldRing && availability != UserAvailabilityStatusEntity.AWAY && conversation != null &&
+                conversation.mutedStatus != ConversationEntity.MutedStatus.ALL_MUTED,
+            shouldNotify = shouldNotify,
+            conversationName = if (result.type == ReceivedCallType.MISSED) conversation?.name else null,
+            senderName = senderName,
+            isGroupConversation = result.type == ReceivedCallType.MISSED && conversation?.type?.isGroup == true,
         )
     }
 }
+
+internal fun callSignalSource(
+    journal: List<CallSignalRecord>,
+    pendingMessageIds: Set<String>,
+    result: ReceivedCallResult,
+): CallSignalRecord? {
+    val matchesIdentity: (CallSignalRecord) -> Boolean = {
+        it.conversationValue == result.conversationValue && it.conversationDomain == result.conversationDomain &&
+            it.senderValue == result.callerValue && it.senderDomain == result.callerDomain &&
+            it.timeMillis / MILLISECONDS_PER_SECOND == result.messageTimeSeconds
+    }
+    return if (result.type == ReceivedCallType.MISSED) {
+        journal.firstOrNull(matchesIdentity)
+    } else {
+        journal.lastOrNull {
+            it.messageId in pendingMessageIds &&
+                (result.callerClientId == null || it.senderClientId == result.callerClientId) &&
+                matchesIdentity(it)
+        }
+    }
+}
+
+internal fun missedCallShouldNotify(
+    conversation: ConversationEntity?,
+    self: UserId,
+    caller: QualifiedIDEntity,
+    notificationTime: Instant,
+    availability: UserAvailabilityStatusEntity?,
+): Boolean = conversation != null &&
+    !conversation.archived &&
+    caller != self.toDao() &&
+    notificationTime > conversation.lastReadDate &&
+    conversation.lastNotificationDate?.let { notificationTime > it } != false &&
+    when (conversation.mutedStatus) {
+        ConversationEntity.MutedStatus.ALL_MUTED,
+        ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED -> false
+        ConversationEntity.MutedStatus.ALL_ALLOWED ->
+            availability !in setOf(UserAvailabilityStatusEntity.BUSY, UserAvailabilityStatusEntity.AWAY)
+        ConversationEntity.MutedStatus.MENTIONS_MUTED -> true
+    }
 
 private fun QualifiedIDEntity.avsId(): String = "$value@$domain"

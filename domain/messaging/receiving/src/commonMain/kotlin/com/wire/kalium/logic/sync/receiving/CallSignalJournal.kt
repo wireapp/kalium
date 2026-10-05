@@ -34,6 +34,7 @@ data class CallSignalRecord(
     @SerialName("submittedGeneration") val submittedGeneration: String? = null,
     @SerialName("incomingGeneration") val incomingGeneration: String? = null,
     @SerialName("ready") val ready: Boolean = false,
+    @SerialName("missedNotificationClaimed") val missedNotificationClaimed: Boolean = false,
 )
 
 @Serializable
@@ -120,6 +121,26 @@ class CallSignalJournal(private val database: UserDatabaseBuilder) : CallSignalS
         )
     }
 
+    /**
+     * Atomically consumes the one missed-call notification opportunity for this signal.
+     * Suppressed notifications are claimed too, so a later replay cannot alert under changed policy.
+     */
+    suspend fun claimMissedNotification(id: String): Boolean = database.writeMessageEffects {
+        val state = read(metadata)
+        val source = state.signals.firstOrNull { it.id == id }
+        if (source == null || source.missedNotificationClaimed) return@writeMessageEffects false
+        write(
+            metadata,
+            state.copy(
+                signals = state.signals.map {
+                    if (it.id == id) it.copy(missedNotificationClaimed = true) else it
+                }
+            )
+        )
+        true
+    }
+
+    @Suppress("CyclomaticComplexMethod") // Keep presentation selection in one database transaction.
     override suspend fun incoming(
         reference: IncomingCallReference,
         ring: Boolean,

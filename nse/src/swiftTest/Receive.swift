@@ -107,7 +107,8 @@ struct ReceiveFixture {
         func call(_ type: KaliumNSECallType, _ conversation: String, ring: Bool = false, reason: KotlinInt? = nil, domain: String = "example.com") -> KaliumNSECall {
             KaliumNSECall(type: type, conversationValue: conversation, conversationDomain: domain,
                           callerValue: "caller", callerDomain: "example.com", callerClientId: "client",
-                          messageTimeSeconds: 100, shouldRing: ring, isVideoCall: true, closeReason: reason, callerName: nil, handoffId: nil)
+                          messageTimeSeconds: 100, shouldRing: ring, isVideoCall: true, closeReason: reason, callerName: nil, handoffId: nil,
+                          shouldNotify: false, mayPreview: false, conversationName: nil, senderName: nil, isGroupConversation: false)
         }
         var payloads: [[String: Any]] = []
         let reporter = KaliumNSECallKitReporter { payload in
