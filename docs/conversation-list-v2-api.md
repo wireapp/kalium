@@ -77,6 +77,7 @@ public sealed interface ConversationListItem {
     public sealed interface Group : WithMessages {
         public val name: String?
         public val isSelfUserMember: Boolean
+        public val adminlessGroupDeletionTimestamp: Instant?
     }
 
     public data class RegularGroup(
@@ -88,6 +89,7 @@ public sealed interface ConversationListItem {
         override val legalHoldStatus: Conversation.LegalHoldStatus,
         override val unreadState: ConversationListUnreadState,
         override val preview: ConversationListPreview?,
+        override val adminlessGroupDeletionTimestamp: Instant? = null,
     ) : Group
 
     public data class Channel(
@@ -100,6 +102,7 @@ public sealed interface ConversationListItem {
         override val legalHoldStatus: Conversation.LegalHoldStatus,
         override val unreadState: ConversationListUnreadState,
         override val preview: ConversationListPreview?,
+        override val adminlessGroupDeletionTimestamp: Instant? = null,
     ) : Group
 
     public data class OneOnOne(
@@ -159,6 +162,7 @@ public data class ConversationListPreview(
 - Items are ordered by `activityTime DESC, conversationId ASC`.
 - `activityTime` is the stored `Conversation.last_modified_date`; V2 does not calculate it from messages.
 - A saved nonblank draft takes precedence over the latest displayable message.
+- Groups and channels expose `adminlessGroupDeletionTimestamp` independently of their preview and order. Reminder writes invalidate loaded pages using the existing last-message key; clearing messages does not remove the timestamp.
 - Archived rows have no draft or last-message preview, matching the legacy list.
 - V2 also subscribes to the `MessageDraft` notification key. Draft saves and deletions invalidate loaded pages so previews update without a client refresh on return.
 - The five unread counters remain distinct so Android can retain its existing badge priority and mute behavior.

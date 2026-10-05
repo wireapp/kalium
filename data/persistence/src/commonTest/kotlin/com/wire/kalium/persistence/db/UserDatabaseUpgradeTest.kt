@@ -55,7 +55,7 @@ abstract class UserDatabaseUpgradeTest {
             val builder = open()
             try {
                 val driver = builder.sqlDriver
-                assertEquals(listOf(listOf("153")), driver.rows("PRAGMA user_version", 1))
+                assertEquals(listOf(listOf("154")), driver.rows("PRAGMA user_version", 1))
                 driver.execute(null, "INSERT INTO User(qualified_id) VALUES ('creator@wire.test')", 0).await()
                 driver.execute(null, """
                     INSERT INTO Conversation(qualified_id, type, mls_group_state, protocol, creator_id,
@@ -86,7 +86,7 @@ abstract class UserDatabaseUpgradeTest {
             var generatedRows: List<List<String?>>
             try {
                 val driver = builder.sqlDriver
-                assertEquals(listOf(listOf("153")), driver.rows("PRAGMA user_version", 1), fixture)
+                assertEquals(listOf(listOf("154")), driver.rows("PRAGMA user_version", 1), fixture)
                 assertEquals(UserDatabase.Schema.version, UserDatabaseSchema.version)
                 assertEquals(listOf(listOf(tzid), listOf(tzid)), driver.rows("SELECT tzid FROM Meeting ORDER BY meeting_id", 1), fixture)
                 assertEquals(emptyList(), driver.rows("SELECT name FROM pragma_table_info('Meeting') WHERE name = 'trial'", 1))

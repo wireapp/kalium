@@ -120,3 +120,35 @@ fun conversationTyping(
         TypingIndicatorStatus.STOPPED -> Conversation.TypingIndicatorMode.STOPPED
     },
 )
+
+fun systemDeletedConversation(
+    id: String,
+    event: EventContentDTO.Conversation.SystemDeletedConversationDTO,
+) = Event.Conversation.DeletedConversation(
+    id = id,
+    conversationId = event.qualifiedConversation.toModel(),
+    senderUserId = event.qualifiedFrom?.toModel(),
+    dateTime = kotlin.time.Instant.parse(event.time),
+)
+
+fun adminlessDeleteReminder(
+    id: String,
+    event: EventContentDTO.Conversation.AdminlessDeleteReminderDTO,
+) = Event.Conversation.AdminlessDeleteReminder(
+    id = id,
+    conversationId = event.qualifiedConversation.toModel(),
+    senderUserId = event.qualifiedFrom.toModel(),
+    dateTime = event.time,
+    deletionScheduledFor = event.data.deletionScheduledFor,
+)
+
+fun adminlessDeleteReminder(
+    id: String,
+    event: EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO,
+) = Event.Conversation.AdminlessDeleteReminder(
+    id = id,
+    conversationId = event.qualifiedConversation.toModel(),
+    senderUserId = event.qualifiedFrom?.toModel(),
+    dateTime = event.time,
+    deletionScheduledFor = event.data.deletionScheduledFor,
+)

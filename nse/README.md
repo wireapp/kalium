@@ -215,7 +215,7 @@ signed-device host run.
 See [current coverage and exact dependencies](../docs/NSE_IMPLEMENTATION_STATUS.md)
 for event families, native constraints and remaining blockers. See
 [ADR 11](../docs/adr/0011-nse-account-runtime-ownership.md) for ownership, readiness
-and transaction decisions. Migration 149 drops the former receipt table; accounts
+and transaction decisions. Migration 150 drops the former receipt table; accounts
 must be prepared using the compatible current app schema.
 
 ## Verification

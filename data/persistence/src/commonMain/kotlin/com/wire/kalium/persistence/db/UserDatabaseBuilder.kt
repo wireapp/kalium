@@ -172,6 +172,7 @@ class UserDatabaseBuilder internal constructor(
 
     internal val database: UserDatabase = UserDatabase(
         driver = sqlDriver,
+        AdminlessGroupDeleteAdapter = TableMapper.adminlessGroupDeleteAdapter,
         CallAdapter = TableMapper.callAdapter,
         ClientAdapter = TableMapper.clientAdapter,
         ConnectionAdapter = TableMapper.connectionAdapter,

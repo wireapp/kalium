@@ -62,6 +62,7 @@ SELECT
     C.name,
     C.muted_status AS mutedStatus,
     C.legal_hold_status AS legalHoldStatus,
+    AdminlessGroupDelete.deletion_timestamp AS adminlessGroupDeletionTimestamp,
     C.channel_access AS channelAccess,
     EXISTS (SELECT 1 FROM Member WHERE conversation = C.qualified_id AND user = P.selfUserId AND role IS NOT NULL) AS isSelfUserMember,
     U.qualified_id AS otherUserId,
@@ -103,6 +104,7 @@ LEFT JOIN MessageDraft D ON D.conversation_id = P.qualified_id AND C.archived = 
 LEFT JOIN LastMessage L ON L.conversation_id = P.qualified_id AND C.archived = 0
 LEFT JOIN Message ON Message.id = L.message_id AND Message.conversation_id = P.qualified_id
 LEFT JOIN User Sender ON Sender.qualified_id = Message.sender_user_id
+LEFT JOIN AdminlessGroupDelete ON AdminlessGroupDelete.conversation_id = P.qualified_id
 LEFT JOIN MessageSystemContent SystemContent ON SystemContent.message_id = Message.id AND SystemContent.conversation_id = P.qualified_id
 LEFT JOIN MessageTextContent TextContent ON TextContent.message_id = Message.id AND TextContent.conversation_id = P.qualified_id
 LEFT JOIN MessageAssetContent AssetContent ON AssetContent.message_id = Message.id AND AssetContent.conversation_id = P.qualified_id
@@ -168,6 +170,7 @@ SELECT
     C.name,
     C.muted_status AS mutedStatus,
     C.legal_hold_status AS legalHoldStatus,
+    AdminlessGroupDelete.deletion_timestamp AS adminlessGroupDeletionTimestamp,
     C.channel_access AS channelAccess,
     EXISTS (SELECT 1 FROM Member WHERE conversation = C.qualified_id AND user = P.selfUserId AND role IS NOT NULL) AS isSelfUserMember,
     U.qualified_id AS otherUserId,
@@ -209,6 +212,7 @@ LEFT JOIN MessageDraft D ON D.conversation_id = P.qualified_id AND C.archived = 
 LEFT JOIN LastMessage L ON L.conversation_id = P.qualified_id AND C.archived = 0
 LEFT JOIN Message ON Message.id = L.message_id AND Message.conversation_id = P.qualified_id
 LEFT JOIN User Sender ON Sender.qualified_id = Message.sender_user_id
+LEFT JOIN AdminlessGroupDelete ON AdminlessGroupDelete.conversation_id = P.qualified_id
 LEFT JOIN MessageSystemContent SystemContent ON SystemContent.message_id = Message.id AND SystemContent.conversation_id = P.qualified_id
 LEFT JOIN MessageTextContent TextContent ON TextContent.message_id = Message.id AND TextContent.conversation_id = P.qualified_id
 LEFT JOIN MessageAssetContent AssetContent ON AssetContent.message_id = Message.id AND AssetContent.conversation_id = P.qualified_id

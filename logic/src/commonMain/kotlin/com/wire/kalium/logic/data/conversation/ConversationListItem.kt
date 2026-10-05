@@ -63,6 +63,7 @@ public sealed interface ConversationListItem {
     public sealed interface Group : WithMessages {
         public val name: String?
         public val isSelfUserMember: Boolean
+        public val adminlessGroupDeletionTimestamp: Instant?
     }
 
     public data class RegularGroup(
@@ -74,6 +75,7 @@ public sealed interface ConversationListItem {
         override val legalHoldStatus: Conversation.LegalHoldStatus,
         override val unreadState: ConversationListUnreadState,
         override val preview: ConversationListPreview?,
+        override val adminlessGroupDeletionTimestamp: Instant? = null,
     ) : Group
 
     public data class Channel(
@@ -86,6 +88,7 @@ public sealed interface ConversationListItem {
         override val legalHoldStatus: Conversation.LegalHoldStatus,
         override val unreadState: ConversationListUnreadState,
         override val preview: ConversationListPreview?,
+        override val adminlessGroupDeletionTimestamp: Instant? = null,
     ) : Group
 
     public data class OneOnOne(

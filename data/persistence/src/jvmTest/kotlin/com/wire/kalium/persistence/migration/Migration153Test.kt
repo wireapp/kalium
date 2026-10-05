@@ -13,7 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class Migration152Test {
+class Migration153Test {
     @Test
     fun existingMessagesSurviveMigrationAndIdentityFollowsEditsUsingIndexedForeignKey() = runTest {
         val file = File.createTempFile("notification-identity-migration-", ".db")
@@ -21,7 +21,7 @@ class Migration152Test {
         val driver = JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", SQLiteConfig().apply { enforceForeignKeys(true) }.toProperties())
         try {
             object : SuspendingTransacterImpl(driver) {}.transaction {
-                UserDatabase.Schema.awaitMigrate(driver, 124, 152)
+                UserDatabase.Schema.awaitMigrate(driver, 124, 153)
             }
             driver.execute(null, "INSERT INTO User(qualified_id) VALUES ('sender@domain')", 0)
             driver.execute(null, """
@@ -34,7 +34,7 @@ class Migration152Test {
                 VALUES ('original','conversation@domain','TEXT',100,'sender@domain','SENT','VISIBLE')
             """.trimIndent(), 0)
             object : SuspendingTransacterImpl(driver) {}.transaction {
-                UserDatabase.Schema.awaitMigrate(driver, 152, 153)
+                UserDatabase.Schema.awaitMigrate(driver, 153, 154)
             }
             assertEquals(listOf("original"), driver.strings("SELECT id FROM Message"))
             assertEquals(emptyList(), driver.strings("SELECT notification_message_id FROM MessageNotificationIdentity"))

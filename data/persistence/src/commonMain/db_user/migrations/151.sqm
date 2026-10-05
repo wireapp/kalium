@@ -1,9 +1,3 @@
-CREATE TABLE Subconversation (
-    conversation_id TEXT NOT NULL,
-    conversation_domain TEXT NOT NULL,
-    subconversation_id TEXT NOT NULL,
-    group_id TEXT NOT NULL,
-    PRIMARY KEY (conversation_id, conversation_domain, subconversation_id)
-);
-
-CREATE INDEX subconversation_group_id ON Subconversation(group_id);
+-- Pre-TZID recurring starts used the viewer's zone. Regenerate them from the meeting start in its stored zone.
+DELETE FROM MeetingOccurrence
+WHERE meeting_id IN (SELECT meeting_id FROM Meeting WHERE recurrence_frequency IS NOT NULL);

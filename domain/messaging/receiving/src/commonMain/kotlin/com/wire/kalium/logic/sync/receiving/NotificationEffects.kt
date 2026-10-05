@@ -328,6 +328,9 @@ internal class NotificationEffects(
         previousAccess: MessageEntity?,
     ) {
         when (event) {
+            is Event.Conversation.AdminlessDeleteReminder -> wrapStorageRequest {
+                conversations.insertAdminlessGroupDelete(event.conversationId.toDao(), event.deletionScheduledFor)
+            }
             is Event.Conversation.AccessUpdate -> wrapStorageRequest {
                 access.handle(event, previousAccess)
             }

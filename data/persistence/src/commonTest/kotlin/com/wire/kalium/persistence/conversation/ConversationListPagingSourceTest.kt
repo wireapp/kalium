@@ -223,6 +223,36 @@ class ConversationListPagingSourceTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun adminlessRemindersInvalidatePagesAndExposeTimestampInBothDirectionsAndSearch() = runTest(dispatcher) {
+        db.userDAO.upsertUser(newUserEntity(self))
+        for (type in listOf(ConversationEntity.Type.GROUP, ConversationEntity.Type.CHANNEL)) {
+            val conversation = group(id(1)).copy(type = type)
+            db.conversationDAO.insertConversation(conversation)
+            db.messageDAO.insertOrIgnoreMessage(newRegularMessageEntity(conversationId = conversation.id, senderUserId = self))
+            db.messageDraftDAO.upsertMessageDraft(newDraftMessageEntity(conversation.id))
+            val before = source()
+            val original = before.refresh().data.single()
+            assertNull(original.adminlessGroupDeletionTimestamp)
+            assertNotNull(original.lastMessage)
+            assertNotNull(original.draftText)
+            db.conversationDAO.insertAdminlessGroupDelete(conversation.id, time(20))
+            assertTrue(before.invalid)
+            val after = source().refresh().data.single()
+            assertEquals(time(20), after.adminlessGroupDeletionTimestamp)
+            assertEquals(original.position, after.position)
+            assertEquals(original.lastMessage, after.lastMessage)
+            assertEquals(original.draftText, after.draftText)
+            val newer = source().load(PagingSource.LoadParams.Prepend(
+                ConversationListPositionEntity(time(0), id(0)), 4, false,
+            )).page().data.single()
+            assertEquals(time(20), newer.adminlessGroupDeletionTimestamp)
+            val search = source(ConversationListQueryEntity(searchQuery = requireNotNull(conversation.name))).refresh().data.single()
+            assertEquals(time(20), search.adminlessGroupDeletionTimestamp)
+            db.conversationDAO.deleteConversationByQualifiedID(conversation.id)
+        }
+    }
+
+    @Test
     fun draftWritesInvalidateWhileFolderWritesDoNot() = runTest(dispatcher) {
         db.conversationDAO.insertConversation(group(id(1)))
         val source = source()

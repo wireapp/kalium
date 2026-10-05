@@ -60,7 +60,7 @@ class MessageTimelineMigrationTest {
             try {
                 if (upgrade) {
                     object : SuspendingTransacterImpl(driver) {}.transaction {
-                        UserDatabase.Schema.awaitMigrate(driver, 124, 145)
+                        UserDatabase.Schema.awaitMigrate(driver, 124, 146)
                     }
                 } else UserDatabase.Schema.awaitCreate(driver)
                 val self = newUserEntity("timeline-migration-self")
@@ -78,7 +78,7 @@ class MessageTimelineMigrationTest {
                     )
                 }
                 builder.messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = false)
-                if (upgrade) UserDatabase.Schema.awaitMigrate(driver, 145, UserDatabase.Schema.version)
+                if (upgrade) UserDatabase.Schema.awaitMigrate(driver, 146, UserDatabase.Schema.version)
 
                 definitions += driver.strings(
                     "SELECT sql FROM sqlite_master " +

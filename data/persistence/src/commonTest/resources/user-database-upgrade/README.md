@@ -4,6 +4,10 @@ These SQLite files were generated with the compiled production schema from the
 exact preceding Super Kalium commit
 `24f4a09e6b38af31b9bcb0d537f1f76b61958182`.
 
+Fixture names and stored versions describe that historical parent. They remain
+unchanged when current local migration files are renumbered; tests upgrade copies
+to the current schema.
+
 `fork149.db` uses that parent's `UserDatabase.Schema.create` through the
 SQLDelight JDBC automatic-open path. `fork143.db` through `fork148.db` start from
 that parent's checked-in schema 2 and run its generated migrations from 2 to the

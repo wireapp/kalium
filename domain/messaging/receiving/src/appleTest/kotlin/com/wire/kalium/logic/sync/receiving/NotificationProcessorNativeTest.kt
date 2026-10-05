@@ -2474,7 +2474,7 @@ class NotificationProcessorNativeTest {
     @Test
     fun memberRolesMLS() = memberRoles(true)
 
-    private fun memberRoles(mls: Boolean) = runTest {
+    private fun memberRoles(mls: Boolean, system: Boolean = false) = runTest {
         for (kind in listOf("member", "admin", "absent-member", "incomplete")) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 val member = if (kind == "absent-member") THIRD else SENDER
@@ -2484,7 +2484,7 @@ class NotificationProcessorNativeTest {
                     fixture.seedProteusConversation(target)
                     fixture.sql("UPDATE Conversation SET incomplete_metadata = 1 WHERE qualified_id = '$target'")
                 }
-                val event = fixture.memberRoleEvents(member, target)
+                val event = fixture.memberRoleEvents(member, target, system)
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id,
@@ -4227,13 +4227,16 @@ class NotificationProcessorNativeTest {
     @Test
     fun mlsConversationDeletionRetriesAfterCancellation() = mlsConversationDeletionRoundTrip(Interruption.CANCEL_BEFORE_COMMIT)
 
-    private fun mlsConversationDeletionRoundTrip(interruption: Interruption?) = runTest {
+    private fun mlsConversationDeletionRoundTrip(interruption: Interruption?, system: Boolean = false) = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
                 fixture.sql("UPDATE Conversation SET type = 'GROUP' WHERE qualified_id = '$CONVERSATION_ID'")
                 fixture.seedProteusConversation()
                 fixture.seedConversationCleanupFiles(CONVERSATION_ID)
-                val deleted = fixture.deletedConversationEvent(CONVERSATION_ID, sender = SELF)
+                val rawDeleted = fixture.deletedConversationEvent(CONVERSATION_ID, sender = SELF)
+                val deleted = if (system) rawDeleted.copy(payload = checkNotNull(rawDeleted.payload)
+                    .replace("conversation.delete", "conversation.system.delete")
+                    .replace("\"qualified_from\":{\"id\":\"${SELF.value}\",\"domain\":\"${SELF.domain}\"}", "\"qualified_from\":null")) else rawDeleted
                 val first = fixture.event("first", fixture.encrypt("first", protocolMLS = false),
                     protocolMLS = false, conversationId = DELETE_TARGET)
                 val second = fixture.event("second", fixture.encrypt("second", protocolMLS = false),
@@ -8691,6 +8694,58 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun adminlessRemindersPersistWithoutReplacingMessages() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) for (system in listOf(false, true)) withFixture(mls) { fixture ->
+                val event = fixture.batch("notification", fixture.adminlessReminder(system, TIME),
+                    fixture.event("first", fixture.encrypt("first")))
+                fixture.releasePrepared()
+                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id)).value?.text)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertEquals(TIME, runtime.database.conversationDAO.getConversationDetailsById(CONVERSATION_ID)
+                        ?.adminlessGroupDeletionTimestamp)
+                    assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
+                    assertNull(runtime.database.messageDAO.getMessageById("notification", CONVERSATION_ID))
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                })
+            }
+        }
+    }
+
+    @Test
+    fun adminlessReminderWriteFailureKeepsBothProtocolsPendingUntilRetry() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+                val event = fixture.batch("notification", fixture.event("first", fixture.encrypt("first")),
+                    fixture.adminlessReminder(true, TIME))
+                fixture.releasePrepared()
+                fixture.sql("CREATE TRIGGER fail_adminless BEFORE INSERT ON AdminlessGroupDelete " +
+                    "BEGIN SELECT RAISE(ABORT, 'reminder write failed'); END")
+                assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
+                    assertNull(runtime.database.conversationDAO.getConversationDetailsById(CONVERSATION_ID)?.adminlessGroupDeletionTimestamp)
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                })
+                fixture.sql("DROP TRIGGER fail_adminless")
+                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id)).value?.text)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertEquals(TIME, runtime.database.conversationDAO.getConversationDetailsById(CONVERSATION_ID)
+                        ?.adminlessGroupDeletionTimestamp)
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                })
+            }
+        }
+    }
+
+    @Test
+    fun systemMemberRolesMLS() = memberRoles(true, system = true)
+
+    @Test
+    fun systemMLSDeletionWithoutSenderReplaysNativeRollback() =
+        mlsConversationDeletionRoundTrip(Interruption.BEFORE_COMMIT, system = true)
+
+    @Test
     fun ordinaryMetadataProteus() = ordinaryMetadata(false)
 
     @Test
@@ -11276,6 +11331,14 @@ class NotificationProcessorNativeTest {
             sql("INSERT INTO PendingDeliveryConfirmations(conversation_id, message_id) VALUES('$target', 'remove-asset')")
         }
 
+        fun adminlessReminder(system: Boolean, deletionTime: Instant) = plainEvent("reminder", """{
+            "type":"conversation.${if (system) "system." else ""}adminless-reminder",
+            "conversation":"${CONVERSATION_ID.value}","from":"system","via":"system","team":"team",
+            "qualified_conversation":{"id":"${CONVERSATION_ID.value}","domain":"${CONVERSATION_ID.domain}"},
+            "qualified_from":${if (system) "null" else """{"id":"${SENDER.value}","domain":"${SENDER.domain}"}"""},
+            "time":"$TIME","data":{"deletion_scheduled_for":"$deletionTime"}
+        }""")
+
         fun deletedConversationEvent(target: QualifiedIDEntity = DELETE_TARGET, meeting: Boolean = false, sender: UserId = SENDER) = plainEvent("delete-conversation",
             """{"type":"conversation.${if (meeting) "delete-meeting" else "delete"}",
             "qualified_conversation":{"id":"${target.value}","domain":"${target.domain}"},
@@ -12372,9 +12435,12 @@ class NotificationProcessorNativeTest {
             })
         }
 
-        fun memberRoleEvent(role: String?, member: UserId = SENDER, target: QualifiedIDEntity = CONVERSATION_ID) = plainEvent("role",
-            """{"type":"conversation.member-update","qualified_conversation":{"id":"${target.value}","domain":"${target.domain}"},
-            "qualified_from":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},"from":"${SENDER.value}","time":"$TIME",
+        fun memberRoleEvent(role: String?, member: UserId = SENDER, target: QualifiedIDEntity = CONVERSATION_ID,
+            system: Boolean = false) = plainEvent("role",
+            """{"type":"conversation.${if (system) "system." else ""}member-update",
+            "qualified_conversation":{"id":"${target.value}","domain":"${target.domain}"},
+            "qualified_from":${if (system) "null" else """{"id":"${SENDER.value}","domain":"${SENDER.domain}"}"""},
+            "from":"${SENDER.value}","time":"$TIME",
             "data":{"target":"${member.value}","qualified_target":{"id":"${member.value}","domain":"${member.domain}"},
             "conversation_role":${role?.let { "\"$it\"" } ?: "null"},"otr_muted_ref":null,"otr_muted_status":null,"otr_archived":null,"otr_archived_ref":null}}""")
 
@@ -12384,10 +12450,12 @@ class NotificationProcessorNativeTest {
             "data":{"target":"${SELF.value}","qualified_target":{"id":"${SELF.value}","domain":"${SELF.domain}"},
             "conversation_role":null,"otr_muted_ref":null,"otr_muted_status":3,"otr_archived":null,"otr_archived_ref":null}}""")
 
-        suspend fun memberRoleEvents(member: UserId = SENDER, target: QualifiedIDEntity = CONVERSATION_ID) = batch("notification",
-            event("prefix", encrypt("prefix")), memberRoleEvent("custom-role", member, target), memberRoleEvent("wire_admin", member, target),
-            memberRoleEvent("wire_admin", member, target), memberRoleEvent("wire_member", member, target), memberRoleEvent("wire_admin", member, target),
-            memberRoleEvent("custom-final", member, target), event("first", encrypt("first")))
+        suspend fun memberRoleEvents(member: UserId = SENDER, target: QualifiedIDEntity = CONVERSATION_ID,
+            system: Boolean = false) = batch("notification",
+            event("prefix", encrypt("prefix")), memberRoleEvent("custom-role", member, target, system),
+            memberRoleEvent("wire_admin", member, target, system), memberRoleEvent("wire_admin", member, target, system),
+            memberRoleEvent("wire_member", member, target, system), memberRoleEvent("wire_admin", member, target, system),
+            memberRoleEvent("custom-final", member, target, system), event("first", encrypt("first")))
 
         suspend fun verifyPromotion(runtime: AppleAccountRuntime, id: String, member: UserId, target: QualifiedIDEntity = CONVERSATION_ID) {
             val message = assertIs<MessageEntity.System>(runtime.database.messageDAO.getMessageById(id, target))

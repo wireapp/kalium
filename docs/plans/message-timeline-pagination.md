@@ -8,7 +8,7 @@ Client adoption and performance measurements are pending. No speedup has been me
 - `MessageScope.openMessageTimeline` opens an account/conversation-scoped generation with concrete
   requests, pages, and results. `MessageScope.getPaginatedFlowOfMessageListItems` provides the Paging adapter.
 - `MessageTimeline.sq` selects eligible keys using the stored timestamp and SQLite's binary ID order.
-  Migration 145 adds the key view and conversation/date/ID index. Existing indexes remain available.
+  Migration 146 adds the key view and conversation/date/ID index. Existing indexes remain available.
 - Page assembly loads scalar display rows, batches child collections and users, and hydrates no
   full messages or `UserDetails`. Related-user bindings are chunked at 500 IDs.
 - A session registers dependencies before its first read, keeps them for every retained page,

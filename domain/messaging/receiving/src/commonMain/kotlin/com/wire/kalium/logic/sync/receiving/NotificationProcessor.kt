@@ -30,6 +30,8 @@ import com.wire.kalium.logic.data.event.conversationAccessUpdate
 import com.wire.kalium.logic.data.event.conversationCodeUpdated
 import com.wire.kalium.logic.data.event.conversationCodeDeleted
 import com.wire.kalium.logic.data.event.conversationChannelPermissionUpdate
+import com.wire.kalium.logic.data.event.adminlessDeleteReminder
+import com.wire.kalium.logic.data.event.systemDeletedConversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.conversationMemberJoin
 import com.wire.kalium.logic.data.event.conversationMemberLeave
@@ -48,6 +50,7 @@ import com.wire.kalium.logic.data.event.updateUserProperties
 import com.wire.kalium.logic.data.event.userUpdate
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -407,6 +410,7 @@ class NotificationProcessor(
                     // SQL can commit before native rollback. The durable identity survives that gap.
                     payload.filter {
                         it is EventContentDTO.Conversation.DeletedConversationDTO ||
+                            it is EventContentDTO.Conversation.SystemDeletedConversationDTO ||
                             it is EventContentDTO.Conversation.DeletedMeetingConversationDTO
                     }.forEach { recovery.resumeDeletion(mlsContext, ReceivedPayloadIdentity(eventId, it)) }
                     recovery.recordProcessed(
@@ -456,17 +460,25 @@ class NotificationProcessor(
         ) == true
         // The outer Proteus transaction can roll back after MLS commits. Advance it even on effects replay.
         if (effectsProcessed && content !is EventContentDTO.Conversation.NewMessageDTO) return@flatMapIndexed emptyList()
+        val memberUpdateEvent = when (content) {
+            is EventContentDTO.Conversation.MemberUpdateDTO ->
+                conversationMemberUpdate(metadataSystemMessageId(eventId, index), content)
+            is EventContentDTO.Conversation.SystemMemberUpdateDTO ->
+                conversationMemberUpdate(metadataSystemMessageId(eventId, index), content)
+            else -> null
+        }
         val metadataId = when (content) {
             is EventContentDTO.Conversation.ConversationRenameDTO -> content.qualifiedConversation
             is EventContentDTO.Conversation.ReceiptModeUpdate -> content.qualifiedConversation
             is EventContentDTO.Conversation.MessageTimerUpdate -> content.qualifiedConversation
             is EventContentDTO.Conversation.MemberLeaveDTO -> content.qualifiedConversation
-            is EventContentDTO.Conversation.MemberUpdateDTO -> when (
-                conversationMemberUpdate(metadataSystemMessageId(eventId, index), content)
-            ) {
+            is EventContentDTO.Conversation.AdminlessDeleteReminderDTO -> content.qualifiedConversation
+            is EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO -> content.qualifiedConversation
+            is EventContentDTO.Conversation.MemberUpdateDTO,
+            is EventContentDTO.Conversation.SystemMemberUpdateDTO -> when (memberUpdateEvent) {
                 is Event.Conversation.MemberChanged.IgnoredMemberChanged,
                 is Event.Conversation.MemberChanged.MemberChangedRole -> null
-                else -> content.qualifiedConversation
+                else -> checkNotNull(memberUpdateEvent).conversationId.toApi()
             }
             else -> null
         }
@@ -515,6 +527,16 @@ class NotificationProcessor(
                     ?: return@flatMapIndexed emptyList()
                 metadata + mlsHandler.decrypt(context, event, metadataSystemMessageId(eventId, index))
             }
+            is EventContentDTO.Conversation.AdminlessDeleteReminderDTO ->
+                listOf(ReceivedPayload.Metadata(adminlessDeleteReminder(eventId, content)))
+            is EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO ->
+                listOf(ReceivedPayload.Metadata(adminlessDeleteReminder(eventId, content)))
+            is EventContentDTO.Conversation.SystemDeletedConversationDTO -> listOf(
+                ReceivedPayload.Deletion(
+                    systemDeletedConversation(metadataSystemMessageId(eventId, index), content),
+                    preparedDeletionGroupId = prepareDeletion(eventId, content, content.qualifiedConversation.toModel(), mlsContext),
+                )
+            )
             is EventContentDTO.Conversation.DeletedConversationDTO -> listOf(
                 ReceivedPayload.Deletion(
                     Event.Conversation.DeletedConversation(
@@ -578,19 +600,17 @@ class NotificationProcessor(
                 listOf(ReceivedPayload.Metadata(conversationReceiptModeUpdate(eventId, content, index)))
             is EventContentDTO.Conversation.MessageTimerUpdate ->
                 listOf(ReceivedPayload.Metadata(conversationMessageTimerUpdate(eventId, content, index)))
-            is EventContentDTO.Conversation.MemberUpdateDTO -> {
-                val event = conversationMemberUpdate(metadataSystemMessageId(eventId, index), content)
-                when (event) {
-                    is Event.Conversation.MemberChanged.MemberChangedRole -> {
-                        diagnostics?.stage = "EVENT_FETCH_CONVERSATION"
-                        val metadata = conversations.fetchMissingConversation(event.conversationId, mlsContext)
-                            ?: return@flatMapIndexed emptyList()
-                        // Compare the old role before the fetched member list is persisted.
-                        listOf(ReceivedPayload.MemberRole(event, (metadata.singleOrNull() as? ReceivedPayload.Creation)?.creation))
-                    }
-                    is Event.Conversation.MemberChanged.IgnoredMemberChanged -> emptyList()
-                    else -> listOf(ReceivedPayload.Metadata(event))
+            is EventContentDTO.Conversation.MemberUpdateDTO,
+            is EventContentDTO.Conversation.SystemMemberUpdateDTO -> when (val event = checkNotNull(memberUpdateEvent)) {
+                is Event.Conversation.MemberChanged.MemberChangedRole -> {
+                    diagnostics?.stage = "EVENT_FETCH_CONVERSATION"
+                    val metadata = conversations.fetchMissingConversation(event.conversationId, mlsContext)
+                        ?: return@flatMapIndexed emptyList()
+                    // Compare the old role before the fetched member list is persisted.
+                    listOf(ReceivedPayload.MemberRole(event, (metadata.singleOrNull() as? ReceivedPayload.Creation)?.creation))
                 }
+                is Event.Conversation.MemberChanged.IgnoredMemberChanged -> emptyList()
+                else -> listOf(ReceivedPayload.Metadata(event))
             }
             is EventContentDTO.User.UpdateDTO -> {
                 val event = userUpdate(selfUserId, eventId, content)

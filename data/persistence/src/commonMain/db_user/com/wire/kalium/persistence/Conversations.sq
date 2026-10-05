@@ -61,6 +61,13 @@ CREATE TABLE ConversationLegalHoldStatusChangeNotified (
 
 CREATE INDEX conversation_list_recency ON Conversation(last_modified_date DESC, qualified_id ASC);
 
+CREATE TABLE AdminlessGroupDelete (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    deletion_timestamp INTEGER AS Instant NOT NULL,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 -- Optimise comparisons and sorting by dates:
 CREATE INDEX conversation_modified_date_index ON Conversation(last_modified_date);
 CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date);
@@ -103,6 +110,12 @@ deleteConversation {
 DELETE FROM PendingDeliveryConfirmations WHERE conversation_id = :conversationId;
 DELETE FROM Conversation WHERE qualified_id = :conversationId;
 }
+
+insertAdminlessGroupDelete:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Conversation
+INSERT OR IGNORE INTO AdminlessGroupDelete(conversation_id, deletion_timestamp)
+VALUES (?, ?);
 
 setDeletedLocally:
 -- @NotifyCustomKey conversation_list_membership

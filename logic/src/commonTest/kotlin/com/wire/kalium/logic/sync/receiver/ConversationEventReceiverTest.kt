@@ -28,6 +28,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.DeleteConversationReminderEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSResetConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -541,6 +542,7 @@ class ConversationEventReceiverTest {
         val newMessageEventHandler = mock<NewMessageEventHandler>()
         val newConversationEventHandler = mock<NewConversationEventHandler>()
         val deletedConversationEventHandler = mock<DeletedConversationEventHandler>()
+        val deleteConversationReminderEventHandler = mock<DeleteConversationReminderEventHandler>()
         val typingIndicatorHandler = mock<TypingIndicatorHandler>()
         val protocolUpdateEventHandler = mock<ProtocolUpdateEventHandler>()
         val channelAddPermissionUpdateEventHandler = mock<ChannelAddPermissionUpdateEventHandler>()
@@ -553,6 +555,7 @@ class ConversationEventReceiverTest {
             newMessageHandler = newMessageEventHandler,
             newConversationHandler = newConversationEventHandler,
             deletedConversationHandler = deletedConversationEventHandler,
+            deleteConversationReminderEventHandler = deleteConversationReminderEventHandler,
             memberJoinHandler = memberJoinEventHandler,
             memberLeaveHandler = memberLeaveEventHandler,
             memberChangeHandler = memberChangeEventHandler,
@@ -583,9 +586,10 @@ class ConversationEventReceiverTest {
             everySuspend { newMessageEventHandler.flushPendingSideEffects() } returns Unit
             everySuspend { newConversationEventHandler.handle(any(), any()) } returns Unit
             everySuspend { deletedConversationEventHandler.handle(any(), any()) } returns Unit
+            everySuspend { deleteConversationReminderEventHandler.handle(any()) } returns Unit
             everySuspend { memberJoinEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { memberLeaveEventHandler.handle(any(), any()) } returns Either.Right(Unit)
-            everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Unit
+            everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { mlsWelcomeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { renamedConversationEventHandler.handle(any()) } returns Either.Right(Unit)
             everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Either.Right(Unit)

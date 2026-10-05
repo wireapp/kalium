@@ -105,7 +105,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
         }
 
         // This local migration must also repair databases that already applied upstream's TZID migration.
-        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 150, 151)
+        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 151, 152)
         assertEquals(emptyList(), occurrencesFor(series))
         assertEquals(oneTimeOccurrences, occurrencesFor(oneTime))
         meetingDao.upsertMeetings(listOf(series, oneTime), window)
@@ -141,7 +141,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
         meetingsQueries.insertMeetingOccurrence(
             "legacy-upcoming", series.meetingId, Instant.parse("2026-10-25T08:00:00Z"), Instant.parse("2026-10-25T09:00:00Z"),
         )
-        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 150, 151)
+        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 151, 152)
 
         // Load locally before any meeting sync. Starts overlapping the list boundary must not consume its count.
         val pagingSource = meetingDao.getPaginatedMeetingOccurrenceDetails(
@@ -184,7 +184,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
                     )
                     insertMeetingWithoutOccurrences(series)
                     meetingsQueries.insertMeetingOccurrence("legacy-${series.meetingId.value}", series.meetingId, ongoing, ongoing + 1.hours)
-                    UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 150, 151)
+                    UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 151, 152)
 
                     val id = checkNotNull(meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(series.meetingId, request.first))
                     val occurrence = checkNotNull(meetingDao.getMeetingOccurrenceDetailsFlow(id).first()).occurrence
@@ -212,7 +212,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
             oneTimeMeetings, GenerationLimit.Window(Instant.parse("2026-10-25T00:00:00Z"), Instant.parse("2026-11-10T00:00:00Z")),
         )
         val preserved = oneTimeMeetings.associate { it.meetingId to occurrencesFor(it) }
-        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 150, 151)
+        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 151, 152)
 
         val page = firstLocalPage(Instant.parse("2026-10-25T00:00:00Z"))
         assertContentEquals(
@@ -230,7 +230,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
         )
         insertMeetingDependencies(series)
         insertMeetingWithoutOccurrences(series)
-        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 150, 151)
+        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 151, 152)
         val nextId = checkNotNull(meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(series.meetingId, Instant.parse("2026-10-26T12:00:00Z")))
         assertEquals(Instant.parse("2026-10-27T09:00:00Z"), occurrencesFor(series).single().occurrence_start)
 
@@ -260,7 +260,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
         )
         insertMeetingDependencies(series)
         insertMeetingWithoutOccurrences(series)
-        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 150, 151)
+        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 151, 152)
         val from = Instant.parse("2026-10-25T00:00:00Z")
         val page = firstLocalPage(from)
         assertEquals(Instant.parse("2026-10-25T23:00:00Z"), page.data.first().occurrence.occurrenceStart)

@@ -58,6 +58,21 @@ class ConversationListItemMapperTest {
     )
 
     @Test
+    fun pendingDeletionIsMappedForBothGroupTypesWithoutChangingTheirPreviewOrPosition() {
+        val timestamp = Instant.parse("2026-10-10T12:00:00Z")
+        for (type in listOf(ConversationEntity.Type.GROUP, ConversationEntity.Type.CHANNEL)) {
+            val before = assertIs<ConversationListItem.Group>(mapper.fromListItemEntity(row.copy(type = type)))
+            val after = assertIs<ConversationListItem.Group>(mapper.fromListItemEntity(row.copy(
+                type = type, adminlessGroupDeletionTimestamp = timestamp,
+            )))
+            assertNull(before.adminlessGroupDeletionTimestamp)
+            assertEquals(timestamp, after.adminlessGroupDeletionTimestamp)
+            assertEquals(before.preview, after.preview)
+            assertEquals(before.position, after.position)
+        }
+    }
+
+    @Test
     fun savedDraftTakesPrecedenceOverTheLastMessage() {
         val result = assertIs<ConversationListItem.RegularGroup>(mapper.fromListItemEntity(row.copy(draftText = "Unsent")))
         assertEquals(MessagePreviewContent.Draft("Unsent"), result.preview?.content)

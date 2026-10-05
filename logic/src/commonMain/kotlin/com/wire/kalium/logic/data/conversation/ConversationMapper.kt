@@ -150,7 +150,8 @@ internal class ConversationMapperImpl(
             archivedDateTime = archivedDateTime,
             mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
             proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus),
-            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus)
+            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus),
+            adminlessGroupDeletionTimestamp = adminlessGroupDeletionTimestamp,
         )
     }
 
@@ -185,7 +186,8 @@ internal class ConversationMapperImpl(
             archivedDateTime = archivedDateTime,
             mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
             proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus),
-            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus)
+            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus),
+            adminlessGroupDeletionTimestamp = adminlessGroupDeletionTimestamp,
         )
     }
 
@@ -362,12 +364,14 @@ internal class ConversationMapperImpl(
         }
         when (type) {
             ConversationEntity.Type.GROUP ->
-                ConversationListItem.RegularGroup(id, time, name, isSelfUserMember, muted, legalHold, unread, preview)
+                ConversationListItem.RegularGroup(
+                    id, time, name, isSelfUserMember, muted, legalHold, unread, preview, adminlessGroupDeletionTimestamp,
+                )
             ConversationEntity.Type.CHANNEL -> ConversationListItem.Channel(
                 id, time, name, isSelfUserMember,
                 if (channelAccess == ConversationEntity.ChannelAccess.PUBLIC) ConversationListChannelAccess.PUBLIC
                 else ConversationListChannelAccess.PRIVATE,
-                muted, legalHold, unread, preview,
+                muted, legalHold, unread, preview, adminlessGroupDeletionTimestamp,
             )
             ConversationEntity.Type.ONE_ON_ONE ->
                 ConversationListItem.OneOnOne(id, time, requireNotNull(user), muted, legalHold, unread, preview)

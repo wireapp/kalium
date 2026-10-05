@@ -5,64 +5,72 @@
  */
 package com.wire.kalium.logic.data.event
 
-import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
+import com.wire.kalium.logic.data.conversation.ConversationRoleMapperImpl
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import kotlin.time.Instant
 
 fun conversationMemberUpdate(
     id: String,
     event: EventContentDTO.Conversation.MemberUpdateDTO,
-    roleMapper: com.wire.kalium.logic.data.conversation.ConversationRoleMapper =
-        com.wire.kalium.logic.data.conversation.ConversationRoleMapperImpl(),
-): Event.Conversation.MemberChanged = if (event.roleChange.role?.isNotEmpty() == true) {
-    Event.Conversation.MemberChanged.MemberChangedRole(
+    roleMapper: ConversationRoleMapper = ConversationRoleMapperImpl(),
+): Event.Conversation.MemberChanged = memberUpdate(id, event.qualifiedConversation.toModel(), event.time, event.roleChange, roleMapper)
+
+fun conversationMemberUpdate(
+    id: String,
+    event: EventContentDTO.Conversation.SystemMemberUpdateDTO,
+    roleMapper: ConversationRoleMapper = ConversationRoleMapperImpl(),
+): Event.Conversation.MemberChanged = memberUpdate(id, event.qualifiedConversation.toModel(), event.time, event.roleChange, roleMapper)
+
+private fun memberUpdate(
+    id: String,
+    conversationId: ConversationId,
+    time: String,
+    roleChange: ConversationRoleChange,
+    roleMapper: ConversationRoleMapper,
+): Event.Conversation.MemberChanged = when {
+    roleChange.role?.isNotEmpty() == true -> Event.Conversation.MemberChanged.MemberChangedRole(
         id = id,
-        conversationId = event.qualifiedConversation.toModel(),
-        dateTime = Instant.parse(event.time),
-        member = com.wire.kalium.logic.data.conversation.Conversation.Member(
-            id = event.roleChange.qualifiedUserId.toModel(),
-            role = roleMapper.fromApi(event.roleChange.role.orEmpty()),
-        ),
+        conversationId = conversationId,
+        dateTime = Instant.parse(time),
+        member = Conversation.Member(roleChange.qualifiedUserId.toModel(), roleMapper.fromApi(roleChange.role.orEmpty())),
     )
-} else conversationPreferenceUpdate(id, event)
+    else -> preferenceUpdate(id, conversationId, time, roleChange)
+}
 
 /** The app dispatches role changes before reaching these preference-only variants. */
 fun conversationPreferenceUpdate(
     id: String,
-    eventContentDTO: EventContentDTO.Conversation.MemberUpdateDTO
+    event: EventContentDTO.Conversation.MemberUpdateDTO,
 ): Event.Conversation.MemberChanged {
-    require(eventContentDTO.roleChange.role.isNullOrEmpty()) { "Membership role update requires processing" }
-    return when {
-        eventContentDTO.roleChange.mutedStatus != null -> {
-            Event.Conversation.MemberChanged.MemberMutedStatusChanged(
-                id = id,
-                conversationId = eventContentDTO.qualifiedConversation.toModel(),
-                mutedConversationChangedTime = eventContentDTO.roleChange.mutedRef
-                    ?.let(Instant::parse)
-                    ?: Instant.parse(eventContentDTO.time),
-                mutedConversationStatus = mapConversationMutedStatus(eventContentDTO.roleChange.mutedStatus)
-            )
-        }
+    require(event.roleChange.role.isNullOrEmpty()) { "Membership role update requires processing" }
+    return preferenceUpdate(id, event.qualifiedConversation.toModel(), event.time, event.roleChange)
+}
 
-        eventContentDTO.roleChange.isArchiving != null -> {
-            Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
-                id = id,
-                conversationId = eventContentDTO.qualifiedConversation.toModel(),
-                archivedConversationChangedTime = eventContentDTO.roleChange.archivedRef
-                    ?.let(Instant::parse)
-                    ?: Instant.parse(eventContentDTO.time),
-                isArchiving = eventContentDTO.roleChange.isArchiving ?: false
-            )
-        }
-
-        else -> {
-            Event.Conversation.MemberChanged.IgnoredMemberChanged(
-                id,
-                eventContentDTO.qualifiedConversation.toModel(),
-            )
-        }
-    }
+private fun preferenceUpdate(
+    id: String,
+    conversationId: ConversationId,
+    time: String,
+    roleChange: ConversationRoleChange,
+): Event.Conversation.MemberChanged = when {
+    roleChange.mutedStatus != null -> Event.Conversation.MemberChanged.MemberMutedStatusChanged(
+        id = id,
+        conversationId = conversationId,
+        mutedConversationChangedTime = roleChange.mutedRef?.let(Instant::parse) ?: Instant.parse(time),
+        mutedConversationStatus = mapConversationMutedStatus(roleChange.mutedStatus),
+    )
+    roleChange.isArchiving != null -> Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
+        id = id,
+        conversationId = conversationId,
+        archivedConversationChangedTime = roleChange.archivedRef?.let(Instant::parse) ?: Instant.parse(time),
+        isArchiving = roleChange.isArchiving ?: false,
+    )
+    else -> Event.Conversation.MemberChanged.IgnoredMemberChanged(id, conversationId)
 }
 
 @Suppress("MagicNumber")

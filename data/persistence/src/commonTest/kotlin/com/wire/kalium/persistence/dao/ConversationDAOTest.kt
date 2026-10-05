@@ -842,6 +842,34 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 assertNull(result)
             }
         }
+
+    @Test
+    fun adminlessDeletionIsObservedFirstWriteWinsAndSurvivesOnlyContentClearing() = runTest(dispatcher) {
+        val conversation = newConversationEntity("adminless")
+        val user = newUserEntity("adminless")
+        val message = newRegularMessageEntity(conversationId = conversation.id, senderUserId = user.id)
+        val timestamp = Instant.parse("2026-08-30T12:00:00Z")
+        conversationDAO.insertConversation(conversation)
+        userDAO.upsertUser(user)
+        messageDAO.insertOrIgnoreMessage(message)
+
+        conversationDAO.observeConversationDetailsById(conversation.id).test {
+            assertNull(awaitItem()?.adminlessGroupDeletionTimestamp)
+            conversationDAO.insertAdminlessGroupDelete(conversation.id, timestamp)
+            assertEquals(timestamp, awaitItem()?.adminlessGroupDeletionTimestamp)
+            cancelAndIgnoreRemainingEvents()
+        }
+        conversationDAO.insertAdminlessGroupDelete(conversation.id, Instant.parse("2026-09-01T12:00:00Z"))
+        assertEquals(timestamp, conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp)
+
+        conversationDAO.clearContent(conversation.id)
+        assertNull(messageDAO.getMessageById(message.id, conversation.id))
+        assertEquals(timestamp, conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp)
+
+        conversationDAO.deleteConversationByQualifiedID(conversation.id)
+        conversationDAO.insertConversation(conversation)
+        assertNull(conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp)
+    }
 // Mateusz : This test is failing because of some weird issue, I do not want to block this feature
 // Therefore I will comment it, I am in very unstable and low bandwith internet now and to run test
 // I need new version of xCode which will take me ages to download untill I am home from the trip

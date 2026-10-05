@@ -95,7 +95,8 @@ internal class EventMapper(
             is EventContentDTO.Conversation.NewConversationDTO -> newConversation(id, eventContentDTO)
             is EventContentDTO.Conversation.MemberJoinDTO -> conversationMemberJoin(id, eventContentDTO, payloadIndex)
             is EventContentDTO.Conversation.MemberLeaveDTO -> conversationMemberLeave(id, eventContentDTO, payloadIndex)
-            is EventContentDTO.Conversation.MemberUpdateDTO -> memberUpdate(id, eventContentDTO)
+            is EventContentDTO.Conversation.MemberUpdateDTO -> conversationMemberUpdate(id, eventContentDTO, roleMapper)
+            is EventContentDTO.Conversation.SystemMemberUpdateDTO -> conversationMemberUpdate(id, eventContentDTO, roleMapper)
             is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
             is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
             is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
@@ -110,6 +111,9 @@ internal class EventMapper(
             is EventContentDTO.Unknown -> unknown(id, eventContentDTO)
             is EventContentDTO.Conversation.AccessUpdate -> conversationAccessUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.DeletedConversationDTO -> deletedConversation(id, eventContentDTO)
+            is EventContentDTO.Conversation.SystemDeletedConversationDTO -> systemDeletedConversation(id, eventContentDTO)
+            is EventContentDTO.Conversation.AdminlessDeleteReminderDTO -> adminlessDeleteReminder(id, eventContentDTO)
+            is EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO -> adminlessDeleteReminder(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, payloadIndex)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO)
             is EventContentDTO.User.UpdateDTO -> userUpdate(selfUserId, id, eventContentDTO)
@@ -275,11 +279,6 @@ internal class EventMapper(
         groupID = GroupID(eventContentDTO.data.groupId),
         newGroupID = GroupID(eventContentDTO.data.newGroupId),
     )
-
-    private fun memberUpdate(
-        id: String,
-        eventContentDTO: EventContentDTO.Conversation.MemberUpdateDTO,
-    ): Event.Conversation.MemberChanged = conversationMemberUpdate(id, eventContentDTO, roleMapper)
 
     private fun deletedConversation(
         id: String,
