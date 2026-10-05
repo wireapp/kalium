@@ -28,7 +28,7 @@ internal interface CellAttachmentsRepository {
     suspend fun getAssetPath(assetId: String): Either<StorageFailure, String?>
     suspend fun setAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
     suspend fun getAttachment(assetId: String): Either<StorageFailure, MessageAttachment>
-    suspend fun savePreviewUrl(assetId: String, url: String?): Either<StorageFailure, Unit>
+    suspend fun savePreviewUrl(assetId: String, url: String?, conversationId: String?): Either<StorageFailure, Unit>
     suspend fun saveLocalPath(assetId: String, path: String?): Either<StorageFailure, Unit>
 
     @Suppress("LongParameterList")

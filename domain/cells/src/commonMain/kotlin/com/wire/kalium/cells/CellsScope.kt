@@ -21,6 +21,7 @@ import com.wire.kalium.cells.data.CellAttachmentsDataSource
 import com.wire.kalium.cells.data.CellConfigDataSource
 import com.wire.kalium.cells.data.CellConversationDataSource
 import com.wire.kalium.cells.data.CellFileDataSource
+import com.wire.kalium.cells.data.CellUploadCoordinatorImpl
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.CellUsersDataSource
 import com.wire.kalium.cells.data.CellsApiImpl
@@ -34,6 +35,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConfigRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellFileRepository
+import com.wire.kalium.cells.domain.CellUploadCoordinator
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsApi
@@ -60,6 +62,8 @@ import com.wire.kalium.cells.domain.usecase.GetCellConversationsPagedUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellGroupConversationsUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetPdfPreviewUrlUseCase
+import com.wire.kalium.cells.domain.usecase.GetPdfPreviewUrlUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellGroupConversationsUseCaseImpl
@@ -272,6 +276,14 @@ public class CellsScope(
         )
     }
 
+    public val uploadCoordinator: CellUploadCoordinator by lazy {
+        CellUploadCoordinatorImpl(
+            uploadManager = uploadManager,
+            cellsRepository = cellsRepository,
+            scope = this,
+        )
+    }
+
     public val addAttachment: AddAttachmentDraftUseCase by lazy {
         AddAttachmentDraftUseCaseImpl(uploadManager, cellsConversationRepository, messageAttachmentsDraftRepository, this)
     }
@@ -427,6 +439,10 @@ public class CellsScope(
 
     public val getEditorUrl: GetEditorUrlUseCase by lazy {
         GetEditorUrlUseCaseImpl(cellsRepository)
+    }
+
+    public val getPdfPreviewUrl: GetPdfPreviewUrlUseCase by lazy {
+        GetPdfPreviewUrlUseCaseImpl(cellsRepository)
     }
 
     public val getNodeVersions: GetNodeVersionsUseCase by lazy {
