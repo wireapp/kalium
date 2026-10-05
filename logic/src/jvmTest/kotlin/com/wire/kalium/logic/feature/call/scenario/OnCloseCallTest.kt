@@ -354,6 +354,30 @@ class OnCloseCallTest {
             }
         }
 
+    @Test
+    fun givenMeeting_whenCancelled_thenDoNotPersistMissedCall() =
+        verifyMeetingClose(CallClosedReason.CANCELLED, CallStatus.MISSED)
+
+    @Test
+    fun givenMeeting_whenClosedWithoutJoining_thenDoNotPersistMissedCall() =
+        verifyMeetingClose(CallClosedReason.NORMAL, CallStatus.CLOSED)
+
+    private fun verifyMeetingClose(reason: CallClosedReason, expectedStatus: CallStatus) = testScope.runTest {
+        val (arrangement, onCloseCall) = Arrangement(testScope)
+            .withGetCallMetadata(callMetadata.copy(conversationType = Conversation.Type.Group.Meeting))
+            .arrange()
+
+        onCloseCall.onClosedCall(reason.avsValue, conversationIdString, time, userIdString, clientId, null)
+        yield()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.callRepository.persistMissedCall(conversationId)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callRepository.updateCallStatusById(conversationId, expectedStatus)
+        }
+    }
+
     private class Arrangement(val testScope: TestScope) {
         val callRepository: CallRepository = mock<CallRepository>(mode = MockMode.autoUnit)
         val networkStateObserver = mock<NetworkStateObserver>(mode = MockMode.autoUnit)

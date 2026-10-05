@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.calling.AppleAvsBridge
 import com.wire.kalium.calling.AppleAvsCallbacks
+import com.wire.kalium.calling.CallClosedReason
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
@@ -138,6 +139,56 @@ class CallManagerStartupTest {
         assertEquals(CallStatus.STARTED, f.metadata?.callStatus)
         verify(VerifyMode.exactly(1)) { f.avs.startCall(any(), any(), any(), any(), any(), any()) }
         manager.cancelJobs()
+    }
+
+    @Test
+    fun cancelledMeetingDoesNotPersistMissedCall() = verifyClose(CallClosedReason.CANCELLED, CallStatus.MISSED)
+
+    @Test
+    fun meetingClosedWithoutJoiningDoesNotPersistMissedCall() = verifyClose(CallClosedReason.NORMAL, CallStatus.CLOSED)
+
+    private fun verifyClose(reason: CallClosedReason, expectedStatus: CallStatus) = runTest {
+        val cases = listOf(
+            Conversation.Type.Group.Meeting to false,
+            Conversation.Type.Group.Regular to true,
+            Conversation.Type.OneOnOne to true,
+            null to (reason == CallClosedReason.CANCELLED)
+        )
+        for ((type, persistMissedCall) in cases) {
+            val fixture = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+            fixture.metadata = type?.let {
+                TestCall.oneOnOneCallMetadata().copy(
+                    callStatus = CallStatus.INCOMING,
+                    establishedTime = null,
+                    conversationType = it,
+                    protocol = if (it == Conversation.Type.Group.Meeting) Conversation.ProtocolInfo.MLS(
+                        GroupID("meeting"),
+                        Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                        1uL,
+                        Instant.DISTANT_PAST,
+                        CipherSuite.fromTag(1)
+                    ) else Conversation.ProtocolInfo.Proteus
+                )
+            }
+            val manager = fixture.manager()
+            try {
+                manager.waitUntilInitialized()
+                fixture.callbacks.onClosedCall(reason.avsValue, "call@example.com", 1u, "caller@example.com", "client")
+                runCurrent()
+
+                verifySuspend(VerifyMode.exactly(if (persistMissedCall) 1 else 0)) {
+                    fixture.repository.persistMissedCall(CONVERSATION)
+                }
+                verifySuspend(VerifyMode.exactly(1)) {
+                    fixture.repository.updateCallStatusById(CONVERSATION, expectedStatus)
+                }
+                if (type == Conversation.Type.Group.Meeting) {
+                    verifySuspend(VerifyMode.exactly(1)) { fixture.repository.leaveMlsConference(CONVERSATION) }
+                }
+            } finally {
+                manager.cancelJobs()
+            }
+        }
     }
 
     private suspend fun CallManager.start() = startCall(CONVERSATION, CallType.AUDIO, ConversationTypeCalling.OneOnOne, false, false)

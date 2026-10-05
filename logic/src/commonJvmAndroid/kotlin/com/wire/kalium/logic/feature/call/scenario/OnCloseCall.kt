@@ -106,9 +106,10 @@ internal class OnCloseCall(
     }
 
     private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean =
-        when (callStatus) {
-            CallStatus.MISSED -> true
-            CallStatus.CLOSED -> callMetadata?.callStatus?.let { currentCallStatus ->
+        when {
+            callMetadata?.conversationType == Conversation.Type.Group.Meeting -> false
+            callStatus == CallStatus.MISSED -> true
+            callStatus == CallStatus.CLOSED -> callMetadata?.callStatus?.let { currentCallStatus ->
                 callMetadata.establishedTime == null &&
                         currentCallStatus != CallStatus.CLOSED_INTERNALLY &&
                         currentCallStatus != CallStatus.REJECTED &&

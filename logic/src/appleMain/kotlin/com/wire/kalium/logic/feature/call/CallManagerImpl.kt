@@ -795,9 +795,10 @@ internal class CallManagerImpl internal constructor(
         }
     }
 
-    private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean = when (callStatus) {
-        CallStatus.MISSED -> true
-        CallStatus.CLOSED -> callMetadata?.let { metadata ->
+    private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean = when {
+        callMetadata?.conversationType == Conversation.Type.Group.Meeting -> false
+        callStatus == CallStatus.MISSED -> true
+        callStatus == CallStatus.CLOSED -> callMetadata?.let { metadata ->
             metadata.establishedTime == null &&
                     metadata.callStatus != CallStatus.CLOSED_INTERNALLY &&
                     metadata.callStatus != CallStatus.REJECTED &&
