@@ -352,7 +352,7 @@ class NotificationProcessor(
         canDefer: Boolean = false,
         crossesGap: Boolean = false,
     ): NotificationEffectsResult {
-        val users = MembershipUserLoader(database.userDAO, userDetailsApi, teamsApi, selfUserId)
+        val users = MembershipUserLoader(database.userDAO, userDetailsApi, teamsApi, selfUserId, database.clientDAO)
         val conversations = ReceivedConversationHandler(database, selfUserId, users, conversationApi)
         val mlsHandler = ReceivedMLSHandler(database, selfUserId, conversations, recovery)
         val oneOnOnes = ReceivedOneOnOneHandler(selfUserId, conversations, users, mlsHandler)

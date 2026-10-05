@@ -28,8 +28,11 @@ import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.isTeamMember
+import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 
 /** Required profile reads precede the atomic write; mapping and persistence are shared with the app. */
 internal class MembershipUserLoader(
@@ -37,6 +40,7 @@ internal class MembershipUserLoader(
     private val api: UserDetailsApi?,
     private val teamsApi: TeamsApi?,
     private val selfUserId: UserId,
+    private val clients: ClientDAO,
 ) {
     private val loaded = mutableMapOf<UserId, UserEntity>()
     private val removedIds = mutableSetOf<UserId>()
@@ -132,6 +136,14 @@ internal class MembershipUserLoader(
         profiles: List<com.wire.kalium.network.api.model.UserProfileDTO>,
         allowFetchFailure: Boolean = false,
     ): UserProfiles {
+        for (profile in profiles) {
+            val cached = clients.getClientsOfUserByQualifiedID(profile.id.toModel().toDao())
+                .any { it.deviceType == DeviceTypeEntity.LegalHold }
+            // The app refreshes clients and writes required history before persisting a changed profile.
+            if (cached != (profile.legalHoldStatus == LegalHoldStatusDTO.ENABLED)) {
+                throw NotificationAppHandoff(NotificationAppWork.LEGAL_HOLD)
+            }
+        }
         val selfTeam = users.getUserDetailsByQualifiedID(selfUserId.toDao())?.team
         val teamMembers = if (profiles.any { it.isTeamMember(selfTeam, selfUserId.domain) }) {
             val result = fetchProfileTeamMembers(

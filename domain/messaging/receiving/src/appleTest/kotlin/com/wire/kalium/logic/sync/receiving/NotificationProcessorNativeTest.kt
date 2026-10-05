@@ -6687,7 +6687,7 @@ class NotificationProcessorNativeTest {
             for (protocols in listOf("proteus", "")) withFixture(false, newConversation = true) { fixture ->
                 val response = fixture.creationResponse().copy(type = ConversationResponse.Type.ONE_TO_ONE)
                 val profiles = KtxSerializer.json.decodeFromString<ListUsersDTO>(
-                    """{"found":[{"qualified_id":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},"id":"${SENDER.value}","name":"Peer","accent_id":1,"assets":[],"legalhold_status":"enabled","supported_protocols":${if (protocols.isEmpty()) "[]" else "[\"proteus\"]"}}],"failed":[]}"""
+                    """{"found":[{"qualified_id":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},"id":"${SENDER.value}","name":"Peer","accent_id":1,"assets":[],"legalhold_status":"disabled","supported_protocols":${if (protocols.isEmpty()) "[]" else "[\"proteus\"]"}}],"failed":[]}"""
                 )
                 val event = fixture.batch("notification", fixture.creationEvent(response = response),
                     fixture.event("text", fixture.encrypt("first")))
@@ -8235,7 +8235,7 @@ class NotificationProcessorNativeTest {
                 val profiles = KtxSerializer.json.decodeFromString<ListUsersDTO>(
                     """{"found":[{"qualified_id":{"id":"${SENDER.value}","domain":"${SENDER.domain}"},
                     "id":"${SENDER.value}","name":"Fetched sender","handle":"sender","accent_id":0,
-                    "assets":[],"deleted":false,"legalhold_status":"enabled","supported_protocols":["proteus","mls"]}],"failed":[]}"""
+                    "assets":[],"deleted":false,"legalhold_status":"disabled","supported_protocols":["proteus","mls"]}],"failed":[]}"""
                 )
                 fixture.sql("CREATE TRIGGER fail_profile BEFORE UPDATE ON User WHEN NEW.name = 'Fetched sender' BEGIN SELECT RAISE(ABORT, 'profile write failed'); END")
                 assertIs<Either.Left<*>>(fixture.receive(emptyList(), "notification", fetchProfiles = { profiles }))
@@ -9647,6 +9647,53 @@ class NotificationProcessorNativeTest {
                         assertEquals(listOf("first"), runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })
                     }
                 )
+            }
+        }
+    }
+
+    @Test
+    fun legalHoldProfileHandoffPreservesRawEventAndCrypto() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) for (isolated in listOf(false, true)) for (enabled in listOf(true, false)) {
+                withFixture(mls) { fixture ->
+                    val event = fixture.batch("notification", fixture.event("prefix", fixture.encrypt("prefix")),
+                        fixture.connectionEvent("pending", peer = SENDER), fixture.event("text", fixture.encrypt("first")))
+                    val profile = fixture.connectionProfile(SENDER.toApi()).copy(legalHoldStatus =
+                        if (enabled) com.wire.kalium.network.api.model.LegalHoldStatusDTO.ENABLED
+                        else com.wire.kalium.network.api.model.LegalHoldStatusDTO.DISABLED)
+                    fixture.releasePrepared()
+                    suspend fun cache(hasLegalHold: Boolean) {
+                        assertIs<Either.Right<*>>(fixture.open { runtime ->
+                            runtime.database.clientDAO.deleteClientsOfUserByQualifiedID(SENDER.toDao())
+                            if (hasLegalHold) runtime.database.clientDAO.insertClient(com.wire.kalium.persistence.dao.client.InsertClientParam(
+                                SENDER.toDao(), "legal-hold", com.wire.kalium.persistence.dao.client.DeviceTypeEntity.LegalHold,
+                                com.wire.kalium.persistence.dao.client.ClientTypeEntity.LegalHold,
+                                null, null, null, null, null, false, false))
+                        })
+                    }
+                    cache(!enabled)
+                    assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id,
+                        fetchConnectionPeer = { profile }, isolateConversations = isolated))
+                    assertEquals(NotificationAppWork.LEGAL_HOLD, fixture.receivedAppWork)
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                        assertNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
+                        assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
+                    })
+                    assertIs<Either.Right<*>>(fixture.receive(emptyList(), event.id,
+                        fetchConnectionPeer = { profile }, isolateConversations = isolated))
+                    assertEquals(NotificationAppWork.LEGAL_HOLD, fixture.receivedAppWork)
+                    // Model app completion of the client refresh, then retry the same native ciphertext.
+                    cache(enabled)
+                    assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(
+                        fixture.receive(emptyList(), event.id, fetchConnectionPeer = { profile },
+                            isolateConversations = isolated)).value?.text)
+                    assertNull(fixture.receivedAppWork)
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                        assertNotNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
+                    })
+                }
             }
         }
     }
@@ -11106,7 +11153,7 @@ class NotificationProcessorNativeTest {
             {"qualified_id":{"id":"${id.value}","domain":"${id.domain}"},"id":"${id.value}",
             "name":"Peer ${id.value.removePrefix("peer-")}","handle":"peer","team":null,"accent_id":0,"assets":[],
             "deleted":false,"email":null,"expires_at":null,"service":null,"supported_protocols":["proteus","mls"],
-            "legalhold_status":"enabled","type":"regular","app":null}
+            "legalhold_status":"disabled","type":"regular","app":null}
             """)
 
         suspend fun connectionEvents() = batch("notification", event("prefix", encrypt("prefix")),
@@ -11239,7 +11286,7 @@ class NotificationProcessorNativeTest {
             """{"found":[${listOf(SENDER, THIRD).joinToString(",") { user ->
                 """{"qualified_id":{"id":"${user.value}","domain":"${user.domain}"},"id":"${user.value}",
                 "name":"Third user","handle":"third","accent_id":0,"assets":[],"deleted":false,
-                "legalhold_status":"enabled","supported_protocols":["proteus","mls"]}"""
+                "legalhold_status":"disabled","supported_protocols":["proteus","mls"]}"""
             }}],"failed":[]}""")
 
         fun creationEvent(id: String = "creation", response: ConversationResponse = creationResponse()): EventResponseToStore =
