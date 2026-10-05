@@ -504,16 +504,14 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
     is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
     is MessageEntityContent.ConversationProtocolChangedDuringACall -> MessageContent.ConversationProtocolChangedDuringACall
     is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
-    is MessageEntityContent.LegalHold -> {
-        when (this.type) {
-            MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Disabled
-            MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Enabled
-            MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
-                MessageContent.LegalHold.ForMembers.Disabled(this.memberUserIdList.map { it.toModel() })
+    is MessageEntityContent.LegalHold -> when (this.type) {
+        MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Disabled
+        MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Enabled
+        MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
+            MessageContent.LegalHold.ForMembers.Disabled(this.memberUserIdList.map { it.toModel() })
 
-            MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
-                MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
-        }
+        MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
+            MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
     }
 
     is MessageEntityContent.NewConversationWithCellMessage -> MessageContent.NewConversationWithCellMessage
