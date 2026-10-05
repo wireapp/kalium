@@ -324,6 +324,7 @@ internal class MessageMapperImpl(
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> null
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> null
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> null
+            MessageEntity.ContentType.NEW_CONVERSATION_APPS_ENABLED -> null
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> null
             MessageEntity.ContentType.HISTORY_LOST -> null
             MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED -> null
@@ -503,16 +504,14 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
     is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
     is MessageEntityContent.ConversationProtocolChangedDuringACall -> MessageContent.ConversationProtocolChangedDuringACall
     is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
-    is MessageEntityContent.LegalHold -> {
-        when (this.type) {
-            MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Disabled
-            MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Enabled
-            MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
-                MessageContent.LegalHold.ForMembers.Disabled(this.memberUserIdList.map { it.toModel() })
+    is MessageEntityContent.LegalHold -> when (this.type) {
+        MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Disabled
+        MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Enabled
+        MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
+            MessageContent.LegalHold.ForMembers.Disabled(this.memberUserIdList.map { it.toModel() })
 
-            MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
-                MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
-        }
+        MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
+            MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
     }
 
     is MessageEntityContent.NewConversationWithCellMessage -> MessageContent.NewConversationWithCellMessage
@@ -522,6 +521,7 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
     is MessageEntityContent.CellEditorAccessMessage -> MessageContent.CellEditorAccessMessage
     is MessageEntityContent.CellViewerAccessMessage -> MessageContent.CellViewerAccessMessage
 
+    MessageEntityContent.NewConversationAppsEnabled -> MessageContent.NewConversationAppsEnabled
     is MessageEntityContent.ConversationAppsAccessChanged -> MessageContent.ConversationAppsEnabledChanged(isEnabled)
 }
 
@@ -854,6 +854,7 @@ internal fun MessageContent.System.toMessageEntityContent(): MessageEntityConten
     MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage
     MessageContent.CellEditorAccessMessage -> MessageEntityContent.CellEditorAccessMessage
     MessageContent.CellViewerAccessMessage -> MessageEntityContent.CellViewerAccessMessage
+    MessageContent.NewConversationAppsEnabled -> MessageEntityContent.NewConversationAppsEnabled
     is MessageContent.ConversationAppsEnabledChanged -> MessageEntityContent.ConversationAppsAccessChanged(isEnabled)
 }
 

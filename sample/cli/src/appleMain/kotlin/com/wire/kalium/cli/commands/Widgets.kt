@@ -166,6 +166,8 @@ private fun systemContent(message: Message.System) =
         is MessageContent.TeamMemberRemoved ->
             systemMessage(null, "${content.userName} was removed from the team")
 
+        MessageContent.NewConversationAppsEnabled -> systemMessage(null, "Conversation apps are enabled")
+
         is MessageContent.ConversationAppsEnabledChanged -> systemMessage(
             message.senderUserName,
             "Conversation apps were ${if (content.isEnabled) "enabled" else "disabled"}"

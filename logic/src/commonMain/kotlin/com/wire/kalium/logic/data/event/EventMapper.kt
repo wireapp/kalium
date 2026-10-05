@@ -256,7 +256,8 @@ internal class EventMapper(
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         access = conversationMapper.fromApiModelToAccessModel(eventContentDTO.data.access),
         accessRole = conversationMapper.fromApiModelToAccessRoleModel(eventContentDTO.data.accessRole),
-        qualifiedFrom = eventContentDTO.qualifiedFrom.toModel()
+        qualifiedFrom = eventContentDTO.qualifiedFrom.toModel(),
+        dateTime = eventContentDTO.time,
     )
 
     private fun conversationReceiptModeUpdate(

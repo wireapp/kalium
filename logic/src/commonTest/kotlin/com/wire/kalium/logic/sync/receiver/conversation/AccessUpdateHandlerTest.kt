@@ -111,7 +111,8 @@ class AccessUpdateHandlerTest {
                 eventId = eq(event.id),
                 conversationId = eq(event.conversationId),
                 senderUserId = eq(event.qualifiedFrom),
-                isAppsAccessEnabled = eq(true)
+                isAppsAccessEnabled = eq(true),
+                instant = any()
             )
         }
     }
@@ -146,7 +147,8 @@ class AccessUpdateHandlerTest {
                 eventId = eq(event.id),
                 conversationId = eq(event.conversationId),
                 senderUserId = eq(event.qualifiedFrom),
-                isAppsAccessEnabled = eq(false)
+                isAppsAccessEnabled = eq(false),
+                instant = any()
             )
         }
     }
@@ -181,7 +183,8 @@ class AccessUpdateHandlerTest {
                 eventId = any(),
                 conversationId = any(),
                 senderUserId = any(),
-                isAppsAccessEnabled = any()
+                isAppsAccessEnabled = any(),
+                instant = any()
             )
         }
     }
@@ -217,7 +220,8 @@ class AccessUpdateHandlerTest {
                 eventId = matches { it == eventId },
                 conversationId = any(),
                 senderUserId = any(),
-                isAppsAccessEnabled = any()
+                isAppsAccessEnabled = any(),
+                instant = any()
             )
         }
     }
@@ -254,7 +258,8 @@ class AccessUpdateHandlerTest {
                 eventId = any(),
                 conversationId = any(),
                 senderUserId = matches { it == senderId },
-                isAppsAccessEnabled = any()
+                isAppsAccessEnabled = any(),
+                instant = any()
             )
         }
     }
@@ -273,7 +278,8 @@ class AccessUpdateHandlerTest {
                     eventId = any(),
                     conversationId = any(),
                     senderUserId = any(),
-                    isAppsAccessEnabled = any()
+                    isAppsAccessEnabled = any(),
+                    instant = any()
                 )
             } returns Unit
         }
@@ -303,7 +309,8 @@ class AccessUpdateHandlerTest {
                     eventId = any(),
                     conversationId = any(),
                     senderUserId = any(),
-                    isAppsAccessEnabled = any()
+                    isAppsAccessEnabled = any(),
+                    instant = any()
                 )
             } returns Unit
         }

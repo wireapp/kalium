@@ -74,7 +74,8 @@ class ChangeAccessForAppsInConversationUseCaseTest {
                 eventId = any(),
                 conversationId = eq(MockConversation.ID),
                 senderUserId = eq(arrangement.selfUserId),
-                isAppsAccessEnabled = eq(true)
+                isAppsAccessEnabled = eq(true),
+                instant = any()
             )
         }
     }
@@ -104,7 +105,8 @@ class ChangeAccessForAppsInConversationUseCaseTest {
                 eventId = any(),
                 conversationId = eq(MockConversation.ID),
                 senderUserId = eq(arrangement.selfUserId),
-                isAppsAccessEnabled = eq(false)
+                isAppsAccessEnabled = eq(false),
+                instant = any()
             )
         }
     }
@@ -144,7 +146,8 @@ class ChangeAccessForAppsInConversationUseCaseTest {
                 eventId = any(),
                 conversationId = any(),
                 senderUserId = any(),
-                isAppsAccessEnabled = any()
+                isAppsAccessEnabled = any(),
+                instant = any()
             )
         }
     }
@@ -198,7 +201,8 @@ class ChangeAccessForAppsInConversationUseCaseTest {
                 eventId = any(),
                 conversationId = any(),
                 senderUserId = matching { it == arrangement.selfUserId },
-                isAppsAccessEnabled = any()
+                isAppsAccessEnabled = any(),
+                instant = any()
             )
         }
     }
@@ -223,7 +227,8 @@ class ChangeAccessForAppsInConversationUseCaseTest {
                 eventId = any(),
                 conversationId = matching { it == MockConversation.ID },
                 senderUserId = any(),
-                isAppsAccessEnabled = any()
+                isAppsAccessEnabled = any(),
+                instant = any()
             )
         }
     }
@@ -246,7 +251,8 @@ class ChangeAccessForAppsInConversationUseCaseTest {
                         eventId = any(),
                         conversationId = any(),
                         senderUserId = any(),
-                        isAppsAccessEnabled = any()
+                        isAppsAccessEnabled = any(),
+                        instant = any()
                     )
                 } returns Unit
             }

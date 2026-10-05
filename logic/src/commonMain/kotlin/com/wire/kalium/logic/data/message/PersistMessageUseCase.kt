@@ -119,6 +119,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.ClientAction -> false
             is MessageContent.CryptoSessionReset -> false
             is MessageContent.NewConversationReceiptMode -> false
+            MessageContent.NewConversationAppsEnabled -> false
             is MessageContent.ConversationReceiptModeChanged -> false
             is MessageContent.HistoryLost -> false
             is MessageContent.HistoryLostProtocolChanged -> false
@@ -187,6 +188,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.ClientAction,
             is MessageContent.CryptoSessionReset,
             is MessageContent.NewConversationReceiptMode,
+            MessageContent.NewConversationAppsEnabled,
             is MessageContent.ConversationReceiptModeChanged,
             is MessageContent.HistoryLost,
             is MessageContent.HistoryLostProtocolChanged,

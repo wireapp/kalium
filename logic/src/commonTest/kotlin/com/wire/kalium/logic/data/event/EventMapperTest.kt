@@ -19,13 +19,23 @@
 package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.authenticated.notification.AdminlessDeleteReminderData
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import kotlinx.datetime.Instant
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 import com.wire.kalium.network.api.model.QualifiedID
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,6 +45,29 @@ import com.wire.kalium.network.api.model.QualifiedID as NetworkQualifiedID
 import kotlin.test.assertNull
 
 class EventMapperTest {
+
+    @Test
+    fun accessUpdatePreservesServerTimeAndKeepsMissingHistoricalTimeUnknown() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val date = Instant.parse("2001-01-01T00:00:00Z")
+        val dto = EventContentDTO.Conversation.AccessUpdate(
+            qualifiedConversation = TestConversation.ID.toApi(),
+            qualifiedFrom = TestUser.NETWORK_ID,
+            data = ConversationAccessInfoDTO(
+                access = setOf(ConversationAccessDTO.INVITE),
+                accessRole = setOf(ConversationAccessRoleDTO.SERVICE),
+            ),
+        )
+
+        val legacyPayload = Json.encodeToJsonElement(dto).jsonObject
+        val datedPayload = JsonObject(legacyPayload + ("time" to JsonPrimitive(date.toString())))
+        val decoded = Json.decodeFromJsonElement<EventContentDTO.Conversation.AccessUpdate>(datedPayload)
+        val event = assertIs<Event.Conversation.AccessUpdate>(mapper.fromEventContentDTO("access-event", decoded))
+        assertEquals(date, event.dateTime)
+        val decodedLegacy = Json.decodeFromJsonElement<EventContentDTO.Conversation.AccessUpdate>(legacyPayload)
+        val legacy = assertIs<Event.Conversation.AccessUpdate>(mapper.fromEventContentDTO("legacy-event", decodedLegacy))
+        assertNull(legacy.dateTime)
+    }
 
     @Test
     fun givenSessionRefreshSuggestedDTO_whenMapping_thenSessionRefreshSuggestedEventIsReturned() {
