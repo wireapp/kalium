@@ -24,7 +24,12 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.meeting.Meeting
+import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
@@ -36,8 +41,8 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
-import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
+import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -47,9 +52,10 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -102,6 +108,7 @@ class DeletedConversationEventHandlerTest {
                     )
                 )
             }
+            verifySuspend(VerifyMode.not) { notificationEventsManager.scheduleMeetingNotification(any()) }
         }
     }
 
@@ -215,14 +222,33 @@ class DeletedConversationEventHandlerTest {
     }
 
     @Test
-    fun givenADeletedMeetingTypeConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationWithoutTheNotification() = runTest {
+    fun givenADeletedMeetingTypeConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationWithMeetingNotification() = runTest {
         val event = TestEvent.deletedConversation()
         val conversation = MockConversation.group(event.conversationId).copy(type = Conversation.Type.Group.Meeting)
         val otherUser = TestUser.OTHER
+        val meeting = Meeting(
+            meetingId = MeetingId("meetingId", conversation.id.domain),
+            conversationId = conversation.id,
+            creatorId = UserId(conversation.creatorId.orEmpty(), conversation.id.domain),
+            title = "Planning",
+            startTime = Instant.parse("2026-10-01T09:00:00Z"),
+            endTime = Instant.parse("2026-10-01T10:00:00Z"),
+            tzid = "UTC",
+            recurrence = null,
+        )
+        val cancelNotification = LocalNotification.Meeting.Cancel(
+            eventId = event.id,
+            meetingId = meeting.meetingId,
+            conversationId = meeting.conversationId,
+            meetingTitle = meeting.title,
+            author = LocalNotificationMessageAuthor(otherUser.name.orEmpty(), otherUser.previewPicture),
+            time = event.dateTime,
+        )
         val (arrangement, eventHandler) = arrange {
             withGetConversationByIdReturning(conversation)
             withObserveUser(flowOf(otherUser), requireNotNull(event.senderUserId))
             withDeletingConversationSucceeding()
+            withGetMeetingsByConversationId(Either.Right(listOf(meeting)))
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
@@ -230,6 +256,7 @@ class DeletedConversationEventHandlerTest {
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
                 deleteConversation(any(), event.conversationId)
+                notificationEventsManager.scheduleMeetingNotification(cancelNotification)
             }
             verifySuspend(VerifyMode.exactly(0)) {
                 notificationEventsManager.scheduleDeleteConversationNotification(any())
@@ -251,6 +278,7 @@ class DeletedConversationEventHandlerTest {
 
         val conversationRepository = mock<ConversationRepository>()
         val userRepository = mock<UserRepository>()
+        val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
         val deleteConversation = mock<DeleteConversationUseCase>()
         val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
 
@@ -274,10 +302,16 @@ class DeletedConversationEventHandlerTest {
             everySuspend { deleteConversation(any(), any()) } returns Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
         }
 
+        suspend fun withGetMeetingsByConversationId(result: Either<StorageFailure, List<Meeting>>) {
+            everySuspend { meetingRepository.getMeetingsByConversationId(any()) } returns (result)
+        }
+
         suspend fun arrange() = run {
+            withGetMeetingsByConversationId(Either.Right(emptyList()))
             block()
             this@Arrangement to DeletedConversationEventHandlerImpl(
                 conversationRepository = conversationRepository,
+                meetingRepository = meetingRepository,
                 userRepository = userRepository,
                 notificationEventsManager = notificationEventsManager,
                 deleteConversation = deleteConversation,
