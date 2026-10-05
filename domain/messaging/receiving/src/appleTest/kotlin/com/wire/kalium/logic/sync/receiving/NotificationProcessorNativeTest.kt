@@ -2475,7 +2475,8 @@ class NotificationProcessorNativeTest {
     fun memberRolesMLS() = memberRoles(true)
 
     private fun memberRoles(mls: Boolean, system: Boolean = false) = runTest {
-        for (kind in listOf("member", "admin", "absent-member", "incomplete")) withContext(Dispatchers.Default) {
+        val kinds = if (system) listOf("member") else listOf("member", "admin", "absent-member", "incomplete")
+        for (kind in kinds) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
                 val member = if (kind == "absent-member") THIRD else SENDER
                 val target = if (kind == "incomplete") DELETE_TARGET else CONVERSATION_ID

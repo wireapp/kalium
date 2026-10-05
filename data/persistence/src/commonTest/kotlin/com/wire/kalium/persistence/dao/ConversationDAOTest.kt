@@ -844,27 +844,28 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
 
     @Test
-    fun adminlessDeletionIsObservedFirstWriteWinsAndSurvivesOnlyContentClearing() = runTest(dispatcher) {
+    fun adminlessReminderLifecyclePreservesFirstTimestampUntilHardDeletion() = runTest(dispatcher) {
         val conversation = newConversationEntity("adminless")
         val user = newUserEntity("adminless")
         val message = newRegularMessageEntity(conversationId = conversation.id, senderUserId = user.id)
-        val timestamp = Instant.parse("2026-08-30T12:00:00Z")
+        val firstTimestamp = Instant.parse("2026-08-30T12:00:00Z")
         conversationDAO.insertConversation(conversation)
         userDAO.upsertUser(user)
         messageDAO.insertOrIgnoreMessage(message)
 
         conversationDAO.observeConversationDetailsById(conversation.id).test {
             assertNull(awaitItem()?.adminlessGroupDeletionTimestamp)
-            conversationDAO.insertAdminlessGroupDelete(conversation.id, timestamp)
-            assertEquals(timestamp, awaitItem()?.adminlessGroupDeletionTimestamp)
+            conversationDAO.insertAdminlessGroupDelete(conversation.id, firstTimestamp)
+            assertEquals(firstTimestamp, awaitItem()?.adminlessGroupDeletionTimestamp)
             cancelAndIgnoreRemainingEvents()
         }
+
         conversationDAO.insertAdminlessGroupDelete(conversation.id, Instant.parse("2026-09-01T12:00:00Z"))
-        assertEquals(timestamp, conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp)
+        assertEquals(firstTimestamp, conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp)
 
         conversationDAO.clearContent(conversation.id)
         assertNull(messageDAO.getMessageById(message.id, conversation.id))
-        assertEquals(timestamp, conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp)
+        assertEquals(firstTimestamp, conversationDAO.getConversationDetailsById(conversation.id)?.adminlessGroupDeletionTimestamp)
 
         conversationDAO.deleteConversationByQualifiedID(conversation.id)
         conversationDAO.insertConversation(conversation)

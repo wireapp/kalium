@@ -11,7 +11,7 @@ import kotlin.time.Instant
 
 class SystemConversationEventSerializationTest {
     @Test
-    fun regularReminderPreservesItsFields() {
+    fun adminlessRemindersPreserveTheirFieldsAndOptionalSender() {
         assertEquals(
             EventContentDTO.Conversation.AdminlessDeleteReminderDTO(
                 conversation = "conversation", data = AdminlessDeleteReminderData(DELETION_TIME), from = "user",
@@ -19,10 +19,7 @@ class SystemConversationEventSerializationTest {
             ),
             decode("adminless-reminder", SENDER_FIELD, REMINDER_DATA),
         )
-    }
 
-    @Test
-    fun systemReminderAcceptsMissingNullAndPresentSenders() {
         for ((sender, expected) in SENDERS) {
             assertEquals(
                 EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO(
