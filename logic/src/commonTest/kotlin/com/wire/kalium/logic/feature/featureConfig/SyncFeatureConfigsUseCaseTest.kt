@@ -126,7 +126,7 @@ class SyncFeatureConfigsUseCaseTest {
         verifySuspend(VerifyMode.not) { arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any()) }
     }
 
-    // Reproducer for fresh-account login: sync aborts before the E2EI configuration needed by MLS registration.
+    // A missing crypto client must not prevent independent server settings from being refreshed.
     @Test
     fun regularConfigurationSyncStillPropagatesMissingCryptoClient() = runTest {
         val config = FeatureConfigTest.newModel()
@@ -143,7 +143,7 @@ class SyncFeatureConfigsUseCaseTest {
         } returns Either.Left(CoreFailure.MissingClientRegistration)
 
         assertEquals(Either.Left(CoreFailure.MissingClientRegistration), sync())
-        assertEquals(Either.Left(StorageFailure.DataNotFound), arrangement.userConfigRepository.getE2EISettings())
+        arrangement.userConfigRepository.getE2EISettings().shouldSucceed { assertTrue(it.isRequired) }
     }
 
     @Test
@@ -157,27 +157,27 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun requiredConfigurationReadFailureStopsSync() = runTest {
+    fun configurationReadFailureDoesNotStopRegularSync() = runTest {
         val failure = IllegalStateException("Self-deletion settings cannot be read")
         val (arrangement, sync) = arrangement().arrange()
         everySuspend { arrangement.userConfigDAO.getTeamSettingsSelfDeletionStatus() } throws failure
 
         assertEquals(Either.Left(StorageFailure.Generic(failure)), sync())
 
-        verifySuspend(VerifyMode.not) {
-            arrangement.userConfigDAO.setAsyncNotificationsEnabled(any())
-            arrangement.userConfigDAO.setMeetingsEnabled(any())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigDAO.setAsyncNotificationsEnabled(true)
+            arrangement.userConfigDAO.setMeetingsEnabled(true)
         }
     }
 
     @Test
-    fun optionalConfigurationWriteFailureStopsSyncAndCanBeRetried() = runTest {
+    fun optionalConfigurationWriteFailureDoesNotStopRegularSyncAndCanBeRetried() = runTest {
         val failure = IllegalStateException("Consumable-notification settings cannot be saved")
         val (arrangement, sync) = arrangement().arrange()
         everySuspend { arrangement.userConfigDAO.setAsyncNotificationsEnabled(any()) } throws failure
 
         assertEquals(Either.Left(StorageFailure.Generic(failure)), sync())
-        verifySuspend(VerifyMode.not) { arrangement.userConfigDAO.setMeetingsEnabled(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigDAO.setMeetingsEnabled(true) }
 
         everySuspend { arrangement.userConfigDAO.setAsyncNotificationsEnabled(any()) } returns Unit
         assertEquals(Either.Right(Unit), sync())
@@ -185,7 +185,7 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun channelConfigurationWriteFailureIsPropagated() = runTest {
+    fun channelConfigurationWriteFailureIsPropagatedAfterLaterSettingsAreApplied() = runTest {
         val failure = StorageFailure.Generic(IllegalStateException("Channel settings cannot be saved"))
         val setup = arrangement()
         val storage = mock<ChannelsConfigurationStorage>()
@@ -195,7 +195,32 @@ class SyncFeatureConfigsUseCaseTest {
 
         assertEquals(Either.Left(failure), sync())
 
-        verifySuspend(VerifyMode.not) { arrangement.userConfigDAO.setAsyncNotificationsEnabled(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigDAO.setAsyncNotificationsEnabled(true) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigDAO.setMeetingsEnabled(true) }
+    }
+
+    @Test
+    fun regularSyncReturnsTheFirstFailureAfterAttemptingLaterSettings() = runTest {
+        val firstFailure = IllegalStateException("Consumable-notification settings cannot be saved")
+        val laterFailure = IllegalStateException("Meetings settings cannot be saved")
+        val (arrangement, sync) = arrangement().arrange()
+        everySuspend { arrangement.userConfigDAO.setAsyncNotificationsEnabled(any()) } throws firstFailure
+        everySuspend { arrangement.userConfigDAO.setMeetingsEnabled(any()) } throws laterFailure
+
+        assertEquals(Either.Left(StorageFailure.Generic(firstFailure)), sync())
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigDAO.setMeetingsEnabled(true) }
+    }
+
+    @Test
+    fun optionalConfigurationWriteFailureStillStopsRegistrationSync() = runTest {
+        val failure = IllegalStateException("Consumable-notification settings cannot be saved")
+        val (arrangement, sync) = arrangement().arrange()
+        everySuspend { arrangement.userConfigDAO.setAsyncNotificationsEnabled(any()) } throws failure
+
+        assertEquals(Either.Left(StorageFailure.Generic(failure)), sync.beforeClientRegistration())
+
+        verifySuspend(VerifyMode.not) { arrangement.userConfigDAO.setMeetingsEnabled(any()) }
     }
 
     @Test
