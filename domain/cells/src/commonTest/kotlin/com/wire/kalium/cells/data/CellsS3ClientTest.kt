@@ -36,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
 import okio.ForwardingFileSystem
@@ -463,6 +464,7 @@ class CellsS3ClientTest {
     fun givenEmbeddedValidationError_whenCompletingMultipartUpload_thenDoesNotRetry() = runTest {
         val (fileSystem, uploadPath) = createUploadFile("multipart".encodeToByteArray())
         var completionCount = 0
+        var abortCount = 0
         val httpClient = HttpClient(
             MockEngine { request ->
                 when {
@@ -478,6 +480,11 @@ class CellsS3ClientTest {
                         headers = headersOf(HttpHeaders.ETag, "etag-1"),
                     )
 
+                    request.method == HttpMethod.Delete -> {
+                        abortCount++
+                        respond(content = "", status = HttpStatusCode.NoContent)
+                    }
+
                     request.method == HttpMethod.Post && request.url.parameters["uploadId"] != null -> {
                         completionCount++
                         respond(
@@ -492,7 +499,7 @@ class CellsS3ClientTest {
 
                     else -> error("Unexpected request: ${request.method} ${request.url}")
                 }
-            }
+            }.apply { config.dispatcher = StandardTestDispatcher(testScheduler) }
         )
         val client = createClient(
             httpClient = httpClient,
@@ -506,6 +513,7 @@ class CellsS3ClientTest {
 
         assertContains(exception.message.orEmpty(), "InvalidPart")
         assertEquals(1, completionCount)
+        assertEquals(1, abortCount)
     }
 
     @Test
