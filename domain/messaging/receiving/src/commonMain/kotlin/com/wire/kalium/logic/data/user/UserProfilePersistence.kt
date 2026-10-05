@@ -113,7 +113,7 @@ fun userProfiles(
                 )
             )
         },
-        apps = teamProfiles.filter { it.type == UserTypeDTO.APP }.map { it.toAppEntity() },
+        apps = profiles.filter { it.type == UserTypeDTO.APP }.map { it.toAppEntity() },
     )
 }
 

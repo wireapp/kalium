@@ -32,11 +32,14 @@ import com.wire.kalium.network.api.v0.authenticated.TeamsApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.exceptions.APINotSupported
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertContains
+import kotlin.test.fail
 import kotlin.test.assertIs
 
 @ExperimentalCoroutinesApi
@@ -183,6 +186,26 @@ internal class TeamsApiV0Test : ApiTest() {
         )
         val teamsApi: TeamsApi = TeamsApiV0(networkClient)
         teamsApi.fetchLegalHoldStatus(teamId, userId)
+    }
+
+    @Test
+    fun givenApiV0_whenGettingTeamApps_thenRequestShouldNotBeSupported() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient("", statusCode = HttpStatusCode.OK,
+            assertion = { fail("Unsupported endpoint must not send a request") })
+        val teamsApi: TeamsApi = TeamsApiV0(networkClient)
+        val response = teamsApi.getTeamApps(DUMMY_TEAM_ID)
+        val error = assertIs<NetworkResponse.Error>(response)
+        assertContains(assertIs<APINotSupported>(error.kException).errorBody, "API V15")
+    }
+
+    @Test
+    fun givenApiV0_whenGettingTeamCollaborators_thenRequestShouldNotBeSupported() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient("", statusCode = HttpStatusCode.OK,
+            assertion = { fail("Unsupported endpoint must not send a request") })
+        val teamsApi: TeamsApi = TeamsApiV0(networkClient)
+        val response = teamsApi.getTeamCollaborators(DUMMY_TEAM_ID)
+        val error = assertIs<NetworkResponse.Error>(response)
+        assertContains(assertIs<APINotSupported>(error.kException).errorBody, "API V10")
     }
 
     private companion object {

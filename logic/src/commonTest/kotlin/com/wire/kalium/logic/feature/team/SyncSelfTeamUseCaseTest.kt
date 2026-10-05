@@ -30,6 +30,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.calls
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -37,7 +38,14 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.awaitCancellation
 import kotlin.test.Test
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class SyncSelfTeamUseCaseTest {
 
@@ -61,6 +69,12 @@ class SyncSelfTeamUseCaseTest {
         verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.syncServices(any())
         }
+        verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.fetchAppsByTeamId(any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.fetchCollaboratorsByTeamId(any())
+        }
     }
 
     @Test
@@ -74,6 +88,8 @@ class SyncSelfTeamUseCaseTest {
                 .withTeam()
                 .withTeamMembers()
                 .withServicesSync()
+                .withAppsSync()
+                .withCollaboratorsSync()
                 .arrange()
 
             syncSelfTeamUseCase.invoke()
@@ -91,6 +107,12 @@ class SyncSelfTeamUseCaseTest {
             }
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.teamRepository.syncServices(eq(TestUser.SELF.teamId!!))
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.teamRepository.fetchAppsByTeamId(eq(TestUser.SELF.teamId!!))
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.teamRepository.fetchCollaboratorsByTeamId(eq(TestUser.SELF.teamId!!))
             }
         }
 
@@ -116,6 +138,12 @@ class SyncSelfTeamUseCaseTest {
             arrangement.teamRepository.syncServices(any())
         }
         verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.fetchAppsByTeamId(any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.teamRepository.fetchCollaboratorsByTeamId(any())
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.fetchMembersByTeamId(
                 eq(TestUser.SELF.teamId!!),
                 eq(TestUser.SELF.id.domain),
@@ -135,6 +163,27 @@ class SyncSelfTeamUseCaseTest {
             .withTeam()
             .withTeamMembers()
             .withFailingServicesSync()
+            .withAppsSync()
+            .withCollaboratorsSync()
+            .arrange()
+
+        val result = syncSelfTeamUseCase.invoke()
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenFetchingMembersFails_whenSyncingSelfTeam_thenMembersAreIgnoredButUseCaseSucceeds() = runTest {
+        val selfUser = TestUser.SELF.right()
+
+        val (_, syncSelfTeamUseCase) = Arrangement()
+            .withSelfUser(selfUser)
+            .witFetchAllTeamMembersEagerly(null)
+            .withTeam()
+            .withFailingTeamMembers()
+            .withServicesSync()
+            .withAppsSync()
+            .withCollaboratorsSync()
             .arrange()
 
         val result = syncSelfTeamUseCase.invoke()
@@ -152,6 +201,8 @@ class SyncSelfTeamUseCaseTest {
             .withTeamMembers()
             .withTeam()
             .withServicesSync()
+            .withAppsSync()
+            .withCollaboratorsSync()
             .arrange()
 
         syncSelfTeamUseCase.invoke()
@@ -166,6 +217,67 @@ class SyncSelfTeamUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamRepository.syncServices(eq(TestUser.SELF.teamId!!))
         }
+    }
+
+    @Test
+    fun givenAllTeamBranchesFail_whenSyncing_thenEveryBranchRunsAndSyncSucceeds() = runTest {
+        val (arrangement, sync) = Arrangement()
+            .withSelfUser(TestUser.SELF.right())
+            .withTeam()
+            .withFailingTeamMembers()
+            .withFailingServicesSync()
+            .arrange()
+        val failure = Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied))
+        everySuspend { arrangement.teamRepository.fetchAppsByTeamId(any()) } returns failure
+        everySuspend { arrangement.teamRepository.fetchCollaboratorsByTeamId(any()) } returns failure
+
+        sync().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.teamRepository.fetchMembersByTeamId(any(), any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.teamRepository.syncServices(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.teamRepository.fetchAppsByTeamId(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.teamRepository.fetchCollaboratorsByTeamId(any()) }
+    }
+
+    @Test
+    fun givenAppsStillSyncing_whenOtherBranchesFinish_thenTeamSyncWaits() = runTest {
+        val (arrangement, sync) = Arrangement()
+            .withSelfUser(TestUser.SELF.right()).withTeam().withTeamMembers()
+            .withServicesSync().withCollaboratorsSync().arrange()
+        val gate = CompletableDeferred<Unit>()
+        everySuspend { arrangement.teamRepository.fetchAppsByTeamId(any()) } calls {
+            gate.await()
+            Either.Right(Unit)
+        }
+
+        val result = async { sync() }
+        runCurrent()
+        assertFalse(result.isCompleted)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.teamRepository.fetchCollaboratorsByTeamId(any()) }
+        gate.complete(Unit)
+        result.await().shouldSucceed()
+    }
+
+    @Test
+    fun givenTeamSyncIsCancelled_whenAppSyncIsRunning_thenChildIsDrained() = runTest {
+        val (arrangement, sync) = Arrangement()
+            .withSelfUser(TestUser.SELF.right()).withTeam().withTeamMembers()
+            .withServicesSync().withCollaboratorsSync().arrange()
+        var drained = false
+        everySuspend { arrangement.teamRepository.fetchAppsByTeamId(any()) } calls {
+            try {
+                awaitCancellation()
+            } finally {
+                drained = true
+            }
+        }
+
+        val result = async { sync() }
+        runCurrent()
+        assertFalse(result.isCompleted)
+        result.cancelAndJoin()
+        assertTrue(result.isCancelled)
+        assertTrue(drained)
     }
 
     private class Arrangement {
@@ -203,9 +315,27 @@ class SyncSelfTeamUseCaseTest {
             } returns Either.Right(Unit)
         }
 
+        suspend fun withFailingTeamMembers() = apply {
+            everySuspend {
+                teamRepository.fetchMembersByTeamId(any(), any(), any(), any())
+            } returns Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied))
+        }
+
         suspend fun withServicesSync() = apply {
             everySuspend {
                 teamRepository.syncServices(any())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withAppsSync() = apply {
+            everySuspend {
+                teamRepository.fetchAppsByTeamId(any())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withCollaboratorsSync() = apply {
+            everySuspend {
+                teamRepository.fetchCollaboratorsByTeamId(any())
             } returns Either.Right(Unit)
         }
 

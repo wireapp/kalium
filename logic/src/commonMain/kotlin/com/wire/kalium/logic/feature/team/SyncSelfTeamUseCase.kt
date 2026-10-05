@@ -24,8 +24,10 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 internal interface SyncSelfTeamUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
@@ -41,13 +43,28 @@ internal class SyncSelfTeamUseCaseImpl(
         userRepository.getSelfUser().flatMap { selfUser ->
             selfUser.teamId?.let { teamId ->
                 teamRepository.fetchTeamById(teamId = teamId).flatMap {
-                    teamRepository.fetchMembersByTeamId(
-                        teamId = teamId,
-                        userDomain = selfUser.id.domain,
-                        fetchedUsersLimit = fetchedUsersLimit
-                    )
-                }.onSuccess {
-                    teamRepository.syncServices(teamId = teamId)
+                    coroutineScope {
+                        launch {
+                            teamRepository.fetchMembersByTeamId(
+                                teamId = teamId,
+                                userDomain = selfUser.id.domain,
+                                fetchedUsersLimit = fetchedUsersLimit
+                            ).onFailure { kaliumLogger.withFeatureId(SYNC).w("Failed to fetch team members: $it") }
+                        }
+                        launch {
+                            teamRepository.fetchAppsByTeamId(teamId = teamId)
+                                .onFailure { kaliumLogger.withFeatureId(SYNC).w("Failed to fetch team apps: $it") }
+                        }
+                        launch {
+                            teamRepository.fetchCollaboratorsByTeamId(teamId = teamId)
+                                .onFailure { kaliumLogger.withFeatureId(SYNC).w("Failed to fetch team collaborators: $it") }
+                        }
+                        launch {
+                            teamRepository.syncServices(teamId = teamId)
+                                .onFailure { kaliumLogger.withFeatureId(SYNC).w("Failed to sync team services: $it") }
+                        }
+                    }
+                    Either.Right(Unit)
                 }
             } ?: run {
                 kaliumLogger.withFeatureId(SYNC).i("Skipping team sync because user doesn't belong to a team")
