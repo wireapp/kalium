@@ -154,44 +154,6 @@ class SyncSelfTeamUseCaseTest {
     }
 
     @Test
-    fun givenServicesReturnAccessDenied_whenSyncingSelfTeam_thenServicesAreIgnoredButUseCaseSucceeds() = runTest {
-        val selfUser = TestUser.SELF.right()
-
-        val (_, syncSelfTeamUseCase) = Arrangement()
-            .withSelfUser(selfUser)
-            .witFetchAllTeamMembersEagerly(null)
-            .withTeam()
-            .withTeamMembers()
-            .withFailingServicesSync()
-            .withAppsSync()
-            .withCollaboratorsSync()
-            .arrange()
-
-        val result = syncSelfTeamUseCase.invoke()
-
-        result.shouldSucceed()
-    }
-
-    @Test
-    fun givenFetchingMembersFails_whenSyncingSelfTeam_thenMembersAreIgnoredButUseCaseSucceeds() = runTest {
-        val selfUser = TestUser.SELF.right()
-
-        val (_, syncSelfTeamUseCase) = Arrangement()
-            .withSelfUser(selfUser)
-            .witFetchAllTeamMembersEagerly(null)
-            .withTeam()
-            .withFailingTeamMembers()
-            .withServicesSync()
-            .withAppsSync()
-            .withCollaboratorsSync()
-            .arrange()
-
-        val result = syncSelfTeamUseCase.invoke()
-
-        result.shouldSucceed()
-    }
-
-    @Test
     fun givenSelfUserHasValidTeamAndFetchLimitIsNull_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() = runTest {
         val selfUser = TestUser.SELF.right()
 

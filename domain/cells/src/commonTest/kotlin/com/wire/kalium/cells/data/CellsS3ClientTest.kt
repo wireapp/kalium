@@ -275,6 +275,7 @@ class CellsS3ClientTest {
         val eTags = listOf("\"first&\"", "<second>", "third'")
         val progressUpdates = mutableListOf<Long>()
         var completionBody: String? = null
+        var abortCount = 0
         val httpClient = HttpClient(
             MockEngine { request ->
                 when {
@@ -302,6 +303,11 @@ class CellsS3ClientTest {
                         respond(content = "<CompleteMultipartUploadResult/>", status = HttpStatusCode.OK)
                     }
 
+                    request.method == HttpMethod.Delete -> {
+                        abortCount++
+                        respond(content = "", status = HttpStatusCode.NoContent)
+                    }
+
                     else -> error("Unexpected request: ${request.method} ${request.url}")
                 }
             }
@@ -318,6 +324,7 @@ class CellsS3ClientTest {
         client.upload(uploadPath, cellNode(path = "upload.txt")) { progressUpdates += it }
 
         assertEquals(listOf(1, 2, 3), partNumbers)
+        assertEquals(0, abortCount)
         val expectedPartBodies = listOf(
             byteArrayOf(0, 1, 2, 3),
             byteArrayOf(4, 5, 6, 7),
@@ -481,6 +488,7 @@ class CellsS3ClientTest {
                     )
 
                     request.method == HttpMethod.Delete -> {
+                        assertEquals("upload-id", request.url.parameters["uploadId"])
                         abortCount++
                         respond(content = "", status = HttpStatusCode.NoContent)
                     }

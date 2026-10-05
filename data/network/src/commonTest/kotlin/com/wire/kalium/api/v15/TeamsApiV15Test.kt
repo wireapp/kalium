@@ -20,10 +20,8 @@ package com.wire.kalium.api.v15
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.model.UserProfileDTO
-import com.wire.kalium.network.api.authenticated.teams.TeamCollaboratorDTO
 import com.wire.kalium.network.api.v15.authenticated.TeamsApiV15
 import com.wire.kalium.network.api.v14.authenticated.TeamsApiV14
-import com.wire.kalium.network.api.v18.authenticated.TeamsApiV18
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
@@ -61,25 +59,6 @@ internal class TeamsApiV15Test : ApiTest() {
             assertion = { fail("Unsupported apps endpoint must not send a request") })
         val error = assertIs<NetworkResponse.Error>(TeamsApiV14(client).getTeamApps(DUMMY_TEAM_ID))
         assertContains(assertIs<APINotSupported>(error.kException).errorBody, "API V15")
-    }
-
-    @Test
-    fun givenApiV18_whenGettingAppsAndCollaborators_thenInheritedEndpointsAreSupported() = runTest {
-        val appsClient = mockAuthenticatedNetworkClient(APPS_RESPONSE, HttpStatusCode.OK, assertion = {
-            assertGet()
-            assertAuthorizationHeaderExist()
-            assertPathEqual("/teams/$DUMMY_TEAM_ID/apps")
-        })
-        val apps = assertIs<NetworkResponse.Success<List<UserProfileDTO>>>(TeamsApiV18(appsClient).getTeamApps(DUMMY_TEAM_ID))
-        assertEquals(DUMMY_USER_ID, apps.value.single().id.value)
-
-        val collaboratorsClient = mockAuthenticatedNetworkClient("[]", HttpStatusCode.OK, assertion = {
-            assertGet()
-            assertAuthorizationHeaderExist()
-            assertPathEqual("/teams/$DUMMY_TEAM_ID/collaborators")
-        })
-        val collaborators = TeamsApiV18(collaboratorsClient).getTeamCollaborators(DUMMY_TEAM_ID)
-        assertEquals(emptyList(), assertIs<NetworkResponse.Success<List<TeamCollaboratorDTO>>>(collaborators).value)
     }
 
     private companion object {

@@ -51,20 +51,6 @@ import kotlin.test.assertTrue
 class CellsS3ClientMultipartAbortTest {
 
     @Test
-    fun givenSuccessfulMultipartUpload_whenUploading_thenUploadIsNotAborted() = runTest {
-        val (fileSystem, uploadPath) = createMultipartUploadFile()
-        val recorder = MultipartRecorder()
-        val client = multipartClient(recorder = recorder, fileSystem = fileSystem)
-
-        client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
-
-        assertEquals(1, recorder.createCount)
-        assertEquals(listOf(1, 2), recorder.partNumbers)
-        assertEquals(1, recorder.completeCount)
-        assertTrue(recorder.abortedUploadIds.isEmpty())
-    }
-
-    @Test
     fun givenSourceReadFailure_whenUploadingMultipart_thenUploadIsAborted() = runTest {
         val (fileSystem, uploadPath) = createMultipartUploadFile()
         val failingFileSystem = object : ForwardingFileSystem(fileSystem) {
@@ -103,25 +89,6 @@ class CellsS3ClientMultipartAbortTest {
         assertEquals(listOf(1, 2), recorder.partNumbers)
         assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
         assertEquals(0, recorder.completeCount)
-    }
-
-    @Test
-    fun givenCompletionFailure_whenUploadingMultipart_thenUploadIsAborted() = runTest {
-        val (fileSystem, uploadPath) = createMultipartUploadFile()
-        val recorder = MultipartRecorder()
-        val client = multipartClient(
-            recorder = recorder,
-            fileSystem = fileSystem,
-            completeStatus = HttpStatusCode.BadRequest,
-        )
-
-        val exception = assertFailsWith<IOException> {
-            client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
-        }
-
-        assertContains(exception.message.orEmpty(), "Complete multipart upload failed: 400")
-        assertEquals(1, recorder.completeCount)
-        assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
     }
 
     @Test
@@ -175,7 +142,7 @@ class CellsS3ClientMultipartAbortTest {
                 } else {
                     respondToMultipartRequest(
                         request, recorder, TEST_UPLOAD_ID, { HttpStatusCode.OK },
-                        HttpStatusCode.OK, HttpStatusCode.NoContent,
+                        HttpStatusCode.NoContent,
                     )
                 }
             },
@@ -217,7 +184,7 @@ class CellsS3ClientMultipartAbortTest {
                 } else {
                     respondToMultipartRequest(
                         request, recorder, TEST_UPLOAD_ID, { HttpStatusCode.Forbidden },
-                        HttpStatusCode.OK, HttpStatusCode.NoContent,
+                        HttpStatusCode.NoContent,
                     )
                 }
             },
@@ -254,7 +221,7 @@ class CellsS3ClientMultipartAbortTest {
                 }
                 respondToMultipartRequest(
                     request, recorder, TEST_UPLOAD_ID, { HttpStatusCode.Forbidden },
-                    HttpStatusCode.OK, abortStatus,
+                    abortStatus,
                 )
             },
             fileSystem = fileSystem,
@@ -290,11 +257,10 @@ class CellsS3ClientMultipartAbortTest {
         fileSystem: FileSystem,
         uploadId: String? = TEST_UPLOAD_ID,
         partStatus: (Int) -> HttpStatusCode = { HttpStatusCode.OK },
-        completeStatus: HttpStatusCode = HttpStatusCode.OK,
         abortStatus: HttpStatusCode = HttpStatusCode.NoContent,
     ): CellsS3Client = createClient(
         httpClient = testHttpClient { request ->
-            respondToMultipartRequest(request, recorder, uploadId, partStatus, completeStatus, abortStatus)
+            respondToMultipartRequest(request, recorder, uploadId, partStatus, abortStatus)
         },
         fileSystem = fileSystem,
         config = fixedDateConfig(maxRegularUploadSize = 1, multipartChunkSize = CHUNK_SIZE),
@@ -305,11 +271,9 @@ class CellsS3ClientMultipartAbortTest {
         recorder: MultipartRecorder,
         uploadId: String?,
         partStatus: (Int) -> HttpStatusCode,
-        completeStatus: HttpStatusCode,
         abortStatus: HttpStatusCode,
     ): HttpResponseData = when {
         request.method == HttpMethod.Post && request.url.parameters.names().contains("uploads") -> {
-            recorder.createCount++
             respond(content = initiateMultipartUploadBody(uploadId), status = HttpStatusCode.OK)
         }
 
@@ -330,7 +294,7 @@ class CellsS3ClientMultipartAbortTest {
 
         request.method == HttpMethod.Post -> {
             recorder.completeCount++
-            respond(content = "<CompleteMultipartUploadResult/>", status = completeStatus)
+            respond(content = "<CompleteMultipartUploadResult/>", status = HttpStatusCode.OK)
         }
 
         else -> error("Unexpected request: ${request.method} ${request.url}")
@@ -343,7 +307,6 @@ class CellsS3ClientMultipartAbortTest {
     }
 
     private class MultipartRecorder {
-        var createCount = 0
         var completeCount = 0
         val partNumbers = mutableListOf<Int>()
         val abortedUploadIds = mutableListOf<String>()

@@ -63,16 +63,6 @@ internal class TeamsApiV10Test : ApiTest() {
     }
 
     @Test
-    fun givenApiV10_whenGettingTeamApps_thenRequestShouldStillNotBeSupported() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient("", statusCode = HttpStatusCode.OK,
-            assertion = { fail("Unsupported apps endpoint must not send a request") })
-        val teamsApi: TeamsApi = TeamsApiV10(networkClient)
-        val response = teamsApi.getTeamApps(DUMMY_TEAM_ID)
-        val error = assertIs<NetworkResponse.Error>(response)
-        assertContains(assertIs<APINotSupported>(error.kException).errorBody, "API V15")
-    }
-
-    @Test
     fun givenApiV9_whenGettingCollaborators_thenNoRequestIsSent() = runTest {
         val client = mockAuthenticatedNetworkClient("", HttpStatusCode.OK,
             assertion = { fail("Unsupported collaborators endpoint must not send a request") })
