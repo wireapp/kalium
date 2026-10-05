@@ -223,15 +223,23 @@ class ConversationListPagingSourceTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun draftAndFolderWritesDoNotInvalidateButNewReadsSeeDraft() = runTest(dispatcher) {
+    fun draftWritesInvalidateWhileFolderWritesDoNot() = runTest(dispatcher) {
         db.conversationDAO.insertConversation(group(id(1)))
         val source = source()
         source.refresh()
-        db.messageDraftDAO.upsertMessageDraft(newDraftMessageEntity(id(1)))
+        val draft = newDraftMessageEntity(id(1))
+        db.messageDraftDAO.upsertMessageDraft(draft)
+        assertTrue(source.invalid)
+        val afterDraft = source()
+        assertEquals("draft text", afterDraft.refresh().data.single().draftText)
+        db.messageDraftDAO.upsertMessageDraft(draft)
+        assertFalse(afterDraft.invalid)
         db.conversationFolderDAO.addFolder(ConversationFolderEntity("f", "Folder", ConversationFolderTypeEntity.USER))
         db.conversationFolderDAO.addConversationToFolder(id(1), "f")
-        assertFalse(source.invalid)
-        assertEquals("draft text", source().refresh().data.single().draftText)
+        assertFalse(afterDraft.invalid)
+        db.messageDraftDAO.removeMessageDraft(id(1))
+        assertTrue(afterDraft.invalid)
+        assertNull(source().refresh().data.single().draftText)
     }
 
     @Test

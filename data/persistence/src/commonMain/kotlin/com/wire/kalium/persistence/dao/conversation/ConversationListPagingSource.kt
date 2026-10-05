@@ -32,7 +32,7 @@ internal class ConversationListPagingSource(
     private val query: ConversationListQueryEntity,
     private val readDispatcher: ReadDispatcher,
 ) : PagingSource<ConversationListPositionEntity, ConversationListItemEntity>(), Query.Listener {
-    // All load directions use the same four notification keys. Subscribe before any reads,
+    // All load directions use the same notification keys. Subscribe before any reads,
     // including the multiple queries used by a centered refresh.
     private val invalidationQuery = olderQuery(null, 1, false)
 

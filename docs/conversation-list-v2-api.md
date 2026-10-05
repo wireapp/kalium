@@ -160,7 +160,7 @@ public data class ConversationListPreview(
 - `activityTime` is the stored `Conversation.last_modified_date`; V2 does not calculate it from messages.
 - A saved nonblank draft takes precedence over the latest displayable message.
 - Archived rows have no draft or last-message preview, matching the legacy list.
-- Draft writes do not invalidate V2. A client can request a refresh when returning from a conversation to display the latest draft.
+- V2 also subscribes to the `MessageDraft` notification key. Draft saves and deletions invalidate loaded pages so previews update without a client refresh on return.
 - The five unread counters remain distinct so Android can retain its existing badge priority and mute behavior.
 - Joinable-call state, playing audio, selection, search highlighting, and self-user legal-hold state are client-side overlays.
 - The internal Paging source supports append, prepend, and centered refresh without exposing its cursor.

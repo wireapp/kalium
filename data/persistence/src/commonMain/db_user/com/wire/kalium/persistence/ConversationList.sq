@@ -5,6 +5,7 @@ selectConversationListOlder:
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
+-- @CustomKey MessageDraft
 WITH pageKeys AS MATERIALIZED (
     SELECT C.qualified_id, C.last_modified_date, U.qualified_id AS otherUserId, S.id AS selfUserId
     FROM Conversation C
@@ -112,6 +113,7 @@ selectConversationListNewer:
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
+-- @CustomKey MessageDraft
 WITH pageKeys AS MATERIALIZED (
     SELECT C.qualified_id, C.last_modified_date, U.qualified_id AS otherUserId, S.id AS selfUserId
     FROM Conversation C

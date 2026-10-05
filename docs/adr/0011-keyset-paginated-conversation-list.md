@@ -22,7 +22,7 @@ Use a cursor-keyed Paging source with no count, placeholders, or arbitrary jumps
 
 For each load direction, use an `AS MATERIALIZED` CTE to select the eligible page keys and apply the keyset boundary, ordering, and limit there. Hydrate only those keys with the narrow row projection, saved-draft or last-message preview, and five page-local unread counters. This requires SQLite 3.35 or newer; bundling a modern SQLite binary for the unencrypted Android path and supporting older SQLite runtimes are outside this decision.
 
-Reuse the existing conversation-list membership, order, last-message, and unread invalidation keys. Draft writes, folder changes, and call changes do not invalidate the new Paging source. Joinable-call state remains an Android-observed overlay rather than part of the Kalium page or its ordering.
+Reuse the existing conversation-list membership, order, last-message, and unread invalidation keys, together with the `MessageDraft` table notification key. Draft writes invalidate loaded pages so previews update without rebuilding the pager on return. Folder changes and call changes do not invalidate the new Paging source. Joinable-call state remains an Android-observed overlay rather than part of the Kalium page or its ordering.
 
 Add a global composite recency index and benchmark a second type-prefixed recency index. Ship the type-prefixed index only if it materially improves sparse filtered sources without increasing end-to-end message-write median or p95 latency by more than 10 percent.
 

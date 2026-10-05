@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Observes conversations in activity-time order, without counts or placeholders.
  * Favorites and folders remain on the existing list API. Archived rows have no preview.
- * Draft changes become visible on the next refresh; clients can refresh when returning to the list.
+ * Draft writes invalidate the loaded pages so previews update without a refresh on return.
  */
 public interface ObserveConversationListItemsUseCase {
     public operator fun invoke(
