@@ -133,7 +133,11 @@ class NotificationProcessor(
             val next = events.nextPending()
             if (next != null) {
                 diagnostics?.beginEvent(next.eventId == targetId, next.eventId)
-                val effects = processNotification(next)
+                val effects = try {
+                    processIsolatedNotification(next, canDefer = false, crossesGap = false)
+                } catch (handoff: NotificationAppHandoff) {
+                    return withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = handoff.work)
+                }
                 currentCoroutineContext().ensureActive()
                 diagnostics?.stage = "MARK_PROCESSED"
                 CallSignalJournal(database).committed(effects.calls)
@@ -240,6 +244,8 @@ class NotificationProcessor(
                 continue
             } catch (_: NotificationOrderingBarrier) {
                 return withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
+            } catch (handoff: NotificationAppHandoff) {
+                return withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = handoff.work)
             }
             currentCoroutineContext().ensureActive()
             diagnostics?.stage = "MARK_PROCESSED"
@@ -277,6 +283,7 @@ class NotificationProcessor(
             val wrappedCallback = failure.code == ProteusException.Code.UNKNOWN_ERROR && failure.intCode == null
             if (wrappedCallback && callback is DeferredNotification) throw callback
             if (wrappedCallback && callback is NotificationOrderingBarrier) throw callback
+            if (wrappedCallback && callback is NotificationAppHandoff) throw callback
             throw failure
         }
     }

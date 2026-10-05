@@ -9652,6 +9652,76 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun legalHoldMembershipPolicyMatrix() = runTest {
+        withContext(Dispatchers.Default) {
+            for (scenario in listOf("other-leave", "self-leave", "noop", "absent-leave", "degraded", "pending")) {
+                withFixture(false) { fixture ->
+                    val hold = scenario in listOf("other-leave", "self-leave", "degraded")
+                    fixture.sql("UPDATE Conversation SET legal_hold_status = '${if (scenario == "degraded") "DEGRADED" else if (hold) "ENABLED" else "DISABLED"}'")
+                    val membership = if (scenario in listOf("other-leave", "self-leave", "absent-leave"))
+                        fixture.memberLeave(member = if (scenario == "self-leave") SELF else THIRD)
+                    else fixture.memberJoin()
+                    val tail = fixture.event("tail", fixture.encrypt("tail"))
+                    fixture.releasePrepared()
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        runtime.database.userDAO.upsertUser(user(THIRD))
+                        if (scenario == "other-leave") runtime.database.memberDAO.insertMember(
+                            com.wire.kalium.persistence.dao.member.MemberEntity(THIRD.toDao(),
+                                com.wire.kalium.persistence.dao.member.MemberEntity.Role.Member), CONVERSATION_ID)
+                        if (hold) runtime.database.clientDAO.insertClient(com.wire.kalium.persistence.dao.client.InsertClientParam(
+                            SENDER.toDao(), "legal-hold", com.wire.kalium.persistence.dao.client.DeviceTypeEntity.LegalHold,
+                            com.wire.kalium.persistence.dao.client.ClientTypeEntity.LegalHold,
+                            null, null, null, null, null, false, false))
+                        if (scenario == "pending") runtime.database.metadataDAO.insertValue("[{}]", "legal-hold-conversation-transitions-v1")
+                    })
+                    val result = assertIs<Either.Right<ReceivedMessageResult?>>(
+                        fixture.receive(listOf(membership, tail), "tail", isolateConversations = true))
+                    val needsApp = scenario in listOf("self-leave", "degraded", "pending")
+                    assertEquals(if (needsApp) NotificationAppWork.LEGAL_HOLD else null, fixture.receivedAppWork, scenario)
+                    assertEquals(if (needsApp) null else "tail", result.value?.text, scenario)
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertEquals(!needsApp, checkNotNull(runtime.database.eventDAO.getEventById(membership.id)).isProcessed, scenario)
+                        assertEquals(!needsApp, checkNotNull(runtime.database.eventDAO.getEventById("tail")).isProcessed, scenario)
+                    })
+                }
+            }
+        }
+    }
+
+    @Test
+    fun legalHoldMembershipHandoffMLS() = legalHoldMembershipHandoff(true)
+
+    @Test
+    fun legalHoldMembershipHandoffProteus() = legalHoldMembershipHandoff(false)
+
+    private fun legalHoldMembershipHandoff(mls: Boolean) = runTest {
+        withContext(Dispatchers.Default) {
+          for (isolated in listOf(false, true)) {
+            withFixture(mls) { fixture ->
+                fixture.sql("UPDATE Conversation SET legal_hold_status = 'ENABLED'")
+                val event = fixture.batch("notification", fixture.memberJoin(), fixture.event("text", fixture.encrypt("first")))
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime -> runtime.database.userDAO.upsertUser(user(THIRD)) })
+                assertIs<Either.Right<*>>(fixture.receive(listOf(event), "notification", isolateConversations = isolated))
+                assertEquals(NotificationAppWork.LEGAL_HOLD, fixture.receivedAppWork)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertFalse(checkNotNull(runtime.database.eventDAO.getEventById("notification")).isProcessed)
+                    assertNull(runtime.database.memberDAO.getMemberRole(THIRD.toDao(), CONVERSATION_ID))
+                    assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
+                })
+                assertIs<Either.Right<*>>(fixture.receive(emptyList(), "notification", isolateConversations = isolated))
+                assertEquals(NotificationAppWork.LEGAL_HOLD, fixture.receivedAppWork)
+                // Model completion of the app's status work, then prove native rollback left ciphertext replayable.
+                fixture.sql("UPDATE Conversation SET legal_hold_status = 'DISABLED'")
+                assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(
+                    fixture.receive(emptyList(), "notification", isolateConversations = isolated)).value?.text)
+                assertNull(fixture.receivedAppWork)
+            }
+          }
+        }
+    }
+
+    @Test
     fun legalHoldNoopsMLS() = legalHoldNoops(true)
 
     @Test

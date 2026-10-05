@@ -116,7 +116,7 @@ internal class ReceivedMembershipHandler(
                 )
             ).orThrow()
         }
-        // Legal-hold member/client inspection belongs to the app. NSE deliberately has no such hook.
+        data.requireUnchangedLegalHold(conversationId, selfUserId.toDao())
     }
 
     @Suppress("ReturnCount")
@@ -183,5 +183,6 @@ internal class ReceivedMembershipHandler(
                 data.users.isAtLeastOneUserATeamMember(event.removedList.map { it.toDao() }, selfTeam)
             persistMessage(event.memberRemovedMessage(memberRemovalContent(event.reason, event.removedList, fromTeam))).orThrow()
         }
+        if (deleted > 0) data.requireUnchangedLegalHold(conversationId, selfUserId.toDao())
     }
 }
