@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.incremental.EventBatchRecovery
 import com.wire.kalium.logic.sync.receiving.MLSReceiveRecovery
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.ConversationPersistenceApi
@@ -42,7 +43,7 @@ internal class AppMLSReceiveRecovery(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
     private val selfTeamId: SelfTeamIdProvider,
-) {
+) : EventBatchRecovery {
     @Suppress("ReturnCount") // Receipt, resume, and WrongEpoch have intentionally distinct preflight paths.
     @OptIn(ConversationPersistenceApi::class)
     suspend fun handle(context: CryptoTransactionContext, event: Event.Conversation.NewMLSMessage, wrongEpoch: Boolean): Boolean {
@@ -107,13 +108,13 @@ internal class AppMLSReceiveRecovery(
         conversations.updateMlsVerificationStatus(updated, event.conversationId).recoveryOrThrow()
     }
 
-    suspend fun wereEffectsProcessed(context: CryptoTransactionContext, envelope: EventEnvelope): Boolean {
+    override suspend fun wereEffectsProcessed(context: CryptoTransactionContext, envelope: EventEnvelope): Boolean {
         val mls = context.mls
         val identity = envelope.payloadIdentity
         return mls != null && identity != null && recovery.wereEffectsProcessed(mls, identity)
     }
 
-    suspend fun recordProcessed(context: CryptoTransactionContext, events: List<EventEnvelope>) {
+    override suspend fun recordProcessed(context: CryptoTransactionContext, events: List<EventEnvelope>) {
         context.mls?.let {
             recovery.recordProcessed(
                 it,
@@ -123,7 +124,7 @@ internal class AppMLSReceiveRecovery(
         }
     }
 
-    suspend fun acknowledge(eventIds: List<String>) = recovery.acknowledge(eventIds)
+    override suspend fun acknowledge(eventIds: List<String>) = recovery.acknowledge(eventIds)
 }
 
 internal fun <T> Either<CoreFailure, T>.recoveryOrThrow(): T = when (this) {

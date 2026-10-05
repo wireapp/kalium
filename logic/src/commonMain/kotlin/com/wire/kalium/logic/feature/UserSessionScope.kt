@@ -460,6 +460,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.SyncStateObserverImpl
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
+import com.wire.kalium.logic.sync.incremental.EventBatchProcessor
 import com.wire.kalium.logic.sync.incremental.EventGatherer
 import com.wire.kalium.logic.sync.incremental.EventGathererImpl
 import com.wire.kalium.logic.sync.incremental.EventProcessor
@@ -1657,11 +1658,24 @@ public class UserSessionScope internal constructor(
     internal fun createIncrementalSyncWorker(eventGatherer: EventGatherer = this.eventGatherer): IncrementalSyncWorker =
         IncrementalSyncWorkerImpl(
             eventGatherer,
-            eventProcessor,
-            cryptoTransactionProvider,
-            userStorage.database,
-            eventRepository,
-            userScopedLogger,
+            batchProcessor = if (enableDurableMLSReceiveRecovery) {
+                EventBatchProcessor.durable(
+                    eventProcessor = eventProcessor,
+                    transactionProvider = cryptoTransactionProvider,
+                    databaseBuilder = userStorage.database,
+                    recovery = { checkNotNull(receiveRecovery()) },
+                    logger = userScopedLogger,
+                )
+            } else {
+                EventBatchProcessor.standard(
+                    eventProcessor = eventProcessor,
+                    transactionProvider = cryptoTransactionProvider,
+                    databaseBuilder = userStorage.database,
+                    eventRepository = eventRepository,
+                    logger = userScopedLogger,
+                )
+            },
+            logger = userScopedLogger,
             consumePendingAccountInvalidation = {
                 val client = clientRepository.currentClientId().getOrNull()
                 val pending = client?.let {
@@ -1677,15 +1691,6 @@ public class UserSessionScope internal constructor(
                 }
                 pending != null
             },
-            recordMLSReceipts = if (enableDurableMLSReceiveRecovery) {
-                { context, events -> receiveRecovery()?.recordProcessed(context, events) }
-            } else null,
-            werePayloadEffectsProcessed = if (enableDurableMLSReceiveRecovery) {
-                { context, envelope -> receiveRecovery()?.wereEffectsProcessed(context, envelope) == true }
-            } else null,
-            acknowledgeMLSRecovery = if (enableDurableMLSReceiveRecovery) {
-                { eventIds -> receiveRecovery()?.acknowledge(eventIds) }
-            } else null,
         )
 
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
