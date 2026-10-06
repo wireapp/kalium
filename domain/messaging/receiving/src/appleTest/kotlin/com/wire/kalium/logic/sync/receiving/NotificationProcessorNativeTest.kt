@@ -8716,9 +8716,9 @@ class NotificationProcessorNativeTest {
     @Test
     fun adminlessReminderWriteFailureKeepsBothProtocolsPendingUntilRetry() = runTest {
         withContext(Dispatchers.Default) {
-            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+            for (mls in listOf(false, true)) for (system in listOf(false, true)) withFixture(mls) { fixture ->
                 val event = fixture.batch("notification", fixture.event("first", fixture.encrypt("first")),
-                    fixture.adminlessReminder(true, TIME))
+                    fixture.adminlessReminder(system, TIME))
                 fixture.releasePrepared()
                 fixture.sql("CREATE TRIGGER fail_adminless BEFORE INSERT ON AdminlessGroupDelete " +
                     "BEGIN SELECT RAISE(ABORT, 'reminder write failed'); END")
@@ -11456,7 +11456,7 @@ class NotificationProcessorNativeTest {
         fun adminlessReminder(system: Boolean, deletionTime: Instant) = plainEvent("reminder", """{
             "type":"conversation.${if (system) "system." else ""}adminless-reminder",
             "conversation":"${CONVERSATION_ID.value}","via":"system",
-            ${if (system) "" else """"from":"system","team":"team","""}
+            ${if (system) "" else """"from":"system","""}
             "qualified_conversation":{"id":"${CONVERSATION_ID.value}","domain":"${CONVERSATION_ID.domain}"},
             "qualified_from":${if (system) "null" else """{"id":"${SENDER.value}","domain":"${SENDER.domain}"}"""},
             "time":"$TIME","data":{"deletion_scheduled_for":"$deletionTime"}

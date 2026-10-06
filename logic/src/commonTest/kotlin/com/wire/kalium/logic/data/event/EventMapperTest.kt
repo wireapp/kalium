@@ -246,7 +246,7 @@ class EventMapperTest {
         val regular = EventContentDTO.Conversation.AdminlessDeleteReminderDTO(
             conversation = TestConversation.NETWORK_ID.value, data = data, from = TestUser.NETWORK_ID.value,
             qualifiedConversation = TestConversation.NETWORK_ID, qualifiedFrom = TestUser.NETWORK_ID,
-            teamId = "team-id", time = EVENT_TIME, via = "user",
+            time = EVENT_TIME, via = "user",
         )
         val system = EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO(
             conversation = TestConversation.NETWORK_ID.value, data = data,

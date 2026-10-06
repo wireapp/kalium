@@ -32,6 +32,23 @@ class SystemConversationEventSerializationTest {
     }
 
     @Test
+    fun regularAdminlessReminderAcceptsMissingNullAndPresentTeam() {
+        for ((teamField, expectedTeam) in TEAM_FIELDS) {
+            val reminder = assertIs<EventContentDTO.Conversation.AdminlessDeleteReminderDTO>(
+                decode("adminless-reminder", SENDER_FIELD, REMINDER_DATA, "\"from\":\"user\", $teamField")
+            )
+            assertEquals(expectedTeam, reminder.teamId)
+            assertEquals("user", reminder.from)
+            assertEquals(SENDER, reminder.qualifiedFrom)
+            assertEquals(CONVERSATION, reminder.qualifiedConversation)
+            assertEquals("conversation", reminder.conversation)
+            assertEquals(DELETION_TIME, reminder.data.deletionScheduledFor)
+            assertEquals(TIME, reminder.time)
+            assertEquals("user", reminder.via)
+        }
+    }
+
+    @Test
     fun systemDeletionAndMembershipAcceptMissingNullAndPresentSenders() {
         for ((sender, expected) in SENDERS) {
             val deletion = assertIs<EventContentDTO.Conversation.SystemDeletedConversationDTO>(decode("system.delete", sender))
