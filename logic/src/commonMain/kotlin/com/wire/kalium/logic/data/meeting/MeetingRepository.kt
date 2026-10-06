@@ -33,7 +33,6 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -150,7 +149,7 @@ internal class MeetingDataSource(
             meetingApi.fetchMeetings()
         }.map { meetings ->
             meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
-        }.onSuccess { meetingsToPersist ->
+        }.flatMap { meetingsToPersist ->
             val creatorIds = meetingsToPersist.map { it.creatorId.toModel() }.toSet()
             if (creatorIds.isNotEmpty()) {
                 // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
@@ -159,21 +158,24 @@ internal class MeetingDataSource(
                 userRepository.fetchUsersIfUnknownByIds(creatorIds)
             }
             val conversationIds = meetingsToPersist.map { it.conversationId.toModel() }.distinct()
-            if (conversationIds.isNotEmpty()) {
+            val persistConversationResult = if (conversationIds.isNotEmpty()) {
                 conversationRepository.fetchConversationListDetails(conversationIds).flatMap {
                     persistConversations(transactionContext, it.conversationsFound, false)
                 }
+            } else {
+                Either.Right(Unit)
             }
 
-            wrapStorageRequest {
-                meetingDAO.upsertMeetings(
-                    meetings = meetingsToPersist,
-                    generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
-                    removeMeetingsAbsentFromUpsertList = true,
-                )
+            persistConversationResult.flatMap {
+                wrapStorageRequest {
+                    meetingDAO.upsertMeetings(
+                        meetings = meetingsToPersist,
+                        generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
+                        removeMeetingsAbsentFromUpsertList = true,
+                    )
+                    meetingsToPersist.map { meetingMapper.fromDaoToModel(it) }
+                }
             }
-        }.map {
-            it.map { meetingMapper.fromDaoToModel(it) }
         }
 
     override suspend fun fetchAndPersistMeeting(

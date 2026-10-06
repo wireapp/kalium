@@ -1,0 +1,1 @@
+Propagate meeting conversation fetch/persistence and meeting storage failures through the existing meeting sync API. Do not replace the meeting cache after conversation preparation fails; preserve authoritative empty/unsupported-only reconciliation and background feature-gating behavior.

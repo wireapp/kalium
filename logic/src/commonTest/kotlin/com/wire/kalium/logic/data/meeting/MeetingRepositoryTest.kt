@@ -165,6 +165,48 @@ class MeetingRepositoryTest {
     }
 
     @Test
+    fun givenConversationFetchFails_whenFetchingMeetings_thenReturnFailureWithoutReplacingMeetings() = runTest {
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingsSuccess(listOf(meetingDTO()))
+            .arrange()
+        everySuspend { arrangement.userRepository.insertOrIgnoreIncompleteUsers(any()) } returns Either.Right(Unit)
+        everySuspend { arrangement.userRepository.fetchUsersIfUnknownByIds(any()) } returns Either.Right(Unit)
+        everySuspend { arrangement.conversationRepository.fetchConversationListDetails(any()) } returns Either.Left(failure)
+
+        assertEquals(Either.Left(failure), repository.fetchAndPersistMeetings(arrangement.transactionContext))
+        verifySuspend(VerifyMode.not) { arrangement.meetingDao.upsertMeetings(any(), any(), any()) }
+    }
+
+    @Test
+    fun givenConversationPersistenceFails_whenFetchingMeetings_thenReturnFailureWithoutReplacingMeetings() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingsSuccess(listOf(meetingDTO()))
+            .withFetchConversationsSuccess()
+            .withPersistConversationsFailure(failure)
+            .arrange()
+        everySuspend { arrangement.userRepository.insertOrIgnoreIncompleteUsers(any()) } returns Either.Right(Unit)
+        everySuspend { arrangement.userRepository.fetchUsersIfUnknownByIds(any()) } returns Either.Right(Unit)
+
+        assertEquals(Either.Left(failure), repository.fetchAndPersistMeetings(arrangement.transactionContext))
+        verifySuspend(VerifyMode.not) { arrangement.meetingDao.upsertMeetings(any(), any(), any()) }
+    }
+
+    @Test
+    fun givenMeetingPersistenceFails_whenFetchingEmptyMeetings_thenReturnStorageFailure() = runTest {
+        val failure = RuntimeException("meeting storage failed")
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingsSuccess(emptyList())
+            .arrange()
+        everySuspend { arrangement.meetingDao.upsertMeetings(any(), any(), any()) } throws failure
+
+        val result = repository.fetchAndPersistMeetings(arrangement.transactionContext)
+
+        assertSame(failure, assertIs<Either.Left<StorageFailure.Generic>>(result).value.rootCause)
+    }
+
+    @Test
     fun givenEmptyMeetingResponse_whenFetching_thenRemoveStaleMeetingsWithoutFetchingConversations() = runTest {
         val (arrangement, repository) = Arrangement()
             .withFetchMeetingsSuccess(emptyList())

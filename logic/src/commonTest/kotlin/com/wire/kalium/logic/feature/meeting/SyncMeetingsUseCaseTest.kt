@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.meeting
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
@@ -98,6 +99,17 @@ class SyncMeetingsUseCaseTest {
         val result = useCase()
 
         assertIs<NetworkFailure.NoNetworkConnection>(assertIs<SyncMeetingsUseCase.Result.Failure>(result).coreFailure)
+    }
+
+    @Test
+    fun givenStorageFailure_whenInvoking_thenReturnFailure() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (_, useCase) = Arrangement()
+            .withMeetingsEnabled(true)
+            .withFetchMeetingsFailed(failure)
+            .arrange()
+
+        assertEquals(SyncMeetingsUseCase.Result.Failure(failure), useCase())
     }
 
     @Test
