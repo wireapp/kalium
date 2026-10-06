@@ -166,6 +166,8 @@ data class Conversation(
         (it.contains(AccessRole.SERVICE))
     }
 
+    fun isGuestAccessEnabled(): Boolean = isGuestAllowed() && isNonTeamMemberAllowed() && Access.CODE in access
+
     sealed interface Type {
         data object Self : Type
         data object OneOnOne : Type
