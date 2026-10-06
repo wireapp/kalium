@@ -175,8 +175,8 @@ separate durable settings and remain supported.
   Pinned sources: [iOS flags](https://github.com/wireapp/core-crypto/blob/v10.4.0/make/config.mk),
   [KMP packaging](https://github.com/wireapp/core-crypto/blob/v10.4.0/crypto-ffi/bindings/kmp/build.gradle.kts),
   [error enum](https://github.com/wireapp/core-crypto/blob/v10.4.0/crypto-ffi/src/error/core_crypto.rs).
-- **Calling artifact and lifecycle:** the existing AVS 10.5.10 archive hash is
-  `67ebe389b81a66aaf95fa3cb151c2863728ec4c08b0c6879822ef21aa7fcd1fb`.
+- **Calling artifact and lifecycle:** the pinned AVS 10.5.19 archive hash is
+  `637e71bb26ae8d50446e500fd4141bcdb8ee4a13bc6bb1d861d6d656780e2d77`.
   App live handles register `wcall_set_shutdown_handler`, call `wcall_destroy`
   after cancelling and joining Kotlin work, and await native shutdown before
   disposing their callback references. In the pinned source, `instance_destroy`

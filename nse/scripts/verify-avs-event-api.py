@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 
 REPO = Path(__file__).resolve().parents[2]
-SHA = "67ebe389b81a66aaf95fa3cb151c2863728ec4c08b0c6879822ef21aa7fcd1fb"
+SHA = "637e71bb26ae8d50446e500fd4141bcdb8ee4a13bc6bb1d861d6d656780e2d77"
 CACHE = Path.home() / ".gradle/caches/kalium-apple-avs-runtime" / SHA
 FRAMEWORK = CACHE / "frameworks-v1/avs.xcframework"
 REPORT = REPO / "nse/build/reports/avs-event-api"
@@ -77,7 +77,7 @@ def main():
         assert not metadata["device"]["extensionSafeFlag"] and not metadata["simulator"]["extensionSafeFlag"]
         assert metadata["device"]["importsUIApplication"] and metadata["device"]["containsSharedApplication"]
         (REPORT / "result.json").write_text(json.dumps({"auditCompleted": True, "extensionSafetyEstablished": False,
-            "version": "10.5.10", "archiveSha256": SHA, "sourceCommit": "a861f5fd9c9b6d4c9704d7276c2d62cb07116f32",
+            "version": "10.5.19", "archiveSha256": SHA, "sourceCommit": "4ca13dde13759a2081b6ccaa2c2ac4756f7f20fd",
             "extensionOnlyLinkSucceeded": True, "artifact": metadata, "observations": outcomes}, indent=2) + "\n")
     finally:
         if not options.simulator and simulator:
