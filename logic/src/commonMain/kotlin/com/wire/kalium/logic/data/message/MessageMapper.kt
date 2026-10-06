@@ -234,6 +234,13 @@ internal class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> null
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PROTEUS -> null
             MessageEntity.ContentType.COMPOSITE -> null
+            MessageEntity.ContentType.POLL -> LocalNotificationMessage.Text(
+                messageId = message.id,
+                author = sender,
+                text = message.text.orEmpty(),
+                time = message.date,
+                isQuotingSelfUser = message.isQuotingSelf
+            )
             MessageEntity.ContentType.FEDERATION -> null
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> null
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> null
@@ -383,6 +390,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
     is MessagePreviewEntityContent.Composite -> MessagePreviewContent.WithUser.Composite(username = senderName, messageBody = messageBody)
+    is MessagePreviewEntityContent.Poll -> MessagePreviewContent.WithUser.Poll(username = senderName, question = question)
     is MessagePreviewEntityContent.ConversationVerifiedMls -> MessagePreviewContent.VerificationChanged.VerifiedMls
     is MessagePreviewEntityContent.ConversationVerifiedProteus -> MessagePreviewContent.VerificationChanged.VerifiedProteus
     is MessagePreviewEntityContent.ConversationVerificationDegradedMls -> MessagePreviewContent.VerificationChanged.DegradedMls

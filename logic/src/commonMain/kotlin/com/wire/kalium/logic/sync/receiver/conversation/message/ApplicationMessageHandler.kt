@@ -52,6 +52,7 @@ import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.handler.PollVoteHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -104,6 +105,7 @@ internal class ApplicationMessageHandlerImpl(
     private val messageCompositeEditHandler: MessageCompositeEditHandler,
     private val callingMessageHandler: CallingMessageHandler,
     private val resolveLinkPreviewImages: LinkPreviewImagesResolver,
+    private val pollVoteHandler: PollVoteHandler,
     private val selfUserId: UserId,
     baseLogger: KaliumLogger = kaliumLogger,
 ) : ApplicationMessageHandler {
@@ -184,6 +186,8 @@ internal class ApplicationMessageHandlerImpl(
                 )
             }
 
+            is MessageContent.PollVote -> pollVoteHandler.handle(signaling, content)
+
             is MessageContent.DataTransfer -> dataTransferEventHandler.handle(signaling, content)
             is MessageContent.InCallEmoji -> inCallReactionsRepository.addInCallReaction(
                 conversationId = signaling.conversationId,
@@ -249,6 +253,7 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.Composite -> persistMessage(message)
+            is MessageContent.Poll -> persistMessage(message)
             is MessageContent.Location -> persistMessage(message)
             is MessageContent.Multipart -> handleMultipartMessage(message, content)
         }

@@ -163,6 +163,8 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PollMessageDataSource
+import com.wire.kalium.logic.data.message.PollMessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
@@ -554,6 +556,7 @@ import com.wire.kalium.logic.sync.receiver.handler.MeetingsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.PollVoteHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
@@ -1073,6 +1076,9 @@ public class UserSessionScope internal constructor(
 
     private val compositeMessageRepository: CompositeMessageRepository
         get() = CompositeMessageDataSource(compositeMessageDAO = userStorage.database.compositeMessageDAO)
+
+    private val pollMessageRepository: PollMessageRepository
+        get() = PollMessageDataSource(pollMessageDAO = userStorage.database.pollMessageDAO)
 
     private val messageDraftRepository: MessageDraftRepository by lazy {
         MessageDraftDataSource(messageDraftDAO = userStorage.database.messageDraftDAO)
@@ -2083,6 +2089,7 @@ public class UserSessionScope internal constructor(
             MessageCompositeEditHandlerImpl(messageRepository),
             callingMessageHandler,
             linkPreviewsResolver,
+            PollVoteHandlerImpl(pollMessageRepository),
             userId
         )
 
@@ -2753,6 +2760,7 @@ public class UserSessionScope internal constructor(
             fetchConversationUseCase,
             cryptoTransactionProvider,
             compositeMessageRepository,
+            pollMessageRepository,
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,

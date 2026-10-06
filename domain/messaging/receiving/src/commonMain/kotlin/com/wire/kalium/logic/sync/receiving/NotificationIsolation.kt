@@ -51,7 +51,7 @@ internal fun CoreFailure.canDeferNotification(): Boolean = when (this) {
 internal fun ReceivedPayload.canCrossNotificationGap(): Boolean = when (this) {
     is ReceivedPayload.Application -> when (message.content.messageContent) {
         is MessageContent.Text, is MessageContent.Knock, is MessageContent.Location,
-        is MessageContent.Asset, is MessageContent.Composite, is MessageContent.Multipart,
+        is MessageContent.Asset, is MessageContent.Composite, is MessageContent.Poll, is MessageContent.Multipart,
         is MessageContent.Ignored, is MessageContent.Unknown -> true
         else -> false
     }

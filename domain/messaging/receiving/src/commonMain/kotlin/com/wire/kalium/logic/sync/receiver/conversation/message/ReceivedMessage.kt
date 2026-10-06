@@ -36,6 +36,7 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 /** The app starts expiration in its executor; NSE can persist a start time for that executor to resume. */
+@Suppress("CyclomaticComplexMethod") // The exhaustive visibility `when` makes every new content type choose its visibility.
 fun MessageUnpackResult.ApplicationMessage.toRegularMessage(
     selfUserId: UserId,
     selfDeletionStartedAt: Instant? = null,
@@ -49,6 +50,7 @@ fun MessageUnpackResult.ApplicationMessage.toRegularMessage(
         is MessageContent.RestrictedAsset -> Message.Visibility.VISIBLE
         is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
         is MessageContent.Composite -> Message.Visibility.VISIBLE
+        is MessageContent.Poll -> Message.Visibility.VISIBLE
         is MessageContent.Location -> Message.Visibility.VISIBLE
         is MessageContent.Multipart -> Message.Visibility.VISIBLE
     }

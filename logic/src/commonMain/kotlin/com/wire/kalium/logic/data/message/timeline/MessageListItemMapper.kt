@@ -142,6 +142,18 @@ internal class MessageListItemMapper(private val selfUserId: UserId) {
             row.location_name,
             row.location_zoom
         )
+        MessageEntity.ContentType.POLL -> {
+            val poll = page.polls.getValue(row.id)
+            MessageListContent.Poll(
+                poll = MessageContent.Poll(
+                    question = poll.question,
+                    options = poll.options.map { MessageContent.Poll.Option(it.id, it.text) },
+                    allowMultipleAnswers = poll.allowMultipleAnswers,
+                    votes = poll.votes.map { it.toModel() },
+                ),
+                voters = poll.votes.map { user(it.voterId) },
+            )
+        }
         MessageEntity.ContentType.KNOCK -> MessageListContent.Knock
         MessageEntity.ContentType.UNKNOWN -> MessageListContent.Unknown(row.unknown_type_name)
         MessageEntity.ContentType.FAILED_DECRYPTION -> MessageListContent.FailedDecryption(

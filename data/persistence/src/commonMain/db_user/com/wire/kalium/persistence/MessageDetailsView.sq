@@ -166,6 +166,23 @@ IFNULL(
     ),
     '[]'
 ) AS buttonsJson,
+PollContent.question AS pollQuestion,
+PollContent.allow_multiple_answers AS pollAllowMultipleAnswers,
+PollContent.options_json AS pollOptionsJson,
+IFNULL(
+    (SELECT '[' ||
+            GROUP_CONCAT(
+                '{"voterId":"' || voter_user_id ||
+                '","selectedOptionIds":' || selected_option_ids_json ||
+                ',"date":' || creation_date || '}'
+            )
+        || ']'
+    FROM PollVoteContent
+    WHERE PollVoteContent.poll_message_id = Message.id
+        AND PollVoteContent.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS pollVotesJson,
 CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.list_1 END AS federationDomainList,
 CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.enum_1 END AS federationType,
 CASE WHEN SystemContent.content_type = 'CONVERSATION_PROTOCOL_CHANGED' THEN SystemContent.enum_1 END AS conversationProtocolChanged,
@@ -186,6 +203,7 @@ LEFT JOIN MessageSystemContent AS SystemContent ON Message.id = SystemContent.me
 
 LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
+LEFT JOIN PollContent AS PollContent ON Message.id = PollContent.message_id AND Message.conversation_id = PollContent.conversation_id
 LEFT JOIN MessageRecipientFailure AS FailedRecipientsWithNoClients ON Message.id = FailedRecipientsWithNoClients.message_id AND Message.conversation_id = FailedRecipientsWithNoClients.conversation_id AND FailedRecipientsWithNoClients.recipient_failure_type = 'NO_CLIENTS_TO_DELIVER'
 LEFT JOIN MessageRecipientFailure AS FailedRecipientsDeliveryFailed ON Message.id = FailedRecipientsDeliveryFailed.message_id AND Message.conversation_id = FailedRecipientsDeliveryFailed.conversation_id AND FailedRecipientsDeliveryFailed.recipient_failure_type = 'MESSAGE_DELIVERY_FAILED'
 

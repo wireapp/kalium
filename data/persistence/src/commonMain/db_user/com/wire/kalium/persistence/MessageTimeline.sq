@@ -4,7 +4,7 @@ FROM Message m
 WHERE (
     m.visibility = 'VISIBLE'
     OR (m.visibility = 'DELETED' AND m.content_type IN
-        ('TEXT', 'ASSET', 'KNOCK', 'RESTRICTED_ASSET', 'UNKNOWN', 'FAILED_DECRYPTION', 'COMPOSITE', 'LOCATION', 'MULTIPART'))
+        ('TEXT', 'ASSET', 'KNOCK', 'RESTRICTED_ASSET', 'UNKNOWN', 'FAILED_DECRYPTION', 'COMPOSITE', 'LOCATION', 'MULTIPART', 'POLL'))
 )
 AND (m.visibility = 'DELETED' OR NOT EXISTS (
     SELECT 1 FROM MessageAssetContent a
@@ -91,6 +91,14 @@ FROM MessageLinkPreview WHERE conversation_id = :conversationId AND message_id I
 
 timelineButtons:
 SELECT * FROM ButtonContent WHERE conversation_id = :conversationId AND message_id IN :ids ORDER BY message_id, rowid;
+
+timelinePolls:
+SELECT message_id, question, options_json, allow_multiple_answers FROM PollContent
+WHERE conversation_id = :conversationId AND message_id IN :ids;
+
+timelinePollVotes:
+SELECT poll_message_id, voter_user_id, selected_option_ids_json, creation_date FROM PollVoteContent
+WHERE conversation_id = :conversationId AND poll_message_id IN :ids;
 
 timelineReactions:
 SELECT message_id, emoji, COUNT(*) AS reaction_count,

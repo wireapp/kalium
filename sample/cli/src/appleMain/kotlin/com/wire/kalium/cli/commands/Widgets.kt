@@ -129,6 +129,7 @@ private fun regularContent(message: Message.Regular) =
         is MessageContent.RestrictedAsset -> textMessage(message.senderUserName, "Shared an asset")
         is MessageContent.Unknown -> systemMessage(message.senderUserName, "Unknown message")
         is MessageContent.Composite -> systemMessage(message.senderUserName, "Shared a composite message")
+        is MessageContent.Poll -> textMessage(message.senderUserName, "Poll: ${content.question}")
         is MessageContent.Location -> systemMessage(message.senderUserName, "Shared a location")
         is MessageContent.Multipart -> systemMessage(message.senderUserName, "Shared a multipart message")
     }

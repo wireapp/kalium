@@ -75,6 +75,9 @@ public sealed interface MessageListContent {
     public data class System(public val event: MessageContent.System, public val members: List<MessageListUser>) : MessageListContent
     public data class Text(public val text: MessageListText) : Regular
     public data class Composite(public val text: MessageListText?, public val buttons: List<Button>) : Regular
+
+    /** A native poll with the latest vote of each user. [voters] resolves every voter in [poll] for display. */
+    public data class Poll(public val poll: MessageContent.Poll, public val voters: List<MessageListUser>) : Regular
     public data class Multipart(public val text: MessageListText, public val attachments: List<MessageListAttachment>) : Regular
     public data class Asset(public val asset: MessageListAsset) : Regular
     public data class RestrictedAsset(public val name: String, public val mimeType: String, public val sizeInBytes: Long) : Regular

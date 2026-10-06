@@ -58,6 +58,7 @@ class MessageInsertExtensionTest : BaseDatabaseTest() {
             db.database.unreadEventsQueries,
             db.database.conversationsQueries,
             db.database.buttonContentQueries,
+            db.database.pollContentQueries,
             selfUserId
         )
     }

@@ -43,6 +43,7 @@ import com.wire.kalium.logic.data.message.timeline.MessageTimelineRepository
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PollMessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -93,6 +94,8 @@ import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHa
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCase
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCase
+import com.wire.kalium.logic.feature.message.poll.SendPollMessageUseCase
+import com.wire.kalium.logic.feature.message.poll.SendPollVoteUseCase
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCaseImpl
@@ -166,6 +169,7 @@ public class MessageScope internal constructor(
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val compositeMessageRepository: CompositeMessageRepository,
+    private val pollMessageRepository: PollMessageRepository,
     private val joinExistingConversationUseCaseProvider: () -> JoinExistingMLSConversationUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
@@ -562,6 +566,28 @@ public class MessageScope internal constructor(
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
             scope = scope
+        )
+
+    public val sendPollMessage: SendPollMessageUseCase
+        get() = SendPollMessageUseCase(
+            persistMessage = persistMessage,
+            selfUserId = selfUserId,
+            currentClientIdProvider = currentClientIdProvider,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            userPropertyRepository = userPropertyRepository,
+            pendingMessagesEnabled = kaliumConfigs.pendingMessages,
+            scope = scope
+        )
+
+    public val sendPollVote: SendPollVoteUseCase
+        get() = SendPollVoteUseCase(
+            messageSender = messageSender,
+            pollMessageRepository = pollMessageRepository,
+            syncManager = syncManager,
+            currentClientIdProvider = currentClientIdProvider,
+            selfUserId = selfUserId
         )
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl

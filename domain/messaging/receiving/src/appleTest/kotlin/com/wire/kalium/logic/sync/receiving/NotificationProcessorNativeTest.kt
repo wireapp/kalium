@@ -6372,6 +6372,37 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun pollAndVotesAreStoredAndUnknownPollVotesAreDropped() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                val poll = MessageContent.Poll(
+                    question = "Lunch?",
+                    options = listOf(MessageContent.Poll.Option("a", "Pizza"), MessageContent.Poll.Option("b", "Sushi")),
+                    allowMultipleAnswers = false
+                )
+                val event = fixture.batch("notification",
+                    fixture.event("poll", fixture.encrypt("poll", poll)),
+                    fixture.event("vote", fixture.encrypt("vote", MessageContent.PollVote("poll", listOf("b")))),
+                    fixture.event("invalid-vote", fixture.encrypt("invalid-vote", MessageContent.PollVote("poll", listOf("a", "b")))),
+                    fixture.event("orphan-vote", fixture.encrypt("orphan-vote", MessageContent.PollVote("missing", listOf("a")))))
+                val next = fixture.encrypt("next")
+                fixture.releasePrepared()
+                val result = assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id)).value
+                assertEquals("poll", result?.messageId)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val stored = checkNotNull(runtime.database.messageDAO.getMessageById("poll", CONVERSATION_ID))
+                    val content = assertIs<MessageEntityContent.Poll>(stored.content)
+                    assertEquals("Lunch?", content.question)
+                    assertEquals(listOf("a", "b"), content.options.map { it.id })
+                    assertEquals(listOf(listOf("b")), content.votes.map { it.selectedOptionIds })
+                    assertNull(runtime.database.messageDAO.getMessageById("missing", CONVERSATION_ID))
+                })
+                assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
+            }
+        }
+    }
+
+    @Test
     fun regularContentProteusEffects() = regularContentEffects(false)
 
     @Test

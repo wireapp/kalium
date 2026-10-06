@@ -66,6 +66,7 @@ internal class SendPendingMessagesUseCaseImpl(
 
                             is MessageContent.Location,
                             is MessageContent.Multipart,
+                            is MessageContent.Poll,
                             is MessageContent.Text -> messageSender.sendPendingMessage(message.conversationId, message.id)
 
                             else -> {

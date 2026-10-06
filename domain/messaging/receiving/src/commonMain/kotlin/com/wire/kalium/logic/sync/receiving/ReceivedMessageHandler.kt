@@ -54,6 +54,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.PollVoteEntity
 import com.wire.kalium.persistence.dao.message.ReceivedMessage
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
@@ -156,13 +157,19 @@ internal class ReceivedMessageHandler(
         // Legal-hold state and embedded legal-hold effects are deliberately app-only.
         when (val content = unpacked.content.messageContent) {
             is MessageContent.Text, is MessageContent.Knock, is MessageContent.Location, is MessageContent.Unknown,
-            is MessageContent.Composite, is MessageContent.Asset, is MessageContent.Multipart ->
+            is MessageContent.Composite, is MessageContent.Poll, is MessageContent.Asset, is MessageContent.Multipart ->
                 storeRegular(unpacked, conversation, laterMessages)
             is MessageContent.Ignored, is MessageContent.History -> Unit
             is MessageContent.ClientAction -> persistMessage(unpacked.toSignalingMessage(selfUserId).cryptoSessionResetMessage()).orThrow()
             is MessageContent.DataTransfer -> trackingIdentifier(unpacked, content)
             is MessageContent.TextEdited, is MessageContent.CompositeEdited, is MessageContent.MultipartEdited -> edit(unpacked)
             is MessageContent.ButtonAction, is MessageContent.ButtonActionConfirmation -> buttonAction(unpacked)
+            // Votes for polls this client does not have are dropped, exactly as in the app.
+            is MessageContent.PollVote -> data.polls.recordVote(
+                conversationId,
+                content.referencedMessageId,
+                PollVoteEntity(unpacked.senderUserId.toDao(), content.selectedOptionIds, unpacked.instant)
+            )
             is MessageContent.DeleteMessage -> delete(unpacked, content.messageId)
             is MessageContent.DeleteForMe -> deleteForMe(content, conversation)
             is MessageContent.Cleared -> clear(unpacked, content, conversation, requiredEarlier, recreatedLater, laterMessages)

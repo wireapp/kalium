@@ -711,6 +711,19 @@ public final class com/wire/kalium/logic/data/message/timeline/MessageListConten
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/wire/kalium/logic/data/message/timeline/MessageListContent$Poll : com/wire/kalium/logic/data/message/timeline/MessageListContent$Regular {
+	public fun <init> (Lcom/wire/kalium/logic/data/message/MessageContent$Poll;Ljava/util/List;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/message/MessageContent$Poll;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Lcom/wire/kalium/logic/data/message/MessageContent$Poll;Ljava/util/List;)Lcom/wire/kalium/logic/data/message/timeline/MessageListContent$Poll;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/message/timeline/MessageListContent$Poll;Lcom/wire/kalium/logic/data/message/MessageContent$Poll;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/message/timeline/MessageListContent$Poll;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPoll ()Lcom/wire/kalium/logic/data/message/MessageContent$Poll;
+	public final fun getVoters ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract interface class com/wire/kalium/logic/data/message/timeline/MessageListContent$Regular : com/wire/kalium/logic/data/message/timeline/MessageListContent {
 }
 
@@ -1239,6 +1252,7 @@ public final class com/wire/kalium/logic/failure/LegalHoldEnabledForConversation
 }
 
 public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coroutines/CoroutineScope {
+	public final fun callPresentations (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getAnalyticsIdentifierManager ()Lcom/wire/kalium/logic/feature/analytics/AnalyticsIdentifierManager;
 	public final fun getAppLockTeamFeatureConfigObserver ()Lcom/wire/kalium/logic/feature/applock/AppLockTeamFeatureConfigObserver;
 	public final fun getApproveLegalHoldRequest ()Lcom/wire/kalium/logic/feature/legalhold/ApproveLegalHoldRequestUseCase;
@@ -1311,7 +1325,11 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun isMLSEnabled ()Lcom/wire/kalium/logic/feature/user/IsMLSEnabledUseCase;
 	public final fun isMeetingsEnabled ()Lcom/wire/kalium/logic/feature/user/IsMeetingsEnabledUseCase;
 	public final fun isPreventAdminlessGroupsEnabled ()Lcom/wire/kalium/logic/feature/user/IsPreventAdminlessGroupsEnabledUseCase;
+	public final fun observeCallPresentations ()Lkotlinx/coroutines/flow/Flow;
 	public final fun observeIfE2EIRequiredDuringLogin (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun observeNotificationRemovalCandidates (Ljava/util/List;)Lkotlinx/coroutines/flow/Flow;
+	public final fun rememberNotificationMessages (Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun resumePendingCallSignals (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun setIncrementalSyncUnprocessedEventsBatchLimit (Ljava/lang/Integer;)V
 }
 
@@ -6075,6 +6093,8 @@ public final class com/wire/kalium/logic/feature/message/MessageScope {
 	public final fun getSendKnock ()Lcom/wire/kalium/logic/feature/message/SendKnockUseCase;
 	public final fun getSendLocation ()Lcom/wire/kalium/logic/feature/message/SendLocationUseCase;
 	public final fun getSendMultipartMessage ()Lcom/wire/kalium/logic/feature/message/SendMultipartMessageUseCase;
+	public final fun getSendPollMessage ()Lcom/wire/kalium/logic/feature/message/poll/SendPollMessageUseCase;
+	public final fun getSendPollVote ()Lcom/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase;
 	public final fun getSendTextMessage ()Lcom/wire/kalium/logic/feature/message/SendTextMessageUseCase;
 	public final fun getToggleReaction ()Lcom/wire/kalium/logic/feature/message/ToggleReactionUseCase;
 	public final fun getUpdateAssetMessageTransferStatus ()Lcom/wire/kalium/logic/feature/asset/UpdateAssetMessageTransferStatusUseCase;
@@ -6382,6 +6402,41 @@ public final class com/wire/kalium/logic/feature/message/linkpreview/LinkPreview
 
 public abstract interface class com/wire/kalium/logic/feature/message/linkpreview/ResolveLinkPreviewImagesUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;)V
+}
+
+public final class com/wire/kalium/logic/feature/message/poll/SendPollMessageUseCase {
+	public static final field Companion Lcom/wire/kalium/logic/feature/message/poll/SendPollMessageUseCase$Companion;
+	public static final field MAX_OPTIONS I
+	public static final field MIN_OPTIONS I
+	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/util/List;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/message/poll/SendPollMessageUseCase$Companion {
+}
+
+public final class com/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase {
+	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase$Result$Failure : com/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase$Result$Success : com/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/message/poll/SendPollVoteUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract class com/wire/kalium/logic/feature/notificationToken/Result {

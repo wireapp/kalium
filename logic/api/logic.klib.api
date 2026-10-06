@@ -2332,6 +2332,22 @@ sealed interface com.wire.kalium.logic.data.message.timeline/MessageListContent 
         final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.Multipart.toString|toString(){}[0]
     }
 
+    final class Poll : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll|null[0]
+        constructor <init>(com.wire.kalium.logic.data.message/MessageContent.Poll, kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser>) // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.<init>|<init>(com.wire.kalium.logic.data.message.MessageContent.Poll;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListUser>){}[0]
+
+        final val poll // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.poll|{}poll[0]
+            final fun <get-poll>(): com.wire.kalium.logic.data.message/MessageContent.Poll // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.poll.<get-poll>|<get-poll>(){}[0]
+        final val voters // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.voters|{}voters[0]
+            final fun <get-voters>(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.voters.<get-voters>|<get-voters>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.message/MessageContent.Poll // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.component1|component1(){}[0]
+        final fun component2(): kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.component2|component2(){}[0]
+        final fun copy(com.wire.kalium.logic.data.message/MessageContent.Poll = ..., kotlin.collections/List<com.wire.kalium.logic.data.message.timeline/MessageListUser> = ...): com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.copy|copy(com.wire.kalium.logic.data.message.MessageContent.Poll;kotlin.collections.List<com.wire.kalium.logic.data.message.timeline.MessageListUser>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.data.message.timeline/MessageListContent.Poll.toString|toString(){}[0]
+    }
+
     final class RestrictedAsset : com.wire.kalium.logic.data.message.timeline/MessageListContent.Regular { // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset|null[0]
         constructor <init>(kotlin/String, kotlin/String, kotlin/Long) // com.wire.kalium.logic.data.message.timeline/MessageListContent.RestrictedAsset.<init>|<init>(kotlin.String;kotlin.String;kotlin.Long){}[0]
 
@@ -5044,6 +5060,42 @@ final class com.wire.kalium.logic.feature.message.linkpreview/LinkPreviewTarget 
     final fun toString(): kotlin/String // com.wire.kalium.logic.feature.message.linkpreview/LinkPreviewTarget.toString|toString(){}[0]
 }
 
+final class com.wire.kalium.logic.feature.message.poll/SendPollMessageUseCase { // com.wire.kalium.logic.feature.message.poll/SendPollMessageUseCase|null[0]
+    final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin.collections/List<kotlin/String>, kotlin/Boolean): com.wire.kalium.logic.feature.message/MessageOperationResult // com.wire.kalium.logic.feature.message.poll/SendPollMessageUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.collections.List<kotlin.String>;kotlin.Boolean){}[0]
+
+    final object Companion { // com.wire.kalium.logic.feature.message.poll/SendPollMessageUseCase.Companion|null[0]
+        final const val MAX_OPTIONS // com.wire.kalium.logic.feature.message.poll/SendPollMessageUseCase.Companion.MAX_OPTIONS|{}MAX_OPTIONS[0]
+            final fun <get-MAX_OPTIONS>(): kotlin/Int // com.wire.kalium.logic.feature.message.poll/SendPollMessageUseCase.Companion.MAX_OPTIONS.<get-MAX_OPTIONS>|<get-MAX_OPTIONS>(){}[0]
+        final const val MIN_OPTIONS // com.wire.kalium.logic.feature.message.poll/SendPollMessageUseCase.Companion.MIN_OPTIONS|{}MIN_OPTIONS[0]
+            final fun <get-MIN_OPTIONS>(): kotlin/Int // com.wire.kalium.logic.feature.message.poll/SendPollMessageUseCase.Companion.MIN_OPTIONS.<get-MIN_OPTIONS>|<get-MIN_OPTIONS>(){}[0]
+    }
+}
+
+final class com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase { // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase|null[0]
+    final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin.collections/List<kotlin/String>): com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.collections.List<kotlin.String>){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result { // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val error // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Failure.error|{}error[0]
+                final fun <get-error>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Failure.error.<get-error>|<get-error>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Failure // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result { // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 final class com.wire.kalium.logic.feature.message/DeleteMessageUseCase { // com.wire.kalium.logic.feature.message/DeleteMessageUseCase|null[0]
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin/Boolean): com.wire.kalium.logic.feature.message/MessageOperationResult // com.wire.kalium.logic.feature.message/DeleteMessageUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.Boolean){}[0]
 }
@@ -5268,6 +5320,10 @@ final class com.wire.kalium.logic.feature.message/MessageScope { // com.wire.kal
         final fun <get-sendLocation>(): com.wire.kalium.logic.feature.message/SendLocationUseCase // com.wire.kalium.logic.feature.message/MessageScope.sendLocation.<get-sendLocation>|<get-sendLocation>(){}[0]
     final val sendMultipartMessage // com.wire.kalium.logic.feature.message/MessageScope.sendMultipartMessage|{}sendMultipartMessage[0]
         final fun <get-sendMultipartMessage>(): com.wire.kalium.logic.feature.message/SendMultipartMessageUseCase // com.wire.kalium.logic.feature.message/MessageScope.sendMultipartMessage.<get-sendMultipartMessage>|<get-sendMultipartMessage>(){}[0]
+    final val sendPollMessage // com.wire.kalium.logic.feature.message/MessageScope.sendPollMessage|{}sendPollMessage[0]
+        final fun <get-sendPollMessage>(): com.wire.kalium.logic.feature.message.poll/SendPollMessageUseCase // com.wire.kalium.logic.feature.message/MessageScope.sendPollMessage.<get-sendPollMessage>|<get-sendPollMessage>(){}[0]
+    final val sendPollVote // com.wire.kalium.logic.feature.message/MessageScope.sendPollVote|{}sendPollVote[0]
+        final fun <get-sendPollVote>(): com.wire.kalium.logic.feature.message.poll/SendPollVoteUseCase // com.wire.kalium.logic.feature.message/MessageScope.sendPollVote.<get-sendPollVote>|<get-sendPollVote>(){}[0]
     final val sendTextMessage // com.wire.kalium.logic.feature.message/MessageScope.sendTextMessage|{}sendTextMessage[0]
         final fun <get-sendTextMessage>(): com.wire.kalium.logic.feature.message/SendTextMessageUseCase // com.wire.kalium.logic.feature.message/MessageScope.sendTextMessage.<get-sendTextMessage>|<get-sendTextMessage>(){}[0]
     final val toggleReaction // com.wire.kalium.logic.feature.message/MessageScope.toggleReaction|{}toggleReaction[0]
@@ -5848,6 +5904,16 @@ final class com.wire.kalium.logic.feature.user/UserScope { // com.wire.kalium.lo
         final fun <get-uploadUserAvatar>(): com.wire.kalium.logic.feature.user/UploadUserAvatarUseCase // com.wire.kalium.logic.feature.user/UserScope.uploadUserAvatar.<get-uploadUserAvatar>|<get-uploadUserAvatar>(){}[0]
 }
 
+final class com.wire.kalium.logic.feature/LocalVideoPreviewAttachment { // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment|null[0]
+    final suspend fun detach() // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment.detach|detach(){}[0]
+    final suspend fun startCapture() // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment.startCapture|startCapture(){}[0]
+    final suspend fun stopCapture() // com.wire.kalium.logic.feature/LocalVideoPreviewAttachment.stopCapture|stopCapture(){}[0]
+}
+
+final class com.wire.kalium.logic.feature/RemoteVideoViewAttachment { // com.wire.kalium.logic.feature/RemoteVideoViewAttachment|null[0]
+    final suspend fun detach() // com.wire.kalium.logic.feature/RemoteVideoViewAttachment.detach|detach(){}[0]
+}
+
 final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/CoroutineScope { // com.wire.kalium.logic.feature/UserSessionScope|null[0]
     final val analyticsIdentifierManager // com.wire.kalium.logic.feature/UserSessionScope.analyticsIdentifierManager|{}analyticsIdentifierManager[0]
         final fun <get-analyticsIdentifierManager>(): com.wire.kalium.logic.feature.analytics/AnalyticsIdentifierManager // com.wire.kalium.logic.feature/UserSessionScope.analyticsIdentifierManager.<get-analyticsIdentifierManager>|<get-analyticsIdentifierManager>(){}[0]
@@ -5994,8 +6060,13 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
     final val users // com.wire.kalium.logic.feature/UserSessionScope.users|{}users[0]
         final fun <get-users>(): com.wire.kalium.logic.feature.user/UserScope // com.wire.kalium.logic.feature/UserSessionScope.users.<get-users>|<get-users>(){}[0]
 
+    final fun observeCallPresentations(): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.logic.sync.receiving/CallPresentationRecord>> // com.wire.kalium.logic.feature/UserSessionScope.observeCallPresentations|observeCallPresentations(){}[0]
+    final fun observeNotificationRemovalCandidates(kotlin.collections/List<kotlin/String>): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.persistence.dao.message/NotificationMessageKey>> // com.wire.kalium.logic.feature/UserSessionScope.observeNotificationRemovalCandidates|observeNotificationRemovalCandidates(kotlin.collections.List<kotlin.String>){}[0]
     final fun setIncrementalSyncUnprocessedEventsBatchLimit(kotlin/Int?) // com.wire.kalium.logic.feature/UserSessionScope.setIncrementalSyncUnprocessedEventsBatchLimit|setIncrementalSyncUnprocessedEventsBatchLimit(kotlin.Int?){}[0]
+    final suspend fun callPresentations(): kotlin.collections/List<com.wire.kalium.logic.sync.receiving/CallPresentationRecord> // com.wire.kalium.logic.feature/UserSessionScope.callPresentations|callPresentations(){}[0]
     final suspend fun observeIfE2EIRequiredDuringLogin(): kotlinx.coroutines.flow/Flow<kotlin/Boolean?> // com.wire.kalium.logic.feature/UserSessionScope.observeIfE2EIRequiredDuringLogin|observeIfE2EIRequiredDuringLogin(){}[0]
+    final suspend fun rememberNotificationMessages(kotlin.collections/List<com.wire.kalium.persistence.dao.message/NotificationMessageKey>) // com.wire.kalium.logic.feature/UserSessionScope.rememberNotificationMessages|rememberNotificationMessages(kotlin.collections.List<com.wire.kalium.persistence.dao.message.NotificationMessageKey>){}[0]
+    final suspend fun resumePendingCallSignals() // com.wire.kalium.logic.feature/UserSessionScope.resumePendingCallSignals|resumePendingCallSignals(){}[0]
 }
 
 final class com.wire.kalium.logic.featureFlags/KaliumConfigs { // com.wire.kalium.logic.featureFlags/KaliumConfigs|null[0]
@@ -6151,6 +6222,7 @@ final class com.wire.kalium.logic/CoreLogic : com.wire.kalium.logic/CoreLogicCom
         final fun <get-networkStateObserver>(): com.wire.kalium.network/NetworkStateObserver // com.wire.kalium.logic/CoreLogic.networkStateObserver.<get-networkStateObserver>|<get-networkStateObserver>(){}[0]
 
     final fun getSessionScope(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature/UserSessionScope // com.wire.kalium.logic/CoreLogic.getSessionScope|getSessionScope(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    final suspend fun prepareSessionForNotifications(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.feature/UserSessionScope): com.wire.kalium.common.functional/Either<com.wire.kalium.common.error/CoreFailure, kotlin/Unit> // com.wire.kalium.logic/CoreLogic.prepareSessionForNotifications|prepareSessionForNotifications(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.feature.UserSessionScope){}[0]
     final suspend fun releaseSessionScope(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic/CoreLogic.releaseSessionScope|releaseSessionScope(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
@@ -8905,3 +8977,5 @@ final fun (kotlin/String).com.wire.kalium.logic.util/splitFileExtension(): kotli
 final fun (kotlin/String).com.wire.kalium.logic.util/splitFileExtensionAndCopyCounter(): kotlin/Triple<kotlin/String, kotlin/Int, kotlin/String?> // com.wire.kalium.logic.util/splitFileExtensionAndCopyCounter|splitFileExtensionAndCopyCounter@kotlin.String(){}[0]
 final fun com.wire.kalium.logic.util/ExponentialDurationHelper(kotlin.time/Duration, kotlin.time/Duration): com.wire.kalium.logic.util/ExponentialDurationHelper // com.wire.kalium.logic.util/ExponentialDurationHelper|ExponentialDurationHelper(kotlin.time.Duration;kotlin.time.Duration){}[0]
 final fun com.wire.kalium.logic.util/buildFileName(kotlin/String, kotlin/String? = ..., kotlin/Int = ...): kotlin/String // com.wire.kalium.logic.util/buildFileName|buildFileName(kotlin.String;kotlin.String?;kotlin.Int){}[0]
+final suspend fun (com.wire.kalium.logic.feature/UserSessionScope).com.wire.kalium.logic.feature/attachLocalVideoPreview(com.wire.kalium.logic.util/PlatformView): com.wire.kalium.logic.feature/LocalVideoPreviewAttachment // com.wire.kalium.logic.feature/attachLocalVideoPreview|attachLocalVideoPreview@com.wire.kalium.logic.feature.UserSessionScope(com.wire.kalium.logic.util.PlatformView){}[0]
+final suspend fun (com.wire.kalium.logic.feature/UserSessionScope).com.wire.kalium.logic.feature/attachRemoteVideoView(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, com.wire.kalium.logic.util/PlatformView): com.wire.kalium.logic.feature/RemoteVideoViewAttachment // com.wire.kalium.logic.feature/attachRemoteVideoView|attachRemoteVideoView@com.wire.kalium.logic.feature.UserSessionScope(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;com.wire.kalium.logic.util.PlatformView){}[0]

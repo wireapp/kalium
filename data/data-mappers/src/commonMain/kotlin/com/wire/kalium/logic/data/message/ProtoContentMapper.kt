@@ -70,6 +70,7 @@ import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
 import com.wire.kalium.protobuf.messages.Multipart
+import com.wire.kalium.protobuf.messages.PollOption
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
@@ -79,6 +80,8 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlin.time.Instant
 import pbandk.ByteArr
 import com.wire.kalium.protobuf.messages.HistoryClient as ProtoHistoryClient
+import com.wire.kalium.protobuf.messages.Poll as ProtoPoll
+import com.wire.kalium.protobuf.messages.PollVote as ProtoPollVote
 
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
@@ -104,7 +107,9 @@ class ProtoContentMapperImpl(
 
         val message = GenericMessage(
             messageId = protoContent.messageUid,
-            content = messageContent
+            content = messageContent,
+            // Clients without poll support show an "unsupported message" notice instead of silently dropping the poll.
+            unknownStrategy = if (messageContent is GenericMessage.Content.Poll) UnknownStrategy.DISCARD_AND_WARN else null
         )
         return PlainMessageBlob(message.encodeToByteArray())
     }
@@ -163,9 +168,11 @@ class ProtoContentMapperImpl(
                 )
 
             is MessageContent.Composite -> packComposite(readableContent, expectsReadConfirmation, legalHoldStatus)
+            is MessageContent.Poll -> packPoll(readableContent, expectsReadConfirmation, legalHoldStatus)
             is MessageContent.ButtonAction -> packButtonAction(readableContent)
 
             is MessageContent.ButtonActionConfirmation -> packButtonActionConfirmation(readableContent)
+            is MessageContent.PollVote -> packPollVote(readableContent)
             is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
 
             is MessageContent.DataTransfer -> packDataTransfer(readableContent)
@@ -293,6 +300,29 @@ class ProtoContentMapperImpl(
             )
         )
 
+    private fun packPoll(
+        readableContent: MessageContent.Poll,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): GenericMessage.Content.Poll =
+        GenericMessage.Content.Poll(
+            ProtoPoll(
+                question = readableContent.question,
+                options = readableContent.options.map { PollOption(id = it.id, text = it.text) },
+                allowMultipleAnswers = readableContent.allowMultipleAnswers,
+                expectsReadConfirmation = expectsReadConfirmation,
+                legalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
+            )
+        )
+
+    private fun packPollVote(readableContent: MessageContent.PollVote): GenericMessage.Content.PollVote =
+        GenericMessage.Content.PollVote(
+            ProtoPollVote(
+                referenceMessageId = readableContent.referencedMessageId,
+                selectedOptionIds = readableContent.selectedOptionIds
+            )
+        )
+
     private fun packComposite(
         readableContent: MessageContent.Composite,
         expectsReadConfirmation: Boolean,
@@ -369,8 +399,10 @@ class ProtoContentMapperImpl(
             is MessageContent.Reaction,
             is MessageContent.Receipt,
             is MessageContent.Composite,
+            is MessageContent.Poll,
             is MessageContent.ButtonAction,
             is MessageContent.ButtonActionConfirmation,
+            is MessageContent.PollVote,
             is MessageContent.TextEdited,
             is MessageContent.CompositeEdited,
             is MessageContent.MultipartEdited,
@@ -407,6 +439,7 @@ class ProtoContentMapperImpl(
             val expectsReadConfirmation = when (val content = genericMessage.content) {
                 is GenericMessage.Content.Text -> content.value.expectsReadConfirmation ?: false
                 is GenericMessage.Content.Asset -> content.value.expectsReadConfirmation ?: false
+                is GenericMessage.Content.Poll -> content.value.expectsReadConfirmation ?: false
                 else -> false
             }
             val legalHoldStatus = getLegalHoldStatusFromProtoContent(genericMessage)
@@ -432,6 +465,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Location -> content.value.legalHoldStatus
             is GenericMessage.Content.Reaction -> content.value.legalHoldStatus
             is GenericMessage.Content.Composite -> content.value.legalHoldStatus
+            is GenericMessage.Content.Poll -> content.value.legalHoldStatus
             else -> null
         }
 
@@ -459,6 +493,7 @@ class ProtoContentMapperImpl(
             )
 
             is GenericMessage.Content.Composite -> unpackComposite(protoContent)
+            is GenericMessage.Content.Poll -> unpackPoll(protoContent)
 
             is GenericMessage.Content.ButtonAction -> MessageContent.ButtonAction(
                 buttonId = protoContent.value.buttonId,
@@ -468,6 +503,11 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.ButtonActionConfirmation(
                 referencedMessageId = protoContent.value.referenceMessageId,
                 buttonId = protoContent.value.buttonId
+            )
+
+            is GenericMessage.Content.PollVote -> MessageContent.PollVote(
+                referencedMessageId = protoContent.value.referenceMessageId,
+                selectedOptionIds = protoContent.value.selectedOptionIds
             )
 
             is GenericMessage.Content.Calling -> unpackCalling(protoContent)
@@ -952,6 +992,16 @@ class ProtoContentMapperImpl(
             buttonList = buttonList
         )
     }
+
+    private fun unpackPoll(protoContent: GenericMessage.Content.Poll): MessageContent.Poll =
+        MessageContent.Poll(
+            question = protoContent.value.question,
+            // Option ids identify votes, so a duplicated id would make votes ambiguous.
+            options = protoContent.value.options
+                .distinctBy { it.id }
+                .map { MessageContent.Poll.Option(id = it.id, text = it.text) },
+            allowMultipleAnswers = protoContent.value.allowMultipleAnswers ?: false
+        )
 
     private fun unpackInCallEmoji(protoContent: GenericMessage.Content.InCallEmoji): MessageContent.InCallEmoji {
         return MessageContent.InCallEmoji(

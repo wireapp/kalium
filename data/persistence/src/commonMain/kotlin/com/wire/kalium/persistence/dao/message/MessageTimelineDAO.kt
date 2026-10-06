@@ -91,7 +91,8 @@ class MessageTimelineSession internal constructor(
     private val dependencies = arrayOf(
         "message_list_$conversationId", "message_list", "Message", "MessageTextContent", "MessageAssetContent",
         "MessageRestrictedAssetContent", "MessageUnknownContent", "MessageSystemContent", "MessageConversationLocationContent",
-        "MessageMention", "MessageLinkPreview", "MessageRecipientFailure", "ButtonContent", "Reaction", "Receipt",
+        "MessageMention", "MessageLinkPreview", "MessageRecipientFailure", "ButtonContent", "PollContent", "PollVoteContent",
+        "Reaction", "Receipt",
         "MessageAttachments", "CellFile", "User", "Client", "SelfUser",
     )
 
@@ -243,6 +244,8 @@ class MessageTimelineSession internal constructor(
         val regularIds = visible.filter { it.content_type in REGULAR_TYPES }.map { it.id }
         val compositeIds = visible.filter { it.content_type == MessageEntity.ContentType.COMPOSITE }.map { it.id }
         val multipartIds = visible.filter { it.content_type == MessageEntity.ContentType.MULTIPART }.map { it.id }
+        val pollIds = visible.filter { it.content_type == MessageEntity.ContentType.POLL }.map { it.id }
+        val polls = if (pollIds.isEmpty()) emptyMap() else polls(pollIds)
         val failures = if (regularIds.isEmpty()) emptyList() else queries.timelineFailures(conversationId, regularIds).awaitAsList()
         val systems = visible.mapNotNull { row -> row.systemContent()?.let { row.id to it } }.toMap()
         val userIds = buildSet {
@@ -258,6 +261,7 @@ class MessageTimelineSession internal constructor(
                 }
             }
             failures.forEach { addAll(it.recipient_failure_list) }
+            polls.values.forEach { poll -> poll.votes.forEach { add(it.voterId) } }
         }
         val users = userIds.toList().chunked(USER_BIND_LIMIT).flatMap { queries.timelineUsers(it).awaitAsList() }
         return MessageTimelinePageEntity(
@@ -275,6 +279,7 @@ class MessageTimelineSession internal constructor(
             buttons = if (compositeIds.isEmpty()) emptyMap() else {
                 queries.timelineButtons(conversationId, compositeIds).awaitAsList().groupBy { it.message_id }
             },
+            polls = polls,
             reactions = if (regularIds.isEmpty()) emptyMap() else {
                 queries.timelineReactions(conversationId, regularIds).awaitAsList().groupBy { it.message_id }
             },
@@ -286,6 +291,20 @@ class MessageTimelineSession internal constructor(
             systemContents = systems,
             users = users.associateBy { it.qualified_id },
         )
+    }
+
+    private suspend fun polls(ids: List<String>): Map<String, MessageEntityContent.Poll> {
+        val votes = queries.timelinePollVotes(conversationId, ids).awaitAsList().groupBy { it.poll_message_id }
+        return queries.timelinePolls(conversationId, ids).awaitAsList().associate { poll ->
+            poll.message_id to MessageEntityContent.Poll(
+                question = poll.question,
+                options = PollContentJson.decodeOptions(poll.options_json),
+                allowMultipleAnswers = poll.allow_multiple_answers,
+                votes = votes[poll.message_id].orEmpty().map {
+                    PollVoteEntity(it.voter_user_id, PollContentJson.decodeOptionIds(it.selected_option_ids_json), it.creation_date)
+                }
+            )
+        }
     }
 
     private data class Selection(
@@ -308,6 +327,7 @@ class MessageTimelineSession internal constructor(
         private val REGULAR_TYPES = TEXT_TYPES + setOf(
             MessageEntity.ContentType.ASSET, MessageEntity.ContentType.KNOCK, MessageEntity.ContentType.RESTRICTED_ASSET,
             MessageEntity.ContentType.UNKNOWN, MessageEntity.ContentType.FAILED_DECRYPTION, MessageEntity.ContentType.LOCATION,
+            MessageEntity.ContentType.POLL,
         )
     }
 }

@@ -76,6 +76,8 @@ import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
 import com.wire.kalium.persistence.adapter.SupportedProtocolSetAdapter
 import com.wire.kalium.persistence.content.ButtonContent
+import com.wire.kalium.persistence.content.PollContent
+import com.wire.kalium.persistence.content.PollVoteContent
 
 internal object TableMapper {
     val adminlessGroupDeleteAdapter = AdminlessGroupDelete.Adapter(
@@ -222,6 +224,16 @@ internal object TableMapper {
 
     val buttonContentAdapter = ButtonContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
+    )
+
+    val pollContentAdapter = PollContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
+    )
+
+    val pollVoteContentAdapter = PollVoteContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        voter_user_idAdapter = QualifiedIDAdapter,
+        creation_dateAdapter = InstantTypeAdapter
     )
 
     val messageConversationLocationContentAdapter = MessageConversationLocationContent.Adapter(

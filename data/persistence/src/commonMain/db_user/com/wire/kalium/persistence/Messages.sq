@@ -316,6 +316,8 @@ markMessageAsDeleted {
 -- @NotifyCustomKey MessageConversationLocationContent
 -- @NotifyCustomKey MessageLinkPreview
 -- @NotifyCustomKey MessageAttachments
+-- @NotifyCustomKey PollContent
+-- @NotifyCustomKey PollVoteContent
    UPDATE Message
    SET visibility = 'DELETED'
    WHERE id = :message_id AND conversation_id = :conversation_id;
@@ -328,6 +330,8 @@ markMessageAsDeleted {
    DELETE FROM MessageConversationLocationContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageLinkPreview WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageAttachments WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM PollVoteContent WHERE poll_message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM PollContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    INSERT INTO MessageTextContent(message_id, conversation_id, text_body, is_quoting_self) VALUES(:message_id, :conversation_id, NULL, 0);
 }
 

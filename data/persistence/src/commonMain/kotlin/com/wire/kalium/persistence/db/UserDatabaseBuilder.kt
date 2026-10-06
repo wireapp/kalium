@@ -84,6 +84,8 @@ import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageTimelineDAO
 import com.wire.kalium.persistence.dao.message.PendingDeliveryConfirmationDAO
 import com.wire.kalium.persistence.dao.message.PendingDeliveryConfirmationDAOImpl
+import com.wire.kalium.persistence.dao.message.PollMessageDAO
+import com.wire.kalium.persistence.dao.message.PollMessageDAOImpl
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDaoImpl
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
@@ -195,6 +197,8 @@ class UserDatabaseBuilder internal constructor(
         NewClientAdapter = TableMapper.newClientAdapter,
         MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter,
         ButtonContentAdapter = TableMapper.buttonContentAdapter,
+        PollContentAdapter = TableMapper.pollContentAdapter,
+        PollVoteContentAdapter = TableMapper.pollVoteContentAdapter,
         MessageConversationLocationContentAdapter = TableMapper.messageConversationLocationContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
         MessageAssetTransferStatusAdapter = TableMapper.messageAssetTransferStatusAdapter,
@@ -372,6 +376,7 @@ class UserDatabaseBuilder internal constructor(
         database.messageAssetTransferStatusQueries,
         database.buttonContentQueries,
         database.pendingDeliveryConfirmationsQueries,
+        database.pollContentQueries,
     )
 
     /**
@@ -388,6 +393,7 @@ class UserDatabaseBuilder internal constructor(
                 conversations = conversationDAO(transactionReads),
                 messages = messageDAO(transactionReads),
                 composites = CompositeMessageDAOImpl(database.buttonContentQueries, writeDispatcher),
+                polls = PollMessageDAOImpl(database.pollContentQueries, transactionReads, writeDispatcher),
                 assets = AssetDAOImpl(database.assetsQueries, transactionReads, writeDispatcher),
                 pendingActions = PendingActionDAOImpl(database.pendingActionsQueries, transactionReads, writeDispatcher),
                 reactions = ReactionDAOImpl(database.reactionsQueries, transactionReads, writeDispatcher),
@@ -430,6 +436,9 @@ class UserDatabaseBuilder internal constructor(
         readDispatcher,
         writeDispatcher,
     )
+
+    val pollMessageDAO: PollMessageDAO
+        get() = PollMessageDAOImpl(database.pollContentQueries, readDispatcher, writeDispatcher)
 
     val assetDAO: AssetDAO
         get() = AssetDAOImpl(
@@ -566,6 +575,7 @@ class MessageEffectDAOs internal constructor(
     val messages: MessageDAO,
     val reactions: ReactionDAO,
     val composites: CompositeMessageDAO,
+    val polls: PollMessageDAO,
     val assets: AssetDAO,
     val pendingActions: PendingActionDAO,
     val deliveries: PendingDeliveryConfirmationDAO,

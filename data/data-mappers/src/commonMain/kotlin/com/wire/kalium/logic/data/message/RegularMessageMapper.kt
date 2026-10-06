@@ -39,6 +39,8 @@ import kotlin.time.toDuration
 import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.PollOptionEntity
+import com.wire.kalium.persistence.dao.message.PollVoteEntity
 
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.id.IdMapper
@@ -198,6 +200,13 @@ class RegularMessageMapper(
             },
         )
 
+        is MessageContent.Poll -> MessageEntityContent.Poll(
+            question = regularMessage.question,
+            options = regularMessage.options.map { PollOptionEntity(id = it.id, text = it.text) },
+            allowMultipleAnswers = regularMessage.allowMultipleAnswers,
+            votes = regularMessage.votes.map { it.toEntity() }
+        )
+
         is MessageContent.Location -> MessageEntityContent.Location(
             latitude = regularMessage.latitude,
             longitude = regularMessage.longitude,
@@ -321,6 +330,13 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
         }
     )
 
+    is MessageEntityContent.Poll -> MessageContent.Poll(
+        question = this.question,
+        options = this.options.map { MessageContent.Poll.Option(id = it.id, text = it.text) },
+        allowMultipleAnswers = this.allowMultipleAnswers,
+        votes = this.votes.map { it.toModel() }
+    )
+
     is MessageEntityContent.Location -> MessageContent.Location(
         latitude = this.latitude,
         longitude = this.longitude,
@@ -359,6 +375,12 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
         )
     }
 }
+
+fun MessageContent.Poll.Vote.toEntity(): PollVoteEntity =
+    PollVoteEntity(voterId = voterId.toDao(), selectedOptionIds = selectedOptionIds, date = date)
+
+fun PollVoteEntity.toModel(): MessageContent.Poll.Vote =
+    MessageContent.Poll.Vote(voterId = voterId.toModel(), selectedOptionIds = selectedOptionIds, date = date)
 
 private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
     // Prioritise Invalid and Deleted over content types

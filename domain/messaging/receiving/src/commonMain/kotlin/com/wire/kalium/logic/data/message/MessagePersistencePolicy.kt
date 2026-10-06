@@ -69,8 +69,10 @@ fun MessageContent.shouldUpdateConversationOrder(): Boolean =
         MessageContent.ConversationDegradedProteus -> false
         MessageContent.ConversationVerifiedProteus -> false
         is MessageContent.Composite -> true
+        is MessageContent.Poll -> true
         is MessageContent.ButtonAction -> false
         is MessageContent.ButtonActionConfirmation -> false
+        is MessageContent.PollVote -> false
         is MessageContent.MemberChange.FederationRemoved -> false
         is MessageContent.FederationStopped.ConnectionRemoved -> false
         is MessageContent.FederationStopped.Removed -> false
@@ -102,6 +104,7 @@ fun MessageContent.shouldNotifyUser(): Boolean =
         is MessageContent.RestrictedAsset,
         is MessageContent.MissedCall,
         is MessageContent.Location,
+        is MessageContent.Poll,
         is MessageContent.Multipart -> true
 
         is MessageContent.MemberChange.Added,
@@ -137,6 +140,7 @@ fun MessageContent.shouldNotifyUser(): Boolean =
         MessageContent.ConversationDegradedProteus,
         MessageContent.ConversationVerifiedProteus,
         is MessageContent.Composite,
+        is MessageContent.PollVote,
         is MessageContent.ButtonAction,
         is MessageContent.ButtonActionConfirmation,
         is MessageContent.MemberChange.FederationRemoved,

@@ -1,0 +1,62 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
+import kotlin.time.Instant;
+
+-- options_json is encoded in Kotlin so option text never has to be escaped in SQL.
+CREATE TABLE PollContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      question TEXT NOT NULL,
+      options_json TEXT NOT NULL,
+      allow_multiple_answers INTEGER AS Boolean NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (conversation_id, message_id) REFERENCES Message(conversation_id, id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, message_id)
+);
+
+-- The latest vote of each user. An empty selected_option_ids_json array is a retracted vote.
+CREATE TABLE PollVoteContent (
+      poll_message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      voter_user_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      selected_option_ids_json TEXT NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
+
+      FOREIGN KEY (conversation_id, poll_message_id) REFERENCES PollContent(conversation_id, message_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, poll_message_id, voter_user_id)
+);
+
+insertPoll:
+INSERT OR IGNORE INTO PollContent(message_id, conversation_id, question, options_json, allow_multiple_answers)
+VALUES(:message_id, :conversation_id, :question, :options_json, :allow_multiple_answers);
+
+-- Votes can arrive out of order, so an older vote never replaces a newer one.
+upsertVote:
+INSERT INTO PollVoteContent(poll_message_id, conversation_id, voter_user_id, selected_option_ids_json, creation_date)
+VALUES(:poll_message_id, :conversation_id, :voter_user_id, :selected_option_ids_json, :creation_date)
+ON CONFLICT(conversation_id, poll_message_id, voter_user_id) DO UPDATE SET
+    selected_option_ids_json = excluded.selected_option_ids_json,
+    creation_date = excluded.creation_date
+WHERE excluded.creation_date >= PollVoteContent.creation_date;
+
+getPoll:
+SELECT options_json, allow_multiple_answers FROM PollContent
+WHERE message_id = :message_id AND conversation_id = :conversation_id;
+
+getVote:
+SELECT selected_option_ids_json, creation_date FROM PollVoteContent
+WHERE poll_message_id = :poll_message_id AND conversation_id = :conversation_id AND voter_user_id = :voter_user_id;
+
+-- Rolls back a vote that failed to send, unless a newer vote already replaced it.
+restoreVote:
+UPDATE PollVoteContent
+SET selected_option_ids_json = :selected_option_ids_json, creation_date = :creation_date
+WHERE poll_message_id = :poll_message_id AND conversation_id = :conversation_id AND voter_user_id = :voter_user_id
+    AND creation_date = :failed_vote_date;
+
+deleteVote:
+DELETE FROM PollVoteContent
+WHERE poll_message_id = :poll_message_id AND conversation_id = :conversation_id AND voter_user_id = :voter_user_id
+    AND creation_date = :failed_vote_date;

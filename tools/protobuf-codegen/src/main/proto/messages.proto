@@ -53,6 +53,8 @@ message GenericMessage {
         HistoryClientAvailable historyClientAvailable = 28;
         HistoryClientRequest historyClientRequest = 29;
         HistoryClientResponse historyClientResponse = 30;
+        Poll poll = 31;
+        PollVote pollVote = 32;
     }
     optional UnknownStrategy unknownStrategy = 25 [default = IGNORE];
 
@@ -100,6 +102,29 @@ message ButtonAction {
 message ButtonActionConfirmation {
     required string reference_message_id = 1;
     optional string button_id = 2; // if not present, no button is accepted
+}
+
+// A native poll. The GenericMessage id is the poll id. Votes are never anonymous:
+// every client sees the sender of each encrypted PollVote.
+message Poll {
+    required string question = 1;
+    repeated PollOption options = 2;
+    optional bool allow_multiple_answers = 3 [default = false];
+    // Standard flags for all message types
+    optional bool expects_read_confirmation = 4 [default = false];
+    optional LegalHoldStatus legal_hold_status = 5 [default = UNKNOWN];
+}
+
+message PollOption {
+    required string id = 1;
+    required string text = 2;
+}
+
+// The sender's complete current selection for a poll. It replaces any earlier vote from the
+// same user. An empty selection retracts the vote.
+message PollVote {
+    required string reference_message_id = 1;
+    repeated string selected_option_ids = 2;
 }
 
 message Availability {

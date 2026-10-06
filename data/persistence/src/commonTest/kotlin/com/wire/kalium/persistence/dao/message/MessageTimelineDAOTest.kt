@@ -294,6 +294,32 @@ class MessageTimelineDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun pollsCarryTheirOptionsVotesAndVotersAndNewVotesInvalidateTheTimeline() = runTest(dispatcher) {
+        val poll = message(0).copy(
+            id = "poll",
+            content = MessageEntityContent.Poll(
+                question = "Lunch?",
+                options = listOf(PollOptionEntity("a", "Pizza"), PollOptionEntity("b", "Sushi")),
+                allowMultipleAnswers = false,
+            )
+        )
+        seed(listOf(poll))
+        db.pollMessageDAO.recordVote(conversation.id, "poll", PollVoteEntity(self.id, listOf("b"), Instant.fromEpochMilliseconds(2_000)))
+        val timeline = open()
+
+        val page = timeline.page()
+
+        val content = page.polls.getValue("poll")
+        assertEquals(listOf("a", "b"), content.options.map { it.id })
+        assertEquals(listOf(PollVoteEntity(self.id, listOf("b"), Instant.fromEpochMilliseconds(2_000))), content.votes)
+        assertNotNull(page.users[self.id])
+        db.dbInvalidationController.runMuted {
+            db.pollMessageDAO.recordVote(conversation.id, "poll", PollVoteEntity(other.id, listOf("a"), Instant.fromEpochMilliseconds(3_000)))
+        }
+        assertTrue(timeline.invalidated.value)
+    }
+
+    @Test
     fun closingOrInvalidatingDuringAssemblyDiscardsTheLoadAndRemovesListeners() = runTest(dispatcher) {
         seed((0..40).map(::message))
         val timeline = open()

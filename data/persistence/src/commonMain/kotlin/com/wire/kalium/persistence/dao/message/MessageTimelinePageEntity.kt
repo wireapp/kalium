@@ -58,6 +58,7 @@ data class MessageTimelinePageEntity(
     val mentions: Map<String, List<MessageMention>> = emptyMap(),
     val previews: Map<String, List<TimelinePreviews>> = emptyMap(),
     val buttons: Map<String, List<ButtonContent>> = emptyMap(),
+    val polls: Map<String, MessageEntityContent.Poll> = emptyMap(),
     val reactions: Map<String, List<TimelineReactions>> = emptyMap(),
     val readCounts: Map<String, Long> = emptyMap(),
     val failures: Map<String, List<MessageRecipientFailure>> = emptyMap(),

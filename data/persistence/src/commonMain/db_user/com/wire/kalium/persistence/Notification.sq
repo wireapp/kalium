@@ -22,7 +22,7 @@ SELECT
     u.name AS senderName,
     u.preview_asset_id AS senderPreviewAssetId,
     c.name AS conversationName,
-    tc.text_body AS text,
+    COALESCE(tc.text_body, pc.question) AS text,
     tc.is_quoting_self AS isQuotingSelf,
     ac.asset_mime_type AS assetMimeType,
     c.muted_status AS mutedStatus,
@@ -40,13 +40,15 @@ LEFT JOIN MessageAssetContent ac
     ON ac.message_id = uc.messageId AND ac.conversation_id = uc.messageConversationId
 LEFT JOIN MessageTextContent tc
     ON tc.message_id = uc.messageId AND tc.conversation_id = uc.messageConversationId
+LEFT JOIN PollContent pc
+    ON pc.message_id = uc.messageId AND pc.conversation_id = uc.messageConversationId
 WHERE
     uc.row_num <= 10 -- there is a bug in sqldelight where you can't use a parameter here
     AND c.muted_status != 'ALL_MUTED'
     AND c.archived = 0
     AND uc.unreadCreationDate > COALESCE(c.last_notified_date, 0)
     AND m.visibility = 'VISIBLE'
-    AND m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION')
+    AND m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION', 'POLL')
     AND NOT EXISTS (SELECT 1 FROM SelfUser WHERE id = m.sender_user_id)
 ORDER BY m.creation_date DESC;
 

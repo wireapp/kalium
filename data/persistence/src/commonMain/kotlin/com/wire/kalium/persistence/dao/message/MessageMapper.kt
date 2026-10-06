@@ -108,6 +108,11 @@ object MessageMapper {
                 messageBody = text
             )
 
+            MessageEntity.ContentType.POLL -> MessagePreviewEntityContent.Poll(
+                senderName = senderName,
+                question = text
+            )
+
             MessageEntity.ContentType.TEXT -> when {
                 isSelfMessage -> MessagePreviewEntityContent.Text(
                     senderName = senderName,
@@ -546,6 +551,10 @@ object MessageMapper {
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
         buttonsJson: String,
+        pollQuestion: String?,
+        pollAllowMultipleAnswers: Boolean?,
+        pollOptionsJson: String?,
+        pollVotesJson: String,
         federationDomainList: String?,
         federationType: String?,
         conversationProtocolChanged: String?,
@@ -639,6 +648,10 @@ object MessageMapper {
         recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
         recipientsFailedDeliveryList = recipientsFailedDeliveryList,
         buttonsJson = buttonsJson,
+        pollQuestion = pollQuestion,
+        pollAllowMultipleAnswers = pollAllowMultipleAnswers,
+        pollOptionsJson = pollOptionsJson,
+        pollVotesJson = pollVotesJson,
         federationDomainList = federationDomainList,
         federationType = federationType,
         conversationProtocolChanged = conversationProtocolChanged,
@@ -735,6 +748,10 @@ object MessageMapper {
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
         buttonsJson: String,
+        pollQuestion: String?,
+        pollAllowMultipleAnswers: Boolean?,
+        pollOptionsJson: String?,
+        pollVotesJson: String,
         federationDomainList: String?,
         federationType: String?,
         conversationProtocolChanged: String?,
@@ -852,6 +869,13 @@ object MessageMapper {
                     JsonSerializer().decodeFromString(buttonsJson)
                 )
             }
+
+            MessageEntity.ContentType.POLL -> MessageEntityContent.Poll(
+                question = pollQuestion.requireField("pollQuestion"),
+                options = PollContentJson.decodeOptions(pollOptionsJson.requireField("pollOptionsJson")),
+                allowMultipleAnswers = pollAllowMultipleAnswers ?: false,
+                votes = PollContentJson.decodeVotes(pollVotesJson)
+            )
 
             MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(conversationName.orEmpty())
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessageEntityContent.TeamMemberRemoved(senderName.orEmpty())

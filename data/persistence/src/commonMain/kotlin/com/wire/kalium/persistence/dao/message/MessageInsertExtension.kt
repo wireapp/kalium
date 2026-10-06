@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.content.ButtonContentQueries
+import com.wire.kalium.persistence.content.PollContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import kotlin.time.Instant
@@ -62,6 +63,7 @@ internal class MessageInsertExtensionImpl(
     private val unreadEventsQueries: UnreadEventsQueries,
     private val conversationsQueries: ConversationsQueries,
     private val buttonContentQueries: ButtonContentQueries,
+    private val pollContentQueries: PollContentQueries,
     private val selfUserIDEntity: UserIDEntity
 ) : MessageInsertExtension {
 
@@ -277,6 +279,7 @@ internal class MessageInsertExtensionImpl(
             )
 
             is MessageEntityContent.Composite -> insertCompositeMessage(content, message)
+            is MessageEntityContent.Poll -> insertPollMessage(content, message)
             is MessageEntityContent.ConversationCreated,
             is MessageEntityContent.MLSWrongEpochWarning -> {
                 /* no-op */
@@ -453,6 +456,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.Asset,
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.Composite,
+                is MessageEntityContent.Poll,
                 is MessageEntityContent.Location,
                 is MessageEntityContent.Multipart,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
@@ -560,6 +564,19 @@ internal class MessageInsertExtensionImpl(
         }
     }
 
+    private suspend fun insertPollMessage(
+        content: MessageEntityContent.Poll,
+        message: MessageEntity
+    ) {
+        pollContentQueries.insertPoll(
+            message_id = message.id,
+            conversation_id = message.conversationId,
+            question = content.question,
+            options_json = PollContentJson.encodeOptions(content.options),
+            allow_multiple_answers = content.allowMultipleAnswers
+        )
+    }
+
     @Suppress("ComplexMethod")
     override fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> MessageEntity.ContentType.TEXT
@@ -583,6 +600,7 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationDegradedMLS -> MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS
         is MessageEntityContent.ConversationDegradedProteus -> MessageEntity.ContentType.CONVERSATION_DEGRADED_PROTEUS
         is MessageEntityContent.Composite -> MessageEntity.ContentType.COMPOSITE
+        is MessageEntityContent.Poll -> MessageEntity.ContentType.POLL
         is MessageEntityContent.Federation -> MessageEntity.ContentType.FEDERATION
         MessageEntityContent.ConversationVerifiedMLS -> MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS
         MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS

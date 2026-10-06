@@ -209,6 +209,10 @@ INSERT INTO Receipt
 
 INSERT INTO ButtonContent SELECT * FROM local_db.ButtonContent;
 
+-- Polls cannot be self-deleting, so no expiration filter is needed.
+INSERT INTO PollContent SELECT * FROM local_db.PollContent;
+INSERT INTO PollVoteContent SELECT * FROM local_db.PollVoteContent;
+
 WITH selfdelete_message_id AS (
     SELECT local_db.Message.id, local_db.Message.conversation_id
         FROM local_db.Message
