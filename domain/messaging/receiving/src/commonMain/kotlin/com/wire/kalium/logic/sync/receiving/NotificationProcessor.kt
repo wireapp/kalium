@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiving
 
-import com.wire.kalium.cryptography.RequireConfirmedCryptoRollback
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.MLSClient
@@ -137,7 +135,7 @@ class NotificationProcessor(
                 }
                 diagnostics?.beginEvent(next.eventId == targetId, next.eventId)
                 val effects = try {
-                    processIsolatedNotification(next, canDefer = false, crossesGap = false)
+                    withConfirmedNotificationRollback { processNotification(next, canDefer = false, crossesGap = false) }
                 } catch (handoff: NotificationAppHandoff) {
                     return withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = handoff.work)
                 }
@@ -239,7 +237,7 @@ class NotificationProcessor(
             }
             diagnostics?.beginEvent(next.eventId == targetId, next.eventId)
             val effects = try {
-                processIsolatedNotification(next, dependencies != null, deferred.isNotEmpty())
+                withConfirmedNotificationRollback { processNotification(next, dependencies != null, deferred.isNotEmpty()) }
             } catch (_: DeferredNotification) {
                 // The strict native boundary restores this control signal only after confirmed rollback.
                 // A commit or rollback failure stops the whole receive attempt.
@@ -274,25 +272,6 @@ class NotificationProcessor(
         presentationReason = reason,
         callSignalsPending = CallSignalJournal(database).signals().any { it.submittedGeneration == null },
     )
-
-    private suspend fun processIsolatedNotification(
-        event: EventEntity,
-        canDefer: Boolean,
-        crossesGap: Boolean,
-    ): NotificationEffectsResult = withContext(RequireConfirmedCryptoRollback) {
-        try {
-            processNotification(event, canDefer, crossesGap)
-        } catch (failure: ProteusException) {
-            // ProteusClient wraps non-Proteus callback errors exactly once. Do not traverse
-            // arbitrary cause chains: a native failure must never become a local deferral.
-            val callback = failure.cause
-            val wrappedCallback = failure.code == ProteusException.Code.UNKNOWN_ERROR && failure.intCode == null
-            if (wrappedCallback && callback is DeferredNotification) throw callback
-            if (wrappedCallback && callback is NotificationOrderingBarrier) throw callback
-            if (wrappedCallback && callback is NotificationAppHandoff) throw callback
-            throw failure
-        }
-    }
 
     @Suppress("ReturnCount") // Every unknown dependency fails closed before any speculative transaction.
     private suspend fun dependencies(payload: List<EventContentDTO>): Set<NotificationDependency>? {
