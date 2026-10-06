@@ -99,6 +99,7 @@ class GetNextUnfinishedMeetingOccurrenceUseCaseTest {
             recurrence = null,
         )
         val MEETING_OCCURRENCE: MeetingOccurrence = MeetingOccurrence(
+            participants = emptyList(),
             meeting = MEETING,
             selfRole = MeetingOccurrence.SelfRole.Creator,
             conversationName = "Conversation 1",

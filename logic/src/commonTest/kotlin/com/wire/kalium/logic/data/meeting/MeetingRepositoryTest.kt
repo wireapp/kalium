@@ -73,6 +73,8 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
+import app.cash.turbine.test
+import com.wire.kalium.persistence.dao.meeting.MeetingParticipantEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -1121,6 +1123,39 @@ class MeetingRepositoryTest {
         }
     }
 
+    @Test
+    fun observedOccurrencesPreserveParticipantSelectionAndNullableAvatarsForEveryConversationType() = runTest {
+        val avatarId = QualifiedIDEntity("asset", "assets.example")
+        val otherId = QualifiedIDEntity("other", "remote.example")
+        val participants = listOf(
+            MeetingParticipantEntity(MEETING_ENTITY.conversationId, MEETING_ENTITY.creatorId, "Creator", 4, avatarId),
+            MeetingParticipantEntity(MEETING_ENTITY.conversationId, otherId, "Other", 7, null)
+        )
+        listOf(
+            ConversationEntity.Type.MEETING to MeetingOccurrence.ConversationType.Meeting,
+            ConversationEntity.Type.ONE_ON_ONE to MeetingOccurrence.ConversationType.OneOnOne,
+            ConversationEntity.Type.GROUP to MeetingOccurrence.ConversationType.Group,
+            ConversationEntity.Type.CHANNEL to MeetingOccurrence.ConversationType.Channel(true)
+        ).forEach { (type, expectedType) ->
+            val details = MEETING_OCCURRENCE_DETAILS.copy(conversationType = type, participants = participants)
+            val (_, repository) = Arrangement()
+                .withMeetingOccurrenceDetailsFlow(details.occurrence.occurrenceId, flowOf(details, details.copy(participants = participants.take(1))))
+                .arrange()
+            repository.observeMeetingOccurrence(details.occurrence.occurrenceId).test {
+                val occurrence = requireNotNull(awaitItem())
+                assertEquals(expectedType, occurrence.conversationType)
+                assertEquals(
+                    listOf(
+                        MeetingOccurrence.Participant(MEETING_ENTITY.creatorId.toModel(), "Creator", 4, avatarId.toModel()),
+                        MeetingOccurrence.Participant(otherId.toModel(), "Other", 7, null)
+                    ), occurrence.participants
+                )
+                assertEquals(listOf(MEETING_ENTITY.creatorId.toModel()), awaitItem()?.participants?.map { it.userId })
+                awaitComplete()
+            }
+        }
+    }
+
     inner class Arrangement {
         internal val selfUserId = TestUser.SELF.id
         internal val meetingDao = mock<MeetingDao>(mode = MockMode.autoUnit)
@@ -1323,7 +1358,6 @@ class MeetingRepositoryTest {
         meeting = MEETING_ENTITY,
         conversationName = "Conversation 1",
         conversationType = ConversationEntity.Type.GROUP,
-        otherUserPreviewAssetId = null,
         channelAccess = null,
         selfUserId = MEETING_ENTITY.creatorId,
     )

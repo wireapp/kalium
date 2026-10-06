@@ -19,6 +19,10 @@ package com.wire.kalium.persistence.dao.meeting
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
+import app.cash.turbine.test
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.member.MemberEntity
+import kotlin.test.assertTrue
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitMigrate
 import com.wire.kalium.persistence.BaseDatabaseTest
@@ -694,6 +698,144 @@ class MeetingDaoTest : BaseDatabaseTest() {
         assertEquals(true, occurrencesFor(updatedMeetingToKeep).isNotEmpty())
         assertEquals(false, isMeetingStored(meetingToRemove))
         assertEquals(true, occurrencesFor(meetingToRemove).isEmpty())
+    }
+
+    @Test
+    fun givenOneOnOneMeeting_whenLoadingAndUpdatingAvatars_thenAllMembersAreReturnedAndPagingInvalidates() = runTest(dispatcher) {
+        val meeting = newMeeting()
+        insertAvatarMeeting(meeting, ConversationEntity.Type.ONE_ON_ONE)
+        val occurrenceId = occurrencesFor(meeting).single().occurrence_id
+        val source = meetingDao.getPaginatedMeetingOccurrenceDetails(
+            PagingConfig(pageSize = 10), 0, meeting.startTime
+        ).pagingSource
+        val page = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            source.load(PagingSource.LoadParams.Refresh(null, 10, false))
+        )
+        val expected = MeetingParticipantEntity(meeting.conversationId, CREATOR_ID, "Alex", 3, null)
+        val self = MeetingParticipantEntity(meeting.conversationId, SELF_USER_ID, "usertest", 1, null)
+        assertEquals(listOf(expected, self), page.data.single().participants)
+
+        meetingDao.getMeetingOccurrenceDetailsFlow(occurrenceId).test {
+            assertEquals(listOf(expected, self), awaitItem()?.participants)
+            databaseBuilder.userDAO.updateUserAccentColor(CREATOR_ID, 5)
+            assertEquals(listOf(expected.copy(accentColor = 5), self), awaitItem()?.participants)
+            assertTrue(source.invalid)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenAnyGroupType_whenLoadingParticipants_thenMembersWithoutPicturesAndSelfAreIncluded() = runTest(dispatcher) {
+        listOf(ConversationEntity.Type.MEETING, ConversationEntity.Type.GROUP, ConversationEntity.Type.CHANNEL).forEach { type ->
+            val meeting = newMeeting()
+            insertAvatarMeeting(meeting, type)
+            val source = meetingDao.getPaginatedMeetingOccurrenceDetails(
+                PagingConfig(pageSize = 10), 0, meeting.startTime
+            ).pagingSource
+            val page = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+                source.load(PagingSource.LoadParams.Refresh(null, 10, false))
+            )
+            val participants = page.data.single().participants
+            assertEquals(setOf(CREATOR_ID, SELF_USER_ID), participants.map { it.userId }.toSet(), type.toString())
+            assertTrue(participants.all { it.previewAssetId == null })
+            assertEquals("Alex", participants.first { it.userId == CREATOR_ID }.name)
+            meetingDao.getMeetingOccurrenceDetailsFlow(occurrencesFor(meeting).single().occurrence_id).test {
+                assertEquals(participants, awaitItem()?.participants, type.toString())
+                cancelAndIgnoreRemainingEvents()
+            }
+            source.invalidate()
+        }
+    }
+
+    @Test
+    fun mixedAvatarsAndDeletedMembersStayConsistentAcrossPagingAndObservation() = runTest(dispatcher) {
+        val meeting = newMeeting()
+        insertAvatarMeeting(meeting, ConversationEntity.Type.MEETING)
+        val avatar = QualifiedIDEntity("avatar", "assets.example")
+        val unnamedId = QualifiedIDEntity("unnamed", "other.example")
+        val deletedId = QualifiedIDEntity("deleted", "wire.com")
+        databaseBuilder.userDAO.upsertUser(newUserEntity(CREATOR_ID).copy(name = "Alex", accentId = 3, previewAssetId = avatar))
+        databaseBuilder.userDAO.upsertUser(newUserEntity(unnamedId).copy(name = null, accentId = 7))
+        databaseBuilder.userDAO.upsertUser(newUserEntity(deletedId).copy(deleted = true, previewAssetId = avatar))
+        databaseBuilder.memberDAO.insertMembersWithQualifiedId(
+            listOf(MemberEntity(unnamedId, MemberEntity.Role.Member), MemberEntity(deletedId, MemberEntity.Role.Member)),
+            meeting.conversationId
+        )
+        val expected = listOf(
+            MeetingParticipantEntity(meeting.conversationId, CREATOR_ID, "Alex", 3, avatar),
+            MeetingParticipantEntity(meeting.conversationId, SELF_USER_ID, "usertest", 1, null),
+            MeetingParticipantEntity(meeting.conversationId, unnamedId, "", 7, null)
+        )
+        val source = meetingDao.getPaginatedMeetingOccurrenceDetails(PagingConfig(10), 0, meeting.startTime).pagingSource
+        val page = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            source.load(PagingSource.LoadParams.Refresh(null, 10, false))
+        )
+        assertEquals(expected, page.data.single().participants)
+        meetingDao.getMeetingOccurrenceDetailsFlow(occurrencesFor(meeting).single().occurrence_id).test {
+            assertEquals(expected, awaitItem()?.participants)
+            databaseBuilder.userDAO.markAsDeleted(listOf(CREATOR_ID))
+            // The fork's conversation-list keys may also refresh the outer occurrence query.
+            var current = awaitItem()
+            while (current?.participants?.any { it.userId == CREATOR_ID } == true) current = awaitItem()
+            assertEquals(expected.drop(1), current?.participants)
+            assertTrue(source.invalid)
+            val refreshed = meetingDao.getPaginatedMeetingOccurrenceDetails(PagingConfig(10), 0, meeting.startTime).pagingSource
+            val refreshedPage = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+                refreshed.load(PagingSource.LoadParams.Refresh(null, 10, false))
+            )
+            assertEquals(current?.participants, refreshedPage.data.single().participants)
+            refreshed.invalidate()
+            databaseBuilder.memberDAO.deleteMemberByQualifiedID(unnamedId, meeting.conversationId)
+            current = awaitItem()
+            while (current?.participants?.any { it.userId == unnamedId } == true) current = awaitItem()
+            assertEquals(listOf(expected[1]), current?.participants)
+            meetingDao.deleteMeeting(meeting.meetingId)
+            while (awaitItem() != null) { /* Wait for deletion after any queued participant emission. */ }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun participantPagingKeepsDifferentConversationsSeparate() = runTest(dispatcher) {
+        val first = newMeeting()
+        val second = newMeeting(
+            meetingId = QualifiedIDEntity("second", "wire.com"),
+            conversationId = QualifiedIDEntity("other-conversation", "wire.com"),
+            startTime = first.startTime + 1.hours
+        )
+        insertAvatarMeeting(first, ConversationEntity.Type.GROUP)
+        insertAvatarMeeting(second, ConversationEntity.Type.CHANNEL)
+        databaseBuilder.memberDAO.deleteMemberByQualifiedID(CREATOR_ID, second.conversationId)
+        val source = meetingDao.getPaginatedMeetingOccurrenceDetails(PagingConfig(1, prefetchDistance = 0), 0, first.startTime).pagingSource
+        val firstPage = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            source.load(PagingSource.LoadParams.Refresh(null, 1, false))
+        )
+        assertEquals(first.meetingId, firstPage.data.single().meeting.meetingId)
+        assertEquals(listOf(CREATOR_ID, SELF_USER_ID), firstPage.data.single().participants.map { it.userId })
+        val secondPage = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            source.load(PagingSource.LoadParams.Append(requireNotNull(firstPage.nextKey), 1, false))
+        )
+        assertEquals(second.meetingId, secondPage.data.single().meeting.meetingId)
+        assertEquals(listOf(SELF_USER_ID), secondPage.data.single().participants.map { it.userId })
+        assertEquals(listOf(second.conversationId), secondPage.data.single().participants.map { it.conversationId })
+        source.invalidate()
+    }
+
+    @Test
+    fun missingOccurrenceEmitsNull() = runTest(dispatcher) {
+        assertEquals(null, meetingDao.getMeetingOccurrenceDetailsFlow("missing").first())
+    }
+
+    private suspend fun insertAvatarMeeting(meeting: MeetingEntity, type: ConversationEntity.Type) {
+        databaseBuilder.database.databasePropertiesQueries.insertSelfUserId(SELF_USER_ID)
+        databaseBuilder.userDAO.upsertUser(newUserEntity(SELF_USER_ID))
+        databaseBuilder.userDAO.upsertUser(newUserEntity(CREATOR_ID).copy(name = "Alex", accentId = 3))
+        databaseBuilder.conversationDAO.insertConversation(newConversationEntity(meeting.conversationId).copy(type = type))
+        databaseBuilder.memberDAO.insertMembersWithQualifiedId(
+            listOf(MemberEntity(SELF_USER_ID, MemberEntity.Role.Member), MemberEntity(CREATOR_ID, MemberEntity.Role.Member)),
+            meeting.conversationId
+        )
+        meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(meeting.startTime, meeting.endTime + 1.days))
     }
 
     private suspend fun insertMeetingDependencies(meeting: MeetingEntity) {
