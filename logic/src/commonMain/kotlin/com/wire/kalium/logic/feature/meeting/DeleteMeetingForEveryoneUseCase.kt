@@ -18,9 +18,16 @@
 package com.wire.kalium.logic.feature.meeting
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 
 /**
  * Use case for deleting a meeting for every participant by its ID.
@@ -36,11 +43,23 @@ public interface DeleteMeetingForEveryoneUseCase {
 
 internal class DeleteMeetingForEveryoneUseCaseImpl(
     private val meetingRepository: MeetingRepository,
+    private val conversationRepository: ConversationRepository,
+    private val deleteConversation: DeleteConversationUseCase,
+    private val transactionProvider: CryptoTransactionProvider,
 ) : DeleteMeetingForEveryoneUseCase {
     override suspend operator fun invoke(meetingId: MeetingId): DeleteMeetingForEveryoneUseCase.Result =
-        meetingRepository.deleteMeeting(meetingId).fold({
+        meetingRepository.getMeeting(meetingId).flatMap { meeting ->
+            meetingRepository.deleteMeeting(meeting.meetingId).map { meeting }
+        }.fold({
             DeleteMeetingForEveryoneUseCase.Result.Failure(it)
-        }, {
+        }, { meeting ->
+            conversationRepository.getConversationById(meeting.conversationId).onSuccess { conversation ->
+                if (conversation.type == Conversation.Type.Group.Meeting) {
+                    transactionProvider.transaction("DeleteMeetingForEveryone") { transactionContext ->
+                        deleteConversation(transactionContext, meeting.conversationId)
+                    }
+                }
+            }
             DeleteMeetingForEveryoneUseCase.Result.Success
         })
 }
