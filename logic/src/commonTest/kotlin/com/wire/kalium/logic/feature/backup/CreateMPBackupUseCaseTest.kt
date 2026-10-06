@@ -17,6 +17,10 @@
  */
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.backup.data.BackupDateTime
+import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupMessageContent
+import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.BackupExportResult
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
@@ -27,6 +31,8 @@ import com.wire.kalium.logic.data.backup.PagedData
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -47,12 +53,14 @@ import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
 import dev.mokkery.every
 import dev.mokkery.mock
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -64,6 +72,10 @@ import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -100,6 +112,77 @@ class CreateMPBackupUseCaseTest {
     }
 
     @Test
+    fun givenMixedMentions_whenCreatingBackup_thenOnlyValidMentionsAreExported() = runTest {
+        val message = TEXT_MESSAGE.copy(
+            content = MessageContent.Text(
+                value = "Alice Bob Carol",
+                mentions = listOf(
+                    MessageMention(0, 5, selfUserId, true),
+                    MessageMention(-1, 3, selfUserId, true),
+                    MessageMention(6, 0, selfUserId, true),
+                    MessageMention(6, -1, selfUserId, true),
+                    MessageMention(10, 5, testUser.id, false),
+                ),
+                quotedMessageReference = MessageContent.QuoteReference("quoted-message", null, true),
+            ),
+            editStatus = Message.EditStatus.Edited(TEXT_MESSAGE.date),
+        )
+        val (arrangement, useCase) = Arrangement().withExporter().withMessages(listOf(message)).arrange()
+        val expected = expectedBackupMessage(
+            message,
+            BackupMessageContent.Text(
+                text = "Alice Bob Carol",
+                mentions = listOf(
+                    BackupMessageContent.Text.Mention(BackupQualifiedId("participant1", "domain"), 0, 5),
+                    BackupMessageContent.Text.Mention(BackupQualifiedId("participant2", "domain"), 10, 5),
+                ),
+                quotedMessageId = "quoted-message",
+            ),
+        ).copy(lastEditTime = BackupDateTime(TEXT_MESSAGE.date.toEpochMilliseconds()))
+
+        val result = useCase("test_password") {}
+
+        assertTrue(result is CreateBackupResult.Success)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(expected) }
+    }
+
+    @Test
+    fun givenOnlyMalformedMentions_whenCreatingBackup_thenMessageAndFollowingMessageAreExported() = runTest {
+        val message = TEXT_MESSAGE.copy(
+            content = MessageContent.Text(
+                value = "Alice Bob",
+                mentions = listOf(
+                    MessageMention(-1, 5, selfUserId, true),
+                    MessageMention(0, 0, selfUserId, true),
+                    MessageMention(6, -1, selfUserId, true),
+                ),
+            ),
+        )
+        val followingMessage = TEXT_MESSAGE.copy(id = "following-message", content = MessageContent.Text("Following"))
+        val (arrangement, useCase) = Arrangement()
+            .withExporter()
+            .withMessages(listOf(message, followingMessage))
+            .arrange()
+        val expected = expectedBackupMessage(message, BackupMessageContent.Text("Alice Bob", mentions = emptyList()))
+        val expectedFollowing = expectedBackupMessage(followingMessage, BackupMessageContent.Text("Following"))
+
+        val result = useCase("test_password") {}
+
+        assertTrue(result is CreateBackupResult.Success)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(expected) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(expectedFollowing) }
+    }
+
+    private fun expectedBackupMessage(message: Message.Regular, content: BackupMessageContent) = BackupMessage(
+        id = message.id,
+        conversationId = BackupQualifiedId(message.conversationId.value, message.conversationId.domain),
+        senderUserId = BackupQualifiedId(message.senderUserId.value, message.senderUserId.domain),
+        senderClientId = message.sender?.id.toString(),
+        creationDate = BackupDateTime(message.date.toEpochMilliseconds()),
+        content = content,
+    )
+
+    @Test
     fun givenZippingFails_whenCreatingBackup_thenErrorIsReturned() = runTest {
 
         val (_, useCase) = Arrangement()
@@ -110,6 +193,25 @@ class CreateMPBackupUseCaseTest {
         val result = useCase("test_password") {}
 
         assertTrue(result is CreateBackupResult.Failure)
+    }
+
+    @Test
+    fun givenExportCancellation_whenCreatingBackup_thenCancellationIsRethrown() = runTest {
+        val (arrangement, useCase) = Arrangement().withExporter().withMessages(listOf(TEXT_MESSAGE)).arrange()
+        val cancellation = CancellationException("Export cancelled")
+        everySuspend { arrangement.exporter.finalize(any()) } throws cancellation
+
+        assertEquals(cancellation.message, assertFailsWith<CancellationException> { useCase("") {} }.message)
+    }
+
+    @Test
+    fun givenExportException_whenCreatingBackup_thenFailureIsReturned() = runTest {
+        val (arrangement, useCase) = Arrangement().withExporter().withMessages(listOf(TEXT_MESSAGE)).arrange()
+        val failure = IllegalStateException("Export failed")
+        everySuspend { arrangement.exporter.finalize(any()) } throws failure
+
+        val result = assertIs<CreateBackupResult.Failure>(useCase("") {})
+        assertSame(failure, assertIs<CoreFailure.Unknown>(result.coreFailure).rootCause)
     }
 
     private inner class Arrangement {

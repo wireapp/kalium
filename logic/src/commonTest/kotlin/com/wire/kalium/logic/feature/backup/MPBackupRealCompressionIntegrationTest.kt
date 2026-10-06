@@ -26,6 +26,8 @@ import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.PagedData
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.OtherUser
@@ -45,7 +47,7 @@ import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -128,6 +130,78 @@ class MPBackupRealCompressionIntegrationTest {
         assertEquals(listOf(testReaction.messageId.lowercase()), restoreRepository.insertedReactions.map { it.messageId.lowercase() })
     }
 
+    @Test
+    fun givenMalformedMentions_whenCreatingAndRestoringEncryptedBackup_thenHistoryIsPreserved() = runTest {
+        assertMalformedMentionsRoundTrip("test_password", backgroundScope)
+    }
+
+    @Test
+    fun givenMalformedMentions_whenCreatingAndRestoringUnencryptedBackup_thenHistoryIsPreserved() = runTest {
+        assertMalformedMentionsRoundTrip("", backgroundScope)
+    }
+
+    @Suppress("LongMethod")
+    private suspend fun assertMalformedMentionsRoundTrip(password: String, scope: CoroutineScope) {
+        val validMentions = listOf(
+            MessageMention(0, 5, TestUser.SELF.id, true),
+            MessageMention(10, 5, TestUser.OTHER.id, false),
+        )
+        val malformedMentions = listOf(
+            MessageMention(-1, 3, TestUser.SELF.id, true),
+            MessageMention(6, 0, TestUser.SELF.id, true),
+            MessageMention(6, -1, TestUser.SELF.id, true),
+        )
+        val mixed = TestMessage.TEXT_MESSAGE.copy(
+            content = MessageContent.Text(
+                value = "Alice Bob Carol",
+                mentions = listOf(validMentions.first()) + malformedMentions + validMentions.last(),
+                quotedMessageReference = MessageContent.QuoteReference("quoted-message", null, true),
+            ),
+            editStatus = Message.EditStatus.Edited(TestMessage.TEXT_MESSAGE.date),
+        )
+        val malformed = TestMessage.TEXT_MESSAGE.copy(
+            id = "malformed-message",
+            content = MessageContent.Text("Alice Bob", mentions = malformedMentions),
+        )
+        val following = TestMessage.TEXT_MESSAGE.copy(id = "following-message", content = MessageContent.Text("Following"))
+        val userRepository = mock<UserRepository>()
+        everySuspend { userRepository.getSelfUser() } returns TestUser.SELF.right()
+        val createUseCase = CreateMPBackupUseCaseImpl(
+            backupRepository = BackupRepositoryStub(messages = listOf(mixed, malformed, following), messagesPerPage = 1),
+            userRepository = userRepository,
+            kaliumFileSystem = kaliumFileSystem,
+            fileSystem = fileSystem,
+            exporterProvider = MPBackupExporterProviderImpl(fileSystem),
+            dispatchers = dispatchers,
+        )
+        val progress = mutableListOf<Float>()
+
+        val created = assertIs<CreateBackupResult.Success>(createUseCase(password) { progress += it })
+        assertTrue(fileSystem.exists(created.backupFilePath))
+        assertTrue((fileSystem.metadata(created.backupFilePath).size ?: 0L) > 0)
+        assertEquals(listOf(0f, 1f / 3, 2f / 3), progress)
+        val restored = BackupRepositoryStub()
+        assertIs<RestoreBackupResult.Success>(restoreUseCase(restored, scope).invoke(created.backupFilePath, password) {})
+
+        assertEquals(listOf(mixed.id.lowercase(), malformed.id, following.id), restored.insertedMessages.map { it.id })
+        val restoredMixed = assertIs<Message.Regular>(restored.insertedMessages[0])
+        val mixedContent = assertIs<MessageContent.Text>(restoredMixed.content)
+        assertEquals("Alice Bob Carol", mixedContent.value)
+        assertEquals(
+            validMentions.map { Triple(it.start, it.length, it.userId.copy(value = it.userId.value.lowercase())) },
+            mixedContent.mentions.map { Triple(it.start, it.length, it.userId) },
+        )
+        assertEquals("quoted-message", mixedContent.quotedMessageReference?.quotedMessageId)
+        assertEquals(mixed.editStatus, restoredMixed.editStatus)
+        assertEquals(mixed.date, restoredMixed.date)
+        assertEquals(mixed.conversationId.copy(value = mixed.conversationId.value.lowercase()), restoredMixed.conversationId)
+        assertEquals(mixed.senderUserId, restoredMixed.senderUserId)
+        val malformedContent = assertIs<MessageContent.Text>(assertIs<Message.Regular>(restored.insertedMessages[1]).content)
+        assertEquals("Alice Bob", malformedContent.value)
+        assertTrue(malformedContent.mentions.isEmpty())
+        assertEquals("Following", assertIs<MessageContent.Text>(assertIs<Message.Regular>(restored.insertedMessages[2]).content).value)
+    }
+
     private fun restoreUseCase(backupRepository: BackupRepository, scope: CoroutineScope) = RestoreMPBackupUseCaseImpl(
         selfUserId = TestUser.SELF.id,
         userSessionScope = scope,
@@ -144,6 +218,7 @@ class MPBackupRealCompressionIntegrationTest {
         private val conversations: List<Conversation> = emptyList(),
         private val messages: List<Message.Standalone> = emptyList(),
         private val reactions: List<MessageReactions> = emptyList(),
+        private val messagesPerPage: Int = 1000,
     ) : BackupRepository {
         val insertedUsers = mutableListOf<OtherUser>()
         val insertedConversations = mutableListOf<Conversation>()
@@ -154,13 +229,10 @@ class MPBackupRealCompressionIntegrationTest {
 
         override suspend fun getConversations(): List<Conversation> = conversations
 
-        override suspend fun getMessages(pageSize: Int): Flow<PagedData<Message.Standalone>> = flowOf(
-            PagedData(messages, totalPages = 1)
-        )
+        override suspend fun getMessages(pageSize: Int): Flow<PagedData<Message.Standalone>> = messages.chunked(messagesPerPage)
+            .map { PagedData(it, totalPages = (messages.size + messagesPerPage - 1) / messagesPerPage) }.asFlow()
 
-        override suspend fun getReactions(pageSize: Int): Flow<PagedData<MessageReactions>> = flowOf(
-            PagedData(reactions, totalPages = 1)
-        )
+        override suspend fun getReactions(pageSize: Int): Flow<PagedData<MessageReactions>> = listOf(PagedData(reactions, totalPages = 1)).asFlow()
 
         override suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit> {
             insertedUsers += users
