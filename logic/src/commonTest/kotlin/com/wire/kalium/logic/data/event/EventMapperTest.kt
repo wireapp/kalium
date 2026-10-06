@@ -214,7 +214,7 @@ class EventMapperTest {
     @Test
     fun systemMemberUpdateMapsTheAdminRoleWithoutASender() {
         val dto = EventContentDTO.Conversation.SystemMemberUpdateDTO(
-            qualifiedConversation = TestConversation.NETWORK_ID, qualifiedFrom = null, time = TIMESTAMP, from = "system",
+            qualifiedConversation = TestConversation.NETWORK_ID, qualifiedFrom = null, time = TIMESTAMP,
             roleChange = ConversationRoleChange(
                 user = TestConversation.NETWORK_USER_ID1.value, qualifiedUserId = TestConversation.NETWORK_USER_ID1,
                 role = "wire_admin", mutedRef = null, mutedStatus = null, isArchiving = null, archivedRef = null,
@@ -249,9 +249,9 @@ class EventMapperTest {
             teamId = "team-id", time = EVENT_TIME, via = "user",
         )
         val system = EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO(
-            conversation = TestConversation.NETWORK_ID.value, data = data, from = "system",
+            conversation = TestConversation.NETWORK_ID.value, data = data,
             qualifiedConversation = TestConversation.NETWORK_ID, qualifiedFrom = null,
-            teamId = "team-id", time = EVENT_TIME, via = "system",
+            time = EVENT_TIME, via = "system",
         )
         val expected = Event.Conversation.AdminlessDeleteReminder(
             "event-id", ModelQualifiedID("valueConversation", "domainConversation"), TestUser.USER_ID, EVENT_TIME, DELETION_TIME,

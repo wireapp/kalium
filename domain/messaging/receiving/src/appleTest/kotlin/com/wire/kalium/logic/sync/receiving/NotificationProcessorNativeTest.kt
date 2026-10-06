@@ -8740,6 +8740,9 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun systemMemberRolesProteus() = memberRoles(false, system = true)
+
+    @Test
     fun systemMemberRolesMLS() = memberRoles(true, system = true)
 
     @Test
@@ -11452,7 +11455,8 @@ class NotificationProcessorNativeTest {
 
         fun adminlessReminder(system: Boolean, deletionTime: Instant) = plainEvent("reminder", """{
             "type":"conversation.${if (system) "system." else ""}adminless-reminder",
-            "conversation":"${CONVERSATION_ID.value}","from":"system","via":"system","team":"team",
+            "conversation":"${CONVERSATION_ID.value}","via":"system",
+            ${if (system) "" else """"from":"system","team":"team","""}
             "qualified_conversation":{"id":"${CONVERSATION_ID.value}","domain":"${CONVERSATION_ID.domain}"},
             "qualified_from":${if (system) "null" else """{"id":"${SENDER.value}","domain":"${SENDER.domain}"}"""},
             "time":"$TIME","data":{"deletion_scheduled_for":"$deletionTime"}
@@ -12559,7 +12563,7 @@ class NotificationProcessorNativeTest {
             """{"type":"conversation.${if (system) "system." else ""}member-update",
             "qualified_conversation":{"id":"${target.value}","domain":"${target.domain}"},
             "qualified_from":${if (system) "null" else """{"id":"${SENDER.value}","domain":"${SENDER.domain}"}"""},
-            "from":"${SENDER.value}","time":"$TIME",
+            ${if (system) "" else """"from":"${SENDER.value}","""}"time":"$TIME",
             "data":{"target":"${member.value}","qualified_target":{"id":"${member.value}","domain":"${member.domain}"},
             "conversation_role":${role?.let { "\"$it\"" } ?: "null"},"otr_muted_ref":null,"otr_muted_status":null,"otr_archived":null,"otr_archived_ref":null}}""")
 

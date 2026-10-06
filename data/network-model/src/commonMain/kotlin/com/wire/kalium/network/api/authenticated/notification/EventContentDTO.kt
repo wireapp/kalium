@@ -247,10 +247,10 @@ sealed class EventContentDTO {
         data class SystemAdminlessDeleteReminderDTO(
             @SerialName("conversation") val conversation: String,
             @SerialName("data") val data: AdminlessDeleteReminderData,
-            @SerialName("from") val from: String,
+            @SerialName("from") val from: String? = null,
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId? = null,
-            @SerialName("team") val teamId: TeamId,
+            @SerialName("team") val teamId: TeamId? = null,
             @SerialName("time") val time: Instant,
             @SerialName("via") val via: String,
         ) : Conversation()
@@ -300,7 +300,7 @@ sealed class EventContentDTO {
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId? = null,
             @SerialName("time") val time: String,
-            @SerialName("from") val from: String,
+            @SerialName("from") val from: String? = null,
             @SerialName("data") val roleChange: ConversationRoleChange
         ) : Conversation()
 
