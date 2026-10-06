@@ -202,11 +202,11 @@ class V17NetworkContainerTest {
     }
 
     @Test
-    fun v18NegotiationRequiresDevelopmentApisEnabled() {
+    fun v18NegotiationDoesNotRequireDevelopmentApisEnabled() {
         val server = VersionInfoDTO(null, "wire.com", false, listOf(15, 16, 17, 18))
         val production = BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = false)
         val development = BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = true)
-        assertEquals(ApiVersionDTO.Valid(17), production.commonApiVersion)
+        assertEquals(ApiVersionDTO.Valid(18), production.commonApiVersion)
         assertEquals(ApiVersionDTO.Valid(18), development.commonApiVersion)
     }
 

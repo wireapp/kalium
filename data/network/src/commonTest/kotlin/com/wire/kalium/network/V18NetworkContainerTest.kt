@@ -55,7 +55,10 @@ import kotlin.test.assertTrue
 
 class V18NetworkContainerTest {
     private val config = TEST_BACKEND_CONFIG.copy(
-        metaData = TEST_BACKEND_CONFIG.metaData.copy(commonApiVersion = ApiVersionDTO.Valid(18))
+        metaData = BackendMetaDataUtilImpl.calculateApiVersion(
+            VersionInfoDTO(null, "wire.com", false, listOf(15, 16, 17, 18)),
+            developmentApiEnabled = false
+        )
     )
     private val conversationId = ConversationId("conversation", "wire.com")
     private val member = UserId("member", "wire.com")
@@ -122,20 +125,31 @@ class V18NetworkContainerTest {
     }
 
     @Test
-    fun v18NegotiationRequiresDevelopmentApisEnabled() {
+    fun v18NegotiationDoesNotRequireDevelopmentApisEnabled() {
         for (server in listOf(
-            VersionInfoDTO(listOf(16, 17, 18), "wire.com", false, listOf(15)),
+            VersionInfoDTO(null, "wire.com", false, listOf(18)),
             VersionInfoDTO(emptyList(), "wire.com", false, listOf(15, 18)),
         )) {
-            assertEquals(
-                ApiVersionDTO.Valid(15),
-                BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = false).commonApiVersion
-            )
-            assertEquals(
-                ApiVersionDTO.Valid(18),
-                BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = true).commonApiVersion
-            )
+            for (developmentApiEnabled in listOf(false, true)) {
+                assertEquals(
+                    ApiVersionDTO.Valid(18),
+                    BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = developmentApiEnabled).commonApiVersion
+                )
+            }
         }
+    }
+
+    @Test
+    fun serverDevelopmentApisStillRequireDevelopmentApisEnabled() {
+        val server = VersionInfoDTO(listOf(16, 17, 18), "wire.com", false, listOf(15))
+        assertEquals(
+            ApiVersionDTO.Valid(15),
+            BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = false).commonApiVersion
+        )
+        assertEquals(
+            ApiVersionDTO.Valid(18),
+            BackendMetaDataUtilImpl.calculateApiVersion(server, developmentApiEnabled = true).commonApiVersion
+        )
     }
 
     @Test
@@ -205,7 +219,7 @@ class V18NetworkContainerTest {
 
     private suspend fun withAuthenticated(
         engine: HttpClientEngine? = null,
-        version: Int = 18,
+        version: Int = config.metaData.commonApiVersion.version,
         block: suspend (AuthenticatedNetworkContainer) -> Unit,
     ) {
         val manager = object : SessionManager by TestSessionManagerV0() {
