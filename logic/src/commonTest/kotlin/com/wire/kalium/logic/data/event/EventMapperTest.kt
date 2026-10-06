@@ -260,6 +260,45 @@ class EventMapperTest {
         assertEquals(expected.copy(senderUserId = null), mapper.fromEventContentDTO("event-id", system))
     }
 
+    @Test
+    fun givenMeetingInviteWithOptionalSender_whenMapping_thenPreserveSender() {
+        listOf(null, NetworkQualifiedID("inviter", "example.com")).forEach { sender ->
+            val dto = EventContentDTO.Meeting.MeetingMemberAddDTO(
+                qualifiedMeetingId = NetworkQualifiedID("meeting", "example.com"),
+                time = Instant.parse("2026-09-23T12:00:00Z"),
+                qualifiedFrom = sender,
+            )
+            val event = assertIs<Event.Meeting.MemberAdd>(MapperProvider.eventMapper(TestUser.SELF.id).fromEventContentDTO("invite", dto))
+            assertEquals(sender?.let { ModelQualifiedID(it.value, it.domain) }, event.senderUserId)
+        }
+    }
+
+    @Test
+    fun givenAllMeetingEventsWithOptionalSender_whenMapping_thenPreserveSenderAndIdentity() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val id = NetworkQualifiedID("meeting", "example.com")
+        listOf(null, NetworkQualifiedID("sender", "example.com")).forEach { sender ->
+            val events = listOf(
+                EventContentDTO.Meeting.MeetingCreateDTO(id, EVENT_TIME, sender),
+                EventContentDTO.Meeting.MeetingUpdateDTO(id, EVENT_TIME, sender),
+                EventContentDTO.Meeting.MeetingDeleteDTO(id, EVENT_TIME, sender),
+                EventContentDTO.Meeting.MeetingMemberAddDTO(id, EVENT_TIME, sender),
+            )
+            events.forEach { dto ->
+                val event = mapper.fromEventContentDTO("event", dto)
+                val actual = when (event) {
+                    is Event.Meeting.Create -> event.senderUserId
+                    is Event.Meeting.Update -> event.senderUserId
+                    is Event.Meeting.Delete -> event.senderUserId
+                    is Event.Meeting.MemberAdd -> event.senderUserId
+                    else -> error("Unexpected event")
+                }
+                assertEquals("event", event.id)
+                assertEquals(sender?.let { ModelQualifiedID(it.value, it.domain) }, actual)
+            }
+        }
+    }
+
     private companion object {
         const val TIMESTAMP = "2026-07-30T10:00:00.000Z"
         val EVENT_TIME = Instant.parse("2026-07-16T12:00:00.000Z")

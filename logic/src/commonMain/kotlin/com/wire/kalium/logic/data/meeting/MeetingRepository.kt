@@ -100,6 +100,8 @@ internal interface MeetingRepository {
 
     suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit>
 
+    suspend fun getMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, List<Meeting>>
+
     suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit>
 
     suspend fun createNewMeeting(
@@ -226,6 +228,13 @@ internal class MeetingDataSource(
     override suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit> = wrapStorageRequest {
         meetingDAO.deleteMeeting(meetingId.toDao())
     }
+
+    override suspend fun getMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, List<Meeting>> =
+        withContext(NonCancellable) {
+            wrapStorageRequest {
+                meetingDAO.getMeetingsByConversationId(conversationId.toDao()).map(meetingMapper::fromDaoToModel)
+            }
+        }
 
     override suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit> =
         withContext(NonCancellable) {

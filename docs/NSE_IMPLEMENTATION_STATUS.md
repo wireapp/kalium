@@ -235,3 +235,9 @@ warning messages after interruption. They also cover access-before-fetch behavio
 on the first attempt an absent conversation cannot be updated; on retry the event
 updates the now-stored row, so access may differ from the first fetched snapshot.
 Actual field writes and crypto/storage integrity remain required.
+
+Meeting invite, update and cancellation cards are ephemeral app-session notifications.
+They are delivered only to active observers of that account. NSE meeting effects
+remain durable and silent, following ADR 0011; no meeting-card queue or replay
+store is added. Conversation notification types and the bulk meeting deletion
+API remain available to existing consumers.

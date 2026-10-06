@@ -875,6 +875,7 @@ sealed class Event(open val id: String) {
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
+            val senderUserId: UserId? = null,
         ) : Meeting(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Meeting.Create",
@@ -888,11 +889,13 @@ sealed class Event(open val id: String) {
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
+            val senderUserId: UserId? = null,
         ) : Meeting(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Meeting.Delete",
                 idKey to id,
                 meetingIdKey to meetingId.toLogString(),
+                senderUserIdKey to senderUserId?.toLogString(),
                 timestampIsoKey to dateTime
             )
         }
@@ -901,11 +904,13 @@ sealed class Event(open val id: String) {
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
+            val senderUserId: UserId? = null,
         ) : Meeting(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Meeting.Update",
                 idKey to id,
                 meetingIdKey to meetingId.toLogString(),
+                senderUserIdKey to senderUserId?.toLogString(),
                 timestampIsoKey to dateTime
             )
         }
@@ -914,11 +919,13 @@ sealed class Event(open val id: String) {
             override val id: String,
             val meetingId: MeetingId,
             val dateTime: Instant,
+            val senderUserId: UserId? = null,
         ) : Meeting(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Meeting.MemberAdd",
                 idKey to id,
                 meetingIdKey to meetingId.toLogString(),
+                senderUserIdKey to senderUserId?.toLogString(),
                 timestampIsoKey to dateTime
             )
         }

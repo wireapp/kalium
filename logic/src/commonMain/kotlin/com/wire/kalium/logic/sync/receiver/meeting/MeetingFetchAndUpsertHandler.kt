@@ -21,18 +21,19 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.EventProcessingLogger
 
+/** Returns the persisted meeting, or null when the event is skipped because the meeting is missing or unsupported. */
 internal suspend fun MeetingRepository.handleMeetingFetchAndUpsert(
     meetingId: MeetingId,
-    eventLogger: EventProcessingLogger
-): Either<CoreFailure, Unit> = fetchAndPersistMeeting(meetingId)
+    eventLogger: EventProcessingLogger,
+): Either<CoreFailure, Meeting?> = fetchAndPersistMeeting(meetingId)
     .onSuccess { eventLogger.logSuccess() }
     .flatMapLeft { failure ->
         when {
@@ -41,7 +42,7 @@ internal suspend fun MeetingRepository.handleMeetingFetchAndUpsert(
                     status = EventLoggingStatus.SKIPPED,
                     extraInfo = arrayOf("info" to "Meetings feature not supported by current API version")
                 )
-                Either.Right(Unit)
+                Either.Right(null)
             }
 
             failure is MeetingDataSource.MeetingNotSupportedFailure -> {
@@ -49,7 +50,7 @@ internal suspend fun MeetingRepository.handleMeetingFetchAndUpsert(
                     status = EventLoggingStatus.SKIPPED,
                     extraInfo = arrayOf("info" to "Meeting not supported by current API version")
                 )
-                Either.Right(Unit)
+                Either.Right(null)
             }
 
             failure.isMeetingNotFound() -> {
@@ -57,7 +58,7 @@ internal suspend fun MeetingRepository.handleMeetingFetchAndUpsert(
                     status = EventLoggingStatus.SKIPPED,
                     extraInfo = arrayOf("info" to "Meeting not found on server")
                 )
-                Either.Right(Unit)
+                Either.Right(null)
             }
 
             else -> {
@@ -66,4 +67,3 @@ internal suspend fun MeetingRepository.handleMeetingFetchAndUpsert(
             }
         }
     }
-    .map {}

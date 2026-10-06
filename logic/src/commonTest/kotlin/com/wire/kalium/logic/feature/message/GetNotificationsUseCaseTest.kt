@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.notification.LocalNotificationUpdateMessageAction
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.user.Connection
@@ -322,6 +323,75 @@ class GetNotificationsUseCaseTest {
 
         getNotifications().test {
             awaitComplete()
+        }
+    }
+    @Test
+    fun givenTwoSessionPublishers_whenBothObserve_thenNotificationsStayInTheirSession() = runTest {
+        val invite = LocalNotification.Meeting.Invite(
+            eventId = "event",
+            meetingId = conversationId(),
+            conversationId = conversationId(),
+            meetingTitle = "Planning",
+            author = null,
+            time = TIME,
+            startTime = TIME,
+            endTime = TIME,
+        )
+        val firstPublisher = NotificationEventsManagerImpl()
+        val secondPublisher = NotificationEventsManagerImpl()
+        suspend fun notificationsFor(publisher: NotificationEventsManager) = arrange {
+            withLocalNotifications(Either.Right(emptyList()))
+            withConnectionList(flowOf(emptyList()))
+            withRegularNotificationsChecking(publisher.observeRegularNotificationsChecking())
+            withEphemeralNotification(publisher.observeEphemeralNotifications())
+        }.second
+        val firstNotifications = notificationsFor(firstPublisher)
+        val secondNotifications = notificationsFor(secondPublisher)
+        firstNotifications().test {
+            val firstObserver = this
+            secondNotifications().test {
+                firstPublisher.scheduleMeetingNotification(invite)
+                assertEquals(listOf(invite), firstObserver.awaitItem())
+                expectNoEvents()
+                secondPublisher.scheduleConversationSeenNotification(conversationId())
+                assertEquals(listOf(LocalNotification.ConversationSeen(conversationId())), awaitItem())
+                firstObserver.expectNoEvents()
+                cancelAndIgnoreRemainingEvents()
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenMeetingNotificationWithoutObservers_whenSubscribingLater_thenDoNotReplay() = runTest {
+        val publisher = NotificationEventsManagerImpl()
+        val notification = LocalNotification.Meeting.Cancel("event", conversationId(), conversationId(), "Planning", null, TIME)
+        publisher.scheduleMeetingNotification(notification)
+
+        publisher.observeEphemeralNotifications().test {
+            expectNoEvents()
+            publisher.scheduleMeetingNotification(notification.copy(eventId = "new-event"))
+            assertEquals(notification.copy(eventId = "new-event"), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenTwoSessionPublishers_whenCheckingRegularNotifications_thenOnlyOwningSessionReceivesCheck() = runTest {
+        val first = NotificationEventsManagerImpl()
+        val second = NotificationEventsManagerImpl()
+        first.observeRegularNotificationsChecking().test {
+            val firstObserver = this
+            second.observeRegularNotificationsChecking().test {
+                first.scheduleRegularNotificationChecking()
+                assertEquals(Unit, firstObserver.awaitItem())
+                expectNoEvents()
+                second.scheduleRegularNotificationChecking()
+                assertEquals(Unit, awaitItem())
+                firstObserver.expectNoEvents()
+                cancelAndIgnoreRemainingEvents()
+            }
+            cancelAndIgnoreRemainingEvents()
         }
     }
 

@@ -41,12 +41,16 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.data.notification.toLocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import kotlinx.coroutines.flow.firstOrNull
 
 internal interface MemberLeaveEventHandler {
     suspend fun handle(
@@ -66,6 +70,7 @@ internal class MemberLeaveEventHandlerImpl(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val mlsConversationRepository: MLSConversationRepository,
     private val meetingRepository: MeetingRepository,
+    private val notificationEventsManager: NotificationEventsManager,
     private val selfUserId: UserId,
 ) : MemberLeaveEventHandler {
 
@@ -102,9 +107,7 @@ internal class MemberLeaveEventHandlerImpl(
                 }
                 legalHoldHandler.handleConversationMembersChanged(event.conversationId)
             }
-            .flatMap {
-                deleteMeetingsIfNeeded(event)
-            }
+            .flatMap { deleteMeetingsIfNeeded(event) }
             .onSuccess {
                 eventLogger.logSuccess()
             }.onFailure {
@@ -162,9 +165,25 @@ internal class MemberLeaveEventHandlerImpl(
             )
         }
 
-    private suspend fun deleteMeetingsIfNeeded(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> =
-        when (selfUserId in event.removedList) {
-            true -> meetingRepository.deleteMeetingsByConversationId(event.conversationId)
-            false -> Either.Right(Unit)
+    private suspend fun deleteMeetingsIfNeeded(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> {
+        if (selfUserId !in event.removedList) return Either.Right(Unit)
+        // Notification metadata is optional; failure to read it must not prevent required deletion.
+        val meetings = meetingRepository.getMeetingsByConversationId(event.conversationId).getOrElse { emptyList() }
+        return meetingRepository.deleteMeetingsByConversationId(event.conversationId).onSuccess {
+            val author = if (meetings.isEmpty()) null else
+                userRepository.observeUser(event.removedBy).firstOrNull()?.toLocalNotificationMessageAuthor()
+            meetings.forEach { meeting ->
+                notificationEventsManager.scheduleMeetingNotification(
+                    LocalNotification.Meeting.Cancel(
+                        eventId = event.id,
+                        meetingId = meeting.meetingId,
+                        conversationId = meeting.conversationId,
+                        meetingTitle = meeting.title,
+                        author = author,
+                        time = event.dateTime,
+                    )
+                )
+            }
         }
+    }
 }

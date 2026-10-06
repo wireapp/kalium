@@ -55,7 +55,7 @@ import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepositoryImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
-import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -133,6 +133,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LongParameterList")
 public class MessageScope internal constructor(
+    private val notificationEventsManager: NotificationEventsManager,
     private val connectionRepository: ConnectionRepository,
     private val messageDraftRepository: MessageDraftRepository,
     private val selfUserId: QualifiedID,
@@ -284,7 +285,7 @@ public class MessageScope internal constructor(
         get() = PersistMessageUseCaseImpl(
             messageRepository = messageRepository,
             selfUserId = selfUserId,
-            notificationEventsManager = NotificationEventsManagerImpl,
+            notificationEventsManager = notificationEventsManager,
             persistMessageHookNotifier = persistenceEventHookNotifier
         )
 
@@ -517,7 +518,7 @@ public class MessageScope internal constructor(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
             incrementalSyncRepository = incrementalSyncRepository,
-            notificationEventsManager = NotificationEventsManagerImpl
+            notificationEventsManager = notificationEventsManager
         )
 
     internal val sendConfirmation: SendConfirmationUseCase

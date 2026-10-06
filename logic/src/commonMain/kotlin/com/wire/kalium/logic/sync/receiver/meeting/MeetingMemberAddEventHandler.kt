@@ -19,10 +19,16 @@ package com.wire.kalium.logic.sync.receiver.meeting
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.data.notification.toLocalNotificationMessageAuthor
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import kotlinx.coroutines.flow.firstOrNull
 
 internal interface MeetingMemberAddEventHandler {
     suspend fun handle(event: Event.Meeting.MemberAdd): Either<CoreFailure, Unit>
@@ -30,9 +36,28 @@ internal interface MeetingMemberAddEventHandler {
 
 internal class MeetingMemberAddEventHandlerImpl(
     private val meetingRepository: MeetingRepository,
+    private val userRepository: UserRepository,
+    private val notificationEventsManager: NotificationEventsManager,
 ) : MeetingMemberAddEventHandler {
     override suspend fun handle(event: Event.Meeting.MemberAdd): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        return meetingRepository.handleMeetingFetchAndUpsert(meetingId = event.meetingId, eventLogger = eventLogger)
+        return meetingRepository.handleMeetingFetchAndUpsert(meetingId = event.meetingId, eventLogger = eventLogger).map { meeting ->
+            meeting?.let {
+                notificationEventsManager.scheduleMeetingNotification(
+                    LocalNotification.Meeting.Invite(
+                        eventId = event.id,
+                        meetingId = meeting.meetingId,
+                        conversationId = meeting.conversationId,
+                        meetingTitle = meeting.title,
+                        author = event.senderUserId?.let {
+                            userRepository.observeUser(it).firstOrNull()?.toLocalNotificationMessageAuthor()
+                        },
+                        time = event.dateTime,
+                        startTime = meeting.startTime,
+                        endTime = meeting.endTime,
+                    )
+                )
+            }
+        }
     }
 }

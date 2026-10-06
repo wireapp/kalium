@@ -63,6 +63,30 @@ class MeetingDaoTest : BaseDatabaseTest() {
 
 
     @Test
+    fun givenQualifiedConversations_whenSnapshottingThenDeleting_thenKeepOtherDomainsAndDeleteOccurrences() = runTest(dispatcher) {
+        val start = Instant.parse("2026-10-01T09:00:00Z")
+        val first = newMeeting(startTime = start).copy(updatedAt = start)
+        val second = first.copy(meetingId = QualifiedIDEntity("second", first.meetingId.domain))
+        val otherDomain = first.copy(
+            meetingId = QualifiedIDEntity(first.meetingId.value, "other.example"),
+            conversationId = QualifiedIDEntity(first.conversationId.value, "other.example"),
+        )
+        listOf(first, second, otherDomain).forEach { insertMeetingDependencies(it) }
+        meetingDao.upsertMeetings(listOf(first, second, otherDomain), GenerationLimit.Window(start - 1.days, start + 1.days))
+
+        val snapshot = meetingDao.getMeetingsByConversationId(first.conversationId)
+        assertEquals(setOf(first, second), snapshot.toSet())
+        meetingDao.deleteMeetingsByConversationId(first.conversationId)
+
+        assertEquals(emptyList(), meetingDao.getMeetingsByConversationId(first.conversationId))
+        assertTrue(occurrencesFor(first).isEmpty())
+        assertTrue(occurrencesFor(second).isEmpty())
+        assertEquals(listOf(otherDomain), meetingDao.getMeetingsByConversationId(otherDomain.conversationId))
+        assertEquals(listOf(first, second).toSet(), snapshot.toSet())
+        assertTrue(occurrencesFor(otherDomain).isNotEmpty())
+    }
+
+    @Test
     fun changingOnlyTzidRegeneratesOccurrencesAndSurvivesReopen() = runTest(dispatcher) {
         val meeting = newMeeting(
             startTime = Instant.parse("2026-10-24T08:00:00Z"),
