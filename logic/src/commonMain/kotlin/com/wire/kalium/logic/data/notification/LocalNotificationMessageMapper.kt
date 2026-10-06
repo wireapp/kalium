@@ -47,7 +47,7 @@ internal interface LocalNotificationMessageMapper {
         list: List<NotificationMessageEntity>,
         messageSizePerConversation: Int,
         mapMessage: (NotificationMessageEntity) -> LocalNotificationMessage?
-    ): List<LocalNotification.Conversation>
+    ): List<LocalNotification.Conversation.NewMessages>
 }
 
 internal class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
@@ -64,7 +64,7 @@ internal class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapp
             connection.lastModifiedDate,
             connection.connection.qualifiedToId
         )
-        return LocalNotification.Conversation(
+        return LocalNotification.Conversation.NewMessages(
             connection.conversationId,
             connection.conversation.name ?: "",
             listOf(message),
@@ -84,7 +84,7 @@ internal class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapp
                     author = LocalNotificationMessageAuthor(author?.name ?: "", null),
                     time = conversationEvent.dateTime
                 )
-                LocalNotification.Conversation(
+                LocalNotification.Conversation.NewMessages(
                     id = conversation.id,
                     conversationName = conversation.name ?: "",
                     messages = listOf(notificationMessage),
@@ -97,10 +97,10 @@ internal class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapp
     }
 
     override fun toConversationSeen(conversationId: ConversationId): LocalNotification =
-        LocalNotification.ConversationSeen(conversationId = conversationId)
+        LocalNotification.Conversation.Seen(conversationId = conversationId)
 
     override fun fromMessageToMessageDeletedLocalNotification(message: Message): LocalNotification =
-        LocalNotification.UpdateMessage(
+        LocalNotification.Conversation.UpdateMessage(
             message.conversationId,
             message.id,
             LocalNotificationUpdateMessageAction.Delete
@@ -110,7 +110,7 @@ internal class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapp
         message: Message,
         messageContent: MessageContent.TextEdited
     ): LocalNotification =
-        LocalNotification.UpdateMessage(
+        LocalNotification.Conversation.UpdateMessage(
             message.conversationId,
             messageContent.editMessageId,
             LocalNotificationUpdateMessageAction.Edit(messageContent.newContent, message.id)
@@ -120,7 +120,7 @@ internal class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapp
         message: Message,
         messageContent: MessageContent.MultipartEdited
     ): LocalNotification =
-        LocalNotification.UpdateMessage(
+        LocalNotification.Conversation.UpdateMessage(
             message.conversationId,
             messageContent.editMessageId,
             LocalNotificationUpdateMessageAction.Edit(messageContent.newTextContent ?: "", message.id)
@@ -130,14 +130,14 @@ internal class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapp
         list: List<NotificationMessageEntity>,
         messageSizePerConversation: Int,
         mapMessage: (NotificationMessageEntity) -> LocalNotificationMessage?
-    ): List<LocalNotification.Conversation> =
+    ): List<LocalNotification.Conversation.NewMessages> =
         list.groupBy { it.conversationId }
             .map { (conversationId, messages) ->
                 val isReplyAllowed = messages.first().run {
                     degradedConversationNotified
                             && (legalHoldStatus != ConversationEntity.LegalHoldStatus.ENABLED || legalHoldStatusChangeNotified)
                 }
-                LocalNotification.Conversation(
+                LocalNotification.Conversation.NewMessages(
                     // todo: needs some clean up!
                     id = conversationId.toModel(),
                     conversationName = messages.first().conversationName ?: "",

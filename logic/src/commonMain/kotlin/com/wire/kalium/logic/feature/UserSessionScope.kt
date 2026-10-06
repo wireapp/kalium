@@ -643,6 +643,7 @@ public class UserSessionScope internal constructor(
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
+    private val notificationEventsManager = NotificationEventsManagerImpl()
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
@@ -1213,7 +1214,7 @@ public class UserSessionScope internal constructor(
         get() = PersistMessageUseCaseImpl(
             messageRepository = messageRepository,
             selfUserId = userId,
-            notificationEventsManager = NotificationEventsManagerImpl,
+            notificationEventsManager = notificationEventsManager,
             persistMessageHookNotifier = currentPersistenceEventHookNotifier
         )
 
@@ -1903,13 +1904,13 @@ public class UserSessionScope internal constructor(
             assetMessageHandler,
             persistMessage,
             persistReaction,
-            MessageTextEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
-            MessageMultipartEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
+            MessageTextEditHandlerImpl(messageRepository, notificationEventsManager),
+            MessageMultipartEditHandlerImpl(messageRepository, notificationEventsManager),
             LastReadContentHandlerImpl(
                 conversationRepository,
                 userId,
                 isMessageSentInSelfConversation,
-                NotificationEventsManagerImpl
+                notificationEventsManager
             ),
             ClearConversationContentHandlerImpl(
                 conversationRepository,
@@ -1923,7 +1924,7 @@ public class UserSessionScope internal constructor(
             DeleteMessageHandlerImpl(
                 messageRepository,
                 assetRepository,
-                NotificationEventsManagerImpl,
+                notificationEventsManager,
                 userId,
                 currentPersistenceEventHookNotifier
             ),
@@ -1997,7 +1998,8 @@ public class UserSessionScope internal constructor(
         get() = DeletedConversationEventHandlerImpl(
             userRepository,
             conversationRepository,
-            NotificationEventsManagerImpl,
+            meetingRepository,
+            notificationEventsManager,
             deleteConversationUseCase,
             currentPersistenceEventHookNotifier,
             userId,
@@ -2030,6 +2032,7 @@ public class UserSessionScope internal constructor(
             selfTeamIdProvider = selfTeamId,
             mlsConversationRepository = mlsConversationRepository,
             meetingRepository = meetingRepository,
+            notificationEventsManager = notificationEventsManager,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
@@ -2310,16 +2313,22 @@ public class UserSessionScope internal constructor(
     private val meetingDeleteEventHandler: MeetingDeleteEventHandler
         get() = MeetingDeleteEventHandlerImpl(
             meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            notificationEventsManager = notificationEventsManager,
         )
 
     private val meetingUpdateEventHandler: MeetingUpdateEventHandler
         get() = MeetingUpdateEventHandlerImpl(
             meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            notificationEventsManager = notificationEventsManager,
         )
 
     private val meetingMemberAddEventHandler: MeetingMemberAddEventHandler
         get() = MeetingMemberAddEventHandlerImpl(
             meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            notificationEventsManager = notificationEventsManager,
         )
 
     private val meetingEventReceiver: MeetingEventReceiver
@@ -2562,6 +2571,7 @@ public class UserSessionScope internal constructor(
 
     public val messages: MessageScope by lazy {
         MessageScope(
+            notificationEventsManager,
             connectionRepository,
             messageDraftRepository,
             userId,
