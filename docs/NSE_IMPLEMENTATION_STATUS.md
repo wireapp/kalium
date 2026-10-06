@@ -12,13 +12,18 @@ suite was rerun for the latest edit. Generated reports live under
 entry points; historical progress narratives and abandoned designs live in Git.
 
 **Supported** means the listed effects are implemented. **Pending/blocked** means
-the whole notification and later queue remain pending until the named dependency
-is resolved. Optional UI state and exact system-message history do not impose
-that barrier. Actual APNs/host integration, signing, protected-data/device budgets,
-Nomad and backup workflows are outside this library coverage. Legal-hold effects
-remain intentional NSE no-ops, as do typing indicators, remote mute and in-call
-emoji. These signals are excluded from required live-consumer work. Delivered-alert
-updates and missed-alert recovery remain optional.
+the attempt fails and the notification stays pending until the named dependency
+is resolved. The later queue stays pending too, except where
+[conversation isolation](#conversation-isolation-and-deferral) lets the scan pass a
+deferred message-only notification. **App handoff** means the NSE returns `SUCCESS`
+with `appWorkPending` and leaves the event and later queue unprocessed; the app's
+incremental sync runs the matching consumer before gathering. Optional UI state and exact system-message
+history do not impose a barrier. Actual APNs/host integration, signing,
+protected-data/device budgets, Nomad and backup workflows are outside this library
+coverage. Legal-hold events, configuration and embedded content remain NSE no-ops,
+as do typing indicators, remote mute and in-call emoji; legal-hold state changes
+that need app work hand off. Removal of delivered alerts for deleted or read messages
+is implemented; updating delivered alerts and missed-alert recovery remain optional.
 
 ## Current coverage
 
@@ -29,20 +34,20 @@ updates and missed-alert recovery remain optional.
 | Adminless reminders; system member updates and senderless system deletion | Shared app/event mapping; persist the first scheduled deletion time independently of messages and expose it in conversation and keyset list reads. Required NSE writes remain atomic and failures keep the event pending. System deletion reuses owned native cleanup and existing replay boundaries. | Focused native receiving cases cover reminders on both protocols, required-write rollback/retry, system membership and senderless deletion. Persistence regressions cover first-write, clear/delete and page invalidation with retained preview/draft; existing fixtures cover every supported legacy upgrade. App mapping/handlers and upstream schema reopen checks pass. | Supported within the existing deletion/replay boundaries |
 | User profile updates/availability; read-receipt, typing and folder properties | Partial existing-user updates and canonical property defaults/replacement. No receiving-time avatar download or protocol resolution from user.update. | Native synchronization failure/replay and four-account Swift/app profile/property/read-state checks. | Supported; unknown keys/values are ignored like the app |
 | Independent configuration events | File sharing, classified domains, conference settings, guest links, self deletion, app lock, allowed global operations, Cells/internal Cells, profile QR, asset audit, prevent-adminless-groups and Meetings flags. Existing settings/change flags and meeting slow-sync invalidation; no new worker. | Shared app handlers, 153 app checks and native/Swift synchronization evidence. MLS and E2EI effects are split below. | Supported |
-| Transient events durably captured by the app; supported transient REST targets | Resume the same ordered queue after live-to-pending conversion. Required payload effects are unchanged. Store every page row atomically; only non-transient IDs advance the app's fetch cursor. | 11 native receiving/regression cases, seven persistence tests and two Swift/app accounts verify failures/replay, cursor, public reads and next ciphertext. | Supported; typed unsupported effects still block the whole queue |
+| Transient events durably captured by the app; supported transient REST targets | Resume the same ordered queue after live-to-pending conversion. Required payload effects are unchanged. Store every page row atomically; only non-transient IDs advance the app's fetch cursor. | 11 native receiving/regression cases, seven persistence tests and two Swift/app accounts verify failures/replay, cursor, public reads and next ciphertext. | Supported; typed unsupported effects still fail the attempt |
 | Pending-connection conversation creation; creation → SENT metadata | Shared WAIT_FOR_CONNECTION mapping, self-only membership and applicable creation system message; later SENT uses existing metadata/member insertion rules. No inferred peer, backend creation or one-to-one resolution. | Nine native receiving/regression cases, 23 app tests and two Swift/app accounts verify duplicates, canonical name/role, required profile/SQL failures, pending type/member/warning reads and next ciphertext. | Supported |
 | Proteus + MLS payloads in backend order within one notification | Same Proteus then MLS nesting as app over separate stores; one ordered decode and SQL effects write; both contexts available to ordered payloads. Existing delivery handoff; no new checkpoint. | 38 native cases; Swift creation/welcome/mixed text and real-app reads plus next ciphertext in both stores. See the scenario verification entry points below. | Supported |
 | Prepared welcome after local-client removal; self-join/welcome after backend leave | Native welcome reuses prepared key material; authenticated join refresh restores current metadata/full roster; final epoch and verification; required SQL effects remain atomic. No new deferred work. | 19 focused native cases and three-account Swift recovery → actual-app reopen/next ciphertext; authenticated membership/creation regressions. | Supported; see recovery scenarios below |
 | Inactive local-client removal → prepared welcome → text in one notification | Native stale-commit/duplicate handling permits replay after recreation; ordered old proposal-timer cleanup and final group verification. | 19 focused native cases and updated three-account Swift recovery/app reopen fixture. | Supported |
 | Backend reset; replacement welcome before/after reset; new-group text | Old native group wipe and timer cleanup; replacement ID/epoch and ESTABLISHED or PENDING_AFTER_RESET; final verification. Reset-only pending state awaits welcome; no recovery handoff is claimed. | 21 native reset/welcome cases; three-account authenticated Swift reset fixture and actual-app reads/next ciphertext. | Supported, except destructive old-group prefix below |
-| Old-group encrypted prefix → reset in one notification | Native wipe removes the state needed to replay the old encrypted prefix after commit. | Pinned CoreCrypto 10.4.0 source and native reopen probe return ConversationNotFound; receiver rollback/pending test passes. Needs native post-wipe replay support; no checkpoint/export workaround is introduced. | Required work blocked; entire notification and later queue remain pending |
-| Protocol update; Proteus → MIXED → MLS with prepared welcome/text; mixed group creation | Authenticated fetch, preserved MLS columns and receipt policy on change; full metadata/member refresh otherwise; canonical protocol system messages and subsequent ordered payloads. | 11 focused native cases, 21 affected regressions; three-account Swift migration and real-app reads/next ciphertext in both stores. | Supported within the metadata-advance boundary below |
+| Old-group encrypted prefix → reset in one notification | Native wipe removes the state needed to replay the old encrypted prefix after commit. | CoreCrypto 10.4.0 source and native reopen probe return ConversationNotFound; receiver rollback/pending test passes. Needs native post-wipe replay support; no checkpoint/export workaround is introduced. | Required work blocked; entire notification and later queue remain pending |
+| Protocol update; Proteus → MIXED → MLS with prepared welcome/text; mixed group creation | Authenticated fetch, preserved MLS columns and receipt policy on change; full metadata/member refresh otherwise; canonical protocol system messages and subsequent ordered payloads. A conversation-not-found (404) or access-denied (403) fetch produces no effects. | 11 focused native cases, 21 affected regressions; three-account Swift migration and real-app reads/next ciphertext in both stores. | Supported within the metadata-advance boundary below |
 | Fresh metadata names a later replacement group after earlier old-group MLS ciphertext in the same notification | SQL can advance to the replacement before native abort; retry has only the current conversation/group mapping, while the protocol DTO supplies no old group. | Native probe confirms retry fails with missing replacement native group and leaves event pending. Needs authenticated historical mapping or narrowly approved forward-anchor reconciliation. | Required work blocked on replay; no checkpoint/bypass added |
 | Proteus one-to-one creation; prepared MLS one-to-one welcome/history migration | Shared protocol selection, authenticated peer refresh with app fallback, canonical/native candidate, all legacy histories, maximum modification time, active pointer, warnings and delivery/privacy. | Nine focused native cases; two-account authenticated Swift receiving and actual-app active conversation/history/next ciphertext. | Supported |
 | One-to-one creation requiring MLS establishment before a later welcome | App resolves at creation before proceeding; no established native candidate exists yet. | Native pending/rollback case; establishment uses the blocked returned-transport path. | Required work blocked; notification and later queue remain pending |
 | MLS proposals, including overdue proposals at a freshly fetched queue tail | Persist native pending work and the first SQL deadline; the existing app Live scheduler commits, clears the timer and processes returned events. NSE sends no optional commit. | 13 native receiving/regression cases, 23 app tests and three-account Swift/app commit, returned member removal/system message and next ciphertext. | Supported; existing native/SQL timer handoff |
-| MLS subconversation payload, including an already-installed native subgroup | App call-session group mapping and subgroup proposal timers exist only in memory; prepared SQL cannot resolve or hand off the subgroup safely. | Native two-attempt whole-queue rollback with both native groups usable after reopen; app repository/scheduler audit. Provide owned cross-process group mapping and a working call/proposal consumer. | Required work blocked; notification and later queue remain pending |
-| External-commit rejoin | Returned transport events share the confirmed response-replay dependency. | See native transport gap and native contracts below. | Required work blocked |
+| MLS subconversation payload, including an already-installed native subgroup | The app now persists subconversation group mappings (`Subconversation` table) and subgroup proposal deadlines (account Metadata), and commits those proposals while Live. The NSE reads neither and has no subconversation receiving path; the payload fails the attempt and is not deferrable. | Native two-attempt whole-queue rollback with both native groups usable after reopen; app subconversation DAO/repository and pending subgroup proposal tests. Add NSE subconversation receiving and subgroup proposal scheduling. | Required work blocked; the result is `FAILED` and the notification and later queue remain pending |
+| External-commit rejoin | Only the wrong-epoch recovery join below is supported. It sends only during the explicit external join and requires a response with no events. A response with events is saved under `nse_mls_rejoin_unexpected_response_v1`, and every later NSE rejoin is refused; nothing clears that record. Establishment commits keep the response-replay dependency. | Recovery tests listed in the wrong-epoch row; see native contracts below. | Supported for wrong-epoch recovery with an empty response; otherwise blocked |
 | Deleted peer with an active one-to-one; existing or new creation metadata triggers cleanup without an earlier native prefix | Preserve peer deletion/history/active pointer; wipe active MLS group and clear its timer, then receive unrelated Proteus text. Active Proteus needs no native work. | Seven native success/failure/replay cases; runtime reopen verifies absent group, empty timers and usable Proteus state. | Supported |
 | Deleted-peer cleanup after a welcome/ciphertext for the group in the same notification | Wipe would destroy the native prefix required for replay. | Same pinned native post-wipe dependency as reset; focused pending/rollback case. | Required work blocked; entire notification stays pending |
 | Legacy teammate resolution with no existing Proteus one-to-one | App posts group creation, then persists returned metadata/members/system messages and active pointer. | Current backend allocates a random group ID for every group-create call; no request identity in the client API. Server success before local SQL failure cannot be retried as the same creation. See native contracts below. | Required work blocked on idempotent creation or authenticated reconciliation; queue stays pending |
@@ -63,21 +68,22 @@ updates and missed-alert recovery remain optional.
 | MLS future-message and missing-proposal commit buffering | Existing native storage commits the buffer; later native decrypt returns bundles to ordinary NSE/app message and epoch effects. Original app trigger-time semantics are preserved. | Two native reopen probes, 13 native receiving/regression cases and two-account Swift/app actual event-processor consumption. | Supported; existing native buffer handoff |
 | Buffered inactive commit after an earlier processed buffer notification, without another encrypted prefix | Count every returned commit's epoch; explicitly wipe a residual inactive native group, clear proposal timer, persist lost-epoch warning/PENDING_JOIN/recovery flag; unrelated Proteus receiving continues. | Actual pinned native result contains active+inactive commits and retains the group; required-wipe failure, both native commit gaps and reopened absent-group/usable-Proteus assertions pass. | Supported within the existing inactive-prefix replay boundary |
 | MLS own commit with no pending commit; message older than retained epochs | Native `SelfCommitIgnored` and `MessageEpochTooOld` match the app ignore policy; no error row or delivery for ignored input, later ordinary receiving continues. | Five native classification/failure/replay cases plus buffered-removal regression; three-account Swift/app reads and next ciphertext. | Supported |
-| MLS wrong-epoch recovery, including a successful metadata refresh with no rejoin | App refreshes full metadata/roster and compares the native epoch with the remote epoch; an already-current group stores no failed-message row. | Real native WrongEpoch → two later commits → reopen decrypts the same input as plaintext. Two queue attempts retain the whole notification and tail, roll back prefix/delivery and preserve a usable group. | Required work blocked on replayable failed-payload outcomes; external rejoin also requires replayable transport responses |
-| Invalid-group recovery | Real foreign-group input maps to InvalidGroupId and invokes the same app metadata/epoch recovery. A refresh may change the canonical group used by retry. | Two native queue attempts retain the event; the original group remains usable. Recovery has no canonical failed-payload outcome and can require external rejoin. | Required work blocked on the recovery replay/transport dependencies below |
-| Native unmerged external group | Native can buffer and later merge on its own join commit, but the public join operation sends then merges inline; rejoin clears old buffers and its API does not return restored bundles. | Pinned native contracts below; exploratory pending-state fixture did not reach a usable pending group. No new app consumer handoff is claimed. | Required work blocked on verified native pending-state access/consumption and external transport replay |
+| MLS wrong-epoch recovery on an established top-level group | Shared `MLSReceiveRecovery` (also used by the Apple app). Fetch and validate the conversation: same conversation and group, MLS or MIXED, current self membership. When the remote epoch is ahead, write a SQL intent before the external-join POST, record completion in the native checkpoint inside the same CoreCrypto transaction, then store refreshed metadata/roster, an `mls-recovery:<operation>` lost-epoch warning and verification state. The triggering plaintext is not recovered. Retry resumes the same intent. MLS payloads with recovery receipts are not decrypted again; Proteus payloads are still decrypted to advance their sessions, but their recorded effects are skipped. If the native group is already current, the NSE rethrows WrongEpoch, while the app treats it as handled; the scan defers that notification only under the isolation rules below. | `externalRejoin*`, `*Recovery*` and `recoveryPayloadReceipts*` native tests cover rollback, reopen, receipts, marker failure and Proteus replay. | Supported when the remote epoch is ahead; an already-current group defers or fails |
+| Invalid-group input | Real foreign-group input maps to InvalidGroupId. The NSE has no InvalidGroupId recovery: durable recovery covers only WrongEpoch, and InvalidGroupId is not deferrable. | Two native queue attempts retain the event; the original group remains usable. | Required work blocked; the attempt fails |
+| Native unmerged external group | Native can buffer and later merge on its own join commit, but the public join operation sends then merges inline; rejoin clears old buffers and its API does not return restored bundles. `UnmergedPendingGroup` is deferrable in the NSE scan. | Pinned native contracts below; exploratory pending-state fixture did not reach a usable pending group. No new app consumer handoff is claimed. | Required work blocked on verified native pending-state access/consumption |
 | Receive-triggered remote MLS reset | App build flag, backend flag and same-domain gates can make reset a no-op. Enabled reset needs epoch-aware backend reset/retry, call termination, native wipe, metadata/roster refresh and establishment. | Reset use case and callback failure paths audited; established native wipe and external-transport dependencies apply. | Required work blocked on those native/transport dependencies; required callback failures keep queue pending |
-| Clear-history/content in Proteus and MLS conversations | Shared sender/self-conversation/target rules; owned file cleanup, message and pending-delivery deletion; later text continues. | Native authorization, real files, required failures and replay; four-account Swift/app cleanup fixture. | Supported within the mixed/native boundaries below |
-| Clear → backend member leave; MLS clear → later verification change | Preserve the later canonical system message within the same SQL attempt when replayed clear removes it; retain app membership-count and verification rules. | Both native commit gaps and marker failure/retry, canonical warnings, final epoch, later text and next ciphertext. | Supported; no new persistent marker |
-| Self-device local removal of a Proteus target, carried by either registered self conversation | Shared clear authorization plus draft/file cleanup and hard SQL deletion; keep the carrier usable. | Both carriers, sender rejection, required failures, replay and subsequent receiving. | Supported |
+| Clear-history/content in Proteus and MLS conversations | Shared sender/self-conversation/target rules. The cutoff is the earlier of the signal time and the envelope time. Delete messages through the cutoff with owned file cleanup and pending-delivery deletion, store the exact deleted IDs as a clear snapshot (`nse-clear-v1:` Metadata) and acknowledge the `PendingActions` row in the same SQL transaction. Replay deletes only the snapshot IDs, so later messages with the same timestamp survive. Snapshots are not pruned. | `conversationClear*` native tests (cutoff, sender matrix, replay) and `appClearRecoveryPreservesLaterMessageAtTheSameTimestamp`; four-account Swift/app cleanup fixture. | Supported within the mixed/native boundaries below |
+| Clear → backend member leave; MLS clear → later verification change | Preserve the later canonical system message on replay; retain app membership-count and verification rules. | Both native commit gaps and marker failure/retry, canonical warnings, final epoch, later text and next ciphertext. | Supported; replay uses the clear snapshot |
+| Self-device local removal, carried by either registered self conversation, of a Proteus or MLS target | Shared clear authorization plus draft/file cleanup. Delete the conversation only when nothing changed after the cutoff and no later application message in the notification targets it. An MLS target clears its proposal timer and queues a native wipe that runs in a separate MLS transaction before the processed marker; the wipe is acknowledged after native commit and never applied to a group a current conversation uses. A carrier targeting itself, a target an earlier payload needed, or one recreated later fails the attempt. | `conversationLocalDelete*` and `conversationLocalMLSDeleteRetriesNativeCleanupBoundaries` native tests; legacy pending rows are retired without deletion. | Supported |
 | Backend deletion of a Proteus conversation; unrelated text before/after; absent target | Owned file/draft cleanup and SQL cascades; capture deletion result/names before removal; meetings are silent and missing targets are stale. | Native ordering/failure/replay, Swift deletion decision and actual app absent-conversation/file reads. | Supported |
-| Deletion of an MLS-capable conversation | Native wipe and hard SQL deletion cross separate stores; after SQL deletion/native abort, the group ID needed to retry is gone while the native group survives. | Real native wipe/SQL-delete/abort probe and pending-queue cases. | Required work blocked on retaining the native group identity across deletion; see native contracts below |
-| Proteus clear before later MLS text/verification; clear before MLS one-to-one migration | Inner MLS commit can remove later plaintext from replay; active one-to-one selection cannot reconstruct migrated history after its source rows were moved and target rows cleared. | Native mixed-clear pending case and existing native/migration source and replay evidence. | Required work blocked on replayable outcomes/history |
+| Deletion of an MLS-capable conversation, including MIXED and meeting conversations | Before SQL deletion, store a durable deletion intent (event, payload hash, group ID) in Metadata. SQL deletes the conversation only when its group matches the intent; the native wipe runs in the same MLS transaction. When SQL committed but native aborted, retry finds no conversation and the intent still drives the wipe. The raw native probe `nativeMLSDeletionLosesGroupIdentityOnSQLCommitNativeAbort` shows why the intent is needed. | `mlsConversationDeletion*` native tests cover SQL/native/marker gaps, cancellation, unrelated later notifications, MIXED, meetings and a missing native group. | Supported, except the metadata-dependent sequences below |
+| Proteus clear before later MLS text/verification in the same notification | The clear snapshot keeps replay from deleting later plaintext or canonical verification messages. | `conversationClearCleansWithoutBlockingNativeReplayDependencies` and `conversationClearBeforeMLSVerificationReplaysCanonicalMessage`. | Supported |
+| Clear before MLS one-to-one migration in the same notification | Active one-to-one selection moves history from the source rows. | Not re-verified since the clear snapshot replaced query-based replay. | Unverified |
 | Delete the signal carrier; delete after earlier target-dependent effects without backend recreation; delete then recreate in the same notification | Replay needs the deleted authentication/conversation metadata or later native plaintext. | Focused pending/rollback cases preserve the queue and original rows. | Required work blocked on replayable metadata/plaintext |
 | Other-client addition; current-client addition and other-client removal | Shared DTO/client mapping; atomic Client and NewClient persistence. Current-client additions and other-client removals retain the app no-op. Existing app observer reads and clears NewClient. | Native required failures/replay, 32 app tests, four-account Swift/app actual new-client observer and clear consumer. | Supported; existing durable NewClient handoff |
 | Other-user deletion; team-member leave including self | Shared app user deletion/group membership rules and team-message construction; preserve one-to-one history. Team leave does not log out, wipe crypto or remove files. | 14 distinct native cases, both leave-event orders without duplicate messages, clear replay, qualified identity, staged deleted-user resolution and four-account Swift/app reopen/next ciphertext. | Supported |
 | Decryptable queued content after own team leave; Proteus content after conversation leave | No additional SQL membership gate on decrypted content, notification selection or delivery enqueueing. Preserve the actual app receive/notification paths. Native MLS removal still stops receiving. | Own-team continuation across notifications in both protocols; Proteus and MLS self-removal regression; actual app self-user/member reads and next crypto. | Supported to the app baseline |
-| Current-client removal; self-account deletion | App requires global invalidation and crypto/client-metadata or full-storage cleanup. Readiness revocation and destructive cleanup remove the existing retry entry point; no durable cleanup consumer exists. | Both protocols and terminal event types retain prefix/in-payload tail/prefetched tail on two attempts; six native interruption probes. | Required work blocked on terminal cleanup re-entry/reconciliation |
+| Current-client removal; self-account deletion | Before each attempt and after each stored page, the NSE scans every unprocessed Events row offline, without decrypting or network access. A self `UserDelete` or a `ClientRemove` for this client writes a per-client invalidation marker and revokes readiness, then returns `appWorkPending = ACCOUNT_INVALIDATION` without processing any row, including rows before the terminal one. The NSE keeps Events, SQL, crypto stores and files. Later NSE opens return `NOT_PREPARED` until a different client publishes readiness. The app's `IncrementalSyncWorker` runs the same scan before gathering and logs out with the matching reason. | `terminalIdentityEventsRetainRecoveryStoresAndBlockReceiving`, `nonHeadInvalidationPreemptsBlockedWorkOfflineWithoutAcknowledgingQueue`, `isolatedNSEPreflightsFetchedTerminalEventsBeforeBlockedWork`; app `IncrementalSyncWorkerTest` with an injected scan. The real session-to-logout wiring and re-entry after an interrupted logout have no test. | App handoff |
 | Meeting create/update/member-add in a known conversation | Authenticated current-meeting fetch; shared recurrence mapping; unknown creator placeholder and best-effort profile fetch; atomic meeting and occurrence upsert. | Six native cases, 46 app tests and two-account authenticated Swift/app occurrence reads and next ciphertext. | Supported |
 | Meeting not-found, unsupported API or unsupported recurrence | Preserve the app skip policy and any existing meeting/occurrences. Other fetch failures remain required. | Native stale-state/occurrence preservation and app handler error-policy tests. | Intentional app skip |
 | Meeting delete, including repeated or absent ID | Delete the qualified meeting and its occurrences; preserve conversation/history and crypto. | Both protocols, SQL/native replay, app absent-meeting reads and subsequent receiving. | Supported |
@@ -120,16 +126,56 @@ updates and missed-alert recovery remain optional.
 | Typing START/STOP from self or other users | Transient app UI state. NSE ignores it without reading preferences or fetching metadata; later durable events continue. | Native preference/no-metadata, normal receiving and interruption/retry cases; app typing behavior is unchanged. | Intentional NSE no-op |
 | REMOTEMUTE | No microphone or moderation action, sender-role lookup or registered-client target check. The current handler still requires valid conversation metadata and decodable calling JSON before recognizing REMOTEMUTE. | Native admin/non-admin, target, text and metadata-refresh replay cases. Incoming call presentation is covered below. | Intentional NSE no-op; common metadata/decoding guards still apply |
 | InCallEmoji | Returns after decoding, before message-handler conversation checks; no live reaction emission, message storage or alert. Ordinary MessageContent.Reaction remains supported separately. | Native Proteus/MLS ignored-call signal cases include reactions followed by text. | Intentional NSE no-op |
-| Calling event API and incoming/missed/closed presentation | Match the iOS NSE event lifecycle: one process-lifetime handle/context per account/client; collect committed Proteus/MLS signals through the target, then run one start/process/end batch. Return typed callbacks and privacy-filtered names; the Swift host helper awaits CallKit reporting. No live calling engine or new durable handoff. | Apple wrapper lifecycle tests, encrypted receiving tests and `--calling-events` Swift/app scenario. Native artifact observations remain separate below. | Implemented; best-effort presentation after receiving, with signed-device CallKit validation still required |
-| Unknown event types and undecodable required metadata | These lack a defined receiving effect and retain the unsupported-event boundary, including transient envelopes. Unknown property keys/values and feature settings are separately ignored, matching the app. | Required-input/unknown-event rollback cases; forward-compatible configuration and transient-queue completion tests. | Unknown event types remain pending; unknown configuration is a no-op |
-| Legal-hold event/configuration/embedded effects | Explicitly excluded by the task; preserve NSE no-ops and all app legal-hold hooks. Legal-hold state alone does not reject otherwise-supported receiving. | Native legal-hold regressions, membership/creation and Swift/app receiving. | Intentional NSE no-op; app behavior preserved |
+| Calling event API and incoming/missed/closed presentation | Match the iOS NSE event lifecycle: one process-lifetime handle/context per account/client; collect committed Proteus/MLS signals through the target, then run one start/process/end batch. Return typed callbacks and privacy-filtered names; the Swift host helper awaits CallKit reporting. A missed callback claims its journal signal once, before the policy check, and gets its own `shouldNotify` from the Android missed-call policy (archive, self caller, last-read/last-notified time, mute and busy/away). No live calling engine. AVS is not evaluated when the scan deferred anything. | Apple wrapper lifecycle tests, encrypted receiving tests, `callingStartAndEndAcrossNotificationsProduceOneMissedCallback`, `readingDuringRingingDoesNotHideTheLaterMissedCall` and `--calling-events` Swift/app scenario. Native artifact observations remain separate below. | Implemented; best-effort presentation after receiving, with signed-device CallKit validation still required |
+| Unknown event types | Match the app event mapper: an event type introduced by a newer backend is marked processed without effects, including transient envelopes, and later events continue. Unknown property keys/values and feature settings are separately ignored. | Unknown-event completion tests; forward-compatible configuration and transient-queue completion tests. | Intentional app/NSE no-op |
+| Undecodable payload of a known event type | No defined receiving effect. | Required-input rollback cases. | Required work blocked; the attempt fails |
+| Legal-hold events, configuration and embedded content | Legal-hold request/enable/disable events, the legal-hold feature config and embedded legal-hold content have no NSE effect. | Native legal-hold regressions, membership/creation and Swift/app receiving. | Intentional NSE no-op |
+| Legal-hold state that needs app work | Hand off before an event when either app legal-hold transition journal is non-empty; on a member join or a removing leave whose computed legal-hold status differs from the stored status, or a self leave while that status is not disabled; and when a fetched profile's legal-hold status disagrees with cached clients. The handoff aborts SQL and native work and returns `appWorkPending = LEGAL_HOLD` with reason `LEGAL_HOLD_REQUIRES_APP`. The app recovers its transition journals before incremental sync processes the events. | Native handoff, rollback and membership-matrix tests; app `LegalHoldHandler` recovery tests. | App handoff |
 | Nomad-configured accounts and crypto backup/export/upload/restore | Prepared runtime rejects Nomad receiving; no receiving hooks or backup workflow is added. Ignored HistoryClient signaling is a separate app policy. | Existing opener/unsupported boundary and signal fixtures. | Explicit exclusion; no Nomad account support |
 
 All required immediate effects must complete, or allowed deferred effects must use
 an existing durable handoff with a verified working app consumer, before Events is
-marked processed. Unsupported work blocks the prefix even when later work is
-supported. Legal-hold NSE no-ops and all app legal-hold/calling/gathered behavior
-remain unchanged. Nomad-configured accounts remain unsupported.
+marked processed. Unsupported work fails the attempt; only the deferrable failures
+described below let the scan pass a notification. App handoffs leave the event and
+later queue for the app. Nomad-configured accounts remain unsupported.
+
+`NotificationAppWork` also declares `MLS_SUBCONVERSATION` and `CALL_MODERATION`, but
+no receiving path produces them. Subconversation payloads fail the attempt, and
+remote mute is an NSE no-op.
+
+## Conversation isolation and deferral
+
+Only the Apple NSE enables this scan; the app processes its queue in order. The scan
+walks every pending row in insertion order. A notification is isolatable when every
+payload is a Proteus or MLS new message in a known, non-SELF conversation. Its
+dependencies are those conversations, the Proteus sender sessions and the MLS groups.
+
+An isolatable notification is deferred when, before persistence, it fails with no
+network, a federation failure, a 5xx response, or MLS `WrongEpoch`,
+`UnmergedPendingGroup`, `CommitForMissingProposal`, `ConversationNotFound` or
+`OrphanWelcome`, and every payload it decoded before the failure can cross a gap
+(listed below). Otherwise the failure fails the attempt. On deferral the native
+transactions roll back, a 30-second retry hint is stored
+in Metadata (`nse-deferred-v1:<eventId>`, removed on acknowledgement) and the scan
+continues. Later notifications that share a dependency with a deferred one are
+skipped. `check`/`error` failures, SQL errors and native commit errors never defer.
+
+After a deferral, a later notification can be processed only when every decoded
+payload can cross the gap: Text, Knock, Location, Asset, Composite, Poll, Multipart,
+Ignored and Unknown content, or Creation, System, Profiles, DecryptionFailure,
+Proposal and ClearProposalTimer payloads. Any other payload, or a non-isolatable
+notification, is an ordering barrier and stops the scan. Results stay `SUCCESS`
+and silent:
+
+- `DEFERRED_CONVERSATION`: the target was deferred or skipped.
+- `DEFERRED_ORDERING_BARRIER`: the scan stopped at a barrier, or the target was
+  already processed while other rows remain pending.
+- `DEFERRED_PRESENTATION_POLICY`: the target was processed after a deferral. Alert
+  fields are cleared, AVS is not evaluated and only `callSignalsPending` is set.
+
+Every NSE notification attempt requires confirmed native rollback: a callback error
+is rethrown only after CoreCrypto reports `TransactionFailed`, and native abort or
+commit errors take precedence.
 
 The no-op policy applies to signal effects. Encrypted remote mute and in-call emoji
 still pass through common decryption and replay handling. Both are recorded as
@@ -140,22 +186,34 @@ separate durable settings and remain supported.
 
 ## Native contracts that constrain receiving
 
-- **CoreCrypto 10.4.0 transactions:** the wrapper runs under `NonCancellable`.
+The pinned CoreCrypto is 10.5.1. Observations below that cite 10.4.0 sources were
+recorded with that version and have not been re-run against 10.5.1.
+
+- **CoreCrypto transactions:** the wrapper runs under `NonCancellable`.
   Returning `Either.Left` commits; required failures must throw. Receiving restores
   its attempt context inside the callback and awaits native unwind before closing
   or unlocking. An in-flight native operation is not promised to be interruptible.
+  NSE receiving also requires confirmed rollback, which relies on 10.5.1 returning
+  `TransactionFailed` only after a successful abort.
 - **Separate stores:** SQL can commit before native crypto, and MLS can commit
   before Proteus. Wiping a group or deleting its SQL identity can destroy the
-  input needed for retry. Those deletion/reset/metadata guards remain necessary.
+  input needed for retry. MLS conversation deletion and local MLS removal keep the
+  group identity in a durable intent; the reset, recreate-after-wipe and
+  deleted-peer guards remain necessary.
   Optional proposal commits use the existing app scheduler, because an external
   response cannot be reconstructed after the SQL/native gap.
 - **Required establishment/recovery:** an external commit can succeed remotely
-  before local failure; replay needs the returned events/welcome. Legacy teammate
-  creation similarly needs an idempotent backend operation or authenticated
-  reconciliation. A fresh POST with a new random conversation ID is not a retry.
+  before local failure. Wrong-epoch recovery writes its intent before the POST,
+  records completion in the native checkpoint and accepts only a response with no
+  events. Other establishment commits still need the returned events/welcome for
+  replay. Legacy teammate creation similarly needs an idempotent backend operation
+  or authenticated reconciliation. A fresh POST with a new random conversation ID
+  is not a retry.
 - **MLS failure typing:** `Other` includes both malformed input and provider/store
-  failures, so it cannot safely become a failed-message row. Wrong-epoch and
-  foreign-group recovery can produce different plaintext after later epoch changes.
+  failures, so it cannot safely become a failed-message row. Wrong-epoch recovery
+  stores a lost-epoch warning instead of the triggering plaintext. A foreign-group
+  (InvalidGroupId) recovery would need a canonical outcome, because refreshed
+  metadata can change the group that retry uses.
   Native unmerged external groups have no verified app-consumer handoff here.
 - **Opening existing stores:** CoreCrypto's exported database operation opens or
   creates and migrates. Readiness and file checks do not provide a strict native
@@ -204,12 +262,14 @@ separate durable settings and remain supported.
   persistent call-history rows or promise exactly-once CallKit delivery. Process
   exit/cancellation after processed markers, or native duplicate replay after a
   commit gap, can lose a call presentation. Earlier processed notifications remain
-  processed if later receiving fails. No call outcome journal or recovery queue is
-  introduced; MLS subconversation receiving remains a separate blocked path.
-- **Terminal cleanup:** current-client/self-account removal can delete readiness,
-  crypto-opening inputs and Events itself. There is no durable cleanup consumer
-  that can re-enter after partial removal. This needs a terminal reconciliation
-  contract; an ordinary message retry cannot supply it.
+  processed if later receiving fails. The journal stores one missed-call claim per
+  signal; a process exit between that claim and iOS scheduling loses the alert.
+  At 4096 signals the journal drops its oldest entries. No other call outcome
+  journal or recovery queue is introduced; MLS subconversation receiving remains
+  a separate blocked path.
+- **Terminal cleanup:** the NSE performs no destructive cleanup. It writes the
+  invalidation marker, revokes readiness and leaves the terminal event pending; the
+  app's logout owns cleanup.
 - **Device evidence:** simulator fixtures do not establish APNs delivery, real
   extension/host lifecycle, shared protected Keychain access or signed-device budgets.
   CoreCrypto WAL keys also depend on the default Keychain group and exact store path.

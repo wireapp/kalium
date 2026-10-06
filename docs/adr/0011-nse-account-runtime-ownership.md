@@ -18,7 +18,9 @@ existing owners. There is no generic opener bundle or common runtime coordinator
 ## Preparation and lifetime
 
 The app awaits `open`; synchronous getters return only active cached sessions.
-Registration and restore invalidate readiness. Successful preparation verifies the
+Registration and restore invalidate readiness. A terminal account event found by the
+NSE also writes a per-client invalidation marker that keeps readiness unreadable
+until a different client publishes it. Successful preparation verifies the
 client, keys, crypto stores and supported configuration before publishing a
 versioned readiness sidecar. That sidecar permits the NSE to open a prepared
 account without opening/migrating a global database. Tokens and keys stay in the
@@ -60,6 +62,14 @@ SQLite transaction; only the last non-transient event advances the existing app
 cursor. Resume already stored pending work before fetching more. No separate queue,
 REST ordering table or notification acknowledgement store is added.
 
+The app processes `Events` strictly in order. The NSE may defer a message-only
+notification that fails on network or recoverable MLS state and process later
+notifications that share none of its conversations, Proteus sessions or MLS groups,
+so it can acknowledge rows out of order. Any other failure fails the attempt. After
+a deferral, a non-isolatable notification or a payload that cannot cross the gap is
+an ordering barrier that stops the scan. The [isolation rules](../NSE_IMPLEMENTATION_STATUS.md#conversation-isolation-and-deferral)
+list the deferrable failures and the payloads that can cross a gap.
+
 For each notification, the NSE uses the app's Proteus-then-MLS nesting order:
 
 1. Decode payloads in backend order inside the owned native transactions.
@@ -70,17 +80,37 @@ For each notification, the NSE uses the app's Proteus-then-MLS nesting order:
 
 Required failures throw out of the native callback; returning an error value would
 commit CoreCrypto. Restore the attempt's cancellation context inside its native
-`NonCancellable` wrapper, and await unwind before releasing resources. The app
-retains its gathered-batch boundary; it does not adopt the NSE executor.
+`NonCancellable` wrapper, and await unwind before releasing resources. NSE attempts
+rethrow a callback error only after CoreCrypto confirms the abort; native abort and
+commit errors take precedence. The app retains its gathered-batch boundary; it does
+not adopt the NSE executor.
 
 These are separate stores. SQL can commit before native crypto, and MLS can commit
 before Proteus. Retry decrypts again, reapplies required fields and uses canonical
-message IDs/native duplicate handling. A stored system message acknowledges only
-its own content, not the notification or every adjacent write. Deletion and reset
-guards remain where losing metadata or a native group would destroy replay inputs.
+message IDs/native duplicate handling. MLS payloads covered by a recovery receipt
+are not decrypted again; covered Proteus payloads are decrypted to advance the
+session, but their effects are skipped. A stored system message acknowledges only its own content, not
+the notification or every adjacent write. Reset, recreate-after-wipe and
+deleted-peer guards remain where losing metadata or a native group would destroy
+replay inputs.
 
-There are no receiving checkpoints, NotificationReceipts, outcome journals or
-startup recovery mode. Migrations 148 through 150 retain compatibility with databases
+There are no NotificationReceipts, general outcome journals or startup recovery
+mode. Besides the call signal journal and the account invalidation marker, narrow
+durable records exist only where replay would otherwise lose inputs:
+
+- MLS wrong-epoch recovery writes an intent before its external-join POST and payload
+  receipts afterwards, in account Metadata; completion is recorded in the native
+  CoreCrypto checkpoint inside the same native transaction as the join. These
+  records load lazily and retire in the same SQL transaction as the processed marker.
+  A join response that unexpectedly contains events is saved and refuses later NSE
+  rejoins; nothing clears it.
+- MLS conversation deletion keeps the group identity in a deletion intent, retired
+  with the processed marker, so retry can wipe after SQL already deleted the
+  conversation. Local MLS removal queues a wipe that is acknowledged after native commit.
+- A conversation clear stores the exact deleted message IDs, so replay never deletes
+  later messages. These snapshots are not pruned.
+
+Migrations 148 through 150 retain compatibility with databases
 created during the earlier implementation and drop the former receipt table.
 Removing those migrations requires a separate compatibility decision.
 
@@ -110,9 +140,9 @@ journal or extra fetch is added solely to reproduce that snapshot.
 Repeated text identities use existing canonical message/sender checks instead of
 a blanket batch rejection. Typing, remote mute and in-call reactions are transient
 app UI/call state; the owned NSE has no active call or live observers and ignores
-those signals. Unknown property keys/values and feature settings follow the app's
-no-op policy. Unknown event types and required undecodable work retain an explicit
-unsupported boundary.
+those signals. Unknown event types, property keys/values and feature settings follow
+the app's no-op policy. Required undecodable work retains an explicit unsupported
+boundary.
 
 Preview metadata and quotes are durable. Optional image downloads run within the
 owned attempt, validate encryption inputs/hash/CBC and cache successful files.
@@ -128,23 +158,43 @@ and configuration notification flags. The NSE sends no optional proposal commit,
 starts no expiration timer and creates no replacement consumer. Native proposal
 responses must be consumed by the app's existing scheduler.
 
+When the app must run the effect itself, the NSE stops, returns `SUCCESS` with
+`appWorkPending` and leaves the event and later queue in `Events`. The app's
+incremental sync runs the matching consumer before gathering:
+
+- `ACCOUNT_INVALIDATION`: a stored pending row removes this client or deletes the
+  account. The NSE checks this before processing any row, so earlier rows stay
+  pending too. It writes the invalidation marker and revokes readiness without
+  deleting stores; the app runs the same offline scan and logs out with the
+  matching reason instead of processing the queue.
+- `LEGAL_HOLD`: app legal-hold transitions are pending, or a membership change or
+  fetched profile disagrees with the stored legal-hold status. The app recovers its
+  transition journals, then processes the events normally.
+
+The Apple app's pre-sync cleanup also retries pending MLS group wipes queued by local
+removal.
+
 Only the target notification returns presentation, selected from final canonical
 state. Actions/system messages alone are silent. Read/mute/archive/availability,
 verification, expiration and host privacy settings determine alert/body eligibility.
 A processed target succeeds silently. An all-native-duplicate retry may miss an
-alert; updating/removing delivered iOS alerts and missed-alert recovery remain
-optional. The host owns the single system completion callback.
+alert. The NSE registers alerted messages and returns delivered identifiers whose
+message is now deleted or read, for the host to remove; updating delivered alerts
+and missed-alert recovery remain optional. The host owns the single system
+completion callback.
 
 The [coverage table](../NSE_IMPLEMENTATION_STATUS.md#current-coverage) names remaining
-native, backend and consumer dependencies. Terminal cleanup and destructive MLS replay cannot be enabled by discarding
-their required effects. Incoming calling uses the iOS branch’s presentation flow:
+native, backend and consumer dependencies. Destructive MLS replay cannot be enabled
+by discarding its required effects. Incoming calling uses the iOS branch’s presentation flow:
 collect committed signals through the target, evaluate one AVS batch after sync,
 and return its callbacks to the Swift CallKit reporter. Committed signals are retained
 in the existing account Call signal journal for replay through the full app engine.
 Both AVS adapters use the journal's first ready start matching the incoming callback
 reference, including caller client when supplied. Native generations do not advance
-selection through tied starts. The NSE lookup is read-only; the full app engine owns
-ringing and termination, and replay preserves terminal presentations. Identical callback
+selection through tied starts. The incoming lookup is read-only; besides storing
+committed signals, the NSE writes only a once-per-signal missed-call claim. The full
+app engine owns ringing and termination,
+and replay preserves terminal presentations. Identical callback
 references cannot distinguish separate real calls because AVS exposes no message or
 session identity. As with ordinary alerts, interruption after processing can lose
 presentation; exactly-once reporting is not claimed. The host awaits reporting before completion.

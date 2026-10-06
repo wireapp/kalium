@@ -34,7 +34,8 @@ certificate pins. Match these build switches to the app's `KaliumConfigs`:
 
 For each push, create `KaliumNSERequest` with the qualified user identity, target
 notification ID, the user's `showMessageContent` privacy preference and a budget
-between 1 and 25,000 milliseconds. Call `process` from Swift async code. The
+between 1 and 25,000 milliseconds. Optionally pass this account's currently delivered
+message alerts in `deliveredNotifications`. Call `process` from Swift async code. The
 [Swift fixture](src/swiftTest/Receive.swift) shows the concrete constructor and call.
 Swift cancellation reaches the owned attempt.
 
@@ -42,17 +43,29 @@ The host owns iOS's single completion callback and its generic failure fallback.
 `SUCCESS` with `shouldNotify == false` is successful silent processing, not failure.
 An eligible result can be a message, conversation deletion or connection request.
 A null body can mean a generic alert or a privacy restriction. The facade filters
-text and names by the host preference and conversation/expiration state. It does
-not update alerts already delivered by iOS.
+text, `conversationName`, `senderName`, `isGroupConversation` and a typed
+`contentType` by the host preference and conversation/expiration state; when
+preview is not allowed, `contentType` is `MESSAGE`. `presentationReason` and
+`failureReason` are content-free diagnostic codes. `appWorkPending` names work
+left in Events for the app (`LEGAL_HOLD` or `ACCOUNT_INVALIDATION`).
+
+The NSE registers each alerted message. After successful receiving it returns
+`notificationIdentifiersToRemove`: the delivered identifiers whose message, or a
+later edit of it, is now read or deleted. Self-deleting messages are never reported
+as deleted, even when their sender deletes them. The host removes those alerts.
+Updating the content of delivered alerts is not supported.
 
 ## Receiving and replay
 
 The account lease covers all resource use, drain and cleanup. The NSE resumes the
-same ordered `Events` queue as the app, stores whole REST pages atomically and
-advances the app's cursor only for non-transient events. It processes the stored
-prefix through the requested target. Required effects share one SQL transaction
-per notification inside the owned Proteus/MLS transactions. The processed marker
-is written only after crypto commits.
+same `Events` queue as the app, stores whole REST pages atomically and advances the
+app's cursor only for non-transient events. It scans stored pending rows in order
+through the requested target. A message-only notification that fails on network or
+recoverable MLS state is deferred for 30 seconds, and later notifications that do
+not depend on it can still be processed; see
+[conversation isolation](../docs/NSE_IMPLEMENTATION_STATUS.md#conversation-isolation-and-deferral).
+Required effects share one SQL transaction per notification inside the owned
+Proteus/MLS transactions. The processed marker is written only after crypto commits.
 
 SQL and native crypto are separate stores. Replay reapplies fields and preserves
 canonical message identity; native duplicates do not produce a second alert.
@@ -63,10 +76,20 @@ first fetched snapshot. Destructive metadata/MLS changes still block when they
 would lose the state needed to recover ciphertext.
 
 Typing, remote mute and in-call reactions are ignored by the NSE because it has
-no live app UI or active call. Unknown property keys/values and feature settings
-follow the app's no-op behavior. Known unsupported required events retain the
-notification and later queue. Legal-hold effects remain intentional NSE no-ops;
-the app keeps its existing handling.
+no live app UI or active call. Unknown event types, property keys/values and
+feature settings follow the app's no-op behavior. Known unsupported required work
+fails the attempt and retains the notification and later queue.
+
+Some work is handed to the app. The NSE returns `SUCCESS` with `appWorkPending`
+and leaves the event and later queue unprocessed for incremental sync:
+
+- `LEGAL_HOLD` when app legal-hold transitions are pending, or a membership change
+  or fetched profile disagrees with the stored legal-hold status. Legal-hold events,
+  configuration and embedded content are otherwise NSE no-ops.
+- `ACCOUNT_INVALIDATION` when any stored pending row removes this client or deletes
+  the account. The NSE processes no row, writes a per-client invalidation marker and
+  revokes readiness, without deleting stores. Later NSE opens are `NOT_PREPARED`;
+  the app logs out instead of processing the queue.
 
 Typing START/STOP is skipped for every sender and preference value; typing
 preference property updates are still persisted for the app. InCallEmoji returns
@@ -84,13 +107,18 @@ files survive replay and unreferenced partial files are cleaned. Required explic
 message/backend-conversation deletion still performs physical file cleanup before losing
 SQL paths, preserving shared/offline/draft/avatar files.
 
-Conversation-clear signals only upsert the target into the existing `PendingActions`
-table, in the same transaction as the notification effects. `CLEAR_CONVERSATION_CONTENT`
-and `DELETE_CONVERSATION_LOCALLY` preserve the clear-versus-remove intent. `created_at`
-is the incoming event timestamp. The NSE leaves conversation content, files and MLS
-state intact. Main-app handling of these action types is intentionally a no-op:
-they stay pending and are not acknowledged or deleted by the existing recovery consumers.
-Direct clear signals received by the app continue using its existing handler.
+Conversation-clear signals are applied in the notification's SQL transaction. The
+cutoff is the earlier of the signal time and the envelope time. The NSE deletes
+messages through the cutoff with their unshared files and pending delivery
+confirmations, stores the exact deleted IDs as a clear snapshot and acknowledges the
+`PendingActions` row. Replay, in the NSE or the Apple app's clear handler, deletes
+only the snapshot IDs, so later messages with the same timestamp survive. Snapshots
+are not pruned. Local removal deletes the conversation only when nothing changed
+after the cutoff and no later application message in the notification targets it. For an MLS target it queues a
+native wipe; the NSE and the Apple app's pre-sync cleanup retry it and acknowledge
+it after native commit, never wiping a group that a current conversation uses.
+Legacy pending clear/remove rows are retired without deleting data. Android keeps
+its existing clear handler.
 
 App message deletion, expiration and direct conversation clear keep their original
 asset-only cleanup scope. A failed asset-file deletion is logged and keeps its
@@ -105,9 +133,13 @@ best effort. The NSE requires all of those effects before completing the notific
 
 Existing app consumers handle pending delivery confirmations, proposal commits,
 expiration timers, asset/Cells downloads and configuration notifications. The NSE
-adds no worker, checkpoint, outcome journal or replacement queue. A processed
-target succeeds silently; missed-alert recovery after native duplicate replay is
-an optional enhancement.
+adds no worker or replacement queue. Its own durable records are narrow: MLS
+wrong-epoch recovery intents and payload receipts with completion in the native
+checkpoint, a saved unexpected rejoin response, MLS deletion and local-removal wipe
+intents, clear snapshots, deferral retry hints, the account invalidation marker,
+and call signals with their missed-call claims. A processed target succeeds
+silently; missed-alert recovery after native duplicate replay is an optional
+enhancement.
 
 The NSE persists a receive-time expiration deadline for self-authored ephemeral
 messages, but does not delete them when that deadline passes. The app resumes
@@ -126,11 +158,19 @@ Only `create`, `start`, `process` and `end` are used; no live calling engine sta
 
 Decrypted Proteus and MLS calling signals are collected in backend order after
 each notification commits. Once the requested target is processed, AVS evaluates
-the collected prefix as one batch. `KaliumNSEResult.calls` contains its incoming,
-missed and closed callbacks independently of `shouldNotify`, which describes the
-ordinary notification. Caller names obey the host privacy setting and conversation
-verification state. Only self-authored signals may redirect to a different calling
-conversation, preserving the shared app's authorization rule.
+the collected prefix as one batch; it is skipped when the scan deferred anything.
+`KaliumNSEResult.calls` contains its incoming, missed and closed callbacks
+independently of the result's `shouldNotify`, which describes the ordinary
+notification. Incoming and closed caller names obey the host privacy setting and
+conversation verification state. Only self-authored signals may redirect to a
+different calling conversation, preserving the shared app's authorization rule.
+
+A missed callback claims its journal signal once, before the policy check, so
+replay cannot show a stale alert. Its own `shouldNotify` follows Android's
+missed-call policy: not archived, not self, newer than last read and last
+notified, and allowed by mute and busy/away status. Its conversation and sender
+names are returned only when the host allows content and the alert is eligible.
+A process exit between the claim and iOS scheduling loses that alert.
 
 The wire-android host uses `IncomingCallReporter` and its versioned
 `CallNotification` contract, not the sample adapter below. Incoming results carry
@@ -148,12 +188,14 @@ replays retained signals; presentation tombstones prevent reopening an ended UUI
 This is retryable delivery, not exactly-once native processing: `wcall_recv_msg`
 acknowledges enqueue and exposes no completion barrier. Recovery needs another
 push or host launch if the process dies before the platform reporting effect.
+The journal keeps at most 4096 signals and drops the oldest when full.
 
 Both AVS adapters resolve incoming callback references through the Call signal journal.
 The first ready start request matching the qualified conversation, caller, message second
 and caller client when supplied provides the stable presentation UUID. Repeated callbacks
 and new engine generations reuse that identity; an ended presentation stays ended.
-The NSE lookup is read-only. Only the full app engine changes ringing and termination state.
+The NSE incoming lookup is read-only. Besides storing committed signals, the NSE writes only
+missed-call claims; only the full app engine changes ringing and termination state.
 AVS callbacks expose neither message ID nor session ID, so identical callback references
 cannot distinguish separate real calls; selection remains deterministic rather than advancing
 through tied signals.
@@ -255,5 +297,8 @@ observes them when sync is LIVE, and uses its existing native transaction and ML
 transport. Successful outer native commit precedes conditional acknowledgement.
 Recoverable failures retry while that owner is active; cancellation retains work
 for the next owner. A newly scheduled record cannot be erased by an old ACK.
-This does not restore missing subgroup mappings/native groups or enable an NSE
-subgroup consumer; background subgroup support remains separate.
+Active subconversation group mappings are persisted in the SQL `Subconversation`
+table, so they survive restarts; mappings lost before that table existed and missing
+native groups are not restored. The NSE reads neither the mappings nor the deadlines,
+and subconversation payloads still fail NSE receiving; background subgroup support
+remains separate.
