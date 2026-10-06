@@ -241,3 +241,10 @@ They are delivered only to active observers of that account. NSE meeting effects
 remain durable and silent, following ADR 0011; no meeting-card queue or replay
 store is added. Conversation notification types and the bulk meeting deletion
 API remain available to existing consumers.
+
+`UserSessionScope.syncMeetingsUseCase` lets the owning app session retry a meeting
+list sync independently of slow sync. It prepares meeting conversations using that
+session's crypto transaction and clears stale meetings on an empty backend list.
+Conversation and meeting persistence are best effort for this app list sync, matching
+upstream slow sync. NSE required event effects still use their existing silent,
+retryable receiving flow; the extension does not run this app list-sync use case.

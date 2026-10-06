@@ -725,6 +725,21 @@ class MeetingDaoTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenStoredMeeting_whenUpsertingEmptyListWithRemoveAbsent_thenMeetingAndOccurrencesAreDeleted() = runTest(dispatcher) {
+        val now = Clock.System.now()
+        val meeting = newMeeting(startTime = now + 1.days)
+        val window = GenerationLimit.Window(now, now + GENERATION_DAYS.days)
+        insertMeetingDependencies(meeting)
+        meetingDao.upsertMeetings(listOf(meeting), window)
+        assertEquals(true, occurrencesFor(meeting).isNotEmpty())
+
+        meetingDao.upsertMeetings(emptyList(), window, removeMeetingsAbsentFromUpsertList = true)
+
+        assertEquals(false, isMeetingStored(meeting))
+        assertEquals(true, occurrencesFor(meeting).isEmpty())
+    }
+
+    @Test
     fun givenOneOnOneMeeting_whenLoadingAndUpdatingAvatars_thenAllMembersAreReturnedAndPagingInvalidates() = runTest(dispatcher) {
         val meeting = newMeeting()
         insertAvatarMeeting(meeting, ConversationEntity.Type.ONE_ON_ONE)
