@@ -34,11 +34,17 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageDataSource
+import com.wire.kalium.logic.data.message.MessageMapperImpl
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
+import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestMessage.ASSET_CONTENT
 import com.wire.kalium.logic.framework.TestMessage.TEST_DATE
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
@@ -47,6 +53,7 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import dev.mokkery.MockMode
 import dev.mokkery.matcher.any
@@ -64,10 +71,129 @@ import okio.Path
 import okio.buffer
 import okio.use
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryFailedMessageUseCaseTest {
+
+    @Test
+    fun givenUnknownContent_whenRetrying_thenShouldRejectWithoutChangingStatusOrSending() =
+        testUnsupportedRegularContent(MessageContent.Unknown())
+
+    @Test
+    fun givenFailedDecryptionContent_whenRetrying_thenShouldRejectWithoutChangingStatusOrSending() =
+        testUnsupportedRegularContent(
+            MessageContent.FailedDecryption(isDecryptionResolved = false, senderUserId = TEXT_MESSAGE.senderUserId)
+        )
+
+    @Test
+    fun givenRestrictedAssetContent_whenRetrying_thenShouldRejectWithoutChangingStatusOrSending() =
+        testUnsupportedRegularContent(MessageContent.RestrictedAsset("application/pdf", 42L, "test.pdf"))
+
+    @Test
+    fun givenCompositeEditedContent_whenRetrying_thenShouldRejectWithoutChangingStatusOrSending() =
+        testUnsupportedSignalingContent(MessageContent.CompositeEdited(editMessageId = TEXT_MESSAGE.id))
+
+    @Test
+    fun givenIgnoredContent_whenRetrying_thenShouldRejectWithoutChangingStatusOrSending() =
+        testUnsupportedSignalingContent(MessageContent.Ignored)
+
+    private fun testUnsupportedRegularContent(content: MessageContent.Regular) {
+        for (status in listOf(Message.Status.Failed, Message.Status.FailedRemotely)) {
+            for (visibility in listOf(Message.Visibility.VISIBLE, Message.Visibility.DELETED)) {
+                for (editStatus in listOf(Message.EditStatus.NotEdited, Message.EditStatus.Edited(TEST_DATE))) {
+                    assertUnsupportedRetry(
+                        TEXT_MESSAGE.copy(content = content, status = status, visibility = visibility, editStatus = editStatus)
+                    )
+                }
+            }
+        }
+    }
+
+    // Signaling content is not currently loaded from storage; cover the defensive guard at the repository boundary.
+    private fun testUnsupportedSignalingContent(content: MessageContent.Signaling) {
+        for (status in listOf(Message.Status.Failed, Message.Status.FailedRemotely)) {
+            assertUnsupportedRetry(
+                Message.Signaling(
+                    id = TEXT_MESSAGE.id,
+                    content = content,
+                    conversationId = TEXT_MESSAGE.conversationId,
+                    date = TEST_DATE,
+                    senderUserId = TEXT_MESSAGE.senderUserId,
+                    senderClientId = TEXT_MESSAGE.senderClientId,
+                    status = status,
+                    isSelfMessage = true,
+                    expirationData = null
+                )
+            )
+        }
+    }
+
+    private fun assertUnsupportedRetry(message: Message.Sendable) = runTest(testDispatcher.default) {
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .withSendMessage(Either.Right(Unit))
+            .arrange()
+
+        val result = useCase(message.id, message.conversationId)
+        advanceUntilIdle()
+
+        val failure = assertIs<MessageOperationResult.Failure>(result)
+        val error = assertIs<CoreFailure.Unknown>(failure.error)
+        val cause = assertIs<IllegalStateException>(error.rootCause)
+        assertEquals("Message with ${message.content.getType()} content cannot be retried", cause.message)
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.messageRepository.updateMessageStatus(any(), any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenDeletedFailedMessageInStorage_whenRetryingRepeatedly_thenShouldKeepDeletedContentAndStatus() =
+        runTest(testDispatcher.default) {
+            val database = TestUserDatabase(TestUser.ENTITY_ID, testDispatcher.default)
+            try {
+                val dao = database.builder.messageDAO
+                val mapper = MessageMapperImpl(TEXT_MESSAGE.senderUserId)
+                database.builder.userDAO.upsertUser(TestUser.ENTITY.copy(id = TEXT_MESSAGE.senderUserId.toDao()))
+                database.builder.conversationDAO.insertConversation(TestConversation.ENTITY.copy(id = TEXT_MESSAGE.conversationId.toDao()))
+                val repository = MessageDataSource(TEXT_MESSAGE.senderUserId, mock(), mock(), dao)
+                val (arrangement, useCase) = Arrangement(repository)
+                    .withSendMessage(Either.Right(Unit))
+                    .arrange()
+
+                for (status in listOf(Message.Status.Failed, Message.Status.FailedRemotely)) {
+                    val message = TEXT_MESSAGE.copy(id = "deleted-$status", status = status)
+                    val entity = mapper.fromMessageToEntity(message)
+                    dao.insertOrIgnoreMessages(listOf(entity))
+                    // Cancellation removes content but retains the failed status in storage.
+                    dao.markMessageAsDeleted(message.id, entity.conversationId)
+                    val deleted = assertIs<Message.Regular>(mapper.fromEntityToMessage(assertNotNull(
+                        dao.getMessageById(message.id, entity.conversationId)
+                    )))
+                    assertIs<MessageContent.Unknown>(deleted.content)
+                    assertEquals(Message.Visibility.DELETED, deleted.visibility)
+
+                    repeat(2) {
+                        assertIs<MessageOperationResult.Failure>(useCase(message.id, message.conversationId))
+                        advanceUntilIdle()
+                        val stored = assertNotNull(dao.getMessageById(message.id, entity.conversationId))
+                        assertEquals(entity.status, stored.status)
+                        assertEquals(MessageEntity.Visibility.DELETED, stored.visibility)
+                        assertEquals(deleted.content, mapper.fromEntityToMessage(stored).content)
+                    }
+                }
+                verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+            } finally {
+                database.builder.close()
+                database.delete()
+            }
+        }
 
     private fun testResendingWithGivenMessageStatus(
         status: Message.Status,
@@ -389,9 +515,9 @@ class RetryFailedMessageUseCaseTest {
             }
         }
 
-    private class Arrangement {
-
-        val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
+    private class Arrangement(
+        val messageRepository: MessageRepository = mock(mode = MockMode.autoUnit)
+    ) {
         val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
         val attachmentsRepository = mock<MessageAttachmentDraftRepository>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)

@@ -84,8 +84,8 @@ public class RetryFailedMessageUseCase internal constructor(
      * @param messageId the id of the failed message to be resent
      * @param conversationId the id of the conversation where the failed message wants to be resent
      * @return [MessageOperationResult] with a [MessageOperationResult.Failure]
-     * in case the message could not be found or has invalid status, [MessageOperationResult.Success] otherwise. Note that this doesn't
-     * imply that send will succeed, it just confirms that resending is the valid action for this message, and it has been started.
+     * in case the message could not be found, has invalid status, or has unsupported content, [MessageOperationResult.Success] otherwise.
+     * Success confirms that resending is valid and has been started; it does not imply that the send will succeed.
      */
     public suspend operator fun invoke(
         messageId: String,
@@ -95,6 +95,16 @@ public class RetryFailedMessageUseCase internal constructor(
             .flatMap { message ->
                 when (message.status) {
                     Message.Status.Failed, Message.Status.FailedRemotely -> {
+                        when (message.content) {
+                            is MessageContent.Unknown,
+                            is MessageContent.CompositeEdited,
+                            is MessageContent.FailedDecryption,
+                            is MessageContent.RestrictedAsset,
+                            MessageContent.Ignored ->
+                                return@flatMap handleError("Message with ${message.content.getType()} content cannot be retried")
+
+                            else -> Unit
+                        }
                         messageRepository.updateMessageStatus(
                             messageStatus = MessageEntity.Status.PENDING,
                             conversationId = message.conversationId,
