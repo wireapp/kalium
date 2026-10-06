@@ -75,6 +75,7 @@ public sealed class Node {
         val isEditSupported: Boolean = false,
         val conversationId: String?,
         val isViewerOnly: Boolean = false,
+        val pdfPreviewUrl: String? = null,
     ) : Node()
 }
 
@@ -87,7 +88,8 @@ internal fun CellNode.toFileModel() = Node.File(
     remotePath = path,
     contentHash = contentHash,
     contentUrl = contentUrl,
-    previewUrl = previews?.maxByOrNull { it.dimension }?.url,
+    previewUrl = previews.imagePreviewUrl(),
+    pdfPreviewUrl = previews.pdfPreviewUrl(),
     size = size,
     publicLinkId = publicLinkId,
     modifiedTime = modified?.let { it * 1000 },

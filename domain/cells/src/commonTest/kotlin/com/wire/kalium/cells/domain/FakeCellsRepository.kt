@@ -98,7 +98,7 @@ class FakeCellsRepository : CellsRepository {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>> {
+    override suspend fun getPreviews(nodeUuid: String): Either<NetworkFailure, List<NodePreview>?> {
         TODO("Not yet implemented")
     }
 

@@ -114,10 +114,16 @@ internal class MessageAttachmentsDaoImpl(
 
     override suspend fun setPreviewUrl(assetId: String, previewUrl: String?) {
         withContext(writeDispatcher.value) {
-            queries.setPreviewUrl(
-                previewUrl = previewUrl,
-                uuid = assetId
-            )
+            queries.transaction {
+                // A cell can appear in more than one message conversation. Use their persisted
+                // qualified IDs, which match the message-list observer keys on every platform.
+                val conversations = queries.getPreviewConversationIds(assetId).awaitAsList()
+                if (conversations.isEmpty()) {
+                    queries.setPreviewUrl(previewUrl, assetId, null)
+                } else {
+                    conversations.forEach { queries.setPreviewUrl(previewUrl, assetId, it.toString()) }
+                }
+            }
         }
     }
 

@@ -319,7 +319,7 @@ class MessageTimelineDAOTest : BaseDatabaseTest() {
             ))),
         ))
         val mutations: List<suspend () -> Unit> = listOf(
-            { db.database.messageAttachmentsQueries.setPreviewUrl("new-preview", "retained-cell") },
+            { db.messageAttachments.setPreviewUrl("retained-cell", "new-preview") },
             { db.database.cellFilesQueries.setTransferStatus("NOT_FOUND", "retained-cell") },
             { db.database.buttonContentQueries.markSelected(conversation.id, "0042", "button").await() },
             { db.messageDAO.updateLinkPreviewImageLocalPath(conversation.id, "0043", 0, "image-path") },

@@ -19,11 +19,14 @@ package com.wire.kalium.cells.domain.usecase
 
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.throws
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
@@ -41,7 +44,11 @@ import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlinx.coroutines.CancellationException
+import com.wire.kalium.common.error.StorageFailure
 import kotlin.test.assertTrue
 
 class RefreshNodeAssetStateUseCaseTest {
@@ -54,9 +61,19 @@ class RefreshNodeAssetStateUseCaseTest {
         private val testPreviews = listOf(
             NodePreview(
                 url = "http://previewUrl",
-                dimension = 720
+                dimension = 720,
+                contentType = "image/jpg",
             )
         )
+
+        /** What a document the backend can convert returns: a thumbnail plus a PDF rendition. */
+        private val testDocumentPreviews = listOf(
+            NodePreview(
+                url = "http://renditionUrl",
+                dimension = 0,
+                contentType = "application/pdf",
+            ),
+        ) + testPreviews
 
         private val testNode: CellNode = CellNode(
             uuid = assetId,
@@ -327,6 +344,25 @@ class RefreshNodeAssetStateUseCaseTest {
     }
 
     @Test
+    fun given_NodeWithPdfAndImagePreviews_when_RefreshInvoked_then_ImagePreviewIsSaved() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withNodeResponseSuccess(testNode.copy(previews = testDocumentPreviews))
+            .withLocalAttachment()
+            .withLocalFileAvailable()
+            .arrange()
+
+        useCase.invoke(assetId)
+
+        // The PDF rendition is what the document is displayed with, never what its thumbnail is.
+        verifySuspend {
+            arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url)
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.attachmentsRepository.savePreviewUrl(assetId, "http://renditionUrl")
+        }
+    }
+
+    @Test
     fun given_NodePreviewsNotReady_when_RefreshInvoked_then_PreviewRequestRetried() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withNodeResponseSuccess(testNode)
@@ -359,6 +395,22 @@ class RefreshNodeAssetStateUseCaseTest {
     }
 
     @Test
+    fun given_NodePreviewsGenerationFailed_when_RefreshInvoked_then_PreviewRequestNotRetried() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withNodeResponseSuccess(testNode)
+            .withPreviewsGenerationFailed()
+            .withLocalAttachment()
+            .withLocalFileAvailable()
+            .arrange()
+
+        useCase.invoke(assetId)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.cellsRepository.getPreviews(any())
+        }
+    }
+
+    @Test
     fun given_NodePreviewsSuccess_when_RefreshInvoked_then_PreviewUrlUpdated() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withNodeResponseSuccess(testNode)
@@ -375,12 +427,85 @@ class RefreshNodeAssetStateUseCaseTest {
     }
 
     @Test
-    fun given_NodePreviewsAreNull_when_PreviewAvailabilityChecked_then_FalseReturned() = runTest {
+    fun givenPdfArrivesBeforeImage_whenRefreshing_thenPollUntilImageAndSaveOnlyThumbnail() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withNodeResponseSuccess(testNode.copy(previews = testDocumentPreviews.take(1)))
+            .withLocalAttachment().withLocalFileAvailable().arrange()
+        var requests = 0
+        everySuspend { arrangement.cellsRepository.getPreviews(assetId) } calls {
+            requests++
+            if (requests == 1) testDocumentPreviews.take(1).right() else testDocumentPreviews.right()
+        }
+        assertEquals(testNode.copy(previews = testDocumentPreviews.take(1)), useCase(assetId).getOrNull())
+        assertEquals(2, requests)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url)
+        }
+    }
+
+    @Test
+    fun givenPendingPreviewsNeverFinish_whenRefreshing_thenRetriesAreBoundedAndNodeStillReturns() = runTest {
+        val (arrangement, useCase) = Arrangement().withNodeResponseSuccess(testNode)
+            .withPreviewsNotReady().withLocalAttachment().withLocalFileAvailable().arrange()
+        assertEquals(testNode, useCase(assetId).getOrNull())
+        verifySuspend(VerifyMode.exactly(20)) { arrangement.cellsRepository.getPreviews(assetId) }
+        verifySuspend(VerifyMode.not) { arrangement.attachmentsRepository.savePreviewUrl(any(), any()) }
+    }
+
+    @Test
+    fun givenThumbnailStorageFails_whenRefreshing_thenExistingBestEffortNodeResultIsPreserved() = runTest {
+        val (arrangement, useCase) = Arrangement().withNodeResponseSuccess(testNode.copy(previews = testPreviews))
+            .withLocalAttachment().withLocalFileAvailable().arrange()
+        everySuspend { arrangement.attachmentsRepository.savePreviewUrl(any(), any()) } returns StorageFailure.DataNotFound.left()
+        assertEquals(testNode.copy(previews = testPreviews), useCase(assetId).getOrNull())
+    }
+
+    @Test
+    fun givenPreviewPollingIsCancelled_whenRefreshing_thenCancellationEscapes() = runTest {
+        val (arrangement, useCase) = Arrangement().withNodeResponseSuccess(testNode)
+            .withLocalAttachment().withLocalFileAvailable().arrange()
+        everySuspend { arrangement.cellsRepository.getPreviews(any()) } throws CancellationException("preview cancelled")
+        assertFailsWith<CancellationException> { useCase(assetId) }
+        verifySuspend(VerifyMode.not) { arrangement.attachmentsRepository.savePreviewUrl(any(), any()) }
+    }
+
+    @Test
+    fun given_NodeWithoutPreviewsYet_when_PreviewAvailabilityChecked_then_TrueReturned() = runTest {
+        // A just received file has no renditions yet: they are generated after upload, and waiting
+        // for them is the whole point of asking whether previews are supported.
         CellNode(
             uuid = assetId,
             versionId = "versionId",
             path = "assetPath",
             previews = null,
+            mimeType = "image/jpg",
+        ).let { node ->
+            assertTrue(node.isPreviewSupported())
+        }
+    }
+
+    @Test
+    fun given_DocumentWithoutPreviewsYet_when_PreviewAvailabilityChecked_then_TrueReturned() = runTest {
+        CellNode(
+            uuid = assetId,
+            versionId = "versionId",
+            path = "assetPath",
+            previews = null,
+            mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            supportedEditors = listOf("collabora"),
+        ).let { node ->
+            assertTrue(node.isPreviewSupported())
+        }
+    }
+
+    @Test
+    fun given_NodeOfATypeWithoutRenditions_when_PreviewAvailabilityChecked_then_FalseReturned() = runTest {
+        CellNode(
+            uuid = assetId,
+            versionId = "versionId",
+            path = "assetPath",
+            previews = null,
+            mimeType = "application/zip",
         ).let { node ->
             assertFalse(node.isPreviewSupported())
         }
@@ -488,6 +613,10 @@ class RefreshNodeAssetStateUseCaseTest {
         }
 
         suspend fun withPreviewsNotReady() = apply {
+            everySuspend { cellsRepository.getPreviews(any()) }.returns(null.right())
+        }
+
+        suspend fun withPreviewsGenerationFailed() = apply {
             everySuspend { cellsRepository.getPreviews(any()) }.returns(emptyList<NodePreview>().right())
         }
 
