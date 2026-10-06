@@ -5404,6 +5404,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-getPersistentWebSocketStatus>(): com.wire.kalium.logic.feature.user.webSocketStatus/GetPersistentWebSocketStatus // com.wire.kalium.logic.feature/UserSessionScope.getPersistentWebSocketStatus.<get-getPersistentWebSocketStatus>|<get-getPersistentWebSocketStatus>(){}[0]
     final val getTeamUrlUseCase // com.wire.kalium.logic.feature/UserSessionScope.getTeamUrlUseCase|{}getTeamUrlUseCase[0]
         final fun <get-getTeamUrlUseCase>(): com.wire.kalium.logic.feature.server/GetTeamUrlUseCase // com.wire.kalium.logic.feature/UserSessionScope.getTeamUrlUseCase.<get-getTeamUrlUseCase>|<get-getTeamUrlUseCase>(){}[0]
+    final val isCellsInitialized // com.wire.kalium.logic.feature/UserSessionScope.isCellsInitialized|{}isCellsInitialized[0]
+        final fun <get-isCellsInitialized>(): kotlin/Boolean // com.wire.kalium.logic.feature/UserSessionScope.isCellsInitialized.<get-isCellsInitialized>|<get-isCellsInitialized>(){}[0]
     final val isE2EIEnabled // com.wire.kalium.logic.feature/UserSessionScope.isE2EIEnabled|{}isE2EIEnabled[0]
         final fun <get-isE2EIEnabled>(): com.wire.kalium.logic.feature.user/IsE2EIEnabledUseCase // com.wire.kalium.logic.feature/UserSessionScope.isE2EIEnabled.<get-isE2EIEnabled>|<get-isE2EIEnabled>(){}[0]
     final val isFileSharingEnabled // com.wire.kalium.logic.feature/UserSessionScope.isFileSharingEnabled|{}isFileSharingEnabled[0]

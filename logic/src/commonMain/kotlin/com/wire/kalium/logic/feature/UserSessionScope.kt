@@ -2976,7 +2976,7 @@ public class UserSessionScope internal constructor(
             coroutineScope = this,
         )
 
-    public val cells: CellsScope by lazy {
+    private val cellsLazy = lazy {
         CellsScope(
             cellsClient = cellsClient,
             dao = with(userStorage.database) {
@@ -2996,6 +2996,9 @@ public class UserSessionScope internal constructor(
             userId = userId,
         )
     }
+    public val cells: CellsScope by cellsLazy
+
+    public val isCellsInitialized: Boolean get() = cellsLazy.isInitialized()
 
     private val deleteConversationUseCase: DeleteConversationUseCase
         get() = DeleteConversationUseCaseImpl(
