@@ -1159,8 +1159,11 @@ public class UserSessionScope internal constructor(
 
     private val appRepository: AppRepository
         get() = AppDataSource(
+            selfUserId = userId,
             appDAO = userStorage.database.appDAO,
-            teamDAO = userStorage.database.teamDAO
+            teamDAO = userStorage.database.teamDAO,
+            teamsApi = authenticatedNetworkContainer.teamsApi,
+            userDetailsApi = authenticatedNetworkContainer.userDetailsApi,
         )
 
     private val persistConversationsUseCase: PersistConversationsUseCase
@@ -2975,7 +2978,9 @@ public class UserSessionScope internal constructor(
 
     public val apps: AppScope
         get() = AppScope(
-            appRepository = appRepository
+            appRepository = appRepository,
+            selfTeamIdProvider = selfTeamId,
+            apiVersion = sessionManager.serverConfig().metaData.commonApiVersion.version
         )
 
     /** Resume NSE-committed signaling using this session's existing full calling engine. */
