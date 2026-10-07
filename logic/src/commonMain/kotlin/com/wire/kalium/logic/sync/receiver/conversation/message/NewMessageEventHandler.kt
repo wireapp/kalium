@@ -225,7 +225,15 @@ internal class NewMessageEventHandlerImpl(
                 event.conversationId,
                 event.subconversationId,
                 event.messageInstant
-            )
+            ).onSuccess {
+                bufferedMLSMessageRecoveryTracker.clear(event.conversationId, event.subconversationId)
+            }.onFailure { recoveryFailure ->
+                // Tracking window is kept, so the next buffered message retries the recovery.
+                logger.w(
+                    "Buffered MLS message recovery failed for conversation ${event.conversationId.toLogString()}, " +
+                        "will retry on next buffered message: $recoveryFailure"
+                )
+            }
         } else {
             eventLogger.logFailure(failure, "protocol" to "MLS", "mlsOutcome" to "BUFFERED")
         }

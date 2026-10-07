@@ -73,13 +73,23 @@ class BufferedMLSMessageRecoveryTrackerTest {
     }
 
     @Test
-    fun givenRecoveryTriggered_whenMoreMessagesAreBuffered_thenShouldUseFreshWindow() = runTest {
+    fun givenRecoveryTriggeredWithoutClear_whenMoreMessagesAreBuffered_thenShouldKeepRecovering() = runTest {
         val tracker = BufferedMLSMessageRecoveryTracker()
 
         assertFalse(tracker.observeBufferedMessage(CONVERSATION_ID, null, TIMESTAMP))
         assertTrue(tracker.observeBufferedMessage(CONVERSATION_ID, null, TIMESTAMP + 1.minutes + 1.seconds))
-        assertFalse(tracker.observeBufferedMessage(CONVERSATION_ID, null, TIMESTAMP + 2.minutes + 1.seconds))
-        assertTrue(tracker.observeBufferedMessage(CONVERSATION_ID, null, TIMESTAMP + 2.minutes + 2.seconds))
+        assertTrue(tracker.observeBufferedMessage(CONVERSATION_ID, null, TIMESTAMP + 1.minutes + 2.seconds))
+    }
+
+    @Test
+    fun givenRecoveryTriggeredAndCleared_whenMoreMessagesAreBuffered_thenShouldUseFreshWindow() = runTest {
+        val tracker = BufferedMLSMessageRecoveryTracker()
+
+        assertFalse(tracker.observeBufferedMessage(CONVERSATION_ID, null, TIMESTAMP))
+        assertTrue(tracker.observeBufferedMessage(CONVERSATION_ID, null, TIMESTAMP + 1.minutes + 1.seconds))
+        tracker.clear(CONVERSATION_ID, null)
+        assertFalse(tracker.observeBufferedMessage(CONVERSATION_ID, null, TIMESTAMP + 1.minutes + 2.seconds))
+        assertTrue(tracker.observeBufferedMessage(CONVERSATION_ID, null, TIMESTAMP + 2.minutes + 3.seconds))
     }
 
     private companion object {

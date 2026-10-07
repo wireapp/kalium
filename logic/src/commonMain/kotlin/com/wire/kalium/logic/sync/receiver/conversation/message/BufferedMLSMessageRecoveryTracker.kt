@@ -35,8 +35,9 @@ import kotlin.time.Duration.Companion.minutes
  *
  * Buffered event timestamps are tracked per conversation and subconversation. Recovery is requested when
  * their timestamp span exceeds [recoveryThreshold], allowing short-lived out-of-order delivery to resolve
- * without intervention. Tracking is kept in memory for the lifetime of the current user session and does not
- * survive process or session recreation.
+ * without intervention. Once triggered, recovery keeps being requested for every further buffered message until
+ * [clear] is called, so a failed recovery attempt is retried with the next buffered message. Tracking is kept
+ * in memory for the lifetime of the current user session and does not survive process or session recreation.
  */
 internal class BufferedMLSMessageRecoveryTracker(
     private val recoveryThreshold: Duration = DEFAULT_RECOVERY_THRESHOLD
@@ -57,13 +58,8 @@ internal class BufferedMLSMessageRecoveryTracker(
 
         logBufferedMessageObserved(key, timestamp, updatedRange, bufferedTimeSpan, shouldRecover)
 
-        if (shouldRecover) {
-            bufferedMessageRanges[key] = TimestampRange(timestamp, timestamp)
-            true
-        } else {
-            bufferedMessageRanges[key] = updatedRange
-            false
-        }
+        bufferedMessageRanges[key] = updatedRange
+        shouldRecover
     }
 
     suspend fun clear(
