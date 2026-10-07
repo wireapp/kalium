@@ -11,6 +11,9 @@ import com.wire.kalium.calling.notifications.AvsClosedCallNotification
 import com.wire.kalium.calling.notifications.AvsIncomingCallNotification
 import com.wire.kalium.calling.notifications.AvsMissedCallNotification
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.AppleCallTrace
+import com.wire.kalium.logger.CallTraceContext
+import com.wire.kalium.logger.CallTraceEvent
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -37,7 +40,7 @@ internal suspend fun evaluateCallingEvents(
     val journal = signalJournal.signals()
     val messageIds = events.map { it.messageId }.toSet()
     journal.filter { it.messageId in messageIds }.forEach {
-        platform.Foundation.NSLog("CALL_FLOW signal=${it.id} stage=durable_ready")
+        AppleCallTrace.record(CallTraceEvent.DURABLE_READY, CallTraceContext(signal = it.id))
     }
     val results = mutableListOf<ReceivedCallResult>()
     fun record(
@@ -139,6 +142,18 @@ internal suspend fun evaluateCallingEvents(
         platform.Foundation.NSLog(
             "CALL_FLOW call=${source?.id ?: "none"} stage=nse_decision type=${result.type} " +
                 "ring=${result.shouldRing} notify=$shouldNotify"
+        )
+        val event = when (result.type) {
+            ReceivedCallType.INCOMING -> CallTraceEvent.NSE_INCOMING
+            ReceivedCallType.CLOSED -> CallTraceEvent.NSE_CLOSED
+            ReceivedCallType.MISSED -> CallTraceEvent.NSE_MISSED
+        }
+        AppleCallTrace.record(
+            event,
+            CallTraceContext(signal = source?.id),
+            code = result.closeReason,
+            flag = result.shouldRing && availability != UserAvailabilityStatusEntity.AWAY && conversation != null &&
+                conversation.mutedStatus != ConversationEntity.MutedStatus.ALL_MUTED
         )
         result.copy(
             callerName = if (result.type == ReceivedCallType.MISSED) null else name,

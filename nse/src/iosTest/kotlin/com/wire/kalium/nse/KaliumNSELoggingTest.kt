@@ -3,6 +3,8 @@ package com.wire.kalium.nse
 
 import com.wire.kalium.common.logger.CoreLogger
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logger.AppleCallTrace
+import com.wire.kalium.logger.CallTraceEvent
 import com.wire.kalium.logger.KaliumLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -32,6 +34,7 @@ class KaliumNSELoggingTest {
 
                 assertTrue(logger.configure(root.toString(), true))
                 kaliumLogger.i("first-entry")
+                AppleCallTrace.record(CallTraceEvent.NSE_INCOMING)
                 logger.recordNative("native-received", false)
                 logger.recordNative("native-failed", true)
                 assertTrue(logger.flush(2_000))
@@ -47,6 +50,8 @@ class KaliumNSELoggingTest {
 
                 val text = FileSystem.SYSTEM.read(root / "logs" / "wire_logs-nse.log") { readUtf8() }
                 assertEquals(1, text.lines().count { "first-entry" in it })
+                assertTrue(text.lines().any { "role=NSE" in it && "event=NSE_INCOMING" in it })
+                assertTrue(FileSystem.SYSTEM.exists(root / "logs" / "wire_logs-nse.coverage.json"))
                 val verbose = text.lines().single { "second-entry" in it }
                 kotlin.time.Instant.parse(verbose.substringBefore(' '))
                 assertTrue(verbose.substringAfter(' ').startsWith("Verbose: ("))

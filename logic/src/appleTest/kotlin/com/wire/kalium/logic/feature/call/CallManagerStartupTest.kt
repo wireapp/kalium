@@ -17,6 +17,14 @@
  */
 package com.wire.kalium.logic.feature.call
 
+import co.touchlab.kermit.LogWriter
+import co.touchlab.kermit.Severity
+import com.wire.kalium.logger.AppleCallTrace
+import com.wire.kalium.logger.CallTraceRole
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
+import kotlin.test.AfterTest
+import kotlin.test.assertTrue
 import com.wire.kalium.calling.AppleAvsBridge
 import com.wire.kalium.calling.AppleAvsCallbacks
 import com.wire.kalium.calling.CallClosedReason
@@ -69,6 +77,49 @@ import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CallManagerStartupTest {
+
+    @AfterTest
+    fun resetTrace() { AppleCallTrace.configure(KaliumLogger.Config.DISABLED, CallTraceRole.APP) }
+
+    @Test
+    fun rejectedStartTraceLinksNativeCodeToFailedOperationWithoutExceptionText() = runTest {
+        val lines = captureTrace()
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        every { f.avs.startCall(any(), any(), any(), any(), any(), any()) } returns 5
+        val manager = f.manager()
+        assertFailsWith<CallStartException> { manager.start() }
+        val requested = lines.single { "event=START " in it && "result=REQUESTED" in it }
+        val operation = requested.substringAfter("operation=").substringBefore(' ')
+        assertTrue(lines.any { "event=AVS_START " in it && "operation=$operation" in it && "result=FAILED code=5" in it })
+        assertTrue(lines.any { "event=START " in it && "operation=$operation" in it && "result=FAILED" in it })
+        assertTrue(lines.none { "AVS rejected startup" in it })
+        manager.cancelJobs()
+    }
+
+    @Test
+    fun malformedCallbackDiagnosticLookupDoesNotThrowThroughNativeBoundary() = runTest {
+        val lines = captureTrace()
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        val manager = f.manager()
+        manager.start()
+        every { f.qualified.fromStringToQualifiedID("malformed") } calls { error("private malformed identity") }
+        f.callbacks.onAnsweredCall("malformed")
+        f.callbacks.onEstablishedCall("malformed", null, null)
+        runCurrent()
+        assertTrue(lines.any { "event=AVS_ANSWERED" in it })
+        assertTrue(lines.any { "event=CALLBACK_EFFECT" in it && "result=FAILED" in it })
+        assertTrue(lines.none { "private malformed identity" in it })
+        manager.cancelJobs()
+    }
+
+    private fun captureTrace(): MutableList<String> {
+        val lines = mutableListOf<String>()
+        val writer = object : LogWriter() {
+            override fun log(severity: Severity, message: String, tag: String, throwable: Throwable?) { lines += message }
+        }
+        AppleCallTrace.configure(KaliumLogger.Config(KaliumLogLevel.INFO, listOf(writer)), CallTraceRole.APP)
+        return lines
+    }
 
     @Test
     fun acceptedStartKeepsRowStarted() = runTest {
@@ -244,7 +295,7 @@ class CallManagerStartupTest {
         lateinit var callbacks: AppleAvsCallbacks
         private val client = mock<CurrentClientIdProvider>()
         private val federated = mock<FederatedIdMapper>()
-        private val qualified = mock<QualifiedIdMapper>()
+        val qualified = mock<QualifiedIdMapper>()
         private val network = mock<NetworkStateObserver>()
 
         init {

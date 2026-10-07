@@ -43,7 +43,7 @@ import kotlin.time.Clock
 @OptIn(ExperimentalForeignApi::class)
 public class AppleDiagnosticLogWriter(
     rootPath: String,
-    streamName: String = "app",
+    private val streamName: String = "app",
     diagnosticLoggingEnabled: Boolean = false,
     fileSystem: FileSystem = FileSystem.SYSTEM,
     maxFileBytes: Long = DEFAULT_MAX_FILE_BYTES,
@@ -56,6 +56,13 @@ public class AppleDiagnosticLogWriter(
     private var pendingEntries = 0
     private var pendingCharacters = 0
     private var generation = 0L
+    private val boot = AppleDiagnosticProcess.id
+    private var submitted = 0L
+    private var written = 0L
+    private var disabled = 0L
+    private var rejected = 0L
+    private var storageFailed = 0L
+    private var discarded = 0L
 
     public val isLoggingEnabled: Boolean get() = locked { enabled }
     public val displayPath: String get() = storage.displayPath
@@ -63,8 +70,17 @@ public class AppleDiagnosticLogWriter(
     override fun log(severity: Severity, message: String, tag: String, throwable: Throwable?) {
         locked {
             val characters = message.length.toLong() + tag.length
-            if (!enabled || pendingEntries >= MAX_PENDING_ENTRIES) return@locked
-            if (characters > MAX_ENTRY_CHARACTERS || pendingCharacters + characters > MAX_PENDING_CHARACTERS) return@locked
+            submitted++
+            if (!enabled) {
+                disabled++
+                return@locked
+            }
+            if (pendingEntries >= MAX_PENDING_ENTRIES || characters > MAX_ENTRY_CHARACTERS ||
+                pendingCharacters + characters > MAX_PENDING_CHARACTERS
+            ) {
+                rejected++
+                return@locked
+            }
             val timestamp = Clock.System.now().toString()
             val acceptedGeneration = generation
             pendingEntries++
@@ -73,8 +89,12 @@ public class AppleDiagnosticLogWriter(
                 try {
                     if (locked { acceptedGeneration == generation }) {
                         storage.append(timestamp, severity, message, tag, throwable)
+                        locked { written++ }
+                    } else {
+                        locked { discarded++ }
                     }
                 } catch (_: Exception) {
+                    locked { storageFailed++ }
                     // Diagnostics must never fail the operation being diagnosed or poison a future export.
                 } finally {
                     locked {
@@ -96,15 +116,22 @@ public class AppleDiagnosticLogWriter(
     }
 
     /** Wait for accepted writes, reporting current storage access failures rather than historical dropped entries. */
-    public suspend fun flushLogs() = onQueue { storage.checkAccess() }
+    public suspend fun flushLogs() = onQueue { storage.checkpoint(coverage()) }
 
     /**
      * Completion barrier with a caller-supplied budget. False means the barrier did not finish in that budget.
-     * No filesystem validation is performed. Dropped entries still count as finished; this is not a durability promise.
+     * Attempts a coverage checkpoint without logging recursively. A failed checkpoint leaves older coverage;
+     * dropped entries still count as finished. This is not a durability promise.
      */
     public suspend fun flushLogsWithin(timeoutMillis: Long): Boolean = withTimeoutOrNull(timeoutMillis) {
         suspendCancellableCoroutine { continuation ->
-            locked { dispatch_async(queue) { continuation.resumeWith(Result.success(Unit)) } }
+            locked {
+                dispatch_async(queue) {
+                    // A failed checkpoint means coverage is unknown after the last successful one.
+                    runCatching { storage.checkpoint(coverage()) }
+                    continuation.resumeWith(Result.success(Unit))
+                }
+            }
         }
         true
     } ?: false
@@ -115,10 +142,17 @@ public class AppleDiagnosticLogWriter(
     }
 
     /** Copy every stream into a new private directory. Contention or storage errors are reported to the caller. */
-    public suspend fun createLogsSnapshot(destinationPath: String) = onQueue { storage.snapshot(destinationPath) }
+    public suspend fun createLogsSnapshot(destinationPath: String) = onQueue {
+        storage.snapshot(destinationPath, coverage())
+    }
 
     /** Delete regular diagnostic files across all streams, retaining preferences, lock file, and unrelated files. */
     public suspend fun deleteLogs() = onQueue { storage.delete() }
+
+    private fun coverage(): String = locked {
+        """{"version":1,"boot":"$boot","stream":"$streamName","at":"${Clock.System.now()}","enabled":$enabled,"submitted":$submitted,"written":$written,"disabled":$disabled,"rejected":$rejected,"storageFailed":$storageFailed,"discarded":$discarded,"pending":$pendingEntries}
+"""
+    }
 
     private suspend fun <T> onQueue(block: () -> T): T = suspendCoroutine { continuation ->
         locked { dispatch_async(queue) { continuation.resumeWith(runCatching(block)) } }

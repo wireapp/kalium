@@ -21,6 +21,10 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.calling.AppleAvs
+import com.wire.kalium.logger.AppleCallTrace
+import com.wire.kalium.logger.CallTraceContext
+import com.wire.kalium.logger.CallTraceEvent
+import com.wire.kalium.logger.CallTraceResult
 import com.wire.kalium.calling.AppleAvsBridge
 import com.wire.kalium.calling.AppleAvsCallbacks
 import com.wire.kalium.calling.CallClosedReason
@@ -168,12 +172,17 @@ internal class CallManagerImpl internal constructor(
         callingLogger.i("$tagWithUserId: Creating iOS AVS Handle")
         val selfClientId = clientId.await().value
         val nativeSelfUserId = federatedIdMapper.parseToFederatedId(selfUserId)
+        AppleCallTrace.record(CallTraceEvent.ENGINE_CREATE, engineContext(), CallTraceResult.REQUESTED)
         nativeHandleCreationIncomplete = true
         avs.userHandle(
             selfUserId = nativeSelfUserId,
             selfClientId = selfClientId,
             callbacks = callbacks
         ).also {
+            AppleCallTrace.record(
+                CallTraceEvent.ENGINE_CREATE, engineContext(),
+                if (it == null) CallTraceResult.FAILED else CallTraceResult.COMPLETED
+            )
             nativeHandle = it
             nativeHandleCreationIncomplete = false
         } ?: error("Failed to create iOS AVS wcall user")
@@ -194,7 +203,7 @@ internal class CallManagerImpl internal constructor(
                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
-                    platform.Foundation.NSLog("CALL_FLOW stage=callback_effect result=failed")
+                    AppleCallTrace.record(CallTraceEvent.CALLBACK_EFFECT, engineContext(), CallTraceResult.FAILED)
                 }
             }
         }
@@ -234,27 +243,50 @@ internal class CallManagerImpl internal constructor(
         for (signal in journal.signals()) {
             if (signal.submittedGeneration == signalGeneration) continue
             val key = "${signal.conversationValue}@${signal.conversationDomain}"
+            val trace = traceContext(ConversationId(signal.conversationValue, signal.conversationDomain)).withSignal(signal.id)
             val watermark = signalWatermarks[key]
             if (watermark != null && signal.timeMillis < watermark) {
-                platform.Foundation.NSLog("CALL_FLOW engine=$signalGeneration signal=${signal.id} stage=native_enqueue result=stale")
+                AppleCallTrace.record(
+                    CallTraceEvent.NATIVE_ENQUEUE,
+                    trace,
+                    CallTraceResult.STALE
+                )
                 journal.submitted(signal.id, signalGeneration)
                 continue
             }
             val target = ConversationId(signal.conversationValue, signal.conversationDomain)
             val sender = UserId(signal.senderValue, signal.senderDomain)
             val content = MessageContent.Calling(signal.payload, target)
-            receiveSignal(
-                Message.Signaling(
-                id = signal.messageId, content = content, conversationId = target,
-                date = kotlin.time.Instant.fromEpochMilliseconds(signal.timeMillis), senderUserId = sender,
-                senderClientId = ClientId(signal.senderClientId), status = Message.Status.Sent,
-                isSelfMessage = sender == selfUserId, expirationData = null,
-            ),
-                content
+            AppleCallTrace.record(
+                CallTraceEvent.NATIVE_ENQUEUE,
+                trace,
+                CallTraceResult.REQUESTED
             )
+            try {
+                receiveSignal(
+                    Message.Signaling(
+                        id = signal.messageId, content = content, conversationId = target,
+                        date = kotlin.time.Instant.fromEpochMilliseconds(signal.timeMillis), senderUserId = sender,
+                        senderClientId = ClientId(signal.senderClientId), status = Message.Status.Sent,
+                        isSelfMessage = sender == selfUserId, expirationData = null,
+                    ),
+                    content
+                )
+            } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+                AppleCallTrace.record(
+                    CallTraceEvent.NATIVE_ENQUEUE,
+                    trace,
+                    if (failure is CancellationException) CallTraceResult.CANCELLED else CallTraceResult.FAILED
+                )
+                throw failure
+            }
             signalWatermarks[key] = signal.timeMillis
             journal.submitted(signal.id, signalGeneration)
-            platform.Foundation.NSLog("CALL_FLOW engine=$signalGeneration signal=${signal.id} stage=native_enqueue result=accepted")
+            AppleCallTrace.record(
+                CallTraceEvent.NATIVE_ENQUEUE,
+                trace,
+                CallTraceResult.ACCEPTED
+            )
         }
     }
 
@@ -288,7 +320,7 @@ internal class CallManagerImpl internal constructor(
         conversationTypeCalling: ConversationTypeCalling,
         isAudioCbr: Boolean,
         isMeeting: Boolean
-    ) {
+    ) = traceCommand(CallTraceEvent.START, conversationId) { trace ->
         callingLogger.d("$tagWithUserId: starting call for conversationId: ${conversationId.toLogString()}..")
         var rowCreated = false
         var joinedMls = false
@@ -318,6 +350,12 @@ internal class CallManagerImpl internal constructor(
                     conversationType = conversationTypeCalling.avsValue,
                     audioCbr = isAudioCbr,
                     meeting = isMeeting
+                )
+                AppleCallTrace.record(
+                    CallTraceEvent.AVS_START,
+                    trace,
+                    if (result == 0) CallTraceResult.ACCEPTED else CallTraceResult.FAILED,
+                    code = result
                 )
                 if (result != 0) throw CallStartException("AVS rejected startup: $result")
                 callingLogger.d("$tagWithUserId: wcall_start() called -> ${conversationId.toLogString()}")
@@ -353,42 +391,57 @@ internal class CallManagerImpl internal constructor(
         }.onFailure(cause::addSuppressed)
     }
 
-    override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean) = withCalling { handle ->
-        callingLogger.d("$tagWithUserId: answering call for conversationId: ${conversationId.toLogString()}..")
-        val callType = if (isVideoCall) CallTypeCalling.VIDEO else CallTypeCalling.AUDIO
-        val answerAvs = suspend {
-            val result = avs.answerCall(
-                handle = handle,
-                conversationId = federatedIdMapper.parseToFederatedId(conversationId),
-                callType = callType.avsValue,
-                audioCbr = isAudioCbr
-            )
-            check(result == 0) { "AVS rejected Answer: $result" }
-            callingLogger.i("$tagWithUserId: wcall_answer() called -> ${conversationId.toLogString()}")
-        }
+    override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean) = traceCommand(
+        CallTraceEvent.ANSWER,
+        conversationId
+    ) { trace ->
+        withCalling { handle ->
+            callingLogger.d("$tagWithUserId: answering call for conversationId: ${conversationId.toLogString()}..")
+            val callType = if (isVideoCall) CallTypeCalling.VIDEO else CallTypeCalling.AUDIO
+            val answerAvs = suspend {
+                val result = avs.answerCall(
+                    handle = handle,
+                    conversationId = federatedIdMapper.parseToFederatedId(conversationId),
+                    callType = callType.avsValue,
+                    audioCbr = isAudioCbr
+                )
+                AppleCallTrace.record(
+                    CallTraceEvent.AVS_ANSWER,
+                    trace,
+                    if (result == 0) CallTraceResult.ACCEPTED else CallTraceResult.FAILED,
+                    code = result
+                )
+                check(result == 0) { "AVS rejected Answer: $result" }
+                callingLogger.i("$tagWithUserId: wcall_answer() called -> ${conversationId.toLogString()}")
+            }
 
-        if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
-            callRepository.joinMlsConference(
-                conversationId = conversationId,
-                onJoined = answerAvs,
-                onEpochChange = { conversation, epochInfo -> updateEpochInfo(conversation, epochInfo) }
-            ).fold({ error("MLS conference join failed: $it") }, {})
-        } else {
-            answerAvs()
+            if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.MLS) {
+                callRepository.joinMlsConference(
+                    conversationId = conversationId,
+                    onJoined = answerAvs,
+                    onEpochChange = { conversation, epochInfo -> updateEpochInfo(conversation, epochInfo) }
+                ).fold({ error("MLS conference join failed: $it") }, {})
+            } else {
+                answerAvs()
+            }
+            Unit
         }
-        Unit
     }
 
-    override suspend fun endCall(conversationId: ConversationId) = withCalling { handle ->
-        callingLogger.d("$tagWithUserId: endCall -> ${conversationId.toLogString()}")
-        avs.endCall(handle, federatedIdMapper.parseToFederatedId(conversationId))
-        Unit
+    override suspend fun endCall(conversationId: ConversationId) = traceCommand(CallTraceEvent.END, conversationId) {
+        withCalling { handle ->
+            callingLogger.d("$tagWithUserId: endCall -> ${conversationId.toLogString()}")
+            avs.endCall(handle, federatedIdMapper.parseToFederatedId(conversationId))
+            Unit
+        }
     }
 
-    override suspend fun rejectCall(conversationId: ConversationId) = withCalling { handle ->
-        callingLogger.d("$tagWithUserId: rejectCall -> ${conversationId.toLogString()}")
-        avs.rejectCall(handle, federatedIdMapper.parseToFederatedId(conversationId))
-        Unit
+    override suspend fun rejectCall(conversationId: ConversationId) = traceCommand(CallTraceEvent.REJECT, conversationId) {
+        withCalling { handle ->
+            callingLogger.d("$tagWithUserId: rejectCall -> ${conversationId.toLogString()}")
+            avs.rejectCall(handle, federatedIdMapper.parseToFederatedId(conversationId))
+            Unit
+        }
     }
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling { handle ->
@@ -477,7 +530,9 @@ internal class CallManagerImpl internal constructor(
                 "AVS handle creation did not finish; retain account ownership until process exit"
             }
             nativeHandle?.let {
+                AppleCallTrace.record(CallTraceEvent.ENGINE_RELEASE, engineContext(), CallTraceResult.REQUESTED)
                 avs.releaseUserHandle(it)
+                AppleCallTrace.record(CallTraceEvent.ENGINE_RELEASE, engineContext(), CallTraceResult.COMPLETED)
                 nativeHandle = null
             }
         }
@@ -574,6 +629,8 @@ internal class CallManagerImpl internal constructor(
             val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
             val isMuted = setOf(ConversationTypeForCall.Conference, ConversationTypeForCall.ConferenceMls).contains(mappedConversationType)
             val status = if (shouldRing) CallStatus.INCOMING else CallStatus.STILL_ONGOING
+            val trace = callbackTraceContext(conversationId)
+            AppleCallTrace.record(CallTraceEvent.AVS_INCOMING, trace, flag = shouldRing)
             callEffects.trySend {
                 val target = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
                 val caller = qualifiedIdMapper.fromStringToQualifiedID(userId)
@@ -592,8 +649,11 @@ internal class CallManagerImpl internal constructor(
                     video,
                     signalGeneration
                 )
-                platform.Foundation.NSLog(
-                    "CALL_FLOW engine=$signalGeneration call=${presentation?.id ?: "none"} stage=avs_incoming ring=$shouldRing"
+                AppleCallTrace.record(
+                    CallTraceEvent.AVS_INCOMING,
+                    trace.withSignal(presentation?.id),
+                    CallTraceResult.COMPLETED,
+                    flag = shouldRing,
                 )
             }
         }
@@ -604,6 +664,7 @@ internal class CallManagerImpl internal constructor(
 
         override fun onAnsweredCall(conversationId: String?) {
             if (conversationId == null) return
+            AppleCallTrace.record(CallTraceEvent.AVS_ANSWERED, callbackTraceContext(conversationId))
             callEffects.trySend {
                 callRepository.updateCallStatusById(qualifiedIdMapper.fromStringToQualifiedID(conversationId), CallStatus.ANSWERED)
             }
@@ -611,6 +672,7 @@ internal class CallManagerImpl internal constructor(
 
         override fun onEstablishedCall(conversationId: String?, userId: String?, clientId: String?) {
             if (conversationId == null) return
+            AppleCallTrace.record(CallTraceEvent.AVS_ESTABLISHED, callbackTraceContext(conversationId))
             callEffects.trySend {
                 callRepository.updateCallStatusById(qualifiedIdMapper.fromStringToQualifiedID(conversationId), CallStatus.ESTABLISHED)
             }
@@ -699,6 +761,8 @@ internal class CallManagerImpl internal constructor(
         avsSelfClientId: ClientId,
         messageTarget: CallingMessageTarget
     ) {
+        val trace = traceContext(callHostConversationId, Uuid.random().toString())
+        AppleCallTrace.record(CallTraceEvent.SIGNAL_SEND, trace, CallTraceResult.REQUESTED)
         scope.launch {
             val transportConversationIds = when (messageTarget) {
                 is CallingMessageTarget.Self -> selfConversationIdProvider()
@@ -720,6 +784,12 @@ internal class CallManagerImpl internal constructor(
                 is Either.Right -> AVS_SEND_SUCCESS_STATUS_CODE to ""
                 is Either.Left -> AVS_SEND_FAILURE_STATUS_CODE to "Couldn't send Calling Message"
             }
+            AppleCallTrace.record(
+                CallTraceEvent.SIGNAL_SEND,
+                trace,
+                if (result is Either.Right) CallTraceResult.COMPLETED else CallTraceResult.FAILED,
+                code = code
+            )
             avs.respondToSend(deferredHandle.await(), code, message, context)
         }
     }
@@ -763,6 +833,8 @@ internal class CallManagerImpl internal constructor(
         val callStatus = getCallStatusFromCloseReason(avsReason)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
+        val closeContext = traceContext(conversationIdWithDomain, Uuid.random().toString())
+        AppleCallTrace.record(CallTraceEvent.AVS_CLOSED, closeContext, code = reason)
         callEffects.trySend {
             try {
                 val callMetadata = callRepository.getCallMetadata(conversationIdWithDomain)
@@ -791,7 +863,11 @@ internal class CallManagerImpl internal constructor(
                 createAndPersistRecentlyEndedCallMetadata(conversationIdWithDomain, reason)
             } finally {
                 val endedId = signalJournal?.closed(conversationIdWithDomain.value, conversationIdWithDomain.domain, reason)
-                platform.Foundation.NSLog("CALL_FLOW engine=$signalGeneration call=${endedId ?: "none"} stage=avs_closed reason=$reason")
+                if (endedId != null) AppleCallTrace.record(
+                    CallTraceEvent.JOURNAL_CLOSED,
+                    closeContext.withSignal(endedId),
+                    code = reason,
+                )
             }
         }
     }
@@ -816,12 +892,42 @@ internal class CallManagerImpl internal constructor(
     }
 
     private fun onCallingReady() {
+        AppleCallTrace.record(CallTraceEvent.ENGINE_READY, engineContext())
         callingReady.complete(Unit)
         callingLogger.i("$tagWithUserId: iOS calling ready")
     }
 
     internal suspend fun waitUntilInitialized() {
         deferredHandle.await()
+    }
+
+    private fun engineContext() = CallTraceContext(engine = signalGeneration)
+
+    // Diagnostic lookup must not move parsing failures out of the callback effect's error boundary.
+    private fun callbackTraceContext(conversation: String): CallTraceContext =
+        runCatching {
+            traceContext(
+            qualifiedIdMapper.fromStringToQualifiedID(conversation),
+            Uuid.random().toString()
+        )
+        }.getOrElse { engineContext() }
+
+    private fun traceContext(conversation: ConversationId, operation: String? = null) =
+        AppleCallTraceBindings.context(selfUserId, conversation, signalGeneration, operation)
+
+    private suspend fun <T> traceCommand(event: CallTraceEvent, conversation: ConversationId, action: suspend (CallTraceContext) -> T): T {
+        val context = traceContext(conversation, Uuid.random().toString())
+        AppleCallTrace.record(event, context, CallTraceResult.REQUESTED)
+        return try {
+            action(context).also { AppleCallTrace.record(event, context, CallTraceResult.COMPLETED) }
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+            AppleCallTrace.record(
+                event,
+                context,
+                if (failure is CancellationException) CallTraceResult.CANCELLED else CallTraceResult.FAILED
+            )
+            throw failure
+        }
     }
 
     private sealed interface CallingMessageTarget {

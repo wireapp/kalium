@@ -62,6 +62,9 @@ class AppleDiagnosticLogWriterTest {
             kotlin.time.Instant.parse(timestamp)
             assertEquals("Warn: (test) accepted\n" + failure.stackTraceToString() + "\n", contents.substringAfter(' '))
             assertFalse("ignored" in contents)
+            val coverage = fs.read(root / "logs" / "wire_logs.coverage.json") { readUtf8() }
+            assertTrue("\"disabled\":2" in coverage)
+            assertTrue("\"written\":1" in coverage)
             assertFalse(AppleDiagnosticLogWriter(root.toString()).isLoggingEnabled)
         }
     }
@@ -79,7 +82,7 @@ class AppleDiagnosticLogWriterTest {
             }
             val snapshot = root / "snapshot"
             app.createLogsSnapshot(snapshot.toString())
-            assertEquals(22, fs.list(snapshot).size)
+            assertEquals(24, fs.list(snapshot).size)
             assertTrue(fs.exists(snapshot / "wire_logs-nse-10.log"))
             assertTrue(fs.read(snapshot / "wire_logs.log") { readUtf8() }.contains("app-12"))
             app.log(Severity.Info, "later", "fixture", null)
@@ -103,7 +106,7 @@ class AppleDiagnosticLogWriterTest {
             fs.createDirectories(logs / "wire_logs-dir.log")
             fs.createSymlink(logs / "wire_logs-link.log", logs / "wire_logs.log")
             writer.createLogsSnapshot((root / "snapshot").toString())
-            assertEquals(listOf("wire_logs.log"), fs.list(root / "snapshot").map { it.name })
+            assertEquals(listOf("wire_logs.coverage.json", "wire_logs.log"), fs.list(root / "snapshot").map { it.name }.sorted())
             writer.deleteLogs()
             assertTrue(fs.exists(logs / "unrelated.txt"))
             assertTrue(fs.metadata(logs / "wire_logs-link.log").symlinkTarget != null)
@@ -140,7 +143,7 @@ class AppleDiagnosticLogWriterTest {
             assertFailsWith<IOException> { writer.flushLogs() }
             fs.delete(root / "logs")
             writer.createLogsSnapshot((root / "snapshot").toString())
-            assertTrue(fs.list(root / "snapshot").isEmpty())
+            assertEquals(listOf("wire_logs.coverage.json"), fs.list(root / "snapshot").map { it.name })
         }
     }
 
@@ -168,8 +171,12 @@ class AppleDiagnosticLogWriterTest {
             snapshot.await()
             app.flushLogs()
             assertFalse("expired" in fs.read(root / "logs" / "wire_logs.log") { readUtf8() })
+            assertTrue("\"discarded\":1" in fs.read(root / "logs" / "wire_logs.coverage.json") { readUtf8() })
             nse.log(Severity.Info, "after-copy", "test", null)
             nse.flushLogs()
+            val coverage = fs.read(root / "logs" / "wire_logs-nse.coverage.json") { readUtf8() }
+            assertTrue("\"storageFailed\":1" in coverage)
+            assertTrue("\"written\":1" in coverage)
             assertTrue("after-copy" in fs.read(root / "logs" / "wire_logs-nse.log") { readUtf8() })
         }
     }
@@ -193,6 +200,9 @@ class AppleDiagnosticLogWriterTest {
             writer.flushLogs()
             val contents = fs.read(root / "logs" / "wire_logs.log") { readUtf8() }
             assertEquals(64, contents.lineSequence().count { "queued-" in it })
+            val coverage = fs.read(root / "logs" / "wire_logs.coverage.json") { readUtf8() }
+            assertTrue("\"rejected\":37" in coverage)
+            assertTrue("\"written\":65" in coverage)
             assertFalse("queued-64" in contents)
             assertFalse("xxxxxxxxxx" in contents)
         }
@@ -233,7 +243,7 @@ class AppleDiagnosticLogWriterTest {
             assertTrue(fs.exists(root / "final-snapshot" / "wire_logs.log"))
             assertTrue(fs.exists(root / "final-snapshot" / "wire_logs-nse.log"))
             fs.list(root).filter { fs.metadata(it).isDirectory }.forEach { directory ->
-                fs.list(directory).forEach { file ->
+                fs.list(directory).filter { it.name.endsWith(".log") }.forEach { file ->
                     val contents = fs.read(file) { readUtf8() }
                     assertTrue(contents.endsWith("\n"))
                     assertTrue(contents.lineSequence().filter { it.isNotEmpty() }.all {

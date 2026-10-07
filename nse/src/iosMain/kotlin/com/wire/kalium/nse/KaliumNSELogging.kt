@@ -4,6 +4,8 @@ package com.wire.kalium.nse
 import co.touchlab.kermit.OSLogWriter
 import co.touchlab.kermit.Severity
 import com.wire.kalium.common.logger.CoreLogger
+import com.wire.kalium.logger.AppleCallTrace
+import com.wire.kalium.logger.CallTraceRole
 import com.wire.kalium.logger.AppleDiagnosticLogWriter
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
@@ -42,6 +44,7 @@ internal class NSEProcessLogger {
             )
             Installed(rootPath, writer, config).also {
                 CoreLogger.init(config)
+                AppleCallTrace.configure(config, CallTraceRole.NSE)
                 installed = it
             }
         }

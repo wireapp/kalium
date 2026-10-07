@@ -18,6 +18,10 @@
 
 package com.wire.kalium.calling
 
+import com.wire.kalium.logger.AppleCallTrace
+import com.wire.kalium.logger.CallTraceEvent
+import com.wire.kalium.logger.CallTraceResult
+
 /**
  * Called under the bridge's startup lock. Native setup/run can leave partial global state on failure;
  * AVS has no supported retry/rollback contract, so both success and failure are cached for this process.
@@ -29,11 +33,23 @@ internal class AppleAvsRuntimeStartup(
 ) {
     private var outcome: Boolean? = null
 
+    private fun runStage(event: CallTraceEvent, action: () -> Int): Int {
+        AppleCallTrace.record(event, result = CallTraceResult.REQUESTED)
+        return try {
+            action().also {
+                AppleCallTrace.record(event, result = if (it == 0) CallTraceResult.COMPLETED else CallTraceResult.FAILED, code = it)
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+            AppleCallTrace.record(event, result = CallTraceResult.FAILED)
+            throw failure
+        }
+    }
+
     fun startIfAvailable(): Boolean {
         outcome?.let { return it }
         outcome = false
         val started = runCatching {
-            if (setup() != 0 || run() != 0) {
+            if (runStage(CallTraceEvent.RUNTIME_SETUP, setup) != 0 || runStage(CallTraceEvent.RUNTIME_RUN, run) != 0) {
                 false
             } else {
                 onStarted()

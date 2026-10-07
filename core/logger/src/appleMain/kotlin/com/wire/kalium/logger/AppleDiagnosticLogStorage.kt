@@ -53,6 +53,7 @@ internal class AppleDiagnosticLogStorage(
     private val root = rootPath.toPath(normalize = true)
     private val directory = root / "logs"
     private val baseName = if (streamName == "app") "wire_logs" else "wire_logs-$streamName"
+    private val coverageFile = directory / "$baseName.coverage.json"
     private val active = directory / "$baseName.log"
     val displayPath: String = active.toString()
 
@@ -75,7 +76,20 @@ internal class AppleDiagnosticLogStorage(
 
     fun checkAccess() = coordinated { prepareDirectory() }
 
-    fun snapshot(destinationPath: String) = coordinated {
+    fun checkpoint(coverage: String) = coordinated {
+        prepareDirectory()
+        writeCheckpoint(coverage)
+    }
+
+    private fun writeCheckpoint(coverage: String) {
+        requireRegularOrMissing(coverageFile)
+        val temporary = directory / "${coverageFile.name}.tmp"
+        requireRegularOrMissing(temporary)
+        fileSystem.write(temporary) { writeUtf8(coverage) }
+        fileSystem.atomicMove(temporary, coverageFile)
+    }
+
+    fun snapshot(destinationPath: String, coverage: String) = coordinated {
         prepareDirectory()
         val destination = destinationPath.toPath(normalize = true)
         require(destination.isAbsolute && !destination.toString().startsWith("$directory/")) {
@@ -84,6 +98,7 @@ internal class AppleDiagnosticLogStorage(
         fileSystem.createDirectories(destination, mustCreate = true)
         var completed = false
         try {
+            writeCheckpoint(coverage)
             logFiles().forEach { source -> fileSystem.copy(source, destination / source.name) }
             completed = true
         } finally {
@@ -98,7 +113,8 @@ internal class AppleDiagnosticLogStorage(
 
     private fun logFiles(): List<Path> = fileSystem.list(directory).sorted().filter { source ->
         val metadata = fileSystem.metadata(source)
-        source.name.matches(LOG_FILE_NAME) && metadata.isRegularFile && metadata.symlinkTarget == null
+        (source.name.matches(LOG_FILE_NAME) || source.name.matches(COVERAGE_FILE_NAME)) &&
+            metadata.isRegularFile && metadata.symlinkTarget == null
     }
 
     private fun prepareDirectory() {
@@ -140,6 +156,7 @@ internal class AppleDiagnosticLogStorage(
 
     companion object {
         internal const val LOCK_FILE_NAME = ".diagnostic-logging.lock"
+        private val COVERAGE_FILE_NAME = Regex("wire_logs(?:-[a-z][a-z0-9_]*)?\\.coverage\\.json")
         private val LOG_FILE_NAME = Regex("wire_logs(?:-[a-z][a-z0-9_]*)?(?:-[1-9][0-9]*)?\\.log")
     }
 }

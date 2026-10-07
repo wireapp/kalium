@@ -66,7 +66,10 @@ kotlin {
             }
         }
         val appleMain by getting {
-            dependencies { implementation(libs.coroutines.core) }
+            dependencies {
+                implementation(libs.coroutines.core)
+                implementation(projects.core.logger)
+            }
         }
         val appleTest by getting {
             dependencies { implementation(libs.coroutines.test) }
