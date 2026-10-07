@@ -27,12 +27,14 @@ import com.wire.kalium.common.functional.Either
 class AppLockConfigHandler constructor(
     private val userConfigRepository: UserConfigRepository
 ) {
-    suspend fun handle(appLockConfig: AppLockModel): Either<CoreFailure, Unit> {
+    /** NSE and registration require previous state to preserve pending change notifications. */
+    suspend fun handle(appLockConfig: AppLockModel, requirePreviousState: Boolean = false): Either<CoreFailure, Unit> {
 
         val isStatusChanged = when (val current = userConfigRepository.isTeamAppLockEnabled()) {
-            is Either.Left -> if (current.value is StorageFailure.DataNotFound) {
-                appLockConfig.status == Status.ENABLED
-            } else return current
+            is Either.Left -> {
+                if (requirePreviousState && current.value !is StorageFailure.DataNotFound) return current
+                current.value is StorageFailure.DataNotFound && appLockConfig.status == Status.ENABLED
+            }
             is Either.Right -> if (current.value.isEnforced != appLockConfig.status.toBoolean()) {
                 true
             } else {

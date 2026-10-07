@@ -94,8 +94,12 @@ internal class SyncFeatureConfigsUseCaseImpl(
             }
 
             // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
-            applyConfiguration { guestRoomConfigHandler.handle(config.guestRoomLinkModel) }
-            applyConfiguration { fileSharingConfigHandler.handle(config.fileSharingModel) }
+            applyConfiguration {
+                guestRoomConfigHandler.handle(config.guestRoomLinkModel, requirePreviousState = duringClientRegistration)
+            }
+            applyConfiguration {
+                fileSharingConfigHandler.handle(config.fileSharingModel, requirePreviousState = duringClientRegistration)
+            }
             applyConfiguration {
                 mlsConfigHandler.handle(
                     config.mlsModel,
@@ -109,9 +113,13 @@ internal class SyncFeatureConfigsUseCaseImpl(
             applyConfiguration { classifiedDomainsConfigHandler.handle(config.classifiedDomainsModel) }
             applyConfiguration { conferenceCallingConfigHandler.handle(config.conferenceCallingModel) }
             applyConfiguration { passwordChallengeConfigHandler.handle(config.secondFactorPasswordChallengeModel) }
-            applyConfiguration { selfDeletingMessagesConfigHandler.handle(config.selfDeletingMessagesModel) }
+            applyConfiguration {
+                selfDeletingMessagesConfigHandler.handle(config.selfDeletingMessagesModel, requirePreviousState = duringClientRegistration)
+            }
             applyConfiguration { e2EIConfigHandler.handle(config.e2EIModel) }
-            applyConfiguration { appLockConfigHandler.handle(config.appLockModel) }
+            applyConfiguration {
+                appLockConfigHandler.handle(config.appLockModel, requirePreviousState = duringClientRegistration)
+            }
             applyConfiguration { channelsConfigHandler.handle(config.channelsModel) }
             config.consumableNotificationsModel?.let {
                 applyConfiguration { consumableNotificationsConfigHandler.handle(it) }

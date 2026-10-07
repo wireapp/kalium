@@ -157,14 +157,15 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun configurationReadFailureDoesNotStopRegularSync() = runTest {
+    fun previousConfigurationReadFailureDoesNotPreventRegularSyncFromApplyingServerSettings() = runTest {
         val failure = IllegalStateException("Self-deletion settings cannot be read")
         val (arrangement, sync) = arrangement().arrange()
         everySuspend { arrangement.userConfigDAO.getTeamSettingsSelfDeletionStatus() } throws failure
 
-        assertEquals(Either.Left(StorageFailure.Generic(failure)), sync())
+        assertEquals(Either.Right(Unit), sync())
 
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(any())
             arrangement.userConfigDAO.setAsyncNotificationsEnabled(true)
             arrangement.userConfigDAO.setMeetingsEnabled(true)
         }

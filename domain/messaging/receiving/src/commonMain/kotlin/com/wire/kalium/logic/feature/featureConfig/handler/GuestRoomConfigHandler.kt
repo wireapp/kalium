@@ -28,13 +28,17 @@ class GuestRoomConfigHandler(
     private val userConfigRepository: UserConfigRepository,
     private val guestRoomLink: Boolean
 ) {
-    suspend fun handle(guestRoomConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
+    /** NSE and registration require previous state to preserve pending change notifications. */
+    suspend fun handle(guestRoomConfig: ConfigsStatusModel, requirePreviousState: Boolean = false): Either<CoreFailure, Unit> {
         return if (!guestRoomLink) {
             userConfigRepository.setGuestRoomStatus(false, null)
         } else {
             val status: Boolean = guestRoomConfig.status == Status.ENABLED
             val hasStatusChanged = when (val current = userConfigRepository.getGuestRoomLinkStatus()) {
-                is Either.Left -> if (current.value is StorageFailure.DataNotFound) false else return current
+                is Either.Left -> {
+                    if (requirePreviousState && current.value !is StorageFailure.DataNotFound) return current
+                    false
+                }
                 is Either.Right -> current.value.isStatusChanged == true || current.value.isGuestRoomLinkEnabled != status
             }
             userConfigRepository.setGuestRoomStatus(status, hasStatusChanged)

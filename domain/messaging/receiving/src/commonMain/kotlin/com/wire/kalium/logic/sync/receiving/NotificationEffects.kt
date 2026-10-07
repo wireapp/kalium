@@ -294,16 +294,19 @@ internal class NotificationEffects(
             }
             is Event.FeatureConfig.MLSE2EIUpdated ->
                 E2EIConfigHandler(userConfigRepository).handle(event.model, requireSettings = true)
-            is Event.FeatureConfig.FileSharingUpdated -> FileSharingConfigHandler(userConfigRepository).handle(event.model)
+            is Event.FeatureConfig.FileSharingUpdated ->
+                FileSharingConfigHandler(userConfigRepository).handle(event.model, requirePreviousState = true)
             is Event.FeatureConfig.ClassifiedDomainsUpdated ->
                 ClassifiedDomainsConfigHandler(userConfigRepository).handle(event.model)
             is Event.FeatureConfig.ConferenceCallingUpdated ->
                 ConferenceCallingConfigHandler(userConfigRepository).handle(event.model)
             is Event.FeatureConfig.GuestRoomLinkUpdated ->
-                GuestRoomConfigHandler(userConfigRepository, options.guestRoomLink).handle(event.model)
+                GuestRoomConfigHandler(userConfigRepository, options.guestRoomLink).handle(event.model, requirePreviousState = true)
             is Event.FeatureConfig.SelfDeletingMessagesConfig ->
-                SelfDeletingMessagesConfigHandler(userConfigRepository, options.selfDeletingMessages).handle(event.model)
-            is Event.FeatureConfig.AppLockUpdated -> AppLockConfigHandler(userConfigRepository).handle(event.model)
+                SelfDeletingMessagesConfigHandler(userConfigRepository, options.selfDeletingMessages)
+                    .handle(event.model, requirePreviousState = true)
+            is Event.FeatureConfig.AppLockUpdated ->
+                AppLockConfigHandler(userConfigRepository).handle(event.model, requirePreviousState = true)
             is Event.FeatureConfig.AllowedGlobalOperationsUpdated ->
                 AllowedGlobalOperationsHandler(userConfigRepository).handle(event.model)
             is Event.FeatureConfig.CellsConfigUpdated -> CellsConfigHandler(userConfigRepository).handle(event.model)

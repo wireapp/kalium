@@ -28,10 +28,14 @@ import com.wire.kalium.common.functional.Either
 class FileSharingConfigHandler(
     private val userConfigRepository: UserConfigRepository,
 ) {
-    suspend fun handle(fileSharingConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
+    /** NSE and registration require previous state to preserve pending change notifications. */
+    suspend fun handle(fileSharingConfig: ConfigsStatusModel, requirePreviousState: Boolean = false): Either<CoreFailure, Unit> {
         val newStatus: Boolean = fileSharingConfig.status == Status.ENABLED
         val isStatusChanged: Boolean = when (val currentStatus = userConfigRepository.getFileSharingServerStatus()) {
-            is Either.Left -> if (currentStatus.value is StorageFailure.DataNotFound) false else return currentStatus
+            is Either.Left -> {
+                if (requirePreviousState && currentStatus.value !is StorageFailure.DataNotFound) return currentStatus
+                false
+            }
             is Either.Right -> {
                 currentStatus.value.isStatusChanged == true || when (currentStatus.value.state) {
                     FileSharingStatus.Value.Disabled -> newStatus

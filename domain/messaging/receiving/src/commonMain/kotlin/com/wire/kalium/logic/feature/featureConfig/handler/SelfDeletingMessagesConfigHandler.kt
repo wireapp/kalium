@@ -33,7 +33,11 @@ class SelfDeletingMessagesConfigHandler(
     private val userConfigRepository: UserConfigRepository,
     private val selfDeletingMessages: Boolean
 ) {
-    suspend fun handle(selfDeletingMessagesConfig: SelfDeletingMessagesModel): Either<CoreFailure, Unit> {
+    /** NSE and registration require previous state to preserve pending change notifications. */
+    suspend fun handle(
+        selfDeletingMessagesConfig: SelfDeletingMessagesModel,
+        requirePreviousState: Boolean = false,
+    ): Either<CoreFailure, Unit> {
         return if (!selfDeletingMessages) {
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
@@ -53,7 +57,10 @@ class SelfDeletingMessagesConfigHandler(
                 else -> TeamSelfDeleteTimer.Disabled
             }
             val hasFeatureChanged = when (val current = userConfigRepository.getTeamSettingsSelfDeletionStatus()) {
-                is Either.Left -> if (current.value is StorageFailure.DataNotFound) false else return current
+                is Either.Left -> {
+                    if (requirePreviousState && current.value !is StorageFailure.DataNotFound) return current
+                    false
+                }
                 is Either.Right -> current.value.hasFeatureChanged == true || current.value.enforcedSelfDeletionTimer != selfDeletionTimer
             }
 
