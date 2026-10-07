@@ -76,6 +76,8 @@ import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCas
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.ManageConversationFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.ManageConversationFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCase
@@ -492,6 +494,8 @@ public class ConversationScope internal constructor(
         get() = RemoveConversationFromFolderUseCaseImpl(conversationFolderRepository)
     public val createConversationFolder: CreateConversationFolderUseCase
         get() = CreateConversationFolderUseCaseImpl(conversationFolderRepository)
+    public val manageConversationFolder: ManageConversationFolderUseCase
+        get() = ManageConversationFolderUseCaseImpl(conversationFolderRepository)
 
     public val isSelfUserViewerOnConversation: IsSelfUserViewerOnConversationUseCase
         get() = IsSelfUserViewerOnConversationUseCase(

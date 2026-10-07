@@ -71,6 +71,7 @@ internal class ConversationRepositoryExtensionsImpl internal constructor(
             fromArchive = query.fromArchive,
             onlyInteractionEnabled = query.onlyInteractionEnabled,
             strictMlsFilter = query.strictMlsFilter,
+            unreadOnly = query.unreadOnly,
         ),
         initialPosition = initialPosition?.let { ConversationListPositionEntity(it.activityTime, it.conversationId.toDao()) },
     ).map { page -> page.map(conversationMapper::fromListItemEntity) }

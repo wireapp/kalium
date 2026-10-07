@@ -32,6 +32,7 @@ public data class ConversationListQuery(
     public val fromArchive: Boolean = false,
     public val onlyInteractionEnabled: Boolean = false,
     public val strictMlsFilter: Boolean = true,
+    public val unreadOnly: Boolean = false,
 )
 
 public enum class ConversationListSource {

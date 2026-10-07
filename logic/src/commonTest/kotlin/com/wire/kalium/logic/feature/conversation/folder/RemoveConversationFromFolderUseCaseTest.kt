@@ -1,181 +1,49 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see http://www.gnu.org/licenses/.
+ * Copyright (C) 2026 Wire Swiss GmbH
+ * SPDX-License-Identifier: GPL-3.0-only
  */
 package com.wire.kalium.logic.feature.conversation.folder
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCase.Result
-import com.wire.kalium.logic.framework.TestConversationDetails
-import com.wire.kalium.common.functional.Either
-import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
 class RemoveConversationFromFolderUseCaseTest {
+    private val conversation = ConversationId("conversation", "example.com")
+    private val repository = mock<ConversationFolderRepository>()
+    private val useCase = RemoveConversationFromFolderUseCaseImpl(repository)
 
     @Test
-    fun givenValidConversationAndFolder_WhenRemoveAndSyncSuccessful_ThenReturnSuccess() = runTest {
-        val testConversationId = ConversationId("conversation-value", "conversation-domain")
-        val testFolderId = "test-folder-id"
-
-        val (arrangement, removeConversationUseCase) = Arrangement()
-            .withRemoveConversationFromFolder(testConversationId, testFolderId, Either.Right(Unit))
-            .withObserveConversationsFromFolder(testFolderId, flowOf(emptyList()))
-            .withRemoveFolder(testFolderId, Either.Right(Unit))
-            .withSyncFolders(Either.Right(Unit))
-            .arrange()
-
-        val result = removeConversationUseCase(testConversationId, testFolderId)
-
-        assertIs<Result.Success>(result)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, testFolderId)
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationFolderRepository.observeConversationsFromFolder(testFolderId)
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationFolderRepository.removeFolder(testFolderId)
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationFolderRepository.syncConversationFoldersFromLocal()
-        }
+    fun removingLastConversationKeepsFolderAndSyncsOnce() = runTest {
+        everySuspend { repository.removeConversationFromFolder(conversation, "work") } returns Either.Right(Unit)
+        everySuspend { repository.syncConversationFoldersFromLocal() } returns Either.Right(Unit)
+        assertIs<RemoveConversationFromFolderUseCase.Result.Success>(useCase(conversation, "work"))
+        verifySuspend(VerifyMode.exactly(1)) { repository.syncConversationFoldersFromLocal() }
+        verifySuspend(VerifyMode.not) { repository.removeFolder(any()) }
     }
 
     @Test
-    fun givenFolderNotEmpty_WhenRemoveAndSyncSuccessful_ThenReturnSuccessWithoutFolderRemoval() = runTest {
-        val testConversationId = ConversationId("conversation-value", "conversation-domain")
-        val testFolderId = "test-folder-id"
-
-        val (arrangement, removeConversationUseCase) = Arrangement()
-            .withRemoveConversationFromFolder(testConversationId, testFolderId, Either.Right(Unit))
-            .withObserveConversationsFromFolder(
-                testFolderId,
-                flowOf(listOf(ConversationDetailsWithEvents(TestConversationDetails.CONVERSATION_GROUP)))
-            )
-            .withSyncFolders(Either.Right(Unit))
-            .arrange()
-
-        val result = removeConversationUseCase(testConversationId, testFolderId)
-
-        assertIs<Result.Success>(result)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, testFolderId)
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationFolderRepository.observeConversationsFromFolder(testFolderId)
-        }
-
-        verifySuspend(VerifyMode.not) {
-            arrangement.conversationFolderRepository.removeFolder(testFolderId)
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationFolderRepository.syncConversationFoldersFromLocal()
-        }
+    fun storageFailureDoesNotSync() = runTest {
+        everySuspend { repository.removeConversationFromFolder(conversation, "work") } returns Either.Left(CoreFailure.Unknown(null))
+        assertIs<RemoveConversationFromFolderUseCase.Result.Failure>(useCase(conversation, "work"))
+        verifySuspend(VerifyMode.not) { repository.syncConversationFoldersFromLocal() }
     }
 
     @Test
-    fun givenErrorDuringFolderRemoval_WhenObservedEmpty_ThenReturnFailure() = runTest {
-        val testConversationId = ConversationId("conversation-value", "conversation-domain")
-        val testFolderId = "test-folder-id"
-
-        val (arrangement, removeConversationUseCase) = Arrangement()
-            .withRemoveConversationFromFolder(testConversationId, testFolderId, Either.Right(Unit))
-            .withObserveConversationsFromFolder(testFolderId, flowOf(emptyList()))
-            .withRemoveFolder(testFolderId, Either.Left(CoreFailure.Unknown(null)))
-            .arrange()
-
-        val result = removeConversationUseCase(testConversationId, testFolderId)
-
-        assertIs<Result.Failure>(result)
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, testFolderId)
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationFolderRepository.observeConversationsFromFolder(testFolderId)
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationFolderRepository.removeFolder(testFolderId)
-        }
-    }
-
-    private class Arrangement {
-
-        val conversationFolderRepository = mock<ConversationFolderRepository>(mode = MockMode.autoUnit)
-
-        private val removeConversationFromFolderUseCase = RemoveConversationFromFolderUseCaseImpl(
-            conversationFolderRepository
-        )
-
-        suspend fun withRemoveConversationFromFolder(
-            conversationId: ConversationId,
-            folderId: String,
-            either: Either<CoreFailure, Unit>
-        ) = apply {
-            everySuspend {
-                conversationFolderRepository.removeConversationFromFolder(conversationId, folderId)
-            } returns either
-        }
-
-        suspend fun withObserveConversationsFromFolder(
-            folderId: String,
-            flow: Flow<List<ConversationDetailsWithEvents>>
-        ) = apply {
-            everySuspend {
-                conversationFolderRepository.observeConversationsFromFolder(folderId)
-            } returns flow
-        }
-
-        suspend fun withRemoveFolder(
-            folderId: String,
-            either: Either<CoreFailure, Unit>
-        ) = apply {
-            everySuspend {
-                conversationFolderRepository.removeFolder(folderId)
-            } returns either
-        }
-
-        suspend fun withSyncFolders(either: Either<CoreFailure, Unit>) = apply {
-            everySuspend {
-                conversationFolderRepository.syncConversationFoldersFromLocal()
-            } returns either
-        }
-
-        fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to removeConversationFromFolderUseCase }
+    fun syncFailureIsReported() = runTest {
+        everySuspend { repository.removeConversationFromFolder(conversation, "work") } returns Either.Right(Unit)
+        everySuspend { repository.syncConversationFoldersFromLocal() } returns Either.Left(CoreFailure.Unknown(null))
+        assertIs<RemoveConversationFromFolderUseCase.Result.Failure>(useCase(conversation, "work"))
     }
 }

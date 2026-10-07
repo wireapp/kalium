@@ -129,8 +129,14 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
 LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type IS 'FAVORITE'
 LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id
-LEFT JOIN LabeledConversation AS ConversationLabel ON ConversationLabel.conversation_id = Conversation.qualified_id AND ConversationLabel.folder_id IS NOT FavoriteFolder.id
-LEFT JOIN ConversationFolder AS CurrentFolder ON CurrentFolder.id = ConversationLabel.folder_id AND CurrentFolder.folder_type IS NOT 'FAVORITE'
+-- Legacy detail models expose one folder. Keep that projection deterministic without
+-- multiplying conversation rows; folder lists use LabeledConversation membership.
+LEFT JOIN ConversationFolder AS CurrentFolder ON CurrentFolder.id = (
+    SELECT LC.folder_id FROM LabeledConversation LC
+    JOIN ConversationFolder F ON F.id = LC.folder_id AND F.folder_type = 'USER'
+    WHERE LC.conversation_id = Conversation.qualified_id
+    ORDER BY F.name COLLATE NOCASE, F.id LIMIT 1
+)
 LEFT JOIN AdminlessGroupDelete ON AdminlessGroupDelete.conversation_id = Conversation.qualified_id;
 
 selectAllConversationDetails:

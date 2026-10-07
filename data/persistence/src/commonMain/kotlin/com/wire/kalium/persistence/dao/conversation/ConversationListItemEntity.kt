@@ -34,6 +34,7 @@ data class ConversationListQueryEntity(
     val fromArchive: Boolean = false,
     val onlyInteractionEnabled: Boolean = false,
     val strictMlsFilter: Boolean = true,
+    val unreadOnly: Boolean = false,
 )
 
 data class ConversationListItemEntity(

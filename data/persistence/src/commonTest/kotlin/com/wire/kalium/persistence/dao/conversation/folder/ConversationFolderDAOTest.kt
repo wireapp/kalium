@@ -51,6 +51,25 @@ class ConversationFolderDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun conversationInTwoCustomFoldersAppearsOnceInEachFolderAndHasOneDetailRow() = runTest {
+        db.conversationDAO.insertConversation(conversationEntity1)
+        val folders = listOf("work", "project").map { id ->
+            folderWithConversationsEntity(
+                id = id,
+                type = ConversationFolderTypeEntity.USER,
+                name = id,
+                conversationIdList = listOf(conversationEntity1.id),
+            )
+        }
+        db.conversationFolderDAO.updateConversationFolders(folders)
+        folders.forEach { folder ->
+            assertEquals(1, db.conversationFolderDAO.observeConversationListFromFolder(folder.id).first().size)
+        }
+        // awaitAsOneOrNull throws if the detail view has one row per membership.
+        assertEquals(conversationEntity1.id, db.conversationDAO.getConversationDetailsById(conversationEntity1.id)?.id)
+    }
+
+    @Test
     fun givenFolderWithConversationId_WhenObservingThenConversationShouldBeReturned() = runTest {
         db.conversationDAO.insertConversation(conversationEntity1)
         db.userDAO.upsertUser(userEntity1)

@@ -24,6 +24,7 @@ WITH pageKeys AS MATERIALIZED (
         )
     END
     WHERE C.deleted_locally = 0 AND C.archived = :fromArchive
+        AND (:unreadOnly = 0 OR EXISTS (SELECT 1 FROM UnreadEvent WHERE conversation_id = C.qualified_id))
         AND CASE :source
             WHEN 'ALL' THEN C.type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
             WHEN 'GROUPS' THEN C.type = 'GROUP'
@@ -134,6 +135,7 @@ WITH pageKeys AS MATERIALIZED (
         )
     END
     WHERE C.deleted_locally = 0 AND C.archived = :fromArchive
+        AND (:unreadOnly = 0 OR EXISTS (SELECT 1 FROM UnreadEvent WHERE conversation_id = C.qualified_id))
         AND CASE :source
             WHEN 'ALL' THEN C.type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
             WHEN 'GROUPS' THEN C.type = 'GROUP'

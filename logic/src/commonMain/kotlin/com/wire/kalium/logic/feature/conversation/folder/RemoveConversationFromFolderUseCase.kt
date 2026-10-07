@@ -21,16 +21,14 @@ package com.wire.kalium.logic.feature.conversation.folder
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /**
- * This use case will remove a conversation from the selected folder and if the folder is empty, it will remove the folder.
+ * Removes membership while preserving the folder, including when it becomes empty.
  */
 public interface RemoveConversationFromFolderUseCase {
     /**
@@ -55,13 +53,6 @@ internal class RemoveConversationFromFolderUseCaseImpl(
         folderId: String
     ): RemoveConversationFromFolderUseCase.Result = withContext(dispatchers.io) {
         conversationFolderRepository.removeConversationFromFolder(conversationId, folderId)
-            .flatMap {
-                if (conversationFolderRepository.observeConversationsFromFolder(folderId).first().isEmpty()) {
-                    conversationFolderRepository.removeFolder(folderId)
-                } else {
-                    Either.Right(Unit)
-                }
-            }
             .flatMap {
                 conversationFolderRepository.syncConversationFoldersFromLocal()
             }

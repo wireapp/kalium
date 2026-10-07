@@ -339,6 +339,17 @@ class ConversationListPagingSourceTest : BaseDatabaseTest() {
     private fun source(query: ConversationListQueryEntity = ConversationListQueryEntity()) =
         ConversationListPagingSource(db.database.conversationListQueries, query, ReadDispatcher(dispatcher)).also { sources += it }
 
+    @Test
+    fun unreadFilterFindsConversationsBeyondTheFirstUnfilteredPage() = runTest(dispatcher) {
+        db.userDAO.upsertUser(newUserEntity(self))
+        seedGroups()
+        val message = newRegularMessageEntity(id = "unread", conversationId = id(1), senderUserId = self)
+        db.messageDAO.insertOrIgnoreMessage(message)
+        db.database.unreadEventsQueries.insertEvent(message.id, UnreadEventTypeEntity.MESSAGE, id(1), message.date)
+        val page = source(ConversationListQueryEntity(unreadOnly = true)).refresh(size = 2)
+        assertEquals(listOf(id(1)), page.ids())
+    }
+
     private suspend fun seedGroups() {
         (1..10).forEach { db.conversationDAO.insertConversation(group(id(it))) }
     }
