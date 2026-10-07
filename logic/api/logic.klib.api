@@ -3698,6 +3698,19 @@ final class com.wire.kalium.logic.failure/LegalHoldEnabledForConversationFailure
     final fun toString(): kotlin/String // com.wire.kalium.logic.failure/LegalHoldEnabledForConversationFailure.toString|toString(){}[0]
 }
 
+final class com.wire.kalium.logic.failure/NoClientsForUser : com.wire.kalium.common.error/CoreFailure.FeatureFailure { // com.wire.kalium.logic.failure/NoClientsForUser|null[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.failure/NoClientsForUser.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+    final val userId // com.wire.kalium.logic.failure/NoClientsForUser.userId|{}userId[0]
+        final fun <get-userId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.failure/NoClientsForUser.userId.<get-userId>|<get-userId>(){}[0]
+
+    final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.failure/NoClientsForUser.component1|component1(){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.logic.failure/NoClientsForUser // com.wire.kalium.logic.failure/NoClientsForUser.copy|copy(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.failure/NoClientsForUser.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.failure/NoClientsForUser.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.failure/NoClientsForUser.toString|toString(){}[0]
+}
+
 final class com.wire.kalium.logic.feature.analytics/AnalyticsContactsData { // com.wire.kalium.logic.feature.analytics/AnalyticsContactsData|null[0]
     constructor <init>(kotlin/String?, kotlin/Int?, kotlin/Int?, kotlin/Boolean?, kotlin/Boolean) // com.wire.kalium.logic.feature.analytics/AnalyticsContactsData.<init>|<init>(kotlin.String?;kotlin.Int?;kotlin.Int?;kotlin.Boolean?;kotlin.Boolean){}[0]
 
@@ -4196,6 +4209,8 @@ final class com.wire.kalium.logic.feature.call.usecase/TurnLoudSpeakerOffUseCase
 final class com.wire.kalium.logic.feature.call.usecase/TurnLoudSpeakerOnUseCase { // com.wire.kalium.logic.feature.call.usecase/TurnLoudSpeakerOnUseCase|null[0]
     final suspend fun invoke() // com.wire.kalium.logic.feature.call.usecase/TurnLoudSpeakerOnUseCase.invoke|invoke(){}[0]
 }
+
+final class com.wire.kalium.logic.feature.call/AppleCallTraceBinding // com.wire.kalium.logic.feature.call/AppleCallTraceBinding|null[0]
 
 final class com.wire.kalium.logic.feature.call/CallsScope { // com.wire.kalium.logic.feature.call/CallsScope|null[0]
     final val allCallsWithSortedParticipants // com.wire.kalium.logic.feature.call/CallsScope.allCallsWithSortedParticipants|{}allCallsWithSortedParticipants[0]
@@ -8967,6 +8982,12 @@ sealed class com.wire.kalium.logic.sync/SyncRequestResult { // com.wire.kalium.l
     }
 
     final object Success : com.wire.kalium.logic.sync/SyncRequestResult // com.wire.kalium.logic.sync/SyncRequestResult.Success|null[0]
+}
+
+final object com.wire.kalium.logic.feature.call/AppleCallTraceBindings { // com.wire.kalium.logic.feature.call/AppleCallTraceBindings|null[0]
+    final fun bind(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, kotlin/String): com.wire.kalium.logic.feature.call/AppleCallTraceBinding // com.wire.kalium.logic.feature.call/AppleCallTraceBindings.bind|bind(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String){}[0]
+    final fun context(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, kotlin/String? = ..., kotlin/String? = ...): com.wire.kalium.logger/CallTraceContext // com.wire.kalium.logic.feature.call/AppleCallTraceBindings.context|context(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?;kotlin.String?){}[0]
+    final fun release(com.wire.kalium.logic.feature.call/AppleCallTraceBinding) // com.wire.kalium.logic.feature.call/AppleCallTraceBindings.release|release(com.wire.kalium.logic.feature.call.AppleCallTraceBinding){}[0]
 }
 
 final object com.wire.kalium.logic.sync/PendingMessagesForegroundSync { // com.wire.kalium.logic.sync/PendingMessagesForegroundSync|null[0]
