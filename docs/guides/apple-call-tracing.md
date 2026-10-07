@@ -1,7 +1,7 @@
 # Apple calling diagnostics
 
-Reviewed 2026-10-06. This is the diagnostic foundation; native intent, CallKit action and shared-owner
-instrumentation is a separate Prism increment. It does not change calling policy or recover failed calls.
+Reviewed 2026-10-06. The Apple trace contract covers engine events and native host lifecycle events.
+The host supplies native instrumentation. Tracing does not change calling policy or recover failed calls.
 
 ## Configuration and record contract
 
@@ -20,8 +20,9 @@ values. The allowlist is defined by `CallTraceEvent`, `CallTraceResult` and `Cal
 | `attempt` | Native participation UUID, when explicitly bound. Not a conversation ID. |
 | `signal` | Durable journal record/presentation UUID, when known. Incoming presentations reuse a selected setup signal UUID. |
 | `engine` | Full-engine generation. Useful even before native binding exists. |
-| `operation` | One command or callback observation. Connects submission/native return/completion within that operation. |
-| `code` | Native numeric return/close code, or signaling response status. Interpret according to event. |
+| `operation` | One command, callback, UI admission request or CallKit action UUID. Connects phases of that operation; a CallKit action and the resulting Kalium command have different operation IDs. Join by attempt and event ordering, not by equating those IDs. |
+| `origin` | Fixed `APP`, `SYSTEM`, `INITIAL_SYNC`, `REPLACEMENT` or `RESET`. An untracked provider action is system-origin, not proof of a human gesture. |
+| `code` | Numeric return/close code, signaling response status or documented shared state code. Interpret according to event. |
 | `flag` | For incoming events: effective ring eligibility in NSE, or native `shouldRing` in full-engine callbacks. |
 
 Invalid UUID fields are omitted. Do not pass names, raw account/conversation IDs, tokens, signaling
@@ -31,7 +32,8 @@ this allowlist does not certify the entire archive.
 Native owners bind the qualified account/conversation to their attempt before shared commands and
 release the returned token after cleanup. Raw lookup keys remain process memory. Releasing an old token
 cannot remove a replacement binding. The binding API is Apple-only and does not own call behavior.
-Native owner wiring is required before outgoing records gain an `attempt` field.
+Asynchronous shared owners capture `context` at construction. They must not look up the current binding
+after suspension, because it may then describe a replacement attempt.
 
 Callbacks capture the current binding before queued state effects run. AVS supplies conversation
 identity, not a participation generation: this is current-binding attribution, not proof that the
@@ -75,4 +77,4 @@ Disabling logging does not recover earlier events. Deleting logs removes checkpo
 The foundation tests exercise schema filtering, concurrent sequence assignment, stale binding release,
 command failure correlation, callback exception safety, export immutability, queue rejection, storage
 contention and discarded writes. These tests do not prove device media, OS call UI, background lifetime
-or whole-call reconstruction. Prism instrumentation and the blind device test provide the next evidence.
+or whole-call reconstruction. A blind physical-device test is still needed to validate end-to-end evidence.

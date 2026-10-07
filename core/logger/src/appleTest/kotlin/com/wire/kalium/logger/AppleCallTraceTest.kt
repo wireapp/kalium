@@ -26,6 +26,17 @@ class AppleCallTraceTest {
     }
 
     @Test
+    fun recordsFixedOriginAndDistinctActionOperation() {
+        var line = ""
+        val process = CallTraceProcess()
+        process.configure(CallTraceRole.APP) { line = it }
+        val operation = "11111111-2222-3333-4444-555555555555"
+        process.record(CallTraceEvent.TRANSACTION_MUTE, CallTraceContext(operation = operation),
+            CallTraceResult.ACCEPTED, null, true, CallTraceOrigin.INITIAL_SYNC)
+        assertTrue(line.contains("operation=$operation origin=INITIAL_SYNC result=ACCEPTED flag=true"))
+    }
+
+    @Test
     fun concurrentObservationsHaveUniqueSequenceAndStableBoot() = runTest {
         val lines = mutableListOf<String>()
         val lock = NSLock()

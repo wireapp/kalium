@@ -35,10 +35,11 @@ public object AppleCallTraceBindings {
         if (released) AppleCallTrace.record(CallTraceEvent.UNBIND, CallTraceContext(attempt = binding.attemptId))
     }
 
-    internal fun context(
+    /** Capture once at owner or command entry; delayed work must not resolve a replacement attempt. */
+    public fun context(
         account: UserId,
         conversation: ConversationId,
-        engine: String,
+        engine: String? = null,
         operation: String? = null,
     ): CallTraceContext = locked {
         CallTraceContext(attempt = bindings[account to conversation]?.attemptId, engine = engine, operation = operation)

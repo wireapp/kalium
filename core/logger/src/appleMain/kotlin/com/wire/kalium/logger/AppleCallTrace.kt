@@ -10,9 +10,19 @@ public enum class CallTraceEvent {
     JOURNAL_CLOSED, NATIVE_ENQUEUE, AVS_INCOMING, AVS_ANSWERED, AVS_ESTABLISHED, AVS_CLOSED, CALLBACK_EFFECT,
     AVS_START, AVS_ANSWER, START, ANSWER, END, REJECT, MUTE, SIGNAL_SEND, ENGINE_CREATE, ENGINE_READY, ENGINE_RELEASE,
     RUNTIME_SETUP, RUNTIME_RUN,
+    INTENT_START, INTENT_JOIN, INTENT_END, INTENT_MUTE, PRESENTATION_MINIMIZE, PRESENTATION_RESTORE,
+    TRANSACTION_START, TRANSACTION_ANSWER, TRANSACTION_END, TRANSACTION_MUTE,
+    ACTION_START, ACTION_ANSWER, ACTION_END, ACTION_MUTE, ACTION_TIMEOUT, PROVIDER_RESET,
+    INCOMING_REPORT, CALL_UPDATE, CALL_CONNECTING, CALL_CONNECTED, CALL_ENDED,
+    OWNER_CREATE, NATIVE_OWNER_RETIRED, STARTUP_OUTCOME, PARTICIPATION_STATE, SHARED_END,
+    AUDIO_PREPARE, AUDIO_ACTIVATE, AUDIO_DEACTIVATE, AUDIO_MANUAL_MODE, AUDIO_START, AUDIO_RESET,
+    SYNC_ACQUIRE, SYNC_RELEASE, SYNC_ENDED, APP_FOREGROUND, APP_BACKGROUND, ACCOUNT_INVALIDATED,
+    BACKGROUND_EXPIRED, MICROPHONE_PERMISSION,
+
 }
 
 public enum class CallTraceResult { REQUESTED, ACCEPTED, COMPLETED, FAILED, CANCELLED, STALE }
+public enum class CallTraceOrigin { APP, SYSTEM, INITIAL_SYNC, REPLACEMENT, RESET }
 public enum class CallTraceRole { APP, NSE }
 
 /** Opaque, random UUIDs only. Invalid input is omitted rather than interrupting the operation being diagnosed. */
@@ -50,7 +60,8 @@ public object AppleCallTrace {
         result: CallTraceResult? = null,
         code: Int? = null,
         flag: Boolean? = null,
-    ) = process.record(event, context, result, code, flag)
+        origin: CallTraceOrigin? = null,
+    ) = process.record(event, context, result, code, flag, origin)
 }
 
 internal object AppleDiagnosticProcess { val id: String = NSUUID().UUIDString.lowercase() }
@@ -67,7 +78,14 @@ internal class CallTraceProcess {
         this.emit = emit
     }
 
-    fun record(event: CallTraceEvent, context: CallTraceContext, result: CallTraceResult?, code: Int?, flag: Boolean?) {
+    fun record(
+        event: CallTraceEvent,
+        context: CallTraceContext,
+        result: CallTraceResult?,
+        code: Int?,
+        flag: Boolean?,
+        origin: CallTraceOrigin? = null,
+    ) {
         val record = locked {
             sequence++
             emit to buildString {
@@ -76,6 +94,7 @@ internal class CallTraceProcess {
                 context.signal?.let { append(" signal=$it") }
                 context.engine?.let { append(" engine=$it") }
                 context.operation?.let { append(" operation=$it") }
+                origin?.let { append(" origin=${it.name}") }
                 result?.let { append(" result=${it.name}") }
                 code?.let { append(" code=$it") }
                 flag?.let { append(" flag=$it") }
