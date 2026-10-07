@@ -17,11 +17,11 @@
  */
 package com.wire.kalium.cells.data
 
+import com.wire.kalium.cells.CellsCredentialsProvider
 import com.wire.kalium.cells.domain.model.CellsCredentials
-import kotlinx.coroutines.Deferred
 
-internal suspend fun Deferred<CellsCredentials?>.awaitOrThrow(): CellsCredentials =
-    await() ?: throw CellsCredentialsUnavailableException()
+internal suspend fun CellsCredentialsProvider.credentialsOrThrow(): CellsCredentials =
+    credentials() ?: throw CellsCredentialsUnavailableException()
 
 internal class CellsCredentialsUnavailableException :
     Exception("Cells credentials are not available")

@@ -106,10 +106,8 @@ class CellsS3CredentialsProviderTest {
 
     @Test
     fun givenMissingCellsCredentials_whenRequestingCredentials_thenFails() = runTest {
-        val missingCredentials = CompletableDeferred<CellsCredentials?>()
-        missingCredentials.complete(null)
         val provider = CellsS3CredentialsProvider(
-            cellsCredentials = missingCredentials,
+            cellsCredentials = { null },
             sessionManager = FakeSessionManager(),
             accessTokenApi = FakeAccessTokenApi,
         )
@@ -118,7 +116,7 @@ class CellsS3CredentialsProviderTest {
     }
 
     private fun createProvider(sessionManager: SessionManager) = CellsS3CredentialsProvider(
-        cellsCredentials = CompletableDeferred(CellsCredentials(TEST_ENDPOINT, GATEWAY_SECRET)),
+        cellsCredentials = { CellsCredentials(TEST_ENDPOINT, GATEWAY_SECRET) },
         sessionManager = sessionManager,
         accessTokenApi = FakeAccessTokenApi,
     )
