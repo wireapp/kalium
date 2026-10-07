@@ -24,6 +24,7 @@ import kotlinx.cinterop.COpaquePointer
 
 @Suppress("TooManyFunctions")
 interface AppleAvsBridge {
+    /** Initializes the process runtime once; false is retained after failure because native retry is unsafe. */
     fun startIfAvailable(): Boolean
     fun userHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt?
 

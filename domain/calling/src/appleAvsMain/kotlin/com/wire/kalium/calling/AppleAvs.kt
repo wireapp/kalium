@@ -82,7 +82,11 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
         var releasing = false
     }
 
-    private var isStarted = false
+    private val runtimeStartup = AppleAvsRuntimeStartup(
+        setup = { wcall_setup() },
+        run = { wcall_run() },
+        onStarted = { wcall_set_log_handler(logHandler, null) },
+    )
     private val handles = mutableMapOf<String, CreatedHandle>()
     private val handlesLock = NSRecursiveLock()
     private val startLock = NSRecursiveLock()
@@ -284,14 +288,7 @@ private object AppleAvsBridgeImpl : AppleAvsBridge {
     override fun startIfAvailable(): Boolean {
         startLock.lock()
         return try {
-            if (isStarted) return true
-            runCatching {
-                wcall_setup()
-                wcall_run()
-                wcall_set_log_handler(logHandler, null)
-                isStarted = true
-                true
-            }.getOrElse { false }
+            runtimeStartup.startIfAvailable()
         } finally {
             startLock.unlock()
         }
