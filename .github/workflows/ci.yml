@@ -130,7 +130,7 @@ jobs:
   ios-tests:
     name: iOS tests
     needs: static-analysis
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, wire-nirvana]
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -140,6 +140,13 @@ jobs:
 
       - name: Set up Java and Gradle
         uses: ./.github/actions/setup-java-gradle
+
+      - name: Report Xcode and simulator inventory
+        run: |
+          xcode-select -p
+          xcodebuild -version
+          xcrun simctl list runtimes --json
+          xcrun simctl list devicetypes --json
 
       - name: Run iOS simulator tests
         env:

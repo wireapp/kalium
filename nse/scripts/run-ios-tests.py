@@ -17,14 +17,24 @@ def run(*command):
     return subprocess.run(command, cwd=REPO, check=True, text=True, capture_output=True).stdout.strip()
 
 
-def main():
-    devices = json.loads(run("xcrun", "simctl", "list", "devices", "available", "--json"))["devices"]
-    runtime, device = next(
-        (runtime, device)
-        for runtime, entries in devices.items() if ".iOS-" in runtime
-        for device in entries if device["isAvailable"] and device["name"].startswith("iPhone")
+def select_simulator(runtimes):
+    # A fresh self-hosted runner may have runtimes but no created devices.
+    for runtime in runtimes:
+        if not runtime["isAvailable"] or ".iOS-" not in runtime["identifier"]:
+            continue
+        for device_type in runtime.get("supportedDeviceTypes", []):
+            if device_type["productFamily"] == "iPhone":
+                return runtime["identifier"], device_type["identifier"]
+    raise RuntimeError(
+        "No available iOS runtime with an iPhone device type. "
+        "Install an iOS Simulator runtime for the selected Xcode on this runner."
     )
-    simulator = run("xcrun", "simctl", "create", "Kalium native tests", device["deviceTypeIdentifier"], runtime)
+
+
+def main():
+    runtimes = json.loads(run("xcrun", "simctl", "list", "runtimes", "--json"))["runtimes"]
+    runtime, device_type = select_simulator(runtimes)
+    simulator = run("xcrun", "simctl", "create", "Kalium native tests", device_type, runtime)
     try:
         run("xcrun", "simctl", "bootstatus", simulator, "-b")
         with tempfile.TemporaryDirectory(prefix="kalium-ios-tests-") as directory:
