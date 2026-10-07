@@ -165,6 +165,8 @@ import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PollMessageDataSource
 import com.wire.kalium.logic.data.message.PollMessageRepository
+import com.wire.kalium.logic.data.message.PendingSubconversationProposals
+import com.wire.kalium.logic.data.message.PendingSubconversationProposalsImpl
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
@@ -1297,6 +1299,7 @@ public class UserSessionScope internal constructor(
             subconversationRepository = subconversationRepository,
             joinSubconversation = joinSubconversationUseCase,
             leaveSubconversation = leaveSubconversationUseCase,
+            subgroupProposals = pendingSubconversationProposals,
             userRepository = userRepository,
             epochChangesObserver = epochChangesObserver,
             teamRepository = teamRepository,
@@ -1495,6 +1498,7 @@ public class UserSessionScope internal constructor(
             subconversationRepository,
             userId,
             clientIdProvider,
+            pendingSubconversationProposals,
         )
 
     private val mlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver
@@ -1881,13 +1885,17 @@ public class UserSessionScope internal constructor(
 
     private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
 
+    private val pendingSubconversationProposals: PendingSubconversationProposals by lazy {
+        PendingSubconversationProposalsImpl(userStorage.database.pendingSubconversationProposalDAO)
+    }
+
     private val pendingProposalScheduler: PendingProposalScheduler =
         PendingProposalSchedulerImpl(
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
             lazy { subconversationRepository },
             cryptoTransactionProvider,
-            com.wire.kalium.logic.data.message.PendingSubconversationProposalsImpl(userStorage.database.metadataDAO),
+            pendingSubconversationProposals,
             parentContext = coroutineContext,
         )
 
@@ -2563,7 +2571,8 @@ public class UserSessionScope internal constructor(
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(
         authenticatedNetworkContainer.logoutApi,
-        userStorage.database.metadataDAO
+        userStorage.database.metadataDAO,
+        userStorage.database.pendingSubconversationProposalDAO,
     )
 
     private val backupRepository: BackupRepository

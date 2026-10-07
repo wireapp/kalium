@@ -27,9 +27,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.data.message.PendingSubconversationProposal
+import com.wire.kalium.logic.data.message.PendingSubconversationProposals
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationMemberDTO
 
@@ -37,35 +40,42 @@ import com.wire.kalium.network.api.authenticated.conversation.SubconversationMem
  * Leave a sub-conversation you've previously joined
  */
 internal interface LeaveSubconversationUseCase {
+    /**
+     * Returns the pending proposal marked for retirement after the backend leave, if any. The caller
+     * must acknowledge that exact token only after the native transaction containing this operation commits.
+     */
     suspend operator fun invoke(
         mlsContext: MlsCoreCryptoContext,
         conversationId: ConversationId,
         subconversationId: SubconversationId
-    ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, PendingSubconversationProposal?>
 }
 
 internal class LeaveSubconversationUseCaseImpl(
     val conversationApi: ConversationApi,
     val subconversationRepository: SubconversationRepository,
     val selfUserId: UserId,
-    val selfClientIdProvider: CurrentClientIdProvider
+    val selfClientIdProvider: CurrentClientIdProvider,
+    val subgroupProposals: PendingSubconversationProposals,
 ) : LeaveSubconversationUseCase {
     override suspend fun invoke(
         mlsContext: MlsCoreCryptoContext,
         conversationId: ConversationId,
         subconversationId: SubconversationId
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, PendingSubconversationProposal?> =
         retrieveSubconversationGroupId(conversationId, subconversationId).flatMap { groupId ->
             groupId?.let { groupId ->
+                val pendingProposal = subgroupProposals.current(groupId)
                 wrapApiRequest {
                     conversationApi.leaveSubconversation(conversationId.toApi(), subconversationId.toApi())
                 }.flatMap {
+                    val retirement = pendingProposal?.let { subgroupProposals.markForRetirement(it) }
                     subconversationRepository.deleteSubconversation(conversationId, subconversationId)
                     wrapMLSRequest {
                         mlsContext.wipeConversation(groupId.toCrypto())
-                    }
+                    }.map { retirement }
                 }
-            } ?: Either.Right(Unit)
+            } ?: Either.Right(null)
         }
 
     suspend fun retrieveSubconversationGroupId(

@@ -61,6 +61,7 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.PendingSubconversationProposals
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -172,6 +173,7 @@ internal class CallDataSource(
     private val teamRepository: TeamRepository,
     private val joinSubconversation: JoinSubconversationUseCase,
     private val leaveSubconversation: LeaveSubconversationUseCase,
+    private val subgroupProposals: PendingSubconversationProposals,
     private val transactionProvider: CryptoTransactionProvider,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
@@ -685,7 +687,12 @@ internal class CallDataSource(
         transactionProvider.mlsTransaction("leaveSubconversation") { mlsContext ->
             leaveSubconversation(mlsContext, conversationId, CALL_SUBCONVERSATION_ID)
         }
-            .onSuccess {
+            .onSuccess { pendingProposal ->
+                // Acknowledge the marked token only after the outer native transaction commits.
+                pendingProposal?.let {
+                    // The durable leave intent lets the scheduler retry a failed SQL acknowledgement.
+                    wrapStorageRequest { subgroupProposals.acknowledge(it) }
+                }
                 callingLogger.i("Successfully left MLS conference")
             }
             .onFailure {

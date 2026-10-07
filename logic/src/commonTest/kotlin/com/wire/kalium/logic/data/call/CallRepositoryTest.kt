@@ -19,10 +19,12 @@
 package com.wire.kalium.logic.data.call
 
 import app.cash.turbine.test
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.callerId
 import com.wire.kalium.logic.data.call.CallRepositoryTest.Arrangement.Companion.participant
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
@@ -44,6 +46,9 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.PendingSubconversationProposal
+import com.wire.kalium.logic.data.message.PendingSubconversationProposals
+import com.wire.kalium.logic.data.message.PendingSubconversationProposalsImpl
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -65,6 +70,9 @@ import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.conversation.PendingSubconversationProposalDAO
+import com.wire.kalium.persistence.dao.conversation.PendingSubconversationProposalEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -84,6 +92,7 @@ import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
 import io.ktor.util.reflect.instanceOf
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -107,6 +116,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -1539,6 +1549,137 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenSuccessfulMlsLeave_whenTransactionCommits_thenAcknowledgeSnapshottedProposal() = runTest(testDispatcher) {
+        val db = TestUserDatabase(QualifiedID("call-leave-success", "test").toDao(), testDispatcher)
+        try {
+            val queue = PendingSubconversationProposalsImpl(db.builder.pendingSubconversationProposalDAO)
+            queue.schedule(Arrangement.subconversationGroupId, Instant.DISTANT_PAST)
+            val pendingProposal = queue.current(Arrangement.subconversationGroupId)!!
+            val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher(), queue)
+                .givenLeaveSubconversationSuccessful(pendingProposal)
+                .arrange()
+
+            callRepository.leaveMlsConference(Arrangement.conversationId)
+
+            assertNull(queue.current(Arrangement.subconversationGroupId))
+        } finally { db.builder.close(); db.delete() }
+    }
+
+    @Test
+    fun givenPostcommitAcknowledgementFails_whenLeavingConference_thenReturnAndRetainDurableIntent() = runTest(testDispatcher) {
+        val db = TestUserDatabase(QualifiedID("call-leave-ack-failure", "test").toDao(), testDispatcher)
+        try {
+            val proposals = db.builder.pendingSubconversationProposalDAO
+            val queue = PendingSubconversationProposalsImpl(proposals)
+            queue.schedule(Arrangement.subconversationGroupId, Instant.DISTANT_PAST)
+            val marked = queue.markForRetirement(queue.current(Arrangement.subconversationGroupId)!!)!!
+            val failingQueue = PendingSubconversationProposalsImpl(object : PendingSubconversationProposalDAO by proposals {
+                override suspend fun acknowledge(record: PendingSubconversationProposalEntity) { error("ACK storage unavailable") }
+            })
+            val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher(), failingQueue)
+                .givenLeaveSubconversationSuccessful(marked)
+                .arrange()
+
+            callRepository.leaveMlsConference(Arrangement.conversationId)
+
+            assertEquals(marked, queue.current(Arrangement.subconversationGroupId))
+        } finally { db.builder.close(); db.delete() }
+    }
+
+    @Test
+    fun givenPostcommitAcknowledgementIsCancelled_whenLeavingConference_thenPropagateCancellation() = runTest(testDispatcher) {
+        val db = TestUserDatabase(QualifiedID("call-leave-ack-cancelled", "test").toDao(), testDispatcher)
+        try {
+            val proposals = db.builder.pendingSubconversationProposalDAO
+            val queue = PendingSubconversationProposalsImpl(proposals)
+            queue.schedule(Arrangement.subconversationGroupId, Instant.DISTANT_PAST)
+            val marked = queue.markForRetirement(queue.current(Arrangement.subconversationGroupId)!!)!!
+            val cancelledQueue = PendingSubconversationProposalsImpl(object : PendingSubconversationProposalDAO by proposals {
+                override suspend fun acknowledge(record: PendingSubconversationProposalEntity) { throw CancellationException("Owner cancelled") }
+            })
+            val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher(), cancelledQueue)
+                .givenLeaveSubconversationSuccessful(marked)
+                .arrange()
+
+            assertFailsWith<CancellationException> { callRepository.leaveMlsConference(Arrangement.conversationId) }
+
+            assertEquals(marked, queue.current(Arrangement.subconversationGroupId))
+        } finally { db.builder.close(); db.delete() }
+    }
+
+    @Test
+    fun givenMlsLeaveFails_whenLeavingConference_thenRetainPendingProposal() = runTest(testDispatcher) {
+        val db = TestUserDatabase(QualifiedID("call-leave-failure", "test").toDao(), testDispatcher)
+        try {
+            val queue = PendingSubconversationProposalsImpl(db.builder.pendingSubconversationProposalDAO)
+            queue.schedule(Arrangement.subconversationGroupId, Instant.DISTANT_PAST)
+            val pendingProposal = queue.current(Arrangement.subconversationGroupId)!!
+            val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher(), queue)
+                .givenLeaveSubconversationFails(CoreFailure.Unknown(null))
+                .arrange()
+
+            callRepository.leaveMlsConference(Arrangement.conversationId)
+
+            assertEquals(pendingProposal, queue.current(Arrangement.subconversationGroupId))
+        } finally { db.builder.close(); db.delete() }
+    }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun givenOuterTransactionFailsAfterMlsLeave_whenLeavingConference_thenRetainPendingProposal() = runTest(testDispatcher) {
+        val db = TestUserDatabase(QualifiedID("call-leave-outer-failure", "test").toDao(), testDispatcher)
+        try {
+            val queue = PendingSubconversationProposalsImpl(db.builder.pendingSubconversationProposalDAO)
+            queue.schedule(Arrangement.subconversationGroupId, Instant.DISTANT_PAST)
+            val pendingProposal = queue.current(Arrangement.subconversationGroupId)!!
+            val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher(), queue)
+                .givenLeaveSubconversationSuccessful(pendingProposal)
+                .arrange()
+            everySuspend {
+                arrangement.cryptoTransactionProvider.mlsTransaction<PendingSubconversationProposal?>(any(), any())
+            } calls {
+                val block = it.args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, PendingSubconversationProposal?>
+                block(arrangement.mlsContext)
+                assertTrue(queue.isCurrent(pendingProposal))
+                Either.Left(CoreFailure.Unknown(null))
+            }
+
+            callRepository.leaveMlsConference(Arrangement.conversationId)
+
+            assertEquals(pendingProposal, queue.current(Arrangement.subconversationGroupId))
+        } finally { db.builder.close(); db.delete() }
+    }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun givenProposalIsRescheduledBeforeLeaveCommits_whenLeavingConference_thenRetainNewToken() = runTest(testDispatcher) {
+        val db = TestUserDatabase(QualifiedID("call-leave-new-token", "test").toDao(), testDispatcher)
+        try {
+            val queue = PendingSubconversationProposalsImpl(db.builder.pendingSubconversationProposalDAO)
+            queue.schedule(Arrangement.subconversationGroupId, Instant.DISTANT_PAST)
+            val pendingProposal = queue.current(Arrangement.subconversationGroupId)!!
+            val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher(), queue)
+                .givenLeaveSubconversationSuccessful(pendingProposal)
+                .arrange()
+            everySuspend {
+                arrangement.cryptoTransactionProvider.mlsTransaction<PendingSubconversationProposal?>(any(), any())
+            } calls {
+                val block = it.args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, PendingSubconversationProposal?>
+                val result = block(arrangement.mlsContext)
+                assertTrue(queue.isCurrent(pendingProposal))
+                queue.schedule(Arrangement.subconversationGroupId, Instant.DISTANT_PAST)
+                result
+            }
+
+            callRepository.leaveMlsConference(Arrangement.conversationId)
+
+            val current = queue.current(Arrangement.subconversationGroupId)
+            assertNotNull(current)
+            assertTrue(current.token != pendingProposal.token)
+        } finally { db.builder.close(); db.delete() }
+    }
+
+    @Test
     fun givenMlsConferenceCall_whenAdvanceEpoch_thenKeyMaterialIsUpdatedInSubconversation() = runTest(testDispatcher) {
         val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
@@ -2194,7 +2335,8 @@ class CallRepositoryTest {
     )
 
     private class Arrangement(
-        private val kaliumTestDispatcher: KaliumDispatcher
+        private val kaliumTestDispatcher: KaliumDispatcher,
+        val subgroupProposals: PendingSubconversationProposals = mock(mode = MockMode.autoUnit),
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val callApi = mock<CallApi>()
@@ -2230,6 +2372,7 @@ class CallRepositoryTest {
             persistMessage = persistMessage,
             joinSubconversation = joinSubconversationUseCase,
             leaveSubconversation = leaveSubconversationUseCase,
+            subgroupProposals = subgroupProposals,
             callMapper = callMapper,
             federatedIdMapper = federatedIdMapper,
             kaliumDispatchers = kaliumTestDispatcher,
@@ -2345,10 +2488,16 @@ class CallRepositoryTest {
             } returns Either.Right(Unit)
         }
 
-        suspend fun givenLeaveSubconversationSuccessful() = apply {
+        suspend fun givenLeaveSubconversationSuccessful(pendingProposal: PendingSubconversationProposal? = null) = apply {
             everySuspend {
                 leaveSubconversationUseCase.invoke(any(), any(), any())
-            } returns Either.Right(Unit)
+            } returns Either.Right(pendingProposal)
+        }
+
+        suspend fun givenLeaveSubconversationFails(failure: CoreFailure) = apply {
+            everySuspend {
+                leaveSubconversationUseCase.invoke(any(), any(), any())
+            } returns Either.Left(failure)
         }
 
         fun givenObserveEpochChangesReturns(flow: Flow<GroupWithEpoch>) = apply {

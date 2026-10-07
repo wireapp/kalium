@@ -45,7 +45,7 @@ class SubconversationProposalProcessTest {
                 assertTrue(process.waitFor(10, TimeUnit.SECONDS))
                 val db = proposalProcessDatabase(directory)
                 try {
-                    val pending = PendingSubconversationProposalsImpl(db.metadataDAO)
+                    val pending = PendingSubconversationProposalsImpl(db.pendingSubconversationProposalDAO)
                     val record = pending.observe().first().single()
                     assertEquals(GroupID("durable-subgroup"), record.group)
                     assertEquals(Instant.parse("2020-01-01T00:00:00Z"), record.deadline)
@@ -67,7 +67,7 @@ object SubconversationProposalProcessProbe {
     fun main(args: Array<String>): Unit = runBlocking {
         val directory = File(args.single())
         val db = proposalProcessDatabase(directory)
-        PendingSubconversationProposalsImpl(db.metadataDAO).schedule(GroupID("durable-subgroup"), Instant.parse("2020-01-01T00:00:00Z"))
+        PendingSubconversationProposalsImpl(db.pendingSubconversationProposalDAO).schedule(GroupID("durable-subgroup"), Instant.parse("2020-01-01T00:00:00Z"))
         File(directory, "ready").writeText("ready")
         // Parent kills this synthetic owner with its SQLite handle still open, before ACK.
         kotlinx.coroutines.awaitCancellation()

@@ -21,8 +21,10 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.distinct
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.wrapInMLSContext
@@ -30,6 +32,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.message.PendingSubconversationProposal
 import com.wire.kalium.logic.data.message.PendingSubconversationProposals
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -124,7 +127,18 @@ internal class PendingProposalSchedulerImpl(
                     // Recheck after waiting for the account's native transaction owner.
                     if (record != null && !subgroupProposals.isCurrent(record)) return@transaction Either.Right(Unit)
                     transactionContext.wrapInMLSContext { mlsContext ->
-                        mlsConversationRepository.value.commitPendingProposals(mlsContext, scheduled.timer.groupID)
+                        if (record?.leaveRequested == true) {
+                            // Leave intent is durable before wipe. Only confirmed native absence retires it;
+                            // a rolled-back wipe or a rejoined group must still follow the normal commit path.
+                            wrapMLSRequest { mlsContext.conversationExists(scheduled.timer.groupID.toCrypto()) }
+                                .flatMap { exists ->
+                                    if (exists) {
+                                        mlsConversationRepository.value.commitPendingProposals(mlsContext, scheduled.timer.groupID)
+                                    } else Either.Right(Unit)
+                                }
+                        } else {
+                            mlsConversationRepository.value.commitPendingProposals(mlsContext, scheduled.timer.groupID)
+                        }
                     }
                 }
                 if (result is Either.Right) {
@@ -133,7 +147,9 @@ internal class PendingProposalSchedulerImpl(
                     break
                 }
                 val failure = (result as Either.Left).value
-                if (failure.isUnrecoverableProposalFailure()) {
+                if (failure.isUnrecoverableProposalFailure() &&
+                    !(record != null && failure == MLSFailure.ConversationNotFound)
+                ) {
                     if (record != null) subgroupProposals.acknowledge(record)
                     else mlsConversationRepository.value.clearProposalTimer(scheduled.timer.groupID)
                     break

@@ -65,6 +65,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
+import com.wire.kalium.persistence.dao.conversation.PendingSubconversationProposalDAO
+import com.wire.kalium.persistence.dao.conversation.PendingSubconversationProposalDAOImpl
 import com.wire.kalium.persistence.dao.conversation.SubconversationDAO
 import com.wire.kalium.persistence.dao.conversation.SubconversationDAOImpl
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
@@ -303,6 +305,10 @@ class UserDatabaseBuilder internal constructor(
             readDispatcher,
             writeDispatcher,
         )
+
+    val pendingSubconversationProposalDAO: PendingSubconversationProposalDAO by lazy {
+        PendingSubconversationProposalDAOImpl(database, readDispatcher, writeDispatcher)
+    }
 
     val subconversationDAO: SubconversationDAO by lazy {
         SubconversationDAOImpl(database, readDispatcher, writeDispatcher)

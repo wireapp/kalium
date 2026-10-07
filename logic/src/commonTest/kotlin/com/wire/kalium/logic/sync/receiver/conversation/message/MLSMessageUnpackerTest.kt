@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.SubConversation
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -190,19 +191,34 @@ internal class MLSMessageUnpackerTest {
     }
 
     @Test
-    fun givenSubconversationGroupIsMissing_whenUnpacking_thenFallBackToParentConversationGroup() = runTest {
+    fun givenSubconversationMappingAndNativeGroupAreMissing_whenUnpacking_thenDoNotFallBackToParent() = runTest {
         val subConversationId = SubconversationId("conference")
+        val remoteSubconversation = SubConversation(
+            id = subConversationId,
+            parentId = TestConversation.ID,
+            groupId = GroupID("missing-native-group"),
+            epoch = 1UL,
+            epochTimestamp = null,
+            mlsCipherSuiteTag = null,
+            members = emptyList(),
+        )
         val (arrangement, mlsUnpacker) = Arrangement()
             .withSubconversationInfo(null)
-            .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
-            .withDecryptMessageReturning(Either.Right(emptyList()))
-            .arrange()
+            .arrange {
+                everySuspend {
+                    subconversationRepository.fetchRemoteSubConversationDetails(any(), any())
+                } returns Either.Right(remoteSubconversation)
+                everySuspend { mlsContext.conversationExists(remoteSubconversation.groupId.value) } returns false
+            }
         val event = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant(), subConversationId)
 
-        mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, event)
+        mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, event).shouldFail {
+            assertEquals(MLSFailure.ConversationNotFound, it)
+        }
 
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.decryptMessage(any(), any(), eq(TestConversation.GROUP_ID))
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.decryptMessage(any(), any(), any())
+            arrangement.conversationRepository.getConversationProtocolInfo(any())
         }
     }
 

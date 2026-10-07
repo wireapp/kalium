@@ -27,17 +27,25 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.message.PendingSubconversationProposal
+import com.wire.kalium.logic.data.message.PendingSubconversationProposals
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationMemberDTO
 import com.wire.kalium.network.api.model.QualifiedID
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -46,6 +54,9 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFails
+import kotlin.time.Instant
 
 class LeaveSubconversationUseCaseTest {
 
@@ -120,18 +131,121 @@ class LeaveSubconversationUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.subconversationRepository.deleteSubconversation(eq(Arrangement.CONVERSATION_ID), eq(Arrangement.SUBCONVERSATION_ID))
         }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.subgroupProposals.markForRetirement(any())
+        }
+    }
+
+    @Test
+    fun givenPendingProposal_whenLeaveSucceeds_thenPersistRetirementAfterBackendLeaveBeforeLocalCleanup() = runTest {
+        val pendingProposal = PendingSubconversationProposal(
+            Arrangement.SUBCONVERSATION_GROUP_ID,
+            Instant.parse("2020-01-01T00:00:00Z"),
+            "proposal-token",
+        )
+        val calls = mutableListOf<String>()
+        val (arrangement, leaveSubconversation) = Arrangement()
+            .withGetSubconversationInfoReturns(Arrangement.SUBCONVERSATION_GROUP_ID)
+            .withPendingProposal(
+                pendingProposal,
+                onCurrent = { calls += "snapshot" },
+                onMark = { calls += "mark" },
+            )
+            .withLeaveSubconversationSuccessful { calls += "leave" }
+            .withWipeMlsConversationSuccessful { calls += "wipe" }
+            .withDeleteSubconversationSuccessful { calls += "delete" }
+            .arrange()
+
+        leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
+            .shouldSucceed { assertEquals(pendingProposal.copy(leaveRequested = true), it) }
+
+        assertEquals(listOf("snapshot", "leave", "mark", "delete", "wipe"), calls)
+    }
+
+    @Test
+    fun givenRemoteMembershipAndPendingProposal_whenLeaveSucceeds_thenReturnSnapshottedToken() = runTest {
+        val pendingProposal = PendingSubconversationProposal(
+            Arrangement.SUBCONVERSATION_GROUP_ID,
+            Instant.parse("2020-01-01T00:00:00Z"),
+            "remote-proposal-token",
+        )
+        val (arrangement, leaveSubconversation) = Arrangement()
+            .withGetSubconversationInfoReturns(null)
+            .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_SELF)
+            .withPendingProposal(pendingProposal)
+            .withLeaveSubconversationSuccessful()
+            .withWipeMlsConversationSuccessful()
+            .withDeleteSubconversationSuccessful()
+            .arrange()
+
+        leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
+            .shouldSucceed { assertEquals(pendingProposal.copy(leaveRequested = true), it) }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.subgroupProposals.current(eq(Arrangement.SUBCONVERSATION_GROUP_ID))
+        }
+    }
+
+    @Test
+    fun givenBackendLeaveFails_thenRetirementIsNotMarkedAndLocalStateIsPreserved() = runTest {
+        val pendingProposal = PendingSubconversationProposal(
+            Arrangement.SUBCONVERSATION_GROUP_ID,
+            Instant.parse("2020-01-01T00:00:00Z"),
+            "proposal-token",
+        )
+        val (arrangement, leaveSubconversation) = Arrangement()
+            .withGetSubconversationInfoReturns(Arrangement.SUBCONVERSATION_GROUP_ID)
+            .withPendingProposal(pendingProposal)
+            .withLeaveSubconversationFailure()
+            .arrange()
+
+        leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
+
+        verifySuspend(VerifyMode.not) { arrangement.subgroupProposals.markForRetirement(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.subconversationRepository.deleteSubconversation(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.mlsContext.wipeConversation(any()) }
+    }
+
+    @Test
+    fun givenRetirementMetadataWriteFails_thenLocalStateIsPreserved() = runTest {
+        val pendingProposal = PendingSubconversationProposal(
+            Arrangement.SUBCONVERSATION_GROUP_ID,
+            Instant.parse("2020-01-01T00:00:00Z"),
+            "proposal-token",
+        )
+        val (arrangement, leaveSubconversation) = Arrangement()
+            .withGetSubconversationInfoReturns(Arrangement.SUBCONVERSATION_GROUP_ID)
+            .withPendingProposalSnapshot(pendingProposal)
+            .withLeaveSubconversationSuccessful()
+            .withRetirementMarkingFailure(pendingProposal)
+            .arrange()
+
+        assertFails {
+            leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
+        }
+
+        verifySuspend(VerifyMode.not) { arrangement.subconversationRepository.deleteSubconversation(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.mlsContext.wipeConversation(any()) }
     }
 
     private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationApi = mock<ConversationApi>(mode = MockMode.autoUnit)
         val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
         val selfClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val subgroupProposals = mock<PendingSubconversationProposals>(mode = MockMode.autoUnit)
+
+        init {
+            everySuspend { subgroupProposals.current(any()) } returns null
+            everySuspend { subgroupProposals.markForRetirement(any()) } returns null
+        }
 
         suspend fun arrange() = this to LeaveSubconversationUseCaseImpl(
             conversationApi,
             subconversationRepository,
             TestUser.SELF.id,
-            selfClientIdProvider
+            selfClientIdProvider,
+            subgroupProposals,
         ).also {
             everySuspend {
                 selfClientIdProvider.invoke()
@@ -144,10 +258,51 @@ class LeaveSubconversationUseCaseTest {
             } returns NetworkResponse.Success(response, emptyMap(), 200)
         }
 
-        suspend fun withLeaveSubconversationSuccessful() = apply {
+        suspend fun withLeaveSubconversationSuccessful(onCall: () -> Unit = {}) = apply {
             everySuspend {
                 conversationApi.leaveSubconversation(any(), any())
-            } returns NetworkResponse.Success(Unit, emptyMap(), 200)
+            } calls {
+                onCall()
+                NetworkResponse.Success(Unit, emptyMap(), 200)
+            }
+        }
+
+        suspend fun withLeaveSubconversationFailure() = apply {
+            everySuspend {
+                conversationApi.leaveSubconversation(any(), any())
+            } returns NetworkResponse.Error(KaliumException.NoNetwork())
+        }
+
+        suspend fun withPendingProposal(
+            pendingProposal: PendingSubconversationProposal,
+            onCurrent: () -> Unit = {},
+            onMark: () -> Unit = {},
+        ) = apply {
+            withPendingProposalSnapshot(pendingProposal, onCurrent)
+            everySuspend {
+                subgroupProposals.markForRetirement(eq(pendingProposal))
+            } calls {
+                onMark()
+                pendingProposal.copy(leaveRequested = true)
+            }
+        }
+
+        suspend fun withPendingProposalSnapshot(
+            pendingProposal: PendingSubconversationProposal,
+            onCall: () -> Unit = {},
+        ) = apply {
+            everySuspend {
+                subgroupProposals.current(eq(SUBCONVERSATION_GROUP_ID))
+            } calls {
+                onCall()
+                pendingProposal
+            }
+        }
+
+        suspend fun withRetirementMarkingFailure(pendingProposal: PendingSubconversationProposal) = apply {
+            everySuspend {
+                subgroupProposals.markForRetirement(eq(pendingProposal))
+            } throws IllegalStateException("Metadata unavailable")
         }
 
         suspend fun withGetSubconversationInfoReturns(groupID: GroupID?) = apply {
@@ -156,16 +311,22 @@ class LeaveSubconversationUseCaseTest {
             } returns groupID
         }
 
-        suspend fun withDeleteSubconversationSuccessful() = apply {
+        suspend fun withDeleteSubconversationSuccessful(onCall: () -> Unit = {}) = apply {
             everySuspend {
                 subconversationRepository.deleteSubconversation(any(), any())
-            } returns Unit
+            } calls {
+                onCall()
+                Unit
+            }
         }
 
-        suspend fun withWipeMlsConversationSuccessful() = apply {
+        suspend fun withWipeMlsConversationSuccessful(onCall: () -> Unit = {}) = apply {
             everySuspend {
                 mlsContext.wipeConversation(any())
-            } returns Unit
+            } calls {
+                onCall()
+                Unit
+            }
         }
 
         companion object {
@@ -180,6 +341,9 @@ class LeaveSubconversationUseCaseTest {
                 null,
                 0,
                 emptyList()
+            )
+            val SUBCONVERSATION_RESPONSE_WITH_SELF = SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.copy(
+                members = listOf(SubconversationMemberDTO(TestClient.CLIENT_ID.value, TestUser.SELF.id.value, TestUser.SELF.id.domain))
             )
         }
     }

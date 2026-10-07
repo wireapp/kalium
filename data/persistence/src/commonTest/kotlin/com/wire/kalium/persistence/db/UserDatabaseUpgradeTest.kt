@@ -55,7 +55,7 @@ abstract class UserDatabaseUpgradeTest {
             val builder = open()
             try {
                 val driver = builder.sqlDriver
-                assertEquals(listOf(listOf("155")), driver.rows("PRAGMA user_version", 1))
+                assertEquals(listOf(listOf("156")), driver.rows("PRAGMA user_version", 1))
                 driver.execute(null, "INSERT INTO User(qualified_id) VALUES ('creator@wire.test')", 0).await()
                 driver.execute(null, """
                     INSERT INTO Conversation(qualified_id, type, mls_group_state, protocol, creator_id,
@@ -86,7 +86,7 @@ abstract class UserDatabaseUpgradeTest {
             var generatedRows: List<List<String?>>
             try {
                 val driver = builder.sqlDriver
-                assertEquals(listOf(listOf("155")), driver.rows("PRAGMA user_version", 1), fixture)
+                assertEquals(listOf(listOf("156")), driver.rows("PRAGMA user_version", 1), fixture)
                 assertEquals(UserDatabase.Schema.version, UserDatabaseSchema.version)
                 assertEquals(listOf(listOf(tzid), listOf(tzid)), driver.rows("SELECT tzid FROM Meeting ORDER BY meeting_id", 1), fixture)
                 assertEquals(emptyList(), driver.rows("SELECT name FROM pragma_table_info('Meeting') WHERE name = 'trial'", 1))
@@ -139,10 +139,11 @@ abstract class UserDatabaseUpgradeTest {
     }
 
     private suspend fun assertLocalSchema(driver: SqlDriver) {
-        assertEquals(listOf("MessageTimelineKey", "PendingDeliveryConfirmations", "conversation_list_recency", "idx_msg_conv_date_id_desc")
+        assertEquals(listOf("MessageTimelineKey", "PendingDeliveryConfirmations", "PendingSubconversationProposal",
+            "conversation_list_recency", "idx_msg_conv_date_id_desc")
             .map { listOf(it) }, driver.rows("""
                 SELECT name FROM sqlite_master WHERE name IN ('conversation_list_recency', 'idx_msg_conv_date_id_desc',
-                    'MessageTimelineKey', 'PendingDeliveryConfirmations', 'NotificationReceipts') ORDER BY name
+                    'MessageTimelineKey', 'PendingDeliveryConfirmations', 'PendingSubconversationProposal', 'NotificationReceipts') ORDER BY name
             """.trimIndent(), 1))
         assertEquals(emptyList(), driver.rows("SELECT name FROM sqlite_temp_master WHERE name = 'MeetingOccurrenceMigration'", 1))
         assertEquals(emptyList(), driver.rows("PRAGMA foreign_key_check", 4))

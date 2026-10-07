@@ -21,6 +21,16 @@ package com.wire.kalium.logic.data.logout
 import app.cash.turbine.test
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.PendingSubconversationProposalDAO
+import com.wire.kalium.persistence.dao.conversation.PendingSubconversationProposalEntity
+import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import kotlin.time.Instant
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.first
 import dev.mokkery.MockMode
 import dev.mokkery.mock
 import kotlin.test.Test
@@ -83,11 +93,37 @@ class LogoutRepositoryTest {
         }
     }
 
+    @Test
+    fun clearingClientMetadataRemovesSqlProposalsAndLegacyWithoutLosingRetainedClientId() =
+        runTest(TestKaliumDispatcher.default) {
+            val database = TestUserDatabase(UserIDEntity("proposal-client-reset", "test"), TestKaliumDispatcher.default)
+            try {
+                val db = database.builder
+                val queue = db.pendingSubconversationProposalDAO
+                val record = PendingSubconversationProposalEntity("group", Instant.DISTANT_PAST, "token")
+                queue.schedule(record)
+                queue.schedule(record.copy(groupId = "marked-group"))
+                queue.markForRetirement(record.copy(groupId = "marked-group"))
+                db.metadataDAO.insertValue("malformed legacy", "pending-subconversation-proposals-v1")
+                db.metadataDAO.insertValue("retained-client", ClientRegistrationStorageImpl.RETAINED_CLIENT_ID_KEY)
+                val repository = LogoutDataSource(mock(), db.metadataDAO, queue)
+
+                repository.clearClientRelatedLocalMetadata()
+
+                assertTrue(queue.observe().first().isEmpty())
+                assertNull(db.metadataDAO.valueByKey("pending-subconversation-proposals-v1"))
+                assertEquals("retained-client", db.metadataDAO.valueByKey(ClientRegistrationStorageImpl.RETAINED_CLIENT_ID_KEY))
+            } finally {
+                database.builder.close()
+                database.delete()
+            }
+        }
+
     private class Arrangement {
         private val logoutApi = mock<LogoutApi>(mode = MockMode.autoUnit)
         private val metadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
 
-        private val logoutDataSource = LogoutDataSource(logoutApi, metadataDAO)
+        private val logoutDataSource = LogoutDataSource(logoutApi, metadataDAO, mock<PendingSubconversationProposalDAO>(mode = MockMode.autoUnit))
 
         fun arrange() = this to logoutDataSource
 
