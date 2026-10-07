@@ -1450,7 +1450,8 @@ public class UserSessionScope internal constructor(
             conversationRepository,
             messageRepository,
             userRepository,
-            systemMessageInserter
+            systemMessageInserter,
+            clientRemoteRepository,
         )
     private val pendingActionsRepository: PendingActionsRepository by lazy {
         PersistentPendingActionsRepository(

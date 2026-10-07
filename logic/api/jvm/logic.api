@@ -906,6 +906,17 @@ public final class com/wire/kalium/logic/failure/LegalHoldEnabledForConversation
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/wire/kalium/logic/failure/NoClientsForUser : com/wire/kalium/common/error/CoreFailure$FeatureFailure {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/failure/NoClientsForUser;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/failure/NoClientsForUser;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/failure/NoClientsForUser;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coroutines/CoroutineScope {
 	public final fun getAnalyticsIdentifierManager ()Lcom/wire/kalium/logic/feature/analytics/AnalyticsIdentifierManager;
 	public final fun getAppLockTeamFeatureConfigObserver ()Lcom/wire/kalium/logic/feature/applock/AppLockTeamFeatureConfigObserver;

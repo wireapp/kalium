@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.failure.NoClientsForUser
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isTooManyRequests
@@ -190,7 +191,7 @@ internal class OneOnOneResolverImpl(
             Either.Left(failure)
         }
 
-        failure is CoreFailure.MissingKeyPackages -> {
+        failure is CoreFailure.MissingKeyPackages || failure is NoClientsForUser -> {
             enqueueForForegroundRecovery(user.id, failure)
             Either.Right(Unit)
         }
