@@ -1,0 +1,1 @@
+Prune a recurrence using the final possible occurrence end instead of its UNTIL/final-start date, retaining the meeting and its dependent occurrence while that occurrence is still within the retention window.
