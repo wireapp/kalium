@@ -357,12 +357,13 @@ internal class CallManagerImpl internal constructor(
         callingLogger.d("$tagWithUserId: answering call for conversationId: ${conversationId.toLogString()}..")
         val callType = if (isVideoCall) CallTypeCalling.VIDEO else CallTypeCalling.AUDIO
         val answerAvs = suspend {
-            avs.answerCall(
+            val result = avs.answerCall(
                 handle = handle,
                 conversationId = federatedIdMapper.parseToFederatedId(conversationId),
                 callType = callType.avsValue,
                 audioCbr = isAudioCbr
             )
+            check(result == 0) { "AVS rejected Answer: $result" }
             callingLogger.i("$tagWithUserId: wcall_answer() called -> ${conversationId.toLogString()}")
         }
 
@@ -371,7 +372,7 @@ internal class CallManagerImpl internal constructor(
                 conversationId = conversationId,
                 onJoined = answerAvs,
                 onEpochChange = { conversation, epochInfo -> updateEpochInfo(conversation, epochInfo) }
-            )
+            ).fold({ error("MLS conference join failed: $it") }, {})
         } else {
             answerAvs()
         }

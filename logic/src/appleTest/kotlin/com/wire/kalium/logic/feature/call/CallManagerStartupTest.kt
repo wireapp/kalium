@@ -191,6 +191,46 @@ class CallManagerStartupTest {
         }
     }
 
+    @Test
+    fun acceptedAnswerPreservesExistingConference() = runTest {
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        f.metadata = TestCall.oneOnOneCallMetadata().copy(callStatus = CallStatus.STILL_ONGOING)
+        val manager = f.manager()
+        manager.answerCall(CONVERSATION, false, false)
+        assertEquals(CallStatus.STILL_ONGOING, f.metadata?.callStatus)
+        verify(VerifyMode.exactly(1)) { f.avs.answerCall(any(), any(), any(), any()) }
+        manager.cancelJobs()
+    }
+
+    @Test
+    fun rejectedAnswerPropagatesWithoutClosingRemoteConference() = runTest {
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        f.metadata = TestCall.oneOnOneCallMetadata().copy(callStatus = CallStatus.STILL_ONGOING)
+        every { f.avs.answerCall(any(), any(), any(), any()) } returns -1
+        val manager = f.manager()
+        assertFailsWith<IllegalStateException> { manager.answerCall(CONVERSATION, false, false) }
+        assertEquals(CallStatus.STILL_ONGOING, f.metadata?.callStatus)
+        verify(VerifyMode.exactly(0)) { f.avs.endCall(any(), any()) }
+        manager.cancelJobs()
+    }
+
+    @Test
+    fun rejectedMlsAnswerPropagatesWithoutSubmittingAvs() = runTest {
+        val f = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+        f.metadata = TestCall.oneOnOneCallMetadata().copy(
+            protocol = Conversation.ProtocolInfo.MLS(
+                GroupID("group"), Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                1uL, Instant.DISTANT_PAST, CipherSuite.fromTag(1)
+            )
+        )
+        everySuspend { f.repository.joinMlsConference(any(), any(), any()) } returns Either.Left(CoreFailure.Unknown(null))
+        val manager = f.manager()
+        assertFailsWith<IllegalStateException> { manager.answerCall(CONVERSATION, false, false) }
+        verify(VerifyMode.exactly(0)) { f.avs.answerCall(any(), any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(0)) { f.repository.leaveMlsConference(any()) }
+        manager.cancelJobs()
+    }
+
     private suspend fun CallManager.start() = startCall(CONVERSATION, CallType.AUDIO, ConversationTypeCalling.OneOnOne, false, false)
 
     private class Fixture(
@@ -219,6 +259,7 @@ class CallManagerStartupTest {
                 if (ready) callbacks.onReady(0)
                 HANDLE
             }
+            every { avs.answerCall(any(), any(), any(), any()) } returns 0
             every { avs.startCall(any(), any(), any(), any(), any(), any()) } returns 0
             every { repository.getCallMetadata(any()) } calls { metadata }
             everySuspend { repository.createCall(any(), any(), any(), any(), any(), any(), any()) } calls {
