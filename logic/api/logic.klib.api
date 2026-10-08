@@ -1488,6 +1488,31 @@ abstract interface com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccu
     abstract suspend fun invoke(androidx.paging/PagingConfig, kotlin/Long, kotlinx.datetime/Instant = ...): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.meeting/MeetingOccurrence>> // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase.invoke|invoke(androidx.paging.PagingConfig;kotlin.Long;kotlinx.datetime.Instant){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase { // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase|null[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.invoke|invoke(){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result { // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result { // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 abstract interface com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase { // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase|null[0]
     abstract suspend fun invoke(kotlin/String): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.meeting/MeetingOccurrence?> // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase.invoke|invoke(kotlin.String){}[0]
 }
@@ -3633,6 +3658,8 @@ final class com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope { // c
         final fun <get-create>(): com.wire.kalium.logic.feature.backup/CreateMPBackupUseCase // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.create.<get-create>|<get-create>(){}[0]
     final val restore // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.restore|{}restore[0]
         final fun <get-restore>(): com.wire.kalium.logic.feature.backup/RestoreMPBackupUseCase // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.restore.<get-restore>|<get-restore>(){}[0]
+
+    final fun restore(kotlinx.coroutines/CoroutineDispatcher): com.wire.kalium.logic.feature.backup/RestoreMPBackupUseCase // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.restore|restore(kotlinx.coroutines.CoroutineDispatcher){}[0]
 }
 
 final class com.wire.kalium.logic.feature.call.usecase.video/SetVideoSendStateUseCase { // com.wire.kalium.logic.feature.call.usecase.video/SetVideoSendStateUseCase|null[0]
@@ -4506,6 +4533,8 @@ final class com.wire.kalium.logic.feature.meeting/MeetingScope { // com.wire.kal
         final fun <get-getNextUnfinishedMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextUnfinishedMeetingOccurrence.<get-getNextUnfinishedMeetingOccurrence>|<get-getNextUnfinishedMeetingOccurrence>(){}[0]
     final val getPaginatedMeetingOccurrenceDetails // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails|{}getPaginatedMeetingOccurrenceDetails[0]
         final fun <get-getPaginatedMeetingOccurrenceDetails>(): com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails.<get-getPaginatedMeetingOccurrenceDetails>|<get-getPaginatedMeetingOccurrenceDetails>(){}[0]
+    final val maintainMeetingOccurrences // com.wire.kalium.logic.feature.meeting/MeetingScope.maintainMeetingOccurrences|{}maintainMeetingOccurrences[0]
+        final fun <get-maintainMeetingOccurrences>(): com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.maintainMeetingOccurrences.<get-maintainMeetingOccurrences>|<get-maintainMeetingOccurrences>(){}[0]
     final val observeMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence|{}observeMeetingOccurrence[0]
         final fun <get-observeMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence.<get-observeMeetingOccurrence>|<get-observeMeetingOccurrence>(){}[0]
     final val updateMeeting // com.wire.kalium.logic.feature.meeting/MeetingScope.updateMeeting|{}updateMeeting[0]
