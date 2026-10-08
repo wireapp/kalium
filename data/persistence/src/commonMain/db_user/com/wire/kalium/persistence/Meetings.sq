@@ -93,7 +93,8 @@ WHERE (
 ) OR (
     recurrence_frequency IS NOT NULL
     AND recurrence_end_date IS NOT NULL
-    AND recurrence_end_date <= :outdatedThreshold
+    -- UNTIL bounds the last start, not its end. Retain even a long final occurrence until it ends.
+    AND recurrence_end_date + (end_date - start_date) <= :outdatedThreshold
 );
 
 removeOutdatedMeetingOccurrences:
