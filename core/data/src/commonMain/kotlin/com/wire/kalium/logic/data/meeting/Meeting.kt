@@ -22,6 +22,8 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 data class MeetingOccurrence(
     val meeting: Meeting,
@@ -81,3 +83,17 @@ data class UpsertMeeting(
     val recurrence: Meeting.Recurrence?,
     val otherParticipants: List<UserId>,
 )
+
+data class MeetingReminder(
+    val occurrenceId: String,
+    val meetingId: MeetingId,
+    val title: String,
+    val startTime: Instant,
+) {
+    @Suppress("unused")
+    val reminderTime: Instant get() = startTime - REMINDER_NOTIFICATION_LEAD_TIME
+
+    companion object {
+        val REMINDER_NOTIFICATION_LEAD_TIME: Duration = 10.minutes
+    }
+}

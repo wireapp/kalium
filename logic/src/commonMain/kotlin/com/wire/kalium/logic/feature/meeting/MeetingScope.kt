@@ -96,4 +96,7 @@ public class MeetingScope internal constructor(
             resetMLSConversation = resetMLSConversation,
             transactionProvider = transactionProvider,
         )
+
+    public val meetingReminders: MeetingRemindersUseCase
+        get() = MeetingRemindersUseCaseImpl(meetingRepository)
 }

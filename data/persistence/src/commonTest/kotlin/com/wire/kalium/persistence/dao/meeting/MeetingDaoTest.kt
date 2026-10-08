@@ -43,6 +43,8 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class MeetingDaoTest : BaseDatabaseTest() {
     private lateinit var databaseBuilder: UserDatabaseBuilder
@@ -516,6 +518,97 @@ class MeetingDaoTest : BaseDatabaseTest() {
                 cancelAndIgnoreRemainingEvents()
             }
             source.invalidate()
+        }
+    }
+
+    @Test
+    fun givenMeetingsAroundReminderCutoff_whenFindingNextReminder_thenSkipsLateMeetingAndReflectsChanges() = runTest(dispatcher) {
+        val now = Instant.parse("2026-01-02T10:00:00Z")
+        val late = newMeeting(startTime = now + 5.minutes)
+        val next = newMeeting(
+            meetingId = QualifiedIDEntity("next-meeting", "wire.com"),
+            conversationId = QualifiedIDEntity("next-conversation", "wire.com"),
+            startTime = now + 1.hours,
+        )
+        val sameMinute = newMeeting(
+            meetingId = QualifiedIDEntity("same-minute-meeting", "wire.com"),
+            conversationId = QualifiedIDEntity("same-minute-conversation", "wire.com"),
+            startTime = next.startTime + 1.seconds,
+        )
+        insertMeetingDependencies(late)
+        insertMeetingDependencies(next)
+        insertMeetingDependencies(sameMinute)
+        meetingDao.upsertMeetings(listOf(late, next, sameMinute), GenerationLimit.Window(now - 1.days, now + 2.days))
+
+        assertEquals(next.startTime, meetingDao.getNextMeetingReminder(now + 10.minutes)?.startTime)
+        assertEquals(2, meetingDao.getMeetingRemindersWithin(next.startTime, next.startTime + 1.minutes).size)
+
+        meetingDao.deleteMeeting(next.meetingId)
+        meetingDao.deleteMeeting(sameMinute.meetingId)
+        assertEquals(null, meetingDao.getNextMeetingReminder(now + 10.minutes))
+    }
+
+    @Test
+    fun givenMeetingChanges_whenObservingNextReminder_thenEmitsUpdatedAndRemovedOccurrence() = runTest(dispatcher) {
+        val now = Instant.parse("2026-01-02T10:00:00Z")
+        val meeting = newMeeting(startTime = now + 1.hours)
+        insertMeetingDependencies(meeting)
+
+        meetingDao.observeMeetingReminderChanges().test {
+            awaitItem()
+            assertEquals(null, meetingDao.getNextMeetingReminder(now + 10.minutes))
+            meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(now - 1.days, now + 2.days))
+            awaitItem()
+            assertEquals(meeting.startTime, meetingDao.getNextMeetingReminder(now + 10.minutes)?.startTime)
+
+            meetingDao.deleteMeeting(meeting.meetingId)
+            awaitItem()
+            assertEquals(null, meetingDao.getNextMeetingReminder(now + 10.minutes))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenLaterMeetingIsInserted_thenObserverSignalsChangeEvenIfNextReminderIsUnchanged() = runTest(dispatcher) {
+        val now = Instant.parse("2026-01-02T10:00:00Z")
+        val first = newMeeting(startTime = now + 1.hours)
+        val later = newMeeting(
+            meetingId = QualifiedIDEntity("later-meeting", "wire.com"),
+            conversationId = QualifiedIDEntity("later-conversation", "wire.com"),
+            startTime = now + 2.hours,
+        )
+        insertMeetingDependencies(first)
+        insertMeetingDependencies(later)
+        meetingDao.upsertMeetings(listOf(first), GenerationLimit.Window(now - 1.days, now + 2.days))
+
+        meetingDao.observeMeetingReminderChanges().test {
+            awaitItem()
+            val initial = meetingDao.getNextMeetingReminder(now + 10.minutes)
+            assertEquals(first.startTime, initial?.startTime)
+            meetingDao.upsertMeetings(listOf(later), GenerationLimit.Window(now - 1.days, now + 3.days))
+            awaitItem()
+            assertEquals(initial, meetingDao.getNextMeetingReminder(now + 10.minutes))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenOccurrenceIsReplacedWithSameCount_thenReminderChangeIsEmitted() = runTest(dispatcher) {
+        val now = Instant.parse("2026-01-02T10:00:00Z")
+        val meeting = newMeeting(startTime = now + 1.hours)
+        val movedMeeting = meeting.copy(startTime = now + 2.hours, endTime = meeting.endTime + 1.hours)
+        insertMeetingDependencies(meeting)
+        val window = GenerationLimit.Window(now - 1.days, now + 3.days)
+        meetingDao.upsertMeetings(listOf(meeting), window)
+        assertEquals(1, occurrencesFor(meeting).size)
+
+        meetingDao.observeMeetingReminderChanges().test {
+            awaitItem()
+            meetingDao.upsertMeetings(listOf(movedMeeting), window)
+            awaitItem()
+            assertEquals(1, occurrencesFor(meeting).size)
+            assertEquals(movedMeeting.startTime, meetingDao.getNextMeetingReminder(now + 10.minutes)?.startTime)
+            cancelAndIgnoreRemainingEvents()
         }
     }
 

@@ -62,6 +62,7 @@ import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceDetailsEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingReminderEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -1164,6 +1165,35 @@ class MeetingRepositoryTest {
         }
     }
 
+    @Test
+    fun givenReminderEntity_whenGettingNextReminder_thenMapsAllFields() = runTest {
+        val reminderStart = Instant.parse("2026-06-01T10:00:00Z")
+        val from = Instant.parse("2026-06-01T09:00:00Z")
+        val entity = MeetingReminderEntity("occurrence1", QualifiedIDEntity("meeting1", "domain"), "Meeting 1", reminderStart)
+        val (arrangement, repository) = Arrangement()
+            .withGetNextMeetingReminder(from, entity)
+            .arrange()
+
+        assertEquals(arrangement.meetingMapper.fromDaoToModel(entity), repository.getNextMeetingReminder(from))
+    }
+
+    @Test
+    fun givenReminderEntities_whenGettingRemindersWithin_thenPreservesOrderAndMapsFields() = runTest {
+        val reminderStart = Instant.parse("2026-06-01T10:00:00Z")
+        val start = Instant.parse("2026-06-01T09:00:00Z")
+        val end = Instant.parse("2026-06-01T12:00:00Z")
+        val secondReminderStart = Instant.parse("2026-06-01T11:00:00Z")
+        val entities = listOf(
+            MeetingReminderEntity("a", QualifiedIDEntity("meeting1", "domain"), "First", reminderStart),
+            MeetingReminderEntity("b", QualifiedIDEntity("meeting2", "domain"), "Second", secondReminderStart),
+        )
+        val (arrangement, repository) = Arrangement()
+            .withGetMeetingRemindersWithin(start, end, entities)
+            .arrange()
+
+        assertEquals(entities.map { arrangement.meetingMapper.fromDaoToModel(it) }, repository.getMeetingRemindersWithin(start, end))
+    }
+
     inner class Arrangement {
         internal val selfUserId = TestUser.SELF.id
         internal val meetingDao = mock<MeetingDao>(mode = MockMode.autoUnit)
@@ -1333,6 +1363,14 @@ class MeetingRepositoryTest {
             everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), groupId, members, null, true)
             } returns Either.Right(result)
+        }
+
+        internal fun withGetNextMeetingReminder(from: Instant, result: MeetingReminderEntity) = apply {
+            everySuspend { meetingDao.getNextMeetingReminder(from) } returns result
+        }
+
+        internal fun withGetMeetingRemindersWithin(start: Instant, end: Instant, result: List<MeetingReminderEntity>) = apply {
+            everySuspend { meetingDao.getMeetingRemindersWithin(start, end) } returns result
         }
 
         internal fun arrange() = this to MeetingDataSource(

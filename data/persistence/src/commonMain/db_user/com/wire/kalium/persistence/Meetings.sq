@@ -221,3 +221,26 @@ ORDER BY MeetingOccurrence.occurrence_start ASC,
     MeetingOccurrence.occurrence_end ASC,
     Meeting.title ASC
 LIMIT 1;
+
+selectMeetingReminderChanges:
+-- @CustomKey MeetingOccurrence
+-- @CustomKey Meeting
+SELECT COUNT(*) FROM MeetingOccurrence;
+
+selectNextMeetingReminder:
+SELECT MeetingOccurrence.occurrence_id, MeetingOccurrence.meeting_id,
+    Meeting.title, MeetingOccurrence.occurrence_start
+FROM MeetingOccurrence
+JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+WHERE MeetingOccurrence.occurrence_start > :from
+ORDER BY MeetingOccurrence.occurrence_start ASC, MeetingOccurrence.occurrence_id ASC
+LIMIT 1;
+
+selectMeetingRemindersWithin:
+SELECT MeetingOccurrence.occurrence_id, MeetingOccurrence.meeting_id,
+    Meeting.title, MeetingOccurrence.occurrence_start
+FROM MeetingOccurrence
+JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+WHERE MeetingOccurrence.occurrence_start >= :startInclusive
+    AND MeetingOccurrence.occurrence_start < :endExclusive
+ORDER BY MeetingOccurrence.occurrence_id ASC;
