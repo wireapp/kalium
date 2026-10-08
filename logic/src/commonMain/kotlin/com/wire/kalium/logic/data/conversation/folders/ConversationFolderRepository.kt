@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+@Suppress("TooManyFunctions")
 internal interface ConversationFolderRepository {
 
     suspend fun getFavoriteConversationFolder(): Either<CoreFailure, ConversationFolder>
@@ -69,6 +70,11 @@ internal interface ConversationFolderRepository {
     fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
     suspend fun addFolder(folder: ConversationFolder): Either<CoreFailure, Unit>
     suspend fun getFolder(folderId: String): Either<CoreFailure, FolderWithConversations>
+    suspend fun updateMembership(
+        folderId: String,
+        added: Set<QualifiedID>,
+        removed: Set<QualifiedID>,
+    ): Either<CoreFailure, ConversationFolder>
     suspend fun saveFolder(
         folder: ConversationFolder,
         added: Set<QualifiedID>,
@@ -203,6 +209,19 @@ internal class ConversationFolderDataSource internal constructor(
         conversationFolderDAO.getFoldersWithConversations().first { it.id == folderId }.toModel()
     }
 
+    override suspend fun updateMembership(
+        folderId: String,
+        added: Set<QualifiedID>,
+        removed: Set<QualifiedID>,
+    ): Either<CoreFailure, ConversationFolder> = mutateFolders { folders ->
+        val previous = folders.first { it.id == folderId }
+        val updated = previous.copy(conversationIdList = ((previous.conversationIdList.toSet() - removed) + added).toList())
+        folders.map { if (it.id == folderId) updated else it }
+    }.map { folders ->
+        val saved = folders.first { it.id == folderId }
+        ConversationFolder(saved.id, saved.name, saved.type)
+    }
+
     override suspend fun saveFolder(
         folder: ConversationFolder,
         added: Set<QualifiedID>,
@@ -219,22 +238,22 @@ internal class ConversationFolderDataSource internal constructor(
         folders.filterNot { it.id == folder.id } + FolderWithConversations(
             folder.id, folder.name, FolderType.USER, members.toList(),
         )
-    }
+    }.map { }
 
     override suspend fun deleteFolderAndSync(folderId: String): Either<CoreFailure, Unit> = mutateFolders { folders ->
         require(folders.first { it.id == folderId }.type == FolderType.USER)
         folders.filterNot { it.id == folderId }
-    }
+    }.map { }
 
     // Send one snapshot per batch. A network failure leaves local membership unchanged,
     // allowing the editor to keep its draft and retry without a partially applied batch.
     private suspend fun mutateFolders(
         transform: (List<FolderWithConversations>) -> List<FolderWithConversations>,
-    ): Either<CoreFailure, Unit> = folderMutationMutex.withLock {
+    ): Either<CoreFailure, List<FolderWithConversations>> = folderMutationMutex.withLock {
         wrapStorageRequest { transform(conversationFolderDAO.getFoldersWithConversations().map { it.toModel() }) }
             .flatMap { folders ->
                 wrapApiRequest { userPropertiesApi.updateLabels(LabelListResponseDTO(folders.map { it.toLabel() })) }
-                    .flatMap { persistFolders(folders) }
+                    .flatMap { persistFolders(folders).map { folders } }
             }
     }
 

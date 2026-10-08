@@ -385,6 +385,60 @@ class ConversationFolderRepositoryTest {
         favorite.await().shouldSucceed()
     }
 
+    @Test
+    fun favoriteMembershipBatchPreservesMetadataOtherFoldersAndUntouchedMembers() = runTest {
+        val first = TestConversation.ID
+        val added = first.copy(value = "new")
+        val archived = first.copy(value = "archived")
+        val favorites = FolderWithConversations("favorite", "", FolderType.FAVORITE, listOf(first, archived))
+        val other = FolderWithConversations("other", "Other", FolderType.USER, listOf(first))
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(favorites, other))
+            .withSuccessfulFolderUpdate().withUpdateLabels(NetworkResponse.Success(Unit, emptyMap(), 200))
+        arrangement.repository.updateMembership(favorites.id, setOf(added), setOf(first)).shouldSucceed {
+            assertEquals(ConversationFolder(favorites.id, favorites.name, FolderType.FAVORITE), it)
+        }
+        val expected = listOf(favorites.copy(conversationIdList = listOf(archived, added)), other)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userPropertiesApi.updateLabels(LabelListResponseDTO(expected.map { it.toLabel() }))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationFolderDAO.updateConversationFolders(expected.map { it.toDao() })
+        }
+    }
+
+    @Test
+    fun failedFavoriteMembershipBatchLeavesLocalStateUnchanged() = runTest {
+        val favorites = FolderWithConversations("favorite", "", FolderType.FAVORITE, emptyList())
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(favorites))
+            .withUpdateLabels(NetworkResponse.Error(KaliumException.NoNetwork()))
+        arrangement.repository.updateMembership(favorites.id, setOf(TestConversation.ID), emptySet()).shouldFail()
+        verifySuspend(VerifyMode.not) { arrangement.conversationFolderDAO.updateConversationFolders(any()) }
+    }
+
+    @Test
+    fun clearingFavoritesPreservesTheEmptySystemFolder() = runTest {
+        val favorites = FolderWithConversations("favorite", "", FolderType.FAVORITE, listOf(TestConversation.ID))
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(favorites))
+            .withSuccessfulFolderUpdate().withUpdateLabels(NetworkResponse.Success(Unit, emptyMap(), 200))
+        arrangement.repository.updateMembership(favorites.id, emptySet(), setOf(TestConversation.ID)).shouldSucceed()
+        verifySuspend {
+            arrangement.conversationFolderDAO.updateConversationFolders(listOf(favorites.copy(conversationIdList = emptyList()).toDao()))
+        }
+    }
+
+    @Test
+    fun favoritesCannotBeRenamedOrDeletedAndMembershipRequiresAnExistingFolder() = runTest {
+        val favorites = FolderWithConversations("favorite", "", FolderType.FAVORITE, emptyList())
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(favorites))
+        arrangement.repository.saveFolder(
+            ConversationFolder(favorites.id, "Renamed", FolderType.USER), emptySet(), emptySet(),
+        ).shouldFail()
+        arrangement.repository.deleteFolderAndSync(favorites.id).shouldFail()
+        arrangement.repository.updateMembership("missing", emptySet(), emptySet()).shouldFail()
+        verifySuspend(VerifyMode.not) { arrangement.userPropertiesApi.updateLabels(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.conversationFolderDAO.updateConversationFolders(any()) }
+    }
+
     private class Arrangement {
 
         val conversationFolderDAO = mock<ConversationFolderDAO>()

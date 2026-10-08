@@ -17,6 +17,13 @@ import com.wire.kalium.logic.data.id.ConversationId
 /** Batch membership changes preserve every other folder and archived membership. */
 public interface ManageConversationFolderUseCase {
     public suspend fun getFolder(folderId: String): Either<CoreFailure, FolderWithConversations>
+
+    /** Changes membership of an existing folder without changing its name or type, including Favorites. */
+    public suspend fun updateMembership(
+        folderId: String,
+        added: Set<ConversationId>,
+        removed: Set<ConversationId>,
+    ): Either<CoreFailure, ConversationFolder>
     public suspend fun save(
         folderId: String,
         name: String,
@@ -30,6 +37,12 @@ internal class ManageConversationFolderUseCaseImpl(
     private val repository: ConversationFolderRepository,
 ) : ManageConversationFolderUseCase {
     override suspend fun getFolder(folderId: String): Either<CoreFailure, FolderWithConversations> = repository.getFolder(folderId)
+
+    override suspend fun updateMembership(
+        folderId: String,
+        added: Set<ConversationId>,
+        removed: Set<ConversationId>,
+    ): Either<CoreFailure, ConversationFolder> = repository.updateMembership(folderId, added, removed)
 
     override suspend fun save(
         folderId: String,
