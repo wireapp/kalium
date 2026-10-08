@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,15 +16,20 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.userstorage.di
+package com.wire.kalium.logic.util
 
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.persistence.db.UserDBSecret
-import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
+import platform.Foundation.NSRecursiveLock
 
-public actual class PlatformUserStorageProperties(
-    public val rootPath: String,
-    public val keychainConfig: ApplePersistenceConfig,
-    internal val rootStoragePath: String,
-    internal val userDbSecretProvider: (UserId) -> UserDBSecret
-)
+/** Serializes database-key state transitions across SDK instances in this process. */
+internal object DatabaseKeyLock {
+    private val lock = NSRecursiveLock()
+
+    fun <T> withLock(block: () -> T): T {
+        lock.lock()
+        return try {
+            block()
+        } finally {
+            lock.unlock()
+        }
+    }
+}
