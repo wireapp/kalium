@@ -46,6 +46,7 @@ interface MeetingDao {
         generateOccurrencesWindow: GenerationLimit.Window,
         removeMeetingsAbsentFromUpsertList: Boolean = false,
     )
+
     suspend fun removeOutdatedMeetings(olderThan: Instant)
     suspend fun insertMissingOccurrences(generateOccurrencesWindow: GenerationLimit.Window)
     fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?>
@@ -54,6 +55,7 @@ interface MeetingDao {
         startingOffset: Long,
         from: Instant,
     ): KaliumPager<MeetingOccurrenceDetailsEntity>
+
     suspend fun deleteMeeting(meetingId: QualifiedIDEntity)
     suspend fun getMeetingsByConversationId(conversationId: QualifiedIDEntity): List<MeetingEntity>
     suspend fun getNextUnfinishedMeetingOccurrenceDetailsId(meetingId: QualifiedIDEntity, from: Instant): String?
@@ -218,16 +220,14 @@ internal class MeetingDaoImpl(
 
     override suspend fun getNextMeetingReminder(from: Instant): MeetingReminderEntity? =
         withContext(readDispatcher.value) {
-            meetingsQueries.selectNextMeetingReminder(from) { occurrenceId, meetingId, title, startTime ->
-                MeetingReminderEntity(occurrenceId, meetingId, title, startTime)
-            }.awaitAsOneOrNull()
+            meetingsQueries.selectNextMeetingReminder(from, MeetingMapper::fromViewToModel)
+                .awaitAsOneOrNull()
         }
 
     override suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminderEntity> =
         withContext(readDispatcher.value) {
-            meetingsQueries.selectMeetingRemindersWithin(startInclusive, endExclusive) { occurrenceId, meetingId, title, startTime ->
-                MeetingReminderEntity(occurrenceId, meetingId, title, startTime)
-            }.awaitAsList()
+            meetingsQueries.selectMeetingRemindersWithin(startInclusive, endExclusive, MeetingMapper::fromViewToModel)
+                .awaitAsList()
         }
 }
 

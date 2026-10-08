@@ -250,28 +250,29 @@ class MeetingRepositoryTest {
     }
 
     @Test
-    fun givenUnsupportedMeeting_whenFetchAndPersistMeeting_thenReturnsMeetingNotSupportedFailureAndMeetingIsNotPersistedLocally() = runTest {
-        val meetingId = MeetingId("meeting1", "domain")
-        val meetingDTO = meetingDTO(
-            meetingId = meetingId.toApi(),
-            recurrence = MeetingRecurrenceDTO(frequency = MeetingFrequencyDTO.WEEKLY, interval = 7L, until = null)
-        )
-        val (arrangement, repository) = Arrangement()
-            .withFetchMeetingSuccess(meetingId, meetingDTO)
-            .arrange()
+    fun givenUnsupportedMeeting_whenFetchAndPersistMeeting_thenReturnsMeetingNotSupportedFailureAndMeetingIsNotPersistedLocally() =
+        runTest {
+            val meetingId = MeetingId("meeting1", "domain")
+            val meetingDTO = meetingDTO(
+                meetingId = meetingId.toApi(),
+                recurrence = MeetingRecurrenceDTO(frequency = MeetingFrequencyDTO.WEEKLY, interval = 7L, until = null)
+            )
+            val (arrangement, repository) = Arrangement()
+                .withFetchMeetingSuccess(meetingId, meetingDTO)
+                .arrange()
 
-        val result = repository.fetchAndPersistMeeting(meetingId)
+            val result = repository.fetchAndPersistMeeting(meetingId)
 
-        assertEquals(MeetingDataSource.MeetingNotSupportedFailure, assertIs<Either.Left<CoreFailure>>(result).value)
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingApi.fetchMeeting(meetingId.toApi())
+            assertEquals(MeetingDataSource.MeetingNotSupportedFailure, assertIs<Either.Left<CoreFailure>>(result).value)
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.meetingApi.fetchMeeting(meetingId.toApi())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
+                arrangement.userRepository.fetchUsersIfUnknownByIds(any())
+                arrangement.meetingDao.upsertMeetings(any(), any())
+            }
         }
-        verifySuspend(VerifyMode.not) {
-            arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
-            arrangement.userRepository.fetchUsersIfUnknownByIds(any())
-            arrangement.meetingDao.upsertMeetings(any(), any())
-        }
-    }
 
     @Test
     fun givenApiFetchMeetingFails_whenFetchAndPersistMeeting_thenReturnsNetworkFailureAndMeetingIsNotPersistedLocally() = runTest {
@@ -1169,7 +1170,7 @@ class MeetingRepositoryTest {
     fun givenReminderEntity_whenGettingNextReminder_thenMapsAllFields() = runTest {
         val reminderStart = Instant.parse("2026-06-01T10:00:00Z")
         val from = Instant.parse("2026-06-01T09:00:00Z")
-        val entity = MeetingReminderEntity("occurrence1", QualifiedIDEntity("meeting1", "domain"), "Meeting 1", reminderStart)
+        val entity = meetingReminderEntity(1, reminderStart)
         val (arrangement, repository) = Arrangement()
             .withGetNextMeetingReminder(from, entity)
             .arrange()
@@ -1183,10 +1184,7 @@ class MeetingRepositoryTest {
         val start = Instant.parse("2026-06-01T09:00:00Z")
         val end = Instant.parse("2026-06-01T12:00:00Z")
         val secondReminderStart = Instant.parse("2026-06-01T11:00:00Z")
-        val entities = listOf(
-            MeetingReminderEntity("a", QualifiedIDEntity("meeting1", "domain"), "First", reminderStart),
-            MeetingReminderEntity("b", QualifiedIDEntity("meeting2", "domain"), "Second", secondReminderStart),
-        )
+        val entities = listOf(meetingReminderEntity(1, reminderStart), meetingReminderEntity(2, secondReminderStart))
         val (arrangement, repository) = Arrangement()
             .withGetMeetingRemindersWithin(start, end, entities)
             .arrange()
@@ -1517,5 +1515,13 @@ class MeetingRepositoryTest {
         mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+    )
+
+    private fun meetingReminderEntity(index: Int, reminderStart: Instant) = MeetingReminderEntity(
+        occurrenceId = "occurrence$index",
+        meetingId = QualifiedIDEntity("meeting$index", "domain"),
+        conversationId = QualifiedIDEntity("conversation$index", "domain"),
+        title = "Meeting $index",
+        startTime = reminderStart,
     )
 }

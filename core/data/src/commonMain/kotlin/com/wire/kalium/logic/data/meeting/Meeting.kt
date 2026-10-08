@@ -87,6 +87,7 @@ data class UpsertMeeting(
 data class MeetingReminder(
     val occurrenceId: String,
     val meetingId: MeetingId,
+    val conversationId: ConversationId,
     val title: String,
     val startTime: Instant,
 ) {

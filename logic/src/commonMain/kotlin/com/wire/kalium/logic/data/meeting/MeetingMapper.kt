@@ -146,6 +146,7 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
     override fun fromDaoToModel(reminder: MeetingReminderEntity): MeetingReminder = MeetingReminder(
         occurrenceId = reminder.occurrenceId,
         meetingId = reminder.meetingId.toModel(),
+        conversationId = reminder.conversationId.toModel(),
         title = reminder.title,
         startTime = reminder.startTime
     )

@@ -228,8 +228,12 @@ selectMeetingReminderChanges:
 SELECT COUNT(*) FROM MeetingOccurrence;
 
 selectNextMeetingReminder:
-SELECT MeetingOccurrence.occurrence_id, MeetingOccurrence.meeting_id,
-    Meeting.title, MeetingOccurrence.occurrence_start
+SELECT
+    MeetingOccurrence.occurrence_id,
+    MeetingOccurrence.meeting_id,
+    Meeting.conversation_id,
+    Meeting.title,
+    MeetingOccurrence.occurrence_start
 FROM MeetingOccurrence
 JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
 WHERE MeetingOccurrence.occurrence_start > :from
@@ -237,8 +241,12 @@ ORDER BY MeetingOccurrence.occurrence_start ASC, MeetingOccurrence.occurrence_id
 LIMIT 1;
 
 selectMeetingRemindersWithin:
-SELECT MeetingOccurrence.occurrence_id, MeetingOccurrence.meeting_id,
-    Meeting.title, MeetingOccurrence.occurrence_start
+SELECT
+    MeetingOccurrence.occurrence_id,
+    MeetingOccurrence.meeting_id,
+    Meeting.conversation_id,
+    Meeting.title,
+    MeetingOccurrence.occurrence_start
 FROM MeetingOccurrence
 JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
 WHERE MeetingOccurrence.occurrence_start >= :startInclusive
