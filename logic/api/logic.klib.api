@@ -1513,6 +1513,12 @@ abstract interface com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurren
     }
 }
 
+abstract interface com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase { // com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase|null[0]
+    abstract fun changes(): kotlinx.coroutines.flow/Flow<kotlin/Unit> // com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase.changes|changes(){}[0]
+    abstract suspend fun next(kotlinx.datetime/Instant): com.wire.kalium.logic.data.meeting/MeetingReminder? // com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase.next|next(kotlinx.datetime.Instant){}[0]
+    abstract suspend fun within(kotlinx.datetime/Instant, kotlinx.datetime/Instant): kotlin.collections/List<com.wire.kalium.logic.data.meeting/MeetingReminder> // com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase.within|within(kotlinx.datetime.Instant;kotlinx.datetime.Instant){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase { // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase|null[0]
     abstract suspend fun invoke(kotlin/String): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.meeting/MeetingOccurrence?> // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase.invoke|invoke(kotlin.String){}[0]
 }
@@ -4535,6 +4541,8 @@ final class com.wire.kalium.logic.feature.meeting/MeetingScope { // com.wire.kal
         final fun <get-getPaginatedMeetingOccurrenceDetails>(): com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails.<get-getPaginatedMeetingOccurrenceDetails>|<get-getPaginatedMeetingOccurrenceDetails>(){}[0]
     final val maintainMeetingOccurrences // com.wire.kalium.logic.feature.meeting/MeetingScope.maintainMeetingOccurrences|{}maintainMeetingOccurrences[0]
         final fun <get-maintainMeetingOccurrences>(): com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.maintainMeetingOccurrences.<get-maintainMeetingOccurrences>|<get-maintainMeetingOccurrences>(){}[0]
+    final val meetingReminders // com.wire.kalium.logic.feature.meeting/MeetingScope.meetingReminders|{}meetingReminders[0]
+        final fun <get-meetingReminders>(): com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.meetingReminders.<get-meetingReminders>|<get-meetingReminders>(){}[0]
     final val observeMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence|{}observeMeetingOccurrence[0]
         final fun <get-observeMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence.<get-observeMeetingOccurrence>|<get-observeMeetingOccurrence>(){}[0]
     final val updateMeeting // com.wire.kalium.logic.feature.meeting/MeetingScope.updateMeeting|{}updateMeeting[0]

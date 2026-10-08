@@ -5440,6 +5440,12 @@ public final class com/wire/kalium/logic/feature/meeting/MaintainMeetingOccurren
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/meeting/MeetingRemindersUseCase {
+	public abstract fun changes ()Lkotlinx/coroutines/flow/Flow;
+	public abstract fun next (Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun within (Lkotlinx/datetime/Instant;Lkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getCreateNewMeeting ()Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase;
 	public final fun getDeleteMeetingForEveryone ()Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase;
@@ -5448,6 +5454,7 @@ public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getGetNextUnfinishedMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
 	public final fun getMaintainMeetingOccurrences ()Lcom/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase;
+	public final fun getMeetingReminders ()Lcom/wire/kalium/logic/feature/meeting/MeetingRemindersUseCase;
 	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
 	public final fun getUpdateMeeting ()Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase;
 }
