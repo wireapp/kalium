@@ -492,7 +492,7 @@ class MeetingRepositoryTest {
         )
 
         assertTrue(result.isRight())
-        assertEquals(expectedMLSAdditionResult, result.getOrNull())
+        assertEquals(CreateNewMeetingResult(response.conversation.id.toModel(), expectedMLSAdditionResult), result.getOrNull())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.createNewMeeting(arrangement.meetingMapper.fromModelToApi(createMeeting))
             arrangement.persistConversations(
@@ -659,7 +659,7 @@ class MeetingRepositoryTest {
         )
 
         assertTrue(result.isRight())
-        assertEquals(MLSAdditionResult.Empty, result.getOrNull())
+        assertEquals(CreateNewMeetingResult(response.conversation.id.toModel(), MLSAdditionResult.Empty), result.getOrNull())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.createNewMeeting(arrangement.meetingMapper.fromModelToApi(createMeeting))
             arrangement.persistConversations(
