@@ -5415,6 +5415,31 @@ public final class com/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccu
 	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;Landroidx/paging/PagingConfig;JLkotlinx/datetime/Instant;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase$Result$Failure : com/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase$Result {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase$Result$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase$Result$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoreFailure ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase$Result$Success : com/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getCreateNewMeeting ()Lcom/wire/kalium/logic/feature/meeting/CreateNewMeetingUseCase;
 	public final fun getDeleteMeetingForEveryone ()Lcom/wire/kalium/logic/feature/meeting/DeleteMeetingForEveryoneUseCase;
@@ -5422,6 +5447,7 @@ public final class com/wire/kalium/logic/feature/meeting/MeetingScope {
 	public final fun getEnsureMeetingIsMLSEstablished ()Lcom/wire/kalium/logic/feature/meeting/EnsureMeetingIsMLSEstablishedUseCase;
 	public final fun getGetNextUnfinishedMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/GetNextUnfinishedMeetingOccurrenceUseCase;
 	public final fun getGetPaginatedMeetingOccurrenceDetails ()Lcom/wire/kalium/logic/feature/meeting/GetPaginatedMeetingOccurrencesUseCase;
+	public final fun getMaintainMeetingOccurrences ()Lcom/wire/kalium/logic/feature/meeting/MaintainMeetingOccurrencesUseCase;
 	public final fun getObserveMeetingOccurrence ()Lcom/wire/kalium/logic/feature/meeting/ObserveMeetingOccurrenceUseCase;
 	public final fun getUpdateMeeting ()Lcom/wire/kalium/logic/feature/meeting/UpdateMeetingUseCase;
 }

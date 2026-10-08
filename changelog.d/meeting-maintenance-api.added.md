@@ -1,0 +1,1 @@
+Expose explicit local meeting occurrence maintenance through MeetingScope with typed Success/Failure results. Reuse existing SDK generation/storage while preserving platform scheduler bindings and PagingData APIs. For remote synchronization, use the existing public UserSessionScope.syncMeetingsUseCase.
