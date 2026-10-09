@@ -138,6 +138,7 @@ kotlin {
         val appleMain by getting {
             dependsOn(nonJsMain)
             dependencies {
+                implementation(projects.core.util)
                 implementation(libs.coreCryptoKmp)
             }
         }

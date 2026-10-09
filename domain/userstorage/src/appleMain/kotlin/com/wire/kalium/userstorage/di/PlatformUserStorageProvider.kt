@@ -34,7 +34,10 @@ public actual class PlatformUserStorageProvider : UserStorageProvider() {
     ): UserStorage {
         val userIdEntity = UserIDEntity(userId.value, userId.domain)
         val database = userDatabaseBuilder(
-            platformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(platformProperties.rootStoragePath)),
+            platformDatabaseData = PlatformDatabaseData(
+                StorageData.FileBacked(platformProperties.rootStoragePath),
+                accountResourceAccess = platformProperties.accountResourceAccess
+            ),
             userId = userIdEntity,
             passphrase = null,
             dispatcher = KaliumDispatcherImpl.io,

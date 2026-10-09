@@ -38,7 +38,7 @@ actual fun userDatabaseBuilder(
     enableWAL: Boolean,
     dbInvalidationControlEnabled: Boolean
 ): UserDatabaseBuilder {
-    val rawDriver = when (platformDatabaseData.storageData) {
+    val nativeDriver = when (platformDatabaseData.storageData) {
         is StorageData.FileBacked -> {
             NSFileManager.defaultManager.createDirectoryAtPath(
                 platformDatabaseData.storageData.storePath,
@@ -58,6 +58,10 @@ actual fun userDatabaseBuilder(
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
     }
+
+    val rawDriver = platformDatabaseData.accountResourceAccess?.let {
+        AppleWriteAccessSqlDriver(nativeDriver, it)
+    } ?: nativeDriver
 
     val invalidationController = DbInvalidationController(
         enabled = dbInvalidationControlEnabled,

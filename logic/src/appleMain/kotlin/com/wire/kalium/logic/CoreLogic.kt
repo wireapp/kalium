@@ -111,9 +111,15 @@ public actual class CoreLogic(
         userSessionScopeProvider.value.prepareReceiving(userId, scope)
 
     /**
-     * Release app ownership before allowing the NSE to use this account. First cancel and join
-     * every host account operation and collector, including global account observers. This method
-     * drains session workers and closes resources; it cannot drain coroutines owned by the host.
+     * Pause account writes and native crypto while retaining the session and database readers.
+     * The host must stop foreground sync and exclude accounts with active calls first.
+     */
+    public suspend fun suspendSessionScope(userId: UserId) {
+        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).suspendForBackground(userId)
+    }
+
+    /**
+     * Fully close an account after the host has cancelled and joined its users and collectors.
      * Failure keeps the account unavailable until process exit.
      */
     public suspend fun releaseSessionScope(userId: UserId) {

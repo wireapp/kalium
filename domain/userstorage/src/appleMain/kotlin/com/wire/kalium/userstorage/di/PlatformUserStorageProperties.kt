@@ -23,5 +23,6 @@ import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 public actual class PlatformUserStorageProperties(
     public val rootPath: String,
     public val keychainConfig: ApplePersistenceConfig,
-    internal val rootStoragePath: String
+    internal val rootStoragePath: String,
+    public val accountResourceAccess: com.wire.kalium.util.AccountResourceAccess? = null
 )

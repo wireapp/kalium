@@ -138,6 +138,33 @@ class AppleAccountSessionTest {
     }
 
     @Test
+    fun `background handoff keeps session and DAO identity while releasing ownership`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val first = logic.openSessionScope(userId)
+            logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            val metadata = first.userStorage.database.metadataDAO
+            metadata.insertValue("before", "handoff-test")
+            try {
+                logic.suspendSessionScope(userId)
+                kotlin.test.assertSame(first, logic.getSessionScope(userId))
+                assertEquals("before", metadata.valueByKey("handoff-test"))
+                val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                    as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+                val pending = async(start = CoroutineStart.UNDISPATCHED) { metadata.insertValue("after", "handoff-test") }
+                assertFalse(pending.isCompleted)
+                lease.release()
+                val second = logic.openSessionScope(userId)
+                kotlin.test.assertSame(first, second)
+                pending.await()
+                assertEquals("after", metadata.valueByKey("handoff-test"))
+            } finally {
+                logic.releaseSessionScope(userId)
+            }
+        }
+    }
+
+    @Test
     fun `app closes real account storage before releasing and can reopen it`() = runTest {
         withContext(Dispatchers.Default) {
             val (root, logic) = fixture(prepared = true)
@@ -353,6 +380,48 @@ class AppleAccountSessionTest {
                 as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
             assertNull(ApplePreparedAccountStore(root, userId).read(afterReopen))
             afterReopen.release()
+        }
+    }
+
+    @Test
+    fun `background handoff drains crypto callback writes without replacing the session`() = runTest {
+        withContext(Dispatchers.Default) {
+            val (root, logic) = fixture(prepared = true)
+            val scope = logic.openSessionScope(userId)
+            assertIs<Either.Right<*>>(logic.getGlobalScope().sessionRepository.storeSession(session()))
+            assertIs<Either.Right<*>>(scope.clientRepository.persistClientId(ClientId("abc123")))
+            val proteus = scope.proteusClientProvider.getOrCreate()
+            assertIs<Either.Right<*>>(logic.userSessionScopeProvider.value.prepareReceiving(userId, scope))
+            logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
+            val entered = CompletableDeferred<Unit>()
+            val finish = CompletableDeferred<Unit>()
+            val worker = async {
+                proteus.transaction("handoff-callback") {
+                    entered.complete(Unit)
+                    finish.await()
+                    scope.userStorage.database.metadataDAO.insertValue(value = "committed", key = "crypto-callback")
+                }
+            }
+            entered.await()
+            val handoff = async(start = CoroutineStart.UNDISPATCHED) { logic.suspendSessionScope(userId) }
+            try {
+                assertFalse(handoff.isCompleted)
+                finish.complete(Unit)
+                worker.await()
+                handoff.await()
+                val lease = assertIs<Either.Right<*>>(AppleAccountRuntimeOwner(root).tryAcquire(userId)).value
+                    as com.wire.kalium.logic.sync.receiving.AccountRuntimeLease
+                lease.release()
+                kotlin.test.assertSame(scope, logic.openSessionScope(userId))
+                assertEquals("committed", scope.userStorage.database.metadataDAO.valueByKey("crypto-callback"))
+                // The retained client must lazily open a new native generation after the handoff.
+                assertTrue(proteus.newPreKeysAuto(1).isNotEmpty())
+            } finally {
+                finish.complete(Unit)
+                worker.await()
+                handoff.await()
+                logic.releaseSessionScope(userId)
+            }
         }
     }
 

@@ -20,6 +20,11 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.util.AccountResourceAccess
+import com.wire.kalium.cryptography.ReopenableCoreCryptoCentral
+import com.wire.kalium.cryptography.coreCryptoCentral
+import com.wire.kalium.persistence.db.refreshAfterExternalWrites
+
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.error.StorageFailure
@@ -99,28 +104,32 @@ internal actual open class UserSessionScopeProviderImpl(
     @Suppress("TooGenericExceptionCaught")
     actual override suspend fun invalidateReceiving(userId: UserId, originatingScope: CoroutineScope, cryptoReplacement: Boolean) {
         val account = checkNotNull(accounts[userId]) { "Account preparation requires ownership" }
-        account.mutex.withLock {
-            checkOwnedScope(account, userId, originatingScope)
-            try {
-                revokeReadiness(account, userId)
-                account.canRefreshReadiness = false
-                // Restore may replace files behind existing crypto clients. Only a fresh app scope
-                // may validate the restored files and publish readiness again.
-                account.needsCryptoReopen = account.needsCryptoReopen || cryptoReplacement
-            } catch (failure: Throwable) {
-                account.unavailable = true
-                throw failure
+        account.access.withAccess {
+            account.mutex.withLock {
+                checkOwnedScope(account, userId, originatingScope)
+                try {
+                    revokeReadiness(account, userId)
+                    account.canRefreshReadiness = false
+                    // Restore may replace files behind existing crypto clients. Only a fresh app scope
+                    // may validate the restored files and publish readiness again.
+                    account.needsCryptoReopen = account.needsCryptoReopen || cryptoReplacement
+                } catch (failure: Throwable) {
+                    account.unavailable = true
+                    throw failure
+                }
             }
         }
     }
 
     actual override suspend fun prepareReceiving(userId: UserId, originatingScope: CoroutineScope): Either<CoreFailure, Unit> {
         val account = checkNotNull(accounts[userId]) { "Account preparation requires ownership" }
-        return account.mutex.withLock {
-            checkOwnedScope(account, userId, originatingScope)
-            account.canRefreshReadiness = false
-            prepareOwned(account, userId, checkNotNull(super.get(userId))).also {
-                account.canRefreshReadiness = it is Either.Right
+        return account.access.withAccess {
+            account.mutex.withLock {
+                checkOwnedScope(account, userId, originatingScope)
+                account.canRefreshReadiness = false
+                prepareOwned(account, userId, checkNotNull(super.get(userId))).also {
+                    account.canRefreshReadiness = it is Either.Right
+                }
             }
         }
     }
@@ -196,14 +205,14 @@ internal actual open class UserSessionScopeProviderImpl(
     @Suppress("TooGenericExceptionCaught")
     actual override suspend fun open(userId: UserId): UserSessionScope {
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return account.mutex.withLock {
+        return withOwnedAccount(account, userId) {
             check(!account.unavailable) { "Account resources are unavailable until process exit" }
             super.get(userId)?.let {
                 if (!it.coroutineContext.job.isActive) {
                     account.unavailable = true
                     error("Account workers stopped before resources were released")
                 }
-                return@withLock it
+                return@withOwnedAccount it
             }
             acquire(account, userId)
             try {
@@ -219,7 +228,7 @@ internal actual open class UserSessionScopeProviderImpl(
     }
 
     actual override fun get(userId: UserId): UserSessionScope? =
-        accounts[userId]?.takeIf { it.lease != null && !it.unavailable }?.let {
+        accounts[userId]?.takeIf { !it.unavailable }?.let {
             super.get(userId)?.takeIf { scope -> scope.coroutineContext.job.isActive }
         }
 
@@ -233,11 +242,12 @@ internal actual open class UserSessionScopeProviderImpl(
         prepare: suspend () -> Unit,
         clearLocalData: suspend () -> Unit,
     ): Boolean {
-        val account = accounts[userId] ?: return false
-        return account.mutex.withLock {
+        val account = accounts[userId]?.takeIf { super.get(userId) === originatingScope } ?: return false
+        return withOwnedAccount(account, userId) {
             // A queued logout for an old scope must not mutate a released or reopened account.
-            if (super.get(userId) !== originatingScope || account.lease == null) return@withLock false
+            if (super.get(userId) !== originatingScope) return@withOwnedAccount false
             check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
+            acquire(account, userId)
             account.unavailable = true
             revokeReadiness(account, userId)
             prepare()
@@ -248,11 +258,43 @@ internal actual open class UserSessionScopeProviderImpl(
         }
     }
 
+    /** Keep the session and its public clients alive; transfer only writable/native resources. */
+    // Keep ownership on uncertain cleanup, and retry if a concurrent full release replaced the gate.
+    @Suppress("TooGenericExceptionCaught", "ReturnCount")
+    suspend fun suspendForBackground(userId: UserId) {
+        val account = accounts[userId] ?: return
+        while (true) {
+            val access = account.access
+            // Drain before taking the lifecycle mutex: admitted operations may still need it
+            // to invalidate notification readiness or complete account preparation.
+            access.pause {
+                account.mutex.withLock {
+                    if (access !== account.access || account.lease == null) return@withLock
+                    check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
+                    try {
+                        super.get(userId)?.let { scope ->
+                            if (account.canRefreshReadiness) prepareOwned(account, userId, scope)
+                            else revokeReadiness(account, userId)
+                        }
+                        account.crypto.keys.forEach { it.suspendNativeResources() }
+                        account.lease?.release()
+                        account.lease = null
+                    } catch (failure: Throwable) {
+                        account.unavailable = true
+                        throw failure
+                    }
+                }
+            }
+            if (access === account.access) return
+        }
+    }
+
     /** The host must quiesce account use cases and global account collectors before requesting release. */
     actual override suspend fun delete(userId: UserId) = withContext(NonCancellable) {
         val account = accounts[userId] ?: return@withContext
-        account.mutex.withLock {
+        withOwnedAccount(account, userId) {
             check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
+            acquire(account, userId)
             account.unavailable = true
             super.get(userId)?.let { scope ->
                 // Drain before entering crypto: a worker can hold a non-cancellable transaction.
@@ -274,12 +316,14 @@ internal actual open class UserSessionScopeProviderImpl(
         account.unavailable = false
         account.needsCryptoReopen = false
         account.canRefreshReadiness = false
+        account.crypto.clear()
+        account.access = AccountResourceAccess()
     }
 
     @Suppress("TooGenericExceptionCaught")
     actual override suspend fun deleteSession(userId: UserId, sessionRepository: SessionRepository): Either<StorageFailure, Unit> {
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return account.mutex.withLock {
+        return withOwnedAccount(account, userId) {
             try {
                 check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
                 acquire(account, userId)
@@ -295,6 +339,8 @@ internal actual open class UserSessionScopeProviderImpl(
                         account.unavailable = false
                         account.needsCryptoReopen = false
                         account.canRefreshReadiness = false
+                        account.crypto.clear()
+                        account.access = AccountResourceAccess()
                     }
                 }
                 result
@@ -314,7 +360,7 @@ internal actual open class UserSessionScopeProviderImpl(
     ): Either<StorageFailure, Unit> {
         val userId = session.accountTokens.userId
         val account = accounts.computeIfAbsent(userId) { OwnedAccount() }
-        return account.mutex.withLock {
+        return withOwnedAccount(account, userId) {
             try {
                 check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
                 acquire(account, userId)
@@ -326,6 +372,8 @@ internal actual open class UserSessionScopeProviderImpl(
                     super.delete(userId)
                     account.needsCryptoReopen = false
                     account.canRefreshReadiness = false
+                    account.crypto.clear()
+                    account.access = AccountResourceAccess()
                 }
                 sessionRepository.storeSession(session).also {
                     // A failed store may already have changed account metadata or credentials.
@@ -349,6 +397,40 @@ internal actual open class UserSessionScopeProviderImpl(
         }
     }
 
+    private suspend fun <T> withOwnedAccount(
+        account: OwnedAccount,
+        userId: UserId,
+        operation: suspend () -> T,
+    ): T {
+        while (true) {
+            val access = account.access
+            var completed = false
+            var result: T? = null
+            access.withResumedAccess(
+                openResources = {
+                    account.mutex.withLock {
+                        check(!account.unavailable) { "Account resources are unavailable until process exit" }
+                        if (access === account.access) {
+                            acquire(account, userId)
+                            revokeReadiness(account, userId)
+                            super.get(userId)?.userStorage?.database?.refreshAfterExternalWrites()
+                        }
+                    }
+                },
+                operation = {
+                    account.mutex.withLock {
+                        if (access === account.access) {
+                            result = operation()
+                            completed = true
+                        }
+                    }
+                },
+            )
+            @Suppress("UNCHECKED_CAST")
+            if (completed) return result as T
+        }
+    }
+
     private suspend fun acquire(account: OwnedAccount, userId: UserId) {
         if (account.lease == null) {
             account.lease = when (val acquired = owner.acquire(userId)) {
@@ -361,6 +443,10 @@ internal actual open class UserSessionScopeProviderImpl(
     private class OwnedAccount {
         val mutex = Mutex()
 
+        @Volatile var access = AccountResourceAccess()
+
+        val crypto = ConcurrentMutableMap<ReopenableCoreCryptoCentral, Unit>()
+
         @Volatile var lease: AccountRuntimeLease? = null
 
         @Volatile var unavailable = false
@@ -371,7 +457,9 @@ internal actual open class UserSessionScopeProviderImpl(
     }
 
     override fun create(userId: UserId): UserSessionScope {
-        check(accounts[userId]?.lease != null) { "Account construction requires ownership" }
+        val account = checkNotNull(accounts[userId])
+        check(account.lease != null) { "Account construction requires ownership" }
+        val access = account.access
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
         val rootStoragePath = "$rootAccountPath/storage"
         val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
@@ -383,6 +471,7 @@ internal actual open class UserSessionScopeProviderImpl(
                 rootPath = rootPathsProvider.rootPath,
                 keychainConfig = keychainConfig,
                 rootStoragePath = rootStoragePath,
+                accountResourceAccess = access,
             ),
             userId,
             globalScope,
@@ -398,7 +487,12 @@ internal actual open class UserSessionScopeProviderImpl(
             this,
             networkStateObserver,
             logoutCallback,
-            userAgent
+            userAgent,
+            coreCryptoCentralFactory = { root, key ->
+                ReopenableCoreCryptoCentral(access) { coreCryptoCentral(root, key) }.also {
+                    account.crypto[it] = Unit
+                }
+            },
         )
     }
 

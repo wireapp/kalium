@@ -20,6 +20,9 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logic.data.client.guardedBy
+import com.wire.kalium.logic.network.guardedBy
+
 import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
@@ -667,12 +670,16 @@ public class UserSessionScope internal constructor(
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
     private val enableDurableMLSReceiveRecovery: Boolean = false,
+    private val resourceAccess: com.wire.kalium.util.AccountResourceAccess? = null,
+    private val coreCryptoCentralFactory: suspend (String, ByteArray) -> com.wire.kalium.cryptography.CoreCryptoCentral = { root, key ->
+        com.wire.kalium.cryptography.coreCryptoCentral(root, key)
+    },
 ) : CoroutineScope {
     private val notificationEventsManager = NotificationEventsManagerImpl()
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
-    private val userStorage = userStorageProvider.getOrCreate(
+    internal val userStorage = userStorageProvider.getOrCreate(
         userId,
         platformUserStorageProperties,
         kaliumConfigs.shouldEncryptData(),
@@ -820,7 +827,7 @@ public class UserSessionScope internal constructor(
     private val accessTokenRefresher: AccessTokenRefresher
         get() = AccessTokenRefresherImpl(
             repository = accessTokenRepository
-        )
+        ).guardedBy(resourceAccess) { sessionManager.session()?.refreshToken }
 
     private val sessionManager: SessionManager = SessionManagerImpl(
         sessionRepository = globalScope.sessionRepository,
@@ -830,7 +837,7 @@ public class UserSessionScope internal constructor(
         tokenStorage = globalPreferences.authTokenStorage,
         // Token failures can originate in a non-cancellable event worker that logout must drain.
         logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = false) }
-    )
+    ).guardedBy(resourceAccess)
 
     /**
      * Keep the session's Nomad URL lookup in one place so both networking and hook setup share the same value.
@@ -901,8 +908,9 @@ public class UserSessionScope internal constructor(
             userId = userId,
             passphraseStorage = globalPreferences.passphraseStorage,
             proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler,
-            currentClientIdProvider = clientIdProvider
-        )
+            currentClientIdProvider = clientIdProvider,
+            coreCryptoCentralFactory = coreCryptoCentralFactory,
+        ).guardedBy(resourceAccess)
     }
 
     internal val proteusClientProvider: ProteusClientProvider by proteusClientProviderDelegate
@@ -927,8 +935,9 @@ public class UserSessionScope internal constructor(
             featureConfigRepository = featureConfigRepository,
             mlsTransportProvider = mlsTransportProvider,
             epochObserver = epochChangesObserver,
-            processingScope = this@UserSessionScope
-        )
+            processingScope = this@UserSessionScope,
+            coreCryptoCentralFactory = coreCryptoCentralFactory,
+        ).guardedBy(resourceAccess)
     }
 
     internal val mlsClientProvider: MLSClientProvider by mlsClientProviderDelegate

@@ -63,13 +63,15 @@ internal interface ProteusClientProvider : CryptoBackupExporter {
     suspend fun getOrError(): Either<CoreFailure, ProteusClient>
 }
 
+@Suppress("LongParameterList") // Inject the native factory without changing provider consumers.
 internal class ProteusClientProviderImpl(
     private val rootProteusPath: String,
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
+    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler,
+    private val coreCryptoCentralFactory: suspend (String, ByteArray) -> CoreCryptoCentral = { root, key -> coreCryptoCentral(root, key) }
 ) : ProteusClientProvider, CryptoBackupExporter {
 
     private var _proteusClient: ProteusClient? = null
@@ -127,10 +129,7 @@ internal class ProteusClientProviderImpl(
         val central = try {
 
             val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath)
-            coreCryptoCentral(
-                rootDir = rootProteusPath,
-                passphrase = dbSecret.passphrase,
-            )
+            coreCryptoCentralFactory(rootProteusPath, dbSecret.passphrase)
         } catch (e: Exception) {
             // Only a failed cleanup can leave native resources open. Other failures can be retried.
             if (e is CoreCryptoOpenCleanupException) openFailure = e

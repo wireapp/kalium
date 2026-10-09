@@ -53,7 +53,10 @@ internal fun UserSessionScope(
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
     logoutCallback: LogoutCallback,
-    userAgent: String
+    userAgent: String,
+    coreCryptoCentralFactory: suspend (String, ByteArray) -> com.wire.kalium.cryptography.CoreCryptoCentral = { root, key ->
+        com.wire.kalium.cryptography.coreCryptoCentral(root, key)
+    },
 ): UserSessionScope {
 
     val clientConfig: ClientConfig = ClientConfigImpl()
@@ -77,5 +80,7 @@ internal fun UserSessionScope(
         networkStateObserver,
         logoutCallback,
         enableDurableMLSReceiveRecovery = true,
+        resourceAccess = platformUserStorageProperties.accountResourceAccess,
+        coreCryptoCentralFactory = coreCryptoCentralFactory,
     )
 }

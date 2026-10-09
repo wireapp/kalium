@@ -39,7 +39,8 @@ import platform.posix.getenv
 // TODO encrypt database using sqlcipher
 actual data class PlatformDatabaseData(
     val storageData: StorageData,
-    val useGradleSafeSqliterLogging: Boolean = false
+    val useGradleSafeSqliterLogging: Boolean = false,
+    val accountResourceAccess: com.wire.kalium.util.AccountResourceAccess? = null
 )
 
 sealed class StorageData {
