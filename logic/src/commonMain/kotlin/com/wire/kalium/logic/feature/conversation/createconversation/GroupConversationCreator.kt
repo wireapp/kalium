@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.normalizeFederatedBackendConflict
+import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
@@ -152,8 +153,9 @@ internal class GroupConversationCreatorImpl(
             },
             { true }
         )
-        pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(conversationId))
-        return wasDeleted
+        return wrapStorageRequest {
+            pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(conversationId))
+        }.fold({ false }, { wasDeleted })
     }
 
     private fun Conversation.isMLSEstablished(): Boolean {
