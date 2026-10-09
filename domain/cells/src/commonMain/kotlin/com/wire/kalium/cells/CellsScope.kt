@@ -44,7 +44,6 @@ import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.NodeServiceBuilder
 import com.wire.kalium.cells.domain.SelfTeamIdProvider
 import com.wire.kalium.cells.domain.SelfTeamIdProviderImpl
-import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCase
@@ -162,9 +161,7 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpRedirect
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.FileSystem
@@ -204,15 +201,11 @@ public class CellsScope(
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     private val cellsCredentialsProvider: CellsCredentialsProvider by lazy {
-        CellsCredentialsProvider(getCellConfig)
-    }
-
-    private val cellClientCredentialsDeferred: Deferred<CellsCredentials> by lazy {
-        async { cellsCredentialsProvider.getCredentials() }
+        CellsCredentialsProviderImpl(getCellConfig)
     }
 
     private val cellAwsClient: CellsAwsClient by lazy {
-        cellsAwsClient(cellClientCredentialsDeferred, sessionManager, accessTokenApi)
+        cellsAwsClient(cellsCredentialsProvider, sessionManager, accessTokenApi)
     }
 
     private val nodeServiceApiMutex = Mutex()
@@ -226,7 +219,7 @@ public class CellsScope(
         return nodeServiceApiMutex.withLock {
             _nodeServiceApi ?: NodeServiceBuilder
                 .withHttpClient(cellsClient)
-                .withCredentials(cellClientCredentialsDeferred)
+                .withCredentials(cellsCredentialsProvider)
                 .build()
                 .also { _nodeServiceApi = it }
         }
@@ -342,11 +335,11 @@ public class CellsScope(
     }
 
     public val createPublicLinkUseCase: CreatePublicLinkUseCase by lazy {
-        CreatePublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
+        CreatePublicLinkUseCaseImpl(cellsCredentialsProvider, cellsRepository)
     }
 
     public val getPublicLinkUseCase: GetPublicLinkUseCase by lazy {
-        GetPublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
+        GetPublicLinkUseCaseImpl(cellsCredentialsProvider, cellsRepository)
     }
 
     public val deletePublicLinkUseCase: DeletePublicLinkUseCase by lazy {
