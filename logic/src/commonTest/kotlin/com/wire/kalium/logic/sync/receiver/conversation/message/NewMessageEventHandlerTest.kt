@@ -58,6 +58,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class NewMessageEventHandlerTest {
 
@@ -490,6 +492,131 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
+    fun givenDifferentBufferedErrorsSpanThreshold_whenHandling_thenVerifyStaleEpoch() = runTest {
+        val subConversationId = SubconversationId("subconversation-id")
+        val firstTimestamp = Instant.parse("2026-07-21T10:00:00Z")
+        val triggeringTimestamp = firstTimestamp + 1.minutes + 1.seconds
+        val firstEvent = TestEvent.newMLSMessageEvent(firstTimestamp, subConversationId)
+        val triggeringEvent = TestEvent.newMLSMessageEvent(triggeringTimestamp, subConversationId)
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturningInOrder(
+                Either.Left(MLSFailure.BufferedFutureMessage),
+                Either.Left(MLSFailure.BufferedCommit)
+            )
+            .withVerifyEpoch(Either.Right(Unit))
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, firstEvent, TestEvent.nonLiveDeliveryInfo)
+        newMessageEventHandler.handleNewMLSMessage(arrangement.transactionContext, triggeringEvent, TestEvent.liveDeliveryInfo)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.staleEpochVerifier.verifyEpoch(
+                any(),
+                eq(triggeringEvent.conversationId),
+                eq(subConversationId),
+                eq(triggeringTimestamp)
+            )
+        }
+    }
+
+    @Test
+    fun givenBufferedRecoveryFails_whenNextBufferedMessageArrives_thenRetryRecovery() = runTest {
+        val firstTimestamp = Instant.parse("2026-07-21T10:00:00Z")
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.BufferedFutureMessage))
+            .withVerifyEpoch(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            .arrange()
+
+        listOf(firstTimestamp, firstTimestamp + 61.seconds, firstTimestamp + 62.seconds).forEach { timestamp ->
+            newMessageEventHandler.handleNewMLSMessage(
+                arrangement.transactionContext,
+                TestEvent.newMLSMessageEvent(timestamp),
+                TestEvent.liveDeliveryInfo
+            )
+        }
+
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenBufferedRecoverySucceeds_whenNextBufferedMessageArrives_thenDoNotRetryRecovery() = runTest {
+        val firstTimestamp = Instant.parse("2026-07-21T10:00:00Z")
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.BufferedFutureMessage))
+            .withVerifyEpoch(Either.Right(Unit))
+            .arrange()
+
+        listOf(firstTimestamp, firstTimestamp + 61.seconds, firstTimestamp + 62.seconds).forEach { timestamp ->
+            newMessageEventHandler.handleNewMLSMessage(
+                arrangement.transactionContext,
+                TestEvent.newMLSMessageEvent(timestamp),
+                TestEvent.liveDeliveryInfo
+            )
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenBufferedMessagesAtThreshold_whenHandling_thenShouldNotVerifyStaleEpoch() = runTest {
+        val firstTimestamp = Instant.parse("2026-07-21T10:00:00Z")
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.BufferedFutureMessage))
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(
+            arrangement.transactionContext,
+            TestEvent.newMLSMessageEvent(firstTimestamp),
+            TestEvent.liveDeliveryInfo
+        )
+        newMessageEventHandler.handleNewMLSMessage(
+            arrangement.transactionContext,
+            TestEvent.newMLSMessageEvent(firstTimestamp + 1.minutes),
+            TestEvent.liveDeliveryInfo
+        )
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenSuccessfulDecryptionBetweenBufferedMessages_whenHandling_thenShouldStartANewWindow() = runTest {
+        val firstTimestamp = Instant.parse("2026-07-21T10:00:00Z")
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturningInOrder(
+                Either.Left(MLSFailure.BufferedCommit),
+                Either.Right(listOf(MessageUnpackResult.HandshakeMessage)),
+                Either.Left(MLSFailure.BufferedCommit)
+            )
+            .arrange()
+
+        newMessageEventHandler.handleNewMLSMessage(
+            arrangement.transactionContext,
+            TestEvent.newMLSMessageEvent(firstTimestamp),
+            TestEvent.liveDeliveryInfo
+        )
+        newMessageEventHandler.handleNewMLSMessage(
+            arrangement.transactionContext,
+            TestEvent.newMLSMessageEvent(firstTimestamp + 2.minutes),
+            TestEvent.liveDeliveryInfo
+        )
+        newMessageEventHandler.handleNewMLSMessage(
+            arrangement.transactionContext,
+            TestEvent.newMLSMessageEvent(firstTimestamp + 4.minutes),
+            TestEvent.liveDeliveryInfo
+        )
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
+        }
+    }
+
+    @Test
     fun givenMLSEventFailsWithWrongEpoch_whenHandling_shouldCallWrongEpochHandler() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
@@ -526,6 +653,59 @@ class NewMessageEventHandlerTest {
                 arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
             }
         }
+
+    @Test
+    fun givenWrongEpochBetweenBufferedMessages_whenHandling_thenShouldClearBufferedWindow() = runTest {
+        val firstTimestamp = Instant.parse("2026-07-21T10:00:00Z")
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturningInOrder(
+                Either.Left(MLSFailure.BufferedFutureMessage),
+                Either.Left(MLSFailure.WrongEpoch),
+                Either.Left(MLSFailure.BufferedFutureMessage)
+            )
+            .withVerifyEpoch(Either.Right(Unit))
+            .arrange()
+
+        listOf(firstTimestamp, firstTimestamp + 2.minutes, firstTimestamp + 4.minutes).forEach { timestamp ->
+            newMessageEventHandler.handleNewMLSMessage(
+                arrangement.transactionContext,
+                TestEvent.newMLSMessageEvent(timestamp),
+                TestEvent.liveDeliveryInfo
+            )
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenConversationResetBetweenBufferedMessages_whenHandling_thenShouldClearBufferedWindow() = runTest {
+        val firstTimestamp = Instant.parse("2026-07-21T10:00:00Z")
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturningInOrder(
+                Either.Left(MLSFailure.BufferedCommit),
+                Either.Left(NetworkFailure.MlsMessageRejectedFailure.InvalidLeafNodeIndex),
+                Either.Left(MLSFailure.BufferedCommit)
+            )
+            .withResetConversationReturning(ResetMLSConversationResult.Success)
+            .arrange()
+
+        listOf(firstTimestamp, firstTimestamp + 2.minutes, firstTimestamp + 4.minutes).forEach { timestamp ->
+            newMessageEventHandler.handleNewMLSMessage(
+                arrangement.transactionContext,
+                TestEvent.newMLSMessageEvent(timestamp),
+                TestEvent.liveDeliveryInfo
+            )
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.resetMlsConversation(any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.staleEpochVerifier.verifyEpoch(any(), any(), any(), any())
+        }
+    }
 
     @Test
     fun givenMLSEventFailsWithInvalidLeafNodeIndex_whenHandling_thenResetConversation() = runTest {
@@ -644,6 +824,17 @@ class NewMessageEventHandlerTest {
                     mlsMessageUnpacker.unpackMlsMessage(any(), any())
                 }.returns(result)
             }
+
+        suspend fun withMLSUnpackerReturningInOrder(
+            vararg results: Either<CoreFailure, List<MessageUnpackResult>>
+        ) = apply {
+            var nextResult = 0
+            everySuspend {
+                mlsMessageUnpacker.unpackMlsMessage(any(), any())
+            } calls {
+                results[nextResult++]
+            }
+        }
 
         suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
