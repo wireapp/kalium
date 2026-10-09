@@ -90,7 +90,7 @@ kotlin {
                 implementation(projects.data.network)
                 api(projects.core.data)
                 implementation(projects.data.dataMappers)
-                implementation(projects.domain.messaging.receiving)
+                api(projects.domain.messaging.receiving)
                 api(projects.data.networkUtil)
                 implementation(projects.core.cryptography)
                 implementation(projects.data.persistence)

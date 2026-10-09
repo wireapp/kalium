@@ -17,7 +17,9 @@
  */
 package com.wire.kalium.nse
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
@@ -58,7 +60,7 @@ public data class KaliumNSERequest(
     public val userValue: String,
     public val userDomain: String,
     public val notificationId: String,
-    /** The host must derive this from the user's notification privacy setting. */
+    /** Additional host message-preview restriction; the saved account choice is read for each request. */
     public val showMessageContent: Boolean,
     public val budgetMilliseconds: Long,
     /** The host supplies only delivered message alerts belonging to this request's account. */
@@ -113,7 +115,7 @@ public data class KaliumNSECall(
     public val shouldRing: Boolean,
     public val isVideoCall: Boolean,
     public val closeReason: Int?,
-    /** Null when the host privacy preference or verification state suppresses names. */
+    /** Upstream call policy may suppress names; message-preview preferences never change this value. */
     public val callerName: String?,
     public val handoffId: String? = null,
     /** Eligible, first presentation of a missed call; never controls incoming CallKit delivery. */
@@ -172,7 +174,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         received: ReceivedNotificationResult,
         request: KaliumNSERequest,
     ): KaliumNSEResult {
-        val result = success(received, request.showMessageContent)
+        val result = success(received, request.showMessageContent, runtime.readMessageContentPreference())
         if (result.shouldNotify && result.contentType == KaliumNSEContentType.MESSAGE) {
             val message = checkNotNull(received.message)
             runtime.database.messageDAO.rememberNotificationMessages(
@@ -195,9 +197,20 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     )
 
     @Suppress("CyclomaticComplexMethod") // Maps optional receiving fields to the public result.
-    internal fun success(result: ReceivedNotificationResult, showContent: Boolean): KaliumNSEResult {
+    internal fun success(
+        result: ReceivedNotificationResult,
+        showContent: Boolean,
+        preference: Either<StorageFailure, MessageContentPreference>,
+    ): KaliumNSEResult {
+        val savedAllowsPreview = when (preference) {
+            is Either.Left -> false
+            is Either.Right -> when (preference.value) {
+                MessageContentPreference.Unset, MessageContentPreference.Enabled -> true
+                MessageContentPreference.Disabled -> false
+            }
+        }
         val message = result.message
-        val canPreview = showContent && message?.shouldNotify == true && message.mayPreview
+        val canPreview = showContent && savedAllowsPreview && message?.shouldNotify == true && message.mayPreview
         val contentType = when (message?.type) {
             ReceivedNotificationType.CONVERSATION_DELETED -> KaliumNSEContentType.CONVERSATION_DELETED
             ReceivedNotificationType.CONNECTION_REQUEST -> KaliumNSEContentType.CONNECTION_REQUEST
@@ -211,6 +224,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             presentationReason = result.presentationReason ?: when {
                 message == null -> "NO_MESSAGE_CANDIDATE"
                 !message.shouldNotify -> message.suppressionReason ?: "NOT_ELIGIBLE"
+                !showContent || !savedAllowsPreview -> "MESSAGE_CONTENT_HIDDEN"
                 !message.mayPreview -> message.previewPolicyReason ?: "PREVIEW_POLICY"
                 message.text.isNullOrEmpty() -> "NO_TEXT"
                 else -> "TEXT"
@@ -236,13 +250,13 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     shouldRing = call.shouldRing,
                     isVideoCall = call.isVideoCall,
                     closeReason = call.closeReason,
-                    callerName = call.callerName?.takeIf { showContent },
+                    callerName = call.callerName,
                     handoffId = call.handoffId,
                     shouldNotify = call.shouldNotify,
-                    mayPreview = showContent && call.shouldNotify,
-                    conversationName = call.conversationName?.takeIf { showContent && call.shouldNotify },
-                    senderName = call.senderName?.takeIf { showContent && call.shouldNotify },
-                    isGroupConversation = showContent && call.shouldNotify && call.isGroupConversation,
+                    mayPreview = call.shouldNotify,
+                    conversationName = call.conversationName?.takeIf { call.shouldNotify },
+                    senderName = call.senderName?.takeIf { call.shouldNotify },
+                    isGroupConversation = call.shouldNotify && call.isGroupConversation,
                 )
             },
         )

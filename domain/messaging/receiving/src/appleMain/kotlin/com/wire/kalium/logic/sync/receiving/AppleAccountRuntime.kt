@@ -24,11 +24,13 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.coreCryptoCentral
+import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -89,6 +91,13 @@ public class AppleAccountRuntime private constructor(
     public val network: AuthenticatedNetworkContainer get() = checkNotNull(openedNetwork)
     public val proteusCoreCrypto: CoreCryptoCentral get() = checkNotNull(openedProteus)
     public val mlsCoreCrypto: CoreCryptoCentral? get() = openedMLS
+
+    /** Fresh account-local read inside [use]; absence and storage failure remain distinct. */
+    public suspend fun readMessageContentPreference(): Either<StorageFailure, MessageContentPreference> = UserConfigDataSource(
+        database.userPrefsDAO,
+        database.userConfigDAO,
+        lazy { BuildFileRestrictionState.NoRestriction },
+    ).getMessageContentPreference()
 
     /** Canonical default for this attempt; changing it requires an already installed credential. */
     public var mlsCipherSuite: CipherSuite? = prepared.mlsCipherSuite

@@ -20,8 +20,13 @@
 
 package com.wire.kalium.logic.sync.receiving
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.coreCryptoCentral
+import com.wire.kalium.logic.configuration.MessageContentPreference
+import com.wire.kalium.logic.configuration.UserConfigDataSource
+import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
+import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.user.UserId
@@ -181,6 +186,34 @@ class AppleAccountRuntimeTest {
         }
     }
 
+    @Test
+    fun `fresh runtime reads saved account choice and recovers after corruption`() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture { fixture ->
+                val other = Fixture(UserId("other", userId.domain), fixture.root, fixture.config)
+                for (account in listOf(fixture, other)) account.prepareUsableAccount()
+                assertEquals(Either.Right(MessageContentPreference.Unset), fixture.readPreference())
+                fixture.savePreference(false)
+                other.savePreference(true)
+                assertEquals(Either.Right(MessageContentPreference.Disabled), fixture.readPreference())
+                assertEquals(Either.Right(MessageContentPreference.Enabled), other.readPreference())
+                fixture.savePreference(true)
+                assertEquals(Either.Right(MessageContentPreference.Enabled), fixture.readPreference())
+                val database = fixture.prepareDatabase()
+                try {
+                    database.metadataDAO.insertValue("invalid", UserConfigStorage.UserPreferences.MESSAGE_CONTENT_ENABLED.key)
+                } finally {
+                    database.close()
+                }
+                assertIs<StorageFailure.Generic>(assertIs<Either.Left<StorageFailure>>(fixture.readPreference()).value)
+                assertEquals(Either.Right(MessageContentPreference.Enabled), other.readPreference())
+                fixture.savePreference(false)
+                assertEquals(Either.Right(MessageContentPreference.Disabled), fixture.readPreference())
+                other.acquire().release()
+            }
+        }
+    }
+
     private suspend fun withFixture(block: suspend (Fixture) -> Unit) {
         val fixture = Fixture()
         try {
@@ -192,11 +225,17 @@ class AppleAccountRuntimeTest {
         }
     }
 
-    private inner class Fixture {
+    private inner class Fixture(
+        private val accountUser: UserId = userId,
+        rootOverride: String? = null,
+        configOverride: ApplePersistenceConfig? = null,
+    ) {
+        private val userId = accountUser
+        private val entity = UserIDEntity(userId.value, userId.domain)
         private val identity = NSUUID.UUID().UUIDString
-        val root = "${NSTemporaryDirectory()}kalium-runtime-$identity"
+        val root = rootOverride ?: "${NSTemporaryDirectory()}kalium-runtime-$identity"
         val account = appleAccountPath(root, userId)
-        val config = ApplePersistenceConfig("com.wire.kalium.test.$identity")
+        val config = configOverride ?: ApplePersistenceConfig("com.wire.kalium.test.$identity")
         val preferences by lazy { GlobalPrefProvider(config) }
         val owner = AppleAccountRuntimeOwner(root)
         var quarantined = false
@@ -234,6 +273,38 @@ class AppleAccountRuntimeTest {
             FileSystem.SYSTEM.createDirectories("$account/proteus".toPath())
             FileSystem.SYSTEM.write("$account/proteus/keystore".toPath()) { writeUtf8("invalid crypto") }
         }
+
+        suspend fun prepareUsableAccount() {
+            prepareReadiness()
+            prepareCredentials()
+            val database = prepareDatabase()
+            try {
+                ClientRegistrationStorageImpl(database.metadataDAO).setRegisteredClientId("abc123")
+            } finally {
+                database.close()
+            }
+            val crypto = coreCryptoCentral("$account/proteus", key)
+            crypto.proteusClient().transaction("prepare-preference-test") { it.getLocalFingerprint() }
+            crypto.close()
+        }
+
+        suspend fun savePreference(enabled: Boolean) {
+            val database = prepareDatabase()
+            try {
+                val repository = UserConfigDataSource(
+                    database.userPrefsDAO, database.userConfigDAO, lazy { BuildFileRestrictionState.NoRestriction },
+                )
+                assertEquals(Either.Right(Unit), repository.setMessageContentPreference(enabled))
+            } finally {
+                database.close()
+            }
+        }
+
+        suspend fun readPreference(): Either<StorageFailure, MessageContentPreference> = assertIs<
+            Either.Right<Either<StorageFailure, MessageContentPreference>>
+        >(AppleAccountRuntime.use(root, userId, config, "runtime-test", emptyMap()) {
+            it.readMessageContentPreference()
+        }).value
 
         fun prepareDatabase() = userDatabaseBuilder(
             PlatformDatabaseData(StorageData.FileBacked("$account/storage"), useGradleSafeSqliterLogging = true),

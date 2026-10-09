@@ -61,6 +61,10 @@ import kotlin.time.Duration.Companion.seconds
 
 @Suppress("TooManyFunctions")
 interface UserConfigRepository {
+    /** Absence is Unset; storage and decoding failures remain Left, without applying presentation defaults. */
+    suspend fun getMessageContentPreference(): Either<StorageFailure, MessageContentPreference>
+    suspend fun setMessageContentPreference(enabled: Boolean): Either<StorageFailure, Unit>
+
     suspend fun setAppLockStatus(
         isAppLocked: Boolean,
         timeout: Int,
@@ -185,6 +189,17 @@ class UserConfigDataSource constructor(
     private val userConfigDAO: UserConfigDAO,
     private val fileRestrictionState: Lazy<BuildFileRestrictionState>
 ) : UserConfigRepository {
+    override suspend fun getMessageContentPreference(): Either<StorageFailure, MessageContentPreference> = wrapStorageRequest {
+        when (userConfigStorage.readMessageContentPreference()) {
+            null -> MessageContentPreference.Unset
+            true -> MessageContentPreference.Enabled
+            false -> MessageContentPreference.Disabled
+        }
+    }
+
+    override suspend fun setMessageContentPreference(enabled: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigStorage.persistMessageContentPreference(enabled)
+    }
 
     override suspend fun setFileSharingStatus(
         status: Boolean,

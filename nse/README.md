@@ -33,7 +33,7 @@ certificate pins. Match these build switches to the app's `KaliumConfigs`:
 | `allowedFileExtensions` | `null` | Unrestricted file types; an empty list allows none |
 
 For each push, create `KaliumNSERequest` with the qualified user identity, target
-notification ID, the user's `showMessageContent` privacy preference and a budget
+notification ID, an additional host `showMessageContent` restriction and a budget
 between 1 and 25,000 milliseconds. Optionally pass this account's currently delivered
 message alerts in `deliveredNotifications`. Call `process` from Swift async code. The
 [Swift fixture](src/swiftTest/Receive.swift) shows the concrete constructor and call.
@@ -43,11 +43,15 @@ The host owns iOS's single completion callback and its generic failure fallback.
 `SUCCESS` with `shouldNotify == false` is successful silent processing, not failure.
 An eligible result can be a message, conversation deletion or connection request.
 A null body can mean a generic alert or a privacy restriction. The facade filters
-text, `conversationName`, `senderName`, `isGroupConversation` and a typed
-`contentType` by the host preference and conversation/expiration state; when
-preview is not allowed, `contentType` is `MESSAGE`. `presentationReason` and
-`failureReason` are content-free diagnostic codes. `appWorkPending` names work
-left in Events for the app (`LEGAL_HOLD` or `ACCOUNT_INVALIDATION`).
+message text, names and typed labels by the host flag, saved account preference
+and conversation/expiration state. The saved choice is read freshly through the
+owned account runtime before presentation. Absence preserves existing preview
+eligibility; Disabled or a storage/decoding failure hides message content. Enabled
+cannot override another restriction. When preview is not allowed, `contentType`
+is `MESSAGE`. Cancellation still cancels the attempt. Message preference failures
+do not suppress or alter call presentation. `presentationReason` and `failureReason`
+are content-free diagnostic codes. `appWorkPending` names work left in Events for
+the app (`LEGAL_HOLD` or `ACCOUNT_INVALIDATION`).
 
 The NSE registers each alerted message. After successful receiving it returns
 `notificationIdentifiersToRemove`: the delivered identifiers whose message, or a
@@ -161,15 +165,16 @@ each notification commits. Once the requested target is processed, AVS evaluates
 the collected prefix as one batch; it is skipped when the scan deferred anything.
 `KaliumNSEResult.calls` contains its incoming, missed and closed callbacks
 independently of the result's `shouldNotify`, which describes the ordinary
-notification. Incoming and closed caller names obey the host privacy setting and
-conversation verification state. Only self-authored signals may redirect to a
-different calling conversation, preserving the shared app's authorization rule.
+notification. Caller names retain upstream conversation verification policy.
+Message-preview preferences never change incoming names or missed-call preview
+fields. Only self-authored signals may redirect to a different calling
+conversation, preserving the shared app's authorization rule.
 
 A missed callback claims its journal signal once, before the policy check, so
 replay cannot show a stale alert. Its own `shouldNotify` follows Android's
 missed-call policy: not archived, not self, newer than last read and last
 notified, and allowed by mute and busy/away status. Its conversation and sender
-names are returned only when the host allows content and the alert is eligible.
+names retain the upstream missed-call preview policy.
 A process exit between the claim and iOS scheduling loses that alert.
 
 The wire-android host uses `IncomingCallReporter` and its versioned
