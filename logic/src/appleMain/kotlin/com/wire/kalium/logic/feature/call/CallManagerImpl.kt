@@ -192,8 +192,7 @@ internal class CallManagerImpl internal constructor(
 
     private var signalJournal: com.wire.kalium.logic.sync.receiving.CallSignalStore? = null
     private val signalGeneration = Uuid.random().toString()
-    private val signalMutex = Mutex()
-    private val signalWatermarks = mutableMapOf<String, Long>()
+    private var signalReplay: CallSignalReplay? = null
     private val callEffects = kotlinx.coroutines.channels.Channel<suspend () -> Unit>(kotlinx.coroutines.channels.Channel.UNLIMITED)
     init {
         scope.launch {
@@ -212,6 +211,13 @@ internal class CallManagerImpl internal constructor(
     override fun attachSignalJournal(journal: com.wire.kalium.logic.sync.receiving.CallSignalStore) {
         check(signalJournal == null)
         signalJournal = journal
+        signalReplay = CallSignalReplay(journal, signalGeneration, ::submitSignal) { signal ->
+            AppleCallTrace.record(
+                CallTraceEvent.NATIVE_ENQUEUE,
+                traceContext(ConversationId(signal.conversationValue, signal.conversationDomain)).withSignal(signal.id),
+                CallTraceResult.STALE,
+            )
+        }
     }
 
     override suspend fun onCallingMessageReceived(message: Message.Signaling, content: MessageContent.Calling) {
@@ -237,57 +243,43 @@ internal class CallManagerImpl internal constructor(
         replayPendingSignals()
     }
 
-    @Suppress("LoopWithTooManyJumpStatements") // Skip already submitted and stale records independently.
-    override suspend fun replayPendingSignals() = signalMutex.withLock {
-        val journal = signalJournal ?: return@withLock
-        for (signal in journal.signals()) {
-            if (signal.submittedGeneration == signalGeneration) continue
-            val key = "${signal.conversationValue}@${signal.conversationDomain}"
-            val trace = traceContext(ConversationId(signal.conversationValue, signal.conversationDomain)).withSignal(signal.id)
-            val watermark = signalWatermarks[key]
-            if (watermark != null && signal.timeMillis < watermark) {
-                AppleCallTrace.record(
-                    CallTraceEvent.NATIVE_ENQUEUE,
-                    trace,
-                    CallTraceResult.STALE
-                )
-                journal.submitted(signal.id, signalGeneration)
-                continue
-            }
-            val target = ConversationId(signal.conversationValue, signal.conversationDomain)
-            val sender = UserId(signal.senderValue, signal.senderDomain)
-            val content = MessageContent.Calling(signal.payload, target)
+    override suspend fun replayPendingSignals() {
+        signalReplay?.replay()
+    }
+
+    override suspend fun replayIncomingCallSignals(callId: String) {
+        checkNotNull(signalReplay) { "Call signal journal is unavailable" }.replayIncoming(callId)
+        // Flush repository/presentation effects from callbacks already delivered during enqueue.
+        val completed = CompletableDeferred<Unit>(job)
+        callEffects.send { completed.complete(Unit) }
+        completed.await()
+    }
+
+    private suspend fun submitSignal(signal: com.wire.kalium.logic.sync.receiving.CallSignalRecord) {
+        val target = ConversationId(signal.conversationValue, signal.conversationDomain)
+        val sender = UserId(signal.senderValue, signal.senderDomain)
+        val content = MessageContent.Calling(signal.payload, target)
+        val trace = traceContext(target).withSignal(signal.id)
+        AppleCallTrace.record(CallTraceEvent.NATIVE_ENQUEUE, trace, CallTraceResult.REQUESTED)
+        try {
+            receiveSignal(
+                Message.Signaling(
+                    id = signal.messageId, content = content, conversationId = target,
+                    date = kotlin.time.Instant.fromEpochMilliseconds(signal.timeMillis), senderUserId = sender,
+                    senderClientId = ClientId(signal.senderClientId), status = Message.Status.Sent,
+                    isSelfMessage = sender == selfUserId, expirationData = null,
+                ),
+                content,
+            )
+        } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
             AppleCallTrace.record(
                 CallTraceEvent.NATIVE_ENQUEUE,
                 trace,
-                CallTraceResult.REQUESTED
+                if (failure is CancellationException) CallTraceResult.CANCELLED else CallTraceResult.FAILED,
             )
-            try {
-                receiveSignal(
-                    Message.Signaling(
-                        id = signal.messageId, content = content, conversationId = target,
-                        date = kotlin.time.Instant.fromEpochMilliseconds(signal.timeMillis), senderUserId = sender,
-                        senderClientId = ClientId(signal.senderClientId), status = Message.Status.Sent,
-                        isSelfMessage = sender == selfUserId, expirationData = null,
-                    ),
-                    content
-                )
-            } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
-                AppleCallTrace.record(
-                    CallTraceEvent.NATIVE_ENQUEUE,
-                    trace,
-                    if (failure is CancellationException) CallTraceResult.CANCELLED else CallTraceResult.FAILED
-                )
-                throw failure
-            }
-            signalWatermarks[key] = signal.timeMillis
-            journal.submitted(signal.id, signalGeneration)
-            AppleCallTrace.record(
-                CallTraceEvent.NATIVE_ENQUEUE,
-                trace,
-                CallTraceResult.ACCEPTED
-            )
+            throw failure
         }
+        AppleCallTrace.record(CallTraceEvent.NATIVE_ENQUEUE, trace, CallTraceResult.ACCEPTED)
     }
 
     private suspend fun receiveSignal(message: Message.Signaling, content: MessageContent.Calling) = withCalling { handle ->

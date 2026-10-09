@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 internal interface CallManager {
     fun attachSignalJournal(journal: com.wire.kalium.logic.sync.receiving.CallSignalStore) = Unit
     suspend fun replayPendingSignals() = Unit
+    suspend fun replayIncomingCallSignals(callId: String) = Unit
 
     suspend fun onCallingMessageReceived(
         message: Message.Signaling,

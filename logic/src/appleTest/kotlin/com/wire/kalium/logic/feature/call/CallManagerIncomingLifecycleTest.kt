@@ -129,12 +129,15 @@ class CallManagerIncomingLifecycleTest {
                                     conversation, now + offset.seconds, if (own) self else peer, ClientId(if (own) "eeee" else "def0"),
                                     Message.Status.Sent, isSelfMessage = own, expirationData = null), content)
                             }
+                            val queuedReject = type == ConversationTypeCalling.OneOnOne && termination == "reject"
                             receive(start, false, false, session, 0)
-                            assertEquals(CallStatus.INCOMING, withTimeout(5000) { states.receive() })
-                            assertEquals(
-                                IncomingCallReference(conversation.toDao(), peer.toDao(), "def0", now.epochSeconds),
-                                withTimeout(5000) { incomingReferences.receive() },
-                            )
+                            if (!queuedReject) {
+                                assertEquals(CallStatus.INCOMING, withTimeout(5000) { states.receive() })
+                                assertEquals(
+                                    IncomingCallReference(conversation.toDao(), peer.toDao(), "def0", now.epochSeconds),
+                                    withTimeout(5000) { incomingReferences.receive() },
+                                )
+                            }
                             val end = when (termination) {
                                 "answer" -> start
                                 "reject" -> "REJECT"
@@ -142,6 +145,14 @@ class CallManagerIncomingLifecycleTest {
                             }
                             receive(end, termination != "cancel", termination == "answer",
                                 if (termination == "answer" && type.avsValue == 0) "other" else session, 1)
+                            var queuedState: CallStatus? = null
+                            if (queuedReject) {
+                                // No wait for native callback effects before enqueueing Answer.
+                                manager.answerCall(conversation, false, false)
+                                queuedState = withTimeout(5000) { states.receive() }
+                                // AVS may suppress the ringing callback when a REJECT is already queued.
+                                assertTrue(queuedState in setOf(CallStatus.INCOMING, CallStatus.REJECTED))
+                            }
                             val reason = withTimeout(5000) { reasons.receive() }
                             val expected = when {
                                 termination == "cancel" && type.avsValue < 2 -> CallStatus.MISSED
@@ -150,9 +161,17 @@ class CallManagerIncomingLifecycleTest {
                                 termination == "answer" -> CallStatus.CLOSED
                                 else -> CallStatus.REJECTED
                             }
-                            val actual = withTimeout(5000) { states.receive() }
+                            val actual = if (queuedState == CallStatus.REJECTED) queuedState else withTimeout(5000) { states.receive() }
                             println("FULL_MANAGER type=${type.avsValue} termination=$termination reason=$reason repository=$actual")
                             assertEquals(expected, actual)
+                            if (queuedReject) {
+                                // This deliberately bypasses the runtime presentation guard. AVS may
+                                // emit CLOSED for the invalid queued Answer, but must never participate.
+                                val subsequent = withTimeoutOrNull(300) { states.receive() }
+                                if (subsequent != null) assertEquals(CallStatus.CLOSED, subsequent)
+                                assertNull(withTimeoutOrNull(300) { states.receive() })
+                                println("FULL_MANAGER queued_reject_before_answer_prevents_participation=true")
+                            }
                             if (type == ConversationTypeCalling.OneOnOne && termination == "answer") {
                                 receive("SETUP", false, false, "next-call", 2, "next-start")
                                 assertEquals(CallStatus.INCOMING, withTimeout(5000) { states.receive() })

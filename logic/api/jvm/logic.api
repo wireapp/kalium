@@ -1341,6 +1341,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun observeIfE2EIRequiredDuringLogin (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun observeNotificationRemovalCandidates (Ljava/util/List;)Lkotlinx/coroutines/flow/Flow;
 	public final fun rememberNotificationMessages (Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun resumeIncomingCallSignals (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun resumePendingCallSignals (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun setIncrementalSyncUnprocessedEventsBatchLimit (Ljava/lang/Integer;)V
 }

@@ -33,10 +33,13 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withContext
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -112,7 +115,7 @@ class PendingLoginSystemSettingsRepositoryTest {
     }
 
     @Test
-    fun callerCancellationDrainsThePendingRequestBeforeReturning() = runTest {
+    fun callerCancellationCancelsThePendingRequestAndClosesResources() = runTest {
         val started = CompletableDeferred<Unit>()
         val finished = CompletableDeferred<Unit>()
         val engine = MockEngine {
@@ -130,8 +133,11 @@ class PendingLoginSystemSettingsRepositoryTest {
         request.cancel()
         request.join()
 
-        assertTrue(finished.isCompleted)
         assertTrue(engine.coroutineContext[Job]!!.isCompleted)
+        // Ktor runs the handler in a separate call job; engine shutdown does not join that job.
+        withContext(Dispatchers.Default) {
+            withTimeout(5_000) { finished.await() }
+        }
     }
 
     @Test

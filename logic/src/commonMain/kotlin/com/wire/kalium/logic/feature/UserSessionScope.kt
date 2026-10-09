@@ -3023,6 +3023,9 @@ public class UserSessionScope internal constructor(
     /** Resume NSE-committed signaling using this session's existing full calling engine. */
     public suspend fun resumePendingCallSignals(): Unit = callManager.value.replayPendingSignals()
 
+    /** Prioritize the exact delivered Apple call, preserving all signaling in its conversation. */
+    public suspend fun resumeIncomingCallSignals(callId: String): Unit = callManager.value.replayIncomingCallSignals(callId)
+
     /** Register the identities of delivered Apple alerts before observing their canonical state. */
     public suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>): Unit =
         userStorage.database.messageDAO.rememberNotificationMessages(messages)

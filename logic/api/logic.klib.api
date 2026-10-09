@@ -6109,6 +6109,7 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
     final suspend fun callPresentations(): kotlin.collections/List<com.wire.kalium.logic.sync.receiving/CallPresentationRecord> // com.wire.kalium.logic.feature/UserSessionScope.callPresentations|callPresentations(){}[0]
     final suspend fun observeIfE2EIRequiredDuringLogin(): kotlinx.coroutines.flow/Flow<kotlin/Boolean?> // com.wire.kalium.logic.feature/UserSessionScope.observeIfE2EIRequiredDuringLogin|observeIfE2EIRequiredDuringLogin(){}[0]
     final suspend fun rememberNotificationMessages(kotlin.collections/List<com.wire.kalium.persistence.dao.message/NotificationMessageKey>) // com.wire.kalium.logic.feature/UserSessionScope.rememberNotificationMessages|rememberNotificationMessages(kotlin.collections.List<com.wire.kalium.persistence.dao.message.NotificationMessageKey>){}[0]
+    final suspend fun resumeIncomingCallSignals(kotlin.String) // com.wire.kalium.logic.feature/UserSessionScope.resumeIncomingCallSignals|resumeIncomingCallSignals(kotlin.String){}[0]
     final suspend fun resumePendingCallSignals() // com.wire.kalium.logic.feature/UserSessionScope.resumePendingCallSignals|resumePendingCallSignals(){}[0]
 }
 
