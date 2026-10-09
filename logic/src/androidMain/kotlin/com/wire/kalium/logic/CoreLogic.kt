@@ -123,7 +123,8 @@ public actual class CoreLogic(
             userAuthenticatedNetworkProvider,
             networkStateObserver,
             logoutCallbackManager,
-            userAgent
+            userAgent,
+            syncShutdownCoordinator,
         )
     }
 

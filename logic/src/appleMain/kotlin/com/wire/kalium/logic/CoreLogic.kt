@@ -95,7 +95,8 @@ public actual class CoreLogic(
             networkStateObserver,
             logoutCallbackManager,
             userAgent,
-            keychainConfig
+            keychainConfig,
+            syncShutdownCoordinator,
         )
     }
 

@@ -458,6 +458,7 @@ import com.wire.kalium.logic.sync.SendPendingMessagesUseCaseImpl
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncShutdownCoordinator
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.SyncStateObserverImpl
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
@@ -644,6 +645,7 @@ public class UserSessionScope internal constructor(
     private val platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
+    private val syncShutdownCoordinator: SyncShutdownCoordinator,
 ) : CoroutineScope {
     private val notificationEventsManager = NotificationEventsManagerImpl()
 
@@ -1337,7 +1339,8 @@ public class UserSessionScope internal constructor(
             slowSyncManager,
             incrementalSyncManager,
             this,
-            userScopedLogger = userScopedLogger
+            userScopedLogger = userScopedLogger,
+            shutdownCoordinator = syncShutdownCoordinator
         )
     }
 
