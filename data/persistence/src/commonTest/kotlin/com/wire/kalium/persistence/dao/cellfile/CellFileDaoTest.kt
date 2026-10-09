@@ -69,4 +69,35 @@ class CellFileDaoTest : BaseDatabaseTest() {
         val result = cellFileDao.getById(uuid)
         assertEquals(result?.isOffline, true)
     }
+
+    @Test
+    fun givenFilesInDb_whenGettingLocalPathsByIds_thenOnlyRequestedFilesWithLocalPathAreReturned() = runTest {
+        cellFileDao.upsert(cellFile(uuid = "requested", localPath = "/data/requested"))
+        cellFileDao.upsert(cellFile(uuid = "requested_no_path", localPath = null))
+        cellFileDao.upsert(cellFile(uuid = "not_requested", localPath = "/data/not_requested"))
+
+        val result = cellFileDao.getLocalPathsByIds(listOf("requested", "requested_no_path", "missing"))
+
+        assertEquals(listOf(CellFileLocalPath("requested", "/data/requested")), result)
+    }
+
+    @Test
+    fun givenEmptyIds_whenGettingLocalPathsByIds_thenEmptyListIsReturned() = runTest {
+        cellFileDao.upsert(cellFile(uuid = "file", localPath = "/data/file"))
+
+        val result = cellFileDao.getLocalPathsByIds(emptyList())
+
+        assertEquals(emptyList(), result)
+    }
+
+    private fun cellFile(uuid: String, localPath: String?) = CellFileEntity(
+        uuid = uuid,
+        conversationId = "conv@domain",
+        name = "$uuid.pdf",
+        owner = null,
+        localPath = localPath,
+        size = 1024,
+        downloadedAt = 1000L,
+        isOffline = false,
+    )
 }

@@ -139,15 +139,17 @@ internal class CellAttachmentsDataSource(
         }
     }
 
-    override suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<CellFileLocalPath>> = withContext(dispatchers.io) {
+    override suspend fun getStandaloneAssetPathsByIds(
+        assetIds: List<String>
+    ): Either<StorageFailure, List<CellFileLocalPath>> = withContext(dispatchers.io) {
         wrapStorageRequest {
-            cellFileDao.getAllWithLocalPath()
+            cellFileDao.getLocalPathsByIds(assetIds)
         }
     }
 
-    override suspend fun getAttachments() = withContext(dispatchers.io) {
+    override suspend fun getAttachmentsByIds(assetIds: List<String>) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            messageAttachments.getAttachments().mapNotNull { it.toModel() }
+            messageAttachments.getAttachmentsByAssetIds(assetIds).mapNotNull { it.toModel() }
         }
     }
 
