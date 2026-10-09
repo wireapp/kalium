@@ -92,6 +92,8 @@ interface UserConfigDAO {
     suspend fun setMeetingsEnabled(enabled: Boolean)
     suspend fun isMeetingsEnabled(): Boolean
     fun observeIsMeetingsEnabled(): Flow<Boolean>
+    suspend fun setShouldJoinPendingMLSConversations(shouldJoin: Boolean)
+    fun observeShouldJoinPendingMLSConversations(): Flow<Boolean>
 }
 
 @Suppress("TooManyFunctions")
@@ -337,6 +339,13 @@ internal class UserConfigDAOImpl internal constructor(
     override fun observeIsMeetingsEnabled(): Flow<Boolean> =
         metadataDAO.valueByKeyFlow(MEETINGS_ENABLED).map { it?.toBoolean() ?: false }
 
+    override suspend fun setShouldJoinPendingMLSConversations(shouldJoin: Boolean) {
+        metadataDAO.insertValue(shouldJoin.toString(), SHOULD_JOIN_PENDING_MLS_CONVERSATIONS)
+    }
+
+    override fun observeShouldJoinPendingMLSConversations(): Flow<Boolean> =
+        metadataDAO.valueByKeyFlow(SHOULD_JOIN_PENDING_MLS_CONVERSATIONS).map { it?.toBoolean() ?: false }
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
@@ -359,5 +368,6 @@ internal class UserConfigDAOImpl internal constructor(
         private const val WIRE_CELLS_CONFIG = "wire_cells_config"
         private const val MLS_FAULTY_CONVERSATIONS_REPAIRED = "mls_faulty_conversations_repaired"
         private const val MEETINGS_ENABLED = "meetings_enabled"
+        private const val SHOULD_JOIN_PENDING_MLS_CONVERSATIONS = "should_join_pending_mls_conversations"
     }
 }

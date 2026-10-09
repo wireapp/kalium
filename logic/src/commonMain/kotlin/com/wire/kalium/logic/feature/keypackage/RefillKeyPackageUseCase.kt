@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
@@ -43,6 +44,10 @@ internal sealed class RefillKeyPackagesResult {
 /**
  * This use case will check if the number of key packages is below the minimum threshold and will
  * upload new key packages if needed.
+ *
+ * If no key packages were left, other clients could not add this client to new MLS groups. In that case
+ * pending MLS conversations are flagged to be joined by external commit, before uploading, so the flag
+ * survives a failed upload or a restart.
  */
 internal interface RefillKeyPackagesUseCase {
 
@@ -56,6 +61,7 @@ internal class RefillKeyPackagesUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfUserId: UserId,
     private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
+    private val userConfigRepository: UserConfigRepository,
 ) : RefillKeyPackagesUseCase {
     override suspend operator fun invoke(mlsContext: MlsCoreCryptoContext): RefillKeyPackagesResult {
         val selfClientId = currentClientIdProvider().getOrElse {
@@ -65,15 +71,17 @@ internal class RefillKeyPackagesUseCaseImpl(
         return keyPackageRepository.getAvailableKeyPackageCount(selfClientId, cipherSuite)
             .flatMap {
                 kaliumLogger.i("Key packages: Found ${it.count} available key packages")
-                if (keyPackageLimitsProvider.needsRefill(it.count)) {
-                    kaliumLogger.i("Key packages: Refilling key packages...")
-                    val amount = keyPackageLimitsProvider.refillAmount()
-                    keyPackageRepository.uploadNewKeyPackages(mlsContext, selfClientId, amount)
-                        .onSuccess { cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId) }
-                        .flatMap { Either.Right(Unit) }
-                } else {
-                    kaliumLogger.i("Key packages: Refill not needed")
-                    Either.Right(Unit)
+                flagPendingConversationsIfDepleted(it.count).flatMap { _ ->
+                    if (keyPackageLimitsProvider.needsRefill(it.count)) {
+                        kaliumLogger.i("Key packages: Refilling key packages...")
+                        val amount = keyPackageLimitsProvider.refillAmount()
+                        keyPackageRepository.uploadNewKeyPackages(mlsContext, selfClientId, amount)
+                            .onSuccess { cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId) }
+                            .flatMap { Either.Right(Unit) }
+                    } else {
+                        kaliumLogger.i("Key packages: Refill not needed")
+                        Either.Right(Unit)
+                    }
                 }
             }.fold({ failure ->
                 RefillKeyPackagesResult.Failure(failure)
@@ -81,4 +89,12 @@ internal class RefillKeyPackagesUseCaseImpl(
                 RefillKeyPackagesResult.Success
             })
     }
+
+    private suspend fun flagPendingConversationsIfDepleted(availableCount: Int): Either<CoreFailure, Unit> =
+        if (availableCount == 0) {
+            kaliumLogger.i("Key packages: None left, pending MLS conversations will be joined by external commit")
+            userConfigRepository.setShouldJoinPendingMLSConversations(true)
+        } else {
+            Either.Right(Unit)
+        }
 }

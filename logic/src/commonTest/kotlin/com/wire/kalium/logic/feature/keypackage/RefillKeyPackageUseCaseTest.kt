@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -32,6 +34,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
+import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -89,6 +92,63 @@ class RefillKeyPackageUseCaseTest {
     }
 
     @Test
+    fun givenNoKeyPackagesLeft_whenRefilling_thenPendingConversationsAreFlaggedBeforeUploading() = runTest {
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT)
+            .withKeyPackageCount(0)
+            .withSetShouldJoinPendingMLSConversationsResult(Either.Right(Unit))
+            .withUploadKeyPackagesSuccessful()
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
+
+        assertIs<RefillKeyPackagesResult.Success>(actual)
+        verifySuspend(VerifyMode.order) {
+            arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(true)
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), eq(Arrangement.KEY_PACKAGE_LIMIT))
+        }
+    }
+
+    @Test
+    fun givenNoKeyPackagesLeftAndFlaggingFails_whenRefilling_thenKeyPackagesAreNotUploaded() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT)
+            .withKeyPackageCount(0)
+            .withSetShouldJoinPendingMLSConversationsResult(Either.Left(failure))
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
+
+        assertIs<RefillKeyPackagesResult.Failure>(actual)
+        assertEquals(failure, actual.failure)
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenSomeKeyPackagesLeft_whenRefilling_thenPendingConversationsAreNotFlagged() = runTest {
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT - 1)
+            .withKeyPackageCount(1)
+            .withUploadKeyPackagesSuccessful()
+            .withDefaultCipherSuite(CipherSuite.fromTag(1))
+            .arrange()
+
+        refillKeyPackagesUseCase(arrangement.mlsContext)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.userConfigRepository.setShouldJoinPendingMLSConversations(any())
+        }
+    }
+
+    @Test
     fun givenErrorIsEncountered_ThenFailureIsPropagated() = runTest {
         val networkFailure = NetworkFailure.NoNetworkConnection(null)
 
@@ -109,6 +169,7 @@ class RefillKeyPackageUseCaseTest {
         val keyPackageRepository: KeyPackageRepository = mock()
         val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock()
         val currentClientIdProvider: CurrentClientIdProvider = mock()
+        val userConfigRepository: UserConfigRepository = mock(MockMode.autoUnit)
 
         private var refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository,
@@ -116,6 +177,7 @@ class RefillKeyPackageUseCaseTest {
             currentClientIdProvider,
             TestUser.SELF.id,
             NoOpCryptoStateChangeHookNotifier,
+            userConfigRepository,
         )
 
         fun withDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
@@ -149,6 +211,12 @@ class RefillKeyPackageUseCaseTest {
             everySuspend {
                 keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), any())
             } returns Either.Right(Unit)
+        }
+
+        suspend fun withSetShouldJoinPendingMLSConversationsResult(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
+                userConfigRepository.setShouldJoinPendingMLSConversations(any())
+            } returns result
         }
 
         suspend fun withGetAvailableKeyPackagesFailing(failure: NetworkFailure) = apply {
