@@ -142,6 +142,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
         commands.trySend(Command.FailPreparing(id))
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private suspend fun handle(command: Command) {
         when (command) {
             is Command.Enqueue -> addItems(command.requests)
@@ -165,7 +166,9 @@ internal class CellUploadCoordinatorImpl internal constructor(
     }
 
     private fun addPreparingItem(id: String, fileName: String, conversationId: String) {
-        _uploads.update { it + CellUploadItem(id = id, conversationId = conversationId, state = CellUploadState.Preparing(fileName)) }
+        _uploads.update {
+            it + CellUploadItem(id = id, conversationId = conversationId, state = CellUploadState.Preparing(fileName))
+        }
     }
 
     private fun attachRequest(id: String, request: CellUploadRequest) {
