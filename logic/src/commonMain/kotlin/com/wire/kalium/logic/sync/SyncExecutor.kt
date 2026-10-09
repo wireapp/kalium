@@ -167,7 +167,9 @@ internal class SyncExecutorImpl(
     }
 
     override suspend fun stopForRestart() {
+        logger.i("Stopping account sync for application restart; waiting for processing and cleanup")
         executionJob.cancelAndJoin()
+        logger.i("Account sync stopped for application restart")
     }
 
     private val executionJob: Job by lazy {
