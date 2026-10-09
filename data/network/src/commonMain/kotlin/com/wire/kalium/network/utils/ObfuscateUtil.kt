@@ -62,7 +62,7 @@ fun obfuscatedJsonElement(element: JsonElement): JsonElement =
                     /**
                      * Secrets: always redact, never log in clear (tokens, cookies, auth, etc.)
                      */
-                    sensitiveJsonKeys.contains(lowerKey) -> {
+                    sensitiveLogKeys.contains(lowerKey) -> {
                         key to "***"
                     }
 
@@ -177,13 +177,21 @@ fun deleteSensitiveItemsFromJson(text: String): String {
     }
 }
 
-val sensitiveJsonKeys by lazy {
+val sensitiveLogKeys by lazy {
     listOf(
         "password",
         "authorization",
+        "authentication",
+        "authentication-info",
+        "proxy-authorization",
+        "proxy-authenticate",
+        "proxy-authentication-info",
+        "www-authenticate",
         "set-cookie",
         "cookie",
         "location",
+        "x-api-key",
+        "x-auth-token",
         "x-amz-meta-user",
         "sec-websocket-key",
         "sec-websocket-accept",
@@ -193,6 +201,9 @@ val sensitiveJsonKeys by lazy {
         "token"
     )
 }
+
+@Deprecated("Use sensitiveLogKeys instead")
+val sensitiveJsonKeys: List<String> get() = sensitiveLogKeys
 
 private val sensitiveJsonObjects by lazy {
     listOf("qualified_id", "qualified_ids", "qualified_users", "content", "payload")
