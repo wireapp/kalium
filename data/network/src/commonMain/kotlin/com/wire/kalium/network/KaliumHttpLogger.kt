@@ -22,7 +22,7 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.utils.obfuscatePath
 import com.wire.kalium.network.utils.obfuscatedJsonMessage
-import com.wire.kalium.network.utils.sensitiveJsonKeys
+import com.wire.kalium.network.utils.sensitiveLogKeys
 import com.wire.kalium.util.serialization.toJsonElement
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.HttpRequest
@@ -134,17 +134,6 @@ internal class KaliumHttpLogger(
 
     private fun obfuscatedHeaders(headers: List<Pair<String, List<String>>>): Map<String, String> =
         headers.associate {
-            it.first to if (it.first.lowercase() in sensitiveHeaderNames) "***" else it.second.joinToString(",")
+            it.first to if (it.first.lowercase() in sensitiveLogKeys) "***" else it.second.joinToString(",")
         }
-
-    private val sensitiveHeaderNames = sensitiveJsonKeys.toSet() + setOf(
-        "authentication",
-        "authentication-info",
-        "proxy-authorization",
-        "proxy-authenticate",
-        "proxy-authentication-info",
-        "www-authenticate",
-        "x-api-key",
-        "x-auth-token"
-    )
 }
