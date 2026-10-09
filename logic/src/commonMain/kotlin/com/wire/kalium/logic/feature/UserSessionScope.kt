@@ -378,6 +378,8 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSel
 import com.wire.kalium.logic.feature.selfDeletingMessages.PersistNewSelfDeletionTimerUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.PersistNewSelfDeletionTimerUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetTeamUrlUseCase
+import com.wire.kalium.logic.feature.server.ObserveApiVersionChangeUseCase
+import com.wire.kalium.logic.feature.server.ObserveApiVersionChangeUseCaseImpl
 import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
@@ -456,6 +458,7 @@ import com.wire.kalium.logic.sync.SendPendingMessagesUseCaseImpl
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncShutdownCoordinator
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.SyncStateObserverImpl
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
@@ -642,6 +645,7 @@ public class UserSessionScope internal constructor(
     private val platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
+    private val syncShutdownCoordinator: SyncShutdownCoordinator,
 ) : CoroutineScope {
     private val notificationEventsManager = NotificationEventsManagerImpl()
 
@@ -827,6 +831,13 @@ public class UserSessionScope internal constructor(
                 )
             )
         }.container
+
+    public val observeApiVersionChange: ObserveApiVersionChangeUseCase
+        get() = ObserveApiVersionChangeUseCaseImpl(
+            repository = authenticationScope.serverConfigRepository,
+            serverConfig = sessionManager.getServerConfig(),
+        )
+
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
@@ -1328,7 +1339,8 @@ public class UserSessionScope internal constructor(
             slowSyncManager,
             incrementalSyncManager,
             this,
-            userScopedLogger = userScopedLogger
+            userScopedLogger = userScopedLogger,
+            shutdownCoordinator = syncShutdownCoordinator
         )
     }
 
@@ -1546,13 +1558,14 @@ public class UserSessionScope internal constructor(
 
     private val slowSyncManager: SlowSyncManager by lazy {
         SlowSyncManager(
-            slowSyncCriteriaProvider,
-            slowSyncRepository,
-            slowSyncWorker,
-            slowSyncRecoveryHandler,
-            networkStateObserver,
-            syncMigrationStepsProvider,
-            userScopedLogger,
+            slowSyncCriteriaProvider = slowSyncCriteriaProvider,
+            slowSyncRepository = slowSyncRepository,
+            slowSyncWorker = slowSyncWorker,
+            slowSyncRecoveryHandler = slowSyncRecoveryHandler,
+            networkStateObserver = networkStateObserver,
+            syncMigrationStepsProvider = syncMigrationStepsProvider,
+            userScopedLogger = userScopedLogger,
+            apiVersion = sessionManager.serverConfig().metaData.commonApiVersion.version,
         )
     }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {

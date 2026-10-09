@@ -107,7 +107,8 @@ public actual class CoreLogic(
             networkStateObserver,
             logoutCallbackManager,
             userAgent,
-            useInMemoryStorage
+            useInMemoryStorage,
+            syncShutdownCoordinator,
         )
     }
     public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()

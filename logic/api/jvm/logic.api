@@ -21,6 +21,7 @@ public abstract class com/wire/kalium/logic/CoreLogicCommon {
 	public final fun globalScope (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public final fun registerLogger (Lcom/wire/kalium/logger/KaliumLogger$Config;)V
 	public final fun sessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun stopSyncForRestart (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun versionedAuthenticationScope (Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;)Lcom/wire/kalium/logic/feature/auth/autoVersioningAuth/AutoVersionAuthScopeUseCase;
 }
 
@@ -957,6 +958,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getMigrateFromPersonalToTeam ()Lcom/wire/kalium/logic/feature/user/migration/MigrateFromPersonalToTeamUseCase;
 	public final fun getMultiPlatformBackup ()Lcom/wire/kalium/logic/feature/backup/MultiPlatformBackupScope;
 	public final fun getObserveAnalyticsTrackingIdentifierStatus ()Lcom/wire/kalium/logic/feature/analytics/ObserveAnalyticsTrackingIdentifierStatusUseCase;
+	public final fun getObserveApiVersionChange ()Lcom/wire/kalium/logic/feature/server/ObserveApiVersionChangeUseCase;
 	public final fun getObserveE2EIRequired ()Lcom/wire/kalium/logic/feature/user/ObserveE2EIRequiredUseCase;
 	public final fun getObserveFileSharingStatus ()Lcom/wire/kalium/logic/feature/user/ObserveFileSharingStatusUseCase;
 	public final fun getObserveGuestRoomLinkFeatureFlag ()Lcom/wire/kalium/logic/feature/user/guestroomlink/ObserveGuestRoomLinkFeatureFlagUseCase;
@@ -6510,6 +6512,10 @@ public final class com/wire/kalium/logic/feature/server/IsCrossBackendLoginBlock
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/server/ObserveApiVersionChangeUseCase {
+	public abstract fun invoke ()Lkotlinx/coroutines/flow/Flow;
+}
+
 public final class com/wire/kalium/logic/feature/server/ServerConfigForAccountUseCase {
 	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -7803,6 +7809,7 @@ public abstract class com/wire/kalium/logic/sync/SyncExecutor {
 	public fun <init> ()V
 	public abstract fun request (Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun startAndStopSyncAsNeeded ()V
+	public abstract fun stopForRestart (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/sync/SyncRequest {
