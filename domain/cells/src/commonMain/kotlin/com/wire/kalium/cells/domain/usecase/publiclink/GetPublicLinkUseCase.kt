@@ -18,12 +18,11 @@
 package com.wire.kalium.cells.domain.usecase.publiclink
 
 import com.wire.kalium.cells.domain.CellsRepository
-import com.wire.kalium.cells.domain.model.CellsCredentials
+import com.wire.kalium.cells.CellsCredentialsProvider
 import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
-import kotlinx.coroutines.Deferred
 
 /**
  * Get public link with given UUID from Wire Cell server
@@ -33,14 +32,14 @@ public interface GetPublicLinkUseCase {
 }
 
 internal class GetPublicLinkUseCaseImpl(
-    private val cellsCredentials: Deferred<CellsCredentials?>,
+    private val cellsCredentials: CellsCredentialsProvider,
     private val cellsRepository: CellsRepository,
 ) : GetPublicLinkUseCase {
     override suspend fun invoke(linkUuid: String): Either<CoreFailure, PublicLink> {
         return cellsRepository.getPublicLink(linkUuid)
             .map { link ->
                 link.copy(
-                    url = "${cellsCredentials.await()?.serverUrl}${link.url}"
+                    url = "${cellsCredentials.credentials()?.serverUrl.orEmpty()}${link.url}"
                 )
             }
     }

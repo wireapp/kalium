@@ -17,12 +17,11 @@
  */
 package com.wire.kalium.cells.data
 
+import com.wire.kalium.cells.CellsCredentialsProvider
 import com.wire.kalium.cells.data.model.CellNodeDTO
-import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.HttpClient
-import kotlinx.coroutines.Deferred
 import okio.FileSystem
 import okio.Path
 import okio.SYSTEM
@@ -39,7 +38,7 @@ internal interface CellsAwsClient {
 }
 
 internal fun cellsAwsClient(
-    credentials: Deferred<CellsCredentials?>,
+    credentials: CellsCredentialsProvider,
     sessionManager: SessionManager,
     accessTokenApi: AccessTokenApi
 ): CellsAwsClient = CellsS3Client(
@@ -47,7 +46,7 @@ internal fun cellsAwsClient(
         installCellsS3HttpTimeout()
     },
     endpointProvider = {
-        credentials.awaitOrThrow().serverUrl
+        credentials.credentialsOrThrow().serverUrl
     },
     credentialsProvider = CellsS3CredentialsProvider(
         cellsCredentials = credentials,

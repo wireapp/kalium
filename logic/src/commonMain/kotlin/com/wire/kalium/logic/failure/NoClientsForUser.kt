@@ -15,13 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.CellsCredentialsProvider
-import com.wire.kalium.cells.domain.model.CellsCredentials
+package com.wire.kalium.logic.failure
 
-internal suspend fun CellsCredentialsProvider.credentialsOrThrow(): CellsCredentials =
-    credentials() ?: throw CellsCredentialsUnavailableException()
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.user.UserId
 
-internal class CellsCredentialsUnavailableException :
-    Exception("Cells credentials are not available")
+/**
+ * A fresh client lookup found no registered devices for the recipient of a new Proteus one-to-one conversation.
+ */
+public data class NoClientsForUser(val userId: UserId) : CoreFailure.FeatureFailure()

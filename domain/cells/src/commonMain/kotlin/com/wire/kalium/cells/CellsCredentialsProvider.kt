@@ -22,15 +22,35 @@ import com.wire.kalium.cells.domain.usecase.GetWireCellConfigurationUseCase
 
 /**
  * Provides credentials for Cells API based on current environment.
- * Temporary solution until we make we way to get the serverUrl and gateway secret.
  */
-internal class CellsCredentialsProvider(
+internal fun interface CellsCredentialsProvider {
+
+    /**
+     * @return the credentials, or null while the Cells backend URL is not known yet
+     * (e.g. right after login, before the feature config is synced).
+     */
+    suspend fun credentials(): CellsCredentials?
+}
+
+/**
+ * Temporary solution until we make we way to get the serverUrl and gateway secret.
+ *
+ * Credentials are cached only once the backend URL is available, so a lookup made before the
+ * feature config is synced does not keep the feature broken for the rest of the session.
+ */
+internal class CellsCredentialsProviderImpl(
     private val getConfiguration: GetWireCellConfigurationUseCase
-) {
-    internal suspend fun getCredentials() = CellsCredentials(
-        // Url is required and supposed to be configured if Cells Feature is enabled
-        // Setting empty URL will fail all network requests "turning off" the feature
-        serverUrl = getConfiguration()?.backendUrl ?: "",
-        gatewaySecret = "gatewaysecret"
-    )
+) : CellsCredentialsProvider {
+
+    private var cachedCredentials: CellsCredentials? = null
+
+    override suspend fun credentials(): CellsCredentials? =
+        cachedCredentials ?: getConfiguration()?.backendUrl
+            ?.takeIf { it.isNotBlank() }
+            ?.let { CellsCredentials(serverUrl = it, gatewaySecret = GATEWAY_SECRET) }
+            ?.also { cachedCredentials = it }
+
+    private companion object {
+        const val GATEWAY_SECRET = "gatewaysecret"
+    }
 }
