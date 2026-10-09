@@ -21,6 +21,7 @@ public abstract class com/wire/kalium/logic/CoreLogicCommon {
 	public final fun globalScope (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public final fun registerLogger (Lcom/wire/kalium/logger/KaliumLogger$Config;)V
 	public final fun sessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun stopSyncForRestart (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun versionedAuthenticationScope (Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;)Lcom/wire/kalium/logic/feature/auth/autoVersioningAuth/AutoVersionAuthScopeUseCase;
 }
 
@@ -7808,6 +7809,7 @@ public abstract class com/wire/kalium/logic/sync/SyncExecutor {
 	public fun <init> ()V
 	public abstract fun request (Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun startAndStopSyncAsNeeded ()V
+	public abstract fun stopForRestart (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/sync/SyncRequest {

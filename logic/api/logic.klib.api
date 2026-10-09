@@ -2660,6 +2660,7 @@ abstract class com.wire.kalium.logic.sync/SyncExecutor { // com.wire.kalium.logi
 
     abstract fun startAndStopSyncAsNeeded() // com.wire.kalium.logic.sync/SyncExecutor.startAndStopSyncAsNeeded|startAndStopSyncAsNeeded(){}[0]
     abstract suspend fun <#A1: kotlin/Any?> request(kotlin.coroutines/SuspendFunction1<com.wire.kalium.logic.sync/SyncRequest, #A1>): #A1 // com.wire.kalium.logic.sync/SyncExecutor.request|request(kotlin.coroutines.SuspendFunction1<com.wire.kalium.logic.sync.SyncRequest,0:0>){0§<kotlin.Any?>}[0]
+    abstract suspend fun stopForRestart() // com.wire.kalium.logic.sync/SyncExecutor.stopForRestart|stopForRestart(){}[0]
 }
 
 abstract class com.wire.kalium.logic/CoreLogicCommon { // com.wire.kalium.logic/CoreLogicCommon|null[0]
@@ -2686,6 +2687,7 @@ abstract class com.wire.kalium.logic/CoreLogicCommon { // com.wire.kalium.logic/
     final fun versionedAuthenticationScope(com.wire.kalium.logic.configuration.server/ServerConfig.Links): com.wire.kalium.logic.feature.auth.autoVersioningAuth/AutoVersionAuthScopeUseCase // com.wire.kalium.logic/CoreLogicCommon.versionedAuthenticationScope|versionedAuthenticationScope(com.wire.kalium.logic.configuration.server.ServerConfig.Links){}[0]
     final inline fun <#A1: kotlin/Any?> globalScope(kotlin/Function1<com.wire.kalium.logic/GlobalKaliumScope, #A1>): #A1 // com.wire.kalium.logic/CoreLogicCommon.globalScope|globalScope(kotlin.Function1<com.wire.kalium.logic.GlobalKaliumScope,0:0>){0§<kotlin.Any?>}[0]
     final inline fun <#A1: kotlin/Any?> sessionScope(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Function1<com.wire.kalium.logic.feature/UserSessionScope, #A1>): #A1 // com.wire.kalium.logic/CoreLogicCommon.sessionScope|sessionScope(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Function1<com.wire.kalium.logic.feature.UserSessionScope,0:0>){0§<kotlin.Any?>}[0]
+    final suspend fun stopSyncForRestart() // com.wire.kalium.logic/CoreLogicCommon.stopSyncForRestart|stopSyncForRestart(){}[0]
 }
 
 final class com.wire.kalium.logic.configuration.server/ServerConfig { // com.wire.kalium.logic.configuration.server/ServerConfig|null[0]
