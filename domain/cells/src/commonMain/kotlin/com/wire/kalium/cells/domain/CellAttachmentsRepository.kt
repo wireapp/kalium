@@ -41,7 +41,7 @@ internal interface CellAttachmentsRepository {
         isEditSupported: Boolean,
     ): Either<StorageFailure, Unit>
     suspend fun getAttachments(messageId: String, conversationId: ConversationId): Either<StorageFailure, List<MessageAttachment>>
-    suspend fun getAttachments(): Either<StorageFailure, List<MessageAttachment>>
+    suspend fun getAttachmentsByIds(assetIds: List<String>): Either<StorageFailure, List<MessageAttachment>>
     suspend fun saveStandaloneAssetPath(
         assetId: String,
         conversationId: String?,
@@ -51,7 +51,7 @@ internal interface CellAttachmentsRepository {
         ownerId: String? = null,
     ): Either<StorageFailure, Unit>
     suspend fun setStandaloneAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
-    suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<CellFileLocalPath>>
+    suspend fun getStandaloneAssetPathsByIds(assetIds: List<String>): Either<StorageFailure, List<CellFileLocalPath>>
     suspend fun deleteStandaloneAsset(assetId: String): Either<StorageFailure, Unit>
     suspend fun updateAssetPath(assetId: String, remotePath: String): Either<StorageFailure, Unit>
 }

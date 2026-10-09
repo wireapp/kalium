@@ -77,9 +77,6 @@ internal class GetPaginatedNodesUseCaseImpl(
         isRecursive: Boolean
     ): Either<CoreFailure, PaginatedList<Node>> {
 
-        val attachments = attachmentsRepository.getAttachments().getOrElse { emptyList() }.filterIsInstance<CellAssetContent>()
-        val assets = attachmentsRepository.getStandaloneAssetPaths().getOrElse { emptyList() }
-
         return cellsRepository.getPaginatedNodes(
             path = conversationId,
             query = query,
@@ -107,6 +104,15 @@ internal class GetPaginatedNodesUseCaseImpl(
                 conversation.id to (conversation.teamId != null && conversation.teamId != selfTeamId)
             }
 
+            val fileNodeIds = visibleNodes.filter { it.type != CellNodeType.FOLDER.value }.map { it.uuid }.distinct()
+            // An asset can be attached to several messages; distinctBy keeps the first row (lowest asset_index).
+            val attachmentsById = attachmentsRepository.getAttachmentsByIds(fileNodeIds).getOrElse(emptyList())
+                .filterIsInstance<CellAssetContent>()
+                .distinctBy { it.id }
+                .associateBy { it.id }
+            val localPathsById = attachmentsRepository.getStandaloneAssetPathsByIds(fileNodeIds).getOrElse(emptyList())
+                .associate { it.uuid to it.localPath }
+
             PaginatedList(
                 data = visibleNodes.map { node ->
                     val nodeConversationId = node.conversationId ?: browsedConversationId
@@ -121,9 +127,9 @@ internal class GetPaginatedNodesUseCaseImpl(
                             isViewerOnly = isViewerOnly,
                         )
                     } else {
-                        val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
+                        val attachment = attachmentsById[node.uuid]
                         node.toFileModel().copy(
-                            localPath = attachment?.localPath ?: assets.firstOrNull { it.uuid == node.uuid }?.localPath,
+                            localPath = attachment?.localPath ?: localPathsById[node.uuid],
                             metadata = attachment?.metadata,
                             userName = userName,
                             conversationName = conversationName,

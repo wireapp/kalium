@@ -54,8 +54,8 @@ SELECT * FROM CellFile WHERE isOffline = 1 AND conversationId = ?;
 selectById:
 SELECT * FROM CellFile WHERE uuid = ?;
 
-getAllWithLocalPath:
-SELECT uuid, localPath FROM CellFile WHERE localPath IS NOT NULL;
+getLocalPathsByIds:
+SELECT uuid, localPath FROM CellFile WHERE localPath IS NOT NULL AND uuid IN ?;
 
 setTransferStatus:
 UPDATE CellFile
