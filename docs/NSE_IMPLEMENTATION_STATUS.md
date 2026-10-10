@@ -186,14 +186,14 @@ separate durable settings and remain supported.
 
 ## Native contracts that constrain receiving
 
-The pinned CoreCrypto is 10.5.1. Observations below that cite 10.4.0 sources were
-recorded with that version and have not been re-run against 10.5.1.
+The pinned CoreCrypto is 10.5.4. Observations below that cite 10.4.0 sources were
+recorded with that version and have not been re-run against 10.5.4.
 
 - **CoreCrypto transactions:** the wrapper runs under `NonCancellable`.
   Returning `Either.Left` commits; required failures must throw. Receiving restores
   its attempt context inside the callback and awaits native unwind before closing
   or unlocking. An in-flight native operation is not promised to be interruptible.
-  NSE receiving also requires confirmed rollback, which relies on 10.5.1 returning
+  NSE receiving also requires confirmed rollback, which relies on CoreCrypto returning
   `TransactionFailed` only after a successful abort.
 - **Separate stores:** SQL can commit before native crypto, and MLS can commit
   before Proteus. Wiping a group or deleting its SQL identity can destroy the
