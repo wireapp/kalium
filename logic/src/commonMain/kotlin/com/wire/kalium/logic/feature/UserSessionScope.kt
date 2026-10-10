@@ -633,6 +633,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -945,7 +946,14 @@ public class UserSessionScope internal constructor(
     /** The host must first cancel/join public account operations and account/global observers. */
     internal suspend fun stopAccountWork() {
         withTimeout(LogoutUseCaseImpl.SCOPE_DRAIN_TIMEOUT_MS) {
+            if (isCellsInitialized) {
+                val uploadCoordinator = cells.uploadCoordinator
+                uploadCoordinator.cancelAll()
+                uploadCoordinator.dismissAll()
+                cells.cancel()
+            }
             this@UserSessionScope.coroutineContext.job.cancelAndJoin()
+            if (isCellsInitialized) cells.coroutineContext.job.join()
             if (callManager.isInitialized()) callManager.value.cancelJobs()
         }
     }
@@ -3183,7 +3191,7 @@ public class UserSessionScope internal constructor(
             coroutineScope = this,
         )
 
-    public val cells: CellsScope by lazy {
+    private val cellsLazy = lazy {
         CellsScope(
             cellsClient = cellsClient,
             dao = with(userStorage.database) {
@@ -3203,6 +3211,9 @@ public class UserSessionScope internal constructor(
             userId = userId,
         )
     }
+    public val cells: CellsScope by cellsLazy
+
+    public val isCellsInitialized: Boolean get() = cellsLazy.isInitialized()
 
     private val deleteConversationUseCase: DeleteConversationUseCase
         get() = DeleteConversationUseCaseImpl(

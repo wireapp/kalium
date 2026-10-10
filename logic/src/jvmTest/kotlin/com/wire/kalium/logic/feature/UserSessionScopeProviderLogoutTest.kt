@@ -27,6 +27,10 @@ import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -34,6 +38,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -57,10 +62,41 @@ class UserSessionScopeProviderLogoutTest {
         try {
             assertTrue(provider.logout(userId, scope, prepare = {}, clearLocalData = { cleared = true }))
             assertTrue(cleared)
+            assertFalse(scope.isCellsInitialized)
             assertNull(provider.get(userId))
         } finally {
             release.complete(Unit)
             stuckWorker.join()
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun givenInitializedCells_whenLoggingOut_thenCellsWorkDrainsBeforeLocalDataIsCleared() = runTest {
+        val root = Files.createTempDirectory("logout-cells").toFile()
+        val userId = UserId("user", "example.com")
+        storeAccount(root, userId)
+        val logic = CoreLogic(
+            rootPath = root.absolutePath,
+            kaliumConfigs = KaliumConfigs(enableCalling = false, mockedRequests = emptyList()),
+            userAgent = "kalium-logout-test",
+        )
+        val provider = logic.userSessionScopeProvider.value
+        val scope = provider.getOrCreate(userId)
+        val cells = scope.cells
+        val worker = cells.launch(start = CoroutineStart.UNDISPATCHED) { awaitCancellation() }
+        try {
+            assertTrue(scope.isCellsInitialized)
+            withContext(Dispatchers.Default) {
+                assertTrue(provider.logout(userId, scope, prepare = {}, clearLocalData = {
+                    assertTrue(worker.isCompleted)
+                    assertTrue(cells.coroutineContext.job.isCompleted)
+                }))
+            }
+            assertNull(provider.get(userId))
+        } finally {
+            worker.cancel()
+            logic.getGlobalScope().coroutineContext.job.cancel()
             root.deleteRecursively()
         }
     }

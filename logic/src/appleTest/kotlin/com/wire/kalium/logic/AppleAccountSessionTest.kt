@@ -57,6 +57,7 @@ import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -216,13 +217,18 @@ class AppleAccountSessionTest {
             val scope = logic.openSessionScope(userId)
             logic.getGlobalScope().coroutineContext.job.cancelAndJoin()
             val provider = logic.userSessionScopeProvider.value
+            val cells = scope.cells
+            val cellsWorker = cells.launch(start = CoroutineStart.UNDISPATCHED) { awaitCancellation() }
             val entered = CompletableDeferred<Unit>()
             val finish = CompletableDeferred<Unit>()
             val logout = async {
                 provider.logout(userId, scope, {
                     entered.complete(Unit)
                     finish.await()
-                }, {})
+                }, {
+                    assertTrue(cellsWorker.isCompleted)
+                    assertTrue(cells.coroutineContext.job.isCompleted)
+                })
             }
             entered.await()
             val duplicate = async(start = CoroutineStart.UNDISPATCHED) {
