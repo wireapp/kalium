@@ -17,10 +17,9 @@
  */
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.domain.model.CellsCredentials
+import com.wire.kalium.cells.CellsCredentialsProvider
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -47,7 +46,7 @@ internal interface S3CredentialsProvider {
 }
 
 internal class CellsS3CredentialsProvider(
-    private val cellsCredentials: Deferred<CellsCredentials?>,
+    private val cellsCredentials: CellsCredentialsProvider,
     private val sessionManager: SessionManager,
     private val accessTokenApi: AccessTokenApi,
 ) : S3CredentialsProvider {
@@ -66,7 +65,7 @@ internal class CellsS3CredentialsProvider(
 
     private suspend fun s3Credentials(accessToken: String) = S3Credentials(
         accessKeyId = accessToken,
-        secretAccessKey = cellsCredentials.awaitOrThrow().gatewaySecret,
+        secretAccessKey = cellsCredentials.credentialsOrThrow().gatewaySecret,
     )
 
     private suspend fun currentAccessToken(): String? =
