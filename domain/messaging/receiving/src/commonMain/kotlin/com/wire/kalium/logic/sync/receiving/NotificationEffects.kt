@@ -82,13 +82,12 @@ internal class NotificationEffects(
     private val options: ReceivingOptions,
     private val deleteFile: (String) -> Unit,
     private val previewImages: ReceivedLinkPreviewImages,
-    private val serverConfigLinks: com.wire.kalium.logic.configuration.server.ServerConfig.Links?,
-    private val callingEnabled: Boolean,
+    private val serverConfigLinks: com.wire.kalium.logic.configuration.server.ServerConfig.Links,
 ) {
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     suspend fun persist(payload: List<ReceivedPayload>, verifications: List<MLSVerification>): NotificationEffectsResult =
         database.writeMessageEffects {
-            val calls = if (callingEnabled) mutableListOf<ReceivedCallEvent>() else null
+            val calls = mutableListOf<ReceivedCallEvent>()
             // Distinct settings reset the wall-clock grace deadline on every replay. The final
             // settings row cannot recover the first attempt's deadline after an intervening change.
             val e2ei = payload.filterIsInstance<ReceivedPayload.Configuration>()
@@ -183,7 +182,7 @@ internal class NotificationEffects(
                     }
                     is ReceivedPayload.Application -> {
                         val laterApplications = after.filterIsInstance<ReceivedPayload.Application>()
-                        val previousCallCount = calls?.size ?: 0
+                        val previousCallCount = calls.size
                         messageHandler.handle(
                             received.message,
                             laterApplications.map { it.message },
@@ -195,7 +194,7 @@ internal class NotificationEffects(
                             requiredEarlier = requiredEarlier,
                             recreatedLater = lastCreationIndex.filterValues { it > index }.keys,
                         )
-                        if (calls != null && calls.size > previousCallCount) {
+                        if (calls.size > previousCallCount) {
                             // A self-device signal may need another conversation's metadata on retry.
                             val target = calls.last().conversationId
                             if (target !in recreatedEarlier) requiredEarlier += target
@@ -259,7 +258,7 @@ internal class NotificationEffects(
                 recordConversationDependencies(received, recreatedEarlier, requiredEarlier)
             }
             verifications.forEach { persistVerification(this, it, persistMessage) }
-            NotificationEffectsResult(messageHandler.finish(), calls.orEmpty())
+            NotificationEffectsResult(messageHandler.finish(), calls)
         }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
@@ -338,10 +337,7 @@ internal class NotificationEffects(
                 access.handle(event, previousAccess)
             }
             is Event.Conversation.CodeUpdated ->
-                CodeUpdateHandlerImpl(
-                    conversations,
-                    checkNotNull(serverConfigLinks) { "Account links are required for invitation codes" }
-                ).handle(event)
+                CodeUpdateHandlerImpl(conversations, serverConfigLinks).handle(event)
             is Event.Conversation.CodeDeleted ->
                 CodeDeletedHandlerImpl(conversations).handle(event)
             is Event.Conversation.ConversationChannelAddPermission -> wrapStorageRequest {

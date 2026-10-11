@@ -178,7 +178,7 @@ names retain the upstream missed-call preview policy.
 A process exit between the claim and iOS scheduling loses that alert.
 
 The wire-android host uses `IncomingCallReporter` and its versioned
-`CallNotification` contract, not the sample adapter below. Incoming results carry
+`CallNotification` contract. Incoming results carry
 `handoffId`, the UUID of a durable account-scoped signaling record. The host
 reports this UUID to CallKit and resumes the existing account's full AVS engine.
 CallKit termination comes from that engine's callbacks, preserving its close reason.
@@ -205,10 +205,6 @@ AVS callbacks expose neither message ID nor session ID, so identical callback re
 cannot distinguish separate real calls; selection remains deterministic rather than advancing
 through tied signals.
 
-The sample [KaliumNSECallKitReporter.swift](host/KaliumNSECallKitReporter.swift)
-remains available for legacy hosts. Its payload differs from wire-android's host
-contract and must not be connected to the new parser.
-
 The host must also link and embed AVS. The NSE module now applies the existing
 [Apple AVS runtime plugin](../plugins/apple-avs-runtime/README.md): generate its
 configuration with `:nse:generateAvsXcodeConfig`, include
@@ -216,25 +212,6 @@ configuration with `:nse:generateAvsXcodeConfig`, include
 target's configuration, and run `:nse:embedAvsForXcode` from that target's Xcode
 build phase to embed/sign the matching runtime. Copying only `KaliumNSE.framework`
 does not include its dynamic AVS dependency.
-
-The helper retains the legacy required payload fields (`accountID`,
-`conversationID`, `shouldRing`, `hasVideo`, `callerName`) on every event, including
-termination. Payload version 1 adds `callPayloadVersion`, `accountDomain`,
-`conversationDomain`, `eventType` (`incoming`, `missed`, `closed`),
-`messageTimeSeconds`, `callerID`, `callerDomain`, and optional `callerClientID` and
-`closeReason` (the AVS integer reason, including 5 for answered elsewhere and 10
-for rejection). `process` takes the account domain from the request; direct
-`report` callers must supply it. Unknown call types and invalid conversation UUIDs
-fail reporting rather than silently acknowledging unsupported work.
-
-The adapter awaits reports in order and propagates errors/cancellation. It forwards
-terminations even without an incoming event in the current invocation, and forwards
-duplicates. It does **not** own the host call register, deduplicate events, or infer
-a call-instance UUID from a conversation. Hosts must correlate these decisions to
-an existing call instance before applying them. This payload is evidence, not a
-complete instance-correlation contract: AVS callbacks do not supply a signal ID or
-call-instance ID. Do not wire this adapter directly to a conversation-only host
-termination path when successive calls can overlap delayed events.
 
 Native AVS 10.5.10 tests demonstrate that valid SETUP/GROUPSTART/CONFSTART responses
 and REJECT from another local device can succeed without a CLOSED callback, both
@@ -255,9 +232,8 @@ calling JSON or required conversation/crypto failures still roll back the curren
 notification. An interruption after processed markers, or native duplicate replay,
 can lose call presentation, just as it can lose an ordinary alert. There is no new
 durable call queue, call-history persistence or exactly-once CallKit guarantee.
-MLS subconversations remain outside this path. Simulator fixtures verify reporting
-payloads through an injected reporter; real CallKit/APNs behavior still needs a
-signed-device host run.
+MLS subconversations remain outside this path. Simulator fixtures verify the
+returned call results; real CallKit/APNs behavior still needs a signed-device host run.
 
 See [current coverage and exact dependencies](../docs/NSE_IMPLEMENTATION_STATUS.md)
 for event families, native constraints and remaining blockers. See

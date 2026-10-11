@@ -49,7 +49,7 @@ internal class ReceivedConversationHandler(
     private val database: UserDatabaseBuilder,
     private val selfUserId: UserId,
     private val users: MembershipUserLoader,
-    private val api: ConversationApi?,
+    private val api: ConversationApi,
 ) {
     private val staged = linkedMapOf<ConversationId, ConversationCreation>()
 
@@ -75,9 +75,7 @@ internal class ReceivedConversationHandler(
             conversation(id) != null -> emptyList()
             id in unavailable -> null
             else -> {
-                val result = wrapApiRequest {
-                    checkNotNull(api) { "Conversation metadata requires authenticated transport" }.fetchConversationDetails(id.toApi())
-                }
+                val result = wrapApiRequest { api.fetchConversationDetails(id.toApi()) }
                 if (rememberUnavailable(id, result)) null else {
                     val response = result.orThrow()
                     check(response.id.toModel() == id) { "Required conversation metadata was not returned" }
@@ -183,9 +181,7 @@ internal class ReceivedConversationHandler(
         if (id in unavailable) return null
         // The app attempts this refresh for every join, but still adds event members
         // when the network fetch fails. Required mapping/native/SQL effects are awaited.
-        val result = wrapApiRequest {
-            checkNotNull(api) { "Conversation refresh requires authenticated transport" }.fetchConversationDetails(id.toApi())
-        }
+        val result = wrapApiRequest { api.fetchConversationDetails(id.toApi()) }
         return when {
             rememberUnavailable(id, result) -> null
             result is Either.Left && conversation(id) != null -> emptyList()
@@ -203,7 +199,7 @@ internal class ReceivedConversationHandler(
         context: MlsCoreCryptoContext?,
     ): List<ReceivedPayload> {
         val id = content.qualifiedConversation.toModel()
-        val result = wrapApiRequest { checkNotNull(api).fetchConversationDetails(content.qualifiedConversation) }
+        val result = wrapApiRequest { api.fetchConversationDetails(content.qualifiedConversation) }
         if (rememberUnavailable(id, result)) return emptyList()
         val response = result.orThrow()
         check(response.id.toModel() == id) { "Required conversation metadata was not returned" }
@@ -346,9 +342,7 @@ internal class ReceivedConversationHandler(
             else -> database.memberDAO.getMemberRole(selfUserId.toDao(), id.toDao()) != null
         }
         return if (canUseCachedMetadata) emptyList() else {
-            val result = wrapApiRequest {
-                checkNotNull(api) { "Welcome metadata requires authenticated transport" }.fetchConversationDetails(id.toApi())
-            }
+            val result = wrapApiRequest { api.fetchConversationDetails(id.toApi()) }
             if (rememberUnavailable(id, result)) null else {
                 val response = result.orThrow()
                 check(response.id.toModel() == id) { "Required conversation metadata was not returned" }
@@ -359,7 +353,7 @@ internal class ReceivedConversationHandler(
     }
 
     private suspend fun fetch(id: ConversationId): ConversationResponse = wrapApiRequest {
-        checkNotNull(api) { "Conversation metadata requires authenticated transport" }.fetchConversationDetails(id.toApi())
+        api.fetchConversationDetails(id.toApi())
     }.orThrow().also { check(it.id.toModel() == id) { "Required conversation metadata was not returned" } }
 
     private suspend fun prepare(

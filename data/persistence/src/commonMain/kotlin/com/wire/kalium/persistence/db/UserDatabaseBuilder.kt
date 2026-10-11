@@ -381,7 +381,6 @@ class UserDatabaseBuilder internal constructor(
         writeDispatcher,
         database.messageAssetTransferStatusQueries,
         database.buttonContentQueries,
-        database.pendingDeliveryConfirmationsQueries,
         database.pollContentQueries,
     )
 

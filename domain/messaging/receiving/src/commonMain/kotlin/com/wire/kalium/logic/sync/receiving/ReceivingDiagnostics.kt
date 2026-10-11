@@ -156,7 +156,7 @@ private fun safeCoreFailureType(failure: CoreFailure): String = when (failure) {
 }
 
 private fun safeResultReason(reason: String?): String? = when (reason) {
-    "INVALID_REQUEST", "TIMEOUT", "NOT_PREPARED", "ALREADY_IN_USE", "MISSING_STORAGE", "PROTECTED_STORAGE",
+    "INVALID_REQUEST", "TIMEOUT", "NOT_PREPARED", "MISSING_STORAGE", "PROTECTED_STORAGE",
     "STORAGE", "INCOMPATIBLE", "BUSY" -> reason
     null -> null
     else -> "OTHER"

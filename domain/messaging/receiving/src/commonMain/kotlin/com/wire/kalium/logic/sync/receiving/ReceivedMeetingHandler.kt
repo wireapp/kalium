@@ -17,12 +17,10 @@ import com.wire.kalium.network.api.model.MeetingId
 
 internal suspend fun fetchReceivedMeeting(
     meetingId: MeetingId,
-    api: MeetingApi?,
+    api: MeetingApi,
     users: MembershipUserLoader,
 ): List<ReceivedPayload> {
-    val result = wrapApiRequest {
-        checkNotNull(api) { "Meeting receiving requires authenticated transport" }.fetchMeeting(meetingId)
-    }
+    val result = wrapApiRequest { api.fetchMeeting(meetingId) }
     if (result is Either.Left && (result.value is NetworkFailure.FeatureNotSupported || result.value.isMeetingNotFound())) {
         return emptyList()
     }

@@ -22,7 +22,6 @@ import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
-import com.wire.kalium.persistence.PendingDeliveryConfirmationsQueries
 import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAssetTransferStatus
@@ -80,7 +79,6 @@ internal class MessageDAOImpl internal constructor(
     private val writeDispatcher: WriteDispatcher,
     private val assetStatusQueries: MessageAssetTransferStatusQueries,
     private val buttonContentQueries: ButtonContentQueries,
-    private val pendingDeliveryConfirmationsQueries: PendingDeliveryConfirmationsQueries,
     private val pollContentQueries: PollContentQueries,
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
@@ -165,22 +163,19 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
-    override suspend fun insertReceivedMessages(messages: List<ReceivedMessage>) = withContext(writeDispatcher.value) {
+    override suspend fun insertReceivedMessage(
+        message: MessageEntity.Regular,
+        updateConversationOrder: Boolean
+    ) = withContext(writeDispatcher.value) {
         queries.transaction {
-            messages.forEach { received ->
-                val message = received.message
-                if (!queries.messageExists(message.id, message.conversationId).awaitAsOne()) {
-                    insertReceivedMessageInTransaction(message, received.updateConversationOrder)
-                    if (received.enqueueDelivery) {
-                        pendingDeliveryConfirmationsQueries.insertOrIgnore(message.conversationId, message.id)
-                    }
-                } else if (isValidAssetMessageUpdate(message)) {
-                    // Reuse the app's preview-to-valid-keys rule. A completed asset is immutable here.
-                    insertReceivedMessageInTransaction(message, received.updateConversationOrder)
-                }
-                // Do not recreate unread state, update conversation dates or requeue acknowledged
-                // delivery work on replay. These effects committed with the original message.
+            if (!queries.messageExists(message.id, message.conversationId).awaitAsOne()) {
+                insertReceivedMessageInTransaction(message, updateConversationOrder)
+            } else if (isValidAssetMessageUpdate(message)) {
+                // Reuse the app's preview-to-valid-keys rule. A completed asset is immutable here.
+                insertReceivedMessageInTransaction(message, updateConversationOrder)
             }
+            // Do not recreate unread state or update conversation dates on replay.
+            // These effects committed with the original message.
         }
     }
 

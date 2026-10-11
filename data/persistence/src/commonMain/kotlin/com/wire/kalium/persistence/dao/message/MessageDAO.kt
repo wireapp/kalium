@@ -50,8 +50,8 @@ interface MessageDAO {
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteAllMessages()
 
-    /** Atomically insert new messages or complete asset previews; canonical duplicates have no repeated effects. */
-    suspend fun insertReceivedMessages(messages: List<ReceivedMessage>)
+    /** Atomically insert a new message or complete an asset preview; canonical duplicates have no repeated effects. */
+    suspend fun insertReceivedMessage(message: MessageEntity.Regular, updateConversationOrder: Boolean)
 
     /**
      * Inserts the message, or ignores if there's already a message with the same [MessageEntity.id] and [MessageEntity.conversationId].
@@ -240,13 +240,6 @@ interface MessageDAO {
 
     suspend fun updateAudioMessageNormalizedLoudness(conversationId: QualifiedIDEntity, messageId: String, normalizedLoudness: ByteArray)
 }
-
-/** Required writes for an incoming regular message, not additional persisted receiving state. */
-data class ReceivedMessage(
-    val message: MessageEntity.Regular,
-    val updateConversationOrder: Boolean,
-    val enqueueDelivery: Boolean,
-)
 
 /** Message identities are scoped to a conversation and this DAO's account. */
 data class NotificationMessageKey(val messageId: String, val conversationId: QualifiedIDEntity)

@@ -12,7 +12,6 @@ import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.event.NewEventEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import com.wire.kalium.persistence.dao.message.ReceivedMessage
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -48,7 +47,8 @@ class Migration150Test : BaseDatabaseTest() {
                     id = "text", conversationId = conversation.id, senderUserId = sender.id, content = MessageEntityContent.Text("stored"),
                 )
                 database.eventDAO.insertEvents(listOf(NewEventEntity("pending", "[]", false, false)))
-                database.messageDAO.insertReceivedMessages(listOf(ReceivedMessage(message, true, true)))
+                database.messageDAO.insertReceivedMessage(message, true)
+                database.pendingDeliveryConfirmationDAO.enqueue(conversation.id, message.id)
                 val before = database.messageDAO.getMessageById("text", conversation.id)
                 // The fixture uses the current schema; replay only the receipt migrations under test.
                 UserDatabase.Schema.awaitMigrate(database.sqlDriver, oldVersion, 151L)

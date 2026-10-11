@@ -36,7 +36,6 @@ import co.touchlab.sqliter.sqlite3.sqlite3_finalize
 import co.touchlab.sqliter.sqlite3.sqlite3_open_v2
 import co.touchlab.sqliter.sqlite3.sqlite3_prepare_v2
 import co.touchlab.sqliter.sqlite3.sqlite3_step
-import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -82,16 +81,6 @@ fun existingUserDatabaseBuilder(
             dbInvalidationController = DbInvalidationController(enabled = false, notifyKey = driver::notifyListeners),
             initializeSelfUser = false,
         )
-    } catch (failure: Throwable) {
-        throw uncertainOpenFailure(driver, failure)
-    }
-}
-
-/** Opens only an app-prepared global database at the exact schema version. */
-fun existingGlobalDatabaseBuilder(storagePath: String, dispatcher: CoroutineDispatcher): GlobalDatabaseBuilder {
-    val driver = existingDatabaseDriver(storagePath, FileNameUtil.globalDBName(), GlobalDatabase.Schema.version)
-    return try {
-        GlobalDatabaseBuilder(driver, PlatformDatabaseData(StorageData.FileBacked(storagePath)), dispatcher)
     } catch (failure: Throwable) {
         throw uncertainOpenFailure(driver, failure)
     }

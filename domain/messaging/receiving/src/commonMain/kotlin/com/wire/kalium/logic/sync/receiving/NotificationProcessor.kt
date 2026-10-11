@@ -79,22 +79,22 @@ class NotificationProcessor(
     private val selfUserId: UserId,
     private val proteus: ProteusClient,
     private val mls: MLSClient?,
-    private val options: ReceivingOptions = ReceivingOptions(),
-    private val serverConfigLinks: com.wire.kalium.logic.configuration.server.ServerConfig.Links? = null,
+    private val options: ReceivingOptions,
+    private val serverConfigLinks: com.wire.kalium.logic.configuration.server.ServerConfig.Links,
     private val sessionRefresh: SessionRefreshSuggestedEventHandler? = null,
-    private val userDetailsApi: com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi? = null,
-    private val conversationApi: com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi? = null,
-    private val meetingApi: com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi? = null,
-    private val teamsApi: com.wire.kalium.network.api.base.authenticated.TeamsApi? = null,
-    private val deleteFile: (String) -> Unit = { error("Local file cleanup is unavailable") },
-    assetApi: com.wire.kalium.network.api.base.authenticated.asset.AssetApi? = null,
-    assetDirectory: String? = null,
-    private val clientApi: com.wire.kalium.network.api.base.authenticated.client.ClientApi? = null,
-    private val apiVersion: Int = 6,
-    private val selfApi: com.wire.kalium.network.api.base.authenticated.self.SelfApi? = null,
-    private val hasMLSCredential: suspend (com.wire.kalium.cryptography.MLSCiphersuite) -> Boolean = { false },
-    private val invalidateReceiving: suspend () -> Unit = { error("Account invalidation is unavailable") },
-    private val evaluateCalls: (suspend (List<ReceivedCallEvent>) -> List<ReceivedCallResult>)? = null,
+    private val userDetailsApi: com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi,
+    private val conversationApi: com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi,
+    private val meetingApi: com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi,
+    private val teamsApi: com.wire.kalium.network.api.base.authenticated.TeamsApi,
+    private val deleteFile: (String) -> Unit,
+    assetApi: com.wire.kalium.network.api.base.authenticated.asset.AssetApi,
+    assetDirectory: String,
+    private val clientApi: com.wire.kalium.network.api.base.authenticated.client.ClientApi,
+    private val apiVersion: Int,
+    private val selfApi: com.wire.kalium.network.api.base.authenticated.self.SelfApi,
+    private val hasMLSCredential: suspend (com.wire.kalium.cryptography.MLSCiphersuite) -> Boolean,
+    private val invalidateReceiving: suspend () -> Unit,
+    private val evaluateCalls: suspend (List<ReceivedCallEvent>) -> List<ReceivedCallResult>,
     private val diagnostics: ReceivingDiagnostics? = null,
     private val recovery: MLSReceiveRecovery? = null,
     // Opted in only by the Apple NSE factory. Existing consumers retain prefix processing.
@@ -301,7 +301,6 @@ class NotificationProcessor(
 
     private suspend fun withPendingCalls(message: ReceivedMessageResult?, reason: String? = null): ReceivedNotificationResult {
         diagnostics?.stage = "PRESENTATION"
-        if (evaluateCalls == null) return ReceivedNotificationResult(message, presentationReason = reason)
         val pending = CallSignalJournal(database).signals().filter { it.submittedGeneration == null }
         val events = pending.map {
             ReceivedCallEvent(
@@ -315,7 +314,7 @@ class NotificationProcessor(
                 it.messageId
             )
         }
-        val results = if (events.isEmpty()) emptyList() else evaluateCalls.invoke(events)
+        val results = if (events.isEmpty()) emptyList() else evaluateCalls(events)
         return ReceivedNotificationResult(message, results, reason, pending.isNotEmpty())
     }
 
@@ -396,7 +395,6 @@ class NotificationProcessor(
                 deleteFile = deleteFile,
                 previewImages = previewImages,
                 serverConfigLinks = serverConfigLinks,
-                callingEnabled = evaluateCalls != null,
             ).persist(decoded, verifications).also {
                 if (mlsContext != null && recovery != null) {
                     // SQL can commit before native rollback. The durable identity survives that gap.

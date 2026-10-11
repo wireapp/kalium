@@ -96,15 +96,11 @@ suspend fun verifyMessageQuote(
     messageDAO: MessageDAO,
     selfUserId: UserId,
     messageEncoder: MessageContentEncoder = MessageContentEncoder(),
-    pendingMessages: List<MessageEntity.Regular> = emptyList(),
 ): Either<CoreFailure, MessageContent.QuoteReference> {
     val hash = quotedReference.quotedMessageSha256
         ?: return Either.Right(quotedReference.copy(isVerified = false))
     return wrapStorageRequest {
-        val original = pendingMessages.lastOrNull {
-            it.id == quotedReference.quotedMessageId && it.conversationId == conversationId.toDao()
-        }
-            ?: messageDAO.getMessageById(quotedReference.quotedMessageId, conversationId.toDao())
+        val original = messageDAO.getMessageById(quotedReference.quotedMessageId, conversationId.toDao())
         val originalHash = (original as? MessageEntity.Regular)?.let {
             messageEncoder.encodeMessageContent(
                 it.date,
@@ -120,11 +116,10 @@ suspend fun prepareReceivedTextMessage(
     messageDAO: MessageDAO,
     selfUserId: UserId,
     messageEncoder: MessageContentEncoder = MessageContentEncoder(),
-    pendingMessages: List<MessageEntity.Regular> = emptyList(),
 ): Either<CoreFailure, Message.Regular> {
     val text = requireNotNull(message.content as? MessageContent.Text)
     val quote = text.quotedMessageReference ?: return Either.Right(message)
-    return verifyMessageQuote(quote, message.conversationId, messageDAO, selfUserId, messageEncoder, pendingMessages).map {
+    return verifyMessageQuote(quote, message.conversationId, messageDAO, selfUserId, messageEncoder).map {
         message.copy(content = text.copy(quotedMessageReference = it))
     }
 }

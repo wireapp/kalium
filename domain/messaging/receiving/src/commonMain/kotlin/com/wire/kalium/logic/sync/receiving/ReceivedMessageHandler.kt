@@ -55,7 +55,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.PollVoteEntity
-import com.wire.kalium.persistence.dao.message.ReceivedMessage
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import com.wire.kalium.persistence.db.MessageEffectDAOs
@@ -72,7 +71,7 @@ internal class ReceivedMessageHandler(
     private val userConfig: UserConfigRepository,
     private val deleteFile: (String) -> Unit,
     private val previewImages: ReceivedLinkPreviewImages,
-    private val calls: MutableList<ReceivedCallEvent>?,
+    private val calls: MutableList<ReceivedCallEvent>,
 ) {
     private val mapper = RegularMessageMapper(selfUserId)
     private val receiptMapper = ReceiptModeMapperImpl()
@@ -127,9 +126,7 @@ internal class ReceivedMessageHandler(
         if (data.messages.getMessageById(message.id, conversationId) != null || migratedMessage(message.id, conversation) != null) return
         val receiptMode = data.messages.getReceiptModeFromGroupConversationByQualifiedID(conversationId)
         val stored = receiptMode?.let { message.withGroupReceiptMode(receiptMapper.fromEntityToModel(it)) } ?: message
-        data.messages.insertReceivedMessages(
-            listOf(ReceivedMessage(mapper.toEntity(stored), stored.content.shouldUpdateConversationOrder(), enqueueDelivery = false))
-        )
+        data.messages.insertReceivedMessage(mapper.toEntity(stored), stored.content.shouldUpdateConversationOrder())
     }
 
     @Suppress("CyclomaticComplexMethod")
@@ -214,7 +211,6 @@ internal class ReceivedMessageHandler(
         val value = callingJson.decodeFromString<MessageContent.Calling.CallingValue>(content.value)
         // The NSE has no active call. Remote mute, like in-call reactions, has no durable effect.
         if (value.type == "REMOTEMUTE") return
-        val calls = checkNotNull(calls) { "Calling event processing is unavailable" }
         // Match the shared app's authorization: only our own devices can address another
         // conversation through the calling payload (for example, rejecting via SELF).
         val targetId = if (message.senderUserId == selfUserId) content.conversationId?.toDao() ?: carrier.id else carrier.id
@@ -422,11 +418,7 @@ internal class ReceivedMessageHandler(
         data.messages.getReceiptModeFromGroupConversationByQualifiedID(conversation.id)?.let {
             message = message.withGroupReceiptMode(receiptMapper.fromEntityToModel(it))
         }
-        data.messages.insertReceivedMessages(
-            listOf(
-                ReceivedMessage(mapper.toEntity(message), message.content.shouldUpdateConversationOrder(), enqueueDelivery = false)
-            )
-        )
+        data.messages.insertReceivedMessage(mapper.toEntity(message), message.content.shouldUpdateConversationOrder())
         if (content is MessageContent.Text) previewImages.resolve(data, message)
         candidates += MessageCandidate(
             message.id,

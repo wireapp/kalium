@@ -40,5 +40,14 @@ internal class ShouldRemoteMuteCheckerImpl : ShouldRemoteMuteChecker {
         selfUserId: UserId,
         selfClientId: String,
         targets: MessageContent.Calling.Targets?
-    ): Boolean = isSenderAdmin && targets.targetsClient(selfUserId, selfClientId)
+    ): Boolean = isSenderAdmin && isCurrentClientTargeted(selfUserId, selfClientId, targets)
+
+    // Because of the nature of MLS (where all the MLS group members always receive a message),
+    // we need to check if the current client is a target of the remote mute or not.
+    private fun isCurrentClientTargeted(selfUserId: UserId, selfClientId: String, targets: MessageContent.Calling.Targets?): Boolean =
+        targets?.domainToUserIdToClients?.values.orEmpty().any { userClientsMap ->
+            userClientsMap[selfUserId.value].orEmpty().any { client ->
+                client == selfClientId
+            }
+        }
 }

@@ -112,13 +112,6 @@ class AppleExistingDatabaseTest {
     }
 
     @Test
-    fun `existing global database opens and closes`() = withDirectory { root ->
-        globalDatabaseProvider(PlatformDatabaseData(StorageData.FileBacked(root)), dispatcher, null).close()
-        existingGlobalDatabaseBuilder(root, dispatcher).close()
-        existingGlobalDatabaseBuilder(root, dispatcher).close()
-    }
-
-    @Test
     fun `file removed before native open stays missing and cleanup is uncertain`() = withDirectory { root ->
         prepareUser(root).close()
         assertTrue(fileManager.removeItemAtPath(databasePath(root), null))

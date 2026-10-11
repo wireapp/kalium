@@ -38,8 +38,8 @@ internal class ReceivedMLSConfigurationHandler(
     private val users: MembershipUserLoader,
     private val self: UserId,
     private val clientId: ClientId,
-    private val clientApi: ClientApi?,
-    private val selfApi: SelfApi?,
+    private val clientApi: ClientApi,
+    private val selfApi: SelfApi,
     private val oneOnOnes: ReceivedOneOnOneHandler,
     private val mlsSupported: Boolean,
     private val hasCredential: suspend (MLSCiphersuite) -> Boolean,
@@ -98,9 +98,7 @@ internal class ReceivedMLSConfigurationHandler(
     ): ReceivedPayload.Configuration {
         val selfProtocols = checkNotNull(users.user(self)).supportedProtocols
             ?.map { SupportedProtocol.valueOf(it.name) }?.toSet()
-        val fetched = wrapApiRequest {
-            checkNotNull(clientApi) { "Updating self protocols requires authenticated self clients" }.fetchSelfUserClient()
-        }.orThrow()
+        val fetched = wrapApiRequest { clientApi.fetchSelfUserClient() }.orThrow()
         val previousMigration = migration ?: config.getMigrationConfiguration().flatMapLeft {
             if (it is StorageFailure.DataNotFound) Either.Right(DISABLED_MLS_MIGRATION) else Either.Left(it)
         }.orThrow()
@@ -115,10 +113,7 @@ internal class ReceivedMLSConfigurationHandler(
         if (calculated == selfProtocols) {
             return ReceivedPayload.Configuration(event, selfClients = fetched.map { it.selfClientParameters(self) })
         }
-        wrapApiRequest {
-            checkNotNull(selfApi) { "Changed self protocols require authenticated upload" }
-                .updateSupportedProtocols(calculated.map { it.toApi() })
-        }.orThrow()
+        wrapApiRequest { selfApi.updateSupportedProtocols(calculated.map { it.toApi() }) }.orThrow()
         users.updateSelfProtocols(calculated)
         val profiles = users.refreshAll()
         val resolutions = oneOnOnes.resolveAll(payloadId, context)

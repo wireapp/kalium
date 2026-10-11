@@ -84,22 +84,6 @@ class ReceivedMessageTest {
     }
 
     @Test
-    fun quoteCanUseAnEarlierPreparedMessageOnlyInTheSameConversation() = runTest {
-        val original = TestMessage.TEXT_MESSAGE
-        val hash = checkNotNull(encoder.encodeMessageContent(original.date, original.content)).sha256Digest
-        val message = original.copy(id = "reply", content = MessageContent.Text(
-            "reply", quotedMessageReference = MessageContent.QuoteReference(original.id, hash, false)
-        ))
-        everySuspend { messageDAO.getMessageById(any(), any()) } throws IllegalStateException("Must use prepared original")
-        val prepared = assertIs<Either.Right<Message.Regular>>(prepareReceivedTextMessage(
-            message, messageDAO, selfUserId, pendingMessages = listOf(mapper.toEntity(original))
-        )).value
-        assertTrue(checkNotNull((prepared.content as MessageContent.Text).quotedMessageReference).isVerified)
-        val differentConversation = mapper.toEntity(original).copy(conversationId = com.wire.kalium.persistence.dao.QualifiedIDEntity("other", "wire.test"))
-        assertIs<Either.Left<*>>(prepareReceivedTextMessage(message, messageDAO, selfUserId, pendingMessages = listOf(differentConversation)))
-    }
-
-    @Test
     fun receivedRegularMessagePreservesServerTimestampAndAppTimerOrigins() {
         val source = TestMessage.TEXT_MESSAGE
         for (sender in listOf(selfUserId, TestUser.OTHER_USER_ID)) {

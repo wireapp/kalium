@@ -37,8 +37,8 @@ import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 /** Required profile reads precede the atomic write; mapping and persistence are shared with the app. */
 internal class MembershipUserLoader(
     private val users: UserDAO,
-    private val api: UserDetailsApi?,
-    private val teamsApi: TeamsApi?,
+    private val api: UserDetailsApi,
+    private val teamsApi: TeamsApi,
     private val selfUserId: UserId,
     private val clients: ClientDAO,
 ) {
@@ -59,13 +59,12 @@ internal class MembershipUserLoader(
     suspend fun refreshAll(): UserProfiles {
         val ids = otherUserIds()
         if (ids.isEmpty()) return UserProfiles()
-        val transport = checkNotNull(api) { "Protocol resolution requires authenticated profiles" }
         val removed = mutableSetOf<UserId>()
         val response = recoverMalformedQualifiedIdsIfNeeded(
-            fetchResult = fetchUserProfiles(ids, selfUserId, transport),
+            fetchResult = fetchUserProfiles(ids, selfUserId, api),
             qualifiedUserIds = ids,
             deleteMalformedUser = { removed += it },
-            retry = { fetchUserProfiles(it, selfUserId, transport) },
+            retry = { fetchUserProfiles(it, selfUserId, api) },
         ).orThrow()
         removedIds += removed
         removed.forEach { loaded.remove(it) }
@@ -101,8 +100,7 @@ internal class MembershipUserLoader(
     /** The app refreshes peer protocols for resolution and falls back on fetch failure. */
     suspend fun refresh(id: UserId): UserProfiles {
         val response = wrapApiRequest {
-            checkNotNull(api) { "Profile refresh requires authenticated transport" }
-                .getMultipleUsers(ListUserRequest.qualifiedIds(listOf(id.toApi())))
+            api.getMultipleUsers(ListUserRequest.qualifiedIds(listOf(id.toApi())))
         }.getOrNull() ?: return UserProfiles()
         val profiles = response.usersFound.filter { it.id.toModel() == id }
         return map(profiles, allowFetchFailure = true)
@@ -110,9 +108,7 @@ internal class MembershipUserLoader(
 
     /** Every connection status refreshes the peer; only the app's user-not-found case is tolerated. */
     suspend fun connectionPeer(id: UserId): UserProfiles = try {
-        val profile = wrapApiRequest {
-            checkNotNull(api) { "Connection profiles require authenticated transport" }.getUserInfo(id.toApi())
-        }.orThrow()
+        val profile = wrapApiRequest { api.getUserInfo(id.toApi()) }.orThrow()
         check(profile.id.toModel() == id) { "Required connection profile was not returned" }
         map(listOf(profile))
     } catch (failure: KaliumSyncException) {
@@ -123,8 +119,7 @@ internal class MembershipUserLoader(
         val known = users.getUsersDetailsByQualifiedIDList(ids.map { it.toDao() })
         val missing = ids.filterNot { id -> id in loaded || known.any { it.id == id.toDao() && !it.name.isNullOrBlank() } }
         if (missing.isEmpty()) return UserProfiles()
-        val transport = checkNotNull(api) { "Membership profiles require authenticated transport" }
-        val response = fetchUserProfiles(missing.toSet(), selfUserId, transport).orThrow()
+        val response = fetchUserProfiles(missing.toSet(), selfUserId, api).orThrow()
         // Like the app, store users that could not be fetched (e.g. from an unreachable backend) as incomplete.
         val found = response.usersFound.map { it.id.toModel() }.toSet()
         val incomplete = missing.filterNot { it in found }.map { it.toApi().toIncompleteUserEntity() }
@@ -146,12 +141,7 @@ internal class MembershipUserLoader(
         }
         val selfTeam = users.getUserDetailsByQualifiedID(selfUserId.toDao())?.team
         val teamMembers = if (profiles.any { it.isTeamMember(selfTeam, selfUserId.domain) }) {
-            val result = fetchProfileTeamMembers(
-                profiles,
-                selfUserId,
-                selfTeam,
-                checkNotNull(teamsApi) { "Team profiles require authenticated transport" }
-            )
+            val result = fetchProfileTeamMembers(profiles, selfUserId, selfTeam, teamsApi)
             if (allowFetchFailure && result is com.wire.kalium.common.functional.Either.Left) return UserProfiles()
             result.orThrow()
         } else emptyList()

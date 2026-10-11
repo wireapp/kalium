@@ -286,9 +286,6 @@ recorded with that version and have not been re-run against 10.5.4.
 - Ownership, readiness, existing-database, network-close and crypto-close tests live
   beside those components. Their failure-retention and cancellation coverage remains
   separate from message-policy tests.
-- [AVS event probe](../nse/scripts/verify-avs-event-api.py) records executable artifact
-  findings under `nse/build/reports/avs-event-api/`; host integration is verified
-  separately by the receiving tests and Swift/app runner.
 
 The cleanup's replay tests explicitly accept extra access, promotion and connection
 warning messages after interruption. They also cover access-before-fetch behavior:

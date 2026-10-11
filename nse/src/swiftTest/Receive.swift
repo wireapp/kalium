@@ -4,7 +4,6 @@ import KaliumNSE
 @main
 struct ReceiveFixture {
     @MainActor static func main() async throws {
-        try await verifyCallKitReporting()
         let data = try Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))
         let accounts = try JSONSerialization.jsonObject(with: data) as! [[String: Any]]
         for account in accounts {
@@ -27,28 +26,22 @@ struct ReceiveFixture {
                 userDomain: account["userDomain"] as! String,
                 notificationId: "notification",
                 showMessageContent: showContent,
-                budgetMilliseconds: 20_000
+                budgetMilliseconds: 20_000,
+                deliveredNotifications: []
             )
-            let accountID = UUID(uuidString: "22222222-2222-4222-8222-222222222222")!
-            var reportedCalls: [[String: Any]] = []
-            let callReporter = KaliumNSECallKitReporter { payload in
-                await Task.yield()
-                reportedCalls.append(payload)
-            }
-            let result = try await callReporter.process(receiver: receiver, request: request, accountID: accountID)
+            let result = try await receiver.process(request: request)
             precondition(result.status == .success, "Receive failed for \(account["route"]!)")
             if account["callingEvents"] as? Bool == true {
                 precondition(result.calls.count == 1 && result.calls[0].type == .incoming, "Missing incoming call")
-                precondition(reportedCalls.count == 1, "CallKit reporting was not awaited")
-                let payload = reportedCalls[0]
-                precondition(payload["accountID"] as? String == accountID.uuidString, "Wrong CallKit account")
-                precondition(payload["conversationID"] as? String == "11111111-1111-4111-8111-111111111111", "Wrong call conversation")
-                precondition(payload["shouldRing"] as? Bool == true, "Incoming call did not ring")
+                let call = result.calls[0]
+                precondition(call.conversationValue == "11111111-1111-4111-8111-111111111111", "Wrong call conversation")
+                precondition(call.shouldRing, "Incoming call did not ring")
                 // One-to-one calls use the sender's name, not the conversation's display name.
-                precondition(payload["callerName"] as? String == (showContent ? "Fixture" : ""),
-                             "Wrong caller privacy: \(String(describing: payload["callerName"])) for \(account["route"]!)")
+                // Message-preview restrictions never hide caller names.
+                precondition(call.callerName == "Fixture",
+                             "Wrong caller name: \(String(describing: call.callerName)) for \(account["route"]!)")
             } else {
-                precondition(result.calls.isEmpty && reportedCalls.isEmpty, "Unexpected call reporting")
+                precondition(result.calls.isEmpty, "Unexpected call result")
             }
             if account["sentConnectionEvents"] as? Bool == true || account["acceptedConnectionEvents"] as? Bool == true {
                 precondition(result.contentType == .message && result.shouldNotify && result.messageId == "first",
@@ -98,79 +91,5 @@ struct ReceiveFixture {
             }
             print("SWIFT_RECEIVE_PASSED \(account["mls"] as! Bool ? "MLS" : "Proteus")")
         }
-    }
-
-    @MainActor static func verifyCallKitReporting() async throws {
-        let first = "11111111-1111-4111-8111-111111111111"
-        let second = "33333333-3333-4333-8333-333333333333"
-        let accountID = UUID()
-        func call(_ type: KaliumNSECallType, _ conversation: String, ring: Bool = false, reason: KotlinInt? = nil, domain: String = "example.com") -> KaliumNSECall {
-            KaliumNSECall(type: type, conversationValue: conversation, conversationDomain: domain,
-                          callerValue: "caller", callerDomain: "example.com", callerClientId: "client",
-                          messageTimeSeconds: 100, shouldRing: ring, isVideoCall: true, closeReason: reason, callerName: nil, handoffId: nil,
-                          shouldNotify: false, mayPreview: false, conversationName: nil, senderName: nil, isGroupConversation: false)
-        }
-        var payloads: [[String: Any]] = []
-        let reporter = KaliumNSECallKitReporter { payload in
-            await Task.yield()
-            payloads.append(payload)
-        }
-        try await reporter.report([
-            call(.closed, first), call(.incoming, first, ring: true), call(.incoming, second, ring: true),
-            call(.missed, first), call(.closed, second), call(.closed, second)
-        ], accountID: accountID, accountDomain: "account.example")
-        precondition(payloads.count == 6, "Every termination must reach the host, including duplicates and unknown starts")
-        precondition(payloads.map { $0["shouldRing"] as! Bool } == [false, true, true, false, false, false], "Wrong call action order")
-        precondition(payloads[0]["callerName"] as? String == "", "Private caller name was not hidden")
-        precondition(payloads[0]["hasVideo"] as? Bool == true, "Video flag was lost")
-        // A new wrapper simulates loss of all request-local state. The host owns
-        // deduplication; a late end must not disappear in the transport adapter.
-        let nextRequest = KaliumNSECallKitReporter { payloads.append($0) }
-        try await nextRequest.report([call(.closed, first, reason: KotlinInt(int: 5))], accountID: accountID, accountDomain: "account.example")
-        let end = payloads.last!
-        precondition(end["callPayloadVersion"] as? Int == 1, "Missing payload version")
-        precondition(end["eventType"] as? String == "closed", "Lost termination type")
-        precondition(end["closeReason"] as? Int == 5, "Lost answered-elsewhere reason")
-        precondition(end["conversationDomain"] as? String == "example.com", "Lost qualified conversation")
-        precondition(end["messageTimeSeconds"] as? Int64 == 100, "Lost signal time")
-        precondition(end["callerClientID"] as? String == "client", "Lost sender client")
-        for payload in payloads {
-            precondition(payload["accountID"] as? String == accountID.uuidString, "Wrong account")
-            precondition(payload["accountDomain"] as? String == "account.example", "Lost account domain")
-            precondition(payload["callerName"] as? String == "", "End payload must satisfy legacy parser")
-            precondition(payload["hasVideo"] as? Bool == true, "End payload must satisfy legacy parser")
-        }
-        try await nextRequest.report([
-            call(.closed, first, reason: KotlinInt(int: 10)),
-            call(.closed, first, reason: KotlinInt(int: 4)),
-            call(.incoming, first, domain: "federated.example")
-        ], accountID: accountID, accountDomain: "account.example")
-        precondition(payloads[7]["closeReason"] as? Int == 10, "Lost rejection reason")
-        precondition(payloads[8]["closeReason"] as? Int == 4, "Lost cancellation reason")
-        precondition(payloads[9]["conversationDomain"] as? String == "federated.example", "Conflated domains")
-        precondition(payloads[9]["shouldRing"] as? Bool == false, "Restarted a non-ringing incoming call")
-        do {
-            try await reporter.report([call(.closed, "invalid")], accountID: accountID, accountDomain: "account.example")
-            preconditionFailure("Invalid conversation was reported")
-        } catch KaliumNSECallKitReporter.ReportingError.invalidConversationID { }
-        do {
-            try await reporter.report([call(.closed, first)], accountID: accountID, accountDomain: "")
-            preconditionFailure("Unqualified account was reported")
-        } catch KaliumNSECallKitReporter.ReportingError.missingAccountDomain { }
-        enum Failure: Error { case reporting }
-        let failing = KaliumNSECallKitReporter { _ in throw Failure.reporting }
-        do {
-            try await failing.report([call(.closed, first)], accountID: accountID, accountDomain: "account.example")
-            preconditionFailure("Reporting failure was swallowed")
-        } catch Failure.reporting { }
-        let cancelled = Task { @MainActor in
-            try await reporter.report([call(.incoming, first, ring: true)], accountID: accountID, accountDomain: "account.example")
-        }
-        cancelled.cancel()
-        do {
-            try await cancelled.value
-            preconditionFailure("Cancelled reporting continued")
-        } catch is CancellationError { }
-        precondition(payloads.count == 10, "Failed validation or cancelled reporting emitted a payload")
     }
 }

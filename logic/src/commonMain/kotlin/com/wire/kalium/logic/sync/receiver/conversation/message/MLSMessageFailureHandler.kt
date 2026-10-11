@@ -26,14 +26,14 @@ import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 
-sealed class MLSMessageFailureResolution {
-    data object Ignore : MLSMessageFailureResolution()
-    data object InformUser : MLSMessageFailureResolution()
-    data object OutOfSync : MLSMessageFailureResolution()
-    data object ResetConversation : MLSMessageFailureResolution()
+internal sealed class MLSMessageFailureResolution {
+    internal data object Ignore : MLSMessageFailureResolution()
+    internal data object InformUser : MLSMessageFailureResolution()
+    internal data object OutOfSync : MLSMessageFailureResolution()
+    internal data object ResetConversation : MLSMessageFailureResolution()
 }
 
-object MLSMessageFailureHandler {
+internal object MLSMessageFailureHandler {
     fun handleFailure(failure: CoreFailure): MLSMessageFailureResolution {
         fun handleRejected(rejectedFailure: NetworkFailure.MlsMessageRejectedFailure) = when (rejectedFailure) {
             is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync,

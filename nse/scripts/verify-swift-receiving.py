@@ -26,7 +26,7 @@ REPORT = NSE / "build/reports/swift-receiving/result.json"
 # CLI selection, native exporter and report path stay together.
 SCENARIOS = {
     'calling-events': ('export-calling', 'calling-result.json',
-        'Verify Proteus/MLS calling batches, Swift CallKit payload reporting and app reopen'),
+        'Verify Proteus/MLS calling batches, Swift call results and app reopen'),
     'multiple-payloads': ('export-multiple', 'multiple-result.json',
         'Receive two text payloads, including a quote and alert selection'),
     'mls-commit': ('export-mls-commit', 'mls-commit-result.json',
@@ -444,7 +444,7 @@ extendedKeyUsage=serverAuth
                 "-Xlinker", "-rpath", "-Xlinker", "@executable_path/Frameworks",
                 "-Xlinker", "-rpath", "-Xlinker", str(FRAMEWORK),
                 "-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__entitlements", "-Xlinker", str(ENTITLEMENTS),
-                str(NSE / "src/swiftTest/Receive.swift"), str(NSE / "host/KaliumNSECallKitReporter.swift"), "-o", str(consumer))
+                str(NSE / "src/swiftTest/Receive.swift"), "-o", str(consumer))
             print("Running real Swift Proteus and MLS receiving", flush=True)
             output = run("xcrun", "simctl", "spawn", simulator, str(consumer), manifest, timeout=90)
             assert "SWIFT_RECEIVE_PASSED Proteus" in output and "SWIFT_RECEIVE_PASSED MLS" in output

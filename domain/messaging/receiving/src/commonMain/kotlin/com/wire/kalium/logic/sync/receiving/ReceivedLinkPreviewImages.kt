@@ -36,10 +36,10 @@ import kotlin.uuid.Uuid
 /** Optional image work stays within the owned NSE lifetime; failures leave the text usable. */
 internal class ReceivedLinkPreviewImages(
     private val enabled: Boolean,
-    private val assetApi: AssetApi?,
-    assetDirectory: String?,
+    private val assetApi: AssetApi,
+    assetDirectory: String,
 ) {
-    private val directory = assetDirectory?.toPath()?.resolve("nse-previews")
+    private val directory = assetDirectory.toPath().resolve("nse-previews")
     private val files = FileSystem.SYSTEM
     private val created = mutableListOf<Path>()
 
@@ -68,9 +68,8 @@ internal class ReceivedLinkPreviewImages(
 
     /** Recover only unreferenced files in our own directory, including an interrupted file/SQL gap. */
     suspend fun cleanupAbandoned(assets: AssetDAO) {
-        val root = directory ?: return
-        if (!files.exists(root)) return
-        cleanup(assets, files.list(root))
+        if (!files.exists(directory)) return
+        cleanup(assets, files.list(directory))
     }
 
     /** Called after SQL has committed or rolled back, including prompt coroutine cancellation. */
@@ -85,19 +84,17 @@ internal class ReceivedLinkPreviewImages(
     }
 
     private suspend fun download(assets: AssetDAO, image: LinkPreviewAsset): Path {
-        val api = checkNotNull(assetApi) { "Preview asset API is unavailable" }
-        val root = checkNotNull(directory) { "Preview file storage is unavailable" }
         // The native CBC primitive expects a complete key and IV. Reject malformed remote data
         // before it reaches that primitive. The app resolver also uses CBC for preview images.
         require(image.otrKey.size == KEY_SIZE && image.sha256Key.size == KEY_SIZE) { "Invalid preview encryption keys" }
-        files.createDirectories(root)
+        files.createDirectories(directory)
         val name = Uuid.random().toString()
-        val encrypted = root.resolve("$name.encrypted").also { created += it }
-        val decoded = root.resolve("$name.decoded").also { created += it }
-        val persistent = root.resolve(name).also { created += it }
+        val encrypted = directory.resolve("$name.encrypted").also { created += it }
+        val decoded = directory.resolve("$name.decoded").also { created += it }
+        val persistent = directory.resolve(name).also { created += it }
         val key = checkNotNull(image.assetKey)
         files.sink(encrypted).use { sink ->
-            wrapApiRequest { api.downloadAsset(key, image.assetDomain, image.assetToken?.ifEmpty { null }, sink) }.orThrow()
+            wrapApiRequest { assetApi.downloadAsset(key, image.assetDomain, image.assetToken?.ifEmpty { null }, sink) }.orThrow()
         }
         val hash = cancellableSource(encrypted).use { calcFileSHA256(it) }
         currentCoroutineContext().ensureActive() // The shared hash helper converts exceptions to null.
