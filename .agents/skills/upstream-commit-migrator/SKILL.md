@@ -1,11 +1,15 @@
 ---
 name: upstream-commit-migrator
-description: "Adapt exactly the next first-parent commit from wireapp/kalium develop into Super Kalium and open one single-commit PR with upstream author credit. Use when asked to sync, port, or migrate the next upstream Kalium commit. Do not use for bulk rebases or unrelated cherry-picks."
+description: "Migrate wireapp/kalium develop commits into Super Kalium in first-parent order, with Astra xhigh fidelity reviews and single-commit stacked PRs. Use for the next commit, a requested batch, or all pending commits. Preserve upstream author credit and required fork adaptations."
 ---
 
 # Upstream commit migrator
 
-Port one upstream `develop` commit at a time. Keep the implementation and tests as close as possible to the original upstream PR. Adapt only what Super Kalium's existing behavior, iOS/KMP support, accepted ADRs, or database compatibility requires.
+Port upstream `develop` commits sequentially. For each commit, migrate and verify, obtain an adversarial GPT-6 Astra review at xhigh, return the findings to its implementation worker for categorization and must-fix corrections, then open a non-draft PR. Start the next commit only when the preceding PR is ready, using its reviewed head as the base.
+
+Keep the implementation and tests as close as possible to the original upstream PR. Adapt only what Super Kalium's existing behavior, iOS/KMP support, accepted ADRs, or database compatibility requires. Inherited upstream bugs belong to `can ignore`; this workflow does not authorize general bug fixing.
+
+Read [references/sequential-workflow.md](references/sequential-workflow.md) for orchestration, chat handoffs, review scope, stack bookkeeping, and ordered merges. A request for one commit ends after its PR. A batch or all-pending request continues through its full queue. Merge only when the user requests it.
 
 ## Repository contract
 
@@ -15,17 +19,18 @@ Port one upstream `develop` commit at a time. Keep the implementation and tests 
 - Checkpoint: `UPSTREAM_KALIUM_COMMIT.txt` at the repository root. It contains one full lowercase commit SHA and a trailing newline.
 - Commit order: first-parent order on upstream `develop`, starting after the checkpoint.
 - Delivery: one upstream commit becomes one downstream commit in one non-draft PR.
-- Lock: never work on another upstream commit while any open Super Kalium PR contains the `Upstream-Commit:` marker or uses the `mo/upstream-` branch prefix.
+- Stack: the first migration bases on fetched `origin/develop`; each successor bases on the preceding reviewed migration head and targets its branch.
+- Lock: allow open migration PRs recorded in the current authorized sequence. Stop for an untracked migration PR or another worker on the same upstream commit.
 
-The migration PR advances the checkpoint to its upstream SHA. Until that PR merges, `develop` keeps the old checkpoint. If the PR closes without merging, the same upstream commit remains next.
+Each migration advances its branch's checkpoint to its upstream SHA. The selected base's checkpoint is the previous SHA, including when that base is an unmerged stack branch. Until the PR merges, `develop` keeps its old checkpoint. If a PR closes without merging, recover or replace that stack entry before starting its successor.
 
 ## Pass the gates before editing
 
 1. Fetch `origin/develop` and upstream `develop`. Use an existing `upstream` remote when it points to `wireapp/kalium`. Otherwise fetch the URL into a local remote-tracking ref such as `refs/remotes/kalium/develop`. Do not change a configured remote that points somewhere else.
-2. Read the checkpoint from the fetched `origin/develop`, not from a stale feature branch. Require exactly 40 hexadecimal characters. Confirm that the checkpoint is an ancestor of fetched upstream `develop`. Stop if either check fails.
-3. Query open PRs in `wireapp/super-kalium` with `gh pr list`. Inspect their bodies and head branches. If a body contains `Upstream-Commit:` or a head branch starts with `mo/upstream-`, report the PR's number, title, and URL, then stop. Do not edit code, advance the checkpoint, or choose a later commit.
-4. List `CHECKPOINT..UPSTREAM_DEVELOP` with `git rev-list --first-parent --reverse`. Select only the first SHA. Do not select by timestamp and do not skip ahead. If the list is empty, report that Super Kalium is current and stop.
-5. Work from a clean branch based on the fetched `origin/develop`. Use `mo/upstream-<short-sha>` unless the user requests another branch name. Keep unrelated working-tree changes out of the migration. Use a separate clean worktree when needed.
+2. At the start of a sequence, read the checkpoint from fetched `origin/develop`, not a stale feature branch. Require exactly 40 lowercase hexadecimal characters and a trailing newline. Confirm that it lies on the fetched upstream first-parent chain. Stop if either check fails.
+3. Query open PRs in `wireapp/super-kalium` with `gh pr list`. Inspect bodies and branches for `Upstream-Commit:` or `mo/upstream-`. Match known entries against the current sequence's recorded SHAs, checkpoint links, and workers. For any untracked migration, report its number, title, and URL, then stop before editing or choosing a later commit. Do not assume ownership from its author or branch prefix alone.
+4. List `CHECKPOINT..UPSTREAM_DEVELOP` with `git rev-list --first-parent --reverse`. Record the fetched upstream tip and the requested queue, then process its SHAs in that order without skipping. For "all pending", finish this snapshot; do not keep extending it as upstream moves. Resume a known sequence from its last verified checkpoint. If the list is empty, report that Super Kalium is current and stop.
+5. Work from a clean branch based on the selected base. Use fetched `origin/develop` for the first entry and the previous reviewed head for each stacked successor. Confirm that the base's checkpoint equals this entry's previous upstream SHA. Use `mo/upstream-<short-sha>` unless the user requests another name. Keep unrelated changes out of the migration and use a clean worktree when needed.
 
 Follow the repository's GitHub authentication rules. Run the requested `gh` command first, retry network failures with escalation, and request login only after an unrestricted HTTP 401 or `Bad credentials` response.
 
@@ -86,9 +91,11 @@ Keep test changes minimal:
 
 Run verification that covers the affected modules and behavior, including the existing regressions. Running more existing tests does not require adding more test code. Fix failures caused by the migration. Keep unrelated failures separate and state them plainly.
 
+Run Super Kalium's repository lint before final review: `./gradlew detekt` for Kotlin changes. Choose affected JVM, Android, and iOS checks from the current repository CI and module instructions. For SQLDelight changes, include the migration checks above. Compilation and focused tests do not replace lint. Report checks or live scenarios that could not run, and preserve existing device sessions and data.
+
 After the code and tests are ready, replace the checkpoint with the selected full upstream SHA. The checkpoint change belongs in the same commit as the adaptation.
 
-Review the complete diff against both `origin/develop` and the original upstream PR. Every change beyond upstream must address a required fork compatibility gap or an uncovered regression risk; remove it otherwise. Remove unrelated files, duplicate tests, generated noise, and accidental changes. Briefly explain material departures from upstream in the PR. Confirm that the diff represents only the selected upstream commit, necessary adaptations, and its checkpoint update.
+Review the complete diff against both the selected base and the original upstream PR. Every change beyond upstream must address a required fork compatibility gap or an uncovered regression risk; remove it otherwise. Remove unrelated files, duplicate tests added during the port, generated noise, and accidental changes. Briefly explain material departures from upstream in the PR. Confirm that the diff represents only the selected upstream commit, necessary adaptations, and its checkpoint update.
 
 ## Preserve attribution
 
@@ -105,21 +112,22 @@ Co-authored-by: <upstream-author-name> <upstream-author-email>
 
 Always add the upstream commit's primary author as a `Co-authored-by` trailer, including bot authors. Preserve any valid `Co-authored-by` trailers from the upstream commit and remove duplicates. Keep all co-author trailers at the end of the message.
 
-Before pushing, require `git rev-list --count origin/develop..HEAD` to equal `1` and require `origin/develop` to be an ancestor of `HEAD`. A count of one is not enough when both refs have advanced. If either check fails, rebuild, rebase, or squash the branch without rewriting unrelated user history.
+Before review and pushing, require the selected base to be the direct parent of `HEAD`, `git rev-list --count BASE_SHA..HEAD` to equal `1`, and `git rev-list --left-right --count BASE_SHA...HEAD` to report `0/1`. A stacked head contains predecessor commits relative to `develop`; measure its own migration against its selected base. If these checks fail, rebuild, rebase, or squash only that migration without rewriting unrelated user history.
 
-## Open one PR and stop
+## Review, open the PR, and continue
 
-Fetch `origin/develop` again immediately before pushing. Confirm that its checkpoint still equals the previous checkpoint. Query the open-PR lock again. If the checkpoint moved or another migration PR appeared, stop without pushing or opening a PR.
+Follow the Astra review and implementation categorization loop in [references/sequential-workflow.md](references/sequential-workflow.md). Open the PR only after the exact head has no unresolved `must fix` issues. For a PR that already exists, apply the same loop before advancing the sequence or merging.
 
-If `origin/develop` advanced but its checkpoint did not, rebase the single migration commit onto the refreshed base and rerun affected verification. Then repeat the final fetch, checkpoint, ancestry, commit-count, and lock checks. Push only when `git rev-list --left-right --count origin/develop...HEAD` reports zero base-only commits and one migration commit.
+Immediately before pushing, fetch `origin/develop` and the selected remote base branch. Recheck its SHA, checkpoint, and the sequence's open-PR lock. If the base changed, rebuild or rebase only this entry onto the correct base, rerun affected verification, and send the new head to the same Astra reviewer. Do not push or open a PR for an unreviewed revision. If a predecessor merged, use the ordered-merge procedure in the workflow reference.
 
-Push the branch and open one non-draft PR against `develop`. Use the commit subject as the PR title and follow `.github/pull_request_template.md`. The description must include:
+Push the branch and open one non-draft PR against the selected base branch. Use an explicit force-with-lease against the freshly fetched remote head for updates. Use the commit subject as the PR title and follow the repository's PR template when present. The description must include:
 
 - The upstream behavior and how Super Kalium adapts it.
 - The original commit and upstream PR links.
 - Each Jira key, without private issue details.
 - The ADRs that affected the adaptation, or `None` when no ADR applies.
 - The verification result, without listing the commands used.
+- The predecessor PR when stacked, reviewed head and base SHAs, and any unverified runtime behavior.
 - These exact machine-readable lines outside a code block:
 
 ```text
@@ -127,6 +135,8 @@ Upstream-Commit: <full-upstream-sha>
 Previous-Upstream-Commit: <full-previous-checkpoint-sha>
 ```
 
-After opening the PR, report its URL, the upstream SHA, the adaptation outcome, the Jira keys, the ADRs used, and the verification result. Do not merge the PR. Do not start the next upstream commit in the same invocation, even if the user asks to process several commits.
+After opening the PR, attach it to the relevant chats and record its URL, upstream SHA, reviewed head and base, adaptation outcome, Jira keys, ADRs, verification, and issue categories. For a batch, start the next entry only after this PR is published and ready. Its implementation uses this reviewed head as its base. Continue until every requested queue entry has a reviewed PR or a concrete blocker prevents progress.
 
-If product behavior is ambiguous or an accepted ADR conflicts with the upstream intent, stop before opening the PR and ask for the missing product decision. Leave the checkpoint unchanged.
+When the user requests merges, follow the workflow reference to merge in order, then rebase and retarget each successor to `develop`. Preserve one attributed downstream commit per upstream commit. Do not merge merely because the stack is ready.
+
+If product behavior is ambiguous or an accepted ADR conflicts with upstream intent, ask for the missing product decision before advancing that entry or opening its PR. Leave its base checkpoint unchanged and do not skip to a successor.
