@@ -81,6 +81,9 @@ internal interface ConversationFolderRepository {
         removed: Set<QualifiedID>,
     ): Either<CoreFailure, Unit>
     suspend fun deleteFolderAndSync(folderId: String): Either<CoreFailure, Unit>
+
+    /** Moves the given folders into the listed order, within the places they already occupy. */
+    suspend fun reorderFolders(folderIds: List<String>): Either<CoreFailure, Unit>
 }
 
 @Suppress("TooManyFunctions")
@@ -235,14 +238,23 @@ internal class ConversationFolderDataSource internal constructor(
         )
         require(previous == null || previous.type == FolderType.USER)
         val members = (previous?.conversationIdList.orEmpty().toSet() - removed) + added
-        folders.filterNot { it.id == folder.id } + FolderWithConversations(
-            folder.id, folder.name, FolderType.USER, members.toList(),
-        )
+        val saved = FolderWithConversations(folder.id, folder.name, FolderType.USER, members.toList())
+        // Keep an edited folder where the user placed it; a new folder goes last.
+        if (previous == null) folders + saved else folders.map { if (it.id == folder.id) saved else it }
     }.map { }
 
     override suspend fun deleteFolderAndSync(folderId: String): Either<CoreFailure, Unit> = mutateFolders { folders ->
         require(folders.first { it.id == folderId }.type == FolderType.USER)
         folders.filterNot { it.id == folderId }
+    }.map { }
+
+    // Only user folders move. Favorites and folders missing from the request, such as one just added on another
+    // device, keep their places even if a caller lists Favorites.
+    override suspend fun reorderFolders(folderIds: List<String>): Either<CoreFailure, Unit> = mutateFolders { folders ->
+        val requested = folderIds.withIndex().associate { (index, id) -> id to index }
+        fun FolderWithConversations.moves() = type == FolderType.USER && id in requested
+        val reordered = folders.filter { it.moves() }.sortedBy { requested.getValue(it.id) }.iterator()
+        folders.map { if (it.moves()) reordered.next() else it }
     }.map { }
 
     // Send one snapshot per batch. A network failure leaves local membership unchanged,

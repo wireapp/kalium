@@ -1,0 +1,2 @@
+-- Keep the order of the synced labels list instead of always sorting folders by name.
+ALTER TABLE ConversationFolder ADD COLUMN position INTEGER NOT NULL DEFAULT 0;

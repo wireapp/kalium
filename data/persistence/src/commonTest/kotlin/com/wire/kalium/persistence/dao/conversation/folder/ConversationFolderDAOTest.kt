@@ -352,6 +352,37 @@ class ConversationFolderDAOTest : BaseDatabaseTest() {
         assertEquals(folderType, addedFolder.type)
     }
 
+    @Test
+    fun givenFoldersInSyncedOrder_whenReadingFolders_thenTheyKeepThatOrderInsteadOfSortingByName() = runTest {
+        val folders = listOf("Zeta", "alpha", "Mid").map { name ->
+            folderWithConversationsEntity(
+                id = name,
+                name = name,
+                type = ConversationFolderTypeEntity.USER,
+                conversationIdList = emptyList(),
+            )
+        }
+
+        db.conversationFolderDAO.updateConversationFolders(folders)
+
+        assertEquals(listOf("Zeta", "alpha", "Mid"), db.conversationFolderDAO.observeFolders().first().map { it.id })
+        assertEquals(listOf("Zeta", "alpha", "Mid"), db.conversationFolderDAO.getFoldersWithConversations().map { it.id })
+    }
+
+    @Test
+    fun givenOrderedFolders_whenAddingAndRenamingFolders_thenNewOnesGoLastAndExistingOnesStay() = runTest {
+        val folders = listOf("b", "a").map { id ->
+            folderWithConversationsEntity(id = id, name = id, type = ConversationFolderTypeEntity.USER, conversationIdList = emptyList())
+        }
+        db.conversationFolderDAO.updateConversationFolders(folders)
+
+        db.conversationFolderDAO.addFolder(ConversationFolderEntity(id = "0", name = "0", type = ConversationFolderTypeEntity.USER))
+        db.conversationFolderDAO.addFolder(ConversationFolderEntity(id = "b", name = "renamed", type = ConversationFolderTypeEntity.USER))
+
+        assertEquals(listOf("b", "a", "0"), db.conversationFolderDAO.observeFolders().first().map { it.id })
+        assertEquals("renamed", db.conversationFolderDAO.observeFolders().first().first().name)
+    }
+
     companion object {
         fun folderWithConversationsEntity(
             id: String = "folderId",

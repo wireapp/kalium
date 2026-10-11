@@ -31,6 +31,9 @@ public interface ManageConversationFolderUseCase {
         removed: Set<ConversationId>,
     ): Either<CoreFailure, ConversationFolder>
     public suspend fun delete(folderId: String): Either<CoreFailure, Unit>
+
+    /** Saves a new order for the user's folders and syncs it, so other devices show the same order. */
+    public suspend fun reorder(folderIds: List<String>): Either<CoreFailure, Unit>
 }
 
 internal class ManageConversationFolderUseCaseImpl(
@@ -55,4 +58,6 @@ internal class ManageConversationFolderUseCaseImpl(
     }
 
     override suspend fun delete(folderId: String): Either<CoreFailure, Unit> = repository.deleteFolderAndSync(folderId)
+
+    override suspend fun reorder(folderIds: List<String>): Either<CoreFailure, Unit> = repository.reorderFolders(folderIds)
 }

@@ -4,7 +4,9 @@ import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTyp
 CREATE TABLE ConversationFolder (
     id TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
-    folder_type TEXT AS ConversationFolderTypeEntity NOT NULL
+    folder_type TEXT AS ConversationFolderTypeEntity NOT NULL,
+    -- Index in the synced labels list, which is the order the user arranged their folders in.
+    position INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX ConversationFolder_idx_type ON ConversationFolder(folder_type);
 
@@ -18,7 +20,7 @@ CREATE TABLE LabeledConversation (
 );
 
 getFolders:
-SELECT * FROM ConversationFolder ORDER BY name COLLATE NOCASE ASC;
+SELECT * FROM ConversationFolder ORDER BY position ASC, name COLLATE NOCASE ASC;
 
 getAllFoldersWithConversations:
 SELECT
@@ -31,6 +33,7 @@ FROM
 LEFT JOIN
     LabeledConversation labeledConversation ON conversationFolder.id = labeledConversation.folder_id
 ORDER BY
+    conversationFolder.position ASC,
     conversationFolder.name COLLATE NOCASE ASC;
 
 getConversationsFromFolder:
@@ -57,11 +60,22 @@ LIMIT 1;
 upsertFolder:
 -- @NotifyCustomKey conversation_list_folders
 -- @NotifyCustomKey ConversationFolder
-INSERT INTO ConversationFolder(id, name, folder_type)
-VALUES( ?, ?, ?)
+-- A new folder goes after the existing ones; an existing folder keeps its place.
+INSERT INTO ConversationFolder(id, name, folder_type, position)
+VALUES( ?, ?, ?, (SELECT COALESCE(MAX(position) + 1, 0) FROM ConversationFolder))
 ON CONFLICT(id) DO UPDATE SET
 name = excluded.name,
 folder_type = excluded.folder_type;
+
+upsertFolderAt:
+-- @NotifyCustomKey conversation_list_folders
+-- @NotifyCustomKey ConversationFolder
+INSERT INTO ConversationFolder(id, name, folder_type, position)
+VALUES( ?, ?, ?, ?)
+ON CONFLICT(id) DO UPDATE SET
+name = excluded.name,
+folder_type = excluded.folder_type,
+position = excluded.position;
 
 insertLabeledConversation:
 -- @NotifyCustomKey conversation_list_folders
