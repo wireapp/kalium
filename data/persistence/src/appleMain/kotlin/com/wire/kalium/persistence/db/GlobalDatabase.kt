@@ -35,7 +35,7 @@ actual fun globalDatabaseProvider(
             NSFileManager.defaultManager.createDirectoryAtPath(data.storePath, true, null, null)
             val schema = GlobalDatabase.Schema.synchronous()
             databaseDriver(data.storePath, FileNameUtil.globalDBName(), schema, passphrase?.value) {
-                isWALEnabled = false
+                isWALEnabled = enableWAL
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
         }

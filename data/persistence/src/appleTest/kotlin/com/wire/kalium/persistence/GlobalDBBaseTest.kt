@@ -50,9 +50,9 @@ actual abstract class GlobalDBBaseTest {
                 useGradleSafeSqliterLogging = true
             ),
             StandardTestDispatcher(),
-            // A raw key, like the one the SDK gives the global database.
+            // A raw key and WAL, as the SDK gives the global database.
             GlobalDatabaseSecret("x'${"42".repeat(32)}'".encodeToByteArray()),
-            false
+            enableWAL = true
         )
     }
 }

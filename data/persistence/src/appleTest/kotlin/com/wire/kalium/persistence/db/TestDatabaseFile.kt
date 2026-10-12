@@ -47,9 +47,10 @@ internal class TestDatabaseFile {
 
     fun read(key: ByteArray?): String? = use(driver(key)) { it.firstValue() }
 
+    /** The bytes of the database file, or of the file next to it with [suffix], e.g. `-wal`. */
     @OptIn(ExperimentalForeignApi::class)
-    fun bytes(): ByteArray {
-        val data = NSData.dataWithContentsOfFile("$directory/$NAME") ?: return ByteArray(0)
+    fun bytes(suffix: String = ""): ByteArray {
+        val data = NSData.dataWithContentsOfFile("$directory/$NAME$suffix") ?: return ByteArray(0)
         return data.bytes?.reinterpret<ByteVar>()?.readBytes(data.length.toInt()) ?: ByteArray(0)
     }
 
