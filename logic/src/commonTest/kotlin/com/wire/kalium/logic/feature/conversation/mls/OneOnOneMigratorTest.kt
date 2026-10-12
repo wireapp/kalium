@@ -18,17 +18,21 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.failure.NoClientsForUser
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -36,6 +40,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -49,6 +54,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 class OneOnOneMigratorTest {
 
@@ -67,6 +73,8 @@ class OneOnOneMigratorTest {
 
         verifySuspend(VerifyMode.not) {
             arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
+            arrangement.clientRemoteRepository.fetchOtherUserClients(any())
+            arrangement.conversationGroupRepository.createGroupConversation(any(), any(), any())
         }
     }
 
@@ -97,6 +105,9 @@ class OneOnOneMigratorTest {
 
         val (arrangement, oneOneMigrator) = arrange {
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(emptyList()))
+            withFetchOtherUserClientsReturning(
+                Either.Right(mapOf(user.id.toApi() to listOf(SimpleClientResponse("registered-client"))))
+            )
             withCreateGroupConversationReturning(Either.Right(TestConversation.ONE_ON_ONE()))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
         }
@@ -114,6 +125,60 @@ class OneOnOneMigratorTest {
 
         verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.userRepository.updateActiveOneOnOneConversation(TestUser.OTHER.id, TestConversation.ONE_ON_ONE().id)
+        }
+    }
+
+    @Test
+    fun givenRecipientHasNoClients_whenCreatingProteusOneOnOne_thenFailWithoutCreatingConversation() = runTest {
+        val user = TestUser.OTHER.copy(activeOneOnOneConversationId = null)
+        val (arrangement, migrator) = arrange {
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(emptyList()))
+            withFetchOtherUserClientsReturning(Either.Right(mapOf(user.id.toApi() to emptyList())))
+        }
+
+        migrator.migrateToProteus(user).shouldFail { assertEquals(NoClientsForUser(user.id), it) }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientRemoteRepository.fetchOtherUserClients(listOf(user.id))
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationGroupRepository.createGroupConversation(any(), any(), any())
+            arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
+        }
+    }
+
+    @Test
+    fun givenRecipientOmittedFromClientsResponse_whenCreatingProteusOneOnOne_thenFailWithoutUsingAnotherUsersClients() = runTest {
+        val user = TestUser.OTHER.copy(activeOneOnOneConversationId = null)
+        val (arrangement, migrator) = arrange {
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
+            withFetchOtherUserClientsReturning(
+                Either.Right(mapOf(TestUser.SELF.id.toApi() to listOf(SimpleClientResponse("another-users-client"))))
+            )
+        }
+
+        migrator.migrateToProteus(user).shouldFail { assertEquals(NoClientsForUser(user.id), it) }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationGroupRepository.createGroupConversation(any(), any(), any())
+            arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
+        }
+    }
+
+    @Test
+    fun givenClientLookupFails_whenCreatingProteusOneOnOne_thenPropagateFailureWithoutCreatingConversation() = runTest {
+        val user = TestUser.OTHER.copy(activeOneOnOneConversationId = null)
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, migrator) = arrange {
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(emptyList()))
+            withFetchOtherUserClientsReturning(Either.Left(failure))
+        }
+
+        migrator.migrateToProteus(user).shouldFail { assertEquals(failure, it) }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationGroupRepository.createGroupConversation(any(), any(), any())
+            arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
         }
     }
 
@@ -357,6 +422,7 @@ class OneOnOneMigratorTest {
         val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
         val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         val systemMessageInserter = mock<SystemMessageInserter>(mode = MockMode.autoUnit)
+        val clientRemoteRepository = mock<ClientRemoteRepository>()
 
         fun arrange() = run {
             runBlocking {
@@ -373,7 +439,12 @@ class OneOnOneMigratorTest {
                 messageRepository = messageRepository,
                 userRepository = userRepository,
                 systemMessageInserter = systemMessageInserter,
+                clientRemoteRepository = clientRemoteRepository,
             )
+        }
+
+        suspend fun withFetchOtherUserClientsReturning(result: Either<NetworkFailure, Map<UserIdDTO, List<SimpleClientResponse>>>) {
+            everySuspend { clientRemoteRepository.fetchOtherUserClients(any()) } returns result
         }
 
         suspend fun withResolveConversationReturning(result: Either<CoreFailure, ConversationId>) {

@@ -124,6 +124,12 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
     private suspend fun drainSessionScope() {
         userSessionScopeProvider.get(userId)?.also { scope ->
+            if (scope.isCellsInitialized) {
+                val uploadCoordinator = scope.cells.uploadCoordinator
+                uploadCoordinator.cancelAll()
+                uploadCoordinator.dismissAll()
+                scope.cells.cancel()
+            }
             scope.cancel()
             scope.coroutineContext[Job]?.let { job ->
                 // don't want to wait indefinitely in case of any issues with the session scope, so we use a timeout and log if it happens
