@@ -28,16 +28,34 @@ import platform.CoreCrypto.CC_SHA256
 import platform.CoreCrypto.CC_SHA256_DIGEST_LENGTH
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.OsFamily
+import kotlin.native.Platform
 
 /**
- * The first bytes of an encrypted database that stay unencrypted, see [setSqlCipherKey]. 32 is what SQLCipher
+ * Whether encrypted databases keep their first [PLAINTEXT_HEADER_SIZE] bytes readable, see [setSqlCipherKey]. Only
+ * iOS needs it; on macOS the whole database is encrypted, with the salt in its header, as SQLCipher does by default.
+ * It is part of the database format, so it depends on nothing but the platform.
+ */
+@OptIn(ExperimentalNativeApi::class)
+internal val isPlaintextHeaderUsed: Boolean = Platform.osFamily == OsFamily.IOS
+
+/**
+ * The first bytes of an encrypted iOS database that stay unencrypted, see [setSqlCipherKey]. 32 is what SQLCipher
  * recommends for this.
  */
 internal const val PLAINTEXT_HEADER_SIZE = 32
 
 /**
+ * The key [setSqlCipherKey] sets on every connection of a database encrypted with [rawKey], SQLCipher's raw-key form
+ * `x'<64 hex digits>'` as `SecurityHelper` creates it: on iOS, [rawKey] with its salt, see [sqlCipherKeyWithSalt].
+ */
+internal fun sqlCipherConnectionKey(rawKey: String): String =
+    if (isPlaintextHeaderUsed) sqlCipherKeyWithSalt(rawKey) else rawKey
+
+/**
  * Turns SQLCipher's raw-key form, `x'<64 hex digits>'` as `SecurityHelper` creates it, into the raw-key form with an
- * explicit salt, `x'<64 hex digits key><32 hex digits salt>'`, which [setSqlCipherKey] needs.
+ * explicit salt, `x'<64 hex digits key><32 hex digits salt>'`, which an iOS database with a readable header needs.
  *
  * The salt is derived from the key, as the first 16 bytes of SHA-256 of [SALT_DERIVATION_LABEL] and the key bytes, and
  * stored nowhere, so every process that has the key opens the database without coordinating with the others. Every
@@ -56,18 +74,18 @@ internal fun sqlCipherKeyWithSalt(rawKey: String): String {
 }
 
 /**
- * Keys a connection with [keyWithSalt], see [sqlCipherKeyWithSalt], and keeps the first [PLAINTEXT_HEADER_SIZE] bytes
- * of the database unencrypted.
+ * Keys a connection with [key], see [sqlCipherConnectionKey]. On iOS, also keeps the first [PLAINTEXT_HEADER_SIZE]
+ * bytes of the database unencrypted.
  *
  * iOS terminates a suspended app that holds a lock on a file in a shared (App Group) container, unless it recognizes
  * the file by its header as a SQLite database in WAL mode. SQLCipher encrypts that header, where it otherwise keeps the
  * salt, so the header stays readable and the salt comes with the key. Both have to be set on every connection before it
  * reads the database: https://www.zetetic.net/sqlcipher/sqlcipher-api/#cipher_plaintext_header_size
  */
-internal fun DatabaseConnection.setSqlCipherKey(keyWithSalt: String) {
+internal fun DatabaseConnection.setSqlCipherKey(key: String) {
     requireSqlCipher()
-    setCipherKey(keyWithSalt)
-    rawExecSql("PRAGMA cipher_plaintext_header_size = $PLAINTEXT_HEADER_SIZE")
+    setCipherKey(key)
+    if (isPlaintextHeaderUsed) rawExecSql("PRAGMA cipher_plaintext_header_size = $PLAINTEXT_HEADER_SIZE")
 }
 
 /**

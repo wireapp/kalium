@@ -63,16 +63,18 @@ class SqlCipherKeyTest {
     }
 
     @Test
-    fun givenAKey_whenWritingTheDatabase_thenItIsEncryptedBehindAReadableHeaderAndOpensWithTheKey() {
+    fun givenAKey_whenWritingTheDatabase_thenItIsEncryptedAndOpensWithTheKey() {
         database.write(KEY)
 
-        assertTrue(database.bytes().startsWith(SQLITE_HEADER))
+        // On iOS behind a readable header, on macOS entirely.
+        assertEquals(isPlaintextHeaderUsed, database.bytes().startsWith(SQLITE_HEADER))
         assertFalse(database.bytes().contains(MARKER))
         assertEquals(MARKER, database.read(KEY))
     }
 
     @Test
-    fun givenAnOpenWalDatabase_whenWriting_thenItsHeaderIdentifiesItAsSqliteInWalModeAndNothingElseIsReadable() {
+    fun givenAnOpenWalDatabaseOnIos_whenWriting_thenItsHeaderIdentifiesItAsSqliteInWalModeAndNothingElseIsReadable() {
+        if (!isPlaintextHeaderUsed) return
         val driver = database.driver(KEY, isWALEnabled = true)
         try {
             repeat(ROWS) { driver.execute(null, "INSERT INTO t VALUES ('$MARKER')", 0) }
@@ -98,11 +100,21 @@ class SqlCipherKeyTest {
     }
 
     @Test
-    fun givenAnEncryptedDatabase_whenOpeningItWithoutTheSaltOrTheReadableHeader_thenItFails() {
+    fun givenAnEncryptedDatabaseOnIos_whenOpeningItWithoutTheSaltOrTheReadableHeader_thenItFails() {
+        if (!isPlaintextHeaderUsed) return
         database.write(KEY)
 
         assertFails { readWith(KEY.decodeToString(), plaintextHeader = true) }
         assertFails { readWith(sqlCipherKeyWithSalt(KEY.decodeToString()), plaintextHeader = false) }
+    }
+
+    @Test
+    fun givenAnEncryptedDatabaseOnMacOs_whenOpeningIt_thenItHasSqlCipherDefaultFormat() {
+        if (isPlaintextHeaderUsed) return
+        database.write(KEY)
+
+        readWith(KEY.decodeToString(), plaintextHeader = false)
+        assertFails { readWith(sqlCipherKeyWithSalt(KEY.decodeToString()), plaintextHeader = true) }
     }
 
     @Test
