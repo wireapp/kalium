@@ -71,26 +71,23 @@ public actual class CoreLogic(
 
     private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
 
-    // Choosing the key and the first open run under one lock, so a second SDK instance can't create a
-    // different key for the same file in between.
-    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = DatabaseKeyLock.withLock {
-        globalDatabaseProvider(
-            platformDatabaseData = PlatformDatabaseData(
-                storageData = if (useInMemoryStorage) {
-                    StorageData.InMemory
-                } else {
-                    StorageData.FileBacked("$rootPath/global-storage")
-                }
-            ),
-            queriesContext = KaliumDispatcherImpl.io,
-            // Apple databases were never encrypted before, so there is no legacy key to migrate from.
-            passphrase = if (kaliumConfigs.shouldEncryptData() && !useInMemoryStorage) {
-                securityHelper.globalDBKeyMaterial(databaseExists = false).rawKey
+    actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
+        platformDatabaseData = PlatformDatabaseData(
+            storageData = if (useInMemoryStorage) {
+                StorageData.InMemory
             } else {
-                null
+                StorageData.FileBacked("$rootPath/global-storage")
             }
-        )
-    }
+        ),
+        queriesContext = KaliumDispatcherImpl.io,
+        passphrase = if (kaliumConfigs.shouldEncryptData() && !useInMemoryStorage) {
+            // Apple databases were never encrypted before, so there is no legacy key to migrate from, and the key
+            // is stored before the database is opened: only choosing it runs under the lock.
+            DatabaseKeyLock.withLock { securityHelper.globalDBKeyMaterial(databaseExists = false).rawKey }
+        } else {
+            null
+        }
+    )
 
     public actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
     actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {

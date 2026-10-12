@@ -20,7 +20,10 @@ package com.wire.kalium.logic.util
 
 import platform.Foundation.NSRecursiveLock
 
-/** Serializes database-key state transitions across SDK instances in this process. */
+/**
+ * Serializes choosing a database key across SDK instances in this process. Without it, two instances could
+ * each find no key and store a new one, and the database created with the first key could no longer be opened.
+ */
 internal object DatabaseKeyLock {
     private val lock = NSRecursiveLock()
 
