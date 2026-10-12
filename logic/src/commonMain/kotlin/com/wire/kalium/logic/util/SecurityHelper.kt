@@ -67,10 +67,15 @@ internal class GlobalDBKeyMaterial(
 
 internal typealias DatabaseMigrator = suspend (rootDir: String, oldKey: String, passphrase: ByteArray) -> Unit
 
+/**
+ * @param isSqlCipherSaltStored whether the raw keys of the global and user databases come with a salt, stored next to
+ * their key, instead of SQLCipher keeping it in the database header. On iOS, where that header stays readable.
+ */
 @Suppress("TooManyFunctions")
 internal class SecurityHelperImpl(
     private val passphraseStorage: PassphraseStorage,
-    private val databaseMigrator: DatabaseMigrator = ::migrateDatabaseKey
+    private val databaseMigrator: DatabaseMigrator = ::migrateDatabaseKey,
+    private val isSqlCipherSaltStored: Boolean = false
 ) : SecurityHelper {
 
     /**
@@ -79,15 +84,13 @@ internal class SecurityHelperImpl(
      * database.
      */
     override fun globalDBKeyMaterial(databaseExists: Boolean): GlobalDBKeyMaterial {
-        val rawKey = getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2).toPreservedByteArray.toSqlCipherRawKey()
+        val rawKey = sqlCipherRawKey(GLOBAL_DB_PASSPHRASE_ALIAS_V2, getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2))
         val legacyKey = if (databaseExists) getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS)?.toPreservedByteArray else null
         return GlobalDBKeyMaterial(GlobalDatabaseSecret(rawKey), legacyKey)
     }
 
     override fun globalDBSecretOrNull(): GlobalDatabaseSecret? =
-        getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2)?.let {
-            GlobalDatabaseSecret(it.toPreservedByteArray.toSqlCipherRawKey())
-        }
+        storedSqlCipherRawKey(GLOBAL_DB_PASSPHRASE_ALIAS_V2)?.let(::GlobalDatabaseSecret)
 
     override fun clearGlobalDBLegacyKey() {
         if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS) != null) {
@@ -98,21 +101,18 @@ internal class SecurityHelperImpl(
     override fun userDBSecret(userId: UserId, databaseExists: Boolean): UserDBSecret {
         val v2Alias = "${USER_DB_PASSPHRASE_PREFIX_V2}_$userId"
         return getStoredDbPassword(v2Alias)?.let {
-            UserDBSecret(it.toPreservedByteArray.toSqlCipherRawKey())
+            UserDBSecret(sqlCipherRawKey(v2Alias, it))
         } ?: if (databaseExists) {
             // Existing user databases keep their legacy key: rekeying them is not worth the cost.
             UserDBSecret(getOrGeneratePassPhrase("${USER_DB_PASSPHRASE_PREFIX}_$userId").toPreservedByteArray)
         } else {
-            UserDBSecret(getOrGeneratePassPhrase(v2Alias).toPreservedByteArray.toSqlCipherRawKey())
+            UserDBSecret(sqlCipherRawKey(v2Alias, getOrGeneratePassPhrase(v2Alias)))
         }
     }
 
     override fun userDBOrSecretNull(userId: UserId): UserDBSecret? =
-        getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX_V2}_$userId")?.let {
-            UserDBSecret(it.toPreservedByteArray.toSqlCipherRawKey())
-        } ?: getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX}_$userId")?.toPreservedByteArray?.let {
-            UserDBSecret(it)
-        }
+        storedSqlCipherRawKey("${USER_DB_PASSPHRASE_PREFIX_V2}_$userId")?.let(::UserDBSecret)
+            ?: getStoredDbPassword("${USER_DB_PASSPHRASE_PREFIX}_$userId")?.toPreservedByteArray?.let(::UserDBSecret)
 
     @Suppress("ReturnCount")
     override suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret {
@@ -164,12 +164,31 @@ internal class SecurityHelperImpl(
      * A new passphrase is only stored if none was stored in between, and the stored one is used: with several processes
      * sharing the storage, e.g. an app and its extensions on Apple, they all end up with the same passphrase.
      */
-    private fun getOrGeneratePassPhrase(alias: String): String =
+    private fun getOrGeneratePassPhrase(alias: String, length: Int = MIN_DATABASE_SECRET_LENGTH): String =
         getStoredDbPassword(alias)
-            ?: passphraseStorage.setPassphraseIfAbsent(alias, generatePassword().toPreservedString)
+            ?: passphraseStorage.setPassphraseIfAbsent(alias, generatePassword(length).toPreservedString)
 
     private fun getStoredDbPassword(passwordAlias: String): String? =
         passphraseStorage.getPassphrase(passwordAlias)
+
+    /**
+     * The raw key of a database from its [key], stored at [alias], with the salt stored next to it if
+     * [isSqlCipherSaltStored]. Like the key, the salt is stored before the database is created, so it is generated if
+     * none is stored yet.
+     */
+    private fun sqlCipherRawKey(alias: String, key: String): ByteArray {
+        val salt = if (isSqlCipherSaltStored) getOrGeneratePassPhrase(saltAlias(alias), SQLCIPHER_SALT_BYTES) else null
+        return key.toPreservedByteArray.toSqlCipherRawKey(salt?.toPreservedByteArray)
+    }
+
+    /** The raw key of an existing database, see [sqlCipherRawKey]: null if its key or its salt isn't stored. */
+    private fun storedSqlCipherRawKey(alias: String): ByteArray? {
+        val key = getStoredDbPassword(alias)?.toPreservedByteArray
+        val salt = if (isSqlCipherSaltStored) getStoredDbPassword(saltAlias(alias))?.toPreservedByteArray else null
+        return if (key == null || isSqlCipherSaltStored && salt == null) null else key.toSqlCipherRawKey(salt)
+    }
+
+    private fun saltAlias(alias: String) = alias + SQLCIPHER_SALT_ALIAS_SUFFIX
 
     private fun generatePassword(minPasswordLength: Int = MIN_DATABASE_SECRET_LENGTH): ByteArray {
         val secureRandom = SecureRandom()
@@ -183,25 +202,30 @@ internal class SecurityHelperImpl(
         get() = Base64.encode(this)
 
     /**
-     * Converts 32 bytes of key material to SQLCipher's raw-key representation, `x'<64 hex chars>'`.
+     * Converts 32 bytes of key material to SQLCipher's raw-key representation, `x'<64 hex chars>'`, or with a 16-byte
+     * [salt], `x'<64 hex chars key><32 hex chars salt>'`.
      *
-     * SQLCipher only recognises this form when the payload is exactly `keySize * 2 + 3` bytes, so
-     * the size is asserted rather than padded or truncated.
+     * SQLCipher only recognises this form when the payload is exactly `keySize * 2 + 3` bytes, or
+     * `(keySize + saltSize) * 2 + 3` with the salt, so the sizes are asserted rather than padded or truncated.
      */
-    private fun ByteArray.toSqlCipherRawKey(): ByteArray {
+    private fun ByteArray.toSqlCipherRawKey(salt: ByteArray? = null): ByteArray {
         require(size == SQLCIPHER_RAW_KEY_BYTES) {
             "SQLCipher raw keys must contain exactly $SQLCIPHER_RAW_KEY_BYTES bytes, but got $size"
         }
+        require(salt == null || salt.size == SQLCIPHER_SALT_BYTES) {
+            "SQLCipher salts must contain exactly $SQLCIPHER_SALT_BYTES bytes, but got ${salt?.size}"
+        }
 
+        val keyMaterial = if (salt == null) this else this + salt
         val hexDigits = HEX_DIGITS.encodeToByteArray()
-        val result = ByteArray(SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH)
+        val result = ByteArray(RAW_KEY_PREFIX_LENGTH + keyMaterial.size * 2 + 1)
         result[0] = SQLCIPHER_RAW_KEY_MARKER
         result[1] = SQLCIPHER_RAW_KEY_QUOTE
 
         var sourceIndex = 0
         var destinationIndex = RAW_KEY_PREFIX_LENGTH
-        while (sourceIndex < size) {
-            val unsignedByte = this[sourceIndex].toInt() and UNSIGNED_BYTE_MASK
+        while (sourceIndex < keyMaterial.size) {
+            val unsignedByte = keyMaterial[sourceIndex].toInt() and UNSIGNED_BYTE_MASK
             result[destinationIndex++] = hexDigits[unsignedByte ushr NIBBLE_BITS]
             result[destinationIndex++] = hexDigits[unsignedByte and LOW_NIBBLE_MASK]
             sourceIndex++
@@ -216,8 +240,9 @@ internal class SecurityHelperImpl(
         const val MIN_DATABASE_SECRET_LENGTH = 32
         const val SQLCIPHER_RAW_KEY_BYTES = 32
         const val SQLCIPHER_RAW_KEY_MARKER: Byte = 0x78
-        const val SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH = 67
         const val SQLCIPHER_RAW_KEY_QUOTE: Byte = 0x27
+        const val SQLCIPHER_SALT_BYTES = 16
+        const val SQLCIPHER_SALT_ALIAS_SUFFIX = "_sqlcipher_salt"
         const val RAW_KEY_PREFIX_LENGTH = 2
         const val NIBBLE_BITS = 4
         const val LOW_NIBBLE_MASK = 0x0F

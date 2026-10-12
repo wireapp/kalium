@@ -23,6 +23,7 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
+import com.wire.kalium.persistence.db.TestDatabaseFile
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -51,7 +52,7 @@ actual abstract class GlobalDBBaseTest {
             ),
             StandardTestDispatcher(),
             // A raw key and WAL, as the SDK gives the global database.
-            GlobalDatabaseSecret("x'${"42".repeat(32)}'".encodeToByteArray()),
+            GlobalDatabaseSecret(TestDatabaseFile.KEY),
             enableWAL = true
         )
     }

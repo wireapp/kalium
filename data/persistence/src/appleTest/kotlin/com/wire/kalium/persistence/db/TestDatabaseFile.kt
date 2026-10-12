@@ -85,8 +85,18 @@ internal class TestDatabaseFile {
         const val MARKER = "plaintext-marker"
         const val SCHEMA_VERSION = 3L
         val SQLITE_HEADER = "SQLite format 3".encodeToByteArray() + byteArrayOf(0)
-        val KEY = "x'${"42".repeat(32)}'".encodeToByteArray()
-        val OTHER_KEY = "x'${"24".repeat(32)}'".encodeToByteArray()
+        val RAW_KEY = "x'${"42".repeat(32)}'"
+        val SALT = "5a".repeat(16)
+
+        /** A key like the SDK gives new databases, see [requireSqlCipherKey]: [RAW_KEY], on iOS with [SALT]. */
+        val KEY = keyOfThisPlatform(RAW_KEY, SALT)
+        val OTHER_KEY = keyOfThisPlatform("x'${"24".repeat(32)}'", "a5".repeat(16))
+
+        /** [rawKey], `x'<64 hex digits>'`, with [salt], 32 hex digits. */
+        fun withSalt(rawKey: String, salt: String) = rawKey.dropLast(1) + salt + "'"
+
+        private fun keyOfThisPlatform(rawKey: String, salt: String) =
+            (if (isPlaintextHeaderUsed) withSalt(rawKey, salt) else rawKey).encodeToByteArray()
     }
 }
 

@@ -31,8 +31,8 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.logic.util.databaseKey
+import com.wire.kalium.logic.util.databaseSecurityHelper
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -65,7 +65,7 @@ internal actual open class UserSessionScopeProviderImpl(
         userAgent,
 ),
     UserSessionScopeProvider {
-    private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+    private val securityHelper = databaseSecurityHelper(globalPreferences.passphraseStorage)
 
     override fun create(userId: UserId): UserSessionScope {
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)

@@ -28,7 +28,10 @@ import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.KEY
 import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.MARKER
 import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.NAME
 import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.OTHER_KEY
+import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.RAW_KEY
+import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.SALT
 import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.SQLITE_HEADER
+import com.wire.kalium.persistence.db.TestDatabaseFile.Companion.withSalt
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,22 +47,13 @@ class SqlCipherKeyTest {
     fun tearDown() = database.delete()
 
     @Test
-    fun givenARawKey_whenAddingItsSalt_thenTheSaltIsDerivedFromTheKey() {
-        assertEquals(
-            "x'${"42".repeat(32)}f703af143ddbd551644ab5ffc3ab2aaa'",
-            sqlCipherKeyWithSalt("x'${"42".repeat(32)}'")
-        )
-        assertEquals(
-            "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fee465d02dddbb2daac1b8ca58494d293'",
-            sqlCipherKeyWithSalt("x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'")
-        )
-    }
+    fun givenAKeyWithoutASaltOnIos_whenCreatingTheDriver_thenItFailsBeforeCreatingTheDatabase() {
+        if (!isPlaintextHeaderUsed) return
 
-    @Test
-    fun givenSomethingOtherThanARawKey_whenAddingItsSalt_thenItFails() {
-        assertFails { sqlCipherKeyWithSalt("a passphrase") }
-        assertFails { sqlCipherKeyWithSalt("x'${"42".repeat(31)}'") }
-        assertFails { sqlCipherKeyWithSalt("x'${"zz".repeat(32)}'") }
+        assertFails { database.driver(RAW_KEY.encodeToByteArray()) }
+        assertFails { database.driver("a passphrase".encodeToByteArray()) }
+        assertFails { database.driver(withSalt(RAW_KEY, "zz".repeat(16)).encodeToByteArray()) }
+        assertEquals(0, database.bytes().size)
     }
 
     @Test
@@ -100,12 +94,14 @@ class SqlCipherKeyTest {
     }
 
     @Test
-    fun givenAnEncryptedDatabaseOnIos_whenOpeningItWithoutTheSaltOrTheReadableHeader_thenItFails() {
+    fun givenAnEncryptedDatabaseOnIos_whenOpeningItWithoutItsSaltOrTheReadableHeader_thenItFails() {
         if (!isPlaintextHeaderUsed) return
         database.write(KEY)
 
-        assertFails { readWith(KEY.decodeToString(), plaintextHeader = true) }
-        assertFails { readWith(sqlCipherKeyWithSalt(KEY.decodeToString()), plaintextHeader = false) }
+        readWith(withSalt(RAW_KEY, SALT), plaintextHeader = true)
+        assertFails { readWith(RAW_KEY, plaintextHeader = true) }
+        assertFails { readWith(withSalt(RAW_KEY, OTHER_SALT), plaintextHeader = true) }
+        assertFails { readWith(withSalt(RAW_KEY, SALT), plaintextHeader = false) }
     }
 
     @Test
@@ -113,8 +109,8 @@ class SqlCipherKeyTest {
         if (isPlaintextHeaderUsed) return
         database.write(KEY)
 
-        readWith(KEY.decodeToString(), plaintextHeader = false)
-        assertFails { readWith(sqlCipherKeyWithSalt(KEY.decodeToString()), plaintextHeader = true) }
+        readWith(RAW_KEY, plaintextHeader = false)
+        assertFails { readWith(withSalt(RAW_KEY, SALT), plaintextHeader = true) }
     }
 
     @Test
@@ -151,5 +147,6 @@ class SqlCipherKeyTest {
         const val FILE_FORMAT_WRITE_VERSION_OFFSET = 18
         const val FILE_FORMAT_READ_VERSION_OFFSET = 19
         const val WAL_FORMAT_VERSION: Byte = 2
+        val OTHER_SALT = "a5".repeat(16)
     }
 }

@@ -21,11 +21,6 @@ package com.wire.kalium.persistence.db
 import co.touchlab.sqliter.DatabaseConnection
 import co.touchlab.sqliter.setCipherKey
 import co.touchlab.sqliter.withStatement
-import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.convert
-import kotlinx.cinterop.usePinned
-import platform.CoreCrypto.CC_SHA256
-import platform.CoreCrypto.CC_SHA256_DIGEST_LENGTH
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.experimental.ExperimentalNativeApi
@@ -47,35 +42,20 @@ internal val isPlaintextHeaderUsed: Boolean = Platform.osFamily == OsFamily.IOS
 internal const val PLAINTEXT_HEADER_SIZE = 32
 
 /**
- * The key [setSqlCipherKey] sets on every connection of a database encrypted with [rawKey], SQLCipher's raw-key form
- * `x'<64 hex digits>'` as `SecurityHelper` creates it: on iOS, [rawKey] with its salt, see [sqlCipherKeyWithSalt].
+ * Checks that [key] can encrypt a database on this platform. On iOS, it has to be SQLCipher's raw-key form with the
+ * salt, `x'<64 hex digits key><32 hex digits salt>'`, as `SecurityHelper` creates it there from the key and the salt
+ * it stores next to it. With the readable header, SQLCipher has no place to keep a salt of its own: it would encrypt a
+ * new database with a random one, and lose it.
  */
-internal fun sqlCipherConnectionKey(rawKey: String): String =
-    if (isPlaintextHeaderUsed) sqlCipherKeyWithSalt(rawKey) else rawKey
-
-/**
- * Turns SQLCipher's raw-key form, `x'<64 hex digits>'` as `SecurityHelper` creates it, into the raw-key form with an
- * explicit salt, `x'<64 hex digits key><32 hex digits salt>'`, which an iOS database with a readable header needs.
- *
- * The salt is derived from the key, as the first 16 bytes of SHA-256 of [SALT_DERIVATION_LABEL] and the key bytes, and
- * stored nowhere, so every process that has the key opens the database without coordinating with the others. Every
- * database has its own random key, so every database gets its own salt.
- *
- * The derivation is part of the database format: changing it, or rekeying a database without the salt of the new key,
- * makes existing databases unreadable.
- */
-internal fun sqlCipherKeyWithSalt(rawKey: String): String {
-    require(rawKey.length == RAW_KEY_LENGTH && rawKey.startsWith("x'") && rawKey.endsWith("'")) {
-        "Expected a SQLCipher raw key, x'<64 hex digits>'"
+internal fun requireSqlCipherKey(key: String) {
+    if (isPlaintextHeaderUsed) {
+        require(RAW_KEY_WITH_SALT.matches(key)) { "On iOS, the database key has to be a SQLCipher raw key with its salt" }
     }
-    val keyHex = rawKey.substring(2, rawKey.length - 1)
-    val salt = sha256(SALT_DERIVATION_LABEL.encodeToByteArray() + keyHex.hexToByteArray()).copyOf(SALT_SIZE)
-    return "x'$keyHex${salt.toHexString()}'"
 }
 
 /**
- * Keys a connection with [key], see [sqlCipherConnectionKey]. On iOS, also keeps the first [PLAINTEXT_HEADER_SIZE]
- * bytes of the database unencrypted.
+ * Keys a connection with [key], see [requireSqlCipherKey]. On iOS, also keeps the first [PLAINTEXT_HEADER_SIZE] bytes
+ * of the database unencrypted.
  *
  * iOS terminates a suspended app that holds a lock on a file in a shared (App Group) container, unless it recognizes
  * the file by its header as a SQLite database in WAL mode. SQLCipher encrypts that header, where it otherwise keeps the
@@ -112,16 +92,5 @@ internal fun DatabaseConnection.requireSqlCipher() {
 @OptIn(ExperimentalAtomicApi::class)
 private val isSqlCipherConfirmed = AtomicBoolean(false)
 
-private fun sha256(data: ByteArray): ByteArray {
-    val digest = UByteArray(CC_SHA256_DIGEST_LENGTH)
-    data.usePinned { input ->
-        digest.usePinned { output -> CC_SHA256(input.addressOf(0), data.size.convert(), output.addressOf(0)) }
-    }
-    return digest.asByteArray()
-}
-
-private const val SALT_DERIVATION_LABEL = "kalium-sqlcipher-salt-v1"
-private const val SALT_SIZE = 16
-
-/** `x'`, 64 hex digits and `'`. */
-private const val RAW_KEY_LENGTH = 67
+/** `x'`, 64 hex digits of key, 32 hex digits of salt and `'`. */
+private val RAW_KEY_WITH_SALT = Regex("x'[0-9a-fA-F]{96}'")

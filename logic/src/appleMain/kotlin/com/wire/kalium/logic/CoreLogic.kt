@@ -30,8 +30,8 @@ import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.logic.sync.WorkSchedulerProviderImpl
 import com.wire.kalium.logic.util.PlatformContext
-import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.logic.util.databaseKey
+import com.wire.kalium.logic.util.databaseSecurityHelper
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
@@ -70,7 +70,7 @@ public actual class CoreLogic(
             shouldEncryptData = kaliumConfigs.shouldEncryptData()
         )
 
-    private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+    private val securityHelper = databaseSecurityHelper(globalPreferences.passphraseStorage)
 
     private val globalStoragePath = "$rootPath/global-storage"
 
