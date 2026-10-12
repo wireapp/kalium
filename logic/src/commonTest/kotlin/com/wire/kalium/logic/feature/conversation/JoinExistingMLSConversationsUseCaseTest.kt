@@ -315,6 +315,51 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
     }
 
+    @Test
+    fun givenPendingWelcomeConversation_whenInvokingUseCaseWithoutIncludingThem_thenConversationIsNotJoined() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful(emptyList())
+            .withPendingWelcomeConversations(listOf(Arrangement.MLS_PENDING_WELCOME_CONVERSATION))
+            .withJoinExistingMLSConversationSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldSucceed()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.getConversationsByGroupState(
+                eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE)
+            )
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenPendingWelcomeConversation_whenInvokingUseCaseIncludingThem_thenConversationIsJoined() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful(listOf(Arrangement.MLS_CONVERSATION1))
+            .withPendingWelcomeConversations(listOf(Arrangement.MLS_PENDING_WELCOME_CONVERSATION))
+            .withJoinExistingMLSConversationSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase(includePendingWelcome = true).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(
+                any(),
+                eq(Arrangement.MLS_PENDING_WELCOME_CONVERSATION.id),
+                any(),
+                eq(true),
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(Arrangement.MLS_CONVERSATION1.id), any(), any())
+        }
+    }
+
     private class Arrangement(
         private val maxConcurrentJoins: Int = 4,
         private val maxThrottleRetries: Int = 3,
@@ -371,6 +416,14 @@ class JoinExistingMLSConversationsUseCaseTest {
             everySuspend {
                 conversationRepository.getConversationsByGroupState(
                     eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION)
+                )
+            } returns Either.Right(conversations)
+        }
+
+        suspend fun withPendingWelcomeConversations(conversations: List<Conversation>) = apply {
+            everySuspend {
+                conversationRepository.getConversationsByGroupState(
+                    eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE)
                 )
             } returns Either.Right(conversations)
         }
@@ -489,6 +542,16 @@ class JoinExistingMLSConversationsUseCaseTest {
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id-pending-creation", "domain"))
+
+            val MLS_PENDING_WELCOME_CONVERSATION = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GroupID("group-pending-welcome"),
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id-pending-welcome", "domain"))
         }
     }
 }
