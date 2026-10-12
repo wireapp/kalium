@@ -29,9 +29,9 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.logic.sync.WorkSchedulerProviderImpl
-import com.wire.kalium.logic.util.DatabaseKeyLock
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.SecurityHelperImpl
+import com.wire.kalium.logic.util.databaseKey
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
@@ -39,6 +39,7 @@ import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -71,22 +72,28 @@ public actual class CoreLogic(
 
     private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
 
+    private val globalStoragePath = "$rootPath/global-storage"
+
     actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(
             storageData = if (useInMemoryStorage) {
                 StorageData.InMemory
             } else {
-                StorageData.FileBacked("$rootPath/global-storage")
+                StorageData.FileBacked(globalStoragePath)
             }
         ),
         queriesContext = KaliumDispatcherImpl.io,
         passphrase = if (kaliumConfigs.shouldEncryptData() && !useInMemoryStorage) {
-            // Apple databases were never encrypted before, so there is no legacy key to migrate from, and the key
-            // is stored before the database is opened: only choosing it runs under the lock.
-            DatabaseKeyLock.withLock { securityHelper.globalDBKeyMaterial(databaseExists = false).rawKey }
+            databaseKey(
+                databasePath = "$globalStoragePath/${FileNameUtil.globalDBName()}",
+                existingKey = securityHelper::globalDBSecretOrNull,
+                newKey = { securityHelper.globalDBKeyMaterial(databaseExists = false).rawKey }
+            )
         } else {
             null
-        }
+        },
+        // The app and its extensions share the global database, see setSqlCipherKey.
+        enableWAL = true
     )
 
     public actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
