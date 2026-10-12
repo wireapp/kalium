@@ -556,6 +556,27 @@ public final class com/wire/kalium/logic/data/call/CallingParticipantsOrderType 
 	public static fun values ()[Lcom/wire/kalium/logic/data/call/CallingParticipantsOrderType;
 }
 
+public final class com/wire/kalium/logic/data/conversation/ConversationMembersQueryConfig {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;ZZLjava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ZZLjava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun component3 ()Z
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;ZZLjava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/data/conversation/ConversationMembersQueryConfig;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/data/conversation/ConversationMembersQueryConfig;Ljava/lang/String;ZZLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/data/conversation/ConversationMembersQueryConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFromArchive ()Z
+	public final fun getOnlyDomain ()Ljava/lang/String;
+	public final fun getOnlyInteractionEnabled ()Z
+	public final fun getOnlyTeamId ()Ljava/lang/String;
+	public final fun getSearchQuery ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/wire/kalium/logic/data/conversation/ConversationQueryConfig {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;ZZZLcom/wire/kalium/logic/data/conversation/ConversationFilter;)V
@@ -3715,6 +3736,7 @@ public final class com/wire/kalium/logic/feature/conversation/ConversationScope 
 
 public final class com/wire/kalium/logic/feature/conversation/ConversationScopeExtensionsKt {
 	public static final fun getGetPaginatedFlowOfConversationDetailsWithEventsBySearchQuery (Lcom/wire/kalium/logic/feature/conversation/ConversationScope;)Lcom/wire/kalium/logic/feature/conversation/GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase;
+	public static final fun getGetPaginatedFlowOfConversationDetailsWithMembersBySearchQuery (Lcom/wire/kalium/logic/feature/conversation/ConversationScope;)Lcom/wire/kalium/logic/feature/conversation/GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/ConversationUpdateReceiptModeResult {
@@ -3902,6 +3924,11 @@ public abstract interface class com/wire/kalium/logic/feature/conversation/GetOr
 
 public final class com/wire/kalium/logic/feature/conversation/GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase {
 	public final fun invoke (Lcom/wire/kalium/logic/data/conversation/ConversationQueryConfig;Landroidx/paging/PagingConfig;JZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/conversation/GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase {
+	public final fun invoke (Lcom/wire/kalium/logic/data/conversation/ConversationMembersQueryConfig;Landroidx/paging/PagingConfig;JZZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/conversation/GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase;Lcom/wire/kalium/logic/data/conversation/ConversationMembersQueryConfig;Landroidx/paging/PagingConfig;JZZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public abstract class com/wire/kalium/logic/feature/conversation/IsInteractionAvailableResult {
