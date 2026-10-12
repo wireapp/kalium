@@ -103,6 +103,10 @@ internal class RegisterMLSClientUseCaseImpl(
                 .flatMap { (publicKey, cipherSuite) ->
                     clientRepository.registerMLSClient(clientId, publicKey, cipherSuite.toModel())
                 }.flatMap {
+                    // Nobody could add this client to MLS groups before it had an MLS identity (e.g. conversations
+                    // migrated from Proteus meanwhile), so those can only be joined by external commit.
+                    userConfigRepository.setShouldJoinPendingMLSConversations(true)
+                }.flatMap {
                     mlsClient.transaction("uploadNewKeyPackages") { context ->
                         keyPackageRepository.uploadNewKeyPackages(context, clientId, keyPackageLimitsProvider.refillAmount())
                     }

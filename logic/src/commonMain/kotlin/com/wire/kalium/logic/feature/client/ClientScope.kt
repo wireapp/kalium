@@ -127,6 +127,7 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             currentClientIdProvider = clientIdProvider,
             selfUserId = selfUserId,
             cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier,
+            userConfigRepository = userConfigRepository,
         )
 
     public val observeCurrentClientId: ObserveCurrentClientIdUseCase
