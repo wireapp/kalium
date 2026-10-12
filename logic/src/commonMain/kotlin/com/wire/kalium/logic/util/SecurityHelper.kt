@@ -42,6 +42,7 @@ internal expect class SecureRandom internal constructor() {
 
 internal interface SecurityHelper {
     fun globalDBKeyMaterial(databaseExists: Boolean): GlobalDBKeyMaterial
+    fun globalDBSecretOrNull(): GlobalDatabaseSecret?
     fun clearGlobalDBLegacyKey()
     fun userDBSecret(userId: UserId, databaseExists: Boolean): UserDBSecret
     fun userDBOrSecretNull(userId: UserId): UserDBSecret?
@@ -82,6 +83,11 @@ internal class SecurityHelperImpl(
         val legacyKey = if (databaseExists) getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS)?.toPreservedByteArray else null
         return GlobalDBKeyMaterial(GlobalDatabaseSecret(rawKey), legacyKey)
     }
+
+    override fun globalDBSecretOrNull(): GlobalDatabaseSecret? =
+        getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2)?.let {
+            GlobalDatabaseSecret(it.toPreservedByteArray.toSqlCipherRawKey())
+        }
 
     override fun clearGlobalDBLegacyKey() {
         if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS) != null) {
@@ -154,17 +160,16 @@ internal class SecurityHelperImpl(
         passphraseStorage.setPassphrase(key, passphrase)
     }
 
+    /**
+     * A new passphrase is only stored if none was stored in between, and the stored one is used: with several processes
+     * sharing the storage, e.g. an app and its extensions on Apple, they all end up with the same passphrase.
+     */
     private fun getOrGeneratePassPhrase(alias: String): String =
-        getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword())
+        getStoredDbPassword(alias)
+            ?: passphraseStorage.setPassphraseIfAbsent(alias, generatePassword().toPreservedString)
 
     private fun getStoredDbPassword(passwordAlias: String): String? =
         passphraseStorage.getPassphrase(passwordAlias)
-
-    private fun storeDbPassword(alias: String, keyBytes: ByteArray): String {
-        val key = keyBytes.toPreservedString
-        passphraseStorage.setPassphrase(alias, key)
-        return key
-    }
 
     private fun generatePassword(minPasswordLength: Int = MIN_DATABASE_SECRET_LENGTH): ByteArray {
         val secureRandom = SecureRandom()
