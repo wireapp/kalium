@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.feature.call
 
+import android.content.Context
+import android.media.AudioManager
+import android.os.Build
 import com.waz.media.manager.MediaManager
 import com.waz.media.manager.MediaManagerListener
 import com.wire.kalium.common.logger.kaliumLogger
@@ -39,6 +42,12 @@ internal actual open class MediaManagerServiceImpl(
     dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : MediaManagerService {
 
+    private val headsetRouteManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        CallHeadsetRouteManager(platformContext.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager)
+    } else {
+        null
+    }
+
     private val mediaManager: Deferred<MediaManager> = scope.async(
         start = CoroutineStart.LAZY,
         context = dispatchers.default
@@ -47,14 +56,16 @@ internal actual open class MediaManagerServiceImpl(
             addListener(object : MediaManagerListener {
                 override fun onPlaybackRouteChanged(route: Int) {
                     _isLoudSpeakerOnFlow.value = this@apply.isLoudSpeakerOn
-                    kaliumLogger.w("onPlaybackRouteChanged called with route = $route..") // Nothing to do for now
+                    kaliumLogger.i("onPlaybackRouteChanged called with route = $route")
                 }
 
                 override fun mediaCategoryChanged(
                     conversationId: String?,
                     category: Int
-                ): Int =
-                    category
+                ): Int {
+                    headsetRouteManager?.onCallStateChanged(category == AudioManager.MODE_IN_COMMUNICATION)
+                    return category
+                }
             })
         }
     }
@@ -69,10 +80,12 @@ internal actual open class MediaManagerServiceImpl(
     }
 
     actual override suspend fun turnLoudSpeakerOn() {
+        headsetRouteManager?.onSpeakerRequested(true)
         mediaManager.await().turnLoudSpeakerOn()
     }
 
     actual override suspend fun turnLoudSpeakerOff() {
+        headsetRouteManager?.onSpeakerRequested(false)
         mediaManager.await().turnLoudSpeakerOff()
     }
 
