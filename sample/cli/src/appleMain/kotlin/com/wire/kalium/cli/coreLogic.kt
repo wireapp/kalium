@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 
-private val CLI_KEYCHAIN_CONFIG = ApplePersistenceConfig(serviceName = "com.wire.kalium.cli")
+private val CLI_KEYCHAIN_CONFIG = ApplePersistenceConfig(serviceName = "com.wire.kalium.cli", keychainAccessibility = null)
 
 actual fun coreLogic(
     rootPath: String,
