@@ -48,13 +48,14 @@ class SecurityHelperTest {
     private val globalV2Alias = "global_db_passphrase_alias_v2"
     private val userV1Alias = "user_db_secret_alias_$userId"
     private val userV2Alias = "user_db_secret_alias_v2_$userId"
-    private val globalV2SaltAlias = "global_db_passphrase_alias_v2_sqlcipher_salt"
-    private val userV2SaltAlias = "user_db_secret_alias_v2_${userId}_sqlcipher_salt"
     private val mlsV1Alias = "mls_db_secret_alias_$userId"
     private val mlsV2Alias = "mls_db_secret_alias_v2_$userId"
     private val proteusV1Alias = "proteus_db_secret_alias_$userId"
     private val proteusV2Alias = "proteus_db_secret_alias_v2_$userId"
     private val rootPath = "/root/path"
+    private val keyAndSalt = Base64.encode(ByteArray(32) { it.toByte() } + ByteArray(16) { (0xa0 + it).toByte() })
+    private val rawKeyWithSalt =
+        "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa0a1a2a3a4a5a6a7a8a9aaabacadaeaf'"
 
     @BeforeTest
     fun setup() {
@@ -280,72 +281,55 @@ class SecurityHelperTest {
     }
 
     @Test
-    fun givenSaltsAreStoredAndAKeyWithoutSalt_whenGettingANewUserDatabaseKey_thenANewSaltIsStoredNextToTheKey() {
-        val storedSalts = mutableListOf<String>()
-        every { passphraseStorage.getPassphrase(userV2Alias) } returns Base64.encode(ByteArray(32) { it.toByte() })
-        every { passphraseStorage.getPassphrase(userV2SaltAlias) } returns null
-        every { passphraseStorage.setPassphraseIfAbsent(userV2SaltAlias, any()) }.calls {
-            (it.args[1] as String).also(storedSalts::add)
+    fun givenSaltsAreStored_whenGeneratingANewUserDatabaseKey_thenAKeyAndItsSaltAreStoredTogether() {
+        val stored = mutableListOf<String>()
+        every { passphraseStorage.getPassphrase(userV2Alias) } returns null
+        every { passphraseStorage.setPassphraseIfAbsent(userV2Alias, any()) }.calls {
+            (it.args[1] as String).also(stored::add)
         }
 
         val secret = securityHelperWithSalts().userDBSecret(userId, databaseExists = false)
 
-        val salt = Base64.decode(storedSalts.single())
-        assertEquals(16, salt.size)
-        assertEquals(
-            "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f${salt.toHexString()}'",
-            secret.value.decodeToString()
-        )
-        verify(VerifyMode.not) { passphraseStorage.setPassphraseIfAbsent(userV2Alias, any()) }
+        val generated = Base64.decode(stored.single())
+        assertEquals(48, generated.size)
+        assertEquals("x'${generated.toHexString()}'", secret.value.decodeToString())
     }
 
     @Test
-    fun givenSaltsAreStoredAndAnotherProcessStoredASaltFirst_whenGettingANewGlobalDatabaseKey_thenTheStoredSaltIsUsed() {
-        every { passphraseStorage.getPassphrase(any()) } returns null
-        every { passphraseStorage.setPassphraseIfAbsent(globalV2Alias, any()) } returns
-            Base64.encode(ByteArray(32) { it.toByte() })
-        every { passphraseStorage.setPassphraseIfAbsent(globalV2SaltAlias, any()) } returns
-            Base64.encode(ByteArray(16) { (0xa0 + it).toByte() })
+    fun givenSaltsAreStoredAndAnotherProcessStoredAKeyFirst_whenGettingANewGlobalDatabaseKey_thenItsKeyAndSaltAreUsed() {
+        every { passphraseStorage.getPassphrase(globalV2Alias) } returns null
+        every { passphraseStorage.setPassphraseIfAbsent(globalV2Alias, any()) } returns keyAndSalt
 
         val keyMaterial = securityHelperWithSalts().globalDBKeyMaterial(databaseExists = false)
 
-        assertEquals(
-            "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa0a1a2a3a4a5a6a7a8a9aaabacadaeaf'",
-            keyMaterial.rawKey.value.decodeToString()
-        )
+        assertEquals(rawKeyWithSalt, keyMaterial.rawKey.value.decodeToString())
     }
 
     @Test
-    fun givenSaltsAreStored_whenGettingAnExistingUserDatabaseKey_thenItComesWithItsStoredSalt() {
-        every { passphraseStorage.getPassphrase(userV2Alias) } returns Base64.encode(ByteArray(32) { it.toByte() })
-        every { passphraseStorage.getPassphrase(userV2SaltAlias) } returns Base64.encode(ByteArray(16) { (0xa0 + it).toByte() })
+    fun givenSaltsAreStored_whenGettingAnExistingUserDatabaseKey_thenItComesWithItsSalt() {
+        every { passphraseStorage.getPassphrase(userV2Alias) } returns keyAndSalt
 
         val secret = securityHelperWithSalts().userDBOrSecretNull(userId)
 
-        assertEquals(
-            "x'000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa0a1a2a3a4a5a6a7a8a9aaabacadaeaf'",
-            secret?.value?.decodeToString()
-        )
+        assertEquals(rawKeyWithSalt, secret?.value?.decodeToString())
     }
 
     @Test
-    fun givenSaltsAreStoredAndTheSaltIsMissing_whenGettingAnExistingGlobalDatabaseKey_thenNullIsReturnedAndNothingIsStored() {
-        every { passphraseStorage.getPassphrase(globalV2Alias) } returns Base64.encode(ByteArray(32) { it.toByte() })
-        every { passphraseStorage.getPassphrase(globalV2SaltAlias) } returns null
-
-        val secret = securityHelperWithSalts().globalDBSecretOrNull()
-
-        assertEquals(null, secret)
-        verify(VerifyMode.not) { passphraseStorage.setPassphraseIfAbsent(any(), any()) }
-        verify(VerifyMode.not) { passphraseStorage.setPassphrase(any(), any()) }
-    }
-
-    @Test
-    fun givenAStoredSaltOfTheWrongSize_whenGettingTheKey_thenItFailsInsteadOfBuildingAnInvalidRawKey() {
+    fun givenSaltsAreStoredAndAKeyWithoutSalt_whenGettingTheGlobalDatabaseKey_thenItFailsInsteadOfBuildingAnInvalidRawKey() {
         every { passphraseStorage.getPassphrase(globalV2Alias) } returns Base64.encode(ByteArray(32))
-        every { passphraseStorage.getPassphrase(globalV2SaltAlias) } returns Base64.encode(ByteArray(32))
 
         assertFailsWith<IllegalArgumentException> { securityHelperWithSalts().globalDBSecretOrNull() }
+        assertFailsWith<IllegalArgumentException> { securityHelperWithSalts().globalDBKeyMaterial(databaseExists = false) }
+    }
+
+    @Test
+    fun givenSaltsAreStored_whenGeneratingTheMlsSecret_thenItKeepsItsLength() = runTest {
+        every { passphraseStorage.getPassphrase(any()) } returns null
+        every { passphraseStorage.setPassphraseIfAbsent(mlsV2Alias, any()) }.calls { it.args[1] as String }
+
+        val secret = securityHelperWithSalts().mlsDBSecret(userId, rootPath)
+
+        assertEquals(32, secret.passphrase.size)
     }
 
     private fun securityHelperWithSalts() = SecurityHelperImpl(passphraseStorage, isSqlCipherSaltStored = true)

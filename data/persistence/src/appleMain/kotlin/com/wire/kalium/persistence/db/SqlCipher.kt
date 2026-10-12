@@ -43,9 +43,9 @@ internal const val PLAINTEXT_HEADER_SIZE = 32
 
 /**
  * Checks that [key] can encrypt a database on this platform. On iOS, it has to be SQLCipher's raw-key form with the
- * salt, `x'<64 hex digits key><32 hex digits salt>'`, as `SecurityHelper` creates it there from the key and the salt
- * it stores next to it. With the readable header, SQLCipher has no place to keep a salt of its own: it would encrypt a
- * new database with a random one, and lose it.
+ * salt, `x'<64 hex digits key><32 hex digits salt>'`, as `SecurityHelper` creates it there from the key and salt it
+ * stores together. With the readable header, SQLCipher has no place to keep a salt of its own: it would encrypt a new
+ * database with a random one, and lose it.
  */
 internal fun requireSqlCipherKey(key: String) {
     if (isPlaintextHeaderUsed) {
