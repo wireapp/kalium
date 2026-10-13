@@ -24,6 +24,7 @@ import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellUploadRequest
 import com.wire.kalium.cells.domain.CellUploadState
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.isActive
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onFailure
@@ -68,7 +69,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
     override val uploads: StateFlow<List<CellUploadItem>> = _uploads.asStateFlow()
 
     override val hasActiveUploads: StateFlow<Boolean> = _uploads
-        .map { items -> items.any { it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading } }
+        .map { items -> items.any { it.state.isActive } }
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.Eagerly, false)
 
@@ -96,7 +97,11 @@ internal class CellUploadCoordinatorImpl internal constructor(
     }
 
     override fun cancelAll() {
-        commands.trySend(Command.CancelAll)
+        commands.trySend(Command.CancelAll(conversationId = null))
+    }
+
+    override fun cancelAll(conversationId: String) {
+        commands.trySend(Command.CancelAll(conversationId))
     }
 
     override fun retry(id: String) {
@@ -104,7 +109,11 @@ internal class CellUploadCoordinatorImpl internal constructor(
     }
 
     override fun retryAllFailed() {
-        commands.trySend(Command.RetryAllFailed)
+        commands.trySend(Command.RetryAllFailed(conversationId = null))
+    }
+
+    override fun retryAllFailed(conversationId: String) {
+        commands.trySend(Command.RetryAllFailed(conversationId))
     }
 
     override fun dismiss(id: String) {
@@ -112,18 +121,40 @@ internal class CellUploadCoordinatorImpl internal constructor(
     }
 
     override fun dismissAll() {
-        commands.trySend(Command.DismissAll)
+        commands.trySend(Command.DismissAll(conversationId = null))
     }
 
+    override fun dismissAll(conversationId: String) {
+        commands.trySend(Command.DismissAll(conversationId))
+    }
+
+    override fun beginPreparing(fileName: String, conversationId: String): String {
+        val id = Uuid.random().toString()
+        commands.trySend(Command.BeginPreparing(id, fileName, conversationId))
+        return id
+    }
+
+    override fun attachPreparedRequest(id: String, request: CellUploadRequest) {
+        commands.trySend(Command.AttachRequest(id, request))
+    }
+
+    override fun failPreparing(id: String) {
+        commands.trySend(Command.FailPreparing(id))
+    }
+
+    @Suppress("CyclomaticComplexMethod")
     private suspend fun handle(command: Command) {
         when (command) {
             is Command.Enqueue -> addItems(command.requests)
             is Command.Cancel -> cancelItem(command.id)
-            Command.CancelAll -> cancelAllItems()
+            is Command.CancelAll -> cancelAllItems(command.conversationId)
             is Command.Retry -> requeueFailed(command.id)
-            Command.RetryAllFailed -> requeueAllFailed()
+            is Command.RetryAllFailed -> requeueAllFailed(command.conversationId)
             is Command.Dismiss -> dismissItem(command.id)
-            Command.DismissAll -> dismissAllItems()
+            is Command.DismissAll -> dismissAllItems(command.conversationId)
+            is Command.BeginPreparing -> addPreparingItem(command.id, command.fileName, command.conversationId)
+            is Command.AttachRequest -> attachRequest(command.id, command.request)
+            is Command.FailPreparing -> removePreparingItem(command.id)
             is Command.NodeCreated -> updateItem(command.id) {
                 copy(nodeUuid = command.nodeUuid, versionId = command.versionId)
             }
@@ -134,8 +165,24 @@ internal class CellUploadCoordinatorImpl internal constructor(
         }
     }
 
+    private fun addPreparingItem(id: String, fileName: String, conversationId: String) {
+        _uploads.update {
+            it + CellUploadItem(id = id, conversationId = conversationId, state = CellUploadState.Preparing(fileName))
+        }
+    }
+
+    private fun attachRequest(id: String, request: CellUploadRequest) {
+        updateItem(id) { copy(request = request, state = CellUploadState.Queued) }
+    }
+
+    private fun removePreparingItem(id: String) {
+        _uploads.update { items -> items.filterNot { it.id == id } }
+    }
+
     private fun addItems(requests: List<CellUploadRequest>) {
-        val items = requests.map { CellUploadItem(id = Uuid.random().toString(), request = it) }
+        val items = requests.map {
+            CellUploadItem(id = Uuid.random().toString(), conversationId = it.destinationFolderPath.substringBefore("/"), request = it)
+        }
         _uploads.update { it + items }
     }
 
@@ -180,7 +227,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
     }
 
     private suspend fun createDraftNode(item: CellUploadItem): String? {
-        val request = item.request
+        val request = checkNotNull(item.request) { "Queued item ${item.id} has no request" }
         val destNodePath = "${request.destinationFolderPath}/${request.fileName}"
         return uploadManager.upload(request.localPath, request.sizeBytes, destNodePath).nullableFold(
             {
@@ -266,9 +313,9 @@ internal class CellUploadCoordinatorImpl internal constructor(
         updateItem(id) { copy(state = CellUploadState.Cancelled) }
     }
 
-    private suspend fun cancelAllItems() {
+    private suspend fun cancelAllItems(conversationId: String?) {
         _uploads.value
-            .filter { it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading }
+            .filter { it.matches(conversationId) && (it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading) }
             .forEach { cancelItem(it.id) }
     }
 
@@ -278,26 +325,29 @@ internal class CellUploadCoordinatorImpl internal constructor(
         }
     }
 
-    private fun requeueAllFailed() {
-        _uploads.value.filter { it.state is CellUploadState.Failed }.forEach { requeueFailed(it.id) }
+    private fun requeueAllFailed(conversationId: String?) {
+        _uploads.value
+            .filter { it.matches(conversationId) && it.state is CellUploadState.Failed }
+            .forEach { requeueFailed(it.id) }
     }
 
     private fun dismissItem(id: String) {
         val item = _uploads.value.firstOrNull { it.id == id } ?: return
-        if (item.state is CellUploadState.Queued || item.state is CellUploadState.Uploading) return
+        if (item.state.isActive) return
         _uploads.update { items -> items.filterNot { it.id == id } }
         deleteLocalFile(item)
     }
 
-    private fun dismissAllItems() {
-        val finished = _uploads.value.filterNot {
-            it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading
-        }
-        _uploads.update { items ->
-            items.filter { it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading }
-        }
+    private fun dismissAllItems(conversationId: String?) {
+        val finished = _uploads.value.filter { it.matches(conversationId) && !it.state.isActive }
+        val finishedIds = finished.mapTo(mutableSetOf()) { it.id }
+        _uploads.update { items -> items.filterNot { it.id in finishedIds } }
         finished.forEach(::deleteLocalFile)
     }
+
+    /** A null [conversationId] means "every conversation", used by the logout-time cleanup. */
+    private fun CellUploadItem.matches(conversationId: String?): Boolean =
+        conversationId == null || this.conversationId == conversationId
 
     private fun updateProgress(id: String, progress: Float) {
         updateItem(id) {
@@ -321,7 +371,8 @@ internal class CellUploadCoordinatorImpl internal constructor(
     }
 
     private fun deleteLocalFile(item: CellUploadItem) {
-        runCatching { fileSystem.delete(item.request.localPath, mustExist = false) }
+        val localPath = item.request?.localPath ?: return
+        runCatching { fileSystem.delete(localPath, mustExist = false) }
     }
 
     private fun updateItem(id: String, block: CellUploadItem.() -> CellUploadItem) {
@@ -334,11 +385,14 @@ internal class CellUploadCoordinatorImpl internal constructor(
     private sealed interface Command {
         data class Enqueue(val requests: List<CellUploadRequest>) : Command
         data class Cancel(val id: String) : Command
-        data object CancelAll : Command
+        data class CancelAll(val conversationId: String?) : Command
         data class Retry(val id: String) : Command
-        data object RetryAllFailed : Command
+        data class RetryAllFailed(val conversationId: String?) : Command
         data class Dismiss(val id: String) : Command
-        data object DismissAll : Command
+        data class DismissAll(val conversationId: String?) : Command
+        data class BeginPreparing(val id: String, val fileName: String, val conversationId: String) : Command
+        data class AttachRequest(val id: String, val request: CellUploadRequest) : Command
+        data class FailPreparing(val id: String) : Command
         data class NodeCreated(val id: String, val nodeUuid: String, val versionId: String) : Command
         data class Progress(val id: String, val progress: Float) : Command
         data class TransferCompleted(val id: String) : Command
