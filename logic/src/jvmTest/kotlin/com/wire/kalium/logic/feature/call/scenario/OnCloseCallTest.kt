@@ -109,6 +109,61 @@ class OnCloseCallTest {
         }
 
     @Test
+    fun givenOneOnOneCallAnsweredElsewhere_whenOnCloseCallBackHappens_thenMarkAnsweredAndDoNotPersistMissedCall() =
+        testScope.runTest {
+            val (arrangement, onCloseCall) = Arrangement(testScope).arrange()
+
+            onCloseCall.onClosedCall(
+                CallClosedReason.ANSWERED_ELSEWHERE.avsValue,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.updateIsAnsweredElsewhere(conversationId)
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.callRepository.persistMissedCall(conversationId)
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
+            }
+        }
+
+    @Test
+    fun givenGroupCallAnsweredElsewhere_whenOnCloseCallBackHappens_thenMarkAnsweredAndKeepCallOngoing() =
+        testScope.runTest {
+            val groupCall = callMetadata.copy(conversationType = Conversation.Type.Group.Regular)
+            val (arrangement, onCloseCall) = Arrangement(testScope)
+                .withGetCallMetadata(groupCall)
+                .arrange()
+
+            onCloseCall.onClosedCall(
+                CallClosedReason.ANSWERED_ELSEWHERE.avsValue,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.updateIsAnsweredElsewhere(conversationId)
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.callRepository.persistMissedCall(conversationId)
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.STILL_ONGOING)
+            }
+        }
+
+    @Test
     fun givenAStartedGroupCall_whenOnCloseCallBackHappens_thenDoNotPersistMissedCallAndUpdateStatus() =
         testScope.runTest {
             val groupCall = callMetadata.copy(

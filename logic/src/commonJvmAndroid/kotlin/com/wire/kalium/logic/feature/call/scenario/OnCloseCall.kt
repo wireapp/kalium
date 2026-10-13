@@ -70,7 +70,10 @@ internal class OnCloseCall(
                 callRepository.updateIsAnsweredElsewhere(conversationIdWithDomain)
             }
 
-            if (isConnectedToInternet && shouldPersistMissedCall(callMetadata, callStatus)) {
+            if (isConnectedToInternet &&
+                avsReason != CallClosedReason.ANSWERED_ELSEWHERE &&
+                shouldPersistMissedCall(callMetadata, callStatus)
+            ) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
             }
 
