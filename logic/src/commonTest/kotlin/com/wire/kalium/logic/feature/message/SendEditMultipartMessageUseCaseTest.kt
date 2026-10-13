@@ -169,6 +169,8 @@ class SendEditMultipartMessageUseCaseTest {
         private val clientIdProvider = CurrentClientIdProvider { TestClient.CLIENT_ID.right() }
 
         private val messageSender = object : MessageSender {
+            override suspend fun cancelPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean> =
+                error("Not used by edit tests")
             override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String) = Unit.right()
             override suspend fun sendMessage(
                 message: Message.Sendable,

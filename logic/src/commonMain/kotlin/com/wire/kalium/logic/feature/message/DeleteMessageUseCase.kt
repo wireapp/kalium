@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
@@ -105,12 +106,30 @@ public class DeleteMessageUseCase internal constructor(
         conversationId: ConversationId,
         messageId: String,
         deleteForEveryone: Boolean,
-    ) = when (message.status) {
+    ) = when {
+        // Remove a locally queued message without requiring a network signal for Delete for Me.
+        message is Message.Regular && message.isSelfMessage &&
+            message.status == Message.Status.Pending && message.editStatus == Message.EditStatus.NotEdited && !deleteForEveryone ->
+            cancelPendingMessage(conversationId, messageId)
+
         // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
         // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
-        Message.Status.Failed -> deleteFailedMessage(conversationId, messageId)
+        message.status == Message.Status.Failed -> deleteFailedMessage(conversationId, messageId)
         else -> deletePersistedMessage(message, conversationId, messageId, deleteForEveryone)
     }
+
+    private suspend fun cancelPendingMessage(conversationId: ConversationId, messageId: String) =
+        messageSender.cancelPendingMessage(conversationId, messageId).flatMap { cancelled ->
+            if (cancelled) {
+                notifyMessageDeleted(conversationId, messageId)
+                Either.Right(Unit)
+            } else {
+                // Sending won the race. Keep the normal Delete for Me signaling for the sent message.
+                messageRepository.getMessageById(conversationId, messageId).flatMap { current ->
+                    deletePersistedMessage(current, conversationId, messageId, deleteForEveryone = false)
+                }
+            }
+        }
 
     private suspend fun deleteFailedMessage(
         conversationId: ConversationId,

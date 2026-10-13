@@ -49,6 +49,13 @@ interface MessageSender {
     suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
 
     /**
+     * Removes an own, unedited Pending message from the persisted sending queue, serialized with sending.
+     * Returns false for pending edits of delivered messages and messages that are no longer eligible for cancellation.
+     * A missing message is already cancelled. Storage and transaction failures are propagated.
+     */
+    suspend fun cancelPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean>
+
+    /**
      * Attempts to send the given [Message] to suitable recipients.
      *
      * Will handle all the needed encryption and possible set-up

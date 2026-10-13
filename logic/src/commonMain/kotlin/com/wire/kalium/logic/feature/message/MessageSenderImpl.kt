@@ -121,48 +121,86 @@ internal class MessageSenderImpl internal constructor(
         }
     }
 
+    override suspend fun cancelPendingMessage(
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Boolean> = transactionProvider.transaction("cancelPendingMessage") {
+        messageRepository.getMessageById(conversationId, messageUuid).fold(
+            { failure ->
+                if (failure == StorageFailure.DataNotFound) Either.Right(true) else Either.Left(failure)
+            },
+            { current ->
+                val isOwnUnedited = current is Message.Regular && current.isSelfMessage &&
+                    current.editStatus == Message.EditStatus.NotEdited
+                if (isOwnUnedited && current.status == Message.Status.Pending) {
+                    messageRepository.deleteMessage(messageUuid, conversationId).map { true }
+                } else {
+                    Either.Right(false)
+                }
+            }
+        )
+    }
+
+    private suspend fun shouldSend(message: Message.Sendable): Either<CoreFailure, Boolean> {
+        if (message !is Message.Regular || message.status != Message.Status.Pending) return Either.Right(true)
+        return messageRepository.getMessageById(message.conversationId, message.id).fold(
+            { failure ->
+                if (failure == StorageFailure.DataNotFound) Either.Right(false) else Either.Left(failure)
+            },
+            { current ->
+                val isEdit = message.content is MessageContent.TextEdited || message.content is MessageContent.MultipartEdited
+                val isVisible = current is Message.Regular && current.visibility == Message.Visibility.VISIBLE
+                Either.Right(isVisible && (current.status == Message.Status.Pending || isEdit))
+            }
+        )
+    }
+
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
         messageSendingInterceptor
             .prepareMessage(message)
             .flatMap { processedMessage ->
                 transactionProvider.transaction("sendMessage") { transactionContext ->
-                    attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
-                        val localDate = message.date
-                        val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
-                        // If it was the "edit" message type, we need to update the id before we promote it to "sent"
-                        val isEditMessage = when (message.content) {
-                            is MessageContent.MultipartEdited -> {
-                                messageRepository.updateMultipartMessage(
-                                    conversationId = processedMessage.conversationId,
-                                    messageContent = processedMessage.content as MessageContent.MultipartEdited,
-                                    newMessageId = processedMessage.id,
-                                    editInstant = processedMessage.date
-                                )
-                                true
+                    // Cancellation uses this same transaction queue. Recheck after entering it, not before waiting.
+                    shouldSend(message).flatMap { send ->
+                        if (!send) return@flatMap Either.Right(false)
+                        attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
+                            val localDate = message.date
+                            val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                            // If it was the "edit" message type, we need to update the id before we promote it to "sent"
+                            val isEditMessage = when (message.content) {
+                                is MessageContent.MultipartEdited -> {
+                                    messageRepository.updateMultipartMessage(
+                                        conversationId = processedMessage.conversationId,
+                                        messageContent = processedMessage.content as MessageContent.MultipartEdited,
+                                        newMessageId = processedMessage.id,
+                                        editInstant = processedMessage.date
+                                    )
+                                    true
+                                }
+                                is MessageContent.TextEdited -> {
+                                    messageRepository.updateTextMessage(
+                                        conversationId = processedMessage.conversationId,
+                                        messageContent = processedMessage.content as MessageContent.TextEdited,
+                                        newMessageId = processedMessage.id,
+                                        editInstant = processedMessage.date
+                                    )
+                                    true
+                                }
+                                else -> false
                             }
-                            is MessageContent.TextEdited -> {
-                                messageRepository.updateTextMessage(
-                                    conversationId = processedMessage.conversationId,
-                                    messageContent = processedMessage.content as MessageContent.TextEdited,
-                                    newMessageId = processedMessage.id,
-                                    editInstant = processedMessage.date
-                                )
-                                true
-                            }
-                            else -> false
+                            messageRepository.promoteMessageToSentUpdatingServerTime(
+                                conversationId = processedMessage.conversationId,
+                                messageUuid = processedMessage.id,
+                                // if it's edit then we don't want to change the original message creation time, it's already a server date
+                                serverDate = if (!isEditMessage) serverDate else null,
+                                millis = millis
+                            )
+                            true
                         }
-                        messageRepository.promoteMessageToSentUpdatingServerTime(
-                            conversationId = processedMessage.conversationId,
-                            messageUuid = processedMessage.id,
-                            // if it's edit then we don't want to change the original message creation time, it's already a server date
-                            serverDate = if (!isEditMessage) serverDate else null,
-                            millis = millis
-                        )
-                        Unit
                     }
-                }.onSuccess {
-                    startSelfDeletionIfNeeded(message)
-                }
+                }.onSuccess { sent ->
+                    if (sent) startSelfDeletionIfNeeded(message)
+                }.map { Unit }
             }.onFailure {
                 logger.e("Failed to send message ${message::class.qualifiedName}. Failure = $it")
             }
