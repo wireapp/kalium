@@ -21,15 +21,15 @@ rootProject.name = "kalium-apple-avs-runtime-gradle-plugin"
 pluginManagement {
     repositories {
         gradlePluginPortal()
-        google()
         mavenCentral()
+        google()
     }
 }
 
 dependencyResolutionManagement {
     repositories {
-        google()
         mavenCentral()
+        google()
     }
     versionCatalogs {
         create("kalium") {
