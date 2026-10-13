@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.failure.NoClientsForUser
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
@@ -62,6 +63,41 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class OneOnOneResolverTest {
+
+    @Test
+    fun givenRecipientHasNoClients_whenExplicitlyStartingProteusConversation_thenPropagateFailure() = runTest {
+        val failure = NoClientsForUser(OTHER_USER.id)
+        val (arrangement, resolver) = arrange {
+            withGetProtocolForUser(Either.Right(SupportedProtocol.PROTEUS))
+            withMigrateToProteusReturns(Either.Left(failure))
+        }
+
+        resolver.resolveOneOnOneConversationWithUser(
+            arrangement.transactionContext,
+            OTHER_USER,
+            invalidateCurrentKnownProtocols = false,
+            fallbackToMLS = true,
+        ).shouldFail { assertEquals(failure, it) }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), mokkeryAny(), mokkeryAny())
+        }
+    }
+
+    @Test
+    fun givenRecipientHasNoClients_whenResolvingInBackground_thenQueueRecoveryWithoutFailingBatch() = runTest {
+        val (arrangement, resolver) = arrange {
+            withGetUsersWithOneOnOneConversationReturning(listOf(OTHER_USER))
+            withGetProtocolForUser(Either.Right(SupportedProtocol.PROTEUS))
+            withMigrateToProteusReturns(Either.Left(NoClientsForUser(OTHER_USER.id)))
+        }
+
+        resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.pendingActionsRepository.enqueuePendingOneOnOneResolution(OTHER_USER.id)
+        }
+    }
 
     @Test
     fun givenListOneOnOneUsers_whenResolveAllOneOnOneConversations_thenResolveOneOnOneForEachUser() = runTest {
