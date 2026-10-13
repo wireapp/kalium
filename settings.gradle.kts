@@ -40,8 +40,8 @@ pluginManagement {
     includeBuild("plugins/apple-avs-runtime")
     repositories {
         gradlePluginPortal()
-        mavenCentral()
         google()
+        mavenCentral()
     }
 }
 

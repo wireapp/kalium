@@ -25,8 +25,8 @@ import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
 buildscript {
     repositories {
-        mavenCentral()
         google()
+        mavenCentral()
     }
 
     dependencies {
@@ -41,8 +41,8 @@ buildscript {
 
 repositories {
     wireDetektRulesRepo()
-    mavenCentral()
     google()
+    mavenCentral()
     maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
 
@@ -114,12 +114,8 @@ allprojects {
         the<NodeJsEnvSpec>().version = libs.versions.node.get()
     }
     repositories {
+        google()
         mavenCentral()
-        google {
-            content {
-                excludeGroup("org.jetbrains.dokka")
-            }
-        }
         maven(url = "https://maven.wire.com")
     }
 }
