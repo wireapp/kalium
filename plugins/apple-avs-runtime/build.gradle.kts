@@ -29,8 +29,8 @@ version = providers.gradleProperty("kalium.appleAvsRuntimePlugin.version")
 description = "Links and embeds the dynamic Apple AVS XCFramework for Kalium consumers"
 
 repositories {
-    google()
     mavenCentral()
+    google()
 }
 
 val kaliumCatalog = extensions.getByType<VersionCatalogsExtension>().named("kalium")
