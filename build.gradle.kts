@@ -25,8 +25,12 @@ import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
 buildscript {
     repositories {
-        google()
         mavenCentral()
+        google {
+            content {
+                excludeGroup("org.jetbrains.dokka")
+            }
+        }
     }
 
     dependencies {

@@ -22,8 +22,12 @@ plugins {
 }
 
 repositories {
-    google()
     mavenCentral()
+    google {
+        content {
+            excludeGroup("org.jetbrains.dokka")
+        }
+    }
     maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
 
