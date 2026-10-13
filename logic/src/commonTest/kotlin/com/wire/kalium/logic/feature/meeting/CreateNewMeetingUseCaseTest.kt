@@ -19,12 +19,14 @@ package com.wire.kalium.logic.feature.meeting
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.meeting.UpsertMeeting
+import com.wire.kalium.logic.data.meeting.CreateNewMeetingResult
 import com.wire.kalium.logic.data.meeting.Meeting
 import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.data.meeting.UpsertMeeting
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -46,16 +48,17 @@ class CreateNewMeetingUseCaseTest {
     @Test
     fun givenRepositoryCreateSucceeds_whenInvoking_thenReturnsSuccessAndCallRefreshUsersWithoutMetadata() = runTest {
         val createMeeting = CREATE_MEETING
+        val createResult = Either.Right(CreateNewMeetingResult(ConversationId("conversation", "domain"), MLSAdditionResult.Empty))
         val (arrangement, useCase) = Arrangement()
-            .withCreateNewMeetingReturning(createMeeting, Either.Right(MLSAdditionResult.Empty))
-            .withTransactionExecutingBlock()
+            .withCreateNewMeetingReturning(createMeeting, createResult)
+            .withTransactionReturning(createResult)
             .arrange()
 
         val result = useCase(createMeeting)
 
-        assertEquals(CreateNewMeetingUseCase.Result.Success, result)
+        assertEquals(CreateNewMeetingUseCase.Result.Success(ConversationId("conversation", "domain")), result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.cryptoTransactionProvider.transaction<MLSAdditionResult>("CreateNewMeeting", any())
+            arrangement.cryptoTransactionProvider.transaction<CreateNewMeetingResult>("CreateNewMeeting", any())
             arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
             arrangement.refreshUsersWithoutMetadata()
         }
@@ -64,9 +67,10 @@ class CreateNewMeetingUseCaseTest {
     @Test
     fun givenRepositoryCreateFails_whenInvoking_thenReturnsFailure() = runTest {
         val createMeeting = CREATE_MEETING
+        val createResult = Either.Left(CoreFailure.MissingClientRegistration)
         val (arrangement, useCase) = Arrangement()
-            .withCreateNewMeetingReturning(createMeeting, Either.Left(CoreFailure.MissingClientRegistration))
-            .withTransactionExecutingBlock()
+            .withCreateNewMeetingReturning(createMeeting, createResult)
+            .withTransactionReturning(createResult)
             .arrange()
 
         val result = useCase(createMeeting)
@@ -87,16 +91,17 @@ class CreateNewMeetingUseCaseTest {
             conversationId = ConversationId("conversation", "domain"),
             reason = CoreFailure.MissingClientRegistration,
         )
+        val createResult = Either.Left(establishMLSFailure)
         val (arrangement, useCase) = Arrangement()
-            .withCreateNewMeetingReturning(createMeeting, Either.Left(establishMLSFailure))
-            .withTransactionExecutingBlock()
+            .withCreateNewMeetingReturning(createMeeting, createResult)
+            .withTransactionReturning(createResult)
             .arrange()
 
         val result = useCase(createMeeting)
 
-        assertEquals(CreateNewMeetingUseCase.Result.Success, result)
+        assertEquals(CreateNewMeetingUseCase.Result.Success(establishMLSFailure.conversationId), result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.cryptoTransactionProvider.transaction<MLSAdditionResult>("CreateNewMeeting", any())
+            arrangement.cryptoTransactionProvider.transaction<CreateNewMeetingResult>("CreateNewMeeting", any())
             arrangement.meetingRepository.createNewMeeting(meeting = createMeeting, transactionContext = arrangement.transactionContext)
             arrangement.refreshUsersWithoutMetadata()
         }
@@ -112,7 +117,7 @@ class CreateNewMeetingUseCaseTest {
 
         assertEquals(CreateNewMeetingUseCase.Result.Failure, result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.cryptoTransactionProvider.transaction<MLSAdditionResult>("CreateNewMeeting", any())
+            arrangement.cryptoTransactionProvider.transaction<CreateNewMeetingResult>("CreateNewMeeting", any())
         }
         verifySuspend(VerifyMode.not) {
             arrangement.meetingRepository.createNewMeeting(meeting = any(), transactionContext = any())
@@ -125,18 +130,18 @@ class CreateNewMeetingUseCaseTest {
 
         internal fun withCreateNewMeetingReturning(
             meeting: UpsertMeeting,
-            result: Either<CoreFailure, MLSAdditionResult>
+            result: Either<CoreFailure, CreateNewMeetingResult>
         ) = apply {
             everySuspend { meetingRepository.createNewMeeting(meeting = meeting, transactionContext = transactionContext) } returns result
         }
 
-        internal suspend fun withTransactionExecutingBlock() = apply {
-            withTransactionReturning<MLSAdditionResult>(Either.Right(MLSAdditionResult.Empty))
+        internal suspend fun withTransactionReturning(result: Either<CoreFailure, CreateNewMeetingResult>) = apply {
+            withTransactionReturning(result.map { it.mlsAdditionResult })
         }
 
         internal fun withTransactionFailure(failure: CoreFailure) = apply {
             everySuspend {
-                cryptoTransactionProvider.transaction<MLSAdditionResult>(any(), any())
+                cryptoTransactionProvider.transaction<CreateNewMeetingResult>(any(), any())
             } returns Either.Left(failure)
         }
 
