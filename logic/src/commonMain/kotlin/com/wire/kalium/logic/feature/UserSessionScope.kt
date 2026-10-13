@@ -272,6 +272,8 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.JoinPendingMLSConversationsManager
+import com.wire.kalium.logic.feature.conversation.JoinPendingMLSConversationsManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSFaultyKeysConversationsRepairUseCaseImpl
@@ -1563,6 +1565,15 @@ public class UserSessionScope internal constructor(
             recoverMLSConversationsUseCase,
             slowSyncRepository,
             cryptoTransactionProvider,
+            userScopedLogger
+        )
+    }
+
+    private val joinPendingMLSConversationsManager: JoinPendingMLSConversationsManager by lazy {
+        JoinPendingMLSConversationsManagerImpl(
+            incrementalSyncRepository,
+            userConfigRepository,
+            joinExistingMLSConversations,
             userScopedLogger
         )
     }
@@ -3114,6 +3125,10 @@ public class UserSessionScope internal constructor(
 
         launch {
             mlsConversationsRecoveryManager.invoke()
+        }
+
+        launch {
+            joinPendingMLSConversationsManager.invoke()
         }
 
         launch {

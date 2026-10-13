@@ -111,7 +111,7 @@ internal interface MeetingRepository {
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil(),
         transactionContext: CryptoTransactionContext,
-    ): Either<CoreFailure, MLSAdditionResult>
+    ): Either<CoreFailure, CreateNewMeetingResult>
 
     suspend fun updateMeeting(
         meetingId: MeetingId,
@@ -259,7 +259,7 @@ internal class MeetingDataSource(
         generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant,
         transactionContext: CryptoTransactionContext,
-    ): Either<CoreFailure, MLSAdditionResult> = withContext(NonCancellable) {
+    ): Either<CoreFailure, CreateNewMeetingResult> = withContext(NonCancellable) {
         wrapApiRequest {
             meetingApi.createNewMeeting(request = meetingMapper.fromModelToApi(meeting))
         }.flatMap { response ->
@@ -268,7 +268,7 @@ internal class MeetingDataSource(
                 otherParticipants = meeting.otherParticipants,
                 generateOccurrencesFrom = generateOccurrencesFrom,
                 generateOccurrencesUntil = generateOccurrencesUntil
-            )
+            ).map { CreateNewMeetingResult(response.conversation.id.toModel(), it) }
         }
     }
 
@@ -446,6 +446,8 @@ internal class MeetingDataSource(
     data class UpdateConversationNameFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
     data object MeetingNotSupportedFailure : CoreFailure.FeatureFailure()
 }
+
+internal data class CreateNewMeetingResult(val conversationId: ConversationId, val mlsAdditionResult: MLSAdditionResult)
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
 private const val OUTDATED_MEETING_RETENTION_DAYS = 30
