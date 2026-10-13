@@ -46,5 +46,5 @@ interface CellFileDao {
     fun observeOfflineFiles(): Flow<List<CellFileEntity>>
     fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<CellFileEntity>>
     suspend fun getById(id: String): CellFileEntity?
-    suspend fun getAllWithLocalPath(): List<CellFileLocalPath>
+    suspend fun getLocalPathsByIds(ids: List<String>): List<CellFileLocalPath>
 }

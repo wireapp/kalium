@@ -26,6 +26,7 @@ import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.SelfTeamIdProvider
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.CellNodeType
 import com.wire.kalium.cells.domain.model.ConversationMetadata
 import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.model.PaginatedList
@@ -35,13 +36,17 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
+import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.persistence.dao.cellfile.CellFileLocalPath
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GetPaginatedNodesUseCaseTest {
@@ -184,6 +189,73 @@ class GetPaginatedNodesUseCaseTest {
         assertEquals(CONVERSATION_NAME, data.first { it.uuid == "uuid_1" }.conversationName)
     }
 
+    @Test
+    fun givenPageWithDraftsAndFolders_whenUseCaseInvoked_thenLocalDataIsFetchedOnlyForVisibleFileNodes() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withNodes(testNodes + folderNode)
+            .arrange()
+
+        useCase(
+            conversationId = null,
+            query = "",
+            limit = 100,
+            offset = 0,
+            fileFilters = FileFilters()
+        )
+
+        // uuid_2 is a draft and folder_uuid is a folder: neither should be queried
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.attachmentsRepository.getAttachmentsByIds(listOf("uuid_1", "uuid_3"))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.attachmentsRepository.getStandaloneAssetPathsByIds(listOf("uuid_1", "uuid_3"))
+        }
+    }
+
+    @Test
+    fun givenNoAttachmentForNode_whenUseCaseInvoked_thenStandaloneAssetLocalPathIsUsed() = runTest {
+        val (_, useCase) = Arrangement()
+            .withAttachments(emptyList())
+            .withAssetPaths(listOf(CellFileLocalPath("uuid_1", "standalone_path")))
+            .arrange()
+
+        val result = useCase(
+            conversationId = null,
+            query = "",
+            limit = 100,
+            offset = 0,
+            fileFilters = FileFilters()
+        )
+
+        val data = result.getOrNull()?.data.orEmpty()
+        assertEquals("standalone_path", (data.first { it.uuid == "uuid_1" } as Node.File).localPath)
+        assertNull((data.first { it.uuid == "uuid_3" } as Node.File).localPath)
+        assertNull((data.first { it.uuid == "uuid_1" } as Node.File).metadata)
+    }
+
+    @Test
+    fun givenAssetAttachedToSeveralMessages_whenUseCaseInvoked_thenFirstAttachmentIsUsed() = runTest {
+        val (_, useCase) = Arrangement()
+            .withAttachments(
+                listOf(
+                    testAttachments.first().copy(localPath = "first_path"),
+                    testAttachments.first().copy(localPath = "second_path"),
+                )
+            )
+            .arrange()
+
+        val result = useCase(
+            conversationId = null,
+            query = "",
+            limit = 100,
+            offset = 0,
+            fileFilters = FileFilters()
+        )
+
+        val data = result.getOrNull()?.data.orEmpty()
+        assertEquals("first_path", (data.first { it.uuid == "uuid_1" } as Node.File).localPath)
+    }
+
     private inner class Arrangement {
 
         val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
@@ -194,6 +266,8 @@ class GetPaginatedNodesUseCaseTest {
 
         private var guestConversations: Set<String> = emptySet()
         private var nodes: List<CellNode> = testNodes
+        private var attachments: List<MessageAttachment> = testAttachments
+        private var assetPaths: List<CellFileLocalPath> = testAssetPaths
 
         fun withGuestConversations(vararg conversationIds: String) = apply {
             guestConversations = conversationIds.toSet()
@@ -201,6 +275,14 @@ class GetPaginatedNodesUseCaseTest {
 
         fun withNodes(nodes: List<CellNode>) = apply {
             this.nodes = nodes
+        }
+
+        fun withAttachments(attachments: List<MessageAttachment>) = apply {
+            this.attachments = attachments
+        }
+
+        fun withAssetPaths(assetPaths: List<CellFileLocalPath>) = apply {
+            this.assetPaths = assetPaths
         }
 
         suspend fun arrange(): Pair<Arrangement, GetPaginatedNodesUseCase> {
@@ -236,9 +318,9 @@ class GetPaginatedNodesUseCaseTest {
                 }.right()
             )
 
-            everySuspend { attachmentsRepository.getAttachments() }.returns(testAttachments.right())
+            everySuspend { attachmentsRepository.getAttachmentsByIds(any()) }.returns(attachments.right())
 
-            everySuspend { attachmentsRepository.getStandaloneAssetPaths() }.returns(testAssetPaths.right())
+            everySuspend { attachmentsRepository.getStandaloneAssetPathsByIds(any()) }.returns(assetPaths.right())
 
             return this to GetPaginatedNodesUseCaseImpl(
                 cellsRepository = cellsRepository,
@@ -281,6 +363,16 @@ class GetPaginatedNodesUseCaseTest {
                 ownerUserId = "user_id_3",
                 conversationId = "conversation_id_3",
             ),
+        )
+
+        val folderNode = CellNode(
+            uuid = "folder_uuid",
+            versionId = "folder_version_id",
+            path = "folder_path",
+            isDraft = false,
+            type = CellNodeType.FOLDER.value,
+            ownerUserId = "user_id",
+            conversationId = "conversation_id",
         )
 
         // Simulates nodes returned by getNodesForPath when browsing inside a conversation:
