@@ -25,7 +25,13 @@ import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
 buildscript {
     repositories {
-        google()
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("androidx.*")
+                includeGroupByRegex("com\\.google.*")
+            }
+        }
         mavenCentral()
     }
 

@@ -22,7 +22,13 @@ plugins {
 }
 
 repositories {
-    google()
+    google {
+        content {
+            includeGroupByRegex("com\\.android.*")
+            includeGroupByRegex("androidx.*")
+            includeGroupByRegex("com\\.google.*")
+        }
+    }
     mavenCentral()
     maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
