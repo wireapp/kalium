@@ -66,3 +66,11 @@ data class MeetingParticipantEntity(
     val accentColor: Int,
     val previewAssetId: QualifiedIDEntity?
 )
+
+data class MeetingReminderEntity(
+    val occurrenceId: String,
+    val meetingId: QualifiedIDEntity,
+    val conversationId: QualifiedIDEntity,
+    val title: String,
+    val startTime: Instant,
+)
