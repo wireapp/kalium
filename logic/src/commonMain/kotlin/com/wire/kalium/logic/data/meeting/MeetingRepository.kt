@@ -70,6 +70,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.time.Instant
 
+@Suppress("TooManyFunctions")
 internal interface MeetingRepository {
     suspend fun fetchAndPersistMeetings(
         transactionContext: CryptoTransactionContext,
@@ -125,6 +126,10 @@ internal interface MeetingRepository {
         meetingId: MeetingId,
         from: Instant = currentInstant()
     ): Either<StorageFailure, MeetingOccurrence>
+
+    fun observeMeetingReminderChanges(): Flow<Unit>
+    suspend fun getNextMeetingReminder(from: Instant): MeetingReminder?
+    suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminder>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -440,6 +445,14 @@ internal class MeetingDataSource(
             }
         }
     }
+
+    override fun observeMeetingReminderChanges(): Flow<Unit> = meetingDAO.observeMeetingReminderChanges()
+
+    override suspend fun getNextMeetingReminder(from: Instant): MeetingReminder? =
+        meetingDAO.getNextMeetingReminder(from)?.let(meetingMapper::fromDaoToModel)
+
+    override suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminder> =
+        meetingDAO.getMeetingRemindersWithin(startInclusive, endExclusive).map { meetingMapper.fromDaoToModel(it) }
 
     private fun CoreFailure.isMLSRetryableError() = when (this) {
         is NetworkFailure.FederatedBackendFailure.RetryableFailure,

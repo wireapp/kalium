@@ -46,6 +46,7 @@ interface MeetingDao {
         generateOccurrencesWindow: GenerationLimit.Window,
         removeMeetingsAbsentFromUpsertList: Boolean = false,
     )
+
     suspend fun removeOutdatedMeetings(olderThan: Instant)
     suspend fun insertMissingOccurrences(generateOccurrencesWindow: GenerationLimit.Window)
     fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?>
@@ -59,8 +60,12 @@ interface MeetingDao {
     suspend fun deleteMeetingsByConversationId(conversationId: QualifiedIDEntity)
     suspend fun getNextUnfinishedMeetingOccurrenceDetailsId(meetingId: QualifiedIDEntity, from: Instant): String?
     suspend fun getMeeting(meetingId: QualifiedIDEntity): MeetingEntity?
+    fun observeMeetingReminderChanges(): Flow<Unit>
+    suspend fun getNextMeetingReminder(from: Instant): MeetingReminderEntity?
+    suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminderEntity>
 }
 
+@Suppress("TooManyFunctions")
 internal class MeetingDaoImpl(
     private val meetingsQueries: MeetingsQueries,
     private val readDispatcher: ReadDispatcher,
@@ -216,6 +221,25 @@ internal class MeetingDaoImpl(
                 prefetchDistance = prefetchDistance,
             ),
         )
+
+    // Only SQLDelight's table invalidation matters here; the COUNT result is never read or compared.
+    override fun observeMeetingReminderChanges(): Flow<Unit> =
+        meetingsQueries.selectMeetingReminderChanges()
+            .asFlow()
+            .map {}
+            .flowOn(readDispatcher.value)
+
+    override suspend fun getNextMeetingReminder(from: Instant): MeetingReminderEntity? =
+        withContext(readDispatcher.value) {
+            meetingsQueries.selectNextMeetingReminder(from, MeetingMapper::fromViewToModel)
+                .awaitAsOneOrNull()
+        }
+
+    override suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminderEntity> =
+        withContext(readDispatcher.value) {
+            meetingsQueries.selectMeetingRemindersWithin(startInclusive, endExclusive, MeetingMapper::fromViewToModel)
+                .awaitAsList()
+        }
 }
 
 private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {

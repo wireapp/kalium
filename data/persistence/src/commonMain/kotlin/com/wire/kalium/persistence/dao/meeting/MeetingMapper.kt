@@ -52,6 +52,7 @@ data object MeetingMapper {
                 interval = recurrenceInterval,
                 until = recurrenceEndDate
             )
+
             else -> null
         }
     )
@@ -103,5 +104,19 @@ data object MeetingMapper {
         conversationType = conversationType,
         channelAccess = channelAccess,
         selfUserId = selfUserId,
+    )
+
+    fun fromViewToModel(
+        occurrenceId: String,
+        meetingId: QualifiedIDEntity,
+        conversationId: QualifiedIDEntity,
+        title: String,
+        startTime: Instant,
+    ): MeetingReminderEntity = MeetingReminderEntity(
+        occurrenceId = occurrenceId,
+        meetingId = meetingId,
+        conversationId = conversationId,
+        title = title,
+        startTime = startTime,
     )
 }
