@@ -1,0 +1,55 @@
+selectConversationDetailsForMemberSearch:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_order
+-- @CustomKey conversation_list_folders
+-- @CustomKey Member
+-- @CustomKey User
+SELECT details.* FROM ConversationDetails AS details
+WHERE
+    details.type IN ('GROUP', 'CHANNEL')
+    AND details.selfRole IS NOT NULL
+    AND details.deletedLocally = 0
+    AND details.archived = :fromArchive
+    AND (:onlyInteractionsEnabled = 0 OR details.interactionEnabled = 1)
+    AND (details.protocol IN ('PROTEUS', 'MIXED') OR
+         (details.protocol = 'MLS' AND (:strict_mls = 0 OR details.mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET'))))
+    AND details.name LIKE ('%' || :searchQuery || '%')
+    AND ((:onlyTeamId IS NULL AND :onlyDomain IS NULL) OR NOT EXISTS (
+        SELECT 1 FROM Member AS member
+        LEFT JOIN User AS usr ON usr.qualified_id = member.user
+        WHERE member.conversation = details.qualifiedId AND (
+            (:onlyTeamId IS NOT NULL AND (usr.team IS NULL OR usr.team != :onlyTeamId))
+            OR (:onlyDomain IS NOT NULL AND substr(member.user, instr(member.user, '@') + 1) != :onlyDomain)
+        )
+    ))
+GROUP BY details.qualifiedId
+ORDER BY details.lastModifiedDate DESC, details.name COLLATE NOCASE ASC, details.qualifiedId ASC
+LIMIT :limit OFFSET :offset;
+
+countConversationDetailsForMemberSearch:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_order
+-- @CustomKey conversation_list_folders
+-- @CustomKey Member
+-- @CustomKey User
+SELECT COUNT(*) FROM Conversation AS conversation
+CROSS JOIN SelfUser AS account
+JOIN Member AS selfMember ON selfMember.conversation = conversation.qualified_id AND selfMember.user = account.id
+WHERE
+    conversation.type IN ('GROUP', 'CHANNEL')
+    AND selfMember.role IS NOT NULL
+    AND conversation.deleted_locally = 0
+    AND conversation.archived = :fromArchive
+    -- Joined groups/channels have interactions enabled when the self member has a role.
+    AND (:onlyInteractionsEnabled = 0 OR selfMember.role IS NOT NULL)
+    AND (conversation.protocol IN ('PROTEUS', 'MIXED') OR
+         (conversation.protocol = 'MLS' AND (:strict_mls = 0 OR conversation.mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET'))))
+    AND conversation.name LIKE ('%' || :searchQuery || '%')
+    AND ((:onlyTeamId IS NULL AND :onlyDomain IS NULL) OR NOT EXISTS (
+        SELECT 1 FROM Member AS member
+        LEFT JOIN User AS usr ON usr.qualified_id = member.user
+        WHERE member.conversation = conversation.qualified_id AND (
+            (:onlyTeamId IS NOT NULL AND (usr.team IS NULL OR usr.team != :onlyTeamId))
+            OR (:onlyDomain IS NOT NULL AND substr(member.user, instr(member.user, '@') + 1) != :onlyDomain)
+        )
+    ));

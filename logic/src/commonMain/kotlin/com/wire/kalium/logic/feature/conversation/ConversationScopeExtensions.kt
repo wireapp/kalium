@@ -25,6 +25,15 @@ public val ConversationScope.getPaginatedFlowOfConversationDetailsWithEventsBySe
         callRepository
     )
 
+public val ConversationScope.getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery:
+        GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase
+    get() = GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase(
+        dispatcher,
+        conversationRepository,
+        selfTeamIdProvider,
+        selfUserId
+    )
+
 /** Keyset-paginated conversation rows, ordered by stored activity time and conversation ID. */
 public val ConversationScope.observeConversationListItems: ObserveConversationListItemsUseCase
     get() = ObserveConversationListItemsUseCaseImpl(conversationRepository)
