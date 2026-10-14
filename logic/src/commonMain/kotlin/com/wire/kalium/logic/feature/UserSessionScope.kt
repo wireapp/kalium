@@ -281,10 +281,10 @@ import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassi
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
-import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
@@ -378,8 +378,6 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSel
 import com.wire.kalium.logic.feature.selfDeletingMessages.PersistNewSelfDeletionTimerUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.PersistNewSelfDeletionTimerUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetTeamUrlUseCase
-import com.wire.kalium.logic.feature.server.ObserveApiVersionChangeUseCase
-import com.wire.kalium.logic.feature.server.ObserveApiVersionChangeUseCaseImpl
 import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
@@ -831,12 +829,6 @@ public class UserSessionScope internal constructor(
                 )
             )
         }.container
-
-    public val observeApiVersionChange: ObserveApiVersionChangeUseCase
-        get() = ObserveApiVersionChangeUseCaseImpl(
-            repository = authenticationScope.serverConfigRepository,
-            serverConfig = sessionManager.getServerConfig(),
-        )
 
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version

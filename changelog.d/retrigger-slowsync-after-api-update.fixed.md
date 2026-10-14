@@ -1,6 +1,6 @@
-Fixed slow sync being skipped when the negotiated backend API version changes. Added `UserSessionScope.observeApiVersionChange` and `ObserveApiVersionChangeUseCase` to observe whether the stored API version differs from the version captured by the user session scope.
+Fixed slow sync being skipped when the negotiated backend API version changes. Exposed `GlobalKaliumScope.updateApiVersions` and `UpdateApiVersionsUseCase` to refresh API versions for locally stored sessions and report whether a persisted common API version changed.
 
-  - ABI: additive.
+  - ABI: additive public use case, scope property, and `Result` enum.
   - Source: additive.
-  - Behavior: slow sync runs when the current scope's API version differs from the last successfully synced API version, including when no previous API version is recorded. The version is recorded only after slow sync succeeds.
-  - Migration: no source changes required. Existing sessions without a recorded slow sync API version perform an additional slow sync. Consumers can observe `observeApiVersionChange()` to detect when their user session scope uses an outdated API version.
+  - Behavior: slow sync runs when the current scope's API version differs from the last successfully synced API version, including when no previous API version is recorded. The version is recorded only after slow sync succeeds. API version refresh returns `Changed` when a session's persisted common API version changes, `Unchanged` when no such change is detected, or `Failure` when sessions cannot be read before or after the refresh. Changes to other server metadata do not produce `Changed`.
+  - Migration: existing sessions without a recorded slow sync API version perform an additional slow sync. Call `updateApiVersions()` and handle `Result.Changed`, `Result.Unchanged`, and `Result.Failure` to react to API version refreshes.

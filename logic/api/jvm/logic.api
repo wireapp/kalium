@@ -48,6 +48,7 @@ public final class com/wire/kalium/logic/GlobalKaliumScope : kotlinx/coroutines/
 	public final fun getServerConfigForAccounts ()Lcom/wire/kalium/logic/feature/server/ServerConfigForAccountUseCase;
 	public final fun getSession ()Lcom/wire/kalium/logic/feature/session/SessionScope;
 	public final fun getSetAllPersistentWebSocketEnabled ()Lcom/wire/kalium/logic/feature/user/webSocketStatus/SetPersistentWebSocketForAllUsersUseCase;
+	public final fun getUpdateApiVersions ()Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase;
 	public final fun getUpdateApiVersionsScheduler ()Lcom/wire/kalium/logic/sync/periodic/UpdateApiVersionsScheduler;
 	public final fun getValidateEmailUseCase ()Lcom/wire/kalium/logic/feature/auth/ValidateEmailUseCase;
 	public final fun getValidatePasswordUseCase ()Lcom/wire/kalium/logic/feature/auth/ValidatePasswordUseCase;
@@ -958,7 +959,6 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getMigrateFromPersonalToTeam ()Lcom/wire/kalium/logic/feature/user/migration/MigrateFromPersonalToTeamUseCase;
 	public final fun getMultiPlatformBackup ()Lcom/wire/kalium/logic/feature/backup/MultiPlatformBackupScope;
 	public final fun getObserveAnalyticsTrackingIdentifierStatus ()Lcom/wire/kalium/logic/feature/analytics/ObserveAnalyticsTrackingIdentifierStatusUseCase;
-	public final fun getObserveApiVersionChange ()Lcom/wire/kalium/logic/feature/server/ObserveApiVersionChangeUseCase;
 	public final fun getObserveE2EIRequired ()Lcom/wire/kalium/logic/feature/user/ObserveE2EIRequiredUseCase;
 	public final fun getObserveFileSharingStatus ()Lcom/wire/kalium/logic/feature/user/ObserveFileSharingStatusUseCase;
 	public final fun getObserveGuestRoomLinkFeatureFlag ()Lcom/wire/kalium/logic/feature/user/guestroomlink/ObserveGuestRoomLinkFeatureFlagUseCase;
@@ -6512,10 +6512,6 @@ public final class com/wire/kalium/logic/feature/server/IsCrossBackendLoginBlock
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class com/wire/kalium/logic/feature/server/ObserveApiVersionChangeUseCase {
-	public abstract fun invoke ()Lkotlinx/coroutines/flow/Flow;
-}
-
 public final class com/wire/kalium/logic/feature/server/ServerConfigForAccountUseCase {
 	public final fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -6543,6 +6539,19 @@ public final class com/wire/kalium/logic/feature/server/ServerConfigForAccountUs
 	public final fun getConfig ()Lcom/wire/kalium/logic/configuration/server/ServerConfig;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result : java/lang/Enum {
+	public static final field Changed Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result;
+	public static final field Failure Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result;
+	public static final field Unchanged Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result;
+	public static fun values ()[Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/service/GetServiceByIdUseCase {
