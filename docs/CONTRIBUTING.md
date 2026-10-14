@@ -70,19 +70,10 @@ make doc/generate-kdocs
 make doc/test-kdocs
 ```
 
-API documentation uses Dokka 2.2's Gradle plugin v2 and is written to `build/dokka/html`.
-The publication includes the existing nine documented modules and keeps their flat module URLs.
-Analysis uses Kotlin Gradle plugin dependency classpaths and builds dependency artifacts as needed.
-Shared documentation source sets also receive compatible analysis dependencies. Generated sources
-under module build directories are excluded from the publication; protobuf sources are generated
-explicitly before documentation.
-Shared source directories are represented once in Dokka so K2 can analyze them without duplicate
-source ownership. In `cryptography`, `logic` and `cli`, affected common/intermediate documentation
-sets use JVM-backed analysis; their declarations and display labels are retained. Native
-intermediate sets use matching native leaf artifacts. SDK source sets and runtime dependencies
-are unaffected by these documentation overrides.
-The documentation CI job runs on `macos-15` to resolve Apple platform types. It checks navigation
-and rejects unresolved signature types before deploying to GitHub Pages.
+API documentation uses Dokka 2.2.0 and is written to `build/dokka/html`. Generate it on macOS
+to resolve Apple platform types; CI uses `macos-15` and checks the publication before deployment.
+Affected common documentation sets in `cryptography`, `logic`, and `cli` use JVM-backed analysis,
+retaining their declarations and display labels without changing SDK source sets or dependencies.
 
 ## Build Configuration
 
