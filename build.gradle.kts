@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+import com.wire.kalium.plugins.documentedDokkaModules
 import com.wire.kalium.plugins.registerSbomCollectionTasks
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
@@ -57,7 +58,8 @@ plugins {
 }
 
 dependencies {
-    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:${libs.versions.dokka.get()}")
+    dokkaPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:${libs.versions.dokka.get()}")
+    documentedDokkaModules.keys.forEach { path -> dokka(project(path)) }
 }
 
 tasks.withType<Test> {
@@ -154,7 +156,12 @@ rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
     }
 }
 
-tasks.dokkaHtmlMultiModule.configure {}
+dokka {
+    dokkaCacheDirectory.set(layout.buildDirectory.dir(".cache/dokka"))
+    dokkaPublications.html {
+        offlineMode.set(true)
+    }
+}
 
 moduleGraphConfig {
     readmePath.set("./docs/ARCHITECTURE.md")

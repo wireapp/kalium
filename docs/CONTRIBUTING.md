@@ -62,7 +62,27 @@ Always pass the native library path when running JVM tests or the CLI:
 # Aggregate unit-test reports
 ./gradlew runAllUnitTests
 ./gradlew aggregateTestResults
+
+# Generate API documentation
+make doc/generate-kdocs
+
+# Generate and check navigation, visibility and resolved API signatures (requires Python 3)
+make doc/test-kdocs
 ```
+
+API documentation uses Dokka 2.2's Gradle plugin v2 and is written to `build/dokka/html`.
+The publication includes the existing nine documented modules and keeps their flat module URLs.
+Analysis uses Kotlin Gradle plugin dependency classpaths and builds dependency artifacts as needed.
+Shared documentation source sets also receive compatible analysis dependencies. Generated sources
+under module build directories are excluded from the publication; protobuf sources are generated
+explicitly before documentation.
+Shared source directories are represented once in Dokka so K2 can analyze them without duplicate
+source ownership. In `cryptography`, `logic` and `cli`, affected common/intermediate documentation
+sets use JVM-backed analysis; their declarations and display labels are retained. Native
+intermediate sets use matching native leaf artifacts. SDK source sets and runtime dependencies
+are unaffected by these documentation overrides.
+The documentation CI job runs on `macos-15` to resolve Apple platform types. It checks navigation
+and rejects unresolved signature types before deploying to GitHub Pages.
 
 ## Build Configuration
 
