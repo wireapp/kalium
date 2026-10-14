@@ -108,6 +108,8 @@ public sealed interface CellUploadState {
     public data class Preparing(val fileName: String) : CellUploadState
     public data object Queued : CellUploadState
     public data class Uploading(val progress: Float = 0f) : CellUploadState
+    /** The transfer failed because the device lost its connection. Resumes on its own once reconnected. */
+    public data object Paused : CellUploadState
     public data object Completed : CellUploadState
     public data object Failed : CellUploadState
     public data object Cancelled : CellUploadState
@@ -144,6 +146,11 @@ public data class CellUploadItem(
  * Whether [CellUploadState] represents work the coordinator still has to do for that item, as opposed to a
  * terminal outcome (completed, failed, cancelled). Centralized so background-liveness, status icons and
  * notification state all agree on what counts as "still going" without redefining the same list four times.
+ *
+ * [CellUploadState.Paused] counts as active too: it isn't abandoned, it's waiting to resume on its own.
  */
 public val CellUploadState.isActive: Boolean
-    get() = this is CellUploadState.Preparing || this is CellUploadState.Queued || this is CellUploadState.Uploading
+    get() = this is CellUploadState.Preparing ||
+            this is CellUploadState.Queued ||
+            this is CellUploadState.Uploading ||
+            this is CellUploadState.Paused

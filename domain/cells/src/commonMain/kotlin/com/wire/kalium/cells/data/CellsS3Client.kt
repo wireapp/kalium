@@ -110,10 +110,22 @@ internal class CellsS3Client(
         val length = fileSystem.metadata(path).size
             ?: throw IOException("Upload source size is not available")
 
-        if (length > config.maxRegularUploadSize) {
-            uploadMultipart(path, length, node, onProgressUpdate)
-        } else {
-            uploadRegular(path, length, node, onProgressUpdate)
+        try {
+            if (length > config.maxRegularUploadSize) {
+                uploadMultipart(path, length, node, onProgressUpdate)
+            } else {
+                uploadRegular(path, length, node, onProgressUpdate)
+            }
+        } catch (cause: CancellationException) {
+            throw cause
+        } catch (cause: ConnectTimeoutException) {
+            throw NoNetworkConnectionException(cause)
+        } catch (cause: SocketTimeoutException) {
+            throw NoNetworkConnectionException(cause)
+        } catch (cause: RetryableTransportException) {
+            throw NoNetworkConnectionException(cause)
+        } catch (cause: KtorIOException) {
+            throw NoNetworkConnectionException(cause)
         }
     }
 
@@ -572,6 +584,14 @@ private class RetryableS3Exception(message: String) : S3RequestException(message
 private class UnauthorizedS3Exception(message: String) : S3RequestException(message)
 
 private class UploadSourceException(message: String) : S3RequestException(message)
+
+/**
+ * Thrown by [CellsS3Client.upload] once every retry attempt for a transport-level failure (timeout, dropped
+ * connection, failed write channel) has been exhausted, so [CellsDataSource.uploadFile] can tell this apart
+ * from a failure the server itself reported (wrong credentials, bad request, 5xx) without needing to know
+ * about any of the private exception types above.
+ */
+internal class NoNetworkConnectionException(cause: Throwable) : Exception(cause)
 
 private sealed interface S3Attempt<out T> {
     data class Success<T>(val value: T) : S3Attempt<T>
