@@ -108,7 +108,6 @@ public sealed interface CellUploadState {
     public data class Preparing(val fileName: String) : CellUploadState
     public data object Queued : CellUploadState
     public data class Uploading(val progress: Float = 0f) : CellUploadState
-    /** The transfer failed because the device lost its connection. Resumes on its own once reconnected. */
     public data object Paused : CellUploadState
     public data object Completed : CellUploadState
     public data object Failed : CellUploadState

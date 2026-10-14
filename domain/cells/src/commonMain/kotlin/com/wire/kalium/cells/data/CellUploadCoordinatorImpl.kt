@@ -334,8 +334,6 @@ internal class CellUploadCoordinatorImpl internal constructor(
     }
 
     private suspend fun cancelAllItems(conversationId: String?) {
-        // isActive minus Preparing: there is nothing a bulk cancel could stop while a batch is still only
-        // being staged locally, so those items are left for failPreparing() to clean up instead.
         _uploads.value
             .filter { it.matches(conversationId) && it.state.isActive && it.state !is CellUploadState.Preparing }
             .forEach { cancelItem(it.id) }
