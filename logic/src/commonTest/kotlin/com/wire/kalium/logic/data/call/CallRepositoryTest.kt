@@ -1125,6 +1125,22 @@ class CallRepositoryTest {
         }
 
     @Test
+    fun givenStoppedParticipant_whenPauseChanges_thenRepositoryPublishesUpdatedParticipant() = runTest {
+        val initial = createOneOnOneCallMetadata(CallStatus.ESTABLISHED).copy(participants = listOf(participant))
+        val (_, repository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to initial)))
+            .arrange()
+
+        listOf(true, false, true, false).forEach { paused ->
+            val roster = initial.participants.map { it.copy(isVideoPaused = paused) }
+            repository.updateCallParticipants(Arrangement.conversationId, roster)
+            val full = repository.getCallMetadata(Arrangement.conversationId)?.getFullParticipants()
+            assertEquals(roster.map { it.isVideoPaused }, full?.map { it.isVideoPaused })
+            assertEquals(roster.map { it.id to it.clientId }, full?.map { it.id to it.clientId })
+        }
+    }
+
+    @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateParticipantsActiveSpeakerIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
         callRepository.updateParticipantsActiveSpeaker(

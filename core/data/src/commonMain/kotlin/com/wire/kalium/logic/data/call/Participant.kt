@@ -34,7 +34,9 @@ data class Participant(
     val hasEstablishedAudio: Boolean,
     val avatarAssetId: UserAssetId? = null,
     val userType: UserTypeInfo = UserTypeInfo.Regular(UserType.NONE),
-    val accentId: Int
+    val accentId: Int,
+    /** Explicit AVS pause status; independent of camera and screen-share eligibility. */
+    val isVideoPaused: Boolean = false
 )
 
 data class ParticipantMinimized(
@@ -45,4 +47,6 @@ data class ParticipantMinimized(
     val isCameraOn: Boolean,
     val isSharingScreen: Boolean = false,
     val hasEstablishedAudio: Boolean,
+    /** Explicit AVS pause status; false for stopped video or connection trouble. */
+    val isVideoPaused: Boolean = false,
 )

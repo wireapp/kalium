@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.call.mapper
 
+import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.logic.data.call.CallMember
 import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.VideoStateChecker
@@ -46,7 +47,8 @@ internal class ParticipantMapperImpl(
             isMuted = isMuted == 1,
             isCameraOn = isCameraOn,
             isSharingScreen = isSharingScreen,
-            hasEstablishedAudio = aestab == 1
+            hasEstablishedAudio = aestab == 1,
+            isVideoPaused = videoState == VideoStateCalling.PAUSED
         )
     }
 
