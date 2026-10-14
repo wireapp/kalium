@@ -25,21 +25,27 @@ import androidx.paging.PagingSource
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
+import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithMembersEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensionsImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationMapper
+import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
+import com.wire.kalium.persistence.dao.message.AsyncQueryPagingSource
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
@@ -78,7 +84,9 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     fun setUp() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
-        val queries = db.database.conversationDetailsWithEventsQueries
+        val conversationDetailsWithEventsQueries = db.database.conversationDetailsWithEventsQueries
+        val conversationDetailsWithMembersQueries = db.database.conversationDetailsWithMembersQueries
+        val membersQueries = db.database.membersQueries
         messageDAO = db.messageDAO
         messageDraftDAO = db.messageDraftDAO
         conversationDAO = db.conversationDAO
@@ -86,7 +94,13 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         memberDAO = db.memberDAO
         userDAO = db.userDAO
         conversationFolderDAO = db.conversationFolderDAO
-        conversationExtensions = ConversationExtensionsImpl(queries, ConversationDetailsWithEventsMapper, ReadDispatcher(dispatcher))
+        conversationExtensions = ConversationExtensionsImpl(
+            conversationDetailsWithEventsQueries,
+            conversationDetailsWithMembersQueries,
+            membersQueries,
+            ConversationDetailsWithEventsMapper,
+            ReadDispatcher(dispatcher),
+        )
     }
 
     @AfterTest
@@ -488,8 +502,10 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
             )
             val pagingSource = ConversationExtensionsImpl(
                 db.database.conversationDetailsWithEventsQueries,
+                db.database.conversationDetailsWithMembersQueries,
+                db.database.membersQueries,
                 ConversationDetailsWithEventsMapper,
-                ReadDispatcher(dispatcher)
+                ReadDispatcher(dispatcher),
             ).getPagerForConversationDetailsWithEventsSearch(
                 pagingConfig = PagingConfig(PAGE_SIZE),
                 queryConfig = ConversationExtensions.QueryConfig(),
@@ -517,6 +533,207 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
             deleteDatabase(mutedUserId)
         }
     }
+
+    @Test
+    fun restrictedSearchExcludesAnyWrongTeamTeamlessOrRemoteMemberBeforePaging() = runTest(dispatcher) {
+        userDAO.upsertUser(newUserEntity(selfUserId))
+        val local = newUserEntity(QualifiedIDEntity("local", selfUserId.domain))
+        val first = insertMemberSearchGroup("a", listOf(local))
+        val second = insertMemberSearchGroup("b", listOf(local), ConversationEntity.Type.CHANNEL)
+        insertMemberSearchGroup("c", listOf(local, memberSearchUser("other-team").copy(team = "other")))
+        insertMemberSearchGroup("d", listOf(local, memberSearchUser("teamless").copy(team = null)))
+        insertMemberSearchGroup("e", listOf(local, newUserEntity(QualifiedIDEntity("remote", "remote.com"))))
+
+        // Blank and nonblank searches use identical eligibility and count rules.
+        for (query in listOf("", "Alpha")) {
+            val source = getMembersPagingSource(restricted = true, query = query)
+            val page = source.load(PagingSource.LoadParams.Refresh(null, 1, false)).page()
+            assertEquals(listOf(first), page.data.map { it.conversationViewEntity.id })
+            assertEquals(1, page.itemsAfter)
+            assertEquals(1, page.nextKey)
+            assertEquals(setOf(selfUserId, local.id), page.data.single().members.map { it.user.id }.toSet())
+            val next = source.load(PagingSource.LoadParams.Append(1, 1, false)).page()
+            assertEquals(listOf(second), next.data.map { it.conversationViewEntity.id })
+            assertEquals(0, next.itemsAfter)
+            assertEquals(null, next.nextKey)
+        }
+    }
+
+    @Test
+    fun unrestrictedSearchIncludesExternalMembersAndPagesConversationsBeforeMembers() = runTest(dispatcher) {
+        userDAO.upsertUser(newUserEntity(selfUserId))
+        val members = (1..6).map { newUserEntity(QualifiedIDEntity("remote$it", "remote.com")).copy(team = null) }
+        val first = insertMemberSearchGroup("a", members)
+        val second = insertMemberSearchGroup("b", members.take(1))
+
+        val source = getMembersPagingSource(restricted = false)
+        val page = source.load(PagingSource.LoadParams.Refresh(null, 1, false)).page()
+        assertEquals(listOf(first), page.data.map { it.conversationViewEntity.id })
+        assertEquals((members.map { it.id } + selfUserId).toSet(), page.data.single().members.map { it.user.id }.toSet())
+        assertEquals(1, page.itemsAfter)
+        assertEquals(listOf(second), source.load(PagingSource.LoadParams.Append(1, 1, false)).page().data.map {
+            it.conversationViewEntity.id
+        })
+    }
+
+    @Test
+    fun teamAndDomainFiltersCanBeUsedIndependently() = runTest(dispatcher) {
+        userDAO.upsertUser(newUserEntity(selfUserId))
+        val local = insertMemberSearchGroup("a", listOf(memberSearchUser("local")))
+        val remote = insertMemberSearchGroup("b", listOf(newUserEntity(QualifiedIDEntity("remote", "remote.com"))))
+        val otherTeam = insertMemberSearchGroup("c", listOf(memberSearchUser("other").copy(team = "other-team")))
+        val teamless = insertMemberSearchGroup("d", listOf(memberSearchUser("teamless").copy(team = null)))
+        for ((config, expected) in listOf(
+            ConversationExtensions.MembersQueryConfig(onlyTeamId = newUserEntity(selfUserId).team) to listOf(local, remote),
+            ConversationExtensions.MembersQueryConfig(onlyDomain = selfUserId.domain) to listOf(local, otherTeam, teamless),
+        )) {
+            val source = conversationExtensions.getPagerForConversationDetailsWithMembersSearch(
+                config, PagingConfig(pageSize = 10, enablePlaceholders = false),
+            ).pagingSource
+            val page = source.load(PagingSource.LoadParams.Refresh(null, 10, false)).page()
+            assertEquals(expected, page.data.map { it.conversationViewEntity.id })
+            assertEquals(0, page.itemsAfter)
+        }
+    }
+
+    @Test
+    fun changingMemberTeamInvalidatesLoadedPageAndExcludesTheGroup() = runTest(dispatcher) {
+        userDAO.upsertUser(newUserEntity(selfUserId))
+        val member = memberSearchUser("local")
+        insertMemberSearchGroup("a", listOf(member))
+        val source = getMembersPagingSource(restricted = true)
+        assertEquals(1, source.load(PagingSource.LoadParams.Refresh(null, 10, false)).page().data.size)
+
+        userDAO.upsertUser(member.copy(team = "another-team"))
+
+        assertTrue(source.invalid)
+        assertTrue(getMembersPagingSource(restricted = true).load(PagingSource.LoadParams.Refresh(null, 10, false)).page().data.isEmpty())
+    }
+
+    @Test
+    fun addingMemberInvalidatesLoadedPageAndReturnsUpdatedMembers() = runTest(dispatcher) {
+        userDAO.upsertUser(newUserEntity(selfUserId))
+        val group = insertMemberSearchGroup("a", listOf(memberSearchUser("local")))
+        val source = getMembersPagingSource(restricted = false)
+        source.load(PagingSource.LoadParams.Refresh(null, 10, false))
+        val added = memberSearchUser("added")
+        userDAO.upsertUser(added)
+        memberDAO.insertMembersWithQualifiedId(listOf(MemberEntity(added.id, MemberEntity.Role.Admin)), group)
+
+        assertTrue(source.invalid)
+        val members = getMembersPagingSource(restricted = false).load(PagingSource.LoadParams.Refresh(null, 10, false)).page().data.single().members
+        assertEquals(3, members.size)
+        assertEquals(MemberEntity.Role.Admin, members.single { it.user.id == added.id }.role)
+    }
+
+    @Test
+    fun conversationInMultipleFoldersAppearsOnlyOnceAndHasOneCount() = runTest(dispatcher) {
+        userDAO.upsertUser(newUserEntity(selfUserId))
+        val group = insertMemberSearchGroup("a", listOf(memberSearchUser("local")))
+        for (folder in listOf("first", "second")) {
+            conversationFolderDAO.addFolder(ConversationFolderEntity(folder, folder, ConversationFolderTypeEntity.USER))
+            conversationFolderDAO.addConversationToFolder(group, folder)
+        }
+
+        val page = getMembersPagingSource(restricted = true).load(PagingSource.LoadParams.Refresh(null, 10, false)).page()
+
+        assertEquals(listOf(group), page.data.map { it.conversationViewEntity.id })
+        assertEquals(0, page.itemsAfter)
+        assertEquals(null, page.nextKey)
+    }
+
+    @Test
+    fun countMatchesResultsWhenConversationsAreArchivedLeftOrHaveAnotherType() = runTest(dispatcher) {
+        userDAO.upsertUser(newUserEntity(selfUserId))
+        val member = memberSearchUser("local")
+        val group = insertMemberSearchGroup("a", listOf(member))
+        val channel = insertMemberSearchGroup("b", listOf(member), ConversationEntity.Type.CHANNEL)
+        val archived = insertMemberSearchGroup("c", listOf(member), archived = true)
+        val left = insertMemberSearchGroup("d", listOf(member))
+        memberDAO.deleteMemberByQualifiedID(selfUserId, left)
+        insertMemberSearchGroup("e", listOf(member), ConversationEntity.Type.MEETING)
+        insertMemberSearchGroup("f", listOf(member), ConversationEntity.Type.ONE_ON_ONE)
+
+        for (onlyInteractionsEnabled in listOf(false, true)) {
+            for ((fromArchive, expected) in listOf(false to listOf(group, channel), true to listOf(archived))) {
+                val source = conversationExtensions.getPagerForConversationDetailsWithMembersSearch(
+                    ConversationExtensions.MembersQueryConfig(
+                        fromArchive = fromArchive,
+                        onlyInteractionEnabled = onlyInteractionsEnabled,
+                        onlyTeamId = newUserEntity(selfUserId).team,
+                        onlyDomain = selfUserId.domain,
+                    ),
+                    PagingConfig(pageSize = 1, enablePlaceholders = false),
+                ).pagingSource
+                val first = source.load(PagingSource.LoadParams.Refresh(null, 1, false)).page()
+                assertEquals(expected.take(1), first.data.map { it.conversationViewEntity.id })
+                assertEquals(expected.size - 1, first.itemsAfter)
+                if (first.nextKey != null) {
+                    val last = source.load(PagingSource.LoadParams.Append(first.nextKey!!, 1, false)).page()
+                    assertEquals(expected.drop(1), last.data.map { it.conversationViewEntity.id })
+                    assertEquals(null, last.nextKey)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun pagingSourceWithoutPostprocessorUsesTheSameRowAndItemTypes() = runTest(dispatcher) {
+        val pagingSelfId = UserIDEntity("pagingSelf", selfUserId.domain)
+        deleteDatabase(pagingSelfId)
+        val db = createDatabase(pagingSelfId, encryptedDBSecret, true)
+        try {
+            db.userDAO.upsertUser(newUserEntity(pagingSelfId))
+            val group = ConversationIDEntity("group", pagingSelfId.domain)
+            db.conversationDAO.insertConversation(newConversationEntity(group).copy(type = ConversationEntity.Type.GROUP))
+            db.memberDAO.insertMembersWithQualifiedId(listOf(MemberEntity(pagingSelfId, MemberEntity.Role.Member)), group)
+            val queries = db.database.conversationDetailsWithMembersQueries
+            val countQuery = queries.countConversationDetailsForMemberSearch(false, 0L, 0L, "", null, null)
+            val queryProvider = { limit: Long, offset: Long ->
+                queries.selectConversationDetailsForMemberSearch(
+                    false, 0L, 0L, "", null, null, limit, offset, ConversationMapper::fromViewToModel,
+                )
+            }
+            val source: AsyncQueryPagingSource<ConversationViewEntity, ConversationViewEntity> =
+                AsyncQueryPagingSource(countQuery, dispatcher, queryProvider)
+            val page = assertIs<PagingSource.LoadResult.Page<Int, ConversationViewEntity>>(
+                source.load(PagingSource.LoadParams.Refresh(null, 10, false)),
+            )
+            assertEquals(listOf(group), page.data.map { it.id })
+        } finally {
+            deleteDatabase(pagingSelfId)
+        }
+    }
+
+    private fun getMembersPagingSource(restricted: Boolean, query: String = "") = conversationExtensions
+        .getPagerForConversationDetailsWithMembersSearch(
+            ConversationExtensions.MembersQueryConfig(
+                searchQuery = query,
+                onlyTeamId = if (restricted) newUserEntity(selfUserId).team else null,
+                onlyDomain = if (restricted) selfUserId.domain else null,
+            ),
+            PagingConfig(pageSize = 1, enablePlaceholders = false),
+        ).pagingSource
+
+    private suspend fun insertMemberSearchGroup(
+        name: String,
+        members: List<UserEntity>,
+        type: ConversationEntity.Type = ConversationEntity.Type.GROUP,
+        archived: Boolean = false,
+    ): QualifiedIDEntity {
+        val id = QualifiedIDEntity(name, selfUserId.domain)
+        conversationDAO.insertConversation(newConversationEntity(id).copy(name = "Alpha $name", type = type, archived = archived))
+        members.forEach { userDAO.upsertUser(it) }
+        memberDAO.insertMembersWithQualifiedId(
+            (members.map { MemberEntity(it.id, MemberEntity.Role.Member) } + MemberEntity(selfUserId, MemberEntity.Role.Member)), id,
+        )
+        return id
+    }
+
+    private fun PagingSource.LoadResult<Int, ConversationDetailsWithMembersEntity>.page() =
+        assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithMembersEntity>>(this)
+
+    private fun memberSearchUser(value: String) = newUserEntity(UserIDEntity(value, selfUserId.domain))
 
     private fun getPager(searchQuery: String = "", fromArchive: Boolean = false, filter: ConversationFilterEntity = ConversationFilterEntity.ALL): KaliumPager<ConversationDetailsWithEventsEntity> =
         conversationExtensions.getPagerForConversationDetailsWithEventsSearch(

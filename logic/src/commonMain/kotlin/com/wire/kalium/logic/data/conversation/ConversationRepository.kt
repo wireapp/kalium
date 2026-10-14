@@ -47,6 +47,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -411,9 +412,10 @@ internal class ConversationDataSource internal constructor(
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
 ) : ConversationRepository {
     override val extensions: ConversationRepositoryExtensions =
-        ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)
+        ConversationRepositoryExtensionsImpl(selfUserId, conversationDAO, conversationMapper, userMapper, memberMapper)
 
     // region Get/Observe by id
 
