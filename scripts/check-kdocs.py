@@ -25,7 +25,42 @@ class Links(HTMLParser):
                         self.paths.add(unquote(url.path))
 
 
-def check_publication(publication):
+class Symbols(HTMLParser):
+    """Read signature text, excluding prose and HTML attributes."""
+
+    VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input",
+                 "link", "meta", "param", "source", "track", "wbr"}
+
+    def __init__(self):
+        super().__init__()
+        self.depth = 0
+        self.parts = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.VOID_TAGS:
+            return
+        if self.depth:
+            self.depth += 1
+        elif "symbol" in dict(attrs).get("class", "").split():
+            self.depth = 1
+
+    def handle_endtag(self, tag):
+        if self.depth and tag not in self.VOID_TAGS:
+            self.depth -= 1
+
+    def handle_data(self, data):
+        if self.depth:
+            self.parts.append(data)
+
+
+def signature_text(page: Path) -> str:
+    assert page.is_file(), f"Missing signature page: {page}"
+    symbols = Symbols()
+    symbols.feed(page.read_text())
+    return "".join(symbols.parts)
+
+
+def check_publication(publication: Path) -> None:
     links = Links()
     for page in ("index.html", "navigation.html"):
         links.feed((publication / page).read_text())
@@ -46,6 +81,19 @@ def check_publication(publication):
     ):
         assert page in links.paths, f"Missing declaration link: {page}"
         assert (publication / page).is_file(), f"Broken declaration link: {page}"
+
+    expected_signatures = {
+        "logic/com.wire.kalium.logic.feature.message/-send-text-message-use-case/invoke.html":
+            ("ConversationId", "MessageLinkPreview", "MessageMention"),
+        "logic/com.wire.kalium.logic.util/-platform-view/index.html":
+            ("UIView", "NSView"),
+        "persistence/com.wire.kalium.persistence.dao.meeting/insert-generated-occurrences.html":
+            ("MeetingsQueries",),
+    }
+    for relative_page, expected_types in expected_signatures.items():
+        text = signature_text(publication / relative_page)
+        for expected_type in expected_types:
+            assert expected_type in text, f"Missing signature type {expected_type}: {relative_page}"
 
     invalid_pages = [
         page.relative_to(publication)
