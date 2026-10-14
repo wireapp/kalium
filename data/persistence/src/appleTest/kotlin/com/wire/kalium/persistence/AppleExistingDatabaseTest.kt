@@ -96,11 +96,16 @@ class AppleExistingDatabaseTest {
 
     @Test
     fun `existing open does not insert self user and supports close reopen`() = withDirectory { root ->
-        val prepared = prepareUser(root)
+        val secret = UserDBSecret(TestDatabaseFile.KEY)
+        val prepared = prepareUser(root, secret)
         prepared.sqlDriver.execute(null, "DELETE FROM SelfUser", 0)
         prepared.close()
+        assertFailsWith<ExistingDatabaseException> { existingUserDatabaseBuilder(root, userId, dispatcher) }
+        assertFailsWith<ExistingDatabaseException> {
+            existingUserDatabaseBuilder(root, userId, dispatcher, UserDBSecret(TestDatabaseFile.OTHER_KEY))
+        }
         repeat(2) {
-            val existing = existingUserDatabaseBuilder(root, userId, dispatcher)
+            val existing = existingUserDatabaseBuilder(root, userId, dispatcher, secret)
             try {
                 assertEquals(0L, existing.sqlDriver.readLong("SELECT count(*) FROM SelfUser"))
                 assertEquals(UserDatabase.Schema.version, existing.sqlDriver.readLong("PRAGMA user_version"))
@@ -179,9 +184,9 @@ class AppleExistingDatabaseTest {
         }
     }
 
-    private fun prepareUser(root: String): UserDatabaseBuilder = userDatabaseBuilder(
+    private fun prepareUser(root: String, passphrase: UserDBSecret? = null): UserDatabaseBuilder = userDatabaseBuilder(
         PlatformDatabaseData(StorageData.FileBacked(root), useGradleSafeSqliterLogging = true),
-        userId, null, dispatcher,
+        userId, passphrase, dispatcher,
     )
 
     private fun databasePath(root: String) = "$root/${FileNameUtil.userDBName(userId)}"

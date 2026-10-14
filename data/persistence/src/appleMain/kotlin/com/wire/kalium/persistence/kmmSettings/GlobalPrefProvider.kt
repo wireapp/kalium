@@ -22,11 +22,12 @@ import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.AuthTokenStorageImpl
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
+import com.wire.kalium.persistence.dbPassphrase.KeychainPassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
 
 actual class GlobalPrefProvider(
-    keychainConfig: ApplePersistenceConfig,
+    private val keychainConfig: ApplePersistenceConfig,
     shouldEncryptData: Boolean = true
 ) {
     private val kaliumPref =
@@ -40,7 +41,7 @@ actual class GlobalPrefProvider(
     actual val authTokenStorage: AuthTokenStorage
         get() = AuthTokenStorageImpl(kaliumPref)
     actual val passphraseStorage: PassphraseStorage
-        get() = PassphraseStorageImpl(kaliumPref)
+        get() = KeychainPassphraseStorage(PassphraseStorageImpl(kaliumPref), keychainConfig)
     actual val tokenStorage: TokenStorage
         get() = TokenStorageImpl(kaliumPref)
 }

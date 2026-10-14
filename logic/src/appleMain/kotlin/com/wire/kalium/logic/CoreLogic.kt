@@ -32,6 +32,8 @@ import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.logic.sync.WorkSchedulerProviderImpl
 import com.wire.kalium.logic.util.PlatformContext
+import com.wire.kalium.logic.util.databaseKey
+import com.wire.kalium.logic.util.databaseSecurityHelper
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
@@ -39,6 +41,7 @@ import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -68,17 +71,29 @@ public actual class CoreLogic(
             shouldEncryptData = kaliumConfigs.shouldEncryptData()
         )
 
-    // TODO: add support for encrypted DB on apple platforms
+    private val securityHelper = databaseSecurityHelper(globalPreferences.passphraseStorage)
+
+    private val globalStoragePath = "$rootPath/global-storage"
+
     actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(
             storageData = if (useInMemoryStorage) {
                 StorageData.InMemory
             } else {
-                StorageData.FileBacked("$rootPath/global-storage")
+                StorageData.FileBacked(globalStoragePath)
             }
         ),
         queriesContext = KaliumDispatcherImpl.io,
-        passphrase = null,
+        passphrase = if (kaliumConfigs.shouldEncryptData() && !useInMemoryStorage) {
+            databaseKey(
+                databasePath = "$globalStoragePath/${FileNameUtil.globalDBName()}",
+                existingKey = securityHelper::globalDBSecretOrNull,
+                newKey = { securityHelper.globalDBKeyMaterial(databaseExists = false).rawKey }
+            )
+        } else {
+            null
+        },
+        // The app and its extensions share the global database, see setSqlCipherKey.
         enableWAL = true
     )
 

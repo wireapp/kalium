@@ -48,6 +48,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.ExistingDatabaseException
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.existingUserDatabaseBuilder
+import com.wire.kalium.persistence.db.existingUserDatabaseSecret
 import com.wire.kalium.persistence.dbPassphrase.MLS_DB_PASSPHRASE_PREFIX_V2
 import com.wire.kalium.persistence.dbPassphrase.PROTEUS_DB_PASSPHRASE_PREFIX_V2
 import com.wire.kalium.persistence.dbPassphrase.existingCoreCryptoKey
@@ -147,7 +148,10 @@ public class AppleAccountRuntime private constructor(
             // The pinned native SQLite driver binds a transaction to its thread. A limited
             // parallelism view alone can resume on another thread after network suspension.
             val dispatcher = newSingleThreadContext("nse-sql").also { sqlDispatcher = it }
-            openedDatabase = existingUserDatabaseBuilder("$root/storage", UserIDEntity(userId.value, userId.domain), dispatcher)
+            val entity = UserIDEntity(userId.value, userId.domain)
+            openedDatabase = existingUserDatabaseBuilder(
+                "$root/storage", entity, dispatcher, preferences.passphraseStorage.existingUserDatabaseSecret(entity)
+            )
         } catch (failure: ExistingDatabaseException) {
             cleanupUncertain = failure.cleanupUncertain
             throw failure

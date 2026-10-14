@@ -36,6 +36,10 @@ import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
+import com.wire.kalium.persistence.db.existingUserDatabaseSecret
+import com.wire.kalium.persistence.db.databaseDriver
+import app.cash.sqldelight.async.coroutines.synchronous
+import com.wire.kalium.persistence.dbPassphrase.USER_DB_PASSPHRASE_PREFIX_V2
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.dbPassphrase.PROTEUS_DB_PASSPHRASE_PREFIX_V2
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
@@ -109,15 +113,42 @@ class AppleAccountRuntimeTest {
             fixture.prepareCredentials()
             fixture.corruptCryptoFile()
             fixture.prepareDatabase().close()
+            val driver = databaseDriver(
+                "${fixture.account}/storage", FileNameUtil.userDBName(entity), UserDatabase.Schema.synchronous(),
+                checkNotNull(fixture.preferences.passphraseStorage.existingUserDatabaseSecret(entity)).value,
+            ) { isWALEnabled = true }
+            try {
+                driver.execute(null, "PRAGMA user_version = ${UserDatabase.Schema.version + 1}", 0)
+            } finally {
+                driver.close()
+            }
             val file = "${fixture.account}/storage/${FileNameUtil.userDBName(entity)}".toPath()
-            val bytes = FileSystem.SYSTEM.read(file) { readByteArray() }
-            // After SQLite closes/checkpoints, change its big-endian user_version header directly.
-            val version = UserDatabase.Schema.version + 1
-            repeat(4) { bytes[60 + it] = (version shr (8 * (3 - it))).toByte() }
-            FileSystem.SYSTEM.write(file) { write(bytes) }
-            val before = bytes.toList()
+            val before = FileSystem.SYSTEM.read(file) { readByteArray().toList() }
             assertEquals(Either.Left(AccountRuntimeFailure.INCOMPATIBLE), fixture.refused())
             assertEquals(before, FileSystem.SYSTEM.read(file) { readByteArray().toList() })
+        }
+    }
+
+    @Test
+    fun `missing encrypted SQLite key refuses without replacing it or opening crypto`() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture { fixture ->
+                fixture.prepareUsableAccount()
+                assertEquals(Either.Right(Unit), AppleAccountRuntime.use(fixture.root, userId, fixture.config, "runtime-test", emptyMap()) {
+                    Unit
+                })
+                val file = "${fixture.account}/storage/${FileNameUtil.userDBName(entity)}".toPath()
+                val cryptoFile = "${fixture.account}/proteus/keystore".toPath()
+                val before = FileSystem.SYSTEM.read(file) { readByteArray().toList() }
+                val cryptoBefore = FileSystem.SYSTEM.read(cryptoFile) { readByteArray().toList() }
+                fixture.preferences.passphraseStorage.clearPassphrase("${USER_DB_PASSPHRASE_PREFIX_V2}_$userId")
+                assertIs<Either.Left<AccountRuntimeFailure>>(AppleAccountRuntime.use(
+                    fixture.root, userId, fixture.config, "runtime-test", emptyMap()
+                ) { Unit })
+                assertEquals(null, fixture.preferences.passphraseStorage.getPassphrase("${USER_DB_PASSPHRASE_PREFIX_V2}_$userId"))
+                assertEquals(before, FileSystem.SYSTEM.read(file) { readByteArray().toList() })
+                assertEquals(cryptoBefore, FileSystem.SYSTEM.read(cryptoFile) { readByteArray().toList() })
+            }
         }
     }
 
@@ -225,6 +256,7 @@ class AppleAccountRuntimeTest {
         }
     }
 
+    @OptIn(kotlin.experimental.ExperimentalNativeApi::class)
     private inner class Fixture(
         private val accountUser: UserId = userId,
         rootOverride: String? = null,
@@ -267,6 +299,8 @@ class AppleAccountRuntimeTest {
         fun prepareCredentials() {
             preferences.authTokenStorage.addOrReplace(AuthTokenEntity(entity, "access", "refresh", "Bearer", "cookie"), null)
             preferences.passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", Base64.encode(key))
+            val databaseKey = if (kotlin.native.Platform.osFamily == kotlin.native.OsFamily.IOS) key + ByteArray(16) else key
+            preferences.passphraseStorage.setPassphrase("${USER_DB_PASSPHRASE_PREFIX_V2}_$userId", Base64.encode(databaseKey))
         }
 
         fun corruptCryptoFile() {
@@ -308,7 +342,7 @@ class AppleAccountRuntimeTest {
 
         fun prepareDatabase() = userDatabaseBuilder(
             PlatformDatabaseData(StorageData.FileBacked("$account/storage"), useGradleSafeSqliterLogging = true),
-            entity, null, Dispatchers.Default,
+            entity, preferences.passphraseStorage.existingUserDatabaseSecret(entity), Dispatchers.Default,
         )
     }
 }

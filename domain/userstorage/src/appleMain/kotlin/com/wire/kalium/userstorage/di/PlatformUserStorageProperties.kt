@@ -18,11 +18,14 @@
 
 package com.wire.kalium.userstorage.di
 
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 
 public actual class PlatformUserStorageProperties(
     public val rootPath: String,
     public val keychainConfig: ApplePersistenceConfig,
     internal val rootStoragePath: String,
-    public val accountResourceAccess: com.wire.kalium.util.AccountResourceAccess? = null
+    public val accountResourceAccess: com.wire.kalium.util.AccountResourceAccess? = null,
+    internal val userDbSecretProvider: (UserId) -> UserDBSecret
 )

@@ -50,6 +50,8 @@ import com.wire.kalium.cryptography.MLSEpochObserver
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.logic.util.databaseSecurityHelper
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.db.PlatformDatabaseData
@@ -472,9 +474,12 @@ class AppleAccountSessionTest {
         val identity = NSUUID.UUID().UUIDString
         val root = "${NSTemporaryDirectory()}kalium-account-session-$identity"
         assertTrue(fileManager.createDirectoryAtPath(root, true, null, null))
+        val keychainConfig = ApplePersistenceConfig("com.wire.kalium.test.$identity")
         if (prepared) {
+            val secret = databaseSecurityHelper(GlobalPrefProvider(keychainConfig).passphraseStorage)
+                .globalDBKeyMaterial(databaseExists = false).rawKey
             val database = globalDatabaseProvider(
-                PlatformDatabaseData(StorageData.FileBacked("$root/global-storage")), KaliumDispatcherImpl.io, null
+                PlatformDatabaseData(StorageData.FileBacked("$root/global-storage")), KaliumDispatcherImpl.io, secret, enableWAL = true
             )
             try {
                 database.serverConfigurationDAO.insert(ServerConfigurationDAO.InsertData(
@@ -491,7 +496,6 @@ class AppleAccountSessionTest {
                 database.close()
             }
         }
-        val keychainConfig = ApplePersistenceConfig("com.wire.kalium.test.$identity")
         val logic = CoreLogic(
             rootPath = root,
             keychainConfig = keychainConfig,

@@ -33,12 +33,16 @@ import co.touchlab.sqliter.sqlite3.SQLITE_ROW
 import co.touchlab.sqliter.sqlite3.sqlite3_close
 import co.touchlab.sqliter.sqlite3.sqlite3_column_text
 import co.touchlab.sqliter.sqlite3.sqlite3_finalize
+import co.touchlab.sqliter.sqlite3.sqlite3_exec
 import co.touchlab.sqliter.sqlite3.sqlite3_open_v2
 import co.touchlab.sqliter.sqlite3.sqlite3_prepare_v2
 import co.touchlab.sqliter.sqlite3.sqlite3_step
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
+import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.persistence.dbPassphrase.USER_DB_PASSPHRASE_PREFIX_V2
+import kotlin.io.encoding.Base64
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.CPointerVar
@@ -64,20 +68,35 @@ class ExistingDatabaseException(
     enum class Reason { INCOMPATIBLE, UNAVAILABLE }
 }
 
+/** Reads the app's current database key and salt only; never generates or migrates a key. */
+fun PassphraseStorage.existingUserDatabaseSecret(userId: UserIDEntity): UserDBSecret? {
+    val stored = getPassphrase("${USER_DB_PASSPHRASE_PREFIX_V2}_$userId") ?: return null
+    val bytes = Base64.decode(stored)
+    val expectedLength = if (isPlaintextHeaderUsed) KEY_BYTES + SALT_BYTES else KEY_BYTES
+    require(bytes.size == expectedLength) {
+        "SQLCipher raw keys must contain exactly $expectedLength bytes, but got ${bytes.size}"
+    }
+    return UserDBSecret("x'${bytes.toHexString()}'".encodeToByteArray())
+}
+
+private const val KEY_BYTES = 32
+private const val SALT_BYTES = 16
+
 /** Caller holds the account lease. Never creates the main database, migrates, or inserts SelfUser. */
 fun existingUserDatabaseBuilder(
     storagePath: String,
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher,
+    passphrase: UserDBSecret? = null,
 ): UserDatabaseBuilder {
-    val driver = existingDatabaseDriver(storagePath, FileNameUtil.userDBName(userId), UserDatabase.Schema.version)
+    val driver = existingDatabaseDriver(storagePath, FileNameUtil.userDBName(userId), UserDatabase.Schema.version, passphrase)
     return try {
         UserDatabaseBuilder(
             userId = userId,
             sqlDriver = driver,
             dispatcher = dispatcher,
             platformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(storagePath)),
-            isEncrypted = false,
+            isEncrypted = passphrase != null,
             dbInvalidationController = DbInvalidationController(enabled = false, notifyKey = driver::notifyListeners),
             initializeSelfUser = false,
         )
@@ -86,13 +105,20 @@ fun existingUserDatabaseBuilder(
     }
 }
 
-internal fun existingDatabaseDriver(storagePath: String, name: String, schemaVersion: Long): SqlDriver {
+internal fun existingDatabaseDriver(storagePath: String, name: String, schemaVersion: Long, passphrase: UserDBSecret?): SqlDriver {
     require(storagePath.startsWith('/')) { "The prepared database path must be absolute" }
-    val journalMode = readExistingSchema("${storagePath.trimEnd('/')}/$name", schemaVersion)
-    return openExistingNativeDriver(storagePath, name, schemaVersion, journalMode)
+    val key = passphrase?.value?.takeIf { it.isNotEmpty() }?.decodeToString()?.also(::requireSqlCipherKey)
+    val journalMode = readExistingSchema("${storagePath.trimEnd('/')}/$name", schemaVersion, key)
+    return openExistingNativeDriver(storagePath, name, schemaVersion, journalMode, key)
 }
 
-internal fun openExistingNativeDriver(storagePath: String, name: String, schemaVersion: Long, journalMode: JournalMode): SqlDriver {
+internal fun openExistingNativeDriver(
+    storagePath: String,
+    name: String,
+    schemaVersion: Long,
+    journalMode: JournalMode,
+    key: String? = null,
+): SqlDriver {
     // SQLiter strips file://. A file:/ URI preserves SQLite's URI mode and escaped path characters.
     val directoryUri = "file:" + NSURL.fileURLWithPath(storagePath).absoluteString!!.removePrefix("file://")
     val driver = nativeDatabaseDriver(
@@ -103,6 +129,9 @@ internal fun openExistingNativeDriver(storagePath: String, name: String, schemaV
             create = { error("Existing database creation is forbidden") },
             upgrade = { _, _, _ -> error("Existing database migration is forbidden") },
             extendedConfig = DatabaseConfiguration.Extended(basePath = directoryUri, foreignKeyConstraints = true),
+            lifecycleConfig = DatabaseConfiguration.Lifecycle(
+                onCreateConnection = { connection -> key?.let(connection::setSqlCipherKey) }
+            ),
         ),
         maxReaderConnections = 1,
     )
@@ -131,7 +160,7 @@ private fun uncertainOpenFailure(driver: SqlDriver, failure: Throwable): Existin
     return ExistingDatabaseException(ExistingDatabaseException.Reason.UNAVAILABLE, cleanupUncertain = true, cause = failure)
 }
 
-private fun readExistingSchema(path: String, schemaVersion: Long): JournalMode = withReadOnlyDatabase(path) { database ->
+private fun readExistingSchema(path: String, schemaVersion: Long, key: String?): JournalMode = withReadOnlyDatabase(path, key) { database ->
     val actualVersion = readTextColumn(database, "PRAGMA user_version").toLongOrNull()
     if (actualVersion != schemaVersion) throw ExistingDatabaseException(ExistingDatabaseException.Reason.INCOMPATIBLE)
     when (readTextColumn(database, "PRAGMA journal_mode")) {
@@ -141,13 +170,19 @@ private fun readExistingSchema(path: String, schemaVersion: Long): JournalMode =
     }
 }
 
-private fun <T> withReadOnlyDatabase(path: String, block: (CPointer<sqlite3>) -> T): T = memScoped {
+private fun <T> withReadOnlyDatabase(path: String, key: String?, block: (CPointer<sqlite3>) -> T): T = memScoped {
     val pointer = alloc<CPointerVar<sqlite3>>()
     pointer.value = null
     val result = sqlite3_open_v2(path, pointer.ptr, SQLITE_OPEN_READONLY, null)
     val database = pointer.value
     try {
         if (result != SQLITE_OK || database == null) throw ExistingDatabaseException(ExistingDatabaseException.Reason.UNAVAILABLE)
+        if (key != null) {
+            // The read-only schema probe must be keyed before reading encrypted pages too.
+            readTextColumn(database, "PRAGMA cipher_version")
+            executeSql(database, "PRAGMA key = \"${key.replace("\"", "\"\"")}\"")
+            if (isPlaintextHeaderUsed) executeSql(database, "PRAGMA cipher_plaintext_header_size = $PLAINTEXT_HEADER_SIZE")
+        }
         block(database)
     } finally {
         // sqlite3_close, unlike close_v2, proves no statement still keeps this connection alive.
@@ -173,5 +208,11 @@ private fun readTextColumn(database: CPointer<sqlite3>, sql: String): String = m
         statement.value?.let {
             if (sqlite3_finalize(it) != SQLITE_OK) throw ExistingDatabaseException(ExistingDatabaseException.Reason.UNAVAILABLE)
         }
+    }
+}
+
+private fun executeSql(database: CPointer<sqlite3>, sql: String) {
+    if (sqlite3_exec(database, sql, null, null, null) != SQLITE_OK) {
+        throw ExistingDatabaseException(ExistingDatabaseException.Reason.UNAVAILABLE)
     }
 }

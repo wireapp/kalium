@@ -122,6 +122,8 @@ import com.wire.kalium.persistence.dbPassphrase.MLS_DB_PASSPHRASE_PREFIX_V2
 import com.wire.kalium.persistence.dbPassphrase.PROTEUS_DB_PASSPHRASE_PREFIX_V2
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.db.existingUserDatabaseSecret
+import com.wire.kalium.persistence.dbPassphrase.USER_DB_PASSPHRASE_PREFIX_V2
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
 import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.protobuf.encodeToByteArray
@@ -3776,7 +3778,7 @@ class NotificationProcessorNativeTest {
                 val lease = assertIs<Either.Right<AccountRuntimeLease>>(AppleAccountRuntimeOwner(fixture.root).tryAcquire(SELF)).value
                 try {
                     val database = com.wire.kalium.persistence.db.existingUserDatabaseBuilder(
-                        "$account/storage", SELF.toDao(), Dispatchers.Default)
+                        "$account/storage", SELF.toDao(), Dispatchers.Default, fixture.databaseSecret)
                     try {
                         assertFalse(checkNotNull(database.eventDAO.getEventById(event.id)).isProcessed)
                         assertFalse(checkNotNull(database.eventDAO.getEventById(tail.id)).isProcessed)
@@ -10966,6 +10968,7 @@ class NotificationProcessorNativeTest {
         }
     }
 
+    @OptIn(kotlin.experimental.ExperimentalNativeApi::class)
     private class Fixture(
         private val mlsEnabled: Boolean,
         private val apiEndpoint: String? = null,
@@ -10982,6 +10985,7 @@ class NotificationProcessorNativeTest {
         var receivedAppWork: NotificationAppWork? = null
         var receivedCallEvents: List<ReceivedCallEvent> = emptyList()
         private val config = ApplePersistenceConfig(keychainService)
+        val databaseSecret get() = checkNotNull(GlobalPrefProvider(config).passphraseStorage.existingUserDatabaseSecret(SELF.toDao()))
         private val account = appleAccountPath(root, SELF)
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         private var lease: AccountRuntimeLease? = null
@@ -11005,6 +11009,8 @@ class NotificationProcessorNativeTest {
             val preferences = GlobalPrefProvider(config)
             preferences.authTokenStorage.addOrReplace(AuthTokenEntity(SELF.toDao(), "access", "refresh", "Bearer", "cookie"), null)
             preferences.passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$SELF", Base64.encode(KEY))
+            val databaseKey = if (kotlin.native.Platform.osFamily == kotlin.native.OsFamily.IOS) KEY + ByteArray(16) else KEY
+            preferences.passphraseStorage.setPassphrase("${USER_DB_PASSPHRASE_PREFIX_V2}_$SELF", Base64.encode(databaseKey))
             receiver = coreCryptoCentral("$account/proteus", KEY)
             sender = coreCryptoCentral("$root/sender-proteus", KEY)
             receiverProteus = receiver.proteusClient()
@@ -11045,7 +11051,7 @@ class NotificationProcessorNativeTest {
                 )
             }
             val database = userDatabaseBuilder(
-                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default
             )
             try {
                 database.userPrefsDAO.persistReadReceipts(false)
@@ -11397,7 +11403,7 @@ class NotificationProcessorNativeTest {
 
         suspend fun seed(vararg messages: MessageEntity.Regular) {
             val database = userDatabaseBuilder(
-                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default
             )
             try {
                 messages.forEach { database.messageDAO.insertOrIgnoreMessage(it) }
@@ -11455,7 +11461,7 @@ class NotificationProcessorNativeTest {
 
         suspend fun multipartEvent(edited: Boolean = false): EventResponseToStore {
             val database = userDatabaseBuilder(
-                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default
             )
             try {
                 database.userConfigDAO.setWireCellsConfig(com.wire.kalium.persistence.config.WireCellsConfigEntity(
@@ -11726,7 +11732,7 @@ class NotificationProcessorNativeTest {
 
         suspend fun seedFederationState(deleteRequests: Boolean = false) {
             val db = userDatabaseBuilder(PlatformDatabaseData(StorageData.FileBacked("$account/storage")),
-                SELF.toDao(), null, Dispatchers.Default)
+                SELF.toDao(), databaseSecret, Dispatchers.Default)
             try {
                 val members = listOf(SELF, SENDER, THIRD.copy(domain = "federated.example"), THIRD.copy(domain = "other.example"))
                 members.forEach { db.userDAO.upsertUser(user(it)) }
@@ -11837,7 +11843,7 @@ class NotificationProcessorNativeTest {
 
         suspend fun seedIdentityState() {
             val database = userDatabaseBuilder(
-                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default)
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default)
             try {
                 for (id in listOf(SELF, SENDER, THIRD, THIRD.copy(domain = "foreign.example"))) {
                     database.userDAO.upsertUser(user(id).copy(team = "fixture-team"))
@@ -11906,7 +11912,7 @@ class NotificationProcessorNativeTest {
 
         suspend fun seedPendingIsolatedRecovery(eventId: String, id: QualifiedIDEntity) {
             val database = userDatabaseBuilder(
-                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default
             )
             try {
                 val source = checkNotNull(database.conversationDAO.getConversationById(CONVERSATION_ID))
@@ -11932,7 +11938,7 @@ class NotificationProcessorNativeTest {
 
         suspend fun seedProteusConversation(id: QualifiedIDEntity = DELETE_TARGET) {
             val database = userDatabaseBuilder(
-                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default
             )
             try {
                 database.conversationDAO.insertConversation(conversation(ConversationEntity.ProtocolInfo.Proteus).copy(id = id))
@@ -11946,7 +11952,7 @@ class NotificationProcessorNativeTest {
 
         suspend fun seedDeleteForMeTarget() {
             val database = userDatabaseBuilder(
-                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default
             )
             try {
                 database.conversationDAO.getConversationById(CONVERSATION_ID)?.let { current ->
@@ -11983,7 +11989,7 @@ class NotificationProcessorNativeTest {
                 ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
             )
             val database = userDatabaseBuilder(
-                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default
             )
             try {
                 database.conversationDAO.insertConversation(conversation(protocol).copy(id = DELETE_TARGET))
@@ -12005,7 +12011,7 @@ class NotificationProcessorNativeTest {
             val database = userDatabaseBuilder(
                 PlatformDatabaseData(StorageData.FileBacked("$account/storage")),
                 SELF.toDao(),
-                null,
+                databaseSecret,
                 Dispatchers.Default
             )
             try {
@@ -12031,7 +12037,7 @@ class NotificationProcessorNativeTest {
                 val database = userDatabaseBuilder(
                     PlatformDatabaseData(StorageData.FileBacked("$account/storage")),
                     SELF.toDao(),
-                    null,
+                    databaseSecret,
                     Dispatchers.Default
                 )
                 try {
@@ -12244,7 +12250,7 @@ class NotificationProcessorNativeTest {
 
         suspend fun signalingEvent(): EventResponseToStore {
             val database = userDatabaseBuilder(
-                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default)
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default)
             try {
                 database.userConfigDAO.setTrackingIdentifier("initial")
                 database.userConfigDAO.setPreviousTrackingIdentifier("earlier")
@@ -12559,7 +12565,7 @@ class NotificationProcessorNativeTest {
 
         /** Test-only failure injection connection; caller already holds the account runtime lease. */
         fun sql(statement: String) {
-            val driver = databaseDriver("$account/storage", FileNameUtil.userDBName(SELF.toDao()), UserDatabase.Schema.synchronous()) {
+            val driver = databaseDriver("$account/storage", FileNameUtil.userDBName(SELF.toDao()), UserDatabase.Schema.synchronous(), databaseSecret.value) {
                 isWALEnabled = true
                 useGradleSafeSqliterLogging = true
             }
@@ -12571,7 +12577,7 @@ class NotificationProcessorNativeTest {
         }
 
         fun sqlValue(statement: String): String? {
-            val driver = databaseDriver("$account/storage", FileNameUtil.userDBName(SELF.toDao()), UserDatabase.Schema.synchronous()) {
+            val driver = databaseDriver("$account/storage", FileNameUtil.userDBName(SELF.toDao()), UserDatabase.Schema.synchronous(), databaseSecret.value) {
                 isWALEnabled = true
                 useGradleSafeSqliterLogging = true
             }
@@ -12667,7 +12673,7 @@ class NotificationProcessorNativeTest {
         }
 
         suspend fun seedAccess(enabled: Boolean) {
-            val db = userDatabaseBuilder(PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default)
+            val db = userDatabaseBuilder(PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default)
             try {
                 db.conversationDAO.updateAccess(CONVERSATION_ID, emptyList(), if (enabled) listOf(ConversationEntity.AccessRole.SERVICE) else emptyList())
             } finally { db.close() }
@@ -12786,7 +12792,7 @@ class NotificationProcessorNativeTest {
                 )
             }
             val database = userDatabaseBuilder(
-                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), null, Dispatchers.Default
+                PlatformDatabaseData(StorageData.FileBacked("$account/storage")), SELF.toDao(), databaseSecret, Dispatchers.Default
             )
             try {
                 database.conversationDAO.insertConversation(conversation(protocol).copy(id = callId, name = "Calling fixture"))
@@ -13145,7 +13151,7 @@ class NotificationProcessorNativeTest {
                 userDatabaseBuilder(
                     PlatformDatabaseData(StorageData.FileBacked("$account/storage")),
                     SELF.toDao(),
-                    null,
+                    databaseSecret,
                     Dispatchers.Default
                 )
             try {

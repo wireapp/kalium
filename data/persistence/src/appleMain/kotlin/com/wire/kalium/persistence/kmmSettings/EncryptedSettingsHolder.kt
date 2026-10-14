@@ -96,7 +96,7 @@ private class RetainedKeychainAttributes(
 }
 
 @OptIn(ExperimentalForeignApi::class)
-private fun AppleKeychainAccessibility.securityValue(): CFTypeRef? = when (this) {
+internal fun AppleKeychainAccessibility.securityValue(): CFTypeRef? = when (this) {
     AppleKeychainAccessibility.WHEN_UNLOCKED -> kSecAttrAccessibleWhenUnlocked
     AppleKeychainAccessibility.AFTER_FIRST_UNLOCK -> kSecAttrAccessibleAfterFirstUnlock
     AppleKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY -> kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly

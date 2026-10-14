@@ -20,6 +20,8 @@
 
 package com.wire.kalium.logic
 
+import com.wire.kalium.persistence.db.existingUserDatabaseSecret
+
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
@@ -943,7 +945,7 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                 try {
                     assertNull(ApplePreparedAccountStore(root, user).read(lease))
                     val database = com.wire.kalium.persistence.db.existingUserDatabaseBuilder(
-                        "${com.wire.kalium.logic.sync.receiving.appleAccountPath(root, user)}/storage", user.toDao(), Dispatchers.Default)
+                        "${com.wire.kalium.logic.sync.receiving.appleAccountPath(root, user)}/storage", user.toDao(), Dispatchers.Default, com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider(keychain).passphraseStorage.existingUserDatabaseSecret(user.toDao()))
                     try {
                         assertTrue(checkNotNull(database.eventDAO.getEventById("notification")).isProcessed)
                         assertFalse(database.userPrefsDAO.isMLSEnabled())

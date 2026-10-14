@@ -29,7 +29,7 @@ class AppleWriteAccessSqlDriverTest {
     fun openReadersSeeOtherConnectionWritesWhileAppWritesWait() = runTest {
         val root = NSTemporaryDirectory() + "wire-write-access-" + NSUUID().UUIDString
         val user = UserIDEntity("reader", "example.com")
-        val database = userDatabaseBuilder(PlatformDatabaseData(StorageData.FileBacked(root)), user, null, testScheduler.let {
+        val database = userDatabaseBuilder(PlatformDatabaseData(StorageData.FileBacked(root)), user, UserDBSecret(TestDatabaseFile.KEY), testScheduler.let {
             kotlinx.coroutines.test.StandardTestDispatcher(it)
         }, enableWAL = true, dbInvalidationControlEnabled = false)
         try {
@@ -38,7 +38,7 @@ class AppleWriteAccessSqlDriverTest {
             native.execute(null, "INSERT INTO AccessTest VALUES (1)", 0).await()
             val writes = AccountResourceAccess()
             val app = AppleWriteAccessSqlDriver(native, writes)
-            val extension = existingUserDatabaseBuilder(root, user, kotlinx.coroutines.test.StandardTestDispatcher(testScheduler))
+            val extension = existingUserDatabaseBuilder(root, user, kotlinx.coroutines.test.StandardTestDispatcher(testScheduler), UserDBSecret(TestDatabaseFile.KEY))
             try {
                 writes.pause {}
                 val pending = async { app.execute(null, "UPDATE AccessTest SET value = 3", 0).await() }
@@ -64,7 +64,7 @@ class AppleWriteAccessSqlDriverTest {
         val root = NSTemporaryDirectory() + "wire-write-transaction-" + NSUUID().UUIDString
         val user = UserIDEntity("transaction", "example.com")
         val dispatcher = kotlinx.coroutines.test.StandardTestDispatcher(testScheduler)
-        val database = userDatabaseBuilder(PlatformDatabaseData(StorageData.FileBacked(root)), user, null, dispatcher,
+        val database = userDatabaseBuilder(PlatformDatabaseData(StorageData.FileBacked(root)), user, UserDBSecret(TestDatabaseFile.KEY), dispatcher,
             enableWAL = true, dbInvalidationControlEnabled = false)
         try {
             database.sqlDriver.execute(null, "CREATE TABLE AccessTest (value INTEGER NOT NULL)", 0).await()

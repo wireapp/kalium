@@ -35,7 +35,12 @@ quiesce their own account operations and observers before releasing ownership.
 NSE opening acquires the lease without waiting, reads compatible readiness,
 checks existing store files and credentials, and opens owned resources. It never
 logs in, registers a client or initializes missing stores to repair preparation.
-SQLite opens without creation or migration. CoreCrypto's available API still
+SQLite opens without creation or migration. For an encrypted account, the NSE
+reads the app's existing raw database key (on iOS with its salt) from the shared
+Keychain; both the read-only schema probe and every pooled connection are keyed
+before reading pages. Missing or invalid keys never trigger generation. The iOS
+32-byte readable header and WAL keep shared databases recognizable during
+suspension; macOS uses SQLCipher's default encrypted header. CoreCrypto's available API still
 opens or creates/migrates; readiness is a practical guard, not a stricter native
 contract. [Native limitations](../NSE_IMPLEMENTATION_STATUS.md#native-contracts-that-constrain-receiving)
 record this and the pinned artifact issues.
