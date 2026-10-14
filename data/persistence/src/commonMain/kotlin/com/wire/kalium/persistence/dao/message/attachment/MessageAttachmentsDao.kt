@@ -49,7 +49,7 @@ interface MessageAttachmentsDao {
         isEditSupported: Boolean,
     )
     suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity>
-    suspend fun getAttachments(): List<MessageAttachmentEntity>
+    suspend fun getAttachmentsByAssetIds(assetIds: List<String>): List<MessageAttachmentEntity>
     fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
     suspend fun setAssetPath(assetId: String, path: String)
 }
@@ -66,9 +66,14 @@ internal class MessageAttachmentsDaoImpl(
             queries.getAttachments(messageId, conversationId, ::toDao).awaitAsList()
         }
 
-    override suspend fun getAttachments(): List<MessageAttachmentEntity> = withContext(readDispatcher.value) {
-        queries.getAllAttachments(::toDao).awaitAsList()
-    }
+    override suspend fun getAttachmentsByAssetIds(assetIds: List<String>): List<MessageAttachmentEntity> =
+        withContext(readDispatcher.value) {
+            if (assetIds.isEmpty()) {
+                emptyList()
+            } else {
+                queries.getAttachmentsByAssetIds(assetIds, ::toDao).awaitAsList()
+            }
+        }
 
     override fun observeAttachments(): Flow<List<MessageAttachmentEntity>> =
         queries.getAllAttachments(::toDao)

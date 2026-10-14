@@ -5752,7 +5752,7 @@ class NotificationProcessorNativeTest {
                         assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
                         if (sqlFailure) {
                             assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
-                            assertTrue(runtime.database.messageAttachments.getAttachments().isEmpty())
+                            assertTrue(runtime.database.messageAttachments.observeAttachments().first().isEmpty())
                             fixture.sql("DROP TRIGGER fail_multipart")
                         }
                         if (interruption == Interruption.MARKER) fixture.sql("DROP TRIGGER interrupt_receive")
