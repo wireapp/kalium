@@ -44,6 +44,7 @@ import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -64,7 +65,7 @@ class CellUploadCoordinatorIntegrationTest {
             val item = arrangement.item("a.txt")
             assertEquals(CellUploadState.Completed, item.state)
             assertEquals(listOf(NodeIdAndVersion(item.nodeUuid!!, item.versionId!!)), arrangement.published)
-            assertFalse(arrangement.fileSystem.exists(item.request.localPath))
+            assertFalse(arrangement.fileSystem.exists(assertNotNull(item.request).localPath))
             assertFalse(arrangement.coordinator.hasActiveUploads.value)
         } finally {
             arrangement.close()
@@ -85,12 +86,12 @@ class CellUploadCoordinatorIntegrationTest {
             assertEquals(CellUploadState.Cancelled, arrangement.item("a.txt").state)
             assertFalse(arrangement.manager.isUploading(first.nodeUuid!!))
             assertEquals(CellUploadState.Uploading(0.5f), arrangement.item("b.txt").state)
-            assertTrue(arrangement.fileSystem.exists(first.request.localPath))
+            assertTrue(arrangement.fileSystem.exists(assertNotNull(first.request).localPath))
             assertTrue(arrangement.published.isEmpty())
 
             arrangement.coordinator.dismiss(first.id)
             advanceUntilIdle()
-            assertFalse(arrangement.fileSystem.exists(first.request.localPath))
+            assertFalse(arrangement.fileSystem.exists(assertNotNull(first.request).localPath))
             arrangement.transfers.getValue("b.txt").complete(Unit)
             advanceUntilIdle()
             assertEquals(CellUploadState.Completed, arrangement.item("b.txt").state)
@@ -108,7 +109,7 @@ class CellUploadCoordinatorIntegrationTest {
             advanceUntilIdle()
             val failed = arrangement.item("a.txt")
             assertEquals(CellUploadState.Failed, failed.state)
-            assertTrue(arrangement.fileSystem.exists(failed.request.localPath))
+            assertTrue(arrangement.fileSystem.exists(assertNotNull(failed.request).localPath))
 
             arrangement.coordinator.retry(failed.id)
             advanceUntilIdle()
@@ -138,7 +139,7 @@ class CellUploadCoordinatorIntegrationTest {
             assertEquals(CellUploadState.Cancelled, item.state)
             assertFalse(arrangement.manager.isUploading(item.nodeUuid!!))
             assertTrue(arrangement.published.isEmpty())
-            assertTrue(arrangement.fileSystem.exists(item.request.localPath))
+            assertTrue(arrangement.fileSystem.exists(assertNotNull(item.request).localPath))
         } finally {
             arrangement.close()
         }
