@@ -165,12 +165,22 @@ internal class NotificationEffects(
                             messageHandler.moved(received.resolution.sources, received.resolution.target)
                         }
                     }
-                    is ReceivedPayload.ProtocolUpdate -> conversations.updateConversationProtocolAndCipherSuite(
-                        conversationId = received.conversationId.toDao(),
-                        groupID = received.groupId,
-                        protocol = received.protocol,
-                        cipherSuite = received.cipherSuite
-                    )
+                    is ReceivedPayload.ProtocolUpdate -> {
+                        conversations.updateConversationProtocolAndCipherSuite(
+                            conversationId = received.conversationId.toDao(),
+                            groupID = received.groupId,
+                            protocol = received.protocol,
+                            cipherSuite = received.cipherSuite
+                        )
+                        if (received.groupId != null && received.groupState != null) {
+                            conversations.updateMLSGroupIdAndState(
+                                received.conversationId.toDao(),
+                                received.groupId,
+                                received.epoch.toLong(),
+                                received.groupState
+                            )
+                        }
+                    }
                     is ReceivedPayload.MLSReset -> {
                         conversations.clearProposalTimer(received.oldGroupId)
                         conversations.updateMLSGroupIdAndState(
@@ -491,6 +501,8 @@ internal sealed interface ReceivedPayload {
         val groupId: String?,
         val protocol: ConversationEntity.Protocol,
         val cipherSuite: ConversationEntity.CipherSuite,
+        val epoch: ULong,
+        val groupState: ConversationEntity.GroupState?,
     ) : ReceivedPayload
     data class MLSReset(
         val conversationId: com.wire.kalium.logic.data.id.ConversationId,

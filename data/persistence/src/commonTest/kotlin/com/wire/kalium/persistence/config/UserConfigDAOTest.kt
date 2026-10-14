@@ -134,4 +134,17 @@ class UserConfigDAOTest : BaseDatabaseTest() {
         userConfigDAO.deleteE2EIRotationCheckpoint()
         assertNull(userConfigDAO.getE2EIRotationCheckpoint())
     }
+
+    @Test
+    fun givenShouldJoinPendingMLSConversationsIsUpdated_whenObserving_thenLatestValueIsEmitted() = runTest {
+        userConfigDAO.observeShouldJoinPendingMLSConversations().test {
+            assertFalse(awaitItem())
+
+            userConfigDAO.setShouldJoinPendingMLSConversations(true)
+            assertTrue(awaitItem())
+
+            userConfigDAO.setShouldJoinPendingMLSConversations(false)
+            assertFalse(awaitItem())
+        }
+    }
 }

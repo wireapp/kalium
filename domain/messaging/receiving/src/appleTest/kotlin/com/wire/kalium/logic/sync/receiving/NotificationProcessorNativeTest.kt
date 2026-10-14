@@ -6838,7 +6838,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun protocolChangePreservesStoredMLSColumns() = runTest {
+    fun protocolChangeRefreshesMLSStateAndEpoch() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
                 fixture.sql("UPDATE Conversation SET protocol = 'PROTEUS', type = 'GROUP', mls_epoch = 7, mls_last_keying_material_update_date = 77")
@@ -6852,10 +6852,38 @@ class NotificationProcessorNativeTest {
                     val protocol = assertIs<ConversationEntity.ProtocolInfo.MLS>(
                         runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)?.protocolInfo
                     )
-                    assertEquals(7uL, protocol.epoch)
+                    assertEquals(1uL, protocol.epoch)
+                    assertEquals(ConversationEntity.GroupState.ESTABLISHED, protocol.groupState)
                     assertEquals(Instant.fromEpochMilliseconds(77), protocol.keyingMaterialLastUpdate)
                 })
                 fixture.verifyStoredAndNext(next, "first")
+            }
+        }
+    }
+
+    @Test
+    fun protocolChangeWithoutWelcomeKeepsMissingGroupPending() = runTest {
+        withContext(Dispatchers.Default) {
+            withFixture(true) { fixture ->
+                fixture.sql("UPDATE Conversation SET protocol = 'PROTEUS', type = 'GROUP', mls_epoch = 0")
+                val event = fixture.protocolEvent(ConvProtocol.MIXED)
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    checkNotNull(fixture.openMLS(runtime)).transaction { it.wipeConversation(GROUP_ID) }
+                })
+                assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id,
+                    fetchConversation = { fixture.creationResponse().copy(protocol = ConvProtocol.MIXED, epoch = 4uL) }))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val protocol = assertIs<ConversationEntity.ProtocolInfo.Mixed>(
+                        runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)?.protocolInfo
+                    )
+                    assertEquals(4uL, protocol.epoch)
+                    assertEquals(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, protocol.groupState)
+                    assertTrue(runtime.database.conversationDAO.getConversationsByGroupState(
+                        ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE).any { it.id == CONVERSATION_ID })
+                    assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                    assertFalse(checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationExists(GROUP_ID) })
+                })
             }
         }
     }
@@ -6958,9 +6986,16 @@ class NotificationProcessorNativeTest {
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
                 if (missing) fixture.sql("DELETE FROM Conversation")
-                fixture.sql("CREATE TRIGGER fail_protocol BEFORE UPDATE OF protocol ON Conversation BEGIN SELECT RAISE(ABORT, 'protocol write failed'); END")
-                if (!missing) assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id,
-                    fetchConversation = { fixture.creationResponse().copy(protocol = ConvProtocol.MIXED) }))
+                fixture.sql("CREATE TRIGGER fail_protocol BEFORE UPDATE OF mls_group_state ON Conversation BEGIN SELECT RAISE(ABORT, 'MLS state write failed'); END")
+                if (!missing) {
+                    assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id,
+                        fetchConversation = { fixture.creationResponse().copy(protocol = ConvProtocol.MIXED) }))
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertIs<ConversationEntity.ProtocolInfo.MLS>(
+                            runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)?.protocolInfo
+                        )
+                    })
+                }
                 fixture.sql("DROP TRIGGER fail_protocol")
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(listOf(event), event.id,
                     fetchConversation = { fixture.creationResponse().copy(protocol = ConvProtocol.MIXED) })).value?.text)

@@ -181,6 +181,13 @@ interface UserConfigRepository {
     suspend fun setMeetingsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isMeetingsEnabled(): Boolean
     fun observeIsMeetingsEnabled(): Flow<Boolean>
+
+    /**
+     * Set when this client may have been left out of MLS groups (no key packages available, or no MLS client yet),
+     * so pending MLS conversations must be joined by external commit once sync is live.
+     */
+    suspend fun setShouldJoinPendingMLSConversations(shouldJoin: Boolean): Either<StorageFailure, Unit>
+    fun observeShouldJoinPendingMLSConversations(): Flow<Boolean>
 }
 
 @Suppress("TooManyFunctions")
@@ -693,4 +700,10 @@ class UserConfigDataSource constructor(
     }
     override suspend fun isMeetingsEnabled(): Boolean = userConfigDAO.isMeetingsEnabled()
     override fun observeIsMeetingsEnabled(): Flow<Boolean> = userConfigDAO.observeIsMeetingsEnabled()
+
+    override suspend fun setShouldJoinPendingMLSConversations(shouldJoin: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.setShouldJoinPendingMLSConversations(shouldJoin) }
+
+    override fun observeShouldJoinPendingMLSConversations(): Flow<Boolean> =
+        userConfigDAO.observeShouldJoinPendingMLSConversations()
 }

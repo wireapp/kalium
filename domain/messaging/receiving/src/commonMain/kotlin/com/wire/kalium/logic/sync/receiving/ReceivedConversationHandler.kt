@@ -6,8 +6,11 @@
 package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.ConversationResponseMapper
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapperImpl
@@ -212,7 +215,7 @@ internal class ReceivedConversationHandler(
             null -> null
         }
         val metadata = if (current == null || currentProtocol == protocol) refresh(response, context)
-        else changeProtocol(current, response, protocol)
+        else changeProtocol(current, response, protocol, context)
         val message = Message.System(
             id = payloadId,
             content = MessageContent.ConversationProtocolChanged(
@@ -232,6 +235,7 @@ internal class ReceivedConversationHandler(
         current: ConversationEntity,
         response: ConversationResponse,
         protocol: ConversationEntity.Protocol,
+        context: MlsCoreCryptoContext?,
     ): List<ReceivedPayload> {
         val id = current.id.toModel()
         val cipher = ConversationEntity.CipherSuite.fromTag(response.mlsCipherSuiteTag)
@@ -243,19 +247,23 @@ internal class ReceivedConversationHandler(
                 "", ConversationEntity.GroupState.ESTABLISHED, 0uL, kotlin.time.Instant.fromEpochMilliseconds(0), cipher
             )
         retainedMLS[id] = old
+        val groupState = if (protocol == ConversationEntity.Protocol.PROTEUS) null
+        else response.groupId?.let { mlsGroupState(context, it) }
+        val epoch = if (groupState == null) old.epoch else response.epoch ?: 0uL
+        val updatedState = preservePendingGroupState(old.groupState, groupState)
         val updatedProtocol = when (protocol) {
             ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
                 groupId = response.groupId.orEmpty(),
-                groupState = old.groupState,
-                epoch = old.epoch,
+                groupState = updatedState,
+                epoch = epoch,
                 keyingMaterialLastUpdate = old.keyingMaterialLastUpdate,
                 cipherSuite = cipher,
             )
             ConversationEntity.Protocol.MIXED -> ConversationEntity.ProtocolInfo.Mixed(
                 groupId = response.groupId.orEmpty(),
-                groupState = old.groupState,
-                epoch = old.epoch,
+                groupState = updatedState,
+                epoch = epoch,
                 keyingMaterialLastUpdate = old.keyingMaterialLastUpdate,
                 cipherSuite = cipher,
             )
@@ -267,7 +275,27 @@ internal class ReceivedConversationHandler(
             } else current.receiptMode,
         )
         staged[id] = staged[id]?.copy(conversation = updated) ?: ConversationCreation(updated, emptyList(), UserProfiles(), null, null)
-        return listOf(ReceivedPayload.ProtocolUpdate(id, response.groupId, protocol, cipher))
+        return listOf(ReceivedPayload.ProtocolUpdate(id, response.groupId, protocol, cipher, epoch, groupState))
+    }
+
+    // Match updateMLSGroupIdAndState so later payloads see the same state that SQL will persist.
+    private fun preservePendingGroupState(
+        current: ConversationEntity.GroupState,
+        derived: ConversationEntity.GroupState?,
+    ): ConversationEntity.GroupState = when {
+        derived == null -> current
+        current == ConversationEntity.GroupState.ESTABLISHED || derived == ConversationEntity.GroupState.ESTABLISHED -> derived
+        else -> current
+    }
+
+    private suspend fun mlsGroupState(context: MlsCoreCryptoContext?, groupId: String): ConversationEntity.GroupState {
+        val mls = context ?: return ConversationEntity.GroupState.PENDING_JOIN
+        return wrapMLSRequest { mls.conversationExists(groupId) }.fold({ failure ->
+            kaliumLogger.w("Error checking MLS group state after protocol update, setting to PENDING_JOIN: $failure")
+            ConversationEntity.GroupState.PENDING_JOIN
+        }, { exists ->
+            if (exists) ConversationEntity.GroupState.ESTABLISHED else ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+        })
     }
 
     private suspend fun refresh(response: ConversationResponse, context: MlsCoreCryptoContext?): List<ReceivedPayload> {
