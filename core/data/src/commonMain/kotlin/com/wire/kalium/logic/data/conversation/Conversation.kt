@@ -315,6 +315,11 @@ data class ConversationDetailsWithEvents(
     val hasNewActivitiesToShow: Boolean = false,
 )
 
+data class ConversationDetailsWithMembers(
+    val conversationDetails: ConversationDetails,
+    val members: List<MemberDetails>,
+)
+
 sealed interface ConversationDetails {
     val conversation: Conversation
 

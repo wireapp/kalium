@@ -398,11 +398,136 @@ class CellUploadCoordinatorTest {
         arrangement.close()
     }
 
-    private fun request(fileName: String, size: Long = 42L) = CellUploadRequest(
+    @Test
+    fun given_beginPreparing_called_then_item_appears_in_preparing_state() = runTest {
+        val arrangement = Arrangement(this)
+        val id = arrangement.coordinator.beginPreparing("a.txt", "convA")
+        advanceUntilIdle()
+
+        val item = arrangement.coordinator.uploads.value.first { it.id == id }
+        assertEquals(CellUploadState.Preparing("a.txt"), item.state)
+        assertEquals("a.txt", item.fileName)
+        assertEquals("convA", item.conversationId)
+        assertTrue(arrangement.coordinator.hasActiveUploads.value)
+        arrangement.close()
+    }
+
+    @Test
+    fun given_preparing_item_when_attachPreparedRequest_then_it_is_queued_and_starts_uploading() = runTest {
+        val arrangement = Arrangement(this)
+        val id = arrangement.coordinator.beginPreparing("a.txt", "convA")
+        advanceUntilIdle()
+
+        arrangement.coordinator.attachPreparedRequest(id, request("a.txt", conversationId = "convA"))
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Uploading(), arrangement.state("a.txt"))
+        arrangement.close()
+    }
+
+    @Test
+    fun given_preparing_item_when_failPreparing_then_item_is_removed() = runTest {
+        val arrangement = Arrangement(this)
+        val id = arrangement.coordinator.beginPreparing("a.txt", "convA")
+        advanceUntilIdle()
+        assertEquals(1, arrangement.coordinator.uploads.value.size)
+
+        arrangement.coordinator.failPreparing(id)
+        advanceUntilIdle()
+
+        assertTrue(arrangement.coordinator.uploads.value.isEmpty())
+        assertFalse(arrangement.coordinator.hasActiveUploads.value)
+        arrangement.close()
+    }
+
+    @Test
+    fun given_preparing_item_when_dismiss_then_it_is_not_removed() = runTest {
+        val arrangement = Arrangement(this)
+        val id = arrangement.coordinator.beginPreparing("a.txt", "convA")
+        advanceUntilIdle()
+
+        arrangement.coordinator.dismiss(id)
+        advanceUntilIdle()
+
+        assertEquals(1, arrangement.coordinator.uploads.value.size)
+        arrangement.close()
+    }
+
+    @Test
+    fun given_preparing_item_when_dismissAll_then_it_is_not_removed() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.coordinator.beginPreparing("a.txt", "convA")
+        advanceUntilIdle()
+
+        arrangement.coordinator.dismissAll()
+        advanceUntilIdle()
+
+        assertEquals(1, arrangement.coordinator.uploads.value.size)
+        arrangement.close()
+    }
+
+    @Test
+    fun given_enqueued_request_then_item_conversationId_is_derived_from_destination_folder() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.coordinator.enqueue(listOf(request("a.txt", conversationId = "convA")))
+        advanceUntilIdle()
+
+        assertEquals("convA", arrangement.coordinator.uploads.value.first { it.fileName == "a.txt" }.conversationId)
+        arrangement.close()
+    }
+
+    @Test
+    fun given_uploads_in_two_conversations_when_cancelAll_scoped_then_only_the_matching_conversation_is_cancelled() = runTest {
+        val arrangement = Arrangement(this, maxConcurrentUploads = 2)
+        arrangement.coordinator.enqueue(listOf(request("a.txt", conversationId = "convA"), request("b.txt", conversationId = "convB")))
+        advanceUntilIdle()
+
+        arrangement.coordinator.cancelAll("convA")
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Cancelled, arrangement.state("a.txt"))
+        assertEquals(CellUploadState.Uploading(), arrangement.state("b.txt"))
+        arrangement.close()
+    }
+
+    @Test
+    fun given_failed_uploads_in_two_conversations_when_retryAllFailed_scoped_then_only_the_matching_conversation_is_retried() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.coordinator.enqueue(listOf(request("a.txt", conversationId = "convA"), request("b.txt", conversationId = "convB")))
+        advanceUntilIdle()
+        arrangement.manager.emit("a.txt", CellUploadEvent.UploadError)
+        arrangement.manager.emit("b.txt", CellUploadEvent.UploadError)
+        advanceUntilIdle()
+
+        arrangement.coordinator.retryAllFailed("convA")
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Uploading(), arrangement.state("a.txt"))
+        assertEquals(CellUploadState.Failed, arrangement.state("b.txt"))
+        arrangement.close()
+    }
+
+    @Test
+    fun given_finished_uploads_in_two_conversations_when_dismissAll_scoped_then_only_the_matching_conversation_is_removed() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.coordinator.enqueue(listOf(request("a.txt", conversationId = "convA"), request("b.txt", conversationId = "convB")))
+        advanceUntilIdle()
+        arrangement.manager.emit("a.txt", CellUploadEvent.UploadCompleted)
+        arrangement.manager.emit("b.txt", CellUploadEvent.UploadCompleted)
+        advanceUntilIdle()
+
+        arrangement.coordinator.dismissAll("convA")
+        advanceUntilIdle()
+
+        assertEquals(listOf("b.txt"), arrangement.coordinator.uploads.value.map { it.fileName })
+        arrangement.close()
+    }
+
+    private fun request(fileName: String, size: Long = 42L, conversationId: String = "cells") = CellUploadRequest(
         localPath = "/tmp/$fileName".toPath(),
         fileName = fileName,
         sizeBytes = size,
-        destinationFolderPath = "cells/folder",
+        destinationFolderPath = "$conversationId/folder",
     )
 
     private class Arrangement(

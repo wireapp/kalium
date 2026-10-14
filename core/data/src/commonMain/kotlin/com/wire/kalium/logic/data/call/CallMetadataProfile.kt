@@ -44,6 +44,7 @@ data class CallMetadata(
     val callerTeamName: String?,
     val establishedTime: Instant? = null,
     val callStatus: CallStatus,
+    val callAnsweredElsewhere: Boolean = false,
     val participants: List<ParticipantMinimized> = emptyList(),
     val maxParticipants: Int = 0, // Was used for tracking
     val protocol: Conversation.ProtocolInfo,

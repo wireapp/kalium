@@ -22,6 +22,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.data.meeting.CreateNewMeetingResult
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.meeting.UpsertMeeting
@@ -35,7 +37,7 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 public interface CreateNewMeetingUseCase {
     public suspend operator fun invoke(createMeeting: UpsertMeeting): Result
     public sealed interface Result {
-        public data object Success : Result
+        public data class Success(val conversationId: ConversationId) : Result
         public data object Failure : Result // TODO: Add more specific error types in the future
     }
 }
@@ -53,12 +55,12 @@ internal class CreateNewMeetingUseCaseImpl(
         .flatMapLeft {
             when (it) {
                 // don't propagate the MLS establishment error, meeting creation succeeded, and MLS establishment can be retried later
-                is EstablishMLSFailure -> Either.Right(MLSAdditionResult.Empty)
+                is EstablishMLSFailure -> Either.Right(CreateNewMeetingResult(it.conversationId, MLSAdditionResult.Empty))
                 else -> Either.Left(it)
             }
         }
         .onSuccess {
             refreshUsersWithoutMetadata()
         }
-        .fold({ CreateNewMeetingUseCase.Result.Failure }, { CreateNewMeetingUseCase.Result.Success })
+        .fold({ CreateNewMeetingUseCase.Result.Failure }, { CreateNewMeetingUseCase.Result.Success(it.conversationId) })
 }

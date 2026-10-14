@@ -25,8 +25,10 @@ import androidx.paging.PagingState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestMessage
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
@@ -97,8 +99,10 @@ class ConversationRepositoryExtensionsTest {
         private val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
         private val conversationMapper = mock<ConversationMapper>(mode = MockMode.autoUnit)
         private val messageMapper = mock<MessageMapper>(mode = MockMode.autoUnit)
+        private val userMapper = mock<UserMapper>(mode = MockMode.autoUnit)
+        private val memberMapper = mock<MemberMapper>(mode = MockMode.autoUnit)
         private val conversationRepositoryExtensions: ConversationRepositoryExtensions by lazy {
-            ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)
+            ConversationRepositoryExtensionsImpl(TestUser.SELF.id, conversationDAO, conversationMapper, userMapper, memberMapper)
         }
 
         init {

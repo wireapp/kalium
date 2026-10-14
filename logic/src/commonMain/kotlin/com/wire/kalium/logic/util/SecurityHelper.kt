@@ -42,6 +42,7 @@ internal expect class SecureRandom internal constructor() {
 
 internal interface SecurityHelper {
     fun globalDBKeyMaterial(databaseExists: Boolean): GlobalDBKeyMaterial
+    fun globalDBSecretOrNull(): GlobalDatabaseSecret?
     fun clearGlobalDBLegacyKey()
     fun userDBSecret(userId: UserId, databaseExists: Boolean): UserDBSecret
     fun userDBOrSecretNull(userId: UserId): UserDBSecret?
@@ -66,11 +67,21 @@ internal class GlobalDBKeyMaterial(
 
 internal typealias DatabaseMigrator = suspend (rootDir: String, oldKey: String, passphrase: ByteArray) -> Unit
 
+/**
+ * @param isSqlCipherSaltStored whether the global and user databases need their SQLCipher salt stored, because SQLCipher
+ * can't keep it in their header. On iOS, where that header stays readable. Their secret, under the same alias, is then
+ * 48 random bytes instead of 32: the key followed by its 16-byte salt, so the two can't go missing apart. The salt
+ * isn't secret, and rotating the key has to keep it.
+ */
 @Suppress("TooManyFunctions")
 internal class SecurityHelperImpl(
     private val passphraseStorage: PassphraseStorage,
-    private val databaseMigrator: DatabaseMigrator = ::migrateDatabaseKey
+    private val databaseMigrator: DatabaseMigrator = ::migrateDatabaseKey,
+    isSqlCipherSaltStored: Boolean = false
 ) : SecurityHelper {
+
+    private val sqlCipherSecretLength =
+        if (isSqlCipherSaltStored) SQLCIPHER_RAW_KEY_BYTES + SQLCIPHER_SALT_BYTES else SQLCIPHER_RAW_KEY_BYTES
 
     /**
      * The raw key is generated and stored *before* it is ever used, so a crash between storing it
@@ -78,10 +89,17 @@ internal class SecurityHelperImpl(
      * database.
      */
     override fun globalDBKeyMaterial(databaseExists: Boolean): GlobalDBKeyMaterial {
-        val rawKey = getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2).toPreservedByteArray.toSqlCipherRawKey()
+        val rawKey = getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS_V2, sqlCipherSecretLength)
+            .toPreservedByteArray
+            .toSqlCipherRawKey()
         val legacyKey = if (databaseExists) getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS)?.toPreservedByteArray else null
         return GlobalDBKeyMaterial(GlobalDatabaseSecret(rawKey), legacyKey)
     }
+
+    override fun globalDBSecretOrNull(): GlobalDatabaseSecret? =
+        getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS_V2)?.let {
+            GlobalDatabaseSecret(it.toPreservedByteArray.toSqlCipherRawKey())
+        }
 
     override fun clearGlobalDBLegacyKey() {
         if (getStoredDbPassword(GLOBAL_DB_PASSPHRASE_ALIAS) != null) {
@@ -97,7 +115,7 @@ internal class SecurityHelperImpl(
             // Existing user databases keep their legacy key: rekeying them is not worth the cost.
             UserDBSecret(getOrGeneratePassPhrase("${USER_DB_PASSPHRASE_PREFIX}_$userId").toPreservedByteArray)
         } else {
-            UserDBSecret(getOrGeneratePassPhrase(v2Alias).toPreservedByteArray.toSqlCipherRawKey())
+            UserDBSecret(getOrGeneratePassPhrase(v2Alias, sqlCipherSecretLength).toPreservedByteArray.toSqlCipherRawKey())
         }
     }
 
@@ -154,17 +172,16 @@ internal class SecurityHelperImpl(
         passphraseStorage.setPassphrase(key, passphrase)
     }
 
-    private fun getOrGeneratePassPhrase(alias: String): String =
-        getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword())
+    /**
+     * A new passphrase is only stored if none was stored in between, and the stored one is used: with several processes
+     * sharing the storage, e.g. an app and its extensions on Apple, they all end up with the same passphrase.
+     */
+    private fun getOrGeneratePassPhrase(alias: String, length: Int = MIN_DATABASE_SECRET_LENGTH): String =
+        getStoredDbPassword(alias)
+            ?: passphraseStorage.setPassphraseIfAbsent(alias, generatePassword(length).toPreservedString)
 
     private fun getStoredDbPassword(passwordAlias: String): String? =
         passphraseStorage.getPassphrase(passwordAlias)
-
-    private fun storeDbPassword(alias: String, keyBytes: ByteArray): String {
-        val key = keyBytes.toPreservedString
-        passphraseStorage.setPassphrase(alias, key)
-        return key
-    }
 
     private fun generatePassword(minPasswordLength: Int = MIN_DATABASE_SECRET_LENGTH): ByteArray {
         val secureRandom = SecureRandom()
@@ -178,18 +195,19 @@ internal class SecurityHelperImpl(
         get() = Base64.encode(this)
 
     /**
-     * Converts 32 bytes of key material to SQLCipher's raw-key representation, `x'<64 hex chars>'`.
+     * Converts the 32 bytes of a key to SQLCipher's raw-key representation, `x'<64 hex chars>'`, or the 48 bytes of a
+     * key and its salt, see `isSqlCipherSaltStored`, to `x'<64 hex chars key><32 hex chars salt>'`.
      *
-     * SQLCipher only recognises this form when the payload is exactly `keySize * 2 + 3` bytes, so
-     * the size is asserted rather than padded or truncated.
+     * SQLCipher only recognises this form when the payload is exactly `keySize * 2 + 3` bytes, or
+     * `(keySize + saltSize) * 2 + 3` with the salt, so the size is asserted rather than padded or truncated.
      */
     private fun ByteArray.toSqlCipherRawKey(): ByteArray {
-        require(size == SQLCIPHER_RAW_KEY_BYTES) {
-            "SQLCipher raw keys must contain exactly $SQLCIPHER_RAW_KEY_BYTES bytes, but got $size"
+        require(size == sqlCipherSecretLength) {
+            "SQLCipher raw keys must contain exactly $sqlCipherSecretLength bytes, but got $size"
         }
 
         val hexDigits = HEX_DIGITS.encodeToByteArray()
-        val result = ByteArray(SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH)
+        val result = ByteArray(RAW_KEY_PREFIX_LENGTH + size * 2 + 1)
         result[0] = SQLCIPHER_RAW_KEY_MARKER
         result[1] = SQLCIPHER_RAW_KEY_QUOTE
 
@@ -211,8 +229,8 @@ internal class SecurityHelperImpl(
         const val MIN_DATABASE_SECRET_LENGTH = 32
         const val SQLCIPHER_RAW_KEY_BYTES = 32
         const val SQLCIPHER_RAW_KEY_MARKER: Byte = 0x78
-        const val SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH = 67
         const val SQLCIPHER_RAW_KEY_QUOTE: Byte = 0x27
+        const val SQLCIPHER_SALT_BYTES = 16
         const val RAW_KEY_PREFIX_LENGTH = 2
         const val NIBBLE_BITS = 4
         const val LOW_NIBBLE_MASK = 0x0F
