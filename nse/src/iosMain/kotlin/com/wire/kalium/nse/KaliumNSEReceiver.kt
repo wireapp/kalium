@@ -31,8 +31,8 @@ import com.wire.kalium.logic.sync.receiving.ReceivingOptions
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
-import com.wire.kalium.persistence.kmmSettings.AppleKeychainAccessibility
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
+import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
@@ -54,7 +54,13 @@ public data class KaliumNSEConfiguration(
     public val allowedFileExtensions: List<String>? = null,
 )
 
-public enum class KaliumNSEKeychainAccessibility { WHEN_UNLOCKED, AFTER_FIRST_UNLOCK, AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY }
+public enum class KaliumNSEKeychainAccessibility {
+    WHEN_UNLOCKED,
+    AFTER_FIRST_UNLOCK,
+    AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    WHEN_PASSCODE_SET_THIS_DEVICE_ONLY,
+}
 
 public data class KaliumNSERequest(
     public val userValue: String,
@@ -139,7 +145,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 configuration.rootPath,
                 UserId(request.userValue, request.userDomain),
                 ApplePersistenceConfig(
-                    configuration.keychainService, configuration.keychainAccessGroup, configuration.keychainAccessibility.toApple()
+                    serviceName = configuration.keychainService,
+                    keychainAccessibility = configuration.keychainAccessibility.toApple(),
+                    accessGroup = configuration.keychainAccessGroup,
                 ),
                 configuration.userAgent,
                 configuration.certificatePins,
@@ -262,10 +270,12 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         )
     }
 
-    private fun KaliumNSEKeychainAccessibility.toApple(): AppleKeychainAccessibility = when (this) {
-        KaliumNSEKeychainAccessibility.WHEN_UNLOCKED -> AppleKeychainAccessibility.WHEN_UNLOCKED
-        KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK -> AppleKeychainAccessibility.AFTER_FIRST_UNLOCK
-        KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY -> AppleKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY
+    private fun KaliumNSEKeychainAccessibility.toApple(): KeychainAccessibility = when (this) {
+        KaliumNSEKeychainAccessibility.WHEN_UNLOCKED -> KeychainAccessibility.WhenUnlocked
+        KaliumNSEKeychainAccessibility.WHEN_UNLOCKED_THIS_DEVICE_ONLY -> KeychainAccessibility.WhenUnlockedThisDeviceOnly
+        KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK -> KeychainAccessibility.AfterFirstUnlock
+        KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY -> KeychainAccessibility.AfterFirstUnlockThisDeviceOnly
+        KaliumNSEKeychainAccessibility.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY -> KeychainAccessibility.WhenPasscodeSetThisDeviceOnly
     }
 
     private fun failure(reason: String) = KaliumNSEResult(

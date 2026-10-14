@@ -267,7 +267,7 @@ class AppleAccountRuntimeTest {
         private val identity = NSUUID.UUID().UUIDString
         val root = rootOverride ?: "${NSTemporaryDirectory()}kalium-runtime-$identity"
         val account = appleAccountPath(root, userId)
-        val config = configOverride ?: ApplePersistenceConfig("com.wire.kalium.test.$identity")
+        val config = configOverride ?: ApplePersistenceConfig("com.wire.kalium.test.$identity", keychainAccessibility = null)
         val preferences by lazy { GlobalPrefProvider(config) }
         val owner = AppleAccountRuntimeOwner(root)
         var quarantined = false

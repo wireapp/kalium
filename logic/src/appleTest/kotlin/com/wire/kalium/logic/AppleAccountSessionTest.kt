@@ -474,7 +474,7 @@ class AppleAccountSessionTest {
         val identity = NSUUID.UUID().UUIDString
         val root = "${NSTemporaryDirectory()}kalium-account-session-$identity"
         assertTrue(fileManager.createDirectoryAtPath(root, true, null, null))
-        val keychainConfig = ApplePersistenceConfig("com.wire.kalium.test.$identity")
+        val keychainConfig = ApplePersistenceConfig("com.wire.kalium.test.$identity", keychainAccessibility = null)
         if (prepared) {
             val secret = databaseSecurityHelper(GlobalPrefProvider(keychainConfig).passphraseStorage)
                 .globalDBKeyMaterial(databaseExists = false).rawKey

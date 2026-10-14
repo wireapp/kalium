@@ -19,7 +19,7 @@
 package com.wire.kalium.persistence.dbPassphrase
 
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
-import com.wire.kalium.persistence.kmmSettings.securityValue
+import com.wire.kalium.persistence.kmmSettings.secAttrValue
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.ptr
 import platform.CoreFoundation.CFDictionaryAddValue
@@ -82,7 +82,7 @@ internal class KeychainPassphraseStorage(
             CFDictionaryAddValue(attributes, kSecAttrService, service)
             CFDictionaryAddValue(attributes, kSecAttrAccount, account)
             accessGroup?.let { CFDictionaryAddValue(attributes, kSecAttrAccessGroup, it) }
-            CFDictionaryAddValue(attributes, kSecAttrAccessible, keychainConfig.accessibility.securityValue())
+            keychainConfig.keychainAccessibility?.let { CFDictionaryAddValue(attributes, kSecAttrAccessible, it.secAttrValue) }
             CFDictionaryAddValue(attributes, kSecValueData, data)
             return when (val status = SecItemAdd(attributes, null)) {
                 errSecSuccess -> true

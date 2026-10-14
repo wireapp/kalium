@@ -31,7 +31,9 @@ import platform.Security.kSecAttrAccessGroup
 import platform.Security.kSecAttrAccessible
 import platform.Security.kSecAttrAccessibleAfterFirstUnlock
 import platform.Security.kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+import platform.Security.kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
 import platform.Security.kSecAttrAccessibleWhenUnlocked
+import platform.Security.kSecAttrAccessibleWhenUnlockedThisDeviceOnly
 import platform.Security.kSecAttrService
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.Cleaner
@@ -43,10 +45,11 @@ internal actual fun buildSettings(
     param: EncryptedSettingsPlatformParam
 ): Settings {
     val config = param.keychainConfig
+    if (config.keychainAccessibility == null && config.accessGroup == null) return KeychainSettings(config.serviceName)
     return RetainedKeychainSettings(
         serviceName = config.serviceName,
         accessGroup = config.accessGroup,
-        accessibility = config.accessibility,
+        accessibility = config.keychainAccessibility,
     )
 }
 
@@ -59,7 +62,7 @@ private class RetainedKeychainSettings private constructor(
     constructor(
         serviceName: String,
         accessGroup: String?,
-        accessibility: AppleKeychainAccessibility,
+        accessibility: KeychainAccessibility?,
     ) : this(RetainedKeychainAttributes(serviceName, accessGroup, accessibility))
 }
 
@@ -73,7 +76,7 @@ private class RetainedKeychainSettings private constructor(
 private class RetainedKeychainAttributes(
     serviceName: String,
     accessGroup: String?,
-    accessibility: AppleKeychainAccessibility,
+    accessibility: KeychainAccessibility?,
 ) {
     private val retainedService = CFBridgingRetain(serviceName)
     private val retainedAccessGroup = accessGroup?.let { CFBridgingRetain(it) }
@@ -90,14 +93,17 @@ private class RetainedKeychainAttributes(
         *buildList<Pair<CFStringRef?, CFTypeRef?>> {
             add(kSecAttrService to retainedService)
             retainedAccessGroup?.let { add(kSecAttrAccessGroup to it) }
-            add(kSecAttrAccessible to accessibility.securityValue())
+            accessibility?.let { add(kSecAttrAccessible to it.secAttrValue) }
         }.toTypedArray()
     )
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal fun AppleKeychainAccessibility.securityValue(): CFTypeRef? = when (this) {
-    AppleKeychainAccessibility.WHEN_UNLOCKED -> kSecAttrAccessibleWhenUnlocked
-    AppleKeychainAccessibility.AFTER_FIRST_UNLOCK -> kSecAttrAccessibleAfterFirstUnlock
-    AppleKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY -> kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-}
+internal val KeychainAccessibility.secAttrValue: CFStringRef?
+    get() = when (this) {
+        KeychainAccessibility.WhenUnlocked -> kSecAttrAccessibleWhenUnlocked
+        KeychainAccessibility.WhenUnlockedThisDeviceOnly -> kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        KeychainAccessibility.AfterFirstUnlock -> kSecAttrAccessibleAfterFirstUnlock
+        KeychainAccessibility.AfterFirstUnlockThisDeviceOnly -> kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        KeychainAccessibility.WhenPasscodeSetThisDeviceOnly -> kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
+    }

@@ -34,15 +34,20 @@ package com.wire.kalium.persistence.kmmSettings
  *  Keychain Sharing this includes the prefix that Xcode applies while signing. Both targets must
  *  include this exact value in their signed entitlements. Keep `null` to use the target's default
  *  access group.
- * @property accessibility Controls when Keychain entries can be read. Notification service
- *  extensions that must run while the device is locked should use
- *  [AppleKeychainAccessibility.AFTER_FIRST_UNLOCK] or
- *  [AppleKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY].
+ * @property keychainAccessibility When Kalium-managed entries can be read, as the iOS Keychain
+ *  `kSecAttrAccessible` value. Null keeps Apple's default, [KeychainAccessibility.WhenUnlocked],
+ *  under which Kalium can't read its tokens and database keys while the device is locked, e.g.
+ *  when the app is launched in the background by a push. Apps that run Kalium in the background
+ *  should use [KeychainAccessibility.AfterFirstUnlockThisDeviceOnly].
+ *  Must be stable across app versions, like [serviceName]: it is part of every Keychain lookup,
+ *  so entries stored with a different value are neither found nor overwritten (storing one
+ *  again fails), and they are not migrated.
+ *  Applies on iOS only; the file-based macOS keychain ignores it.
  */
 public data class ApplePersistenceConfig(
     val serviceName: String,
+    val keychainAccessibility: KeychainAccessibility?,
     val accessGroup: String? = null,
-    val accessibility: AppleKeychainAccessibility = AppleKeychainAccessibility.WHEN_UNLOCKED,
 ) {
     init {
         require(serviceName.isNotBlank()) { "serviceName must not be blank" }
@@ -50,14 +55,23 @@ public data class ApplePersistenceConfig(
     }
 }
 
-/** The iOS Keychain protection class used for Kalium-managed entries. */
-public enum class AppleKeychainAccessibility {
-    /** Available only while the device is unlocked. This preserves Kalium's existing behavior. */
-    WHEN_UNLOCKED,
+/**
+ * The iOS Keychain `kSecAttrAccessible` values Kalium-managed entries can be stored with.
+ * The `ThisDeviceOnly` variants are not restored from a backup onto another device.
+ */
+public enum class KeychainAccessibility {
+    /** `kSecAttrAccessibleWhenUnlocked`, Apple's default. */
+    WhenUnlocked,
 
-    /** Available after the first device unlock following a restart and included in encrypted backups. */
-    AFTER_FIRST_UNLOCK,
+    /** `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`. */
+    WhenUnlockedThisDeviceOnly,
 
-    /** Available after the first device unlock following a restart and never moved to another device. */
-    AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+    /** `kSecAttrAccessibleAfterFirstUnlock`: readable while locked, once unlocked after a restart. */
+    AfterFirstUnlock,
+
+    /** `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`: readable while locked, once unlocked after a restart. */
+    AfterFirstUnlockThisDeviceOnly,
+
+    /** `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly`: removed when the device passcode is removed. */
+    WhenPasscodeSetThisDeviceOnly,
 }

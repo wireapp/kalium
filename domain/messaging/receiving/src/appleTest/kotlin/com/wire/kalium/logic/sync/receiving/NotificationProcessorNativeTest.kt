@@ -10984,7 +10984,7 @@ class NotificationProcessorNativeTest {
         var receivedCalls: List<ReceivedCallResult> = emptyList()
         var receivedAppWork: NotificationAppWork? = null
         var receivedCallEvents: List<ReceivedCallEvent> = emptyList()
-        private val config = ApplePersistenceConfig(keychainService)
+        private val config = ApplePersistenceConfig(keychainService, keychainAccessibility = null)
         val databaseSecret get() = checkNotNull(GlobalPrefProvider(config).passphraseStorage.existingUserDatabaseSecret(SELF.toDao()))
         private val account = appleAccountPath(root, SELF)
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

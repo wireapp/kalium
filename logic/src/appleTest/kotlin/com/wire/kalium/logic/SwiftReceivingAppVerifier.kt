@@ -86,7 +86,7 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
         for (account in selected) {
             val root = account.getValue("root").jsonPrimitive.content
             val user = UserId(account.getValue("userValue").jsonPrimitive.content, account.getValue("userDomain").jsonPrimitive.content)
-            val keychain = ApplePersistenceConfig(account.getValue("service").jsonPrimitive.content)
+            val keychain = ApplePersistenceConfig(account.getValue("service").jsonPrimitive.content, keychainAccessibility = null)
             // Fixture app metadata is created here, under ownership, before app construction.
             // This belongs to app fixture bootstrap; the NSE never opens this global database.
             if (!afterProposal) {
