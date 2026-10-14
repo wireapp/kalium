@@ -76,6 +76,10 @@ val avsRuntimeMetadata = requireNotNull(
             "archiveSha256" to "637e71bb26ae8d50446e500fd4141bcdb8ee4a13bc6bb1d861d6d656780e2d77",
             "macosMinimumVersion" to "15.0",
         ),
+        "10.5.33" to mapOf(
+            "archiveSha256" to "ec50636705f5116899e890fbd8d837d7e1093b508253cd51ab3a0958ffa85cc1",
+            "macosMinimumVersion" to "15.0",
+        ),
     )[avsVersion]
 ) {
     "Apple AVS runtime metadata is missing for AVS $avsVersion. " +

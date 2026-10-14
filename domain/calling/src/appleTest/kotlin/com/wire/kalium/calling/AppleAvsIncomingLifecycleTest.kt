@@ -57,6 +57,7 @@ class AppleAvsIncomingLifecycleTest {
                         val reason = when {
                             termination == "cancel" && type >= 2 -> 0
                             termination == "cancel" -> 4
+                            termination == "answer" && type >= 2 -> 5
                             type != 0 -> 7
                             termination == "answer" -> 5
                             else -> 10

@@ -116,6 +116,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven(url = "https://maven.wire.com")
     }
 }
 

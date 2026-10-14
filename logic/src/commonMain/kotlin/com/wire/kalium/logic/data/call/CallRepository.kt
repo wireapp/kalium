@@ -130,6 +130,7 @@ internal interface CallRepository {
     )
 
     suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus)
+    suspend fun updateIsAnsweredElsewhere(conversationId: ConversationId)
     fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean)
     suspend fun updateIsCbrEnabled(isCbrEnabled: Boolean)
     fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean)
@@ -292,6 +293,7 @@ internal class CallDataSource(
             isCbrEnabled = isCbrEnabled,
             establishedTime = null,
             callStatus = status,
+            callAnsweredElsewhere = false,
             protocol = conversation.protocol,
             activeSpeakers = mapOf()
         )
@@ -424,6 +426,12 @@ internal class CallDataSource(
             )
             persistMessage(message)
         } ?: callingLogger.i("[CallRepository] -> Unable to persist Missed Call due to missing Caller ID")
+    }
+
+    override suspend fun updateIsAnsweredElsewhere(conversationId: ConversationId) {
+        _callMetadataProfile.update(conversationId) { currentMetadata ->
+            currentMetadata.copy(callAnsweredElsewhere = true)
+        }
     }
 
     override fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean) {

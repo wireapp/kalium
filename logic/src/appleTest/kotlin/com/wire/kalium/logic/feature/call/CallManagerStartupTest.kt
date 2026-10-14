@@ -198,6 +198,32 @@ class CallManagerStartupTest {
     @Test
     fun meetingClosedWithoutJoiningDoesNotPersistMissedCall() = verifyClose(CallClosedReason.NORMAL, CallStatus.CLOSED)
 
+    @Test
+    fun callAnsweredElsewhereDoesNotPersistMissedCallWhenClosed() = runTest {
+        for (type in listOf(Conversation.Type.OneOnOne, Conversation.Type.Group.Regular)) {
+            val fixture = Fixture(StandardTestDispatcher(testScheduler).testKaliumDispatcher())
+            fixture.metadata = TestCall.oneOnOneCallMetadata().copy(callStatus = CallStatus.INCOMING, conversationType = type)
+            val manager = fixture.manager()
+            try {
+                manager.waitUntilInitialized()
+                fixture.callbacks.onClosedCall(CallClosedReason.ANSWERED_ELSEWHERE.avsValue, "call@example.com", 1u, "caller@example.com", "client")
+                runCurrent()
+
+                assertEquals(true, fixture.metadata?.callAnsweredElsewhere)
+                assertEquals(if (type is Conversation.Type.Group) CallStatus.STILL_ONGOING else CallStatus.CLOSED, fixture.metadata?.callStatus)
+                verifySuspend(VerifyMode.not) { fixture.repository.persistMissedCall(CONVERSATION) }
+
+                fixture.callbacks.onClosedCall(CallClosedReason.NORMAL.avsValue, "call@example.com", 1u, "caller@example.com", "client")
+                runCurrent()
+
+                assertEquals(CallStatus.CLOSED, fixture.metadata?.callStatus)
+                verifySuspend(VerifyMode.not) { fixture.repository.persistMissedCall(CONVERSATION) }
+            } finally {
+                manager.cancelJobs()
+            }
+        }
+    }
+
     private fun verifyClose(reason: CallClosedReason, expectedStatus: CallStatus) = runTest {
         val cases = listOf(
             Conversation.Type.Group.Meeting to false,
@@ -321,6 +347,9 @@ class CallManagerStartupTest {
                         1uL, Instant.DISTANT_PAST, CipherSuite.fromTag(1)
                     ) else Conversation.ProtocolInfo.Proteus
                 )
+            }
+            everySuspend { repository.updateIsAnsweredElsewhere(any()) } calls {
+                metadata = metadata?.copy(callAnsweredElsewhere = true)
             }
             everySuspend { repository.updateCallStatusById(any(), any()) } calls {
                 metadata = metadata?.copy(callStatus = it.arg(1))

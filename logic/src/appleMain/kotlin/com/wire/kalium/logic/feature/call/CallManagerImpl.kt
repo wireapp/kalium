@@ -822,7 +822,6 @@ internal class CallManagerImpl internal constructor(
 
     private fun handleClosedCall(reason: Int, conversationId: String) {
         val avsReason = CallClosedReason.fromInt(reason)
-        val callStatus = getCallStatusFromCloseReason(avsReason)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         val closeContext = traceContext(conversationIdWithDomain, Uuid.random().toString())
@@ -831,7 +830,16 @@ internal class CallManagerImpl internal constructor(
             try {
                 val callMetadata = callRepository.getCallMetadata(conversationIdWithDomain)
                 val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
-                if (isConnectedToInternet && shouldPersistMissedCall(callMetadata, callStatus)) {
+                val callStatus = getCallStatusFromCloseReason(avsReason, callMetadata?.conversationType)
+
+                if (avsReason == CallClosedReason.ANSWERED_ELSEWHERE) {
+                    callRepository.updateIsAnsweredElsewhere(conversationIdWithDomain)
+                }
+
+                if (isConnectedToInternet &&
+                    avsReason != CallClosedReason.ANSWERED_ELSEWHERE &&
+                    shouldPersistMissedCall(callMetadata, callStatus)
+                ) {
                     callRepository.persistMissedCall(conversationIdWithDomain)
                 }
 
@@ -868,7 +876,7 @@ internal class CallManagerImpl internal constructor(
         callMetadata?.conversationType == Conversation.Type.Group.Meeting -> false
         callStatus == CallStatus.MISSED -> true
         callStatus == CallStatus.CLOSED -> callMetadata?.let { metadata ->
-            metadata.establishedTime == null &&
+            metadata.establishedTime == null && !metadata.callAnsweredElsewhere &&
                     metadata.callStatus != CallStatus.CLOSED_INTERNALLY &&
                     metadata.callStatus != CallStatus.REJECTED &&
                     metadata.callStatus != CallStatus.STARTED
@@ -876,7 +884,12 @@ internal class CallManagerImpl internal constructor(
         else -> false
     }
 
-    private fun getCallStatusFromCloseReason(reason: CallClosedReason): CallStatus = when (reason) {
+    private fun getCallStatusFromCloseReason(reason: CallClosedReason, conversationType: Conversation.Type?): CallStatus = when (reason) {
+        CallClosedReason.ANSWERED_ELSEWHERE -> when (conversationType) {
+            is Conversation.Type.Group -> CallStatus.STILL_ONGOING
+            else -> CallStatus.CLOSED
+        }
+
         CallClosedReason.STILL_ONGOING -> CallStatus.STILL_ONGOING
         CallClosedReason.CANCELLED -> CallStatus.MISSED
         CallClosedReason.REJECTED -> CallStatus.REJECTED
