@@ -94,6 +94,12 @@ interface AuthenticatedNetworkContainer {
     /** Cancel and join all caller requests/collectors before closing. Injected mock engines remain caller-owned. */
     suspend fun close()
 
+    /**
+     * Close open WebSockets and wait until their clients finish; HTTP requests and later WebSockets still work.
+     * The engine may finish closing the native socket afterwards. Stop collectors first, or they may reconnect.
+     */
+    suspend fun closeWebSockets()
+
     val accessTokenApi: AccessTokenApi
 
     val logoutApi: LogoutApi
@@ -395,6 +401,7 @@ interface AuthenticatedNetworkContainer {
 
 internal interface AuthenticatedHttpClientProvider {
     suspend fun close()
+    suspend fun closeWebSockets()
     val cellsHttpClient: HttpClient
         get() = networkClient.httpClient
     val backendConfig: ServerConfigDTO.Links
@@ -503,5 +510,9 @@ internal class AuthenticatedHttpClientProviderImpl(
                 throw failure
             }
         }
+    }
+
+    override suspend fun closeWebSockets() {
+        if (websocketClientDelegate.isInitialized()) websocketClientDelegate.value.closeSessions()
     }
 }

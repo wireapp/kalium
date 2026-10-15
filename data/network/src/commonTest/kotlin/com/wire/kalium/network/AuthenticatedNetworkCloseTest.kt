@@ -27,13 +27,17 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.mock.MockEngine
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -108,6 +112,59 @@ internal class AuthenticatedNetworkCloseTest : ApiTest() {
         assertTrue(disposable.coroutineContext.job.isCompleted)
         engine.close()
         engine.coroutineContext.job.join()
+    }
+
+    @Test
+    fun closeSessionsClosesOpenWebsocketAndAcceptsNewOnes() = runTest {
+        val engine = MockEngine { error("No request expected") }
+        val disposables = mutableListOf<HttpClient>()
+        val websocket = AuthenticatedWebSocketClient(engine, TEST_BEARER_AUTH_PROVIDER, TEST_BACKEND_CONFIG, kaliumLogger) { client, _ ->
+            disposables += client
+            MockWebSocketSession(Job())
+        }
+        websocket.createWebSocketSession("client") {}
+        websocket.closeSessions()
+        assertTrue(disposables.single().coroutineContext.job.isCompleted)
+
+        websocket.createWebSocketSession("client") {}
+        assertTrue(disposables.last().coroutineContext.job.isActive)
+        websocket.close()
+        assertTrue(disposables.last().coroutineContext.job.isCompleted)
+        engine.close()
+        engine.coroutineContext.job.join()
+    }
+
+    @Test
+    fun closeSessionsWaitsForWebsocketClientTeardown() = runTest {
+        val engine = MockEngine { error("No request expected") }
+        lateinit var disposable: HttpClient
+        val websocket = AuthenticatedWebSocketClient(engine, TEST_BEARER_AUTH_PROVIDER, TEST_BACKEND_CONFIG, kaliumLogger) { client, _ ->
+            disposable = client
+            MockWebSocketSession(Job())
+        }
+        websocket.createWebSocketSession("client") {}
+        val teardown = CompletableDeferred<Unit>()
+        CoroutineScope(disposable.coroutineContext).launch(start = CoroutineStart.UNDISPATCHED) {
+            withContext(NonCancellable) { teardown.await() }
+        }
+        val close = launch { websocket.closeSessions() }
+        runCurrent()
+        assertFalse(close.isCompleted)
+        teardown.complete(Unit)
+        close.join()
+        websocket.close()
+        engine.close()
+        engine.coroutineContext.job.join()
+    }
+
+    @Test
+    fun closeWebSocketsKeepsHttpClientsOpen() = runTest {
+        val engine = MockEngine { error("No request expected") }
+        val provider = provider(engine)
+        val main = provider.networkClient.httpClient
+        provider.closeWebSockets()
+        assertTrue(main.coroutineContext.job.isActive)
+        provider.close()
     }
 
     @Test

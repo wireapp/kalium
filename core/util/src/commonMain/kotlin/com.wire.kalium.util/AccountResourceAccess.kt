@@ -42,12 +42,17 @@ class AccountResourceAccess {
         }
     }
 
-    /** Close all resources before releasing ownership; close failure makes access unavailable. */
-    suspend fun pause(closeResources: suspend () -> Unit) {
+    /**
+     * Close all resources before releasing ownership; close failure makes access unavailable.
+     * [quiesce] first stops work that must end before the pause while operations are still admitted;
+     * no resume can interleave before [closeResources]. If it fails, access is unchanged.
+     */
+    suspend fun pause(quiesce: suspend () -> Unit = {}, closeResources: suspend () -> Unit) {
         checkOutsideOperation()
         transition.withLock {
             checkFailure()
             if (state.value.paused) return@withLock
+            quiesce()
             state.update { it.copy(accepting = false) }
             try {
                 state.first { it.permits.isEmpty() }

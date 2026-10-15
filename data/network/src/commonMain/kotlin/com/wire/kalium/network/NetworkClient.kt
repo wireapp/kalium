@@ -190,6 +190,15 @@ internal class AuthenticatedWebSocketClient(
             closed = true
             clients.value
         }
+        awaitClosed(remaining)
+    }
+
+    /** Close current sessions, including pending handshakes, but keep accepting new sessions. */
+    suspend fun closeSessions() = withContext(NonCancellable) {
+        awaitClosed(lifecycleMutex.withLock { clients.value })
+    }
+
+    private suspend fun awaitClosed(remaining: Set<DisposableClient>) {
         remaining.forEach(::requestClose)
         remaining.forEach { it.closeFinished.await() }
         closeFailure.value?.let { throw it }

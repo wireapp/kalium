@@ -25,22 +25,29 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.runningFold
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 public abstract class SyncExecutor {
 
@@ -111,6 +118,12 @@ public abstract class SyncExecutor {
     }
 }
 
+/** A sync suspension whose owner kept the account and must let sync run again. */
+internal fun interface SyncSuspension {
+    /** Resumes sync unless a later suspension or resume replaced this one. */
+    fun cancel()
+}
+
 internal class SyncExecutorImpl(
     private val syncStateObserver: SyncStateObserver,
     private val slowSyncManager: SlowSyncManager,
@@ -149,11 +162,22 @@ internal class SyncExecutorImpl(
         val shouldSync: Boolean,
         val restartVersion: Long,
         val trigger: DemandAction?,
+        val gate: ExecutionGate,
     )
+
+    // Each transition gets a new generation, so a suspension that collectors never observed
+    // still makes the following resume a distinct execution.
+    private data class ExecutionGate(val generation: Long = 0, val suspended: Boolean = false)
 
     // Keep logical request lifetimes separate from transient collectors that only wait for a sync state.
     // Never emits; its subscriptionCount (non-conflated) is the requester count.
     private val syncRequestDemandFlow = MutableSharedFlow<Unit>()
+
+    // Suspension outlives requests: requests made while suspended wait until [resumeExecution].
+    private val gate = MutableStateFlow(ExecutionGate())
+
+    // Held while sync runs, so suspension can wait for a cancelled sync to finish.
+    private val executionMutex = Mutex()
     private val logger by lazy { userScopedLogger.withFeatureId(SYNC).withTextTag("SyncExecutor") }
 
     override fun startAndStopSyncAsNeeded() {
@@ -173,38 +197,69 @@ internal class SyncExecutorImpl(
                         lastStartAction = if (action.startsExecution) action else previous.lastStartAction,
                     )
                 }
-                .map { demand ->
+                .combine(gate) { demand, gate ->
                     SyncExecution(
-                        shouldSync = demand.requesterCount > 0,
+                        shouldSync = demand.requesterCount > 0 && !gate.suspended,
                         restartVersion = demand.restartVersion,
                         trigger = demand.lastStartAction,
+                        gate = gate,
                     )
                 }
                 .distinctUntilChanged()
                 .collectLatest { execution ->
                     if (execution.shouldSync) {
-                        logger.logSyncTelemetry(
-                            event = SyncTelemetryEvent.EXECUTION_STARTED,
-                            component = SyncTelemetryComponent.EXECUTOR,
-                            data = mapOf(
-                                "restartVersion" to execution.restartVersion,
-                                "trigger" to execution.trigger?.name,
+                        executionMutex.withLock {
+                            // A suspension may have completed before this execution took the lock.
+                            if (gate.value.suspended) return@withLock
+                            logger.logSyncTelemetry(
+                                event = SyncTelemetryEvent.EXECUTION_STARTED,
+                                component = SyncTelemetryComponent.EXECUTOR,
+                                data = mapOf(
+                                    "restartVersion" to execution.restartVersion,
+                                    "trigger" to execution.trigger?.name,
+                                )
                             )
-                        )
-                        performSync()
+                            performSync()
+                        }
                     } else {
                         logger.logSyncTelemetry(
                             event = SyncTelemetryEvent.EXECUTION_STOPPED,
                             component = SyncTelemetryComponent.EXECUTOR,
                             data = mapOf(
                                 "restartVersion" to execution.restartVersion,
-                                "reason" to "NO_ACTIVE_REQUESTS",
+                                "reason" to if (execution.gate.suspended) "SUSPENDED" else "NO_ACTIVE_REQUESTS",
                             )
                         )
                     }
                 }
         }
     }
+
+    /**
+     * Stops sync and returns once it has finished. Sync stays stopped, even for new requests,
+     * until [resumeExecution]; requests stay registered and run again on resume.
+     * Cancelling the wait cancels the suspension.
+     */
+    internal suspend fun suspendExecution(): SyncSuspension {
+        val generation = gate.updateAndGet { ExecutionGate(it.generation + 1, suspended = true) }.generation
+        // Resume only if this is still the latest transition, so an aborted owner cannot lift a newer one.
+        val suspension = SyncSuspension { gate.update { resumed(it, it.suspended && it.generation == generation) } }
+        try {
+            executionMutex.withLock { }
+        } catch (cancelled: CancellationException) {
+            suspension.cancel()
+            throw cancelled
+        }
+        return suspension
+    }
+
+    /** Lets active and future requests run sync again after any suspension. */
+    internal fun resumeExecution() {
+        gate.update { resumed(it, it.suspended) }
+    }
+
+    private fun resumed(gate: ExecutionGate, resume: Boolean) =
+        if (resume) ExecutionGate(gate.generation + 1, suspended = false) else gate
 
     /**
      * The demand policy: the first request starts sync. A later request restarts it only when

@@ -67,6 +67,36 @@ class AccountResourceAccessTest {
     }
 
     @Test
+    fun quiesceRunsWhileWorkIsAdmittedAndBeforeAResumeCanInterleave() = runTest {
+        val access = AccountResourceAccess()
+        val stopped = CompletableDeferred<Unit>()
+        val events = mutableListOf<String>()
+        val pause = launch {
+            access.pause(quiesce = {
+                events += access.withAccess { "admitted" }
+                stopped.await()
+            }) { events += "close" }
+        }
+        runCurrent()
+        val resume = launch { access.resume { events += "open" } }
+        runCurrent()
+        assertEquals(listOf("admitted"), events)
+        stopped.complete(Unit)
+        pause.join()
+        resume.join()
+        assertEquals(listOf("admitted", "close", "open"), events)
+    }
+
+    @Test
+    fun failedQuiesceLeavesResourcesOpen() = runTest {
+        val access = AccountResourceAccess()
+        var closed = false
+        assertFailsWith<IllegalStateException> { access.pause(quiesce = { error("busy") }) { closed = true } }
+        assertFalse(closed)
+        assertEquals("open", access.withAccess { "open" })
+    }
+
+    @Test
     fun cancellingDrainLeavesResourcesOpenAndAdmitsWorkAgain() = runTest {
         val access = AccountResourceAccess()
         val finish = CompletableDeferred<Unit>()

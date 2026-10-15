@@ -465,6 +465,7 @@ import com.wire.kalium.logic.sync.SendPendingMessagesUseCase
 import com.wire.kalium.logic.sync.SendPendingMessagesUseCaseImpl
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
+import com.wire.kalium.logic.sync.SyncSuspension
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.SyncStateObserverImpl
@@ -960,6 +961,30 @@ public class UserSessionScope internal constructor(
         }
     }
 
+    /**
+     * Stop sync and close its WebSocket client before another process may receive this account's events.
+     * Legacy push skips clients the backend serves over an open WebSocket, and consumable
+     * notifications need a single consumer. The native socket and the backend see the close
+     * asynchronously. Sync stays stopped, even for new requests, until [resumeSync] or until
+     * the returned suspension is cancelled. Failure leaves sync running.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    internal suspend fun suspendSync(): SyncSuspension {
+        val suspension = syncExecutorImpl.suspendExecution()
+        try {
+            authenticatedNetworkContainer.closeWebSockets()
+        } catch (failure: Throwable) {
+            suspension.cancel()
+            throw failure
+        }
+        return suspension
+    }
+
+    /** Resume after ownership returns. */
+    internal fun resumeSync() {
+        syncExecutorImpl.resumeExecution()
+    }
+
     internal suspend fun closeAccountResources() {
         stopAccountWork()
         if (proteusClientProviderDelegate.isInitialized()) proteusClientProviderDelegate.value.close()
@@ -1406,7 +1431,7 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    public val syncExecutor: SyncExecutor by lazy {
+    private val syncExecutorImpl: SyncExecutorImpl by lazy {
         SyncExecutorImpl(
             syncStateObserver.value,
             slowSyncManager,
@@ -1415,6 +1440,8 @@ public class UserSessionScope internal constructor(
             userScopedLogger = userScopedLogger
         )
     }
+
+    public val syncExecutor: SyncExecutor get() = syncExecutorImpl
 
     public fun setIncrementalSyncUnprocessedEventsBatchLimit(limit: Int?) {
         eventRepository.setUnprocessedEventsBatchLimit(limit)

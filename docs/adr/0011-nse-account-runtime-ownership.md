@@ -31,6 +31,12 @@ may refresh that authorization after workers drain; it cannot certify interrupte
 registration or restore. Logout serializes mutation and cleanup against the
 originating session so stale work cannot reach a reopened account. Hosts must
 quiesce their own account operations and observers before releasing ownership.
+Background release keeps the app session but first stops sync and closes its
+WebSocket client, while no reopen can interleave; sync restarts only after the
+app owns the account again. Legacy push skips clients the backend serves over
+WebSocket, so an open socket would hide new events from the NSE. The native
+socket and the backend see the close asynchronously, so events in that short
+window may still reach the closing socket instead of APNs.
 
 NSE opening acquires the lease without waiting, reads compatible readiness,
 checks existing store files and credentials, and opens owned resources. It never

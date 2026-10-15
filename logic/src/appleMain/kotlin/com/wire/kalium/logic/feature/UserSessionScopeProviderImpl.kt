@@ -44,6 +44,7 @@ import okio.Path.Companion.toPath
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.sync.receiving.ApplePreparedAccountStore
+import com.wire.kalium.logic.sync.SyncSuspension
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.job
@@ -265,32 +266,49 @@ internal actual open class UserSessionScopeProviderImpl(
 
     /** Keep the session and its public clients alive; transfer only writable/native resources. */
     // Keep ownership on uncertain cleanup, and retry if a concurrent full release replaced the gate.
-    @Suppress("TooGenericExceptionCaught", "ReturnCount")
+    @Suppress("ReturnCount")
     suspend fun suspendForBackground(userId: UserId) {
         val account = accounts[userId] ?: return
         while (true) {
             val access = account.access
-            // Drain before taking the lifecycle mutex: admitted operations may still need it
-            // to invalidate notification readiness or complete account preparation.
-            access.pause {
-                account.mutex.withLock {
-                    if (access !== account.access || account.lease == null) return@withLock
-                    check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
-                    try {
-                        super.get(userId)?.let { scope ->
-                            if (account.canRefreshReadiness) prepareOwned(account, userId, scope)
-                            else revokeReadiness(account, userId)
-                        }
-                        account.crypto.keys.forEach { it.suspendNativeResources() }
-                        account.lease?.release()
-                        account.lease = null
-                    } catch (failure: Throwable) {
-                        account.unavailable = true
-                        throw failure
-                    }
+            var syncSuspension: SyncSuspension? = null
+            try {
+                access.pause(
+                    // Access does not gate the WebSocket: stop sync and close it while sync can still finish
+                    // its writes. Pause holds its transition, so reopening cannot resume sync before release.
+                    quiesce = {
+                        if (access === account.access) syncSuspension = super.get(userId)?.suspendSync()
+                    },
+                ) {
+                    // Drain before taking the lifecycle mutex: admitted operations may still need it
+                    // to invalidate notification readiness or complete account preparation.
+                    releaseForBackground(account, userId, access)
                 }
+            } finally {
+                // Reopening resumes sync after reacquiring ownership; undo only this suspension if ownership was kept.
+                if (account.lease != null && !account.unavailable) syncSuspension?.cancel()
             }
             if (access === account.access) return
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun releaseForBackground(account: OwnedAccount, userId: UserId, access: AccountResourceAccess) {
+        account.mutex.withLock {
+            if (access !== account.access || account.lease == null) return@withLock
+            check(!account.unavailable) { "Account cleanup cannot be established until process exit" }
+            try {
+                super.get(userId)?.let { scope ->
+                    if (account.canRefreshReadiness) prepareOwned(account, userId, scope)
+                    else revokeReadiness(account, userId)
+                }
+                account.crypto.keys.forEach { it.suspendNativeResources() }
+                account.lease?.release()
+                account.lease = null
+            } catch (failure: Throwable) {
+                account.unavailable = true
+                throw failure
+            }
         }
     }
 
@@ -418,7 +436,10 @@ internal actual open class UserSessionScopeProviderImpl(
                         if (access === account.access) {
                             acquire(account, userId)
                             revokeReadiness(account, userId)
-                            super.get(userId)?.userStorage?.database?.refreshAfterExternalWrites()
+                            super.get(userId)?.let { session ->
+                                session.userStorage.database.refreshAfterExternalWrites()
+                                session.resumeSync()
+                            }
                         }
                     }
                 },
