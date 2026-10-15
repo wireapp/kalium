@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.LeaveConversationUseCase
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.util.KaliumDispatcher
 
@@ -38,8 +39,12 @@ public class MeetingScope internal constructor(
     private val resetMLSConversation: ResetMLSConversationUseCase,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val leaveConversation: LeaveConversationUseCase,
+    private val deleteConversation: DeleteConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
 ) {
+    public val maintainMeetingOccurrences: MaintainMeetingOccurrencesUseCase
+        get() = MaintainMeetingOccurrencesUseCaseImpl(dispatcher, meetingRepository)
+
     public val getPaginatedMeetingOccurrenceDetails: GetPaginatedMeetingOccurrencesUseCase
         get() = GetPaginatedMeetingOccurrencesUseCaseImpl(
             dispatcher = dispatcher,
@@ -55,6 +60,9 @@ public class MeetingScope internal constructor(
     public val deleteMeetingForEveryone: DeleteMeetingForEveryoneUseCase
         get() = DeleteMeetingForEveryoneUseCaseImpl(
             meetingRepository = meetingRepository,
+            conversationRepository = conversationRepository,
+            deleteConversation = deleteConversation,
+            transactionProvider = transactionProvider,
         )
 
     public val deleteMeetingForMe: DeleteMeetingForMeUseCase
@@ -91,4 +99,7 @@ public class MeetingScope internal constructor(
             resetMLSConversation = resetMLSConversation,
             transactionProvider = transactionProvider,
         )
+
+    public val meetingReminders: MeetingRemindersUseCase
+        get() = MeetingRemindersUseCaseImpl(meetingRepository)
 }

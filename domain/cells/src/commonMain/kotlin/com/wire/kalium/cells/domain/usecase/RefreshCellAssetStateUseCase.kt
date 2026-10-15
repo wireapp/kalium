@@ -20,6 +20,7 @@ package com.wire.kalium.cells.domain.usecase
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
+import com.wire.kalium.cells.domain.model.imagePreviewUrl
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.NetworkFailure.ServerMiscommunication
@@ -35,7 +36,6 @@ import com.wire.kalium.common.functional.retry
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.CellAssetContent
-import com.wire.kalium.logic.data.message.localPath
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -54,7 +54,7 @@ import okio.SYSTEM
  * - Fetch preview URL with retries.
  */
 public fun interface RefreshCellAssetStateUseCase {
-    public suspend operator fun invoke(assetId: String): Either<CoreFailure, CellNode>
+    public suspend operator fun invoke(assetId: String, conversationId: String?): Either<CoreFailure, CellNode>
 }
 
 internal class RefreshCellAssetStateUseCaseImpl internal constructor(
@@ -69,7 +69,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
         private const val DELAY = 500L
     }
 
-    override suspend fun invoke(assetId: String): Either<CoreFailure, CellNode> {
+    override suspend fun invoke(assetId: String, conversationId: String?): Either<CoreFailure, CellNode> {
         return cellsRepository.getNode(assetId)
             .onSuccess { node ->
                 if (node.isRecycled) {
@@ -84,35 +84,34 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
                 }
             }.onSuccess { node ->
                 if (node.isPreviewSupported() && node.isRecycled.not()) {
-                    getNodePreviews(node)
-                        .onSuccess { previews ->
-                            previews.maxBy { it.dimension }.let { preview ->
-                                attachmentsRepository.savePreviewUrl(assetId, preview.url)
-                            }
+                    getImagePreviewUrl(node)
+                        .onSuccess { url ->
+                            attachmentsRepository.savePreviewUrl(assetId, url, conversationId)
                         }
                 }
             }
     }
 
-    private suspend fun getNodePreviews(node: CellNode) =
-        if (!node.previews.isNullOrEmpty()) {
-            node.previews.right()
-        } else {
-            retry(MAX_PREVIEW_FETCH_RETRIES, DELAY) {
+    /**
+     * A node carries every rendition the backend generated for it, so the thumbnail is the image
+     * one. Renditions are generated asynchronously after upload — and for a document the PDF one
+     * can land before the image — so the node is polled until its image rendition exists.
+     */
+    private suspend fun getImagePreviewUrl(node: CellNode): Either<CoreFailure, String> =
+        node.previews.imagePreviewUrl()?.right()
+            ?: retry(MAX_PREVIEW_FETCH_RETRIES, DELAY) {
                 cellsRepository.getPreviews(node.uuid)
                     .onFailure { error ->
                         if (error.isAssetNotFound()) {
                             return error.left()
                         }
                     }
-                    .flatMap { response ->
-                        when {
-                            response.isEmpty() -> StorageFailure.DataNotFound.left()
-                            else -> response.right()
-                        }
+                    .flatMap { previews ->
+                        // Non-null empty means every rendition attempt failed for good: stop polling.
+                        if (previews != null && previews.isEmpty()) return StorageFailure.DataNotFound.left()
+                        previews.imagePreviewUrl()?.right() ?: StorageFailure.DataNotFound.left()
                     }
             }
-        }
 
     private suspend fun removeLocalAssetData(assetId: String) {
         attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
@@ -182,8 +181,14 @@ internal fun NetworkFailure.isAssetNotFound(): Boolean {
     return response.code == HttpStatusCode.NotFound.value || response.code == HttpStatusCode.Forbidden.value
 }
 
+/**
+ * Whether the backend generates renditions for this kind of file.
+ *
+ * It deliberately does not look at [CellNode.previews]: renditions are generated asynchronously
+ * after upload, so a file that has just been received has none yet, and that is exactly the case
+ * the caller has to wait for.
+ */
 public fun CellNode.isPreviewSupported(): Boolean = when {
-    previews == null -> false
     mimeType == null -> false
     mimeType.startsWith("image/") || mimeType.startsWith("video/") || mimeType == "application/pdf" -> true
     supportedEditors.isNotEmpty() -> true

@@ -22,6 +22,7 @@ import androidx.paging.PagingConfig
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.Meeting
 import com.wire.kalium.persistence.MeetingsQueries
@@ -31,6 +32,10 @@ import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
@@ -41,6 +46,7 @@ interface MeetingDao {
         generateOccurrencesWindow: GenerationLimit.Window,
         removeMeetingsAbsentFromUpsertList: Boolean = false,
     )
+
     suspend fun removeOutdatedMeetings(olderThan: Instant)
     suspend fun insertMissingOccurrences(generateOccurrencesWindow: GenerationLimit.Window)
     fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?>
@@ -49,10 +55,14 @@ interface MeetingDao {
         startingOffset: Long,
         from: Instant,
     ): KaliumPager<MeetingOccurrenceDetailsEntity>
+
     suspend fun deleteMeeting(meetingId: QualifiedIDEntity)
-    suspend fun deleteMeetingsByConversationId(conversationId: QualifiedIDEntity)
+    suspend fun getMeetingsByConversationId(conversationId: QualifiedIDEntity): List<MeetingEntity>
     suspend fun getNextUnfinishedMeetingOccurrenceDetailsId(meetingId: QualifiedIDEntity, from: Instant): String?
     suspend fun getMeeting(meetingId: QualifiedIDEntity): MeetingEntity?
+    fun observeMeetingReminderChanges(): Flow<Unit>
+    suspend fun getNextMeetingReminder(from: Instant): MeetingReminderEntity?
+    suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminderEntity>
 }
 
 internal class MeetingDaoImpl(
@@ -130,10 +140,24 @@ internal class MeetingDaoImpl(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?> =
         meetingsQueries.selectMeetingOccurrenceDetailsById(occurrenceId = occurrenceId, mapper = MeetingMapper::fromViewToDetails)
             .asFlow()
             .mapToOneOrNull(readDispatcher.value)
+            .flatMapLatest { meeting ->
+                if (meeting == null) {
+                    flowOf(null)
+                } else {
+                    meetingsQueries.selectMeetingParticipants(
+                        conversationIds = listOf(meeting.meeting.conversationId),
+                        mapper = ::MeetingParticipantEntity
+                    ).asFlow()
+                        .mapToList(readDispatcher.value)
+                        .map { meeting.copy(participants = it) }
+                        .flowOn(readDispatcher.value)
+                }
+            }
             .flowOn(readDispatcher.value)
 
     override fun getPaginatedMeetingOccurrenceDetails(pagingConfig: PagingConfig, startingOffset: Long, from: Instant) =
@@ -158,11 +182,11 @@ internal class MeetingDaoImpl(
         }
     }
 
-    override suspend fun deleteMeetingsByConversationId(conversationId: QualifiedIDEntity) {
-        withContext(writeDispatcher.value) {
-            meetingsQueries.deleteMeetingsByConversationId(conversationId)
+    override suspend fun getMeetingsByConversationId(conversationId: QualifiedIDEntity): List<MeetingEntity> =
+        withContext(readDispatcher.value) {
+            meetingsQueries.selectMeetingsByConversationId(conversationId, MeetingMapper::fromViewToModel)
+                .awaitAsList()
         }
-    }
 
     override suspend fun getNextUnfinishedMeetingOccurrenceDetailsId(meetingId: QualifiedIDEntity, from: Instant): String? =
         withContext(readDispatcher.value) {
@@ -186,6 +210,25 @@ internal class MeetingDaoImpl(
                 prefetchDistance = prefetchDistance,
             ),
         )
+
+    // Only SQLDelight's table invalidation matters here; the COUNT result is never read or compared.
+    override fun observeMeetingReminderChanges(): Flow<Unit> =
+        meetingsQueries.selectMeetingReminderChanges()
+            .asFlow()
+            .map {}
+            .flowOn(readDispatcher.value)
+
+    override suspend fun getNextMeetingReminder(from: Instant): MeetingReminderEntity? =
+        withContext(readDispatcher.value) {
+            meetingsQueries.selectNextMeetingReminder(from, MeetingMapper::fromViewToModel)
+                .awaitAsOneOrNull()
+        }
+
+    override suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminderEntity> =
+        withContext(readDispatcher.value) {
+            meetingsQueries.selectMeetingRemindersWithin(startInclusive, endExclusive, MeetingMapper::fromViewToModel)
+                .awaitAsList()
+        }
 }
 
 private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {

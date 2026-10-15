@@ -30,6 +30,8 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity.RecurrenceEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceDetailsEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingParticipantEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingReminderEntity
 
 internal interface MeetingMapper {
     fun fromApiToDao(meeting: MeetingDTO): MeetingEntity?
@@ -40,8 +42,10 @@ internal interface MeetingMapper {
     fun fromDaoToModel(recurrence: RecurrenceEntity): Meeting.Recurrence
     fun fromModelToDao(recurrence: Meeting.Recurrence): RecurrenceEntity
     fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest
+    fun fromDaoToModel(reminder: MeetingReminderEntity): MeetingReminder
 }
 
+@Suppress("TooManyFunctions")
 internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : MeetingMapper {
     override fun fromApiToDao(meeting: MeetingDTO): MeetingEntity? {
         val recurrence = meeting.recurrence?.let { fromApiToDao(it) }
@@ -85,13 +89,9 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         meeting = fromDaoToModel(meeting.meeting),
         conversationName = meeting.conversationName.orEmpty(),
         conversationType = when (meeting.conversationType) {
-            ConversationEntity.Type.ONE_ON_ONE -> MeetingOccurrence.ConversationType.OneOnOne(
-                previewPicture = meeting.otherUserPreviewAssetId?.toModel()
-            )
+            ConversationEntity.Type.ONE_ON_ONE -> MeetingOccurrence.ConversationType.OneOnOne
 
-            ConversationEntity.Type.MEETING -> MeetingOccurrence.ConversationType.Meeting(
-                previewPictures = meeting.participantPreviewAssetIds.map { it.toModel() }
-            )
+            ConversationEntity.Type.MEETING -> MeetingOccurrence.ConversationType.Meeting
 
             ConversationEntity.Type.CHANNEL -> MeetingOccurrence.ConversationType.Channel(
                 isPrivateChannel = meeting.channelAccess != ConversationEntity.ChannelAccess.PUBLIC
@@ -105,8 +105,17 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         },
         occurrenceId = meeting.occurrence.occurrenceId,
         occurrenceStartTime = meeting.occurrence.occurrenceStart,
-        occurrenceEndTime = meeting.occurrence.occurrenceEnd
+        occurrenceEndTime = meeting.occurrence.occurrenceEnd,
+        participants = meeting.participants.map { fromDaoToModel(it) }
     )
+
+    private fun fromDaoToModel(avatar: MeetingParticipantEntity): MeetingOccurrence.Participant =
+        MeetingOccurrence.Participant(
+            userId = avatar.userId.toModel(),
+            name = avatar.name,
+            accentColor = avatar.accentColor,
+            assetId = avatar.previewAssetId?.toModel()
+        )
 
     override fun fromDaoToModel(recurrence: RecurrenceEntity): Meeting.Recurrence = Meeting.Recurrence(
         frequency = recurrence.frequency.toFrequency(),
@@ -132,6 +141,14 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
                 until = it.until
             )
         }
+    )
+
+    override fun fromDaoToModel(reminder: MeetingReminderEntity): MeetingReminder = MeetingReminder(
+        occurrenceId = reminder.occurrenceId,
+        meetingId = reminder.meetingId.toModel(),
+        conversationId = reminder.conversationId.toModel(),
+        title = reminder.title,
+        startTime = reminder.startTime
     )
 
     private fun RecurrenceEntity.Frequency.toFrequency(): Meeting.Recurrence.Frequency = when (this) {

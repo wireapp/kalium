@@ -18,14 +18,62 @@
 
 package com.wire.kalium.persistence.kmmSettings
 
+import com.russhwolf.settings.ExperimentalSettingsApi
 import com.russhwolf.settings.ExperimentalSettingsImplementation
 import com.russhwolf.settings.KeychainSettings
 import com.russhwolf.settings.Settings
+import kotlinx.cinterop.ExperimentalForeignApi
+import platform.CoreFoundation.CFStringRef
+import platform.CoreFoundation.CFTypeRef
+import platform.Foundation.CFBridgingRelease
+import platform.Foundation.CFBridgingRetain
+import platform.Security.kSecAttrAccessible
+import platform.Security.kSecAttrAccessibleAfterFirstUnlock
+import platform.Security.kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+import platform.Security.kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
+import platform.Security.kSecAttrAccessibleWhenUnlocked
+import platform.Security.kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+import platform.Security.kSecAttrService
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.ref.createCleaner
 
 @OptIn(ExperimentalSettingsImplementation::class)
 internal actual fun buildSettings(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
-): Settings = KeychainSettings(param.keychainConfig.serviceName)
+): Settings {
+    val config = param.keychainConfig
+    val accessibility = config.keychainAccessibility ?: return KeychainSettings(config.serviceName)
+    return AccessibleKeychainSettings(config.serviceName, accessibility)
+}
 
 internal actual class EncryptedSettingsPlatformParam(val keychainConfig: ApplePersistenceConfig)
+
+/**
+ * [KeychainSettings] for [service] whose entries are stored and looked up with [accessibility].
+ *
+ * `KeychainSettings` only takes extra attributes with the service already bridged to Core Foundation,
+ * and then doesn't release it, so this releases it once collected, as `KeychainSettings(service)` does.
+ */
+@OptIn(ExperimentalForeignApi::class, ExperimentalSettingsApi::class, ExperimentalSettingsImplementation::class)
+private class AccessibleKeychainSettings private constructor(
+    cfService: CFTypeRef?,
+    accessibility: KeychainAccessibility
+) : Settings by KeychainSettings(kSecAttrService to cfService, kSecAttrAccessible to accessibility.secAttrValue) {
+
+    constructor(service: String, accessibility: KeychainAccessibility) : this(CFBridgingRetain(service), accessibility)
+
+    @OptIn(ExperimentalNativeApi::class)
+    @Suppress("unused")
+    private val cleaner = createCleaner(cfService) { CFBridgingRelease(it) }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private val KeychainAccessibility.secAttrValue: CFStringRef?
+    get() = when (this) {
+        KeychainAccessibility.WhenUnlocked -> kSecAttrAccessibleWhenUnlocked
+        KeychainAccessibility.WhenUnlockedThisDeviceOnly -> kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        KeychainAccessibility.AfterFirstUnlock -> kSecAttrAccessibleAfterFirstUnlock
+        KeychainAccessibility.AfterFirstUnlockThisDeviceOnly -> kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        KeychainAccessibility.WhenPasscodeSetThisDeviceOnly -> kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
+    }

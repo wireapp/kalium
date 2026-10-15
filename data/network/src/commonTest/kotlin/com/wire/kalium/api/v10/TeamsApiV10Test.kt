@@ -40,6 +40,7 @@ internal class TeamsApiV10Test : ApiTest() {
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
+                assertNoQueryParams()
                 assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/$PATH_COLLABORATORS")
             }
         )
@@ -77,7 +78,8 @@ internal class TeamsApiV10Test : ApiTest() {
                 {
                     "user": "$DUMMY_USER_ID",
                     "team": "$DUMMY_TEAM_ID",
-                    "permissions": ["create_team_conversation"]
+                    "permissions": ["create_team_conversation"],
+                    "unused_future_field": true
                 }
             ]
         """.trimIndent()

@@ -30,6 +30,7 @@ data class CellFileEntity(
     val downloadedAt: Long,
     val isOffline: Boolean,
     val modifiedAt: Long? = null,
+    val remotePath: String? = null,
 )
 
 data class CellFileLocalPath(
@@ -45,5 +46,5 @@ interface CellFileDao {
     fun observeOfflineFiles(): Flow<List<CellFileEntity>>
     fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<CellFileEntity>>
     suspend fun getById(id: String): CellFileEntity?
-    suspend fun getAllWithLocalPath(): List<CellFileLocalPath>
+    suspend fun getLocalPathsByIds(ids: List<String>): List<CellFileLocalPath>
 }

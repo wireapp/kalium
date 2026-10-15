@@ -77,8 +77,8 @@ deleteMeetingsNotIn:
 DELETE FROM Meeting
 WHERE meeting_id NOT IN :meetingIds;
 
-deleteMeetingsByConversationId:
-DELETE FROM Meeting WHERE conversation_id = ?;
+selectMeetingsByConversationId:
+SELECT * FROM Meeting WHERE conversation_id = ?;
 
 deleteMeetingOccurrences:
 DELETE FROM MeetingOccurrence
@@ -93,7 +93,8 @@ WHERE (
 ) OR (
     recurrence_frequency IS NOT NULL
     AND recurrence_end_date IS NOT NULL
-    AND recurrence_end_date <= :outdatedThreshold
+    -- UNTIL bounds the last start, not its end. Retain even a long final occurrence until it ends.
+    AND recurrence_end_date + (end_date - start_date) <= :outdatedThreshold
 );
 
 removeOutdatedMeetingOccurrences:
@@ -142,9 +143,6 @@ SELECT
         ELSE Conversation.name
     END AS conversationName,
     Conversation.type AS conversationType,
-    CASE Conversation.type
-        WHEN 'ONE_ON_ONE' THEN otherUser.preview_asset_id
-    END AS previewAssetId,
     Conversation.channel_access AS channelAccess,
     SelfUser.id AS selfUserId
 FROM MeetingOccurrence
@@ -183,9 +181,6 @@ SELECT
         ELSE Conversation.name
     END AS conversationName,
     Conversation.type AS conversationType,
-    CASE Conversation.type
-        WHEN 'ONE_ON_ONE' THEN otherUser.preview_asset_id
-    END AS previewAssetId,
     Conversation.channel_access AS channelAccess,
     SelfUser.id AS selfUserId
 FROM MeetingOccurrence
@@ -204,15 +199,17 @@ ORDER BY occurrenceStart ASC,
 LIMIT :limit
 OFFSET :offset;
 
-selectMeetingParticipantPreviewAssetIds:
+selectMeetingParticipants:
 SELECT
     Member.conversation AS conversationId,
+    User.qualified_id AS userId,
+    coalesce(User.name, '') AS name,
+    User.accent_id AS accentColor,
     User.preview_asset_id AS previewAssetId
 FROM Member
 JOIN User ON User.qualified_id = Member.user
-LEFT JOIN SelfUser
 WHERE Member.conversation IN :conversationIds
-    AND User.preview_asset_id IS NOT NULL
+    AND User.deleted = 0
 ORDER BY Member.conversation ASC, Member.user ASC;
 
 selectNextUnfinishedMeetingOccurrenceDetailsId:
@@ -225,3 +222,34 @@ ORDER BY MeetingOccurrence.occurrence_start ASC,
     MeetingOccurrence.occurrence_end ASC,
     Meeting.title ASC
 LIMIT 1;
+
+selectMeetingReminderChanges:
+-- @CustomKey MeetingOccurrence
+-- @CustomKey Meeting
+SELECT COUNT(*) FROM MeetingOccurrence;
+
+selectNextMeetingReminder:
+SELECT
+    MeetingOccurrence.occurrence_id,
+    MeetingOccurrence.meeting_id,
+    Meeting.conversation_id,
+    Meeting.title,
+    MeetingOccurrence.occurrence_start
+FROM MeetingOccurrence
+JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+WHERE MeetingOccurrence.occurrence_start > :from
+ORDER BY MeetingOccurrence.occurrence_start ASC, MeetingOccurrence.occurrence_id ASC
+LIMIT 1;
+
+selectMeetingRemindersWithin:
+SELECT
+    MeetingOccurrence.occurrence_id,
+    MeetingOccurrence.meeting_id,
+    Meeting.conversation_id,
+    Meeting.title,
+    MeetingOccurrence.occurrence_start
+FROM MeetingOccurrence
+JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+WHERE MeetingOccurrence.occurrence_start >= :startInclusive
+    AND MeetingOccurrence.occurrence_start < :endExclusive
+ORDER BY MeetingOccurrence.occurrence_id ASC;

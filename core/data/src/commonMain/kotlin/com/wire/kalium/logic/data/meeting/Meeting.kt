@@ -22,6 +22,8 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 data class MeetingOccurrence(
     val meeting: Meeting,
@@ -31,15 +33,18 @@ data class MeetingOccurrence(
     val occurrenceId: String,
     val occurrenceStartTime: Instant,
     val occurrenceEndTime: Instant,
+    val participants: List<Participant>
 ) {
     sealed interface ConversationType {
         data object Group : ConversationType
-        data class Meeting(val previewPictures: List<UserAssetId>) : ConversationType
+        data object Meeting : ConversationType
         data class Channel(val isPrivateChannel: Boolean) : ConversationType
-        data class OneOnOne(val previewPicture: UserAssetId?) : ConversationType
+        data object OneOnOne : ConversationType
     }
 
     enum class SelfRole { Creator, Member }
+
+    data class Participant(val userId: UserId, val name: String, val accentColor: Int, val assetId: UserAssetId? = null)
 }
 
 data class Meeting(
@@ -78,3 +83,18 @@ data class UpsertMeeting(
     val recurrence: Meeting.Recurrence?,
     val otherParticipants: List<UserId>,
 )
+
+data class MeetingReminder(
+    val occurrenceId: String,
+    val meetingId: MeetingId,
+    val conversationId: ConversationId,
+    val title: String,
+    val startTime: Instant,
+) {
+    @Suppress("unused")
+    val reminderTime: Instant get() = startTime - REMINDER_NOTIFICATION_LEAD_TIME
+
+    companion object {
+        val REMINDER_NOTIFICATION_LEAD_TIME: Duration = 10.minutes
+    }
+}

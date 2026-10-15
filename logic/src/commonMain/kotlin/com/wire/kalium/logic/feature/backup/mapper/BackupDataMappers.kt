@@ -126,7 +126,8 @@ private fun MessageMention.toBackupModel() = BackupMessageContent.Text.Mention(
     length = length
 )
 
-private fun List<MessageMention>.toBackupModel() = map { it.toBackupModel() }
+private fun List<MessageMention>.toBackupModel() =
+    filter { it.start >= 0 && it.length > 0 }.map { it.toBackupModel() }
 
 private fun Message.lastEditTime(): BackupDateTime? =
     when (this) {

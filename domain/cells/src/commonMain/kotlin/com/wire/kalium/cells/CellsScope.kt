@@ -21,6 +21,7 @@ import com.wire.kalium.cells.data.CellAttachmentsDataSource
 import com.wire.kalium.cells.data.CellConfigDataSource
 import com.wire.kalium.cells.data.CellConversationDataSource
 import com.wire.kalium.cells.data.CellFileDataSource
+import com.wire.kalium.cells.data.CellUploadCoordinatorImpl
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.CellUsersDataSource
 import com.wire.kalium.cells.data.CellsApiImpl
@@ -34,6 +35,7 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConfigRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellFileRepository
+import com.wire.kalium.cells.domain.CellUploadCoordinator
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsApi
@@ -42,7 +44,6 @@ import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.NodeServiceBuilder
 import com.wire.kalium.cells.domain.SelfTeamIdProvider
 import com.wire.kalium.cells.domain.SelfTeamIdProviderImpl
-import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCase
@@ -60,6 +61,8 @@ import com.wire.kalium.cells.domain.usecase.GetCellConversationsPagedUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellGroupConversationsUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetPdfPreviewUrlUseCase
+import com.wire.kalium.cells.domain.usecase.GetPdfPreviewUrlUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellGroupConversationsUseCaseImpl
@@ -158,9 +161,7 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpRedirect
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.FileSystem
@@ -200,15 +201,11 @@ public class CellsScope(
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     private val cellsCredentialsProvider: CellsCredentialsProvider by lazy {
-        CellsCredentialsProvider(getCellConfig)
-    }
-
-    private val cellClientCredentialsDeferred: Deferred<CellsCredentials> by lazy {
-        async { cellsCredentialsProvider.getCredentials() }
+        CellsCredentialsProviderImpl(getCellConfig)
     }
 
     private val cellAwsClient: CellsAwsClient by lazy {
-        cellsAwsClient(cellClientCredentialsDeferred, sessionManager, accessTokenApi)
+        cellsAwsClient(cellsCredentialsProvider, sessionManager, accessTokenApi)
     }
 
     private val nodeServiceApiMutex = Mutex()
@@ -222,7 +219,7 @@ public class CellsScope(
         return nodeServiceApiMutex.withLock {
             _nodeServiceApi ?: NodeServiceBuilder
                 .withHttpClient(cellsClient)
-                .withCredentials(cellClientCredentialsDeferred)
+                .withCredentials(cellsCredentialsProvider)
                 .build()
                 .also { _nodeServiceApi = it }
         }
@@ -269,6 +266,14 @@ public class CellsScope(
         CellUploadManagerImpl(
             repository = cellsRepository,
             uploadScope = this,
+        )
+    }
+
+    public val uploadCoordinator: CellUploadCoordinator by lazy {
+        CellUploadCoordinatorImpl(
+            uploadManager = uploadManager,
+            cellsRepository = cellsRepository,
+            scope = this,
         )
     }
 
@@ -330,11 +335,11 @@ public class CellsScope(
     }
 
     public val createPublicLinkUseCase: CreatePublicLinkUseCase by lazy {
-        CreatePublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
+        CreatePublicLinkUseCaseImpl(cellsCredentialsProvider, cellsRepository)
     }
 
     public val getPublicLinkUseCase: GetPublicLinkUseCase by lazy {
-        GetPublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
+        GetPublicLinkUseCaseImpl(cellsCredentialsProvider, cellsRepository)
     }
 
     public val deletePublicLinkUseCase: DeletePublicLinkUseCase by lazy {
@@ -427,6 +432,10 @@ public class CellsScope(
 
     public val getEditorUrl: GetEditorUrlUseCase by lazy {
         GetEditorUrlUseCaseImpl(cellsRepository)
+    }
+
+    public val getPdfPreviewUrl: GetPdfPreviewUrlUseCase by lazy {
+        GetPdfPreviewUrlUseCaseImpl(cellsRepository)
     }
 
     public val getNodeVersions: GetNodeVersionsUseCase by lazy {
