@@ -57,10 +57,16 @@ class AssetMimeTypeTest {
             "video/mp4",
             "video/webm",
             "video/3gpp",
-            "video/mkv"
+            "video/mkv",
+            "video/quicktime"
         )
         assertEquals(values.size, SUPPORTED_VIDEO_ASSET_MIME_TYPES.size)
         assertEquals(values, SUPPORTED_VIDEO_ASSET_MIME_TYPES)
+    }
+
+    @Test
+    fun givenQuickTimeMovie_whenCheckingAttachmentType_thenReturnsVideo() {
+        assertEquals(AttachmentType.VIDEO, AttachmentType.fromMimeTypeString("video/quicktime"))
     }
 
     @Test
