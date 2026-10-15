@@ -49,6 +49,14 @@ class KaliumNSEPresentationTest {
                     assertNull(result.conversationName)
                     assertFalse(result.isGroupConversation)
                 }
+                // Unnotified message alerts follow the same rules.
+                if (type == ReceivedNotificationType.MESSAGE) assertEquals(
+                    KaliumNSEAlert(
+                        "message", "conversation", "example.com",
+                        result.text, result.conversationName, result.senderName, result.isGroupConversation,
+                    ),
+                    receiver.alert(message(type).copy(mayPreview = mayPreview), showContent, preference),
+                )
             }
         }
     }
@@ -86,6 +94,33 @@ class KaliumNSEPresentationTest {
             }
         }
     }
+
+    @Test
+    fun requestKeepsItsOwnAlertAndTheHostPostsTheOtherUnnotifiedMessages() {
+        for (type in ReceivedNotificationType.entries) {
+            val own = ReceivedNotificationResult(message(type))
+            val (presented, others) = receiver.presentation(own, listOf(unnotified("earlier"), unnotified("message")))
+            assertEquals(own, presented)
+            // Only a message alert is the unnotified message with its ID.
+            val expected = if (type == ReceivedNotificationType.MESSAGE) listOf("earlier") else listOf("earlier", "message")
+            assertEquals(expected, others.map { it.messageId })
+        }
+    }
+
+    @Test
+    fun requestWithoutItsOwnAlertShowsTheNewestUnnotifiedMessage() {
+        val processed = ReceivedNotificationResult(null, presentationReason = "ALREADY_PROCESSED")
+        val (presented, others) = receiver.presentation(processed, listOf(unnotified("first"), unnotified("second")))
+        assertEquals("second", presented.message?.messageId)
+        assertNull(presented.presentationReason)
+        assertEquals(listOf("first"), others.map { it.messageId })
+        assertEquals(processed to emptyList(), receiver.presentation(processed, emptyList()))
+
+        val read = ReceivedNotificationResult(message(ReceivedNotificationType.MESSAGE).copy(shouldNotify = false))
+        assertEquals("earlier", receiver.presentation(read, listOf(unnotified("earlier"))).first.message?.messageId)
+    }
+
+    private fun unnotified(id: String) = message(ReceivedNotificationType.MESSAGE).copy(messageId = id)
 
     private fun message(type: ReceivedNotificationType) = ReceivedMessageResult(
         "message", "conversation", "example.com", "Text", true, true, type,

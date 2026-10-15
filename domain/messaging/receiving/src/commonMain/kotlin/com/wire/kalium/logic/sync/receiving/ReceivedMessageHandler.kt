@@ -53,7 +53,9 @@ import com.wire.kalium.logic.sync.receiver.handler.editTextMessage
 import com.wire.kalium.logic.sync.receiver.handler.normalizedEmojiSet
 import com.wire.kalium.logic.sync.receiver.handler.persistReceipt
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.PollVoteEntity
@@ -488,41 +490,7 @@ internal class ReceivedMessageHandler(
             // Like Notification.sq and the app delivery queue, absence of a self-member row
             // does not suppress decryptable content (connection metadata can contain only the peer).
             deliveryId?.let { data.deliveries.enqueue(conversationId, it) }
-            if (message.visibility != MessageEntity.Visibility.VISIBLE) return@mapNotNull null
-            val lastNotificationDate = conversation.lastNotificationDate
-            // Notification.sq excludes multipart even when its mute-policy check permits an alert.
-            val notify = message.content !is MessageEntityContent.Multipart &&
-                mapper.fromEntity(message).shouldNotifyUser() && !conversation.archived &&
-                message.senderUserId != selfUserId.toDao() && message.date > conversation.lastReadDate &&
-                (lastNotificationDate == null || message.date > lastNotificationDate) &&
-                data.messages.needsToBeNotified(message.id, conversationId)
-            // Match Android: verification warnings affect reply eligibility, not message previews.
-            val mayPreview = message.expireAfterMs == null
-            val text = (message.content as? MessageEntityContent.Text)?.messageBody
-            val reason = if (notify) null else when {
-                message.content is MessageEntityContent.Multipart -> "MULTIPART"
-                !mapper.fromEntity(message).shouldNotifyUser() -> "CONTENT_POLICY"
-                conversation.archived -> "ARCHIVED"
-                message.senderUserId == selfUserId.toDao() -> "SELF_MESSAGE"
-                message.date <= conversation.lastReadDate -> "ALREADY_READ"
-                lastNotificationDate != null && message.date <= lastNotificationDate -> "ALREADY_NOTIFIED"
-                else -> "NOTIFICATION_POLICY"
-            }
-            ReceivedMessageResult(
-                message.id,
-                conversationId.value,
-                conversationId.domain,
-                text,
-                notify,
-                mayPreview,
-                conversationName = conversation.name,
-                isGroupConversation = conversation.type.isGroup,
-                senderName = data.users.getNameAndHandle(message.senderUserId)?.name,
-                suppressionReason = reason,
-                previewPolicyReason = if (mayPreview) null else
-                    "expiry=${message.expireAfterMs != null};mls=${conversation.mlsVerificationStatus.name};" +
-                        "proteus=${conversation.proteusVerificationStatus.name}"
-            )
+            storedMessagePresentation(message, conversation, mapper, selfUserId, data.messages, data.users)
         }
         return presentations.lastOrNull { it.shouldNotify } ?: presentations.lastOrNull()
     }
@@ -553,6 +521,60 @@ internal class ReceivedMessageHandler(
 internal fun <T> Either<CoreFailure, T>.orThrow(): T = when (this) {
     is Either.Left -> throw KaliumSyncException("Required notification work failed", value)
     is Either.Right -> value
+}
+
+/**
+ * Alert eligibility of a stored message, matching Notification.sq. Shared by receiving and by
+ * [UnnotifiedMessageAlerts], which rebuilds alerts from canonical rows. Null when the message is not visible.
+ */
+internal suspend fun storedMessagePresentation(
+    message: MessageEntity.Regular,
+    conversation: ConversationEntity,
+    mapper: RegularMessageMapper,
+    selfUserId: UserId,
+    messages: MessageDAO,
+    users: UserDAO,
+): ReceivedMessageResult? {
+    if (message.visibility != MessageEntity.Visibility.VISIBLE) return null
+    // Notification.sq excludes multipart even when its mute-policy check permits an alert.
+    val reason = suppressionReason(message, conversation, mapper, selfUserId)
+        ?: "NOTIFICATION_POLICY".takeUnless { messages.needsToBeNotified(message.id, message.conversationId) }
+    // Match Android: verification warnings affect reply eligibility, not message previews.
+    val mayPreview = message.expireAfterMs == null
+    val text = (message.content as? MessageEntityContent.Text)?.messageBody
+    return ReceivedMessageResult(
+        message.id,
+        message.conversationId.value,
+        message.conversationId.domain,
+        text,
+        reason == null,
+        mayPreview,
+        conversationName = conversation.name,
+        isGroupConversation = conversation.type.isGroup,
+        senderName = users.getNameAndHandle(message.senderUserId)?.name,
+        suppressionReason = reason,
+        previewPolicyReason = if (mayPreview) null else
+            "expiry=${message.expireAfterMs != null};mls=${conversation.mlsVerificationStatus.name};" +
+                "proteus=${conversation.proteusVerificationStatus.name}"
+    )
+}
+
+private fun suppressionReason(
+    message: MessageEntity.Regular,
+    conversation: ConversationEntity,
+    mapper: RegularMessageMapper,
+    selfUserId: UserId,
+): String? {
+    val lastNotificationDate = conversation.lastNotificationDate
+    return when {
+        message.content is MessageEntityContent.Multipart -> "MULTIPART"
+        !mapper.fromEntity(message).shouldNotifyUser() -> "CONTENT_POLICY"
+        conversation.archived -> "ARCHIVED"
+        message.senderUserId == selfUserId.toDao() -> "SELF_MESSAGE"
+        message.date <= conversation.lastReadDate -> "ALREADY_READ"
+        lastNotificationDate != null && message.date <= lastNotificationDate -> "ALREADY_NOTIFIED"
+        else -> null
+    }
 }
 
 /** Transient result only: never saved in an additional presentation store or logged. */

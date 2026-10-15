@@ -23,7 +23,8 @@ protected-data/device budgets, Nomad and backup workflows are outside this libra
 coverage. Legal-hold events, configuration and embedded content remain NSE no-ops,
 as do typing indicators, remote mute and in-call emoji; legal-hold state changes
 that need app work hand off. Removal of delivered alerts for deleted or read messages
-is implemented; updating delivered alerts and missed-alert recovery remain optional.
+is implemented, as are alerts for unnotified messages that earlier attempts processed
+silently; updating delivered alerts remains optional.
 
 ## Current coverage
 

@@ -315,7 +315,7 @@ class NotificationProcessor(
             )
         }
         val results = if (events.isEmpty()) emptyList() else evaluateCalls(events)
-        return ReceivedNotificationResult(message, results, reason, pending.isNotEmpty())
+        return ReceivedNotificationResult(message, results, reason, pending.isNotEmpty(), prefixComplete = true)
     }
 
     private suspend fun processNotification(

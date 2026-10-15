@@ -139,6 +139,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -10111,6 +10112,29 @@ class NotificationProcessorNativeTest {
                 assertEquals("first", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
                 assertTrue(offline.requests.isEmpty())
                 fixture.verifyStoredAndNext(next, "first", listOf("earlier", "first"))
+            }
+        }
+    }
+
+    @Test
+    fun `unnotified recent messages are taken once and in order for both protocols`() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+                val old = fixture.event("old", fixture.encrypt("old"))
+                val earlier = fixture.event("earlier", fixture.encrypt("earlier"), time = TIME + 1.seconds)
+                val target = fixture.event("target", fixture.encrypt("target"), time = TIME + 2.seconds)
+                fixture.releasePrepared()
+
+                assertIs<Either.Right<*>>(fixture.receive(listOf(old, earlier, target), target.id, isolateConversations = true))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val now = TIME + UnnotifiedMessageAlerts.MAX_AGE + 500.milliseconds
+                    val alerts = UnnotifiedMessageAlerts(runtime.database, SELF) { now }
+                    // The oldest message is past the age bound; taking marks it notified with the others.
+                    assertEquals(listOf("earlier", "target"), alerts.take().map { it.text })
+                    assertEquals(emptyList(), alerts.take())
+                    val conversation = runtime.database.conversationDAO.getConversationById(CONVERSATION_ID)
+                    assertEquals(TIME + 2.seconds, conversation?.lastNotificationDate)
+                })
             }
         }
     }

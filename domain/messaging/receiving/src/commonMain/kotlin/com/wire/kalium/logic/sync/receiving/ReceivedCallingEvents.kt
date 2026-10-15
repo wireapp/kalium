@@ -12,6 +12,8 @@ data class ReceivedNotificationResult(
     val callSignalsPending: Boolean = false,
     /** Retained ordered Events work, consumed by the existing app incremental sync. */
     val appWorkPending: NotificationAppWork? = null,
+    /** Every queued event through the target was processed without deferral or app handoff; stored alerts may be presented. */
+    val prefixComplete: Boolean = false,
 )
 
 enum class ReceivedCallType { INCOMING, MISSED, CLOSED }

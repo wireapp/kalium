@@ -185,14 +185,30 @@ incremental sync runs the matching consumer before gathering:
 The Apple app's pre-sync cleanup also retries pending MLS group wipes queued by local
 removal.
 
-Only the target notification returns presentation, selected from final canonical
-state. Actions/system messages alone are silent. Read/mute/archive/availability,
-verification, expiration and host privacy settings determine alert/body eligibility.
-A processed target succeeds silently. An all-native-duplicate retry may miss an
-alert. The NSE registers alerted messages and returns delivered identifiers whose
-message is now deleted or read, for the host to remove; updating delivered alerts
-and missed-alert recovery remain optional. The host owns the single system
-completion callback.
+Presentation is selected from final canonical state. Actions/system messages alone
+are silent. Read/mute/archive/availability, verification, expiration and host privacy
+settings determine alert/body eligibility.
+
+An attempt can process messages whose own pushes never present them: an earlier push
+found the account busy or ran out of time, APNs kept only the latest push while the
+device was offline, or pushes arrived out of order. Like the Android app, the NSE
+selects these from existing unread state rather than its own record: unread messages
+newer than their conversation's `last_notified_date` (`Notification.sq`), rechecked
+with the receiving eligibility rules. Only an attempt that processed every event
+through its target, without deferral or app handoff, presents them; a later complete
+attempt presents what a deferral held back. The request keeps its own alert, or shows
+the newest unnotified message when it has none, and returns at most ten others for
+the host to post. The NSE then advances each candidate conversation's date, so
+interruption before the host posts can lose those alerts but a later attempt cannot
+repeat them. Messages older than six hours are marked without an alert.
+
+While it runs, the app maintains the same date as the Android app does: it marks each
+conversation notified through the newest message it presented, and marks the open
+conversation even when it shows no alert. Otherwise the NSE alerts unread messages the
+app received; the age bound limits those, such as after an upgrade. The NSE registers
+alerted messages and returns delivered identifiers whose message is now deleted or
+read, for the host to remove; updating delivered alerts remains optional. The host
+owns the single system completion callback.
 
 The [coverage table](../NSE_IMPLEMENTATION_STATUS.md#current-coverage) names remaining
 native, backend and consumer dependencies. Destructive MLS replay cannot be enabled

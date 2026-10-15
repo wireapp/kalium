@@ -24,10 +24,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
 import com.wire.kalium.logic.sync.receiving.ReceivedCallType
+import com.wire.kalium.logic.sync.receiving.ReceivedMessageResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationType
 import com.wire.kalium.logic.sync.receiving.ReceivingDiagnostics
 import com.wire.kalium.logic.sync.receiving.ReceivingOptions
+import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
@@ -102,6 +104,22 @@ public data class KaliumNSEResult(
     /** Actual UNNotificationRequest identifiers, reconciled after successful receiving. */
     public val notificationIdentifiersToRemove: List<String> = emptyList(),
     public val isGroupConversation: Boolean = false,
+    /**
+     * Further unnotified message alerts, oldest first. Post each before completing the request;
+     * Kalium has already marked them notified.
+     */
+    public val alerts: List<KaliumNSEAlert> = emptyList(),
+)
+
+/** A message alert beyond the request's own; text and names are present only when preview is allowed. */
+public data class KaliumNSEAlert(
+    public val messageId: String,
+    public val conversationValue: String,
+    public val conversationDomain: String,
+    public val text: String?,
+    public val conversationName: String?,
+    public val senderName: String?,
+    public val isGroupConversation: Boolean,
 )
 
 public enum class KaliumNSEStatus { SUCCESS, FAILED }
@@ -166,7 +184,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     ),
                     diagnostics = diagnostics,
                 ).process(request.notificationId)
-                reconcileNotifications(runtime, received, request)
+                val unnotified = if (!received.prefixComplete) emptyList()
+                else UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId).take()
+                reconcileNotifications(runtime, received, unnotified, request)
             }
             when (result) {
                 is Either.Left -> failure(result.value.name)
@@ -179,16 +199,17 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
 
     private suspend fun reconcileNotifications(
         runtime: AppleAccountRuntime,
-        received: ReceivedNotificationResult,
+        processed: ReceivedNotificationResult,
+        unnotified: List<ReceivedMessageResult>,
         request: KaliumNSERequest,
     ): KaliumNSEResult {
-        val result = success(received, request.showMessageContent, runtime.readMessageContentPreference())
-        if (result.shouldNotify && result.contentType == KaliumNSEContentType.MESSAGE) {
-            val message = checkNotNull(received.message)
-            runtime.database.messageDAO.rememberNotificationMessages(
-                listOf(NotificationMessageKey(message.messageId, QualifiedIDEntity(message.conversationValue, message.conversationDomain)))
-            )
-        }
+        val (received, extras) = presentation(processed, unnotified)
+        val preference = runtime.readMessageContentPreference()
+        val result = success(received, request.showMessageContent, preference).copy(
+            alerts = extras.map { alert(it, request.showMessageContent, preference) }
+        )
+        val alerted = extras + listOfNotNull(received.messageAlert())
+        runtime.database.messageDAO.rememberNotificationMessages(alerted.map { it.messageKey() })
         val removals = runtime.database.messageDAO.observeNotificationRemovalCandidates(
             request.deliveredNotifications.map { it.messageId }.distinct()
         ).first().toSet()
@@ -203,6 +224,47 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         messageId,
         QualifiedIDEntity(conversationValue, conversationDomain)
     )
+
+    private fun ReceivedMessageResult.messageKey() = NotificationMessageKey(
+        messageId,
+        QualifiedIDEntity(conversationValue, conversationDomain)
+    )
+
+    /** The request's own message alert, registered for later removal and never repeated among unnotified messages. */
+    private fun ReceivedNotificationResult.messageAlert() =
+        message?.takeIf { it.shouldNotify && it.type == ReceivedNotificationType.MESSAGE }
+
+    /**
+     * The request keeps its own alert and the host posts the other unnotified messages. A request without
+     * its own alert, such as one whose event an earlier attempt processed, shows the newest instead.
+     */
+    internal fun presentation(
+        received: ReceivedNotificationResult,
+        unnotified: List<ReceivedMessageResult>,
+    ): Pair<ReceivedNotificationResult, List<ReceivedMessageResult>> {
+        val ownKey = received.messageAlert()?.messageKey()
+        val others = unnotified.filterNot { it.messageKey() == ownKey }
+        return if (received.message?.shouldNotify == true || others.isEmpty()) received to others
+        else received.copy(message = others.last(), presentationReason = null) to others.dropLast(1)
+    }
+
+    /** An unnotified message alert, with the request's preview rules. */
+    internal fun alert(
+        message: ReceivedMessageResult,
+        showContent: Boolean,
+        preference: Either<StorageFailure, MessageContentPreference>,
+    ): KaliumNSEAlert {
+        val preview = success(ReceivedNotificationResult(message), showContent, preference)
+        return KaliumNSEAlert(
+            message.messageId,
+            message.conversationValue,
+            message.conversationDomain,
+            preview.text,
+            preview.conversationName,
+            preview.senderName,
+            preview.isGroupConversation,
+        )
+    }
 
     @Suppress("CyclomaticComplexMethod") // Maps optional receiving fields to the public result.
     internal fun success(

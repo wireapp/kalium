@@ -59,6 +59,16 @@ later edit of it, is now read or deleted. Self-deleting messages are never repor
 as deleted, even when their sender deletes them. The host removes those alerts.
 Updating the content of delivered alerts is not supported.
 
+When every event through the target was processed without deferral or app handoff,
+the result also returns `alerts`: up to ten other unread messages stored without an
+alert, oldest first, filtered by the same preview rules. A request with no alert of
+its own shows the newest of them instead. Kalium marks them notified before
+returning, so post them as local notifications after reporting calls and before
+completing the request. While running, the app must mark conversations notified as
+the Android app does, or the NSE alerts unread messages the app received.
+[ADR 11](../docs/adr/0011-nse-account-runtime-ownership.md#app-handoffs-and-presentation)
+explains their selection.
+
 ## Receiving and replay
 
 The account lease covers all resource use, drain and cleanup. The NSE resumes the
@@ -141,9 +151,7 @@ adds no worker or replacement queue. Its own durable records are narrow: MLS
 wrong-epoch recovery intents and payload receipts with completion in the native
 checkpoint, a saved unexpected rejoin response, MLS deletion and local-removal wipe
 intents, clear snapshots, deferral retry hints, the account invalidation marker,
-and call signals with their missed-call claims. A processed target succeeds
-silently; missed-alert recovery after native duplicate replay is an optional
-enhancement.
+and call signals with their missed-call claims.
 
 The NSE persists a receive-time expiration deadline for self-authored ephemeral
 messages, but does not delete them when that deadline passes. The app resumes
@@ -230,8 +238,8 @@ Call presentation follows sync and is best effort. Expired or invalid native cal
 payloads do not prevent later call signals from being evaluated. Invalid outer
 calling JSON or required conversation/crypto failures still roll back the current
 notification. An interruption after processed markers, or native duplicate replay,
-can lose call presentation, just as it can lose an ordinary alert. There is no new
-durable call queue, call-history persistence or exactly-once CallKit guarantee.
+can lose call presentation. There is no new durable call queue, call-history
+persistence or exactly-once CallKit guarantee.
 MLS subconversations remain outside this path. Simulator fixtures verify the
 returned call results; real CallKit/APNs behavior still needs a signed-device host run.
 
