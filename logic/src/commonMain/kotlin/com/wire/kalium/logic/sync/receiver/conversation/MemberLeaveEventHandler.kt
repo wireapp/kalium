@@ -42,12 +42,16 @@ import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.data.notification.toLocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import kotlinx.coroutines.flow.firstOrNull
 
 internal interface MemberLeaveEventHandler {
     suspend fun handle(
@@ -67,6 +71,7 @@ internal class MemberLeaveEventHandlerImpl(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val mlsConversationRepository: MLSConversationRepository,
     private val meetingRepository: MeetingRepository,
+    private val notificationEventsManager: NotificationEventsManager,
     private val selfUserId: UserId,
 ) : MemberLeaveEventHandler {
 
@@ -112,10 +117,8 @@ internal class MemberLeaveEventHandlerImpl(
                 }
                 legalHoldHandler.handleConversationMembersChanged(event.conversationId)
             }
-            .flatMap {
-                deleteMeetingsIfNeeded(event)
-            }
             .onSuccess {
+                deleteMeetingsIfNeeded(event)
                 eventLogger.logSuccess()
             }.onFailure {
                 eventLogger.logFailure(it)
@@ -172,9 +175,23 @@ internal class MemberLeaveEventHandlerImpl(
             )
         }
 
-    private suspend fun deleteMeetingsIfNeeded(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> =
-        when (selfUserId in event.removedList) {
-            true -> meetingRepository.deleteMeetingsByConversationId(event.conversationId)
-            false -> Either.Right(Unit)
+    private suspend fun deleteMeetingsIfNeeded(event: Event.Conversation.MemberLeave) {
+        if (selfUserId in event.removedList) {
+            meetingRepository.getMeetingsByConversationId(event.conversationId).map { meetings ->
+                meetings.forEach { meeting ->
+                    notificationEventsManager.scheduleMeetingNotification(
+                        LocalNotification.Meeting.Cancel(
+                            eventId = event.id,
+                            meetingId = meeting.meetingId,
+                            conversationId = meeting.conversationId,
+                            meetingTitle = meeting.title,
+                            author = userRepository.observeUser(event.removedBy).firstOrNull()?.toLocalNotificationMessageAuthor(),
+                            time = event.dateTime,
+                        )
+                    )
+                    meetingRepository.deleteMeetingLocally(meeting.meetingId)
+                }
+            }
         }
+    }
 }

@@ -62,6 +62,7 @@ import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceDetailsEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingReminderEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -72,6 +73,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -95,6 +97,8 @@ class MeetingRepositoryTest {
         val meetingDTO = meetingDTO(creatorId = creatorId.toApi())
         val (arrangement, repository) = Arrangement()
             .withFetchMeetingsSuccess(listOf(meetingDTO))
+            .withFetchConversationsSuccess()
+            .withPersistConversationsSuccess()
             .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
             .withFetchUsersIfUnknownSuccess(setOf(creatorId))
             .arrange()
@@ -103,7 +107,7 @@ class MeetingRepositoryTest {
         val expectedMeetingEntity = requireNotNull(arrangement.meetingMapper.fromApiToDao(meetingDTO))
         val expectedMeeting = arrangement.meetingMapper.fromDaoToModel(expectedMeetingEntity)
 
-        val result = repository.fetchAndPersistMeetings(generateOccurrencesFrom, generateOccurrencesUntil)
+        val result = repository.fetchAndPersistMeetings(arrangement.transactionContext, generateOccurrencesFrom, generateOccurrencesUntil)
 
         assertTrue(result.isRight())
         assertContentEquals(listOf(expectedMeeting), result.getOrNull())
@@ -118,7 +122,7 @@ class MeetingRepositoryTest {
     }
 
     @Test
-    fun whenFetchAndPersistMeetings_thenCreatorsArePreparedOnceBeforePersistingMeetings() = runTest {
+    fun whenFetchAndPersistMeetings_thenCreatorsAndConversationsArePreparedOnceBeforePersistingMeetings() = runTest {
         val creatorId = UserId("user1", "domain")
         val meetings = listOf(
             meetingDTO(
@@ -129,30 +133,70 @@ class MeetingRepositoryTest {
             ),
             meetingDTO(
                 meetingId = NetworkMeetingId("meeting2", "domain"),
-                conversationId = ApiConversationId("conversation2", "domain"),
+                conversationId = ApiConversationId("conversation1", "domain"),
                 creatorId = creatorId.toApi(),
                 title = "Meeting 2"
             )
         )
         val (arrangement, repository) = Arrangement()
             .withFetchMeetingsSuccess(meetings)
+            .withFetchConversationsSuccess()
+            .withPersistConversationsSuccess()
             .withInsertOrIgnoreIncompleteUsersSuccess(listOf(creatorId))
             .withFetchUsersIfUnknownSuccess(setOf(creatorId))
             .arrange()
         val expectedMeetingEntities = meetings.map { requireNotNull(arrangement.meetingMapper.fromApiToDao(it)) }
 
-        val result = repository.fetchAndPersistMeetings()
+        val result = repository.fetchAndPersistMeetings(arrangement.transactionContext)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exhaustiveOrder) {
             arrangement.userRepository.insertOrIgnoreIncompleteUsers(userIds = listOf(creatorId))
             arrangement.userRepository.fetchUsersIfUnknownByIds(ids = setOf(creatorId))
+            arrangement.conversationRepository.fetchConversationListDetails(meetings.map { it.conversationId.toModel() }.distinct())
+            arrangement.persistConversations(
+                arrangement.transactionContext, listOf(ConversationRepositoryTest.CONVERSATION_RESPONSE), false, any()
+            )
             arrangement.meetingDao.upsertMeetings(
                 meetings = expectedMeetingEntities,
                 generateOccurrencesWindow = any(),
                 removeMeetingsAbsentFromUpsertList = true,
             )
         }
+    }
+
+    @Test
+    fun givenEmptyMeetingResponse_whenFetching_thenRemoveStaleMeetingsWithoutFetchingConversations() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingsSuccess(emptyList())
+            .arrange()
+
+        val result = repository.fetchAndPersistMeetings(arrangement.transactionContext)
+
+        assertEquals(Either.Right(emptyList()), result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.upsertMeetings(emptyList(), any(), true)
+        }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.fetchConversationListDetails(any()) }
+    }
+
+    @Test
+    fun givenOnlyUnsupportedMeetings_whenFetching_thenRemoveStaleMeetingsWithoutFetchingConversations() = runTest {
+        val unsupported = meetingDTO(
+            recurrence = MeetingRecurrenceDTO(frequency = MeetingFrequencyDTO.WEEKLY, interval = 7L, until = null)
+        )
+        val (arrangement, repository) = Arrangement()
+            .withFetchMeetingsSuccess(listOf(unsupported))
+            .arrange()
+
+        val result = repository.fetchAndPersistMeetings(arrangement.transactionContext)
+
+        assertEquals(Either.Right(emptyList()), result)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingDao.upsertMeetings(emptyList(), any(), true)
+        }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.fetchConversationListDetails(any()) }
     }
 
     @Test
@@ -206,28 +250,29 @@ class MeetingRepositoryTest {
     }
 
     @Test
-    fun givenUnsupportedMeeting_whenFetchAndPersistMeeting_thenReturnsMeetingNotSupportedFailureAndMeetingIsNotPersistedLocally() = runTest {
-        val meetingId = MeetingId("meeting1", "domain")
-        val meetingDTO = meetingDTO(
-            meetingId = meetingId.toApi(),
-            recurrence = MeetingRecurrenceDTO(frequency = MeetingFrequencyDTO.WEEKLY, interval = 7L, until = null)
-        )
-        val (arrangement, repository) = Arrangement()
-            .withFetchMeetingSuccess(meetingId, meetingDTO)
-            .arrange()
+    fun givenUnsupportedMeeting_whenFetchAndPersistMeeting_thenReturnsMeetingNotSupportedFailureAndMeetingIsNotPersistedLocally() =
+        runTest {
+            val meetingId = MeetingId("meeting1", "domain")
+            val meetingDTO = meetingDTO(
+                meetingId = meetingId.toApi(),
+                recurrence = MeetingRecurrenceDTO(frequency = MeetingFrequencyDTO.WEEKLY, interval = 7L, until = null)
+            )
+            val (arrangement, repository) = Arrangement()
+                .withFetchMeetingSuccess(meetingId, meetingDTO)
+                .arrange()
 
-        val result = repository.fetchAndPersistMeeting(meetingId)
+            val result = repository.fetchAndPersistMeeting(meetingId)
 
-        assertEquals(MeetingDataSource.MeetingNotSupportedFailure, assertIs<Either.Left<CoreFailure>>(result).value)
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingApi.fetchMeeting(meetingId.toApi())
+            assertEquals(MeetingDataSource.MeetingNotSupportedFailure, assertIs<Either.Left<CoreFailure>>(result).value)
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.meetingApi.fetchMeeting(meetingId.toApi())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
+                arrangement.userRepository.fetchUsersIfUnknownByIds(any())
+                arrangement.meetingDao.upsertMeetings(any(), any())
+            }
         }
-        verifySuspend(VerifyMode.not) {
-            arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
-            arrangement.userRepository.fetchUsersIfUnknownByIds(any())
-            arrangement.meetingDao.upsertMeetings(any(), any())
-        }
-    }
 
     @Test
     fun givenApiFetchMeetingFails_whenFetchAndPersistMeeting_thenReturnsNetworkFailureAndMeetingIsNotPersistedLocally() = runTest {
@@ -449,7 +494,7 @@ class MeetingRepositoryTest {
         )
 
         assertTrue(result.isRight())
-        assertEquals(expectedMLSAdditionResult, result.getOrNull())
+        assertEquals(CreateNewMeetingResult(response.conversation.id.toModel(), expectedMLSAdditionResult), result.getOrNull())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.createNewMeeting(arrangement.meetingMapper.fromModelToApi(createMeeting))
             arrangement.persistConversations(
@@ -616,7 +661,7 @@ class MeetingRepositoryTest {
         )
 
         assertTrue(result.isRight())
-        assertEquals(MLSAdditionResult.Empty, result.getOrNull())
+        assertEquals(CreateNewMeetingResult(response.conversation.id.toModel(), MLSAdditionResult.Empty), result.getOrNull())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.createNewMeeting(arrangement.meetingMapper.fromModelToApi(createMeeting))
             arrangement.persistConversations(
@@ -1121,6 +1166,32 @@ class MeetingRepositoryTest {
         }
     }
 
+    @Test
+    fun givenReminderEntity_whenGettingNextReminder_thenMapsAllFields() = runTest {
+        val reminderStart = Instant.parse("2026-06-01T10:00:00Z")
+        val from = Instant.parse("2026-06-01T09:00:00Z")
+        val entity = meetingReminderEntity(1, reminderStart)
+        val (arrangement, repository) = Arrangement()
+            .withGetNextMeetingReminder(from, entity)
+            .arrange()
+
+        assertEquals(arrangement.meetingMapper.fromDaoToModel(entity), repository.getNextMeetingReminder(from))
+    }
+
+    @Test
+    fun givenReminderEntities_whenGettingRemindersWithin_thenPreservesOrderAndMapsFields() = runTest {
+        val reminderStart = Instant.parse("2026-06-01T10:00:00Z")
+        val start = Instant.parse("2026-06-01T09:00:00Z")
+        val end = Instant.parse("2026-06-01T12:00:00Z")
+        val secondReminderStart = Instant.parse("2026-06-01T11:00:00Z")
+        val entities = listOf(meetingReminderEntity(1, reminderStart), meetingReminderEntity(2, secondReminderStart))
+        val (arrangement, repository) = Arrangement()
+            .withGetMeetingRemindersWithin(start, end, entities)
+            .arrange()
+
+        assertEquals(entities.map { arrangement.meetingMapper.fromDaoToModel(it) }, repository.getMeetingRemindersWithin(start, end))
+    }
+
     inner class Arrangement {
         internal val selfUserId = TestUser.SELF.id
         internal val meetingDao = mock<MeetingDao>(mode = MockMode.autoUnit)
@@ -1135,6 +1206,12 @@ class MeetingRepositoryTest {
         internal val meetingMapper = MapperProvider.meetingMapper()
         internal val conversationMapper = MapperProvider.conversationMapper(selfUserId)
         internal val idMapper = MapperProvider.idMapper()
+
+        internal fun withFetchConversationsSuccess() = apply {
+            everySuspend { conversationRepository.fetchConversationListDetails(any()) } returns Either.Right(
+                ConversationResponseDTO(listOf(ConversationRepositoryTest.CONVERSATION_RESPONSE), emptyList(), emptyList())
+            )
+        }
 
         internal fun withFetchMeetingsSuccess(result: List<MeetingDTO>) = apply {
             everySuspend { meetingApi.fetchMeetings() } returns NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value)
@@ -1286,6 +1363,14 @@ class MeetingRepositoryTest {
             } returns Either.Right(result)
         }
 
+        internal fun withGetNextMeetingReminder(from: Instant, result: MeetingReminderEntity) = apply {
+            everySuspend { meetingDao.getNextMeetingReminder(from) } returns result
+        }
+
+        internal fun withGetMeetingRemindersWithin(start: Instant, end: Instant, result: List<MeetingReminderEntity>) = apply {
+            everySuspend { meetingDao.getMeetingRemindersWithin(start, end) } returns result
+        }
+
         internal fun arrange() = this to MeetingDataSource(
             selfUserId = selfUserId,
             meetingDAO = meetingDao,
@@ -1323,7 +1408,6 @@ class MeetingRepositoryTest {
         meeting = MEETING_ENTITY,
         conversationName = "Conversation 1",
         conversationType = ConversationEntity.Type.GROUP,
-        otherUserPreviewAssetId = null,
         channelAccess = null,
         selfUserId = MEETING_ENTITY.creatorId,
     )
@@ -1431,5 +1515,13 @@ class MeetingRepositoryTest {
         mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+    )
+
+    private fun meetingReminderEntity(index: Int, reminderStart: Instant) = MeetingReminderEntity(
+        occurrenceId = "occurrence$index",
+        meetingId = QualifiedIDEntity("meeting$index", "domain"),
+        conversationId = QualifiedIDEntity("conversation$index", "domain"),
+        title = "Meeting $index",
+        startTime = reminderStart,
     )
 }

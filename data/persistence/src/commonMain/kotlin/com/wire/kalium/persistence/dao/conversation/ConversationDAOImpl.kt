@@ -24,6 +24,7 @@ import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationDetailsQueries
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
+import com.wire.kalium.persistence.ConversationDetailsWithMembersQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
@@ -56,6 +57,7 @@ internal class ConversationDAOImpl internal constructor(
     private val conversationQueries: ConversationsQueries,
     private val conversationDetailsQueries: ConversationDetailsQueries,
     private val conversationDetailsWithEventsQueries: ConversationDetailsWithEventsQueries,
+    private val conversationDetailsWithMembersQueries: ConversationDetailsWithMembersQueries,
     private val memberQueries: MembersQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val readDispatcher: ReadDispatcher,
@@ -63,8 +65,13 @@ internal class ConversationDAOImpl internal constructor(
 ) : ConversationDAO {
     private val conversationMapper = ConversationMapper
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
-    override val platformExtensions: ConversationExtensions =
-        ConversationExtensionsImpl(conversationDetailsWithEventsQueries, conversationDetailsWithEventsMapper, readDispatcher)
+    override val platformExtensions: ConversationExtensions = ConversationExtensionsImpl(
+        conversationDetailsWithEventsQueries,
+        conversationDetailsWithMembersQueries,
+        memberQueries,
+        conversationDetailsWithEventsMapper,
+        readDispatcher,
+    )
 
     // region Get/Observe by ID
 

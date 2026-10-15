@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import kotlinx.coroutines.CoroutineDispatcher
 
 @Suppress("LongParameterList")
 public class MultiPlatformBackupScope internal constructor(
@@ -44,5 +45,18 @@ public class MultiPlatformBackupScope internal constructor(
             selfUserId = selfUserId,
             backupRepository = backupRepository,
             kaliumFileSystem = kaliumFileSystem,
+        )
+
+    /**
+     * Creates a restore use case that dispatches progress callbacks on [progressDispatcher].
+     * This allows consumers without a UI main dispatcher to restore history.
+     * The existing `restore` property continues to dispatch progress on the main dispatcher.
+     */
+    public fun restore(progressDispatcher: CoroutineDispatcher): RestoreMPBackupUseCase =
+        RestoreMPBackupUseCaseImpl(
+            selfUserId = selfUserId,
+            backupRepository = backupRepository,
+            kaliumFileSystem = kaliumFileSystem,
+            progressDispatcher = progressDispatcher,
         )
 }

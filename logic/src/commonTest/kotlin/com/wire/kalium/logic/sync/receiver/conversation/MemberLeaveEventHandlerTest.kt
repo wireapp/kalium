@@ -20,29 +20,38 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.MeetingId
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.meeting.Meeting
+import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.cryptography.MlsCoreCryptoContext
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.data.meeting.MeetingRepository
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
@@ -54,8 +63,7 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -377,9 +385,18 @@ internal class MemberLeaveEventHandlerTest {
     }
 
     @Test
-    fun givenSelfUserRemovedFromConversation_whenHandlingMemberLeave_thenDeleteMeetingsByConversationId() = runTest {
+    fun givenSelfUserRemovedFromMeetingConversation_whenHandlingMemberLeave_thenDeleteMeetingAndScheduleNotification() = runTest {
         val event = memberLeaveEvent(reason = MemberLeaveReason.Removed).copy(
-            removedList = listOf(selfUserId)
+            removedList = listOf(selfUserId),
+            removedBy = TestUser.OTHER_USER_ID,
+        )
+        val cancelNotification = LocalNotification.Meeting.Cancel(
+            eventId = event.id,
+            meetingId = meeting.meetingId,
+            conversationId = meeting.conversationId,
+            meetingTitle = meeting.title,
+            author = LocalNotificationMessageAuthor(TestUser.OTHER.name.orEmpty(), TestUser.OTHER.previewPicture),
+            time = event.dateTime,
         )
 
         val (arrangement, memberLeaveEventHandler) = Arrangement()
@@ -390,23 +407,28 @@ internal class MemberLeaveEventHandlerTest {
                     result = event.removedList.size.toLong(),
                 )
                 withGetConversationProtocolInfo(Either.Right(Conversation.ProtocolInfo.Proteus))
+                withGetMeetingsByConversationId(Either.Right(listOf(meeting)))
+                withObserveUserReturning(userId = event.removedBy, user = TestUser.OTHER)
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingRepository.deleteMeetingsByConversationId(event.conversationId)
+            arrangement.meetingRepository.getMeetingsByConversationId(event.conversationId)
+            arrangement.meetingRepository.deleteMeetingLocally(meeting.meetingId)
+            arrangement.notifications.scheduleMeetingNotification(cancelNotification)
         }
     }
 
     @Test
-    fun givenOtherUsersRemovedFromConversation_whenHandlingMemberLeave_thenDoNotDeleteMeetingsByConversationId() = runTest {
+    fun givenOtherUsersRemovedFromMeetingConversation_whenHandlingMemberLeave_thenDoNotDeleteMeetingNorScheduleNotification() = runTest {
         val event = memberLeaveEvent(reason = MemberLeaveReason.Removed).copy(
             removedList = listOf(userId)
         )
 
         val (arrangement, memberLeaveEventHandler) = Arrangement()
             .arrange {
+                withGetMeetingsByConversationId(Either.Right(listOf(meeting)))
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
                 withPersistingMessage(Either.Right(Unit))
                 withDeleteMembersByQualifiedID(
@@ -417,8 +439,27 @@ internal class MemberLeaveEventHandlerTest {
         memberLeaveEventHandler.handle(arrangement.transactionContext, event).shouldSucceed()
 
         verifySuspend(VerifyMode.not) {
-            arrangement.meetingRepository.deleteMeetingsByConversationId(any())
+            arrangement.meetingRepository.getMeetingsByConversationId(any())
+            arrangement.notifications.scheduleMeetingNotification(any())
+            arrangement.meetingRepository.deleteMeetingLocally(any())
         }
+    }
+
+    @Test
+    fun givenMeetingLookupFailure_whenSelfRemoved_thenDoNotNotifyOrDeleteMeetings() = runTest {
+        val event = memberLeaveEvent(MemberLeaveReason.Removed)
+        val (arrangement, handler) = Arrangement().arrange {
+            withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            withPersistingMessage(Either.Right(Unit))
+            withDeleteMembersByQualifiedID(event.removedList.size.toLong())
+            withGetConversationProtocolInfo(Either.Right(Conversation.ProtocolInfo.Proteus))
+            withGetMeetingsByConversationId(Either.Left(StorageFailure.DataNotFound))
+        }
+
+        handler.handle(arrangement.transactionContext, event).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) { arrangement.notifications.scheduleMeetingNotification(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.meetingRepository.deleteMeetingLocally(any()) }
     }
 
     private class Arrangement {
@@ -433,6 +474,7 @@ internal class MemberLeaveEventHandlerTest {
         val updateConversationClientsForCurrentCall = mock<UpdateConversationClientsForCurrentCallUseCase>(mode = MockMode.autoUnit)
         val legalHoldHandler = mock<LegalHoldHandler>(mode = MockMode.autoUnit)
         val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
+        val notifications = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
 
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
 
@@ -444,7 +486,8 @@ internal class MemberLeaveEventHandlerTest {
                 updateConversationClientsForCurrentCall.invoke(any())
             } returns (Unit)
             every { transactionContext.mls } returns (mlsContext)
-            withDeleteMeetingsByConversationId(Either.Right(Unit))
+            withGetMeetingsByConversationId(Either.Right(emptyList()))
+            everySuspend { meetingRepository.deleteMeetingLocally(any()) } returns Either.Right(Unit)
             block()
             memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
                 memberDAO = memberDAO,
@@ -456,7 +499,8 @@ internal class MemberLeaveEventHandlerTest {
                 selfTeamIdProvider = selfTeamIdProvider,
                 selfUserId = selfUserId,
                 mlsConversationRepository = mlsConversationRepository,
-                meetingRepository = meetingRepository
+                meetingRepository = meetingRepository,
+                notificationEventsManager = notifications,
             )
             this to memberLeaveEventHandler
         }
@@ -497,8 +541,12 @@ internal class MemberLeaveEventHandlerTest {
             everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) } returns (Either.Right(Unit))
         }
 
-        suspend fun withDeleteMeetingsByConversationId(result: Either<StorageFailure, Unit>) {
-            everySuspend { meetingRepository.deleteMeetingsByConversationId(any()) } returns (result)
+        suspend fun withGetMeetingsByConversationId(result: Either<StorageFailure, List<Meeting>>) {
+            everySuspend { meetingRepository.getMeetingsByConversationId(any()) } returns (result)
+        }
+
+        fun withObserveUserReturning(userId: UserId, user: User) {
+            everySuspend { userRepository.observeUser(userId) } returns flowOf(user)
         }
     }
 
@@ -509,6 +557,16 @@ internal class MemberLeaveEventHandlerTest {
         private val qualifiedConversationIdEntity = QualifiedIDEntity("conversationId", "domain")
 
         val conversationId = ConversationId("conversationId", "domain")
+        private val meeting = Meeting(
+            meetingId = MeetingId("meetingId", "domain"),
+            conversationId = conversationId,
+            creatorId = TestUser.OTHER_USER_ID,
+            title = "Planning",
+            startTime = Instant.parse("2026-10-01T09:00:00Z"),
+            endTime = Instant.parse("2026-10-01T10:00:00Z"),
+            tzid = "UTC",
+            recurrence = null,
+        )
 
         val MLS_GROUP_ID = GroupID("group2")
         val MLS_DOMAIN_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
