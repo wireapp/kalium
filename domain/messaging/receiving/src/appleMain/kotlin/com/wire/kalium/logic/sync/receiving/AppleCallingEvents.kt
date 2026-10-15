@@ -139,9 +139,15 @@ internal suspend fun evaluateCallingEvents(
         val senderName = if (result.type == ReceivedCallType.MISSED) {
             database.userDAO.getNameAndHandle(QualifiedIDEntity(result.callerValue, result.callerDomain))?.name
         } else null
+        // AVS can mark our other device's start as ringing. Keep its signaling for host replay,
+        // but never present it as an incoming call on this account.
+        val shouldRing = result.shouldRing &&
+            QualifiedIDEntity(result.callerValue, result.callerDomain) != self.toDao() &&
+            availability != UserAvailabilityStatusEntity.AWAY && conversation != null &&
+            conversation.mutedStatus != ConversationEntity.MutedStatus.ALL_MUTED
         platform.Foundation.NSLog(
             "CALL_FLOW call=${source?.id ?: "none"} stage=nse_decision type=${result.type} " +
-                "ring=${result.shouldRing} notify=$shouldNotify"
+                "ring=$shouldRing notify=$shouldNotify"
         )
         val event = when (result.type) {
             ReceivedCallType.INCOMING -> CallTraceEvent.NSE_INCOMING
@@ -152,14 +158,12 @@ internal suspend fun evaluateCallingEvents(
             event,
             CallTraceContext(signal = source?.id),
             code = result.closeReason,
-            flag = result.shouldRing && availability != UserAvailabilityStatusEntity.AWAY && conversation != null &&
-                conversation.mutedStatus != ConversationEntity.MutedStatus.ALL_MUTED
+            flag = shouldRing
         )
         result.copy(
             callerName = if (result.type == ReceivedCallType.MISSED) null else name,
             handoffId = source?.id,
-            shouldRing = result.shouldRing && availability != UserAvailabilityStatusEntity.AWAY && conversation != null &&
-                conversation.mutedStatus != ConversationEntity.MutedStatus.ALL_MUTED,
+            shouldRing = shouldRing,
             shouldNotify = shouldNotify,
             conversationName = if (result.type == ReceivedCallType.MISSED) conversation?.name else null,
             senderName = senderName,

@@ -5,15 +5,18 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.calling.*
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.*
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.sync.receiving.CallSignalStore
 import com.wire.kalium.logic.sync.receiving.CallSignalRecord
 import com.wire.kalium.logic.sync.receiving.IncomingCallReference
@@ -56,12 +59,26 @@ class CallManagerIncomingLifecycleTest {
                         everySuspend { repository.fetchServerTime() } returns null
                         everySuspend { repository.getCallConfigResponse(any()) } returns
                             """{"ice_servers":[{"urls":["stun:127.0.0.1:9"]}],"sft_servers":[{"urls":["https://sft.invalid"]}],"ttl":3600}""".right()
-                        every { repository.getCallMetadata(any()) } returns null
+                        var metadata: CallMetadata? = null
+                        every { repository.getCallMetadata(any()) } calls { metadata }
                         every { repository.establishedCallsFlow() } returns kotlinx.coroutines.flow.flowOf(emptyList())
                         everySuspend { repository.createCall(any(), any(), any(), any(), any(), any(), any()) } calls {
+                            metadata = TestCall.oneOnOneCallMetadata().copy(
+                                callerId = peer,
+                                callStatus = it.arg(2),
+                                conversationType = if (type == ConversationTypeCalling.OneOnOne) {
+                                    Conversation.Type.OneOnOne
+                                } else Conversation.Type.Group.Regular,
+                            )
                             states.send(it.arg(2))
                         }
-                        everySuspend { repository.updateCallStatusById(any(), any()) } calls { states.send(it.arg(1)) }
+                        everySuspend { repository.updateIsAnsweredElsewhere(any()) } calls {
+                            metadata = metadata?.copy(callAnsweredElsewhere = true)
+                        }
+                        everySuspend { repository.updateCallStatusById(any(), any()) } calls {
+                            metadata = metadata?.copy(callStatus = it.arg(1))
+                            states.send(it.arg(1))
+                        }
                         val client = mock<CurrentClientIdProvider>()
                         everySuspend { client() } returns ClientId("abcd").right()
                         val federated = mock<FederatedIdMapper>()

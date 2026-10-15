@@ -7,6 +7,38 @@ import kotlin.test.assertIs
 
 class AppleAvsCallNotificationProcessorTest {
     @Test
+    fun nativeCallStartsMarkBothOwnOtherDeviceAndPeerAsRinging() {
+        val observations = mutableMapOf<String, List<Boolean>>()
+        val expected = mutableMapOf<String, List<Boolean>>()
+        val scenarios = listOf(
+            "SETUP" to AvsCallNotificationConversationType.OneOnOne,
+            "GROUPSTART" to AvsCallNotificationConversationType.Group,
+            "CONFSTART" to AvsCallNotificationConversationType.ConferenceMls,
+        )
+        for ((type, conversationType) in scenarios) {
+            for (own in listOf(false, true)) {
+                val account = "start-$type-$own"
+                val callbacks = Callbacks()
+                val processor = processor(account, callbacks)
+                try {
+                    assertSuccess(processor.process(listOf(event(
+                        "call",
+                        payload = signal(type),
+                        sender = if (own) "$account@example.com" else "peer@example.com",
+                        conversationType = conversationType,
+                    ))))
+                } finally {
+                    processor.close()
+                }
+                observations[account] = callbacks.ringFlags
+                expected[account] = listOf(true)
+            }
+        }
+        // Presentation policy must suppress self calls; the native callback does not.
+        assertEquals(expected, observations)
+    }
+
+    @Test
     fun givenClosedRequest_whenNextRequestUsesSameAccount_thenCallbacksReachOnlyNewRequest() {
         val firstCallbacks = Callbacks()
         val first = processor("repeat", firstCallbacks)
@@ -237,7 +269,8 @@ class AppleAvsCallNotificationProcessorTest {
         conversation: String,
         type: String = "GROUPSTART",
         payload: String = """{"version":"3.0","type":"$type","sessid":"$conversation","resp":false}""",
-        sender: String = "peer@example.com"
+        sender: String = "peer@example.com",
+        conversationType: AvsCallNotificationConversationType = AvsCallNotificationConversationType.ConferenceMls,
     ): AvsCallNotification = AvsCallNotification(
         payload = payload.encodeToByteArray(),
         currentTimeSeconds = 100u,
@@ -245,7 +278,7 @@ class AppleAvsCallNotificationProcessorTest {
         conversationId = conversation,
         senderUserId = sender,
         senderClientId = "def456",
-        conversationType = AvsCallNotificationConversationType.ConferenceMls
+        conversationType = conversationType
     )
 
     private fun assertSuccess(result: AvsCallNotificationProcessingResult) {
@@ -254,6 +287,7 @@ class AppleAvsCallNotificationProcessorTest {
 
     private class Callbacks : AvsCallNotificationCallbacks {
         val incoming = mutableListOf<String>()
+        val ringFlags = mutableListOf<Boolean>()
         val missed = mutableListOf<String>()
         val closed = mutableListOf<String>()
         val reasons = mutableListOf<AvsCallNotificationClosedReason>()
@@ -261,6 +295,7 @@ class AppleAvsCallNotificationProcessorTest {
 
         override fun onIncomingCall(incomingCall: AvsIncomingCallNotification) {
             incoming += incomingCall.conversationId
+            ringFlags += incomingCall.shouldRing
             onIncoming?.invoke()
         }
 

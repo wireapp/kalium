@@ -3132,6 +3132,32 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun incomingCallPresentationSuppressesOwnAccountAndPreservesSignaling() = runTest {
+        val callers = listOf(SELF.toDao(), SENDER.toDao(), QualifiedIDEntity(SELF.value, "other.example"))
+        for (mls in listOf(false, true)) for (caller in callers) withContext(Dispatchers.Default) {
+            withFixture(mls) { fixture ->
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    val event = ReceivedCallEvent(
+                        fixture.callContent().value, CONVERSATION_ID, caller, SENDER_CLIENT,
+                        Clock.System.now(), true, mls, "own-device-start"
+                    )
+                    val journal = CallSignalJournal(runtime.database)
+                    val signal = journal.append(event)
+                    repeat(2) {
+                        val result = evaluateCallingEvents(listOf(event), SELF, CLIENT, runtime.database).single()
+                        assertEquals(ReceivedCallType.INCOMING, result.type)
+                        assertEquals(caller != SELF.toDao(), result.shouldRing, "caller=$caller mls=$mls")
+                        assertEquals(signal.id, result.handoffId)
+                        assertEquals(listOf(signal), journal.signals())
+                        assertTrue(journal.presentations().isEmpty())
+                    }
+                })
+            }
+        }
+    }
+
+    @Test
     fun incomingCallPresentationHonorsMutedConversationAndAwayStatus() = runTest {
         for (mls in listOf(false, true)) for (away in listOf(false, true)) withContext(Dispatchers.Default) {
             withFixture(mls) { fixture ->
