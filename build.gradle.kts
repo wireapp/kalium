@@ -116,7 +116,9 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        maven(url = "https://maven.wire.com")
+        maven(url = "https://maven.wire.com") {
+            content { includeGroup("com.wire") }
+        }
     }
 }
 
