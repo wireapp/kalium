@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
+import com.wire.kalium.logic.data.message.decodeFromProtobufSafely
 import kotlin.io.encoding.Base64
 
 interface ProteusMessageUnpacker {
@@ -133,15 +134,17 @@ class ProteusMessageUnpackerImpl(
     private fun getReadableMessageContent(
         plainMessageBlob: PlainMessageBlob,
         encryptedData: EncryptedData?
-    ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
-        is ProtoContent.Readable -> Either.Right(protoContent)
-        is ProtoContent.ExternalMessageInstructions -> encryptedData?.let {
-            solveExternalContentForProteusMessage(protoContent, encryptedData)
-        } ?: run {
-            val rootCause = IllegalArgumentException(
-                "Null external content when processing external message instructions."
-            )
-            Either.Left(CoreFailure.Unknown(rootCause))
+    ) = protoContentMapper.decodeFromProtobufSafely(plainMessageBlob).flatMap { protoContent ->
+        when (protoContent) {
+            is ProtoContent.Readable -> Either.Right(protoContent)
+            is ProtoContent.ExternalMessageInstructions -> encryptedData?.let {
+                solveExternalContentForProteusMessage(protoContent, encryptedData)
+            } ?: run {
+                val rootCause = IllegalArgumentException(
+                    "Null external content when processing external message instructions."
+                )
+                Either.Left(CoreFailure.Unknown(rootCause))
+            }
         }
     }
 
@@ -151,7 +154,7 @@ class ProteusMessageUnpackerImpl(
     ): Either<CoreFailure, ProtoContent.Readable> = wrapProteusRequest {
         val decryptedExternalMessage = decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data
         PlainMessageBlob(decryptedExternalMessage)
-    }.map(protoContentMapper::decodeFromProtobuf).flatMap { decodedProtobuf ->
+    }.flatMap { protoContentMapper.decodeFromProtobufSafely(it) }.flatMap { decodedProtobuf ->
         if (decodedProtobuf !is ProtoContent.Readable) {
             val rootCause = IllegalArgumentException(
                 "матрёшка! External message can't contain another external message inside!"

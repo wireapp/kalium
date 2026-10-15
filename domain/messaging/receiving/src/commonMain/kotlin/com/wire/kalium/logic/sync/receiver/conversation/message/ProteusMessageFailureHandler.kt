@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.logic.data.message.InvalidMessageContent
 
 sealed class ProteusMessageFailureResolution {
     data object Ignore : ProteusMessageFailureResolution()
@@ -29,7 +30,10 @@ sealed class ProteusMessageFailureResolution {
 
 object ProteusMessageFailureHandler {
     fun handleFailure(failure: CoreFailure): ProteusMessageFailureResolution {
-        if (failure !is ProteusFailure) return ProteusMessageFailureResolution.InformUser
+        if (failure !is ProteusFailure) {
+            return if (failure is InvalidMessageContent) ProteusMessageFailureResolution.Ignore
+            else ProteusMessageFailureResolution.InformUser
+        }
 
         return when (failure.proteusException.code) {
             ProteusException.Code.DUPLICATE_MESSAGE -> ProteusMessageFailureResolution.Ignore

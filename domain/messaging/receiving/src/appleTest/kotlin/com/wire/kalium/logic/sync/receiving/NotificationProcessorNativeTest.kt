@@ -10984,6 +10984,45 @@ class NotificationProcessorNativeTest {
         }
     }
 
+    @Test
+    fun invalidApplicationContentIsConsumedForMLSAndProteus() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(true, false)) withFixture(mls) { fixture ->
+                val invalid = listOf(
+                    byteArrayOf(0x80.toByte()),
+                    GenericMessage(messageId = "bad-history", content = GenericMessage.Content.HistoryClientAvailable(
+                        com.wire.kalium.protobuf.messages.HistoryClientAvailable(com.wire.kalium.protobuf.messages.HistoryClient(
+                            clientId = "client", createdAt = "not-an-instant", secret = pbandk.ByteArr(byteArrayOf(1, 2, 3)),
+                        ))
+                    )).encodeToByteArray(),
+                    GenericMessage(messageId = "bad-calling", content = GenericMessage.Content.Calling(
+                        com.wire.kalium.protobuf.messages.Calling(content = "{")
+                    )).encodeToByteArray(),
+                )
+                val events = invalid.flatMapIndexed { index, bytes ->
+                    listOf(
+                        fixture.event("invalid-$index", fixture.encryptBytes(bytes)),
+                        fixture.event("valid-$index", fixture.encrypt("valid-$index")),
+                    )
+                }
+                val target = events.last().id
+                val next = fixture.encrypt("next")
+                fixture.releasePrepared()
+
+                assertIs<Either.Right<*>>(fixture.receive(events, target))
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    for (index in invalid.indices) {
+                        assertNotNull(runtime.database.messageDAO.getMessageById("valid-$index", CONVERSATION_ID))
+                    }
+                    events.forEach { assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(it.id)).isProcessed) }
+                    assertNull(runtime.database.notificationEventStore.nextPending())
+                })
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(fixture.receive(emptyList(), target)).value)
+                assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
+            }
+        }
+    }
+
     private suspend fun withFixture(mls: Boolean, senderId: UserId = SENDER, newConversation: Boolean = false, x509: Boolean = false, basicSelf: Boolean = false, deleteStorage: Boolean = true, block: suspend (Fixture) -> Unit) {
         val fixture = Fixture(mls, senderId = senderId, newConversation = newConversation, x509 = x509, basicSelf = basicSelf)
         try {
@@ -12203,7 +12242,7 @@ class NotificationProcessorNativeTest {
             return encryptBytes(bytes, protocolMLS, groupId)
         }
 
-        private suspend fun encryptBytes(bytes: ByteArray, protocolMLS: Boolean = mlsEnabled, groupId: String = GROUP_ID): ByteArray =
+        suspend fun encryptBytes(bytes: ByteArray, protocolMLS: Boolean = mlsEnabled, groupId: String = GROUP_ID): ByteArray =
             if (protocolMLS) checkNotNull(senderMLS).transaction { it.encryptMessage(groupId, bytes) } else {
                 senderProteus.transaction("fixture-encrypt") {
                     if (firstProteus) {

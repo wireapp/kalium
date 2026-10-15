@@ -44,7 +44,6 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -61,7 +60,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.seconds
 
@@ -284,13 +282,14 @@ internal class MLSMessageUnpackerTest {
             .withDecodedProtoContent(external)
             .arrange()
 
-        assertFailsWith<KaliumSyncException> {
+        assertEquals(
+            MessageUnpackResult.InvalidMessage,
             mlsUnpacker.unpackMlsBundle(
                 decryptedText(ApplicationMessage(byteArrayOf(1), SELF_USER_ID, ClientId("client-id"))),
                 TestConversation.ID,
                 DateTimeUtil.currentInstant(),
             )
-        }
+        )
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {

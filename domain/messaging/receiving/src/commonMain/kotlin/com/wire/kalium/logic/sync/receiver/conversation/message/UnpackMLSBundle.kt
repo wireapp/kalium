@@ -18,13 +18,14 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
-import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.data.message.decodeFromProtobufSafely
 import kotlin.time.Instant
 
 /** Decode a bundle; callers must complete required proposal work before accepting its handshake result. */
@@ -41,16 +42,19 @@ private fun DecryptedMessageBundle.Text.unpackText(
     conversationId: ConversationId,
     messageInstant: Instant,
     protoContentMapper: ProtoContentMapper,
-): MessageUnpackResult.ApplicationMessage {
-    val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(applicationMessage.message))
-    if (protoContent !is ProtoContent.Readable) {
-        throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
+): MessageUnpackResult {
+    val protoContent = protoContentMapper.decodeFromProtobufSafely(PlainMessageBlob(applicationMessage.message))
+        .getOrElse { return MessageUnpackResult.InvalidMessage }
+    return if (protoContent !is ProtoContent.Readable) {
+        kaliumLogger.w("Invalid application message discarded: MLS external content")
+        MessageUnpackResult.InvalidMessage
+    } else {
+        MessageUnpackResult.ApplicationMessage(
+            conversationId = conversationId,
+            instant = messageInstant,
+            senderUserId = applicationMessage.senderID,
+            senderClientId = applicationMessage.senderClientID,
+            content = protoContent
+        )
     }
-    return MessageUnpackResult.ApplicationMessage(
-        conversationId = conversationId,
-        instant = messageInstant,
-        senderUserId = applicationMessage.senderID,
-        senderClientId = applicationMessage.senderClientID,
-        content = protoContent
-    )
 }

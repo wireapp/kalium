@@ -30,6 +30,9 @@ import kotlin.time.Instant
  */
 sealed interface MessageUnpackResult {
 
+    /** Decryption succeeded, but the application content is invalid and must be consumed without retry. */
+    data object InvalidMessage : MessageUnpackResult
+
     /**
      * The [Event] was successfully processed by the unpacker, and didn't result in
      * any [ApplicationMessage], only protocol-specific signaling/handshake.

@@ -247,10 +247,10 @@ internal class NewMessageEventHandlerImpl(
     }
 
     private val MessageUnpackResult.messageTypeDescription
-        get() = if (this is MessageUnpackResult.ApplicationMessage) {
-            content.messageContent.typeDescription()
-        } else {
-            "Handshake"
+        get() = when (this) {
+            is MessageUnpackResult.ApplicationMessage -> content.messageContent.typeDescription()
+            MessageUnpackResult.InvalidMessage -> "Invalid"
+            MessageUnpackResult.HandshakeMessage -> "Handshake"
         }
 
     private suspend fun onMessageInserted(result: MessageUnpackResult.ApplicationMessage) {

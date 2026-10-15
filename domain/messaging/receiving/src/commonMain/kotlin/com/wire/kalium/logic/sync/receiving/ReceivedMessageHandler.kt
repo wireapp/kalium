@@ -20,12 +20,14 @@ package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationClear
 import com.wire.kalium.logic.data.conversation.conversationClear
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.decodeCallingValue
 import com.wire.kalium.logic.data.message.prepareMultipartEdit
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.cryptoSessionResetMessage
@@ -208,7 +210,7 @@ internal class ReceivedMessageHandler(
         carrier: ConversationEntity,
         isMLS: Boolean,
     ) {
-        val value = callingJson.decodeFromString<MessageContent.Calling.CallingValue>(content.value)
+        val value = content.decodeCallingValue(callingJson).getOrNull() ?: return
         // The NSE has no active call. Remote mute, like in-call reactions, has no durable effect.
         if (value.type == "REMOTEMUTE") return
         // Match the shared app's authorization: only our own devices can address another

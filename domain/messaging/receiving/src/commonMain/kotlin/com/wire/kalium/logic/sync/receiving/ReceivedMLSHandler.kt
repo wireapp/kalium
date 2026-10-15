@@ -137,10 +137,12 @@ internal class ReceivedMLSHandler(
                     }
                     bundleEpoch++
                 }
-                is DecryptedMessageBundle.Text -> effects += ReceivedPayload.Application(
-                    bundle.unpack(event.conversationId, event.messageInstant, mapper) as MessageUnpackResult.ApplicationMessage,
-                    isMLS = true,
-                )
+                is DecryptedMessageBundle.Text -> {
+                    val message = bundle.unpack(event.conversationId, event.messageInstant, mapper)
+                    if (message is MessageUnpackResult.ApplicationMessage) {
+                        effects += ReceivedPayload.Application(message, isMLS = true)
+                    }
+                }
             }
         }
         if (event.conversationId !in removed && (staleCommit || context.conversationEpoch(protocol.groupId) != epoch)) {
