@@ -54,6 +54,7 @@ import okio.buffer
 import okio.use
 import kotlin.random.Random
 
+@Suppress("TooManyFunctions")
 internal class CellsS3Client(
     private val httpClient: HttpClient,
     private val endpointProvider: suspend () -> String,
@@ -115,6 +116,7 @@ internal class CellsS3Client(
         )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
         val length = fileSystem.metadata(path).size
             ?: throw IOException("Upload source size is not available")
@@ -208,6 +210,7 @@ internal class CellsS3Client(
         multipartUploadsMutex.withLock { inProgressMultipartUploads.remove(nodeUuid) }
     }
 
+    @Suppress("LongParameterList")
     private suspend fun uploadParts(
         nodeUuid: String,
         alreadyCompleted: List<CompletedS3Part>,
@@ -565,15 +568,12 @@ internal fun CellNodeDTO.createDraftNodeHeaders(): Map<String, String> = mapOf(
     "x-amz-meta-create-version-id" to versionId,
 )
 
-@Suppress("TooGenericExceptionCaught")
 private fun BufferedSource.readPart(size: Long): ByteArray {
     val buffer = Buffer()
     var remaining = size
     while (remaining > 0L) {
         val read = try {
             read(buffer, remaining)
-        } catch (cause: CancellationException) {
-            throw cause
         } catch (cause: IOException) {
             throw UploadSourceException("Failed to read upload source", cause)
         }

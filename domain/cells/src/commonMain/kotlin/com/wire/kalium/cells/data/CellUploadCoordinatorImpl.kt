@@ -58,7 +58,7 @@ import kotlin.uuid.Uuid
  * `init`, which drains [commands]. Public methods only post commands, so queue and slot accounting are
  * free of locks and process in a deterministic order.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class CellUploadCoordinatorImpl internal constructor(
     private val uploadManager: CellUploadManager,
     private val cellsRepository: CellsRepository,
@@ -341,7 +341,9 @@ internal class CellUploadCoordinatorImpl internal constructor(
 
     /** Every item parked in [CellUploadState.Paused] goes back to the real queue and gets picked up normally. */
     private fun resumeAllPaused() {
-        _uploads.update { items -> items.map { if (it.state is CellUploadState.Paused) it.copy(state = CellUploadState.Queued) else it } }
+        _uploads.update { items ->
+            items.map { if (it.state is CellUploadState.Paused) it.copy(state = CellUploadState.Queued) else it }
+        }
     }
 
     private fun requeueFailed(id: String) {
