@@ -297,6 +297,7 @@ internal class ReceivedMessageHandler(
         deleteMessageForMe(data.messages, content, inSelfConversation).orThrow()
     }
 
+    @Suppress("ReturnCount") // Keep authorization and target guards before destructive work.
     private suspend fun clear(
         unpacked: MessageUnpackResult.ApplicationMessage,
         content: MessageContent.Cleared,
@@ -307,9 +308,15 @@ internal class ReceivedMessageHandler(
     ) {
         val action = conversationClear(unpacked.senderUserId == selfUserId, isSelfConversation(carrier), content.needToRemoveLocally)
         if (action == ConversationClear.IGNORE) return
+        val targetId = content.conversationId.toDao()
+        if (targetId == carrier.id) return
+        val target = data.conversations.getConversationById(targetId)
+        if (target?.type == ConversationEntity.Type.SELF) return
+        val replayKey = clearReplayKey(carrier.id, unpacked.content.messageUid, targetId)
+        // An earlier attempt may already have removed the target. Only its exact snapshot can replay.
+        if (target == null && data.metadata.valueByKey(replayKey) == null) return
         if (action == ConversationClear.CONVERSATION) {
-            val target = content.conversationId.toDao()
-            check(target != carrier.id && target !in requiredEarlier && target !in recreatedLater) {
+            check(targetId !in requiredEarlier && targetId !in recreatedLater) {
                 "Local removal requires replayable conversation metadata"
             }
         }
@@ -317,7 +324,7 @@ internal class ReceivedMessageHandler(
         val type = if (action == ConversationClear.CONVERSATION) PendingActionType.DELETE_CONVERSATION_LOCALLY
             else PendingActionType.CLEAR_CONVERSATION_CONTENT
         val request = PendingActionEntity(
-            content.conversationId.toDao(),
+            targetId,
             minOf(content.time, unpacked.instant).toEpochMilliseconds()
         )
         data.pendingActions.upsert(type, request.qualifiedId, request.createdAt)
@@ -325,7 +332,7 @@ internal class ReceivedMessageHandler(
             type,
             request,
             deleteFile,
-            clearReplayKey(carrier.id, unpacked.content.messageUid, request.qualifiedId),
+            replayKey,
             preserveConversation = laterMessages.any { it.conversationId.toDao() == request.qualifiedId },
         )
     }

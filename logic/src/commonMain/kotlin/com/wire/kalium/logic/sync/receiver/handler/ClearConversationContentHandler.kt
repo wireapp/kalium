@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationClear
 import com.wire.kalium.logic.data.conversation.conversationClear
@@ -55,6 +57,7 @@ internal class ClearConversationContentHandlerImpl(
     private val recoverNSEClear: suspend (Message.Signaling, MessageContent.Cleared) -> Boolean = { _, _ -> false },
 ) : ClearConversationContentHandler {
 
+    @Suppress("ReturnCount") // Keep authorization and target guards before destructive work.
     override suspend fun handle(
         transactionContext: CryptoTransactionContext,
         message: Message.Signaling,
@@ -65,9 +68,18 @@ internal class ClearConversationContentHandlerImpl(
 
         val action = conversationClear(isSelfSender, isMessageInSelfConversation, messageContent.needToRemoveLocally)
         if (action == ConversationClear.IGNORE) return
+        if (messageContent.conversationId == message.conversationId) return
+
+        val target = conversationRepository.getConversationById(messageContent.conversationId).getOrFail {
+            if (it != StorageFailure.DataNotFound) throw KaliumSyncException("Conversation target lookup failed", it)
+            null
+        }
+        if (target?.type == Conversation.Type.Self) return
         // NSE already applied an exact snapshot. The backup hook represents an unconditional
         // conversation wipe and cannot safely describe a cutoff that preserved newer messages.
+        // Recovery must also work after the NSE has already removed the target conversation.
         if (recoverNSEClear(message, messageContent)) return
+        if (target == null) return
 
         clearConversation(messageContent.conversationId)
 

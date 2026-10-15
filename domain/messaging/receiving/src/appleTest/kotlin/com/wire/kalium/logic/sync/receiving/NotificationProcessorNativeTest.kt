@@ -1243,7 +1243,7 @@ class NotificationProcessorNativeTest {
                 if (clear) fixture.verifyPendingConversationCleanup(it, CONVERSATION_ID)
             })
             assertIs<Either.Right<*>>(fixture.receive(emptyList(), tail.id))
-            fixture.verifyStoredAndNext(next, "first", if (clear) listOf("first", "tail") else listOf("prefix", "first", "tail"))
+            fixture.verifyStoredAndNext(next, "first", listOf("prefix", "first", "tail"))
         }
     }
 
@@ -1501,7 +1501,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun clearBeforeTeamLeaveRestoresCanonicalMessages() = runTest {
+    fun foreignClearBeforeTeamLeavePreservesHistory() = runTest {
         for (stage in listOf(Interruption.BEFORE_COMMIT, Interruption.AFTER_COMMIT, Interruption.MARKER)) {
             withContext(Dispatchers.Default) {
                 withFixture(true) { fixture ->
@@ -1517,7 +1517,7 @@ class NotificationProcessorNativeTest {
                     repeat(2) { assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id)) }
                     assertIs<Either.Right<*>>(fixture.open {
                         fixture.verifyIdentityState(it, client = false)
-                        assertNull(it.database.messageDAO.getMessageById("old", CONVERSATION_ID))
+                        assertNotNull(it.database.messageDAO.getMessageById("old", CONVERSATION_ID))
                         fixture.verifyPendingConversationCleanup(it, CONVERSATION_ID)
                     })
                     fixture.verifyStoredAndNext(next, "first")
@@ -2614,8 +2614,7 @@ class NotificationProcessorNativeTest {
                     if (mode == "delete") {
                         assertEquals(MessageEntity.Visibility.DELETED, checkNotNull(message).visibility)
                     } else {
-                        if (mode == "clear-after") assertNull(message)
-                        else fixture.verifyPromotion(runtime, id, SENDER)
+                        fixture.verifyPromotion(runtime, id, SENDER)
                         fixture.verifyPendingConversationCleanup(runtime, CONVERSATION_ID)
                     }
                     assertEquals(com.wire.kalium.persistence.dao.member.MemberEntity.Role.Admin,
@@ -3868,12 +3867,12 @@ class NotificationProcessorNativeTest {
         fileFailure: Boolean = false,
         sqlFailure: Boolean = false,
     ) = withContext(Dispatchers.Default) {
-        withFixture(mls, senderId = if (mode == CleanupMode.LOCAL_DELETE) SELF else SENDER) { fixture ->
-            if (mode == CleanupMode.LOCAL_DELETE) fixture.seedDeleteForMeTarget()
+        withFixture(mls, senderId = if (mode == CleanupMode.BACKEND_DELETE) SENDER else SELF) { fixture ->
+            if (mode != CleanupMode.BACKEND_DELETE) fixture.seedDeleteForMeTarget()
             else if (mode == CleanupMode.BACKEND_DELETE) fixture.seedProteusConversation()
-            val target = if (mode == CleanupMode.CLEAR) CONVERSATION_ID else DELETE_TARGET
+            val target = DELETE_TARGET
             fixture.seedConversationCleanupFiles(target)
-            val event = fixture.conversationCleanupEvent(mode)
+            val event = fixture.conversationCleanupEvent(mode, target)
             val tail = fixture.event("tail", fixture.encrypt("tail"))
             val next = fixture.encrypt("next")
             fixture.releasePrepared()
@@ -3913,7 +3912,7 @@ class NotificationProcessorNativeTest {
                 if (mode != CleanupMode.CLEAR) fixture.verifyConversationCleanup(runtime, target, deleted = true)
                 else {
                     fixture.verifyHistoricalCutoffCleanup(runtime, target)
-                    if (mode == CleanupMode.CLEAR) assertNotNull(runtime.database.messageDAO.getMessageById("prefix", target))
+                    if (mode == CleanupMode.CLEAR) assertNotNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
                 }
                 assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
             })
@@ -3926,21 +3925,22 @@ class NotificationProcessorNativeTest {
     @Test
     fun conversationClearUsesEarlierContentOrEnvelopeCutoff() = runTest {
         for (contentAfterEnvelope in listOf(false, true)) withContext(Dispatchers.Default) {
-            withFixture(false) { fixture ->
+            withFixture(false, senderId = SELF) { fixture ->
+                fixture.seedDeleteForMeTarget()
                 fixture.seed(
-                    storedText("old").copy(date = TIME - 1.seconds),
-                    storedText("newer").copy(date = TIME + 1.seconds),
+                    storedText("old").copy(conversationId = DELETE_TARGET, date = TIME - 1.seconds),
+                    storedText("newer").copy(conversationId = DELETE_TARGET, date = TIME + 1.seconds),
                 )
                 val contentTime = if (contentAfterEnvelope) TIME + 2.seconds else TIME
                 val envelopeTime = if (contentAfterEnvelope) TIME else TIME + 2.seconds
                 val event = fixture.batch("notification", fixture.event("clear", fixture.encrypt("clear",
-                    MessageContent.Cleared(CONVERSATION_ID.toModel(), contentTime, false)), envelopeTime))
+                    MessageContent.Cleared(DELETE_TARGET.toModel(), contentTime, false)), envelopeTime))
                 fixture.releasePrepared()
                 assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
-                    assertNull(runtime.database.messageDAO.getMessageById("old", CONVERSATION_ID))
-                    assertNotNull(runtime.database.messageDAO.getMessageById("newer", CONVERSATION_ID))
-                    fixture.verifyPendingConversationCleanup(runtime, CONVERSATION_ID)
+                    assertNull(runtime.database.messageDAO.getMessageById("old", DELETE_TARGET))
+                    assertNotNull(runtime.database.messageDAO.getMessageById("newer", DELETE_TARGET))
+                    fixture.verifyPendingConversationCleanup(runtime, DELETE_TARGET)
                 })
             }
         }
@@ -3949,20 +3949,21 @@ class NotificationProcessorNativeTest {
     @Test
     fun appClearRecoveryPreservesLaterMessageAtTheSameTimestamp() = runTest {
         withContext(Dispatchers.Default) {
-            withFixture(false) { fixture ->
-                fixture.seed(storedText("old"))
+            withFixture(false, senderId = SELF) { fixture ->
+                fixture.seedDeleteForMeTarget()
+                fixture.seed(storedText("old").copy(conversationId = DELETE_TARGET))
                 val event = fixture.batch("notification", fixture.event("clear", fixture.encrypt("clear",
-                    MessageContent.Cleared(CONVERSATION_ID.toModel(), TIME, false))),
-                    fixture.event("later", fixture.encrypt("later")))
+                    MessageContent.Cleared(DELETE_TARGET.toModel(), TIME, false))),
+                    fixture.event("later", fixture.encrypt("later"), conversationId = DELETE_TARGET))
                 fixture.releasePrepared()
                 assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id, Interruption.BEFORE_COMMIT))
                 assertIs<Either.Right<*>>(fixture.open { runtime ->
                     val cleanup = PendingConversationCleanup(runtime.database) {
                         FileSystem.SYSTEM.delete(it.toPath(), mustExist = false)
                     }
-                    assertTrue(cleanup.recover(CONVERSATION_ID, "clear", CONVERSATION_ID))
-                    assertNull(runtime.database.messageDAO.getMessageById("old", CONVERSATION_ID))
-                    assertNotNull(runtime.database.messageDAO.getMessageById("later", CONVERSATION_ID))
+                    assertTrue(cleanup.recover(CONVERSATION_ID, "clear", DELETE_TARGET))
+                    assertNull(runtime.database.messageDAO.getMessageById("old", DELETE_TARGET))
+                    assertNotNull(runtime.database.messageDAO.getMessageById("later", DELETE_TARGET))
                 })
                 assertIs<Either.Right<*>>(fixture.receive(emptyList(), event.id))
             }
@@ -4072,32 +4073,65 @@ class NotificationProcessorNativeTest {
     @Test
     fun conversationClearSenderMatrix() = runTest {
         withContext(Dispatchers.Default) {
-            for (mls in listOf(false, true)) for (selfCarrier in listOf(false, true)) {
-                withFixture(mls, senderId = if (selfCarrier) SENDER else SELF) { fixture ->
-                    if (selfCarrier) fixture.seedDeleteForMeTarget()
-                    else fixture.seed(storedText("protected"))
-                    val target = if (selfCarrier) DELETE_TARGET else CONVERSATION_ID
-                    val protected = if (selfCarrier) "delete-me" else "protected"
-                    val clear = fixture.encrypt("clear", MessageContent.Cleared(target.toModel(), TIME, true))
-                    val first = fixture.encrypt("first")
-                    val next = fixture.encrypt("next")
-                    fixture.releasePrepared()
-                    assertIs<Either.Right<*>>(fixture.receive(listOf(fixture.batch("notification", fixture.event("clear", clear),
-                        fixture.event("first", first))), "notification"))
-                    assertIs<Either.Right<*>>(fixture.open { runtime ->
-                        assertNotNull(runtime.database.messageDAO.getMessageById(protected, target))
-                        assertNotNull(runtime.database.conversationDAO.getConversationById(target))
-                        assertTrue(runtime.database.pendingActionDAO.getByActionType(PendingActionType.CLEAR_CONVERSATION_CONTENT).isEmpty())
-                        assertTrue(runtime.database.pendingActionDAO.getByActionType(PendingActionType.DELETE_CONVERSATION_LOCALLY).isEmpty())
-                    })
-                    assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
+            for (mls in listOf(false, true)) for (selfSender in listOf(false, true)) {
+                for (selfCarrier in listOf(false, true)) for (removeLocally in listOf(false, true)) {
+                    withFixture(mls, senderId = if (selfSender) SELF else SENDER) { fixture ->
+                        if (selfCarrier) fixture.seedDeleteForMeTarget()
+                        val target = if (selfCarrier) DELETE_TARGET else CONVERSATION_ID
+                        fixture.seedConversationCleanupFiles(target)
+                        val accepted = selfSender && selfCarrier
+                        val clear = fixture.encrypt("clear", MessageContent.Cleared(target.toModel(), TIME, removeLocally))
+                        val first = fixture.encrypt("first")
+                        val next = fixture.encrypt("next")
+                        fixture.releasePrepared()
+                        val event = fixture.batch("notification", fixture.event("clear", clear), fixture.event("first", first))
+                        repeat(2) {
+                            assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id, deleteFile = { path ->
+                                check(accepted) { "Rejected clear must not delete files" }
+                                FileSystem.SYSTEM.delete(path.toPath(), mustExist = false)
+                            }))
+                            assertIs<Either.Right<*>>(fixture.open { runtime ->
+                                if (accepted) fixture.verifyConversationCleanup(runtime, target, deleted = removeLocally)
+                                else {
+                                    fixture.verifyHistoricalCutoffCleanup(runtime, target)
+                                    assertNull(runtime.database.metadataDAO.valueByKey(clearReplayKey(CONVERSATION_ID, "clear", target)))
+                                }
+                                assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
+                                assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                            })
+                        }
+                        assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
+                    }
                 }
             }
         }
     }
 
     @Test
-    fun conversationClearCleansWithoutBlockingNativeReplayDependencies() = runTest {
+    fun conversationClearIgnoresMissingTarget() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) for (removeLocally in listOf(false, true)) {
+                withFixture(mls, senderId = SELF) { fixture ->
+                    fixture.seedDeleteForMeTarget()
+                    val target = QualifiedIDEntity("missing", SELF.domain)
+                    val event = fixture.batch("notification", fixture.event("clear", fixture.encrypt("clear",
+                        MessageContent.Cleared(target.toModel(), TIME, removeLocally))), fixture.event("first", fixture.encrypt("first")))
+                    fixture.releasePrepared()
+                    assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id,
+                        deleteFile = { error("Missing target must not delete files") }))
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertNull(runtime.database.metadataDAO.valueByKey(clearReplayKey(CONVERSATION_ID, "clear", target)))
+                        fixture.verifyPendingConversationCleanup(runtime, target)
+                        assertNotNull(runtime.database.messageDAO.getMessageById("delete-me", DELETE_TARGET))
+                        assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
+                    })
+                }
+            }
+        }
+    }
+
+    @Test
+    fun foreignClearDoesNotBlockNativeReplayDependencies() = runTest {
         withContext(Dispatchers.Default) {
             withFixture(true) { fixture ->
                 fixture.seed(storedText("protected"))
@@ -4108,7 +4142,7 @@ class NotificationProcessorNativeTest {
                 repeat(2) {
                     assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id))
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
-                        assertNull(runtime.database.messageDAO.getMessageById("protected", CONVERSATION_ID))
+                        assertNotNull(runtime.database.messageDAO.getMessageById("protected", CONVERSATION_ID))
                         assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
                         fixture.verifyPendingConversationCleanup(runtime, CONVERSATION_ID)
                         assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
@@ -4119,7 +4153,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun conversationClearBeforeMLSVerificationReplaysCanonicalMessage() = runTest {
+    fun foreignClearBeforeMLSVerificationPreservesHistory() = runTest {
         withContext(Dispatchers.Default) {
             for (stage in listOf(Interruption.BEFORE_COMMIT, Interruption.AFTER_COMMIT, Interruption.MARKER)) withFixture(true) { fixture ->
                 fixture.seed(storedText("protected"))
@@ -4138,7 +4172,7 @@ class NotificationProcessorNativeTest {
                 repeat(2) {
                     assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id))
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
-                        assertNull(runtime.database.messageDAO.getMessageById("protected", CONVERSATION_ID))
+                        assertNotNull(runtime.database.messageDAO.getMessageById("protected", CONVERSATION_ID))
                         fixture.verifyPendingConversationCleanup(runtime, CONVERSATION_ID)
                         assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
                         assertEquals(MessageEntityContent.ConversationDegradedMLS, checkNotNull(runtime.database.messageDAO.getMessageById(
@@ -4154,7 +4188,7 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun conversationClearBeforeMemberLeaveReplaysCanonicalMessage() = runTest {
+    fun foreignClearBeforeMemberLeavePreservesHistory() = runTest {
         withContext(Dispatchers.Default) {
             for (stage in listOf(Interruption.BEFORE_COMMIT, Interruption.AFTER_COMMIT, Interruption.MARKER)) withFixture(false) { fixture ->
                 fixture.seed(storedText("protected"))
@@ -4171,7 +4205,7 @@ class NotificationProcessorNativeTest {
                 repeat(2) {
                     assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id))
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
-                        assertNull(runtime.database.messageDAO.getMessageById("protected", CONVERSATION_ID))
+                        assertNotNull(runtime.database.messageDAO.getMessageById("protected", CONVERSATION_ID))
                         fixture.verifyPendingConversationCleanup(runtime, CONVERSATION_ID)
                         assertNull(runtime.database.memberDAO.getMemberRole(SENDER.toDao(), CONVERSATION_ID))
                         assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
@@ -4189,21 +4223,21 @@ class NotificationProcessorNativeTest {
     @Test
     fun conversationLocalDeleteRejectsItsOwnSelfCarrier() = runTest {
         withContext(Dispatchers.Default) {
-            for (mls in listOf(false, true)) withFixture(mls, senderId = SELF) { fixture ->
+            for (mls in listOf(false, true)) for (removeLocally in listOf(false, true)) withFixture(mls, senderId = SELF) { fixture ->
                 fixture.seedDeleteForMeTarget()
                 fixture.seed(storedText("protected"))
                 val event = fixture.batch("notification", fixture.event("clear", fixture.encrypt("clear",
-                    MessageContent.Cleared(CONVERSATION_ID.toModel(), TIME, true))), fixture.event("first", fixture.encrypt("first")))
+                    MessageContent.Cleared(CONVERSATION_ID.toModel(), TIME, removeLocally))), fixture.event("first", fixture.encrypt("first")))
                 val next = fixture.encrypt("next")
                 fixture.releasePrepared()
                 repeat(2) {
-                    assertIs<Either.Left<*>>(fixture.receive(listOf(event), event.id))
+                    assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id, deleteFile = { error("Rejected clear must not delete files") }))
                     assertIs<Either.Right<*>>(fixture.open { runtime ->
                         assertNotNull(runtime.database.conversationDAO.getConversationById(CONVERSATION_ID))
                         assertNotNull(runtime.database.messageDAO.getMessageById("protected", CONVERSATION_ID))
-                        assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
+                        assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
                         fixture.verifyPendingConversationCleanup(runtime, CONVERSATION_ID, deleted = true)
-                        assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
                     })
                 }
                 assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
@@ -11629,13 +11663,12 @@ class NotificationProcessorNativeTest {
             "qualified_from":{"id":"${sender.value}","domain":"${sender.domain}"},"time":"$TIME"}"""
         )
 
-        suspend fun conversationCleanupEvent(mode: CleanupMode): EventResponseToStore {
+        suspend fun conversationCleanupEvent(mode: CleanupMode, target: QualifiedIDEntity = if (mode == CleanupMode.CLEAR) CONVERSATION_ID else DELETE_TARGET): EventResponseToStore {
             if (mode == CleanupMode.BACKEND_DELETE) return batch("notification", event("first", encrypt("first")), deletedConversationEvent())
-            val target = if (mode == CleanupMode.CLEAR) CONVERSATION_ID else DELETE_TARGET
             val prefix = if (mode == CleanupMode.CLEAR) listOf(event("prefix", encrypt("prefix"))) else emptyList()
             // Clear uses a historical cutoff; local deletion removes the target through this signal.
             val cutoff = if (mode == CleanupMode.CLEAR) TIME - 1_000.seconds else TIME
-            val clear = event("clear", encrypt("clear", MessageContent.Cleared(target.toModel(), cutoff, true)))
+            val clear = event("clear", encrypt("clear", MessageContent.Cleared(target.toModel(), cutoff, mode == CleanupMode.LOCAL_DELETE)))
             return batch("notification", *(prefix + clear + event("first", encrypt("first"))).toTypedArray())
         }
 

@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
@@ -60,112 +62,101 @@ class ClearConversationContentHandlerTest {
         val (arrangement, handler) = Arrangement(hookNotifier = hook).arrange(recoverNSEClear = { message, _ ->
             calls += message.id
             true
-        }) { withMessageSentInSelfConversation(false) }
-        handler.handle(arrangement.transactionContext, MESSAGE,
-            MessageContent.Cleared(CONVERSATION_ID, MESSAGE.date, false))
-        assertEquals(listOf(MESSAGE.id), calls)
+        }) {
+            withMessageSentInSelfConversation(true)
+            everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns Either.Left(StorageFailure.DataNotFound)
+        }
+        handler.handle(arrangement.transactionContext, OWN_MESSAGE,
+            MessageContent.Cleared(CONVERSATION_ID, OWN_MESSAGE.date, false))
+        assertEquals(listOf(OWN_MESSAGE.id), calls)
         assertEquals(0, hook.conversationClearCalls.size)
-        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.clearContent(any()) }
-        verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+        assertNoCleanup(arrangement, hook)
     }
 
     @Test
-    fun givenMessageFromOtherUserAndNeedToRemove_whenMessageNotInSelfConversation_thenWholeConversationShouldNotBeDeleted() =
-        runTest {
-            // given
-            val (arrangement, handler) = Arrangement()
-                .arrange {
-                    withMessageSentInSelfConversation(false)
-                }
-
-            // when
-            handler.handle(
-                message = MESSAGE,
-                messageContent = MessageContent.Cleared(
-                    conversationId = CONVERSATION_ID,
-                    time = Instant.DISTANT_PAST,
-                    needToRemoveLocally = true
-                ),
-                transactionContext = arrangement.transactionContext
-            )
-
-            // then
-            verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
-            verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(any()) }
-        }
+    fun foreignSenderInRegularConversationIsRejected() = rejectedSignal(MESSAGE, false)
 
     @Test
-    fun givenMessageFromOtherClient_whenMessageInSelfConversation_thenDoNothing() =
-        runTest {
-            // given
-            val (arrangement, handler) = Arrangement()
-                .arrange {
-                    withMessageSentInSelfConversation(true)
-                }
-
-            // when
-            handler.handle(
-                message = MESSAGE,
-                messageContent = MessageContent.Cleared(
-                    conversationId = CONVERSATION_ID,
-                    time = Instant.DISTANT_PAST,
-                    needToRemoveLocally = true
-                ),
-                transactionContext = arrangement.transactionContext
-            )
-
-            // then
-            verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
-            verifySuspend(VerifyMode.not) { arrangement.conversationRepository.clearContent(any()) }
-        }
+    fun foreignSenderInSelfConversationIsRejected() = rejectedSignal(MESSAGE.copy(conversationId = SELF_CONVERSATION_ID), true)
 
     @Test
-    fun givenMessageFromOtherUser_whenMessageNotInSelfConversationAndNoNeedToRemove_thenOnlyClearContent() =
-        runTest {
-            // given
-            val (arrangement, handler) = Arrangement()
-                .arrange {
-                    withMessageSentInSelfConversation(false)
-                }
+    fun selfSenderInRegularConversationIsRejected() = rejectedSignal(OWN_MESSAGE.copy(conversationId = CONVERSATION_ID), false)
 
-            // when
-            handler.handle(
-                message = MESSAGE,
-                messageContent = MessageContent.Cleared(
-                    conversationId = CONVERSATION_ID,
-                    time = Instant.DISTANT_PAST,
-                    needToRemoveLocally = false
-                ),
-                transactionContext = arrangement.transactionContext
-            )
+    private fun rejectedSignal(message: Message.Signaling, selfConversation: Boolean) = runTest {
+        for (removeLocally in listOf(false, true)) {
+            for (target in listOf(CONVERSATION_ID, ConversationId("another-conversation", "other-domain"))) {
+                val hook = RecordingPersistenceEventHookNotifier()
+                val recoveryCalls = mutableListOf<String>()
+                val (arrangement, handler) = Arrangement(hook).arrange(recoverNSEClear = { signal, _ ->
+                    recoveryCalls += signal.id
+                    false
+                }) { withMessageSentInSelfConversation(selfConversation) }
 
-            // then
-            verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
-            verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(any()) }
-        }
+                handler.handle(arrangement.transactionContext, message,
+                    MessageContent.Cleared(target, Instant.DISTANT_PAST, removeLocally))
 
-    @Test
-    fun givenMessageFromTheSelfUser_whenMessageNotInSelfConversation_thenContentNorConversationShouldBeRemoved() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .arrange {
-                withMessageSentInSelfConversation(false)
+                assertNoCleanup(arrangement, hook)
+                assertEquals(emptyList(), recoveryCalls)
+                verifySuspend(VerifyMode.not) { arrangement.conversationRepository.getConversationById(any()) }
             }
+        }
+    }
 
-        // when
-        handler.handle(
-            message = OWN_MESSAGE,
-            messageContent = MessageContent.Cleared(
-                conversationId = CONVERSATION_ID,
-                time = Instant.DISTANT_PAST,
-                needToRemoveLocally = false
-            ),
-            transactionContext = arrangement.transactionContext
-        )
+    @Test
+    fun missingTargetIsRejected() = runTest {
+        val hook = RecordingPersistenceEventHookNotifier()
+        val (arrangement, handler) = Arrangement(hook).arrange {
+            withMessageSentInSelfConversation(true)
+            everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns Either.Left(StorageFailure.DataNotFound)
+        }
+        for (removeLocally in listOf(false, true)) {
+            handler.handle(arrangement.transactionContext, OWN_MESSAGE,
+                MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, removeLocally))
+        }
+        assertNoCleanup(arrangement, hook)
+    }
 
-        // then
-        verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+    @Test
+    fun selfConversationTargetIsRejected() = runTest {
+        val hook = RecordingPersistenceEventHookNotifier()
+        val (arrangement, handler) = Arrangement(hook).arrange(recoverNSEClear = { _, _ ->
+            error("Self-conversation target must not trigger recovery")
+        }) {
+            withMessageSentInSelfConversation(true)
+            everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns
+                Either.Right(TestConversation.SELF().copy(id = CONVERSATION_ID))
+        }
+        for (target in listOf(SELF_CONVERSATION_ID, CONVERSATION_ID)) {
+            for (removeLocally in listOf(false, true)) {
+                handler.handle(arrangement.transactionContext, OWN_MESSAGE,
+                    MessageContent.Cleared(target, Instant.DISTANT_PAST, removeLocally))
+            }
+        }
+        assertNoCleanup(arrangement, hook)
+    }
+
+    @Test
+    fun targetLookupFailurePreventsCleanupAndRecovery() = runTest {
+        val hook = RecordingPersistenceEventHookNotifier()
+        val (arrangement, handler) = Arrangement(hook).arrange(recoverNSEClear = { _, _ ->
+            error("Failed target lookup must not trigger recovery")
+        }) {
+            withMessageSentInSelfConversation(true)
+            everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns
+                Either.Left(StorageFailure.Generic(IllegalStateException("Storage unavailable")))
+        }
+        assertFailsWith<KaliumSyncException> {
+            handler.handle(arrangement.transactionContext, OWN_MESSAGE,
+                MessageContent.Cleared(CONVERSATION_ID, Instant.DISTANT_PAST, true))
+        }
+        assertNoCleanup(arrangement, hook)
+    }
+
+    private suspend fun assertNoCleanup(arrangement: Arrangement, hook: RecordingPersistenceEventHookNotifier) {
         verifySuspend(VerifyMode.not) { arrangement.conversationRepository.clearContent(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.clearConversationAssetsLocally(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+        assertEquals(emptyList(), hook.conversationClearCalls)
     }
 
     @Test
@@ -222,12 +213,12 @@ class ClearConversationContentHandlerTest {
         val hookNotifier = RecordingPersistenceEventHookNotifier()
         val (arrangement, handler) = Arrangement(hookNotifier = hookNotifier)
             .arrange {
-                withMessageSentInSelfConversation(false)
+                withMessageSentInSelfConversation(true)
             }
 
         // when
         handler.handle(
-            message = MESSAGE,
+            message = OWN_MESSAGE,
             messageContent = MessageContent.Cleared(
                 conversationId = CONVERSATION_ID,
                 time = Instant.DISTANT_PAST,
@@ -318,6 +309,8 @@ class ClearConversationContentHandlerTest {
             )
             withDeletingConversationSucceeding()
             withClearContentSucceeding()
+            everySuspend { conversationRepository.getConversationById(CONVERSATION_ID) } returns
+                Either.Right(TestConversation.GROUP().copy(id = CONVERSATION_ID))
             everySuspend { clearConversationAssetsLocally(any()) } returns Either.Right(Unit)
             block()
 
@@ -348,6 +341,7 @@ class ClearConversationContentHandlerTest {
 
     companion object {
         private val CONVERSATION_ID = ConversationId("conversationId", "domain")
+        private val SELF_CONVERSATION_ID = ConversationId("self-conversation", "domain")
         private val OTHER_USER_ID = UserId("otherUserId", "domain")
 
         private val MESSAGE_CONTENT = MessageContent.DataTransfer(
@@ -367,6 +361,6 @@ class ClearConversationContentHandlerTest {
             expirationData = null,
         )
 
-        val OWN_MESSAGE = MESSAGE.copy(senderUserId = TestUser.USER_ID)
+        val OWN_MESSAGE = MESSAGE.copy(senderUserId = TestUser.USER_ID, conversationId = SELF_CONVERSATION_ID, isSelfMessage = true)
     }
 }

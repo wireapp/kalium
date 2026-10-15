@@ -475,9 +475,13 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                 if (conversationCleanup.isNotEmpty()) {
                     val deleted = conversationCleanup == "delete"
                     val target = ConversationId(if (deleted) "delete-target" else "conversation", user.domain)
+                    // The clear fixture is sent by another member in a regular conversation.
+                    // It must preserve history and files on both the NSE and app paths.
                     for (id in listOf("remove-asset", "remove-preview", "remove-multipart", "remove-asset-shared", "remove-alias",
                         "remove-offline", "remove-draft-ref", "remove-avatar-ref")) {
-                        assertIs<GetMessageByIdUseCase.Result.Failure>(session.messages.getMessageById(target, id))
+                        val message = session.messages.getMessageById(target, id)
+                        if (deleted) assertIs<GetMessageByIdUseCase.Result.Failure>(message)
+                        else assertIs<GetMessageByIdUseCase.Result.Success>(message)
                     }
                     val details = session.conversations.getConversationProtocolInfo(target)
                     if (deleted) assertIs<com.wire.kalium.logic.feature.conversation.GetConversationProtocolInfoUseCase.Result.Failure>(details)
@@ -486,7 +490,7 @@ fun runSwiftReceivingAppVerifier(args: Array<String>) = runTest {
                     assertIs<GetMessageByIdUseCase.Result.Success>(session.messages.getMessageById(shared, "keep-asset"))
                     assertIs<GetMessageByIdUseCase.Result.Success>(session.messages.getMessageById(shared, "keep-multipart"))
                     for (file in listOf("delete-asset", "delete-preview", "delete-attachment")) {
-                        assertFalse(FileSystem.SYSTEM.exists("$root/message-files/$file.bin".toPath()))
+                        assertEquals(!deleted, FileSystem.SYSTEM.exists("$root/message-files/$file.bin".toPath()))
                     }
                     for (file in listOf("keep-shared", "keep-offline", "keep-avatar")) {
                         assertTrue(FileSystem.SYSTEM.exists("$root/message-files/$file.bin".toPath()))

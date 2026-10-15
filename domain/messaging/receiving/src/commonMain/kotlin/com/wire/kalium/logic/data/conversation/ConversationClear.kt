@@ -7,9 +7,9 @@ package com.wire.kalium.logic.data.conversation
 
 enum class ConversationClear { IGNORE, CONTENT, CONVERSATION }
 
-/** Preserve the app's sender/carrier rule, including clears sent by another member. */
+/** Only our own devices may clear local history, through a registered self conversation. */
 fun conversationClear(selfSender: Boolean, selfConversation: Boolean, removeLocally: Boolean): ConversationClear = when {
-    selfSender != selfConversation -> ConversationClear.IGNORE
-    selfSender && removeLocally -> ConversationClear.CONVERSATION
+    !selfSender || !selfConversation -> ConversationClear.IGNORE
+    removeLocally -> ConversationClear.CONVERSATION
     else -> ConversationClear.CONTENT
 }
