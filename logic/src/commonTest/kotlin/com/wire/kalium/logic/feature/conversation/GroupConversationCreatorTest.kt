@@ -48,6 +48,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.sequentiallyReturns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -56,8 +57,10 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 
@@ -386,13 +389,83 @@ class GroupConversationCreatorTest {
     }
 
     @Test
+    fun givenInitialConflictAndAcknowledgementFails_whenCreating_thenReturnsCleanupFallbackId() = runTest {
+        val domains = listOf("backend-a.example", "backend-b.example")
+        val (_, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withCurrentClientIdReturning(ClientId("client-id"))
+            .withMarkingConversationDeletedLocallySucceeding()
+            .withAcknowledgementThrowing(IllegalStateException("Database write failed"))
+            .withCreateGroupConversationFailingWith(MLSFailure.FederatedBackendConflict(domains), TestConversation.ID)
+            .arrange()
+
+        val result = createGroupConversation(
+            "Conversation name",
+            listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID),
+            CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS),
+        )
+
+        val conflict = assertIs<ConversationCreationResult.BackendConflictFailure>(result)
+        assertEquals(domains, conflict.domains)
+        assertEquals(TestConversation.ID, conflict.conversationId)
+    }
+
+    @Test
+    fun givenRetryConflictAndAcknowledgementFails_whenRetrying_thenReturnsCleanupFallbackId() = runTest {
+        val conversation = TestConversation.GROUP(
+            TestConversation.MLS_PROTOCOL_INFO.copy(groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION)
+        )
+        val domains = listOf("backend-a.example", "backend-b.example")
+        val (_, createGroupConversation) = Arrangement()
+            .withWaitingForSyncSucceeding()
+            .withConversationReturning(conversation)
+            .withJoiningExistingMLSConversationReturning(Either.Left(MLSFailure.FederatedBackendConflict(domains)))
+            .withMarkingConversationDeletedLocallySucceeding()
+            .withAcknowledgementThrowing(IllegalStateException("Database write failed"))
+            .withTransactionInvokingBlock()
+            .arrange()
+
+        val result = createGroupConversation.retryPendingMLSGroupCreation(conversation.id)
+
+        val conflict = assertIs<ConversationCreationResult.BackendConflictFailure>(result)
+        assertEquals(domains, conflict.domains)
+        assertEquals(conversation.id, conflict.conversationId)
+    }
+
+    @Test
+    fun givenAcknowledgementFails_whenDiscarding_thenReturnsFalseAndCanRetry() = runTest {
+        val (arrangement, createGroupConversation) = Arrangement()
+            .withMarkingConversationDeletedLocallySucceeding()
+            .withAcknowledgementThrowing(IllegalStateException("Database write failed"))
+            .arrange()
+
+        assertEquals(false, createGroupConversation.discardPendingMLSGroupCreation(TestConversation.ID))
+        everySuspend {
+            arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(listOf(TestConversation.ID))
+        } returns Unit
+        assertEquals(true, createGroupConversation.discardPendingMLSGroupCreation(TestConversation.ID))
+    }
+
+    @Test
+    fun givenAcknowledgementIsCancelled_whenDiscarding_thenPropagatesCancellation() = runTest {
+        val (_, createGroupConversation) = Arrangement()
+            .withMarkingConversationDeletedLocallySucceeding()
+            .withAcknowledgementThrowing(CancellationException("Cleanup cancelled"))
+            .arrange()
+
+        assertFailsWith<CancellationException> {
+            createGroupConversation.discardPendingMLSGroupCreation(TestConversation.ID)
+        }
+    }
+
+    @Test
     fun givenTerminallyFailedMLSGroup_whenDiscardingCreation_thenConversationIsHiddenAndPendingActionIsAcknowledged() = runTest {
         val conversationId = TestConversation.ID
         val (arrangement, createGroupConversation) = Arrangement()
             .withMarkingConversationDeletedLocallySucceeding()
             .arrange()
 
-        createGroupConversation.discardPendingMLSGroupCreation(conversationId)
+        assertEquals(true, createGroupConversation.discardPendingMLSGroupCreation(conversationId))
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.setConversationDeletedLocally(conversationId, true)
@@ -530,6 +603,12 @@ class GroupConversationCreatorTest {
             everySuspend {
                 conversationRepository.setConversationDeletedLocally(any(), eq(true))
             } returns Either.Left(StorageFailure.DataNotFound)
+        }
+
+        suspend fun withAcknowledgementThrowing(failure: Exception) = apply {
+            everySuspend {
+                pendingActionsRepository.acknowledgePendingMLSGroupJoins(any())
+            } throws failure
         }
 
         suspend fun withPersistingReadReceiptsSystemMessage() = apply {
