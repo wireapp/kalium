@@ -19,7 +19,6 @@
 package com.wire.kalium.plugins
 
 import org.gradle.api.Project
-import org.gradle.api.artifacts.repositories.PasswordCredentials
 import org.gradle.api.plugins.BasePluginExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
@@ -32,13 +31,9 @@ import org.gradle.plugins.signing.Sign
 import org.gradle.plugins.signing.SigningExtension
 
 private const val CENTRAL_STAGING_REPOSITORY_NAME = "mavenCentralStaging"
-private const val CENTRAL_SNAPSHOTS_REPOSITORY_NAME = "mavenCentralSnapshots"
-private const val CENTRAL_SNAPSHOTS_REPOSITORY_URL = "https://central.sonatype.com/repository/maven-snapshots/"
 private const val SIGNING_REQUIRED_PROPERTY = "kalium.mavenCentral.signingRequired"
 private const val PUBLISH_VERSION_PROPERTY = "kalium.publish.version"
 private const val PUBLISH_VERSION_ENV = "KALIUM_PUBLISH_VERSION"
-private const val MAVEN_CENTRAL_USERNAME_PROPERTY = "mavenCentralUsername"
-private const val MAVEN_CENTRAL_PASSWORD_PROPERTY = "mavenCentralPassword"
 private const val SIGNING_KEY_ID_PROPERTY = "signingInMemoryKeyId"
 private const val SIGNING_KEY_PROPERTY = "signingInMemoryKey"
 private const val SIGNING_PASSWORD_PROPERTY = "signingInMemoryKeyPassword"
@@ -79,8 +74,6 @@ internal fun Project.configureKaliumMavenPublishingIfNeeded() {
     val signingRequired = providers.gradleProperty(SIGNING_REQUIRED_PROPERTY)
         .map(String::toBoolean)
         .orElse(false)
-    val mavenCentralUsername = providers.gradleProperty(MAVEN_CENTRAL_USERNAME_PROPERTY)
-    val mavenCentralPassword = providers.gradleProperty(MAVEN_CENTRAL_PASSWORD_PROPERTY)
 
     afterEvaluate {
         providers.gradleProperty(PUBLISH_VERSION_PROPERTY)
@@ -93,14 +86,6 @@ internal fun Project.configureKaliumMavenPublishingIfNeeded() {
                 maven {
                     name = CENTRAL_STAGING_REPOSITORY_NAME
                     url = rootProject.layout.buildDirectory.dir("maven-central-staging").get().asFile.toURI()
-                }
-                maven {
-                    name = CENTRAL_SNAPSHOTS_REPOSITORY_NAME
-                    url = uri(CENTRAL_SNAPSHOTS_REPOSITORY_URL)
-                    credentials(PasswordCredentials::class.java) {
-                        username = mavenCentralUsername.orNull
-                        password = mavenCentralPassword.orNull
-                    }
                 }
             }
 

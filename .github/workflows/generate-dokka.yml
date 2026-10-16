@@ -16,7 +16,7 @@ permissions:
 jobs:
   publish:
     name: Publish
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     steps:
       - name: Checkout project
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -27,8 +27,8 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
-      - name: Generate Dokka docs
-        run: make doc/generate-kdocs
+      - name: Generate and check Dokka docs
+        run: make doc/test-kdocs
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -37,7 +37,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: build/dokka/htmlMultiModule
+          publish_dir: build/dokka/html
           publish_branch: gh-pages
           destination_dir: docs/kdocs
           keep_files: true
