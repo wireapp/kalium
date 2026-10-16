@@ -247,6 +247,7 @@ class UserDatabaseBuilder internal constructor(
             database.conversationsQueries,
             database.conversationDetailsQueries,
             database.conversationDetailsWithEventsQueries,
+            database.conversationDetailsWithMembersQueries,
             database.membersQueries,
             database.unreadEventsQueries,
             readDispatcher,

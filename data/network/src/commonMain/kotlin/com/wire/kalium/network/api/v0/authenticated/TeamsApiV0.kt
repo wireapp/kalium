@@ -19,13 +19,13 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.authenticated.teams.PasswordRequest
 import com.wire.kalium.network.api.authenticated.teams.TeamCollaboratorDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListNonPaginated
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListPaginated
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.model.NonQualifiedConversationId
 import com.wire.kalium.network.api.model.NonQualifiedUserId

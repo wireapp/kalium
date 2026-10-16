@@ -23,6 +23,15 @@ import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 interface PassphraseStorage {
     fun getPassphrase(key: String): String?
     fun setPassphrase(key: String, passphrase: String)
+
+    /**
+     * Stores [passphrase] under [key] unless a passphrase is stored there already, and returns the stored one.
+     *
+     * On Apple, this is atomic across the processes sharing the Keychain items, e.g. an app and its extensions: of
+     * several storing a new passphrase for the same key, all get the one stored first. Elsewhere, it reads and then
+     * stores.
+     */
+    fun setPassphraseIfAbsent(key: String, passphrase: String): String
     fun clearPassphrase(key: String)
 }
 
@@ -34,6 +43,9 @@ internal class PassphraseStorageImpl internal constructor(
     override fun setPassphrase(key: String, passphrase: String) {
         kaliumPreferences.putString(key, passphrase)
     }
+
+    override fun setPassphraseIfAbsent(key: String, passphrase: String): String =
+        getPassphrase(key) ?: passphrase.also { setPassphrase(key, it) }
 
     override fun clearPassphrase(key: String) {
         kaliumPreferences.remove(key)

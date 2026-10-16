@@ -126,8 +126,8 @@ class SearchDAOTest : BaseDatabaseTest() {
                 MemberEntity.Role.Member
             ), conversationToExclude.id
         )
-        searchDAO.getKnownContactsExcludingAConversation(
-            conversationToExclude.id
+        searchDAO.getKnownContacts(
+            excludeConversationId = conversationToExclude.id
         ).also {
             assertEquals(2, it.size)
             assertEquals(connectedUser1.id, it[0].id)
@@ -136,7 +136,7 @@ class SearchDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUsers_whenSearching_thenOnlyReturnConnectedUsers() = runTest {
+    fun givenUsers_whenSearchingByName_thenOnlyReturnConnectedUsers() = runTest {
         val searchQuery = "searchQuery"
         val connectedUser1 = newUserEntity(id = "1").copy(name = "searchQuery", connectionStatus = ConnectionEntity.State.ACCEPTED)
         val connectedUser2 = newUserEntity(id = "2").copy(name = "qwerty", connectionStatus = ConnectionEntity.State.ACCEPTED)
@@ -161,14 +161,14 @@ class SearchDAOTest : BaseDatabaseTest() {
             )
         )
 
-        searchDAO.searchList(searchQuery).also {
+        searchDAO.searchByName(searchQuery).also {
             assertEquals(1, it.size)
             assertEquals(connectedUser1.id, it[0].id)
         }
     }
 
     @Test
-    fun givenUsers_whenSearchingAndExcludingAConversation_thenOnlyReturnConnectedUsersThatAreNotMembers() = runTest {
+    fun givenUsers_whenSearchingByNameAndExcludingAConversation_thenOnlyReturnConnectedUsersThatAreNotMembers() = runTest {
         val searchQuery = "searchQuery"
         val connectedUser1 = newUserEntity(id = "1").copy(name = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
         val connectedUser2 = newUserEntity(id = "2").copy(name = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
@@ -202,7 +202,7 @@ class SearchDAOTest : BaseDatabaseTest() {
             ), conversation.id
         )
 
-        searchDAO.searchListExcludingAConversation(conversation.id, searchQuery).also {
+        searchDAO.searchByName(excludeConversationId = conversation.id, searchQuery = searchQuery).also {
             assertEquals(1, it.size)
             assertEquals(connectedUser2.id, it[0].id)
         }
@@ -234,14 +234,14 @@ class SearchDAOTest : BaseDatabaseTest() {
             )
         )
 
-        searchDAO.handleSearch(searchQuery).also {
+        searchDAO.searchByHandle(searchQuery = searchQuery).also {
             assertEquals(1, it.size)
             assertEquals(connectedUser1.id, it[0].id)
         }
     }
 
     @Test
-    fun givenUsers_whenSearchingVByHandleAndExcludingAConversation_thenOnlyReturnConnectedUsersThatAreNotMembers() = runTest {
+    fun givenUsers_whenSearchingByHandleAndExcludingAConversation_thenOnlyReturnConnectedUsersThatAreNotMembers() = runTest {
         val searchQuery = "searchQuery"
         val connectedUser1 = newUserEntity(id = "1").copy(handle = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
         val connectedUser2 = newUserEntity(id = "2").copy(handle = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
@@ -275,7 +275,7 @@ class SearchDAOTest : BaseDatabaseTest() {
             ), conversation.id
         )
 
-        searchDAO.handleSearchExcludingAConversation(searchQuery, conversation.id).also {
+        searchDAO.searchByHandle(searchQuery = searchQuery, excludeConversationId = conversation.id).also {
             assertEquals(1, it.size)
             assertEquals(connectedUser2.id, it[0].id)
         }

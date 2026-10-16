@@ -962,12 +962,12 @@ class SlowSyncWorkerTest {
 
         fun withSyncMeetingsFailure() = apply {
             everySuspend { syncMeetings.isEnabled() } returns true
-            everySuspend { syncMeetings.invoke() } returns failure
+            everySuspend { syncMeetings.invoke() } returns SyncMeetingsUseCase.Result.Failure(failure.value)
         }
 
         fun withSyncMeetingsSuccess() = apply {
             everySuspend { syncMeetings.isEnabled() } returns true
-            everySuspend { syncMeetings.invoke() } returns success
+            everySuspend { syncMeetings.invoke() } returns SyncMeetingsUseCase.Result.Success
         }
 
         fun withJoinMLSConversationsFailure(

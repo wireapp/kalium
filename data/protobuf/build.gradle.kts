@@ -17,6 +17,7 @@
  */
 
 import com.google.protobuf.gradle.GenerateProtoTask
+import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool
 
 @Suppress("DSL_SCOPE_VIOLATION")
@@ -34,6 +35,12 @@ val codegenProject = project(":tools:protobuf-codegen")
 val generatedFilesBaseDir = file("generated")
 generatedFilesBaseDir.mkdirs()
 val generatedFileSuppressions = """@file:Suppress("UNNECESSARY_NOT_NULL_ASSERTION")"""
+
+extensions.configure<DokkaExtension> {
+    dokkaSourceSets.named("commonMain") {
+        sourceRoots.builtBy(":tools:protobuf-codegen:generateProto")
+    }
+}
 
 kotlin {
     sourceSets {

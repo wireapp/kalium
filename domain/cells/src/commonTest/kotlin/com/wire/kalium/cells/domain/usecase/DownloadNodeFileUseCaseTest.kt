@@ -19,6 +19,7 @@ package com.wire.kalium.cells.domain.usecase
 
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCaseImpl
@@ -33,10 +34,12 @@ import dev.mokkery.matcher.any
 import dev.mokkery.verifySuspend
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.mock
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class DownloadNodeFileUseCaseTest {
@@ -148,6 +151,43 @@ class DownloadNodeFileUseCaseTest {
     }
 
     @Test
+    fun given_Asset_whenDownloadCancelled_thenStatusResetToNotDownloaded() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withAssetPath()
+            .withDownloadCancelled()
+            .arrange()
+
+        assertFailsWith<CancellationException> {
+            useCase(assetId, conversationId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
+        }
+
+        // Cancelling is not failing: the asset goes back to being downloadable rather than
+        // staying stuck on DOWNLOAD_IN_PROGRESS.
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_DOWNLOADED)
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
+        }
+    }
+
+    @Test
+    fun given_Asset_whenDownloadCancelled_thenLocalPathIsNotSaved() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withAssetPath()
+            .withDownloadCancelled()
+            .arrange()
+
+        assertFailsWith<CancellationException> {
+            useCase(assetId, conversationId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
+        }
+
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.attachmentsRepository.saveLocalPath(any(), any())
+        }
+    }
+
+    @Test
     fun given_Asset_whenAssetNotFound_thenRemotePathUsedForDownload() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withAssetNotFound()
@@ -220,6 +260,11 @@ class DownloadNodeFileUseCaseTest {
 
         fun withDownloadSuccess() = apply {
             everySuspend { cellsRepository.downloadFile(any(), any(), any()) }.returns(Unit.right())
+        }
+
+        fun withDownloadCancelled() = apply {
+            everySuspend { cellsRepository.downloadFile(any(), any(), any()) }
+                .throws(CancellationException("screen closed"))
         }
 
         fun withDownloadFailure() = apply {

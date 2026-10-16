@@ -33,7 +33,38 @@ package com.wire.kalium.persistence.kmmSettings
  *  Must be stable across app reinstalls — typically the host app's bundle identifier.
  *  Must NOT be derived from `NSHomeDirectory()`, which embeds the iOS Application UUID
  *  and changes on every reinstall, orphaning every previously stored entry.
+ * @property keychainAccessibility When Kalium-managed entries can be read, as the iOS Keychain
+ *  `kSecAttrAccessible` value. Null keeps Apple's default, [KeychainAccessibility.WhenUnlocked],
+ *  under which Kalium can't read its tokens and database keys while the device is locked, e.g.
+ *  when the app is launched in the background by a push. Apps that run Kalium in the background
+ *  should use [KeychainAccessibility.AfterFirstUnlockThisDeviceOnly].
+ *  Must be stable across app versions, like [serviceName]: it is part of every Keychain lookup,
+ *  so entries stored with a different value are neither found nor overwritten (storing one
+ *  again fails), and they are not migrated.
+ *  Applies on iOS only; the file-based macOS keychain ignores it.
  */
 public data class ApplePersistenceConfig(
     val serviceName: String,
+    val keychainAccessibility: KeychainAccessibility?,
 )
+
+/**
+ * The iOS Keychain `kSecAttrAccessible` values Kalium-managed entries can be stored with.
+ * The `ThisDeviceOnly` variants are not restored from a backup onto another device.
+ */
+public enum class KeychainAccessibility {
+    /** `kSecAttrAccessibleWhenUnlocked`, Apple's default. */
+    WhenUnlocked,
+
+    /** `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`. */
+    WhenUnlockedThisDeviceOnly,
+
+    /** `kSecAttrAccessibleAfterFirstUnlock`: readable while locked, once unlocked after a restart. */
+    AfterFirstUnlock,
+
+    /** `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`: readable while locked, once unlocked after a restart. */
+    AfterFirstUnlockThisDeviceOnly,
+
+    /** `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly`: removed when the device passcode is removed. */
+    WhenPasscodeSetThisDeviceOnly,
+}

@@ -224,6 +224,31 @@ abstract interface com.wire.kalium.logic.feature.app/SearchAppsByNameUseCase { /
     abstract fun invoke(kotlin/String): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.logic.data.service/ServiceDetails>> // com.wire.kalium.logic.feature.app/SearchAppsByNameUseCase.invoke|invoke(kotlin.String){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.app/SyncAppsUseCase { // com.wire.kalium.logic.feature.app/SyncAppsUseCase|null[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result // com.wire.kalium.logic.feature.app/SyncAppsUseCase.invoke|invoke(){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result { // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val error // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.error|{}error[0]
+                final fun <get-error>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.error.<get-error>|<get-error>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result { // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.app/SyncAppsUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
 abstract interface com.wire.kalium.logic.feature.appVersioning/ObserveIfAppUpdateRequiredUseCase { // com.wire.kalium.logic.feature.appVersioning/ObserveIfAppUpdateRequiredUseCase|null[0]
     abstract suspend fun invoke(kotlin/Int): kotlinx.coroutines.flow/Flow<kotlin/Boolean> // com.wire.kalium.logic.feature.appVersioning/ObserveIfAppUpdateRequiredUseCase.invoke|invoke(kotlin.Int){}[0]
 }
@@ -286,7 +311,7 @@ abstract interface com.wire.kalium.logic.feature.asset/UpdateAudioMessageNormali
 }
 
 abstract interface com.wire.kalium.logic.feature.auth.sso/GetSSOLoginSessionUseCase { // com.wire.kalium.logic.feature.auth.sso/GetSSOLoginSessionUseCase|null[0]
-    abstract suspend fun invoke(kotlin/String): com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult // com.wire.kalium.logic.feature.auth.sso/GetSSOLoginSessionUseCase.invoke|invoke(kotlin.String){}[0]
+    abstract suspend fun invoke(kotlin/String, kotlin/Boolean = ...): com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult // com.wire.kalium.logic.feature.auth.sso/GetSSOLoginSessionUseCase.invoke|invoke(kotlin.String;kotlin.Boolean){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginUseCase { // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginUseCase|null[0]
@@ -1387,16 +1412,23 @@ abstract interface com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase
     abstract suspend fun invoke(com.wire.kalium.logic.data.meeting/UpsertMeeting): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.invoke|invoke(com.wire.kalium.logic.data.meeting.UpsertMeeting){}[0]
 
     sealed interface Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result|null[0]
+        final class Success : com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success|null[0]
+            constructor <init>(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+            final val conversationId // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.conversationId|{}conversationId[0]
+                final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+
+            final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.copy|copy(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.toString|toString(){}[0]
+        }
+
         final object Failure : com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure|null[0]
             final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
             final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.hashCode|hashCode(){}[0]
             final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Failure.toString|toString(){}[0]
-        }
-
-        final object Success : com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result { // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success|null[0]
-            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
-            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.hashCode|hashCode(){}[0]
-            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/CreateNewMeetingUseCase.Result.Success.toString|toString(){}[0]
         }
     }
 }
@@ -1463,8 +1495,65 @@ abstract interface com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccu
     abstract suspend fun invoke(androidx.paging/PagingConfig, kotlin/Long, kotlinx.datetime/Instant = ...): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.meeting/MeetingOccurrence>> // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase.invoke|invoke(androidx.paging.PagingConfig;kotlin.Long;kotlinx.datetime.Instant){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase { // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase|null[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.invoke|invoke(){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result { // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result { // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
+}
+
+abstract interface com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase { // com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase|null[0]
+    abstract fun changes(): kotlinx.coroutines.flow/Flow<kotlin/Unit> // com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase.changes|changes(){}[0]
+    abstract suspend fun next(kotlinx.datetime/Instant): com.wire.kalium.logic.data.meeting/MeetingReminder? // com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase.next|next(kotlinx.datetime.Instant){}[0]
+    abstract suspend fun within(kotlinx.datetime/Instant, kotlinx.datetime/Instant): kotlin.collections/List<com.wire.kalium.logic.data.meeting/MeetingReminder> // com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase.within|within(kotlinx.datetime.Instant;kotlinx.datetime.Instant){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase { // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase|null[0]
     abstract suspend fun invoke(kotlin/String): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.meeting/MeetingOccurrence?> // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase.invoke|invoke(kotlin.String){}[0]
+}
+
+abstract interface com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase { // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase|null[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.invoke|invoke(){}[0]
+    abstract suspend fun isEnabled(): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.isEnabled|isEnabled(){}[0]
+
+    sealed interface Result { // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result|null[0]
+        final class Failure : com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result { // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure|null[0]
+            constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+            final val coreFailure // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.coreFailure|{}coreFailure[0]
+                final fun <get-coreFailure>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.coreFailure.<get-coreFailure>|<get-coreFailure>(){}[0]
+
+            final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.component1|component1(){}[0]
+            final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Failure.toString|toString(){}[0]
+        }
+
+        final object Success : com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result { // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Success|null[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase.Result.Success.toString|toString(){}[0]
+        }
+    }
 }
 
 abstract interface com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase { // com.wire.kalium.logic.feature.meeting/UpdateMeetingUseCase|null[0]
@@ -1677,11 +1766,11 @@ abstract interface com.wire.kalium.logic.feature.search/IsFederationSearchAllowe
 }
 
 abstract interface com.wire.kalium.logic.feature.search/SearchUsersByHandleUseCase { // com.wire.kalium.logic.feature.search/SearchUsersByHandleUseCase|null[0]
-    abstract suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID?, kotlin/Boolean = ..., kotlin/String?): com.wire.kalium.logic.feature.search/SearchUserResult // com.wire.kalium.logic.feature.search/SearchUsersByHandleUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID?;kotlin.Boolean;kotlin.String?){}[0]
+    abstract suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID? = ..., kotlin/Boolean = ..., kotlin/String? = ...): com.wire.kalium.logic.feature.search/SearchUserResult // com.wire.kalium.logic.feature.search/SearchUsersByHandleUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID?;kotlin.Boolean;kotlin.String?){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.search/SearchUsersByNameUseCase { // com.wire.kalium.logic.feature.search/SearchUsersByNameUseCase|null[0]
-    abstract suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID?, kotlin/Boolean = ..., kotlin/String?): com.wire.kalium.logic.feature.search/SearchUserResult // com.wire.kalium.logic.feature.search/SearchUsersByNameUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID?;kotlin.Boolean;kotlin.String?){}[0]
+    abstract suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID? = ..., kotlin/Boolean = ..., kotlin/String? = ...): com.wire.kalium.logic.feature.search/SearchUserResult // com.wire.kalium.logic.feature.search/SearchUsersByNameUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID?;kotlin.Boolean;kotlin.String?){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase { // com.wire.kalium.logic.feature.selfDeletingMessages/ObserveSelfDeletionTimerSettingsForConversationUseCase|null[0]
@@ -3000,6 +3089,31 @@ final class com.wire.kalium.logic.data.auth/PersistentWebSocketStatus { // com.w
     final fun toString(): kotlin/String // com.wire.kalium.logic.data.auth/PersistentWebSocketStatus.toString|toString(){}[0]
 }
 
+final class com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig { // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig|null[0]
+    constructor <init>(kotlin/String = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/String? = ..., kotlin/String? = ...) // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.<init>|<init>(kotlin.String;kotlin.Boolean;kotlin.Boolean;kotlin.String?;kotlin.String?){}[0]
+
+    final val fromArchive // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.fromArchive|{}fromArchive[0]
+        final fun <get-fromArchive>(): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.fromArchive.<get-fromArchive>|<get-fromArchive>(){}[0]
+    final val onlyDomain // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.onlyDomain|{}onlyDomain[0]
+        final fun <get-onlyDomain>(): kotlin/String? // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.onlyDomain.<get-onlyDomain>|<get-onlyDomain>(){}[0]
+    final val onlyInteractionEnabled // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.onlyInteractionEnabled|{}onlyInteractionEnabled[0]
+        final fun <get-onlyInteractionEnabled>(): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.onlyInteractionEnabled.<get-onlyInteractionEnabled>|<get-onlyInteractionEnabled>(){}[0]
+    final val onlyTeamId // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.onlyTeamId|{}onlyTeamId[0]
+        final fun <get-onlyTeamId>(): kotlin/String? // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.onlyTeamId.<get-onlyTeamId>|<get-onlyTeamId>(){}[0]
+    final val searchQuery // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.searchQuery|{}searchQuery[0]
+        final fun <get-searchQuery>(): kotlin/String // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.searchQuery.<get-searchQuery>|<get-searchQuery>(){}[0]
+
+    final fun component1(): kotlin/String // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.component1|component1(){}[0]
+    final fun component2(): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.component2|component2(){}[0]
+    final fun component3(): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.component3|component3(){}[0]
+    final fun component4(): kotlin/String? // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.component4|component4(){}[0]
+    final fun component5(): kotlin/String? // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.component5|component5(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/String? = ..., kotlin/String? = ...): com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.copy|copy(kotlin.String;kotlin.Boolean;kotlin.Boolean;kotlin.String?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig.toString|toString(){}[0]
+}
+
 final class com.wire.kalium.logic.data.conversation/ConversationQueryConfig { // com.wire.kalium.logic.data.conversation/ConversationQueryConfig|null[0]
     constructor <init>(kotlin/String = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., com.wire.kalium.logic.data.conversation/ConversationFilter = ...) // com.wire.kalium.logic.data.conversation/ConversationQueryConfig.<init>|<init>(kotlin.String;kotlin.Boolean;kotlin.Boolean;kotlin.Boolean;com.wire.kalium.logic.data.conversation.ConversationFilter){}[0]
 
@@ -3167,6 +3281,19 @@ final class com.wire.kalium.logic.failure/LegalHoldEnabledForConversationFailure
     final fun toString(): kotlin/String // com.wire.kalium.logic.failure/LegalHoldEnabledForConversationFailure.toString|toString(){}[0]
 }
 
+final class com.wire.kalium.logic.failure/NoClientsForUser : com.wire.kalium.common.error/CoreFailure.FeatureFailure { // com.wire.kalium.logic.failure/NoClientsForUser|null[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.logic.failure/NoClientsForUser.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+    final val userId // com.wire.kalium.logic.failure/NoClientsForUser.userId|{}userId[0]
+        final fun <get-userId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.failure/NoClientsForUser.userId.<get-userId>|<get-userId>(){}[0]
+
+    final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.failure/NoClientsForUser.component1|component1(){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.logic.failure/NoClientsForUser // com.wire.kalium.logic.failure/NoClientsForUser.copy|copy(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.failure/NoClientsForUser.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.failure/NoClientsForUser.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.failure/NoClientsForUser.toString|toString(){}[0]
+}
+
 final class com.wire.kalium.logic.feature.analytics/AnalyticsContactsData { // com.wire.kalium.logic.feature.analytics/AnalyticsContactsData|null[0]
     constructor <init>(kotlin/String?, kotlin/Int?, kotlin/Int?, kotlin/Boolean?, kotlin/Boolean) // com.wire.kalium.logic.feature.analytics/AnalyticsContactsData.<init>|<init>(kotlin.String?;kotlin.Int?;kotlin.Int?;kotlin.Boolean?;kotlin.Boolean){}[0]
 
@@ -3205,6 +3332,8 @@ final class com.wire.kalium.logic.feature.app/AppScope { // com.wire.kalium.logi
         final fun <get-observeIsAppMember>(): com.wire.kalium.logic.feature.app/ObserveIsAppMemberUseCase // com.wire.kalium.logic.feature.app/AppScope.observeIsAppMember.<get-observeIsAppMember>|<get-observeIsAppMember>(){}[0]
     final val searchAppsByName // com.wire.kalium.logic.feature.app/AppScope.searchAppsByName|{}searchAppsByName[0]
         final fun <get-searchAppsByName>(): com.wire.kalium.logic.feature.app/SearchAppsByNameUseCase // com.wire.kalium.logic.feature.app/AppScope.searchAppsByName.<get-searchAppsByName>|<get-searchAppsByName>(){}[0]
+    final val syncApps // com.wire.kalium.logic.feature.app/AppScope.syncApps|{}syncApps[0]
+        final fun <get-syncApps>(): com.wire.kalium.logic.feature.app/SyncAppsUseCase // com.wire.kalium.logic.feature.app/AppScope.syncApps.<get-syncApps>|<get-syncApps>(){}[0]
 }
 
 final class com.wire.kalium.logic.feature.asset.upload/AssetUploadParams { // com.wire.kalium.logic.feature.asset.upload/AssetUploadParams|null[0]
@@ -3567,6 +3696,8 @@ final class com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope { // c
         final fun <get-create>(): com.wire.kalium.logic.feature.backup/CreateMPBackupUseCase // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.create.<get-create>|<get-create>(){}[0]
     final val restore // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.restore|{}restore[0]
         final fun <get-restore>(): com.wire.kalium.logic.feature.backup/RestoreMPBackupUseCase // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.restore.<get-restore>|<get-restore>(){}[0]
+
+    final fun restore(kotlinx.coroutines/CoroutineDispatcher): com.wire.kalium.logic.feature.backup/RestoreMPBackupUseCase // com.wire.kalium.logic.feature.backup/MultiPlatformBackupScope.restore|restore(kotlinx.coroutines.CoroutineDispatcher){}[0]
 }
 
 final class com.wire.kalium.logic.feature.call.usecase.video/SetVideoSendStateUseCase { // com.wire.kalium.logic.feature.call.usecase.video/SetVideoSendStateUseCase|null[0]
@@ -4192,6 +4323,10 @@ final class com.wire.kalium.logic.feature.conversation/GetPaginatedFlowOfConvers
     final suspend fun invoke(com.wire.kalium.logic.data.conversation/ConversationQueryConfig, androidx.paging/PagingConfig, kotlin/Long, kotlin/Boolean): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.conversation/ConversationDetailsWithEvents>> // com.wire.kalium.logic.feature.conversation/GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase.invoke|invoke(com.wire.kalium.logic.data.conversation.ConversationQueryConfig;androidx.paging.PagingConfig;kotlin.Long;kotlin.Boolean){}[0]
 }
 
+final class com.wire.kalium.logic.feature.conversation/GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase { // com.wire.kalium.logic.feature.conversation/GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase|null[0]
+    final suspend fun invoke(com.wire.kalium.logic.data.conversation/ConversationMembersQueryConfig, androidx.paging/PagingConfig, kotlin/Long = ..., kotlin/Boolean = ..., kotlin/Boolean = ...): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.conversation/ConversationDetailsWithMembers>> // com.wire.kalium.logic.feature.conversation/GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase.invoke|invoke(com.wire.kalium.logic.data.conversation.ConversationMembersQueryConfig;androidx.paging.PagingConfig;kotlin.Long;kotlin.Boolean;kotlin.Boolean){}[0]
+}
+
 final class com.wire.kalium.logic.feature.conversation/IsSelfUserViewerOnConversationUseCase { // com.wire.kalium.logic.feature.conversation/IsSelfUserViewerOnConversationUseCase|null[0]
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/IsSelfUserViewerOnConversationUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
@@ -4440,6 +4575,10 @@ final class com.wire.kalium.logic.feature.meeting/MeetingScope { // com.wire.kal
         final fun <get-getNextUnfinishedMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/GetNextUnfinishedMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getNextUnfinishedMeetingOccurrence.<get-getNextUnfinishedMeetingOccurrence>|<get-getNextUnfinishedMeetingOccurrence>(){}[0]
     final val getPaginatedMeetingOccurrenceDetails // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails|{}getPaginatedMeetingOccurrenceDetails[0]
         final fun <get-getPaginatedMeetingOccurrenceDetails>(): com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails.<get-getPaginatedMeetingOccurrenceDetails>|<get-getPaginatedMeetingOccurrenceDetails>(){}[0]
+    final val maintainMeetingOccurrences // com.wire.kalium.logic.feature.meeting/MeetingScope.maintainMeetingOccurrences|{}maintainMeetingOccurrences[0]
+        final fun <get-maintainMeetingOccurrences>(): com.wire.kalium.logic.feature.meeting/MaintainMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.maintainMeetingOccurrences.<get-maintainMeetingOccurrences>|<get-maintainMeetingOccurrences>(){}[0]
+    final val meetingReminders // com.wire.kalium.logic.feature.meeting/MeetingScope.meetingReminders|{}meetingReminders[0]
+        final fun <get-meetingReminders>(): com.wire.kalium.logic.feature.meeting/MeetingRemindersUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.meetingReminders.<get-meetingReminders>|<get-meetingReminders>(){}[0]
     final val observeMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence|{}observeMeetingOccurrence[0]
         final fun <get-observeMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence.<get-observeMeetingOccurrence>|<get-observeMeetingOccurrence>(){}[0]
     final val updateMeeting // com.wire.kalium.logic.feature.meeting/MeetingScope.updateMeeting|{}updateMeeting[0]
@@ -5351,6 +5490,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-getPersistentWebSocketStatus>(): com.wire.kalium.logic.feature.user.webSocketStatus/GetPersistentWebSocketStatus // com.wire.kalium.logic.feature/UserSessionScope.getPersistentWebSocketStatus.<get-getPersistentWebSocketStatus>|<get-getPersistentWebSocketStatus>(){}[0]
     final val getTeamUrlUseCase // com.wire.kalium.logic.feature/UserSessionScope.getTeamUrlUseCase|{}getTeamUrlUseCase[0]
         final fun <get-getTeamUrlUseCase>(): com.wire.kalium.logic.feature.server/GetTeamUrlUseCase // com.wire.kalium.logic.feature/UserSessionScope.getTeamUrlUseCase.<get-getTeamUrlUseCase>|<get-getTeamUrlUseCase>(){}[0]
+    final val isCellsInitialized // com.wire.kalium.logic.feature/UserSessionScope.isCellsInitialized|{}isCellsInitialized[0]
+        final fun <get-isCellsInitialized>(): kotlin/Boolean // com.wire.kalium.logic.feature/UserSessionScope.isCellsInitialized.<get-isCellsInitialized>|<get-isCellsInitialized>(){}[0]
     final val isE2EIEnabled // com.wire.kalium.logic.feature/UserSessionScope.isE2EIEnabled|{}isE2EIEnabled[0]
         final fun <get-isE2EIEnabled>(): com.wire.kalium.logic.feature.user/IsE2EIEnabledUseCase // com.wire.kalium.logic.feature/UserSessionScope.isE2EIEnabled.<get-isE2EIEnabled>|<get-isE2EIEnabled>(){}[0]
     final val isFileSharingEnabled // com.wire.kalium.logic.feature/UserSessionScope.isFileSharingEnabled|{}isFileSharingEnabled[0]
@@ -5445,6 +5586,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-syncExecutor>(): com.wire.kalium.logic.sync/SyncExecutor // com.wire.kalium.logic.feature/UserSessionScope.syncExecutor.<get-syncExecutor>|<get-syncExecutor>(){}[0]
     final val syncManager // com.wire.kalium.logic.feature/UserSessionScope.syncManager|{}syncManager[0]
         final fun <get-syncManager>(): com.wire.kalium.logic.sync/SyncStateObserver // com.wire.kalium.logic.feature/UserSessionScope.syncManager.<get-syncManager>|<get-syncManager>(){}[0]
+    final val syncMeetingsUseCase // com.wire.kalium.logic.feature/UserSessionScope.syncMeetingsUseCase|{}syncMeetingsUseCase[0]
+        final fun <get-syncMeetingsUseCase>(): com.wire.kalium.logic.feature.meeting/SyncMeetingsUseCase // com.wire.kalium.logic.feature/UserSessionScope.syncMeetingsUseCase.<get-syncMeetingsUseCase>|<get-syncMeetingsUseCase>(){}[0]
     final val team // com.wire.kalium.logic.feature/UserSessionScope.team|{}team[0]
         final fun <get-team>(): com.wire.kalium.logic.feature.team/TeamScope // com.wire.kalium.logic.feature/UserSessionScope.team.<get-team>|<get-team>(){}[0]
     final val users // com.wire.kalium.logic.feature/UserSessionScope.users|{}users[0]
@@ -5934,13 +6077,19 @@ sealed class com.wire.kalium.logic.feature.asset/UpdateTransferStatusResult { //
 
 sealed class com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult { // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult|null[0]
     final class Success : com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult { // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success|null[0]
-        constructor <init>(kotlin/String) // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.<init>|<init>(kotlin.String){}[0]
+        constructor <init>(kotlin/String, kotlin/String, kotlin/String) // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.<init>|<init>(kotlin.String;kotlin.String;kotlin.String){}[0]
 
+        final val identityProviderId // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.identityProviderId|{}identityProviderId[0]
+            final fun <get-identityProviderId>(): kotlin/String // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.identityProviderId.<get-identityProviderId>|<get-identityProviderId>(){}[0]
         final val requestUrl // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.requestUrl|{}requestUrl[0]
             final fun <get-requestUrl>(): kotlin/String // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.requestUrl.<get-requestUrl>|<get-requestUrl>(){}[0]
+        final val serverConfigId // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.serverConfigId|{}serverConfigId[0]
+            final fun <get-serverConfigId>(): kotlin/String // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.serverConfigId.<get-serverConfigId>|<get-serverConfigId>(){}[0]
 
         final fun component1(): kotlin/String // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.component1|component1(){}[0]
-        final fun copy(kotlin/String = ...): com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.copy|copy(kotlin.String){}[0]
+        final fun component2(): kotlin/String // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.component2|component2(){}[0]
+        final fun component3(): kotlin/String // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.component3|component3(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ...): com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.copy|copy(kotlin.String;kotlin.String;kotlin.String){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult.Success.toString|toString(){}[0]
@@ -5982,10 +6131,12 @@ sealed class com.wire.kalium.logic.feature.auth.sso/SSOInitiateLoginResult { // 
 
 sealed class com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult { // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult|null[0]
     final class Success : com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult { // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success|null[0]
-        constructor <init>(com.wire.kalium.logic.data.auth/AccountTokens, com.wire.kalium.logic.data.user/SsoId?, com.wire.kalium.logic.data.auth.login/ProxyCredentials?, com.wire.kalium.logic.data.user/SsoManagedBy?) // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.<init>|<init>(com.wire.kalium.logic.data.auth.AccountTokens;com.wire.kalium.logic.data.user.SsoId?;com.wire.kalium.logic.data.auth.login.ProxyCredentials?;com.wire.kalium.logic.data.user.SsoManagedBy?){}[0]
+        constructor <init>(com.wire.kalium.logic.data.auth/AccountTokens, com.wire.kalium.logic.data.user/SsoId?, com.wire.kalium.logic.data.auth.login/ProxyCredentials?, com.wire.kalium.logic.data.user/SsoManagedBy?, kotlin/Boolean = ...) // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.<init>|<init>(com.wire.kalium.logic.data.auth.AccountTokens;com.wire.kalium.logic.data.user.SsoId?;com.wire.kalium.logic.data.auth.login.ProxyCredentials?;com.wire.kalium.logic.data.user.SsoManagedBy?;kotlin.Boolean){}[0]
 
         final val accountTokens // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.accountTokens|{}accountTokens[0]
             final fun <get-accountTokens>(): com.wire.kalium.logic.data.auth/AccountTokens // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.accountTokens.<get-accountTokens>|<get-accountTokens>(){}[0]
+        final val isIdpChangeDetectionEnabled // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.isIdpChangeDetectionEnabled|{}isIdpChangeDetectionEnabled[0]
+            final fun <get-isIdpChangeDetectionEnabled>(): kotlin/Boolean // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.isIdpChangeDetectionEnabled.<get-isIdpChangeDetectionEnabled>|<get-isIdpChangeDetectionEnabled>(){}[0]
         final val managedBy // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.managedBy|{}managedBy[0]
             final fun <get-managedBy>(): com.wire.kalium.logic.data.user/SsoManagedBy? // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.managedBy.<get-managedBy>|<get-managedBy>(){}[0]
         final val proxyCredentials // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.proxyCredentials|{}proxyCredentials[0]
@@ -5997,7 +6148,8 @@ sealed class com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult { // c
         final fun component2(): com.wire.kalium.logic.data.user/SsoId? // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.component2|component2(){}[0]
         final fun component3(): com.wire.kalium.logic.data.auth.login/ProxyCredentials? // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.component3|component3(){}[0]
         final fun component4(): com.wire.kalium.logic.data.user/SsoManagedBy? // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.component4|component4(){}[0]
-        final fun copy(com.wire.kalium.logic.data.auth/AccountTokens = ..., com.wire.kalium.logic.data.user/SsoId? = ..., com.wire.kalium.logic.data.auth.login/ProxyCredentials? = ..., com.wire.kalium.logic.data.user/SsoManagedBy? = ...): com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.copy|copy(com.wire.kalium.logic.data.auth.AccountTokens;com.wire.kalium.logic.data.user.SsoId?;com.wire.kalium.logic.data.auth.login.ProxyCredentials?;com.wire.kalium.logic.data.user.SsoManagedBy?){}[0]
+        final fun component5(): kotlin/Boolean // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.component5|component5(){}[0]
+        final fun copy(com.wire.kalium.logic.data.auth/AccountTokens = ..., com.wire.kalium.logic.data.user/SsoId? = ..., com.wire.kalium.logic.data.auth.login/ProxyCredentials? = ..., com.wire.kalium.logic.data.user/SsoManagedBy? = ..., kotlin/Boolean = ...): com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.copy|copy(com.wire.kalium.logic.data.auth.AccountTokens;com.wire.kalium.logic.data.user.SsoId?;com.wire.kalium.logic.data.auth.login.ProxyCredentials?;com.wire.kalium.logic.data.user.SsoManagedBy?;kotlin.Boolean){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.auth.sso/SSOLoginSessionResult.Success.toString|toString(){}[0]
@@ -8336,6 +8488,8 @@ final object com.wire.kalium.logic.sync/PendingMessagesForegroundSync { // com.w
 
 final val com.wire.kalium.logic.feature.conversation/getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery // com.wire.kalium.logic.feature.conversation/getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery|@com.wire.kalium.logic.feature.conversation.ConversationScope{}getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery[0]
     final fun (com.wire.kalium.logic.feature.conversation/ConversationScope).<get-getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery>(): com.wire.kalium.logic.feature.conversation/GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase // com.wire.kalium.logic.feature.conversation/getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery.<get-getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery>|<get-getPaginatedFlowOfConversationDetailsWithEventsBySearchQuery>@com.wire.kalium.logic.feature.conversation.ConversationScope(){}[0]
+final val com.wire.kalium.logic.feature.conversation/getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery // com.wire.kalium.logic.feature.conversation/getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery|@com.wire.kalium.logic.feature.conversation.ConversationScope{}getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery[0]
+    final fun (com.wire.kalium.logic.feature.conversation/ConversationScope).<get-getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery>(): com.wire.kalium.logic.feature.conversation/GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase // com.wire.kalium.logic.feature.conversation/getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery.<get-getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery>|<get-getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery>@com.wire.kalium.logic.feature.conversation.ConversationScope(){}[0]
 final val com.wire.kalium.logic.feature.message/fetchOlderMessagesByConversationId // com.wire.kalium.logic.feature.message/fetchOlderMessagesByConversationId|@com.wire.kalium.logic.feature.message.MessageScope{}fetchOlderMessagesByConversationId[0]
     final fun (com.wire.kalium.logic.feature.message/MessageScope).<get-fetchOlderMessagesByConversationId>(): com.wire.kalium.logic.feature.message/FetchOlderNomadMessagesByConversationUseCase // com.wire.kalium.logic.feature.message/fetchOlderMessagesByConversationId.<get-fetchOlderMessagesByConversationId>|<get-fetchOlderMessagesByConversationId>@com.wire.kalium.logic.feature.message.MessageScope(){}[0]
 final val com.wire.kalium.logic.feature.message/getPaginatedFlowOfAssetMessageByConversationId // com.wire.kalium.logic.feature.message/getPaginatedFlowOfAssetMessageByConversationId|@com.wire.kalium.logic.feature.message.MessageScope{}getPaginatedFlowOfAssetMessageByConversationId[0]

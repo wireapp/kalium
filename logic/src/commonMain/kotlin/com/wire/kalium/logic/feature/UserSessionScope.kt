@@ -272,6 +272,8 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.JoinPendingMLSConversationsManager
+import com.wire.kalium.logic.feature.conversation.JoinPendingMLSConversationsManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSFaultyKeysConversationsRepairUseCaseImpl
@@ -643,6 +645,7 @@ public class UserSessionScope internal constructor(
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
+    private val notificationEventsManager = NotificationEventsManagerImpl()
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
@@ -1108,8 +1111,11 @@ public class UserSessionScope internal constructor(
 
     private val appRepository: AppRepository
         get() = AppDataSource(
+            selfUserId = userId,
             appDAO = userStorage.database.appDAO,
-            teamDAO = userStorage.database.teamDAO
+            teamDAO = userStorage.database.teamDAO,
+            teamsApi = authenticatedNetworkContainer.teamsApi,
+            userDetailsApi = authenticatedNetworkContainer.userDetailsApi,
         )
 
     private val persistConversationsUseCase: PersistConversationsUseCase
@@ -1210,7 +1216,7 @@ public class UserSessionScope internal constructor(
         get() = PersistMessageUseCaseImpl(
             messageRepository = messageRepository,
             selfUserId = userId,
-            notificationEventsManager = NotificationEventsManagerImpl,
+            notificationEventsManager = notificationEventsManager,
             persistMessageHookNotifier = currentPersistenceEventHookNotifier
         )
 
@@ -1446,7 +1452,8 @@ public class UserSessionScope internal constructor(
             conversationRepository,
             messageRepository,
             userRepository,
-            systemMessageInserter
+            systemMessageInserter,
+            clientRemoteRepository,
         )
     private val pendingActionsRepository: PendingActionsRepository by lazy {
         PersistentPendingActionsRepository(
@@ -1558,6 +1565,15 @@ public class UserSessionScope internal constructor(
             recoverMLSConversationsUseCase,
             slowSyncRepository,
             cryptoTransactionProvider,
+            userScopedLogger
+        )
+    }
+
+    private val joinPendingMLSConversationsManager: JoinPendingMLSConversationsManager by lazy {
+        JoinPendingMLSConversationsManagerImpl(
+            incrementalSyncRepository,
+            userConfigRepository,
+            joinExistingMLSConversations,
             userScopedLogger
         )
     }
@@ -1900,13 +1916,13 @@ public class UserSessionScope internal constructor(
             assetMessageHandler,
             persistMessage,
             persistReaction,
-            MessageTextEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
-            MessageMultipartEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
+            MessageTextEditHandlerImpl(messageRepository, notificationEventsManager),
+            MessageMultipartEditHandlerImpl(messageRepository, notificationEventsManager),
             LastReadContentHandlerImpl(
                 conversationRepository,
                 userId,
                 isMessageSentInSelfConversation,
-                NotificationEventsManagerImpl
+                notificationEventsManager
             ),
             ClearConversationContentHandlerImpl(
                 conversationRepository,
@@ -1920,7 +1936,7 @@ public class UserSessionScope internal constructor(
             DeleteMessageHandlerImpl(
                 messageRepository,
                 assetRepository,
-                NotificationEventsManagerImpl,
+                notificationEventsManager,
                 userId,
                 currentPersistenceEventHookNotifier
             ),
@@ -1994,7 +2010,8 @@ public class UserSessionScope internal constructor(
         get() = DeletedConversationEventHandlerImpl(
             userRepository,
             conversationRepository,
-            NotificationEventsManagerImpl,
+            meetingRepository,
+            notificationEventsManager,
             deleteConversationUseCase,
             currentPersistenceEventHookNotifier,
             userId,
@@ -2027,6 +2044,7 @@ public class UserSessionScope internal constructor(
             selfTeamIdProvider = selfTeamId,
             mlsConversationRepository = mlsConversationRepository,
             meetingRepository = meetingRepository,
+            notificationEventsManager = notificationEventsManager,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
@@ -2307,16 +2325,22 @@ public class UserSessionScope internal constructor(
     private val meetingDeleteEventHandler: MeetingDeleteEventHandler
         get() = MeetingDeleteEventHandlerImpl(
             meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            notificationEventsManager = notificationEventsManager,
         )
 
     private val meetingUpdateEventHandler: MeetingUpdateEventHandler
         get() = MeetingUpdateEventHandlerImpl(
             meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            notificationEventsManager = notificationEventsManager,
         )
 
     private val meetingMemberAddEventHandler: MeetingMemberAddEventHandler
         get() = MeetingMemberAddEventHandlerImpl(
             meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            notificationEventsManager = notificationEventsManager,
         )
 
     private val meetingEventReceiver: MeetingEventReceiver
@@ -2559,6 +2583,7 @@ public class UserSessionScope internal constructor(
 
     public val messages: MessageScope by lazy {
         MessageScope(
+            notificationEventsManager,
             connectionRepository,
             messageDraftRepository,
             userId,
@@ -2818,7 +2843,9 @@ public class UserSessionScope internal constructor(
 
     public val apps: AppScope
         get() = AppScope(
-            appRepository = appRepository
+            appRepository = appRepository,
+            selfTeamIdProvider = selfTeamId,
+            apiVersion = sessionManager.serverConfig().metaData.commonApiVersion.version
         )
 
     public val calls: CallsScope
@@ -2961,7 +2988,7 @@ public class UserSessionScope internal constructor(
             coroutineScope = this,
         )
 
-    public val cells: CellsScope by lazy {
+    private val cellsLazy = lazy {
         CellsScope(
             cellsClient = cellsClient,
             dao = with(userStorage.database) {
@@ -2981,6 +3008,9 @@ public class UserSessionScope internal constructor(
             userId = userId,
         )
     }
+    public val cells: CellsScope by cellsLazy
+
+    public val isCellsInitialized: Boolean get() = cellsLazy.isInitialized()
 
     private val deleteConversationUseCase: DeleteConversationUseCase
         get() = DeleteConversationUseCaseImpl(
@@ -3026,6 +3056,7 @@ public class UserSessionScope internal constructor(
             refreshUsersWithoutMetadata = refreshUsersWithoutMetadata,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
             leaveConversation = conversations.leaveConversation,
+            deleteConversation = deleteConversationUseCase,
             transactionProvider = cryptoTransactionProvider
         )
     }
@@ -3042,7 +3073,7 @@ public class UserSessionScope internal constructor(
             persistConversations = persistConversationsUseCase,
         )
 
-    private val syncMeetingsUseCase: SyncMeetingsUseCase
+    public val syncMeetingsUseCase: SyncMeetingsUseCase
         get() = SyncMeetingsUseCaseImpl(
             meetingRepository = meetingRepository,
             isMeetingsEnabledUseCase = isMeetingsEnabled,
@@ -3094,6 +3125,10 @@ public class UserSessionScope internal constructor(
 
         launch {
             mlsConversationsRecoveryManager.invoke()
+        }
+
+        launch {
+            joinPendingMLSConversationsManager.invoke()
         }
 
         launch {

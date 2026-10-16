@@ -110,7 +110,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
         )
 
     private fun hasSsoIdentityChanged(previousIdpId: String?, currentIdpId: String?): Boolean =
-        // The IdP ID is supplied only by the email-based multi-ingress flow.
+        // Email SSO supplies an IdP directly; SSO-code login supplies one only when the backend enables detection.
         currentIdpId != null && previousIdpId != currentIdpId
 
     private suspend fun storeUser(session: StoreSessionParam): Result =

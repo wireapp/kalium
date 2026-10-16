@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.cellfile
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.CellFilesQueries
@@ -46,6 +47,7 @@ internal class CellFileDaoImpl(
                 downloadedAt = entity.downloadedAt,
                 isOffline = if (entity.isOffline) 1L else 0L,
                 modifiedAt = entity.modifiedAt,
+                assetPath = entity.remotePath,
             )
         }
     }
@@ -84,8 +86,12 @@ internal class CellFileDaoImpl(
         queries.selectById(id, ::toEntity).awaitAsOneOrNull()
     }
 
-    override suspend fun getAllWithLocalPath(): List<CellFileLocalPath> = withContext(readDispatcher.value) {
-        queries.getAllWithLocalPath { uuid, localPath -> CellFileLocalPath(uuid, localPath) }.executeAsList()
+    override suspend fun getLocalPathsByIds(ids: List<String>): List<CellFileLocalPath> = withContext(readDispatcher.value) {
+        if (ids.isEmpty()) {
+            emptyList()
+        } else {
+            queries.getLocalPathsByIds(ids) { uuid, localPath -> CellFileLocalPath(uuid, localPath) }.awaitAsList()
+        }
     }
 
     @Suppress("LongParameterList", "UnusedParameter")
@@ -123,5 +129,6 @@ internal class CellFileDaoImpl(
         downloadedAt = downloadedAt,
         isOffline = isOffline == 1L,
         modifiedAt = modifiedAt,
+        remotePath = assetPath,
     )
 }

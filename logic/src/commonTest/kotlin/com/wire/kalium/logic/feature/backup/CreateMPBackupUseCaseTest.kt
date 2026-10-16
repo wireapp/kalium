@@ -17,6 +17,10 @@
  */
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.backup.data.BackupDateTime
+import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupMessageContent
+import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.dump.BackupExportResult
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
@@ -27,6 +31,8 @@ import com.wire.kalium.logic.data.backup.PagedData
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -98,6 +104,77 @@ class CreateMPBackupUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(TEXT_MESSAGE.toBackupMessage()!!) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(testReaction.toBackupReaction()) }
     }
+
+    @Test
+    fun givenMixedMentions_whenCreatingBackup_thenOnlyValidMentionsAreExported() = runTest {
+        val message = TEXT_MESSAGE.copy(
+            content = MessageContent.Text(
+                value = "Alice Bob Carol",
+                mentions = listOf(
+                    MessageMention(0, 5, selfUserId, true),
+                    MessageMention(-1, 3, selfUserId, true),
+                    MessageMention(6, 0, selfUserId, true),
+                    MessageMention(6, -1, selfUserId, true),
+                    MessageMention(10, 5, testUser.id, false),
+                ),
+                quotedMessageReference = MessageContent.QuoteReference("quoted-message", null, true),
+            ),
+            editStatus = Message.EditStatus.Edited(TEXT_MESSAGE.date),
+        )
+        val (arrangement, useCase) = Arrangement().withExporter().withMessages(listOf(message)).arrange()
+        val expected = expectedBackupMessage(
+            message,
+            BackupMessageContent.Text(
+                text = "Alice Bob Carol",
+                mentions = listOf(
+                    BackupMessageContent.Text.Mention(BackupQualifiedId("participant1", "domain"), 0, 5),
+                    BackupMessageContent.Text.Mention(BackupQualifiedId("participant2", "domain"), 10, 5),
+                ),
+                quotedMessageId = "quoted-message",
+            ),
+        ).copy(lastEditTime = BackupDateTime(TEXT_MESSAGE.date.toEpochMilliseconds()))
+
+        val result = useCase("test_password") {}
+
+        assertTrue(result is CreateBackupResult.Success)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(expected) }
+    }
+
+    @Test
+    fun givenOnlyMalformedMentions_whenCreatingBackup_thenMessageAndFollowingMessageAreExported() = runTest {
+        val message = TEXT_MESSAGE.copy(
+            content = MessageContent.Text(
+                value = "Alice Bob",
+                mentions = listOf(
+                    MessageMention(-1, 5, selfUserId, true),
+                    MessageMention(0, 0, selfUserId, true),
+                    MessageMention(6, -1, selfUserId, true),
+                ),
+            ),
+        )
+        val followingMessage = TEXT_MESSAGE.copy(id = "following-message", content = MessageContent.Text("Following"))
+        val (arrangement, useCase) = Arrangement()
+            .withExporter()
+            .withMessages(listOf(message, followingMessage))
+            .arrange()
+        val expected = expectedBackupMessage(message, BackupMessageContent.Text("Alice Bob", mentions = emptyList()))
+        val expectedFollowing = expectedBackupMessage(followingMessage, BackupMessageContent.Text("Following"))
+
+        val result = useCase("test_password") {}
+
+        assertTrue(result is CreateBackupResult.Success)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(expected) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(expectedFollowing) }
+    }
+
+    private fun expectedBackupMessage(message: Message.Regular, content: BackupMessageContent) = BackupMessage(
+        id = message.id,
+        conversationId = BackupQualifiedId(message.conversationId.value, message.conversationId.domain),
+        senderUserId = BackupQualifiedId(message.senderUserId.value, message.senderUserId.domain),
+        senderClientId = message.sender?.id.toString(),
+        creationDate = BackupDateTime(message.date.toEpochMilliseconds()),
+        content = content,
+    )
 
     @Test
     fun givenZippingFails_whenCreatingBackup_thenErrorIsReturned() = runTest {

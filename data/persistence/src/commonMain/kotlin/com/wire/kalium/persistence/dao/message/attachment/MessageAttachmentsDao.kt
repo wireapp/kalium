@@ -35,7 +35,7 @@ import kotlinx.coroutines.withContext
 interface MessageAttachmentsDao {
     suspend fun getAssetPath(assetId: String): String?
     suspend fun setLocalPath(assetId: String, path: String?)
-    suspend fun setPreviewUrl(assetId: String, previewUrl: String?)
+    suspend fun setPreviewUrl(assetId: String, previewUrl: String?, conversationId: String?)
     suspend fun setTransferStatus(assetId: String, status: String)
     suspend fun getAttachment(assetId: String): MessageAttachmentEntity
 
@@ -49,7 +49,7 @@ interface MessageAttachmentsDao {
         isEditSupported: Boolean,
     )
     suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity>
-    suspend fun getAttachments(): List<MessageAttachmentEntity>
+    suspend fun getAttachmentsByAssetIds(assetIds: List<String>): List<MessageAttachmentEntity>
     fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
     suspend fun setAssetPath(assetId: String, path: String)
 }
@@ -66,9 +66,14 @@ internal class MessageAttachmentsDaoImpl(
             queries.getAttachments(messageId, conversationId, ::toDao).awaitAsList()
         }
 
-    override suspend fun getAttachments(): List<MessageAttachmentEntity> = withContext(readDispatcher.value) {
-        queries.getAllAttachments(::toDao).awaitAsList()
-    }
+    override suspend fun getAttachmentsByAssetIds(assetIds: List<String>): List<MessageAttachmentEntity> =
+        withContext(readDispatcher.value) {
+            if (assetIds.isEmpty()) {
+                emptyList()
+            } else {
+                queries.getAttachmentsByAssetIds(assetIds, ::toDao).awaitAsList()
+            }
+        }
 
     override fun observeAttachments(): Flow<List<MessageAttachmentEntity>> =
         queries.getAllAttachments(::toDao)
@@ -112,11 +117,12 @@ internal class MessageAttachmentsDaoImpl(
         }
     }
 
-    override suspend fun setPreviewUrl(assetId: String, previewUrl: String?) {
+    override suspend fun setPreviewUrl(assetId: String, previewUrl: String?, conversationId: String?) {
         withContext(writeDispatcher.value) {
             queries.setPreviewUrl(
                 previewUrl = previewUrl,
-                uuid = assetId
+                assetId = assetId,
+                conversationId = conversationId,
             )
         }
     }

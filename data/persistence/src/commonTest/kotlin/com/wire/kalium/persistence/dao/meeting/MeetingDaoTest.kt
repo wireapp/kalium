@@ -17,10 +17,15 @@
  */
 package com.wire.kalium.persistence.dao.meeting
 
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource
+import app.cash.turbine.test
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.MeetingsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity.RecurrenceEntity.Frequency
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
@@ -34,8 +39,12 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class MeetingDaoTest : BaseDatabaseTest() {
     private lateinit var databaseBuilder: UserDatabaseBuilder
@@ -308,7 +317,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
             val now = Clock.System.now()
             val meeting = newMeeting(
                 startTime = now - OUTDATED_DAYS.days - 5.days,
-                recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = now - OUTDATED_DAYS.days)
+                recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = now - OUTDATED_DAYS.days - 1.hours)
             )
             insertMeetingDependencies(meeting)
             meetingDao.upsertMeetings(listOf(meeting),GenerationLimit.Window(Instant.DISTANT_PAST, now + GENERATION_DAYS.days))
@@ -317,6 +326,25 @@ class MeetingDaoTest : BaseDatabaseTest() {
             meetingDao.removeOutdatedMeetings(now - OUTDATED_DAYS.days)
             assertEquals(false, isMeetingStored(meeting))
             assertEquals(true, occurrencesFor(meeting).isEmpty())
+        }
+
+    @Test
+    fun givenRecurringMeetingWithLastOccurrenceStillOngoing_whenPruning_thenMeetingAndOccurrenceAreKept() =
+        runTest(dispatcher) {
+            val cutoff = Instant.parse("2026-10-04T00:00:00Z")
+            val meeting = newMeeting(
+                startTime = cutoff - 1.days,
+                endTime = cutoff + 1.days,
+                recurrence = MeetingEntity.RecurrenceEntity(Frequency.DAILY, 1, cutoff - 1.days),
+            )
+            insertMeetingDependencies(meeting)
+            meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(cutoff - 2.days, cutoff + 2.days))
+            val occurrence = occurrencesFor(meeting).single()
+
+            meetingDao.removeOutdatedMeetings(cutoff)
+
+            assertTrue(isMeetingStored(meeting))
+            assertEquals(listOf(occurrence), occurrencesFor(meeting))
         }
 
     @Test
@@ -463,6 +491,156 @@ class MeetingDaoTest : BaseDatabaseTest() {
         assertEquals(true, occurrencesFor(updatedMeetingToKeep).isNotEmpty())
         assertEquals(false, isMeetingStored(meetingToRemove))
         assertEquals(true, occurrencesFor(meetingToRemove).isEmpty())
+    }
+
+    @Test
+    fun givenOneOnOneMeeting_whenLoadingAndUpdatingAvatars_thenAllMembersAreReturnedAndPagingInvalidates() = runTest(dispatcher) {
+        val meeting = newMeeting()
+        insertAvatarMeeting(meeting, ConversationEntity.Type.ONE_ON_ONE)
+        val occurrenceId = occurrencesFor(meeting).single().occurrence_id
+        val source = meetingDao.getPaginatedMeetingOccurrenceDetails(
+            PagingConfig(pageSize = 10), 0, meeting.startTime
+        ).pagingSource
+        val page = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            source.load(PagingSource.LoadParams.Refresh(null, 10, false))
+        )
+        val expected = MeetingParticipantEntity(meeting.conversationId, CREATOR_ID, "Alex", 3, null)
+        val self = MeetingParticipantEntity(meeting.conversationId, SELF_USER_ID, "usertest", 1, null)
+        assertEquals(listOf(expected, self), page.data.single().participants)
+
+        meetingDao.getMeetingOccurrenceDetailsFlow(occurrenceId).test {
+            assertEquals(listOf(expected, self), awaitItem()?.participants)
+            databaseBuilder.userDAO.updateUserAccentColor(CREATOR_ID, 5)
+            assertEquals(listOf(expected.copy(accentColor = 5), self), awaitItem()?.participants)
+            assertTrue(source.invalid)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenAnyGroupType_whenLoadingParticipants_thenMembersWithoutPicturesAndSelfAreIncluded() = runTest(dispatcher) {
+        listOf(ConversationEntity.Type.MEETING, ConversationEntity.Type.GROUP, ConversationEntity.Type.CHANNEL).forEach { type ->
+            val meeting = newMeeting()
+            insertAvatarMeeting(meeting, type)
+            val source = meetingDao.getPaginatedMeetingOccurrenceDetails(
+                PagingConfig(pageSize = 10), 0, meeting.startTime
+            ).pagingSource
+            val page = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+                source.load(PagingSource.LoadParams.Refresh(null, 10, false))
+            )
+            val participants = page.data.single().participants
+            assertEquals(setOf(CREATOR_ID, SELF_USER_ID), participants.map { it.userId }.toSet(), type.toString())
+            assertTrue(participants.all { it.previewAssetId == null })
+            assertEquals("Alex", participants.first { it.userId == CREATOR_ID }.name)
+            meetingDao.getMeetingOccurrenceDetailsFlow(occurrencesFor(meeting).single().occurrence_id).test {
+                assertEquals(participants, awaitItem()?.participants, type.toString())
+                cancelAndIgnoreRemainingEvents()
+            }
+            source.invalidate()
+        }
+    }
+
+    @Test
+    fun givenMeetingsAroundReminderCutoff_whenFindingNextReminder_thenSkipsLateMeetingAndReflectsChanges() = runTest(dispatcher) {
+        val now = Instant.parse("2026-01-02T10:00:00Z")
+        val late = newMeeting(startTime = now + 5.minutes)
+        val next = newMeeting(
+            meetingId = QualifiedIDEntity("next-meeting", "wire.com"),
+            conversationId = QualifiedIDEntity("next-conversation", "wire.com"),
+            startTime = now + 1.hours,
+        )
+        val sameMinute = newMeeting(
+            meetingId = QualifiedIDEntity("same-minute-meeting", "wire.com"),
+            conversationId = QualifiedIDEntity("same-minute-conversation", "wire.com"),
+            startTime = next.startTime + 1.seconds,
+        )
+        insertMeetingDependencies(late)
+        insertMeetingDependencies(next)
+        insertMeetingDependencies(sameMinute)
+        meetingDao.upsertMeetings(listOf(late, next, sameMinute), GenerationLimit.Window(now - 1.days, now + 2.days))
+
+        assertEquals(next.startTime, meetingDao.getNextMeetingReminder(now + 10.minutes)?.startTime)
+        assertEquals(2, meetingDao.getMeetingRemindersWithin(next.startTime, next.startTime + 1.minutes).size)
+
+        meetingDao.deleteMeeting(next.meetingId)
+        meetingDao.deleteMeeting(sameMinute.meetingId)
+        assertEquals(null, meetingDao.getNextMeetingReminder(now + 10.minutes))
+    }
+
+    @Test
+    fun givenMeetingChanges_whenObservingNextReminder_thenEmitsUpdatedAndRemovedOccurrence() = runTest(dispatcher) {
+        val now = Instant.parse("2026-01-02T10:00:00Z")
+        val meeting = newMeeting(startTime = now + 1.hours)
+        insertMeetingDependencies(meeting)
+
+        meetingDao.observeMeetingReminderChanges().test {
+            awaitItem()
+            assertEquals(null, meetingDao.getNextMeetingReminder(now + 10.minutes))
+            meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(now - 1.days, now + 2.days))
+            awaitItem()
+            assertEquals(meeting.startTime, meetingDao.getNextMeetingReminder(now + 10.minutes)?.startTime)
+
+            meetingDao.deleteMeeting(meeting.meetingId)
+            awaitItem()
+            assertEquals(null, meetingDao.getNextMeetingReminder(now + 10.minutes))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenLaterMeetingIsInserted_thenObserverSignalsChangeEvenIfNextReminderIsUnchanged() = runTest(dispatcher) {
+        val now = Instant.parse("2026-01-02T10:00:00Z")
+        val first = newMeeting(startTime = now + 1.hours)
+        val later = newMeeting(
+            meetingId = QualifiedIDEntity("later-meeting", "wire.com"),
+            conversationId = QualifiedIDEntity("later-conversation", "wire.com"),
+            startTime = now + 2.hours,
+        )
+        insertMeetingDependencies(first)
+        insertMeetingDependencies(later)
+        meetingDao.upsertMeetings(listOf(first), GenerationLimit.Window(now - 1.days, now + 2.days))
+
+        meetingDao.observeMeetingReminderChanges().test {
+            awaitItem()
+            val initial = meetingDao.getNextMeetingReminder(now + 10.minutes)
+            assertEquals(first.startTime, initial?.startTime)
+            meetingDao.upsertMeetings(listOf(later), GenerationLimit.Window(now - 1.days, now + 3.days))
+            awaitItem()
+            assertEquals(initial, meetingDao.getNextMeetingReminder(now + 10.minutes))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenOccurrenceIsReplacedWithSameCount_thenReminderChangeIsEmitted() = runTest(dispatcher) {
+        val now = Instant.parse("2026-01-02T10:00:00Z")
+        val meeting = newMeeting(startTime = now + 1.hours)
+        val movedMeeting = meeting.copy(startTime = now + 2.hours, endTime = meeting.endTime + 1.hours)
+        insertMeetingDependencies(meeting)
+        val window = GenerationLimit.Window(now - 1.days, now + 3.days)
+        meetingDao.upsertMeetings(listOf(meeting), window)
+        assertEquals(1, occurrencesFor(meeting).size)
+
+        meetingDao.observeMeetingReminderChanges().test {
+            awaitItem()
+            meetingDao.upsertMeetings(listOf(movedMeeting), window)
+            awaitItem()
+            assertEquals(1, occurrencesFor(meeting).size)
+            assertEquals(movedMeeting.startTime, meetingDao.getNextMeetingReminder(now + 10.minutes)?.startTime)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private suspend fun insertAvatarMeeting(meeting: MeetingEntity, type: ConversationEntity.Type) {
+        databaseBuilder.database.databasePropertiesQueries.insertSelfUserId(SELF_USER_ID)
+        databaseBuilder.userDAO.upsertUser(newUserEntity(SELF_USER_ID))
+        databaseBuilder.userDAO.upsertUser(newUserEntity(CREATOR_ID).copy(name = "Alex", accentId = 3))
+        databaseBuilder.conversationDAO.insertConversation(newConversationEntity(meeting.conversationId).copy(type = type))
+        databaseBuilder.memberDAO.insertMembersWithQualifiedId(
+            listOf(MemberEntity(SELF_USER_ID, MemberEntity.Role.Member), MemberEntity(CREATOR_ID, MemberEntity.Role.Member)),
+            meeting.conversationId
+        )
+        meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(meeting.startTime, meeting.endTime + 1.days))
     }
 
     private suspend fun insertMeetingDependencies(meeting: MeetingEntity) {

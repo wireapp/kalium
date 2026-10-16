@@ -59,15 +59,21 @@ internal class OnCloseCall(
         )
 
         val avsReason = CallClosedReason.fromInt(value = reason)
-
-        val callStatus = getCallStatusFromCloseReason(avsReason)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         scope.launch {
             val callMetadata = callRepository.getCallMetadata(conversationIdWithDomain)
             val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
+            val callStatus = getCallStatusFromCloseReason(avsReason, callMetadata?.conversationType)
 
-            if (isConnectedToInternet && shouldPersistMissedCall(callMetadata, callStatus)) {
+            if (avsReason == CallClosedReason.ANSWERED_ELSEWHERE) {
+                callRepository.updateIsAnsweredElsewhere(conversationIdWithDomain)
+            }
+
+            if (isConnectedToInternet &&
+                avsReason != CallClosedReason.ANSWERED_ELSEWHERE &&
+                shouldPersistMissedCall(callMetadata, callStatus)
+            ) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
             }
 
@@ -106,10 +112,11 @@ internal class OnCloseCall(
     }
 
     private fun shouldPersistMissedCall(callMetadata: CallMetadata?, callStatus: CallStatus): Boolean =
-        when (callStatus) {
-            CallStatus.MISSED -> true
-            CallStatus.CLOSED -> callMetadata?.callStatus?.let { currentCallStatus ->
-                callMetadata.establishedTime == null &&
+        when {
+            callMetadata?.conversationType == Conversation.Type.Group.Meeting -> false
+            callStatus == CallStatus.MISSED -> true
+            callStatus == CallStatus.CLOSED -> callMetadata?.callStatus?.let { currentCallStatus ->
+                callMetadata.establishedTime == null && !callMetadata.callAnsweredElsewhere &&
                         currentCallStatus != CallStatus.CLOSED_INTERNALLY &&
                         currentCallStatus != CallStatus.REJECTED &&
                         currentCallStatus != CallStatus.STARTED
@@ -123,7 +130,12 @@ internal class OnCloseCall(
             )
         }
 
-    private fun getCallStatusFromCloseReason(reason: CallClosedReason): CallStatus = when (reason) {
+    private fun getCallStatusFromCloseReason(reason: CallClosedReason, conversationType: Conversation.Type?): CallStatus = when (reason) {
+        CallClosedReason.ANSWERED_ELSEWHERE -> when (conversationType) {
+            is Conversation.Type.Group -> CallStatus.STILL_ONGOING
+            else -> CallStatus.CLOSED
+        }
+
         CallClosedReason.STILL_ONGOING -> CallStatus.STILL_ONGOING
         CallClosedReason.CANCELLED -> CallStatus.MISSED
         CallClosedReason.REJECTED -> CallStatus.REJECTED
