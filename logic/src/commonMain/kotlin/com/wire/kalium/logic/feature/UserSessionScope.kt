@@ -283,10 +283,10 @@ import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassi
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
-import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsForUserUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
@@ -458,6 +458,7 @@ import com.wire.kalium.logic.sync.SendPendingMessagesUseCaseImpl
 import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncShutdownCoordinator
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.SyncStateObserverImpl
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
@@ -644,6 +645,7 @@ public class UserSessionScope internal constructor(
     private val platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
+    private val syncShutdownCoordinator: SyncShutdownCoordinator,
 ) : CoroutineScope {
     private val notificationEventsManager = NotificationEventsManagerImpl()
 
@@ -829,6 +831,7 @@ public class UserSessionScope internal constructor(
                 )
             )
         }.container
+
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
@@ -1330,7 +1333,8 @@ public class UserSessionScope internal constructor(
             slowSyncManager,
             incrementalSyncManager,
             this,
-            userScopedLogger = userScopedLogger
+            userScopedLogger = userScopedLogger,
+            shutdownCoordinator = syncShutdownCoordinator
         )
     }
 
@@ -1548,13 +1552,14 @@ public class UserSessionScope internal constructor(
 
     private val slowSyncManager: SlowSyncManager by lazy {
         SlowSyncManager(
-            slowSyncCriteriaProvider,
-            slowSyncRepository,
-            slowSyncWorker,
-            slowSyncRecoveryHandler,
-            networkStateObserver,
-            syncMigrationStepsProvider,
-            userScopedLogger,
+            slowSyncCriteriaProvider = slowSyncCriteriaProvider,
+            slowSyncRepository = slowSyncRepository,
+            slowSyncWorker = slowSyncWorker,
+            slowSyncRecoveryHandler = slowSyncRecoveryHandler,
+            networkStateObserver = networkStateObserver,
+            syncMigrationStepsProvider = syncMigrationStepsProvider,
+            userScopedLogger = userScopedLogger,
+            apiVersion = sessionManager.serverConfig().metaData.commonApiVersion.version,
         )
     }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {

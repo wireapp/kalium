@@ -105,6 +105,7 @@ internal fun SlowSyncManager(
     networkStateObserver: NetworkStateObserver,
     syncMigrationStepsProvider: () -> SyncMigrationStepsProvider,
     userScopedLogger: KaliumLogger,
+    apiVersion: Int,
     exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelper(
         SlowSyncManager.MIN_RETRY_DELAY,
         SlowSyncManager.MAX_RETRY_DELAY
@@ -175,6 +176,10 @@ internal fun SlowSyncManager(
                         SlowSyncParam.NotPerformedBefore
                     }
 
+                    slowSyncRepository.getLastSlowSyncApiVersion() != apiVersion -> {
+                        SlowSyncParam.ApiVersionChanged
+                    }
+
                     else -> {
                         SlowSyncParam.Success
                     }
@@ -223,7 +228,7 @@ internal fun SlowSyncManager(
             logger.i("SlowSync criteria ready, checking if SlowSync is needed or already performed")
 
             when (isSlowSyncNeeded) {
-                SlowSyncParam.NotPerformedBefore -> {
+                SlowSyncParam.NotPerformedBefore, SlowSyncParam.ApiVersionChanged -> {
                     performSlowSync(emptyList())
                 }
 
@@ -261,13 +266,15 @@ internal fun SlowSyncManager(
     private suspend fun performSlowSync(migrationSteps: List<SyncMigrationStep>) {
         val syncLogger = kaliumLogger.provideNewSyncManagerLogger(SyncType.SLOW)
         syncLogger.logSyncStarted()
-        logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
+        logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently (API $apiVersion)")
         slowSyncWorker.slowSyncStepsFlow(migrationSteps).cancellable().collect { step ->
             logger.i("Performing SlowSyncStep $step")
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(step))
         }
         syncLogger.logSyncCompleted()
         logger.i("SlowSync completed. Updating last completion instant")
+        // Record the version actually used by this scope, only after all steps succeeded.
+        slowSyncRepository.setLastSlowSyncApiVersion(apiVersion)
         slowSyncRepository.setSlowSyncVersion(SlowSyncManager.CURRENT_VERSION)
         slowSyncRepository.setLastSlowSyncCompletionInstant(DateTimeUtil.currentInstant())
     }

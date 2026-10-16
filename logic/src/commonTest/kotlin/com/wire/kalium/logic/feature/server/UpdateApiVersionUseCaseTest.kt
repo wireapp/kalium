@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.server
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.toDao
@@ -32,6 +33,7 @@ import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.ProxyCredentialsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -57,7 +59,7 @@ class UpdateApiVersionUseCaseTest {
                 withValidSessionWithServerConfig(Either.Left(StorageFailure.Generic(IOException())))
             }
 
-        updateApiVersionsUseCase()
+        assertEquals(UpdateApiVersionsUseCase.Result.Failure, updateApiVersionsUseCase())
         advanceUntilIdle()
 
         assertEquals(0, arrangement.serverConfigProviderCalledCount)
@@ -218,6 +220,48 @@ class UpdateApiVersionUseCaseTest {
 
     }
 
+    @Test
+    fun givenOneVersionChanged_whenUpdatingMultipleServers_thenReportChanged() = runTest {
+        val before = mapOf(userId1 to serverConfig1, userId2 to serverConfig2)
+        val changed = serverConfig2.copy(metaData = serverConfig2.metaData.copy(commonApiVersion = CommonApiVersionType.Valid(3)))
+        val (_, useCase) = Arrangement().arrange {
+            withSnapshots(before, Either.Right(before + (userId2 to changed)))
+            withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
+            withUpdateConfigMetaData(serverConfig2, Either.Right(Unit))
+        }
+        assertEquals(UpdateApiVersionsUseCase.Result.Changed, useCase())
+    }
+
+    @Test
+    fun givenOnlyOtherMetadataChanges_whenUpdating_thenReportUnchanged() = runTest {
+        val before = mapOf(userId1 to serverConfig1)
+        val changed = serverConfig1.copy(metaData = serverConfig1.metaData.copy(federation = !serverConfig1.metaData.federation))
+        val (_, useCase) = Arrangement().arrange {
+            withSnapshots(before, Either.Right(mapOf(userId1 to changed)))
+            withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
+        }
+        assertEquals(UpdateApiVersionsUseCase.Result.Unchanged, useCase())
+    }
+
+    @Test
+    fun givenStorageReadFailsAfterUpdate_thenReportFailureInsteadOfUnchanged() = runTest {
+        val (_, useCase) = Arrangement().arrange {
+            withSnapshots(mapOf(userId1 to serverConfig1), Either.Left(StorageFailure.Generic(IOException())))
+            withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
+        }
+        assertEquals(UpdateApiVersionsUseCase.Result.Failure, useCase())
+    }
+
+    @Test
+    fun givenAccountsShareServer_whenUpdating_thenUpdateServerOnlyOnce() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange {
+            withValidSessionWithServerConfig(Either.Right(mapOf(userId1 to serverConfig1, userId2 to serverConfig1)))
+            withUpdateConfigMetaData(serverConfig1, Either.Right(Unit))
+        }
+        assertEquals(UpdateApiVersionsUseCase.Result.Unchanged, useCase())
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.serverConfigRepository1.updateConfigMetaData(any()) }
+    }
+
     private companion object {
         val userId1: UserId = UserId("user1", "domnaion1")
         val userId2: UserId = UserId("user2", "domnaion2")
@@ -226,7 +270,7 @@ class UpdateApiVersionUseCaseTest {
     }
 
     private class Arrangement {
-                val sessionRepository: SessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
+        val sessionRepository: SessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
         val tokenStorage: AuthTokenStorage = mock<AuthTokenStorage>(mode = MockMode.autoUnit)
 
         var serverConfigProviderCalledCount: Int = 0
@@ -263,6 +307,16 @@ class UpdateApiVersionUseCaseTest {
             everySuspend {
                 sessionRepository.validSessionsWithServerConfig()
             } returns result
+        }
+
+        suspend fun withSnapshots(
+            before: Map<UserId, ServerConfig>,
+            after: Either<StorageFailure, Map<UserId, ServerConfig>>,
+        ) {
+            var reads = 0
+            everySuspend { sessionRepository.validSessionsWithServerConfig() } calls {
+                if (reads++ == 0) Either.Right(before) else after
+            }
         }
 
         private val updateApiVersionsUseCase = UpdateApiVersionsUseCaseImpl(

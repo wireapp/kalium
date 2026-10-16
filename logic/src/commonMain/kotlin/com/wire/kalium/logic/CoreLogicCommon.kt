@@ -36,6 +36,7 @@ import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.sync.SyncShutdownCoordinator
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -74,6 +75,7 @@ public abstract class CoreLogicCommon internal constructor(
     internal val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
     internal val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
+    internal val syncShutdownCoordinator = SyncShutdownCoordinator()
 
     private val globalKaliumScope by lazy {
         GlobalKaliumScope(
@@ -87,6 +89,11 @@ public abstract class CoreLogicCommon internal constructor(
             workSchedulerProvider,
             audioNormalizedLoudnessBuilder
         )
+    }
+
+    /** Permanently stops sync for all accounts and waits for current event processing before restarting the app. */
+    public suspend fun stopSyncForRestart() {
+        syncShutdownCoordinator.stopForRestart()
     }
 
     public fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope

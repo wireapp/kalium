@@ -138,4 +138,13 @@ class SlowSyncRepositoryTest {
 
         assertTrue { result }
     }
+
+    @Test
+    fun givenApiVersionIsStored_whenReadingAgain_thenReturnsVersion() = runTest(testDispatcher) {
+        assertEquals(null, slowSyncRepository.getLastSlowSyncApiVersion())
+        slowSyncRepository.setLastSlowSyncApiVersion(5)
+        assertEquals(5, slowSyncRepository.getLastSlowSyncApiVersion())
+        slowSyncRepository.setLastSlowSyncApiVersion(6)
+        assertEquals(6, slowSyncRepository.getLastSlowSyncApiVersion())
+    }
 }

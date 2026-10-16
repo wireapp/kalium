@@ -42,6 +42,8 @@ internal interface SlowSyncRepository {
     fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus)
     suspend fun setSlowSyncVersion(version: Int)
     suspend fun getSlowSyncVersion(): Int?
+    suspend fun setLastSlowSyncApiVersion(version: Int)
+    suspend fun getLastSlowSyncApiVersion(): Int?
 }
 
 internal class SlowSyncRepositoryImpl(
@@ -103,7 +105,15 @@ internal class SlowSyncRepositoryImpl(
 
     override suspend fun getSlowSyncVersion(): Int? = metadataDao.valueByKey(key = SLOW_SYNC_VERSION_KEY)?.toInt()
 
+    override suspend fun setLastSlowSyncApiVersion(version: Int) {
+        metadataDao.insertValue(value = version.toString(), key = LAST_SLOW_SYNC_API_VERSION_KEY)
+    }
+
+    override suspend fun getLastSlowSyncApiVersion(): Int? =
+        metadataDao.valueByKey(key = LAST_SLOW_SYNC_API_VERSION_KEY)?.toIntOrNull()
+
     companion object {
+        private const val LAST_SLOW_SYNC_API_VERSION_KEY = "lastSlowSyncApiVersion"
         const val LAST_SLOW_SYNC_INSTANT_KEY = "lastSlowSyncInstant"
         private const val SLOW_SYNC_VERSION_KEY = "slowSyncVersion"
         private const val MLS_NEEDS_RECOVERY_KEY = "mlsNeedsRecovery"

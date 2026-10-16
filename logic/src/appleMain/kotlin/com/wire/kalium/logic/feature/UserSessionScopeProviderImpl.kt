@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.sync.SyncShutdownCoordinator
 import com.wire.kalium.logic.util.databaseKey
 import com.wire.kalium.logic.util.databaseSecurityHelper
 import com.wire.kalium.network.NetworkStateObserver
@@ -58,6 +59,7 @@ internal actual open class UserSessionScopeProviderImpl(
     private val logoutCallback: LogoutCallback,
     userAgent: String,
     private val keychainConfig: ApplePersistenceConfig,
+    private val syncShutdownCoordinator: SyncShutdownCoordinator,
 ) : UserSessionScopeProviderCommon(
         globalCallManager,
         userStorageProvider,
@@ -102,7 +104,8 @@ internal actual open class UserSessionScopeProviderImpl(
             this,
             networkStateObserver,
             logoutCallback,
-            userAgent
+            userAgent,
+            syncShutdownCoordinator,
         )
     }
 
