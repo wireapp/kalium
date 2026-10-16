@@ -22,7 +22,6 @@ package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.db.SqlDriver
-import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -91,10 +90,16 @@ actual fun userDatabaseDriverByPath(
     passphrase: UserDBSecret?,
     enableWAL: Boolean
 ): SqlDriver {
-    return NativeSqliteDriver(
-        UserDatabase.Schema.synchronous(),
-        path
-    )
+    // SQLiter takes the directory and the file name separately, and rejects a name with a path separator.
+    val file = NSURL.fileURLWithPath(path)
+    return databaseDriver(
+        driverUri = file.URLByDeletingLastPathComponent?.path,
+        dbName = requireNotNull(file.lastPathComponent) { "The database path $path has no file name" },
+        schema = UserDatabase.Schema.synchronous()
+    ) {
+        isWALEnabled = enableWAL
+        useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
+    }
 }
 
 /**
@@ -149,23 +154,31 @@ internal actual fun nuke(
     platformDatabaseData: PlatformDatabaseData
 ): Boolean {
     return when (platformDatabaseData.storageData) {
-        is StorageData.FileBacked -> NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storageData.storePath, null)
+        // Only this user's database, as on the other platforms. Other files share the directory, the backup
+        // database among them, which the backup export deletes with this before it starts.
+        is StorageData.FileBacked -> deleteDatabaseFiles(
+            "${platformDatabaseData.storageData.storePath}/${FileNameUtil.userDBName(userId)}"
+        )
+
         is StorageData.InMemory -> clearInMemoryDatabase(userId)
     }
+}
+
+/** Deletes a database file and its journal files. True when no database file is left. */
+private fun deleteDatabaseFiles(path: String): Boolean {
+    listOf("", "-wal", "-shm", "-journal").forEach { suffix ->
+        NSFileManager.defaultManager.removeItemAtPath("$path$suffix", null)
+    }
+    return !NSFileManager.defaultManager.fileExistsAtPath(path)
 }
 
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
 ): String? {
-    return if (
-        platformDatabaseData.storageData is StorageData.FileBacked && NSURL.fileURLWithPath(platformDatabaseData.storageData.storePath)
-            .checkResourceIsReachableAndReturnError(null)
-    ) {
-        platformDatabaseData.storageData.storePath
-    } else {
-        null
-    }
+    val storageData = platformDatabaseData.storageData as? StorageData.FileBacked ?: return null
+    val path = "${storageData.storePath}/${FileNameUtil.userDBName(userId)}"
+    return path.takeIf { NSFileManager.defaultManager.fileExistsAtPath(it) }
 }
 
 internal actual fun createEmptyDatabaseFile(
