@@ -588,6 +588,7 @@ import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.meeting.MeetingUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiving.CallPresentationRecord
 import com.wire.kalium.logic.sync.receiving.CallSignalJournal
+import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
 import com.wire.kalium.logic.sync.receiving.PendingConversationCleanup
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
@@ -3075,6 +3076,11 @@ public class UserSessionScope internal constructor(
 
     /** Prioritize the exact delivered Apple call, preserving all signaling in its conversation. */
     public suspend fun resumeIncomingCallSignals(callId: String): Unit = callManager.value.replayIncomingCallSignals(callId)
+
+    /** Apple alert claims using this session's existing account owner; the host must retain the session. */
+    public val notificationAlerts: UnnotifiedMessageAlerts by lazy {
+        UnnotifiedMessageAlerts(userStorage.database, userId)
+    }
 
     /** Register the identities of delivered Apple alerts before observing their canonical state. */
     public suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>): Unit =

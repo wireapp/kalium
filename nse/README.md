@@ -147,6 +147,30 @@ Not supported; the attempt fails and the notification stays pending:
 
 Nomad-configured accounts are not supported.
 
+## Preparing alerts with an existing app account
+
+`UserSessionScope.notificationAlerts` uses the session's existing database owner.
+The host must retain that session throughout the request; this API does not acquire
+another Apple account runtime or extend the application's background lifetime.
+
+`prepare` captures message identities without marking them notified or exposing
+preview content. The snapshot stays in the owning process and expires after a
+bounded monotonic deadline (20 seconds by default, at most 30 seconds). Abandoning
+it requires no cleanup. `commit` rechecks unread state, notification eligibility
+and the saved content preference in a writer transaction before advancing the
+conversation cursors. It returns `Committed`, `Expired`, or `Stale`; the last two
+leave notification state unchanged. A stale snapshot needs fresh preparation, for
+example when an older server event arrived after the snapshot. Overlapping claims
+use the persisted cursors to avoid returning the same alert twice. Read failures
+in the content preference hide text, names and typed preview labels.
+
+A committed result is a claim to present, **not acknowledgement of OS delivery**.
+The existing NSE uses immediate `take`; the app API is a building block for a
+separate bounded host handoff. This change does not implement app/NSE IPC, recover
+a process crash after commitment, or guarantee exactly-once system presentation.
+A future handoff must explicitly handle that delivery boundary before extending
+account ownership in the background. Android notification presentation is unchanged.
+
 ## Incoming calls
 
 The receiver uses AVS's event-only API. It retains one native handle and callback

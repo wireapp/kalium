@@ -32,6 +32,7 @@ import com.wire.kalium.logic.sync.receiving.ReceivedNotificationType
 import com.wire.kalium.logic.sync.receiving.ReceivingDiagnostics
 import com.wire.kalium.logic.sync.receiving.ReceivingOptions
 import com.wire.kalium.logic.sync.receiving.UnnotifiedMessageAlerts
+import com.wire.kalium.logic.sync.receiving.notificationPreview
 import com.wire.kalium.logic.sync.receiving.notificationProcessor
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.NotificationMessageKey
@@ -337,15 +338,15 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             }
         }
         val message = result.message
-        val canPreview = showContent && savedAllowsPreview && message?.shouldNotify == true && message.mayPreview
-        val contentType = when (message?.type) {
+        val preview = message?.notificationPreview(showContent, preference)
+        val contentType = when (preview?.type) {
             ReceivedNotificationType.CONVERSATION_DELETED -> KaliumNSEContentType.CONVERSATION_DELETED
             ReceivedNotificationType.CONNECTION_REQUEST -> KaliumNSEContentType.CONNECTION_REQUEST
             ReceivedNotificationType.MESSAGE, null -> KaliumNSEContentType.MESSAGE
         }
         return KaliumNSEResult(
             KaliumNSEStatus.SUCCESS, message?.shouldNotify == true, message?.messageId,
-            message?.conversationValue, message?.conversationDomain, message?.text?.takeIf { canPreview },
+            message?.conversationValue, message?.conversationDomain, preview?.text,
             callSignalsPending = result.callSignalsPending,
             appWorkPending = result.appWorkPending?.name,
             presentationReason = result.presentationReason ?: when {
@@ -357,10 +358,10 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                 else -> "TEXT"
             },
             // A typed system label is also preview content, even when its text is null.
-            contentType = contentType.takeIf { canPreview } ?: KaliumNSEContentType.MESSAGE,
-            conversationName = message?.conversationName?.takeIf { canPreview },
-            senderName = message?.senderName?.takeIf { canPreview },
-            isGroupConversation = canPreview && message?.isGroupConversation == true,
+            contentType = contentType,
+            conversationName = preview?.conversationName,
+            senderName = preview?.senderName,
+            isGroupConversation = preview?.isGroupConversation == true,
             calls = result.calls.map { call ->
                 KaliumNSECall(
                     type = when (call.type) {
