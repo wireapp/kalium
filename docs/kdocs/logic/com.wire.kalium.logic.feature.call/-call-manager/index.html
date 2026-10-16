@@ -1,62 +1,59 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
     <title>CallManager</title>
-<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
-    <script>document.documentElement.classList.replace("no-js","js");</script>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
-    if (storage == null) {
+      if (storage == null) {
         const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         if (osDarkSchemePreferred === true) {
-            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
         }
-    } else {
+      } else {
         const savedDarkMode = JSON.parse(storage)
-        if(savedDarkMode === true) {
-            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
         }
-    }
+      }
     </script>
-<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
 <script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
 <link href="../../../styles/style.css" rel="Stylesheet">
 <link href="../../../styles/main.css" rel="Stylesheet">
 <link href="../../../styles/prism.css" rel="Stylesheet">
 <link href="../../../styles/logo-styles.css" rel="Stylesheet">
-<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
 <link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
-<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/safe-local-storage_blocking.js"></script>
 <script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
 <script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
 <script type="text/javascript" src="../../../scripts/main.js" defer></script>
 <script type="text/javascript" src="../../../scripts/prism.js" async></script>
-<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script>
-<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script></head>
 <body>
-    <div class="root">
-    <nav class="navigation theme-dark" id="navigation-wrapper">
-<a class="library-name--link" href="../../../index.html">
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../../index.html" tabindex="1">
                     kalium
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">21039f2
+        <div class="library-version" id="library-version">dbdce36
         </div>
         <div class="navigation-controls">
-        <div class="filter-section filter-section_loading" id="filter-section">
-                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":logic/commonMain">common</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
-                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
-                    <div class="dropdown--header"><span>Platform filter</span>
-                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
                             <i class="ui-kit-icon ui-kit-icon_cross"></i>
                         </button>
                     </div>
-                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/commonMain" data-filter=":logic:dokkaHtmlPartial/commonMain">
+                                <input type="checkbox" class="checkbox--input" id=":logic/commonMain" data-filter=":logic/commonMain">
                                 <span class="checkbox--icon"></span>
                                 common
                             </label>
@@ -64,294 +61,332 @@
                 </ul>
                 <div class="dropdown--overlay"></div>
             </div>
-        </div>
+        </ul>
             <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
             </button>
             <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
                 API
             </div>
         </div>
-    </nav>
-        <div id="container">
-            <div class="sidebar" id="leftColumn">
-                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
-                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
-                        <div class="dropdown--header">
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
                             <span>
                                     kalium
                             </span>
-                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
-                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
-                            </button>
-                        </div>
-                        <div class="sidebar--inner" id="sideMenu"></div>
-                    </ul>
-                    <div class="dropdown--overlay"></div>
-                </div>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
             </div>
-            <div id="main">
-<div class="main-content" data-page-type="classlike" id="content" pageids="logic::com.wire.kalium.logic.feature.call/CallManager///PointingToDeclaration//867774983">
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="logic::com.wire.kalium.logic.feature.call/CallManager///PointingToDeclaration//-642582577">
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.feature.call</a><span class="delimiter">/</span><span class="current">CallManager</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Call</span><wbr><span><span>Manager</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="index.html">CallManager</a></div><h4 class="">Inheritors</h4><div class="table"><div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../../../logic/com.wire.kalium.logic.feature.call/[macos-arm64]-call-manager-impl/index.html">CallManagerImpl</a></div></span></div><div></div></div></div><div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../../../logic/com.wire.kalium.logic.util/[jvm]-dummy-call-manager/index.html">DummyCallManager</a></div></span></div><div></div></div></div></div></div></div>
+    <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+      <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="index.html">CallManager</a></div><h4 class="tableheader">Inheritors</h4><div class="table"><div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../../../logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/index.html">CallManagerImpl</a></div></span></div><div></div></div></div><div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../../../logic/com.wire.kalium.logic.util/-dummy-call-manager/index.html">DummyCallManager</a></div></span></div><div></div></div></div></div></div>    </div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="FUNCTION">
-        <h2 class="">Functions</h2>
-        <div class="table"><a data-name="1624820769%2FFunctions%2F867774983" anchor-label="answerCall" id="1624820769%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+        <h2 class="tableheader">Functions</h2>
+        <div class="table"><a data-name="239878674%2FFunctions%2F-642582577" anchor-label="answerCall" id="239878674%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="answer-call.html"><span>answer</span><wbr><span><span>Call</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1624820769%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="239878674%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="answer-call.html"><span class="token function">answerCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">isAudioCbr<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token punctuation">, </span></span><span class="parameter ">isVideoCall<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="answer-call.html"><span class="token function">answerCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">isAudioCbr<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token punctuation">, </span></span><span class="parameter ">isVideoCall<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1735011179%2FFunctions%2F867774983" anchor-label="cancelJobs" id="1735011179%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="1735011179%2FFunctions%2F-642582577" anchor-label="cancelJobs" id="1735011179%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="cancel-jobs.html"><span>cancel</span><wbr><span><span>Jobs</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1735011179%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1735011179%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="cancel-jobs.html"><span class="token function">cancelJobs</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="cancel-jobs.html"><span class="token function">cancelJobs</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="777609192%2FFunctions%2F867774983" anchor-label="endCall" id="777609192%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-219282325%2FFunctions%2F-642582577" anchor-label="endCall" id="-219282325%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="end-call.html"><span>end</span><wbr><span><span>Call</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="777609192%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-219282325%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="end-call.html"><span class="token function">endCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="end-call.html"><span class="token function">endCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1884750569%2FFunctions%2F867774983" anchor-label="muteCall" id="1884750569%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="1884750569%2FFunctions%2F-642582577" anchor-label="muteCall" id="1884750569%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="mute-call.html"><span>mute</span><wbr><span><span>Call</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1884750569%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1884750569%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="mute-call.html"><span class="token function">muteCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">shouldMute<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="mute-call.html"><span class="token function">muteCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">shouldMute<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-528306740%2FFunctions%2F867774983" anchor-label="onCallingMessageReceived" id="-528306740%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-3603840%2FFunctions%2F-642582577" anchor-label="onCallingMessageReceived" id="-3603840%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="on-calling-message-received.html"><span>on</span><wbr><span>Calling</span><wbr><span>Message</span><wbr><span><span>Received</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-528306740%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-3603840%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="on-calling-message-received.html"><span class="token function">onCallingMessageReceived</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">content<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="on-calling-message-received.html"><span class="token function">onCallingMessageReceived</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.message/-message/-signaling/index.html">Message.Signaling</a><span class="token punctuation">, </span></span><span class="parameter ">content<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.message/-message-content/-calling/index.html">MessageContent.Calling</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="809127456%2FFunctions%2F867774983" anchor-label="rejectCall" id="809127456%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="265561395%2FFunctions%2F-642582577" anchor-label="rejectCall" id="265561395%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="reject-call.html"><span>reject</span><wbr><span><span>Call</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="809127456%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="265561395%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="reject-call.html"><span class="token function">rejectCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="reject-call.html"><span class="token function">rejectCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1714650957%2FFunctions%2F867774983" anchor-label="reportProcessNotifications" id="-1714650957%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-1714650957%2FFunctions%2F-642582577" anchor-label="reportProcessNotifications" id="-1714650957%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="report-process-notifications.html"><span>report</span><wbr><span>Process</span><wbr><span><span>Notifications</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1714650957%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1714650957%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="report-process-notifications.html"><span class="token function">reportProcessNotifications</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">isStarted<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="report-process-notifications.html"><span class="token function">reportProcessNotifications</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">isStarted<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1014696912%2FFunctions%2F867774983" anchor-label="requestVideoStreams" id="-1014696912%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="50407004%2FFunctions%2F-642582577" anchor-label="requestVideoStreams" id="50407004%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="request-video-streams.html"><span>request</span><wbr><span>Video</span><wbr><span><span>Streams</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1014696912%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="50407004%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="request-video-streams.html"><span class="token function">requestVideoStreams</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">callClients<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="request-video-streams.html"><span class="token function">requestVideoStreams</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">callClients<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.call/-call-client-list/index.html">CallClientList</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-962400460%2FFunctions%2F867774983" anchor-label="setBackground" id="-962400460%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-962400460%2FFunctions%2F-642582577" anchor-label="setBackground" id="-962400460%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="set-background.html"><span>set</span><wbr><span><span>Background</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-962400460%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-962400460%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-background.html"><span class="token function">setBackground</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">background<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-background.html"><span class="token function">setBackground</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">background<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1662230117%2FFunctions%2F867774983" anchor-label="setNetworkQualityInterval" id="1662230117%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="1662230117%2FFunctions%2F-642582577" anchor-label="setNetworkQualityInterval" id="1662230117%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="set-network-quality-interval.html"><span>set</span><wbr><span>Network</span><wbr><span>Quality</span><wbr><span><span>Interval</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1662230117%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1662230117%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-network-quality-interval.html"><span class="token function">setNetworkQualityInterval</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">intervalInSeconds<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-network-quality-interval.html"><span class="token function">setNetworkQualityInterval</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">intervalInSeconds<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-9565338%2FFunctions%2F867774983" anchor-label="setTestPreviewActive" id="-9565338%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-9565338%2FFunctions%2F-642582577" anchor-label="setTestPreviewActive" id="-9565338%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="set-test-preview-active.html"><span>set</span><wbr><span>Test</span><wbr><span>Preview</span><wbr><span><span>Active</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-9565338%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-9565338%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-test-preview-active.html"><span class="token function">setTestPreviewActive</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">shouldEnable<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-test-preview-active.html"><span class="token function">setTestPreviewActive</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">shouldEnable<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="377274396%2FFunctions%2F867774983" anchor-label="setTestRemoteVideoStates" id="377274396%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="690191266%2FFunctions%2F-642582577" anchor-label="setTestRemoteVideoStates" id="690191266%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="set-test-remote-video-states.html"><span>set</span><wbr><span>Test</span><wbr><span>Remote</span><wbr><span>Video</span><wbr><span><span>States</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="377274396%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="690191266%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-test-remote-video-states.html"><span class="token function">setTestRemoteVideoStates</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">participants<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-test-remote-video-states.html"><span class="token function">setTestRemoteVideoStates</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">participants<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../logic/com.wire.kalium.logic.data.call/-participant/index.html">Participant</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-415106387%2FFunctions%2F867774983" anchor-label="setTestVideoType" id="-415106387%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="518868712%2FFunctions%2F-642582577" anchor-label="setTestVideoType" id="518868712%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="set-test-video-type.html"><span>set</span><wbr><span>Test</span><wbr><span>Video</span><wbr><span><span>Type</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-415106387%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="518868712%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-test-video-type.html"><span class="token function">setTestVideoType</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">testVideoType<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-test-video-type.html"><span class="token function">setTestVideoType</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">testVideoType<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.call/-test-video-type/index.html">TestVideoType</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="258681288%2FFunctions%2F867774983" anchor-label="setVideoSendState" id="258681288%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-779882428%2FFunctions%2F-642582577" anchor-label="setVideoSendState" id="-779882428%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="set-video-send-state.html"><span>set</span><wbr><span>Video</span><wbr><span>Send</span><wbr><span><span>State</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="258681288%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-779882428%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-video-send-state.html"><span class="token function">setVideoSendState</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">videoState<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="set-video-send-state.html"><span class="token function">setVideoSendState</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">videoState<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.call/-video-state/index.html">VideoState</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="2119471686%2FFunctions%2F867774983" anchor-label="startCall" id="2119471686%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="2042291551%2FFunctions%2F-642582577" anchor-label="startCall" id="2042291551%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="start-call.html"><span>start</span><wbr><span><span>Call</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2119471686%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2042291551%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="start-call.html"><span class="token function">startCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">callType<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationTypeCalling<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">isAudioCbr<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token punctuation">, </span></span><span class="parameter ">isMeeting<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="start-call.html"><span class="token function">startCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">callType<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.call/-call-type/index.html">CallType</a><span class="token punctuation">, </span></span><span class="parameter ">conversationTypeCalling<span class="token operator">: </span><a href="../../../calling/com.wire.kalium.calling/-conversation-type-calling/index.html">ConversationTypeCalling</a><span class="token punctuation">, </span></span><span class="parameter ">isAudioCbr<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token punctuation">, </span></span><span class="parameter ">isMeeting<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-292278198%2FFunctions%2F867774983" anchor-label="updateConversationClients" id="-292278198%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-390010061%2FFunctions%2F-642582577" anchor-label="updateConversationClients" id="-390010061%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="update-conversation-clients.html"><span>update</span><wbr><span>Conversation</span><wbr><span><span>Clients</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-292278198%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-390010061%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="update-conversation-clients.html"><span class="token function">updateConversationClients</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">clients<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="update-conversation-clients.html"><span class="token function">updateConversationClients</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">clients<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1355388625%2FFunctions%2F867774983" anchor-label="updateEpochInfo" id="-1355388625%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="1450920527%2FFunctions%2F-642582577" anchor-label="updateEpochInfo" id="1450920527%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="update-epoch-info.html"><span>update</span><wbr><span>Epoch</span><wbr><span><span>Info</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1355388625%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1450920527%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="update-epoch-info.html"><span class="token function">updateEpochInfo</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">epochInfo<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="update-epoch-info.html"><span class="token function">updateEpochInfo</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">epochInfo<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.call/-epoch-info/index.html">EpochInfo</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -362,17 +397,21 @@
   </div>
 </div>
     <div class="footer">
-        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
-        <span>© 2026 Copyright</span>
-        <span class="pull-right">
-            <span>Generated by </span>
-            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
-                <span>dokka</span>
-            </a>
-        </span>
-    </div>
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
             </div>
         </div>
     </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

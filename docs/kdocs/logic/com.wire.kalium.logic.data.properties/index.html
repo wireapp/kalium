@@ -1,62 +1,59 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
     <title>com.wire.kalium.logic.data.properties</title>
-<link href="../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../";</script>
-    <script>document.documentElement.classList.replace("no-js","js");</script>
+<link href="../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
-    if (storage == null) {
+      if (storage == null) {
         const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         if (osDarkSchemePreferred === true) {
-            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
         }
-    } else {
+      } else {
         const savedDarkMode = JSON.parse(storage)
-        if(savedDarkMode === true) {
-            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
         }
-    }
+      }
     </script>
-<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
 <script type="text/javascript" src="../../scripts/sourceset_dependencies.js" async></script>
 <link href="../../styles/style.css" rel="Stylesheet">
 <link href="../../styles/main.css" rel="Stylesheet">
 <link href="../../styles/prism.css" rel="Stylesheet">
 <link href="../../styles/logo-styles.css" rel="Stylesheet">
-<link href="../../styles/font-jb-sans-auto.css" rel="Stylesheet">
 <link href="../../ui-kit/ui-kit.min.css" rel="Stylesheet">
-<script type="text/javascript" src="../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../scripts/safe-local-storage_blocking.js"></script>
 <script type="text/javascript" src="../../scripts/navigation-loader.js" async></script>
 <script type="text/javascript" src="../../scripts/platform-content-handler.js" async></script>
 <script type="text/javascript" src="../../scripts/main.js" defer></script>
 <script type="text/javascript" src="../../scripts/prism.js" async></script>
-<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer></script>
-<script type="text/javascript" src="../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer></script></head>
 <body>
-    <div class="root">
-    <nav class="navigation theme-dark" id="navigation-wrapper">
-<a class="library-name--link" href="../../index.html">
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../index.html" tabindex="1">
                     kalium
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">21039f2
+        <div class="library-version" id="library-version">dbdce36
         </div>
         <div class="navigation-controls">
-        <div class="filter-section filter-section_loading" id="filter-section">
-                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":logic/commonMain">common</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
-                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
-                    <div class="dropdown--header"><span>Platform filter</span>
-                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
                             <i class="ui-kit-icon ui-kit-icon_cross"></i>
                         </button>
                     </div>
-                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/commonMain" data-filter=":logic:dokkaHtmlPartial/commonMain">
+                                <input type="checkbox" class="checkbox--input" id=":logic/commonMain" data-filter=":logic/commonMain">
                                 <span class="checkbox--icon"></span>
                                 common
                             </label>
@@ -64,33 +61,35 @@
                 </ul>
                 <div class="dropdown--overlay"></div>
             </div>
-        </div>
+        </ul>
             <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
             </button>
             <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
                 API
             </div>
         </div>
-    </nav>
-        <div id="container">
-            <div class="sidebar" id="leftColumn">
-                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
-                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
-                        <div class="dropdown--header">
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
                             <span>
                                     kalium
                             </span>
-                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
-                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
-                            </button>
-                        </div>
-                        <div class="sidebar--inner" id="sideMenu"></div>
-                    </ul>
-                    <div class="dropdown--overlay"></div>
-                </div>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
             </div>
-            <div id="main">
-<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.data.properties////PointingToDeclaration//867774983">
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.data.properties////PointingToDeclaration//-642582577">
   <div class="breadcrumbs"><a href="../index.html">logic</a><span class="delimiter">/</span><span class="current">com.wire.kalium.logic.data.properties</span></div>
   <div class="cover ">
     <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
@@ -99,213 +98,241 @@
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button></div>
     <div class="tabs-section-body">
       <div data-togglable="TYPE">
-        <h2 class="">Types</h2>
-        <div class="table"><a data-name="-1915639356%2FClasslikes%2F867774983" anchor-label="ConversationFoldersPropertyDataSource" id="-1915639356%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+        <h2 class="tableheader">Types</h2>
+        <div class="table"><a data-name="-1915639356%2FClasslikes%2F-642582577" anchor-label="ConversationFoldersPropertyDataSource" id="-1915639356%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-conversation-folders-property-data-source/index.html"><span>Conversation</span><wbr><span>Folders</span><wbr><span>Property</span><wbr><span>Data</span><wbr><span><span>Source</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1915639356%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1915639356%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-conversation-folders-property-data-source/index.html">ConversationFoldersPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span> : <a href="-conversation-folders-property-repository/index.html">ConversationFoldersPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-conversation-folders-property-data-source/index.html">ConversationFoldersPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><a href="../../network/com.wire.kalium.network.api.base.authenticated.properties/-properties-api/index.html">PropertiesApi</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../../logic/com.wire.kalium.logic.data.user/-user-id/index.html">UserId</a></span></span><span class="token punctuation">)</span> : <a href="-conversation-folders-property-repository/index.html">ConversationFoldersPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1150007681%2FClasslikes%2F867774983" anchor-label="ConversationFoldersPropertyRepository" id="-1150007681%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-1150007681%2FClasslikes%2F-642582577" anchor-label="ConversationFoldersPropertyRepository" id="-1150007681%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-conversation-folders-property-repository/index.html"><span>Conversation</span><wbr><span>Folders</span><wbr><span>Property</span><wbr><span><span>Repository</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1150007681%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1150007681%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-conversation-folders-property-repository/index.html">ConversationFoldersPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-conversation-folders-property-repository/index.html">ConversationFoldersPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-271751773%2FClasslikes%2F867774983" anchor-label="LinkPreviewsPropertyDataSource" id="-271751773%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-271751773%2FClasslikes%2F-642582577" anchor-label="LinkPreviewsPropertyDataSource" id="-271751773%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-link-previews-property-data-source/index.html"><span>Link</span><wbr><span>Previews</span><wbr><span>Property</span><wbr><span>Data</span><wbr><span><span>Source</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-271751773%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-271751773%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-link-previews-property-data-source/index.html">LinkPreviewsPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-link-previews-property-repository/index.html">LinkPreviewsPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-link-previews-property-data-source/index.html">LinkPreviewsPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><a href="../../network/com.wire.kalium.network.api.base.authenticated.properties/-properties-api/index.html">PropertiesApi</a><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-link-previews-property-repository/index.html">LinkPreviewsPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="493879902%2FClasslikes%2F867774983" anchor-label="LinkPreviewsPropertyRepository" id="493879902%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="493879902%2FClasslikes%2F-642582577" anchor-label="LinkPreviewsPropertyRepository" id="493879902%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-link-previews-property-repository/index.html"><span>Link</span><wbr><span>Previews</span><wbr><span>Property</span><wbr><span><span>Repository</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="493879902%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="493879902%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-link-previews-property-repository/index.html">LinkPreviewsPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-link-previews-property-repository/index.html">LinkPreviewsPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1499212553%2FClasslikes%2F867774983" anchor-label="ReadReceiptsPropertyDataSource" id="-1499212553%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-1499212553%2FClasslikes%2F-642582577" anchor-label="ReadReceiptsPropertyDataSource" id="-1499212553%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-read-receipts-property-data-source/index.html"><span>Read</span><wbr><span>Receipts</span><wbr><span>Property</span><wbr><span>Data</span><wbr><span><span>Source</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1499212553%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1499212553%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-read-receipts-property-data-source/index.html">ReadReceiptsPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-read-receipts-property-repository/index.html">ReadReceiptsPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-read-receipts-property-data-source/index.html">ReadReceiptsPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><a href="../../network/com.wire.kalium.network.api.base.authenticated.properties/-properties-api/index.html">PropertiesApi</a><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-read-receipts-property-repository/index.html">ReadReceiptsPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-733580878%2FClasslikes%2F867774983" anchor-label="ReadReceiptsPropertyRepository" id="-733580878%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-733580878%2FClasslikes%2F-642582577" anchor-label="ReadReceiptsPropertyRepository" id="-733580878%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-read-receipts-property-repository/index.html"><span>Read</span><wbr><span>Receipts</span><wbr><span>Property</span><wbr><span><span>Repository</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-733580878%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-733580878%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-read-receipts-property-repository/index.html">ReadReceiptsPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-read-receipts-property-repository/index.html">ReadReceiptsPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="470420596%2FClasslikes%2F867774983" anchor-label="ScreenshotCensoringPropertyDataSource" id="470420596%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="470420596%2FClasslikes%2F-642582577" anchor-label="ScreenshotCensoringPropertyDataSource" id="470420596%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-screenshot-censoring-property-data-source/index.html"><span>Screenshot</span><wbr><span>Censoring</span><wbr><span>Property</span><wbr><span>Data</span><wbr><span><span>Source</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="470420596%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="470420596%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-screenshot-censoring-property-data-source/index.html">ScreenshotCensoringPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-screenshot-censoring-property-repository/index.html">ScreenshotCensoringPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-screenshot-censoring-property-data-source/index.html">ScreenshotCensoringPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><a href="../../network/com.wire.kalium.network.api.base.authenticated.properties/-properties-api/index.html">PropertiesApi</a><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-screenshot-censoring-property-repository/index.html">ScreenshotCensoringPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1236052271%2FClasslikes%2F867774983" anchor-label="ScreenshotCensoringPropertyRepository" id="1236052271%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="1236052271%2FClasslikes%2F-642582577" anchor-label="ScreenshotCensoringPropertyRepository" id="1236052271%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-screenshot-censoring-property-repository/index.html"><span>Screenshot</span><wbr><span>Censoring</span><wbr><span>Property</span><wbr><span><span>Repository</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1236052271%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1236052271%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-screenshot-censoring-property-repository/index.html">ScreenshotCensoringPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-screenshot-censoring-property-repository/index.html">ScreenshotCensoringPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-634938130%2FClasslikes%2F867774983" anchor-label="TypingIndicatorPropertyDataSource" id="-634938130%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-634938130%2FClasslikes%2F-642582577" anchor-label="TypingIndicatorPropertyDataSource" id="-634938130%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-typing-indicator-property-data-source/index.html"><span>Typing</span><wbr><span>Indicator</span><wbr><span>Property</span><wbr><span>Data</span><wbr><span><span>Source</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-634938130%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-634938130%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-typing-indicator-property-data-source/index.html">TypingIndicatorPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-typing-indicator-property-repository/index.html">TypingIndicatorPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-typing-indicator-property-data-source/index.html">TypingIndicatorPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><a href="../../network/com.wire.kalium.network.api.base.authenticated.properties/-properties-api/index.html">PropertiesApi</a><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-typing-indicator-property-repository/index.html">TypingIndicatorPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="130693545%2FClasslikes%2F867774983" anchor-label="TypingIndicatorPropertyRepository" id="130693545%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="130693545%2FClasslikes%2F-642582577" anchor-label="TypingIndicatorPropertyRepository" id="130693545%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-typing-indicator-property-repository/index.html"><span>Typing</span><wbr><span>Indicator</span><wbr><span>Property</span><wbr><span><span>Repository</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="130693545%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="130693545%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-typing-indicator-property-repository/index.html">TypingIndicatorPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-typing-indicator-property-repository/index.html">TypingIndicatorPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1449061156%2FClasslikes%2F867774983" anchor-label="UserPropertiesSyncDataSource" id="1449061156%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="1449061156%2FClasslikes%2F-642582577" anchor-label="UserPropertiesSyncDataSource" id="1449061156%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-user-properties-sync-data-source/index.html"><span>User</span><wbr><span>Properties</span><wbr><span>Sync</span><wbr><span>Data</span><wbr><span><span>Source</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1449061156%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1449061156%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-user-properties-sync-data-source/index.html">UserPropertiesSyncDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-user-properties-sync-repository/index.html">UserPropertiesSyncRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-user-properties-sync-data-source/index.html">UserPropertiesSyncDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">propertiesApi<span class="token operator">: </span><a href="../../network/com.wire.kalium.network.api.base.authenticated.properties/-properties-api/index.html">PropertiesApi</a><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></span></span><span class="token punctuation">)</span> : <a href="-user-properties-sync-repository/index.html">UserPropertiesSyncRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-2080274465%2FClasslikes%2F867774983" anchor-label="UserPropertiesSyncRepository" id="-2080274465%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-2080274465%2FClasslikes%2F-642582577" anchor-label="UserPropertiesSyncRepository" id="-2080274465%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-user-properties-sync-repository/index.html"><span>User</span><wbr><span>Properties</span><wbr><span>Sync</span><wbr><span><span>Repository</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2080274465%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2080274465%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-user-properties-sync-repository/index.html">UserPropertiesSyncRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-user-properties-sync-repository/index.html">UserPropertiesSyncRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="85877469%2FClasslikes%2F867774983" anchor-label="UserPropertyDataSource" id="85877469%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="85877469%2FClasslikes%2F-642582577" anchor-label="UserPropertyDataSource" id="85877469%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-user-property-data-source/index.html"><span>User</span><wbr><span>Property</span><wbr><span>Data</span><wbr><span><span>Source</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="85877469%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="85877469%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-user-property-data-source/index.html">UserPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">readReceipts<span class="token operator">: </span><a href="-read-receipts-property-repository/index.html">ReadReceiptsPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">typingIndicator<span class="token operator">: </span><a href="-typing-indicator-property-repository/index.html">TypingIndicatorPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">linkPreviews<span class="token operator">: </span><a href="-link-previews-property-repository/index.html">LinkPreviewsPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">screenshotCensoring<span class="token operator">: </span><a href="-screenshot-censoring-property-repository/index.html">ScreenshotCensoringPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">userPropertiesSync<span class="token operator">: </span><a href="-user-properties-sync-repository/index.html">UserPropertiesSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">conversationFolders<span class="token operator">: </span><a href="-conversation-folders-property-repository/index.html">ConversationFoldersPropertyRepository</a></span></span><span class="token punctuation">)</span> : <a href="-user-property-repository/index.html">UserPropertyRepository</a>, <a href="-read-receipts-property-repository/index.html">ReadReceiptsPropertyRepository</a>, <a href="-typing-indicator-property-repository/index.html">TypingIndicatorPropertyRepository</a>, <a href="-link-previews-property-repository/index.html">LinkPreviewsPropertyRepository</a>, <a href="-screenshot-censoring-property-repository/index.html">ScreenshotCensoringPropertyRepository</a>, <a href="-user-properties-sync-repository/index.html">UserPropertiesSyncRepository</a>, <a href="-conversation-folders-property-repository/index.html">ConversationFoldersPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-user-property-data-source/index.html">UserPropertyDataSource</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">readReceipts<span class="token operator">: </span><a href="-read-receipts-property-repository/index.html">ReadReceiptsPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">typingIndicator<span class="token operator">: </span><a href="-typing-indicator-property-repository/index.html">TypingIndicatorPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">linkPreviews<span class="token operator">: </span><a href="-link-previews-property-repository/index.html">LinkPreviewsPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">screenshotCensoring<span class="token operator">: </span><a href="-screenshot-censoring-property-repository/index.html">ScreenshotCensoringPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">userPropertiesSync<span class="token operator">: </span><a href="-user-properties-sync-repository/index.html">UserPropertiesSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">conversationFolders<span class="token operator">: </span><a href="-conversation-folders-property-repository/index.html">ConversationFoldersPropertyRepository</a></span></span><span class="token punctuation">)</span> : <a href="-user-property-repository/index.html">UserPropertyRepository</a>, <a href="-read-receipts-property-repository/index.html">ReadReceiptsPropertyRepository</a>, <a href="-typing-indicator-property-repository/index.html">TypingIndicatorPropertyRepository</a>, <a href="-link-previews-property-repository/index.html">LinkPreviewsPropertyRepository</a>, <a href="-screenshot-censoring-property-repository/index.html">ScreenshotCensoringPropertyRepository</a>, <a href="-user-properties-sync-repository/index.html">UserPropertiesSyncRepository</a>, <a href="-conversation-folders-property-repository/index.html">ConversationFoldersPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="851509144%2FClasslikes%2F867774983" anchor-label="UserPropertyRepository" id="851509144%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="851509144%2FClasslikes%2F-642582577" anchor-label="UserPropertyRepository" id="851509144%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-user-property-repository/index.html"><span>User</span><wbr><span>Property</span><wbr><span><span>Repository</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="851509144%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="851509144%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-user-property-repository/index.html">UserPropertyRepository</a> : <a href="-read-receipts-property-repository/index.html">ReadReceiptsPropertyRepository</a>, <a href="-typing-indicator-property-repository/index.html">TypingIndicatorPropertyRepository</a>, <a href="-link-previews-property-repository/index.html">LinkPreviewsPropertyRepository</a>, <a href="-screenshot-censoring-property-repository/index.html">ScreenshotCensoringPropertyRepository</a>, <a href="-user-properties-sync-repository/index.html">UserPropertiesSyncRepository</a>, <a href="-conversation-folders-property-repository/index.html">ConversationFoldersPropertyRepository</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-user-property-repository/index.html">UserPropertyRepository</a> : <a href="-read-receipts-property-repository/index.html">ReadReceiptsPropertyRepository</a>, <a href="-typing-indicator-property-repository/index.html">TypingIndicatorPropertyRepository</a>, <a href="-link-previews-property-repository/index.html">LinkPreviewsPropertyRepository</a>, <a href="-screenshot-censoring-property-repository/index.html">ScreenshotCensoringPropertyRepository</a>, <a href="-user-properties-sync-repository/index.html">UserPropertiesSyncRepository</a>, <a href="-conversation-folders-property-repository/index.html">ConversationFoldersPropertyRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -316,17 +343,21 @@
   </div>
 </div>
     <div class="footer">
-        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
-        <span>© 2026 Copyright</span>
-        <span class="pull-right">
-            <span>Generated by </span>
-            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
-                <span>dokka</span>
-            </a>
-        </span>
-    </div>
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
             </div>
         </div>
     </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

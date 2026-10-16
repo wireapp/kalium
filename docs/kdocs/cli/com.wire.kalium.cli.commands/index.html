@@ -1,0 +1,570 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>com.wire.kalium.cli.commands</title>
+<link href="../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+      if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      } else {
+        const savedDarkMode = JSON.parse(storage)
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      }
+    </script>
+<script type="text/javascript" src="../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../styles/style.css" rel="Stylesheet">
+<link href="../../styles/main.css" rel="Stylesheet">
+<link href="../../styles/prism.css" rel="Stylesheet">
+<link href="../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../scripts/safe-local-storage_blocking.js"></script>
+<script type="text/javascript" src="../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer></script></head>
+<body>
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../index.html" tabindex="1">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">dbdce36
+        </div>
+        <div class="navigation-controls">
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector native-like" data-active="" aria-pressed="true" data-filter=":sample:cli/appleMain">apple</button>
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":sample:cli/commonMain">common</button>
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":sample:cli/jvmMain">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":sample:cli/appleMain" data-filter=":sample:cli/appleMain">
+                                <span class="checkbox--icon"></span>
+                                apple
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":sample:cli/commonMain" data-filter=":sample:cli/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":sample:cli/jvmMain" data-filter=":sample:cli/jvmMain">
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </ul>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="package" id="content" pageids="cli::com.wire.kalium.cli.commands////PointingToDeclaration//-761162047">
+  <div class="breadcrumbs"><a href="../index.html">cli</a><span class="delimiter">/</span><span class="current">com.wire.kalium.cli.commands</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button><button class="section-tab" data-togglable="FUNCTION,EXTENSION_FUNCTION">Functions</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="tableheader">Types</h2>
+        <div class="table"><a data-name="986215585%2FClasslikes%2F12910347" anchor-label="AddMemberToGroupCommand" id="986215585%2FClasslikes%2F12910347" data-filterable-set=":sample:cli/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-add-member-to-group-command/index.html"><span>Add</span><wbr><span>Member</span><wbr><span>To</span><wbr><span>Group</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="986215585%2FClasslikes%2F12910347"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain" data-active="" data-toggle=":sample:cli/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-add-member-to-group-command/index.html">AddMemberToGroupCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1908958504%2FClasslikes%2F138337329" anchor-label="Command" id="-1908958504%2FClasslikes%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-command/index.html"><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1908958504%2FClasslikes%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-command/index.html">Command</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="141102315%2FClasslikes%2F162736955" anchor-label="ConsoleCommand" id="141102315%2FClasslikes%2F162736955" data-filterable-set=":sample:cli/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/jvmMain" data-filterable-set=":sample:cli/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-console-command/index.html"><span>Console</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="141102315%2FClasslikes%2F162736955"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/jvmMain" data-filterable-set=":sample:cli/jvmMain" data-active="" data-toggle=":sample:cli/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/jvmMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-console-command/index.html">ConsoleCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1303653513%2FClasslikes%2F12910347" anchor-label="CreateGroupCommand" id="-1303653513%2FClasslikes%2F12910347" data-filterable-set=":sample:cli/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-create-group-command/index.html"><span>Create</span><wbr><span>Group</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1303653513%2FClasslikes%2F12910347"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain" data-active="" data-toggle=":sample:cli/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-create-group-command/index.html">CreateGroupCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1057648493%2FClasslikes%2F138337329" anchor-label="CustomScrollRegion" id="1057648493%2FClasslikes%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-custom-scroll-region/index.html"><span>Custom</span><wbr><span>Scroll</span><wbr><span><span>Region</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1057648493%2FClasslikes%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-custom-scroll-region/index.html">CustomScrollRegion</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">content<span class="token operator">: </span><span data-unresolved-link="com.github.ajalt.mordant.rendering/Widget///PointingToDeclaration/">Widget</span><span class="token punctuation">, </span></span><span class="parameter ">height<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">contentAlign<span class="token operator">: </span><span data-unresolved-link="com.github.ajalt.mordant.rendering/VerticalAlign///PointingToDeclaration/">VerticalAlign</span></span></span><span class="token punctuation">)</span> : <span data-unresolved-link="com.github.ajalt.mordant.rendering/Widget///PointingToDeclaration/">Widget</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="689517902%2FClasslikes%2F12910347" anchor-label="DeleteClientCommand" id="689517902%2FClasslikes%2F12910347" data-filterable-set=":sample:cli/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-delete-client-command/index.html"><span>Delete</span><wbr><span>Client</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="689517902%2FClasslikes%2F12910347"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain" data-active="" data-toggle=":sample:cli/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-delete-client-command/index.html">DeleteClientCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1188465050%2FClasslikes%2F12910347" anchor-label="GenerateEventsCommand" id="-1188465050%2FClasslikes%2F12910347" data-filterable-set=":sample:cli/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-generate-events-command/index.html"><span>Generate</span><wbr><span>Events</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1188465050%2FClasslikes%2F12910347"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain" data-active="" data-toggle=":sample:cli/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-generate-events-command/index.html">GenerateEventsCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1346724935%2FClasslikes%2F138337329" anchor-label="Input" id="-1346724935%2FClasslikes%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-input/index.html"><span><span>Input</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1346724935%2FClasslikes%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-input/index.html">Input</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-245688285%2FClasslikes%2F138337329" anchor-label="InputAction" id="-245688285%2FClasslikes%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-input-action/index.html"><span>Input</span><wbr><span><span>Action</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-245688285%2FClasslikes%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-input-action/index.html">InputAction</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-244497546%2FClasslikes%2F138337329" anchor-label="InteractiveCommand" id="-244497546%2FClasslikes%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-interactive-command/index.html"><span>Interactive</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-244497546%2FClasslikes%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-interactive-command/index.html">InteractiveCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1272846732%2FClasslikes%2F12910347" anchor-label="ListenGroupCommand" id="1272846732%2FClasslikes%2F12910347" data-filterable-set=":sample:cli/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-listen-group-command/index.html"><span>Listen</span><wbr><span>Group</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1272846732%2FClasslikes%2F12910347"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain" data-active="" data-toggle=":sample:cli/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-listen-group-command/index.html">ListenGroupCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-622525827%2FClasslikes%2F12910347" anchor-label="LoginCommand" id="-622525827%2FClasslikes%2F12910347" data-filterable-set=":sample:cli/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-login-command/index.html"><span>Login</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-622525827%2FClasslikes%2F12910347"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain" data-active="" data-toggle=":sample:cli/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-login-command/index.html">LoginCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="214110861%2FClasslikes%2F12910347" anchor-label="MarkAsReadCommand" id="214110861%2FClasslikes%2F12910347" data-filterable-set=":sample:cli/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mark-as-read-command/index.html"><span>Mark</span><wbr><span>As</span><wbr><span>Read</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="214110861%2FClasslikes%2F12910347"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain" data-active="" data-toggle=":sample:cli/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-mark-as-read-command/index.html">MarkAsReadCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1765863960%2FClasslikes%2F138337329" anchor-label="PosixSignal" id="1765863960%2FClasslikes%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-posix-signal/index.html"><span>Posix</span><wbr><span><span>Signal</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1765863960%2FClasslikes%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-posix-signal/index.html">PosixSignal</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1943459222%2FClasslikes%2F12910347" anchor-label="RefillKeyPackagesCommand" id="-1943459222%2FClasslikes%2F12910347" data-filterable-set=":sample:cli/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-refill-key-packages-command/index.html"><span>Refill</span><wbr><span>Key</span><wbr><span>Packages</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1943459222%2FClasslikes%2F12910347"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain" data-active="" data-toggle=":sample:cli/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-refill-key-packages-command/index.html">RefillKeyPackagesCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1335955093%2FClasslikes%2F12910347" anchor-label="RemoveMemberFromGroupCommand" id="-1335955093%2FClasslikes%2F12910347" data-filterable-set=":sample:cli/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-remove-member-from-group-command/index.html"><span>Remove</span><wbr><span>Member</span><wbr><span>From</span><wbr><span>Group</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1335955093%2FClasslikes%2F12910347"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain" data-active="" data-toggle=":sample:cli/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-remove-member-from-group-command/index.html">RemoveMemberFromGroupCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1882118510%2FClasslikes%2F12910347" anchor-label="UpdateSupportedProtocolsCommand" id="1882118510%2FClasslikes%2F12910347" data-filterable-set=":sample:cli/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-update-supported-protocols-command/index.html"><span>Update</span><wbr><span>Supported</span><wbr><span>Protocols</span><wbr><span><span>Command</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1882118510%2FClasslikes%2F12910347"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/commonMain" data-filterable-set=":sample:cli/commonMain" data-active="" data-toggle=":sample:cli/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-update-supported-protocols-command/index.html">UpdateSupportedProtocolsCommand</a> : <span data-unresolved-link="com.github.ajalt.clikt.core/CliktCommand///PointingToDeclaration/">CliktCommand</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1521464361%2FClasslikes%2F138337329" anchor-label="ViewState" id="-1521464361%2FClasslikes%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-view-state/index.html"><span>View</span><wbr><span><span>State</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1521464361%2FClasslikes%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-view-state/index.html">ViewState</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>title<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>messages<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../logic/com.wire.kalium.logic.data.message/-message/index.html">Message</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>input<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>inputInfo<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>cursorPosition<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="tableheader">Functions</h2>
+        <div class="table"><a data-name="2146765540%2FFunctions%2F138337329" anchor-label="actionFlow" id="2146765540%2FFunctions%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="action-flow.html"><span>action</span><wbr><span><span>Flow</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2146765540%2FFunctions%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><a href="action-flow.html"><span class="token function">actionFlow</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userSession<span class="token operator">: </span><a href="../../logic/com.wire.kalium.logic.feature/-user-session-scope/index.html">UserSessionScope</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines.flow/Flow///PointingToDeclaration/">Flow</span><span class="token operator">&lt;</span><a href="-input-action/index.html">InputAction</a><span class="token operator">&gt;</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="509877557%2FFunctions%2F138337329" anchor-label="clip" id="509877557%2FFunctions%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="clip.html"><span><span>clip</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="509877557%2FFunctions%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><span data-unresolved-link="com.github.ajalt.mordant.rendering/Lines///PointingToDeclaration/">Lines</span><span class="token punctuation">.</span><a href="clip.html"><span class="token function">clip</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">newHeight<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span>lines.size<span class="token punctuation">, </span></span><span class="parameter ">verticalAlign<span class="token operator">: </span><span data-unresolved-link="com.github.ajalt.mordant.rendering/VerticalAlign///PointingToDeclaration/">VerticalAlign</span><span class="token operator"> = </span>VerticalAlign.TOP</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.github.ajalt.mordant.rendering/Lines///PointingToDeclaration/">Lines</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1950097711%2FFunctions%2F138337329" anchor-label="conversation" id="-1950097711%2FFunctions%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="conversation.html"><span><span>conversation</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1950097711%2FFunctions%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><a href="conversation.html"><span class="token function">conversation</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">input<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">aux<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">name<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">messages<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../logic/com.wire.kalium.logic.data.message/-message/index.html">Message</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">height<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.github.ajalt.mordant.rendering/Widget///PointingToDeclaration/">Widget</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1637128290%2FFunctions%2F138337329" anchor-label="inputFlow" id="1637128290%2FFunctions%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="input-flow.html"><span>input</span><wbr><span><span>Flow</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1637128290%2FFunctions%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="input-flow.html"><span class="token function">inputFlow</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines.flow/Flow///PointingToDeclaration/">Flow</span><span class="token operator">&lt;</span><a href="-input/index.html">Input</a><span class="token operator">&gt;</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1243351596%2FFunctions%2F138337329" anchor-label="readChar" id="-1243351596%2FFunctions%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="read-char.html"><span>read</span><wbr><span><span>Char</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1243351596%2FFunctions%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="read-char.html"><span class="token function">readChar</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-input/index.html">Input</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-105499837%2FFunctions%2F138337329" anchor-label="setRawMode" id="-105499837%2FFunctions%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-raw-mode.html"><span>set</span><wbr><span>Raw</span><wbr><span><span>Mode</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-105499837%2FFunctions%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="com.github.ajalt.mordant.terminal/Terminal///PointingToDeclaration/">Terminal</span><span class="token punctuation">.</span><a href="set-raw-mode.html"><span class="token function">setRawMode</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">enabled<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="286066973%2FFunctions%2F138337329" anchor-label="withRawMode" id="286066973%2FFunctions%2F138337329" data-filterable-set=":sample:cli/appleMain"></a>
+          <div class="table-row table-row_content" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="with-raw-mode.html"><span>with</span><wbr><span>Raw</span><wbr><span><span>Mode</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="286066973%2FFunctions%2F138337329"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":sample:cli/appleMain" data-filterable-set=":sample:cli/appleMain" data-active="" data-toggle=":sample:cli/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":sample:cli/appleMain"><div class="symbol monospace"><span class="token keyword">inline </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="with-raw-mode.html">T</a><span class="token operator">&gt; </span><span data-unresolved-link="com.github.ajalt.mordant.terminal/Terminal///PointingToDeclaration/">Terminal</span><span class="token punctuation">.</span><a href="with-raw-mode.html"><span class="token function">withRawMode</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">block<span class="token operator">: </span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="with-raw-mode.html">T</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="with-raw-mode.html">T</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

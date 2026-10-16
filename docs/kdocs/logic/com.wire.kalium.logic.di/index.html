@@ -1,86 +1,83 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
     <title>com.wire.kalium.logic.di</title>
-<link href="../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../";</script>
-    <script>document.documentElement.classList.replace("no-js","js");</script>
+<link href="../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
-    if (storage == null) {
+      if (storage == null) {
         const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         if (osDarkSchemePreferred === true) {
-            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
         }
-    } else {
+      } else {
         const savedDarkMode = JSON.parse(storage)
-        if(savedDarkMode === true) {
-            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
         }
-    }
+      }
     </script>
-<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
 <script type="text/javascript" src="../../scripts/sourceset_dependencies.js" async></script>
 <link href="../../styles/style.css" rel="Stylesheet">
 <link href="../../styles/main.css" rel="Stylesheet">
 <link href="../../styles/prism.css" rel="Stylesheet">
 <link href="../../styles/logo-styles.css" rel="Stylesheet">
-<link href="../../styles/font-jb-sans-auto.css" rel="Stylesheet">
 <link href="../../ui-kit/ui-kit.min.css" rel="Stylesheet">
-<script type="text/javascript" src="../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../scripts/safe-local-storage_blocking.js"></script>
 <script type="text/javascript" src="../../scripts/navigation-loader.js" async></script>
 <script type="text/javascript" src="../../scripts/platform-content-handler.js" async></script>
 <script type="text/javascript" src="../../scripts/main.js" defer></script>
 <script type="text/javascript" src="../../scripts/prism.js" async></script>
-<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer></script>
-<script type="text/javascript" src="../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer></script></head>
 <body>
-    <div class="root">
-    <nav class="navigation theme-dark" id="navigation-wrapper">
-<a class="library-name--link" href="../../index.html">
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../index.html" tabindex="1">
                     kalium
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">21039f2
+        <div class="library-version" id="library-version">dbdce36
         </div>
         <div class="navigation-controls">
-        <div class="filter-section filter-section_loading" id="filter-section">
-                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":logic:dokkaHtmlPartial/androidMain">android</button>
-                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/appleMain">apple</button>
-                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
-                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":logic:dokkaHtmlPartial/jvmMain">jvm</button>
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":logic/androidMain">android</button>
+                <button class="platform-tag platform-selector native-like" data-active="" aria-pressed="true" data-filter=":logic/appleMain">apple</button>
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":logic/commonMain">common</button>
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":logic/jvmMain">jvm</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
-                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
-                    <div class="dropdown--header"><span>Platform filter</span>
-                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
                             <i class="ui-kit-icon ui-kit-icon_cross"></i>
                         </button>
                     </div>
                         <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/androidMain" data-filter=":logic:dokkaHtmlPartial/androidMain">
+                                <input type="checkbox" class="checkbox--input" id=":logic/androidMain" data-filter=":logic/androidMain">
                                 <span class="checkbox--icon"></span>
                                 android
                             </label>
                         </li>
-                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/appleMain" data-filter=":logic:dokkaHtmlPartial/appleMain">
+                                <input type="checkbox" class="checkbox--input" id=":logic/appleMain" data-filter=":logic/appleMain">
                                 <span class="checkbox--icon"></span>
                                 apple
                             </label>
                         </li>
-                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/commonMain" data-filter=":logic:dokkaHtmlPartial/commonMain">
+                                <input type="checkbox" class="checkbox--input" id=":logic/commonMain" data-filter=":logic/commonMain">
                                 <span class="checkbox--icon"></span>
                                 common
                             </label>
                         </li>
                         <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/jvmMain" data-filter=":logic:dokkaHtmlPartial/jvmMain">
+                                <input type="checkbox" class="checkbox--input" id=":logic/jvmMain" data-filter=":logic/jvmMain">
                                 <span class="checkbox--icon"></span>
                                 jvm
                             </label>
@@ -88,33 +85,35 @@
                 </ul>
                 <div class="dropdown--overlay"></div>
             </div>
-        </div>
+        </ul>
             <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
             </button>
             <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
                 API
             </div>
         </div>
-    </nav>
-        <div id="container">
-            <div class="sidebar" id="leftColumn">
-                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
-                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
-                        <div class="dropdown--header">
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
                             <span>
                                     kalium
                             </span>
-                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
-                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
-                            </button>
-                        </div>
-                        <div class="sidebar--inner" id="sideMenu"></div>
-                    </ul>
-                    <div class="dropdown--overlay"></div>
-                </div>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
             </div>
-            <div id="main">
-<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.di////PointingToDeclaration//1228878352">
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.di////PointingToDeclaration//-162688788">
   <div class="breadcrumbs"><a href="../index.html">logic</a><span class="delimiter">/</span><span class="current">com.wire.kalium.logic.di</span></div>
   <div class="cover ">
     <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
@@ -123,82 +122,88 @@
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button></div>
     <div class="tabs-section-body">
       <div data-togglable="TYPE">
-        <h2 class="">Types</h2>
-        <div class="table"><a data-name="-577125556%2FClasslikes%2F867774983" anchor-label="MapperProvider" id="-577125556%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+        <h2 class="tableheader">Types</h2>
+        <div class="table"><a data-name="-577125556%2FClasslikes%2F-642582577" anchor-label="MapperProvider" id="-577125556%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-mapper-provider/index.html"><span>Mapper</span><wbr><span><span>Provider</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-577125556%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-577125556%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">object </span><a href="-mapper-provider/index.html">MapperProvider</a></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">object </span><a href="-mapper-provider/index.html">MapperProvider</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="339209242%2FClasslikes%2F1228878352" anchor-label="PlatformRootPathsProvider" id="339209242%2FClasslikes%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain">
+<a data-name="339209242%2FClasslikes%2F-162688788" anchor-label="PlatformRootPathsProvider" id="339209242%2FClasslikes%2F-162688788" data-filterable-set=":logic/commonMain,:logic/androidMain,:logic/appleMain,:logic/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain,:logic/androidMain,:logic/appleMain,:logic/jvmMain" data-filterable-set=":logic/commonMain,:logic/androidMain,:logic/appleMain,:logic/jvmMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-platform-root-paths-provider/index.html"><span>Platform</span><wbr><span>Root</span><wbr><span>Paths</span><wbr><span><span>Provider</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="339209242%2FClasslikes%2F1228878352"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="339209242%2FClasslikes%2F-162688788"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/jvmMain" data-toggle=":logic:dokkaHtmlPartial/jvmMain">jvm</button></div>
-<div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-platform-root-paths-provider/index.html">PlatformRootPathsProvider</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>rootPath<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span> : <a href="-root-paths-provider/index.html">RootPathsProvider</a></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-platform-root-paths-provider/index.html">PlatformRootPathsProvider</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">rootPath<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">expect </span><span class="token keyword">class </span><a href="-platform-root-paths-provider/index.html">PlatformRootPathsProvider</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>rootPath<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span> : <a href="-root-paths-provider/index.html">RootPathsProvider</a></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-platform-root-paths-provider/index.html">PlatformRootPathsProvider</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>rootPath<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span> : <a href="-root-paths-provider/index.html">RootPathsProvider</a></div></div>                  </div>
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/androidMain" data-filterable-set=":logic/androidMain" data-active="" data-toggle=":logic/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":logic/appleMain" data-filterable-set=":logic/appleMain" data-toggle=":logic/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-toggle=":logic/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":logic/jvmMain" data-filterable-set=":logic/jvmMain" data-toggle=":logic/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-togglable=":logic/androidMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-platform-root-paths-provider/index.html">PlatformRootPathsProvider</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">rootPath<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span> : <a href="-root-paths-provider/index.html">RootPathsProvider</a></div></div><div class="content sourceset-dependent-content" data-togglable=":logic/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-platform-root-paths-provider/index.html">PlatformRootPathsProvider</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">rootPath<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span> : <a href="../../logic/com.wire.kalium.logic.di/-root-paths-provider/index.html">RootPathsProvider</a></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">expect </span><span class="token keyword">class </span><a href="-platform-root-paths-provider/index.html">PlatformRootPathsProvider</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">rootPath<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span> : <a href="-root-paths-provider/index.html">RootPathsProvider</a></div></div><div class="content sourceset-dependent-content" data-togglable=":logic/jvmMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-platform-root-paths-provider/index.html">PlatformRootPathsProvider</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">rootPath<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span> : <a href="-root-paths-provider/index.html">RootPathsProvider</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="567593543%2FClasslikes%2F867774983" anchor-label="RootPathsProvider" id="567593543%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="567593543%2FClasslikes%2F-642582577" anchor-label="RootPathsProvider" id="567593543%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-root-paths-provider/index.html"><span>Root</span><wbr><span>Paths</span><wbr><span><span>Provider</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="567593543%2FClasslikes%2F867774983"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="-root-paths-provider/index.html">RootPathsProvider</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>rootPath<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-518582462%2FClasslikes%2F1228878352" anchor-label="UserConfigStorageFactory" id="-518582462%2FClasslikes%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="-user-config-storage-factory/index.html"><span>User</span><wbr><span>Config</span><wbr><span>Storage</span><wbr><span><span>Factory</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-518582462%2FClasslikes%2F1228878352"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="567593543%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/jvmMain" data-toggle=":logic:dokkaHtmlPartial/jvmMain">jvm</button></div>
-<div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-user-config-storage-factory/index.html">UserConfigStorageFactory</a></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-user-config-storage-factory/index.html">UserConfigStorageFactory</a></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">expect </span><span class="token keyword">class </span><a href="-user-config-storage-factory/index.html">UserConfigStorageFactory</a></div><div class="brief "><p class="paragraph">Factory for creating UserConfigStorage lazily. This is used during migration from SharedPreferences to database storage. Creating the storage only when needed avoids creating SharedPreferences when migration is not required.</p></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-user-config-storage-factory/index.html">UserConfigStorageFactory</a></div></div>                  </div>
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">abstract </span><span class="token keyword">class </span><a href="-root-paths-provider/index.html">RootPathsProvider</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>rootPath<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1375505173%2FClasslikes%2F867774983" anchor-label="UserScopedNomadHookFactory" id="-1375505173%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-518582462%2FClasslikes%2F-162688788" anchor-label="UserConfigStorageFactory" id="-518582462%2FClasslikes%2F-162688788" data-filterable-set=":logic/commonMain,:logic/androidMain,:logic/appleMain,:logic/jvmMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain,:logic/androidMain,:logic/appleMain,:logic/jvmMain" data-filterable-set=":logic/commonMain,:logic/androidMain,:logic/appleMain,:logic/jvmMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-user-scoped-nomad-hook-factory/index.html"><span>User</span><wbr><span>Scoped</span><wbr><span>Nomad</span><wbr><span>Hook</span><wbr><span><span>Factory</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1375505173%2FClasslikes%2F867774983"></span>
+                  <div><a href="-user-config-storage-factory/index.html"><span>User</span><wbr><span>Config</span><wbr><span>Storage</span><wbr><span><span>Factory</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-518582462%2FClasslikes%2F-162688788"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-user-scoped-nomad-hook-factory/index.html">UserScopedNomadHookFactory</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">createPersistenceHook<span class="token operator">: </span><span class="token punctuation">(</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>{ selfUserId, userStorageProvider, nomadAuthenticatedNetworkAccess, scope -&gt;
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/androidMain" data-filterable-set=":logic/androidMain" data-active="" data-toggle=":logic/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":logic/appleMain" data-filterable-set=":logic/appleMain" data-toggle=":logic/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-toggle=":logic/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":logic/jvmMain" data-filterable-set=":logic/jvmMain" data-toggle=":logic/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-togglable=":logic/androidMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-user-config-storage-factory/index.html">UserConfigStorageFactory</a></div><div class="brief "><p class="paragraph">Factory for creating <a href="../../persistence/com.wire.kalium.persistence.config/-user-config-storage/index.html">UserConfigStorage</a> lazily. This is used during migration from SharedPreferences to database storage. Creating the storage only when needed avoids creating SharedPreferences when migration is not required.</p></div></div><div class="content sourceset-dependent-content" data-togglable=":logic/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-user-config-storage-factory/index.html">UserConfigStorageFactory</a></div><div class="brief "><p class="paragraph">Factory for creating <a href="../../persistence/com.wire.kalium.persistence.config/-user-config-storage/index.html">UserConfigStorage</a> lazily. This is used during migration from SharedPreferences to database storage. Creating the storage only when needed avoids creating SharedPreferences when migration is not required.</p></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">expect </span><span class="token keyword">class </span><a href="-user-config-storage-factory/index.html">UserConfigStorageFactory</a></div><div class="brief "><p class="paragraph">Factory for creating <a href="../../persistence/com.wire.kalium.persistence.config/-user-config-storage/index.html">UserConfigStorage</a> lazily. This is used during migration from SharedPreferences to database storage. Creating the storage only when needed avoids creating SharedPreferences when migration is not required.</p></div></div><div class="content sourceset-dependent-content" data-togglable=":logic/jvmMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">class </span><a href="-user-config-storage-factory/index.html">UserConfigStorageFactory</a></div><div class="brief "><p class="paragraph">Factory for creating <a href="../../persistence/com.wire.kalium.persistence.config/-user-config-storage/index.html">UserConfigStorage</a> lazily. This is used during migration from SharedPreferences to database storage. Creating the storage only when needed avoids creating SharedPreferences when migration is not required.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1375505173%2FClasslikes%2F-642582577" anchor-label="UserScopedNomadHookFactory" id="-1375505173%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-user-scoped-nomad-hook-factory/index.html"><span>User</span><wbr><span>Scoped</span><wbr><span>Nomad</span><wbr><span>Hook</span><wbr><span><span>Factory</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1375505173%2FClasslikes%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-user-scoped-nomad-hook-factory/index.html">UserScopedNomadHookFactory</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">createPersistenceHook<span class="token operator">: </span><span class="token punctuation">(</span><a href="../../logic/com.wire.kalium.logic.data.user/-user-id/index.html">UserId</a><span class="token punctuation">, </span>userStorageProvider<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.userstorage.di/UserStorageProvider///PointingToDeclaration/">UserStorageProvider</span><span class="token punctuation">, </span>nomadAuthenticatedNetworkAccess<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.nomaddevice/NomadAuthenticatedNetworkAccess///PointingToDeclaration/">NomadAuthenticatedNetworkAccess</span><span class="token punctuation">, </span>scope<span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineScope///PointingToDeclaration/">CoroutineScope</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="com.wire.kalium.messaging.hooks/PersistenceEventHookNotifier///PointingToDeclaration/">PersistenceEventHookNotifier</span><span class="token operator"> = </span>{ selfUserId, userStorageProvider, nomadAuthenticatedNetworkAccess, scope -&gt;
         createUserScopedDebouncedNomadRemoteBackupChangeLogHookNotifier(
             selfUserId = selfUserId,
             userStorageProvider = userStorageProvider,
@@ -206,28 +211,30 @@
             scope = scope,
             config = NomadRemoteBackupDebouncedSyncConfig(),
         )
-    }<span class="token punctuation">, </span></span><span class="parameter ">createCryptoHook<span class="token operator">: </span><span class="token punctuation">(</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span>backup<span class="token operator">: </span><span class="token keyword">suspend </span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>{ selfUserId, scope, backup -&gt;
+    }<span class="token punctuation">, </span></span><span class="parameter ">createCryptoHook<span class="token operator">: </span><span class="token punctuation">(</span><a href="../../logic/com.wire.kalium.logic.data.user/-user-id/index.html">UserId</a><span class="token punctuation">, </span>scope<span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineScope///PointingToDeclaration/">CoroutineScope</span><span class="token punctuation">, </span>backup<span class="token operator">: </span><span class="token keyword">suspend </span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="com.wire.kalium.messaging.hooks/CryptoStateChangeHookNotifier///PointingToDeclaration/">CryptoStateChangeHookNotifier</span><span class="token operator"> = </span>{ selfUserId, scope, backup -&gt;
         createUserScopedNomadCryptoStateChangeHookNotifier(
             selfUserId = selfUserId,
             scope = scope,
             backup = backup,
         )
-    }</span></span><span class="token punctuation">)</span></div></div></div>
+    }</span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1111667842%2FClasslikes%2F867774983" anchor-label="UserScopedNomadHooks" id="1111667842%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="1111667842%2FClasslikes%2F-642582577" anchor-label="UserScopedNomadHooks" id="1111667842%2FClasslikes%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-user-scoped-nomad-hooks/index.html"><span>User</span><wbr><span>Scoped</span><wbr><span>Nomad</span><wbr><span><span>Hooks</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1111667842%2FClasslikes%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1111667842%2FClasslikes%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">data </span><span class="token keyword">class </span><a href="-user-scoped-nomad-hooks/index.html">UserScopedNomadHooks</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>persistence<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>crypto<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">data </span><span class="token keyword">class </span><a href="-user-scoped-nomad-hooks/index.html">UserScopedNomadHooks</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>persistence<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.messaging.hooks/PersistenceEventHookNotifier///PointingToDeclaration/">PersistenceEventHookNotifier</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>crypto<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.messaging.hooks/CryptoStateChangeHookNotifier///PointingToDeclaration/">CryptoStateChangeHookNotifier</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -238,17 +245,21 @@
   </div>
 </div>
     <div class="footer">
-        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
-        <span>© 2026 Copyright</span>
-        <span class="pull-right">
-            <span>Generated by </span>
-            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
-                <span>dokka</span>
-            </a>
-        </span>
-    </div>
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
             </div>
         </div>
     </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

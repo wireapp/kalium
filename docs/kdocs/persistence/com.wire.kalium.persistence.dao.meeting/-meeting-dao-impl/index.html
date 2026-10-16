@@ -1,0 +1,325 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>MeetingDaoImpl</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+      if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      } else {
+        const savedDarkMode = JSON.parse(storage)
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      }
+    </script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/safe-local-storage_blocking.js"></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script></head>
+<body>
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../../index.html" tabindex="1">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">dbdce36
+        </div>
+        <div class="navigation-controls">
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector common-like" data-active="" aria-pressed="true" data-filter=":data:persistence/commonMain">common</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence/commonMain" data-filter=":data:persistence/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </ul>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="persistence::com.wire.kalium.persistence.dao.meeting/MeetingDaoImpl///PointingToDeclaration//-1025503334">
+  <div class="breadcrumbs"><a href="../../index.html">persistence</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.persistence.dao.meeting</a><span class="delimiter">/</span><span class="current">MeetingDaoImpl</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Meeting</span><wbr><span>Dao</span><wbr><span><span>Impl</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="index.html">MeetingDaoImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">meetingsQueries<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence/-meetings-queries/index.html">MeetingsQueries</a><span class="token punctuation">, </span></span><span class="parameter ">readDispatcher<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.db/-read-dispatcher/index.html">ReadDispatcher</a><span class="token punctuation">, </span></span><span class="parameter ">writeDispatcher<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.db/-write-dispatcher/index.html">WriteDispatcher</a></span></span><span class="token punctuation">)</span> : <a href="../-meeting-dao/index.html">MeetingDao</a></div></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="tableheader">Constructors</h2>
+        <div class="table"><a data-name="-1064449807%2FConstructors%2F-1025503334" anchor-label="MeetingDaoImpl" id="-1064449807%2FConstructors%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-meeting-dao-impl.html"><span>Meeting</span><wbr><span>Dao</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1064449807%2FConstructors%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">meetingsQueries<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence/-meetings-queries/index.html">MeetingsQueries</a><span class="token punctuation">, </span></span><span class="parameter ">readDispatcher<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.db/-read-dispatcher/index.html">ReadDispatcher</a><span class="token punctuation">, </span></span><span class="parameter ">writeDispatcher<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.db/-write-dispatcher/index.html">WriteDispatcher</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="tableheader">Functions</h2>
+        <div class="table"><a data-name="-1043849605%2FFunctions%2F-1025503334" anchor-label="deleteMeeting" id="-1043849605%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="delete-meeting.html"><span>delete</span><wbr><span><span>Meeting</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1043849605%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="delete-meeting.html"><span class="token function">deleteMeeting</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">meetingId<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-48411436%2FFunctions%2F-1025503334" anchor-label="getMeeting" id="-48411436%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-meeting.html"><span>get</span><wbr><span><span>Meeting</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-48411436%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-meeting.html"><span class="token function">getMeeting</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">meetingId<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-meeting-entity/index.html">MeetingEntity</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1156437615%2FFunctions%2F-1025503334" anchor-label="getMeetingOccurrenceDetailsFlow" id="1156437615%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-meeting-occurrence-details-flow.html"><span>get</span><wbr><span>Meeting</span><wbr><span>Occurrence</span><wbr><span>Details</span><wbr><span><span>Flow</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1156437615%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="get-meeting-occurrence-details-flow.html"><span class="token function">getMeetingOccurrenceDetailsFlow</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">occurrenceId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines.flow/Flow///PointingToDeclaration/">Flow</span><span class="token operator">&lt;</span><a href="../-meeting-occurrence-details-entity/index.html">MeetingOccurrenceDetailsEntity</a><span class="token operator">?</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1578118569%2FFunctions%2F-1025503334" anchor-label="getMeetingRemindersWithin" id="-1578118569%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-meeting-reminders-within.html"><span>get</span><wbr><span>Meeting</span><wbr><span>Reminders</span><wbr><span><span>Within</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1578118569%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-meeting-reminders-within.html"><span class="token function">getMeetingRemindersWithin</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">startInclusive<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span><span class="token punctuation">, </span></span><span class="parameter ">endExclusive<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-meeting-reminder-entity/index.html">MeetingReminderEntity</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-966673266%2FFunctions%2F-1025503334" anchor-label="getMeetingsByConversationId" id="-966673266%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-meetings-by-conversation-id.html"><span>get</span><wbr><span>Meetings</span><wbr><span>By</span><wbr><span>Conversation</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-966673266%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-meetings-by-conversation-id.html"><span class="token function">getMeetingsByConversationId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-qualified-i-d-entity/index.html">QualifiedIDEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-meeting-entity/index.html">MeetingEntity</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-886206270%2FFunctions%2F-1025503334" anchor-label="getNextMeetingReminder" id="-886206270%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-next-meeting-reminder.html"><span>get</span><wbr><span>Next</span><wbr><span>Meeting</span><wbr><span><span>Reminder</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-886206270%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-next-meeting-reminder.html"><span class="token function">getNextMeetingReminder</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">from<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-meeting-reminder-entity/index.html">MeetingReminderEntity</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="139033610%2FFunctions%2F-1025503334" anchor-label="getNextUnfinishedMeetingOccurrenceDetailsId" id="139033610%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-next-unfinished-meeting-occurrence-details-id.html"><span>get</span><wbr><span>Next</span><wbr><span>Unfinished</span><wbr><span>Meeting</span><wbr><span>Occurrence</span><wbr><span>Details</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="139033610%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="get-next-unfinished-meeting-occurrence-details-id.html"><span class="token function">getNextUnfinishedMeetingOccurrenceDetailsId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">meetingId<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-qualified-i-d-entity/index.html">QualifiedIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">from<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1532126957%2FFunctions%2F-1025503334" anchor-label="getPaginatedMeetingOccurrenceDetails" id="1532126957%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-paginated-meeting-occurrence-details.html"><span>get</span><wbr><span>Paginated</span><wbr><span>Meeting</span><wbr><span>Occurrence</span><wbr><span><span>Details</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1532126957%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="get-paginated-meeting-occurrence-details.html"><span class="token function">getPaginatedMeetingOccurrenceDetails</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">pagingConfig<span class="token operator">: </span><span data-unresolved-link="androidx.paging/PagingConfig///PointingToDeclaration/">PagingConfig</span><span class="token punctuation">, </span></span><span class="parameter ">startingOffset<span class="token operator">: </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token punctuation">, </span></span><span class="parameter ">from<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao.message/-kalium-pager/index.html">KaliumPager</a><span class="token operator">&lt;</span><a href="../-meeting-occurrence-details-entity/index.html">MeetingOccurrenceDetailsEntity</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1610072588%2FFunctions%2F-1025503334" anchor-label="insertMissingOccurrences" id="-1610072588%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="insert-missing-occurrences.html"><span>insert</span><wbr><span>Missing</span><wbr><span><span>Occurrences</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1610072588%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="insert-missing-occurrences.html"><span class="token function">insertMissingOccurrences</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">generateOccurrencesWindow<span class="token operator">: </span><a href="../-meeting-occurrences-generator/-generation-limit/-window/index.html">MeetingOccurrencesGenerator.GenerationLimit.Window</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="159737021%2FFunctions%2F-1025503334" anchor-label="observeMeetingReminderChanges" id="159737021%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="observe-meeting-reminder-changes.html"><span>observe</span><wbr><span>Meeting</span><wbr><span>Reminder</span><wbr><span><span>Changes</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="159737021%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="observe-meeting-reminder-changes.html"><span class="token function">observeMeetingReminderChanges</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines.flow/Flow///PointingToDeclaration/">Flow</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-789252190%2FFunctions%2F-1025503334" anchor-label="removeOutdatedMeetings" id="-789252190%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="remove-outdated-meetings.html"><span>remove</span><wbr><span>Outdated</span><wbr><span><span>Meetings</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-789252190%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="remove-outdated-meetings.html"><span class="token function">removeOutdatedMeetings</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">olderThan<span class="token operator">: </span><span data-unresolved-link="kotlinx.datetime/Instant///PointingToDeclaration/">Instant</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1182101936%2FFunctions%2F-1025503334" anchor-label="upsertMeetings" id="1182101936%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="upsert-meetings.html"><span>upsert</span><wbr><span><span>Meetings</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1182101936%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="upsert-meetings.html"><span class="token function">upsertMeetings</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">meetings<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../-meeting-entity/index.html">MeetingEntity</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">generateOccurrencesWindow<span class="token operator">: </span><a href="../-meeting-occurrences-generator/-generation-limit/-window/index.html">MeetingOccurrencesGenerator.GenerationLimit.Window</a><span class="token punctuation">, </span></span><span class="parameter ">removeMeetingsAbsentFromUpsertList<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

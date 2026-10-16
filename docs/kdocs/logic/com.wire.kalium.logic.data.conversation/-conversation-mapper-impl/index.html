@@ -1,62 +1,59 @@
 <!doctype html>
-<html class="no-js">
+<html class="no-js" lang="en">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
     <title>ConversationMapperImpl</title>
-<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
-    <script>document.documentElement.classList.replace("no-js","js");</script>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
     <script>const storage = localStorage.getItem("dokka-dark-mode")
-    if (storage == null) {
+      if (storage == null) {
         const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         if (osDarkSchemePreferred === true) {
-            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
         }
-    } else {
+      } else {
         const savedDarkMode = JSON.parse(storage)
-        if(savedDarkMode === true) {
-            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
         }
-    }
+      }
     </script>
-<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
 <script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
 <link href="../../../styles/style.css" rel="Stylesheet">
 <link href="../../../styles/main.css" rel="Stylesheet">
 <link href="../../../styles/prism.css" rel="Stylesheet">
 <link href="../../../styles/logo-styles.css" rel="Stylesheet">
-<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
 <link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
-<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/safe-local-storage_blocking.js"></script>
 <script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
 <script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
 <script type="text/javascript" src="../../../scripts/main.js" defer></script>
 <script type="text/javascript" src="../../../scripts/prism.js" async></script>
-<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script>
-<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script></head>
 <body>
-    <div class="root">
-    <nav class="navigation theme-dark" id="navigation-wrapper">
-<a class="library-name--link" href="../../../index.html">
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../../index.html" tabindex="1">
                     kalium
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">21039f2
+        <div class="library-version" id="library-version">dbdce36
         </div>
         <div class="navigation-controls">
-        <div class="filter-section filter-section_loading" id="filter-section">
-                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":logic/commonMain">common</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
-                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
-                    <div class="dropdown--header"><span>Platform filter</span>
-                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
                             <i class="ui-kit-icon ui-kit-icon_cross"></i>
                         </button>
                     </div>
-                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
-                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/commonMain" data-filter=":logic:dokkaHtmlPartial/commonMain">
+                                <input type="checkbox" class="checkbox--input" id=":logic/commonMain" data-filter=":logic/commonMain">
                                 <span class="checkbox--icon"></span>
                                 common
                             </label>
@@ -64,54 +61,60 @@
                 </ul>
                 <div class="dropdown--overlay"></div>
             </div>
-        </div>
+        </ul>
             <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
             </button>
             <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
                 API
             </div>
         </div>
-    </nav>
-        <div id="container">
-            <div class="sidebar" id="leftColumn">
-                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
-                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
-                        <div class="dropdown--header">
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
                             <span>
                                     kalium
                             </span>
-                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
-                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
-                            </button>
-                        </div>
-                        <div class="sidebar--inner" id="sideMenu"></div>
-                    </ul>
-                    <div class="dropdown--overlay"></div>
-                </div>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
             </div>
-            <div id="main">
-<div class="main-content" data-page-type="classlike" id="content" pageids="logic::com.wire.kalium.logic.data.conversation/ConversationMapperImpl///PointingToDeclaration//867774983">
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="logic::com.wire.kalium.logic.data.conversation/ConversationMapperImpl///PointingToDeclaration//-642582577">
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.data.conversation</a><span class="delimiter">/</span><span class="current">ConversationMapperImpl</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Conversation</span><wbr><span>Mapper</span><wbr><span><span>Impl</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="index.html">ConversationMapperImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">idMapper<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationStatusMapper<span class="token operator">: </span><a href="../-conversation-status-mapper/index.html">ConversationStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">protocolInfoMapper<span class="token operator">: </span><a href="../-protocol-info-mapper/index.html">ProtocolInfoMapper</a><span class="token punctuation">, </span></span><span class="parameter ">userAvailabilityStatusMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-availability-status-mapper/index.html">AvailabilityStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">domainUserTypeMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user.type/-domain-user-type-mapper/index.html">DomainUserTypeMapper</a><span class="token punctuation">, </span></span><span class="parameter ">connectionStatusMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.connection/-connection-status-mapper/index.html">ConnectionStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRoleMapper<span class="token operator">: </span><a href="../-conversation-role-mapper/index.html">ConversationRoleMapper</a><span class="token punctuation">, </span></span><span class="parameter ">messageMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.message/-message-mapper/index.html">MessageMapper</a><span class="token punctuation">, </span></span><span class="parameter ">receiptModeMapper<span class="token operator">: </span><a href="../-receipt-mode-mapper/index.html">ReceiptModeMapper</a><span class="token operator"> = </span>MapperProvider.receiptModeMapper()</span></span><span class="token punctuation">)</span> : <a href="../-conversation-mapper/index.html">ConversationMapper</a></div></div></div>
+    <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+      <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="index.html">ConversationMapperImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.user/-user-id/index.html">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">idMapper<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-id-mapper/index.html">IdMapper</a><span class="token punctuation">, </span></span><span class="parameter ">conversationStatusMapper<span class="token operator">: </span><a href="../-conversation-status-mapper/index.html">ConversationStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">protocolInfoMapper<span class="token operator">: </span><a href="../-protocol-info-mapper/index.html">ProtocolInfoMapper</a><span class="token punctuation">, </span></span><span class="parameter ">userAvailabilityStatusMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-availability-status-mapper/index.html">AvailabilityStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">domainUserTypeMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user.type/-domain-user-type-mapper/index.html">DomainUserTypeMapper</a><span class="token punctuation">, </span></span><span class="parameter ">connectionStatusMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.connection/-connection-status-mapper/index.html">ConnectionStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRoleMapper<span class="token operator">: </span><a href="../-conversation-role-mapper/index.html">ConversationRoleMapper</a><span class="token punctuation">, </span></span><span class="parameter ">messageMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.message/-message-mapper/index.html">MessageMapper</a><span class="token punctuation">, </span></span><span class="parameter ">receiptModeMapper<span class="token operator">: </span><a href="../-receipt-mode-mapper/index.html">ReceiptModeMapper</a><span class="token operator"> = </span>MapperProvider.receiptModeMapper()</span></span><span class="token punctuation">)</span> : <a href="../-conversation-mapper/index.html">ConversationMapper</a></div></div>    </div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
-        <h2 class="">Constructors</h2>
-        <div class="table"><a data-name="2119221653%2FConstructors%2F867774983" anchor-label="ConversationMapperImpl" id="2119221653%2FConstructors%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+        <h2 class="tableheader">Constructors</h2>
+        <div class="table"><a data-name="-488355002%2FConstructors%2F-642582577" anchor-label="ConversationMapperImpl" id="-488355002%2FConstructors%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-conversation-mapper-impl.html"><span>Conversation</span><wbr><span>Mapper</span><wbr><span><span>Impl</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2119221653%2FConstructors%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-488355002%2FConstructors%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">idMapper<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationStatusMapper<span class="token operator">: </span><a href="../-conversation-status-mapper/index.html">ConversationStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">protocolInfoMapper<span class="token operator">: </span><a href="../-protocol-info-mapper/index.html">ProtocolInfoMapper</a><span class="token punctuation">, </span></span><span class="parameter ">userAvailabilityStatusMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-availability-status-mapper/index.html">AvailabilityStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">domainUserTypeMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user.type/-domain-user-type-mapper/index.html">DomainUserTypeMapper</a><span class="token punctuation">, </span></span><span class="parameter ">connectionStatusMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.connection/-connection-status-mapper/index.html">ConnectionStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRoleMapper<span class="token operator">: </span><a href="../-conversation-role-mapper/index.html">ConversationRoleMapper</a><span class="token punctuation">, </span></span><span class="parameter ">messageMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.message/-message-mapper/index.html">MessageMapper</a><span class="token punctuation">, </span></span><span class="parameter ">receiptModeMapper<span class="token operator">: </span><a href="../-receipt-mode-mapper/index.html">ReceiptModeMapper</a><span class="token operator"> = </span>MapperProvider.receiptModeMapper()</span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.user/-user-id/index.html">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">idMapper<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-id-mapper/index.html">IdMapper</a><span class="token punctuation">, </span></span><span class="parameter ">conversationStatusMapper<span class="token operator">: </span><a href="../-conversation-status-mapper/index.html">ConversationStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">protocolInfoMapper<span class="token operator">: </span><a href="../-protocol-info-mapper/index.html">ProtocolInfoMapper</a><span class="token punctuation">, </span></span><span class="parameter ">userAvailabilityStatusMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-availability-status-mapper/index.html">AvailabilityStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">domainUserTypeMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user.type/-domain-user-type-mapper/index.html">DomainUserTypeMapper</a><span class="token punctuation">, </span></span><span class="parameter ">connectionStatusMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.connection/-connection-status-mapper/index.html">ConnectionStatusMapper</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRoleMapper<span class="token operator">: </span><a href="../-conversation-role-mapper/index.html">ConversationRoleMapper</a><span class="token punctuation">, </span></span><span class="parameter ">messageMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.message/-message-mapper/index.html">MessageMapper</a><span class="token punctuation">, </span></span><span class="parameter ">receiptModeMapper<span class="token operator">: </span><a href="../-receipt-mode-mapper/index.html">ReceiptModeMapper</a><span class="token operator"> = </span>MapperProvider.receiptModeMapper()</span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -119,318 +122,360 @@
         </div>
       </div>
       <div data-togglable="FUNCTION">
-        <h2 class="">Functions</h2>
-        <div class="table"><a data-name="-1785794855%2FFunctions%2F867774983" anchor-label="fromApiModel" id="-1785794855%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+        <h2 class="tableheader">Functions</h2>
+        <div class="table"><a data-name="-473548690%2FFunctions%2F-642582577" anchor-label="fromApiModel" id="-473548690%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-api-model.html"><span>from</span><wbr><span>Api</span><wbr><span><span>Model</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1785794855%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-473548690%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-api-model.html"><span class="token function">fromApiModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">mlsPublicKeysDTO<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-api-model.html"><span class="token function">fromApiModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">mlsPublicKeysDTO<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.network.api.authenticated.serverpublickey/MLSPublicKeysDTO///PointingToDeclaration/">MLSPublicKeysDTO</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.mls/-m-l-s-public-keys/index.html">MLSPublicKeys</a><span class="token operator">?</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="430079156%2FFunctions%2F867774983" anchor-label="fromApiModelToAccessModel" id="430079156%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-1775829530%2FFunctions%2F-642582577" anchor-label="fromApiModelToAccessModel" id="-1775829530%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-api-model-to-access-model.html"><span>from</span><wbr><span>Api</span><wbr><span>Model</span><wbr><span>To</span><wbr><span>Access</span><wbr><span><span>Model</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="430079156%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1775829530%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-api-model-to-access-model.html"><span class="token function">fromApiModelToAccessModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-api-model-to-access-model.html"><span class="token function">fromApiModelToAccessModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="com.wire.kalium.network.api.model/ConversationAccessDTO///PointingToDeclaration/">ConversationAccessDTO</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-access/index.html">Conversation.Access</a><span class="token operator">&gt;</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-662476940%2FFunctions%2F867774983" anchor-label="fromApiModelToAccessRoleModel" id="-662476940%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-1277555142%2FFunctions%2F-642582577" anchor-label="fromApiModelToAccessRoleModel" id="-1277555142%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-api-model-to-access-role-model.html"><span>from</span><wbr><span>Api</span><wbr><span>Model</span><wbr><span>To</span><wbr><span>Access</span><wbr><span>Role</span><wbr><span><span>Model</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-662476940%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1277555142%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-api-model-to-access-role-model.html"><span class="token function">fromApiModelToAccessRoleModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessRoleList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-api-model-to-access-role-model.html"><span class="token function">fromApiModelToAccessRoleModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessRoleList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="com.wire.kalium.network.api.model/ConversationAccessRoleDTO///PointingToDeclaration/">ConversationAccessRoleDTO</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-access-role/index.html">Conversation.AccessRole</a><span class="token operator">&gt;</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1009660420%2FFunctions%2F867774983" anchor-label="fromApiModelToDaoModel" id="1009660420%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-29385261%2FFunctions%2F-642582577" anchor-label="fromApiModelToDaoModel" id="-29385261%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-api-model-to-dao-model.html"><span>from</span><wbr><span>Api</span><wbr><span>Model</span><wbr><span>To</span><wbr><span>Dao</span><wbr><span><span>Model</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1009660420%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-29385261%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-api-model-to-dao-model.html"><span class="token function">fromApiModelToDaoModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">apiModel<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">mlsGroupState<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">selfUserTeamId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-api-model-to-dao-model.html"><span class="token function">fromApiModelToDaoModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">apiModel<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.network.api.authenticated.conversation/ConversationResponse///PointingToDeclaration/">ConversationResponse</span><span class="token punctuation">, </span></span><span class="parameter ">mlsGroupState<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-group-state/index.html">ConversationEntity.GroupState</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">selfUserTeamId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-team-id/index.html">TeamId</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/index.html">ConversationEntity</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1724072737%2FFunctions%2F867774983" anchor-label="fromConversationEntityType" id="-1724072737%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-1113455682%2FFunctions%2F-642582577" anchor-label="fromConversationEntityType" id="-1113455682%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-conversation-entity-type.html"><span>from</span><wbr><span>Conversation</span><wbr><span>Entity</span><wbr><span><span>Type</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1724072737%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1113455682%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-conversation-entity-type.html"><span class="token function">fromConversationEntityType</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">type<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-conversation-entity-type.html"><span class="token function">fromConversationEntityType</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">type<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-type/index.html">ConversationEntity.Type</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-type/index.html">Conversation.Type</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1895893481%2FFunctions%2F867774983" anchor-label="fromDaoModel" id="1895893481%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="2072803150%2FFunctions%2F-642582577" anchor-label="fromDaoModel" id="2072803150%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-dao-model.html"><span>from</span><wbr><span>Dao</span><wbr><span><span>Model</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1895893481%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2072803150%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-dao-model.html"><span class="token function">fromDaoModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">daoModel<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-dao-model.html"><span class="token function">fromDaoModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">daoModel<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-dao-model.html"><span class="token function">fromDaoModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">daoModel<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-dao-model.html"><span class="token function">fromDaoModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">daoModel<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/index.html">ConversationEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/index.html">Conversation</a></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-dao-model.html"><span class="token function">fromDaoModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">daoModel<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-view-entity/index.html">ConversationViewEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/index.html">Conversation</a></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-dao-model.html"><span class="token function">fromDaoModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">daoModel<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-proposal-timer-entity/index.html">ProposalTimerEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-proposal-timer/index.html">ProposalTimer</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="758570610%2FFunctions%2F867774983" anchor-label="fromDaoModelToDetails" id="758570610%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="1677108507%2FFunctions%2F-642582577" anchor-label="fromDaoModelToDetails" id="1677108507%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-dao-model-to-details.html"><span>from</span><wbr><span>Dao</span><wbr><span>Model</span><wbr><span>To</span><wbr><span><span>Details</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="758570610%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1677108507%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-dao-model-to-details.html"><span class="token function">fromDaoModelToDetails</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">daoModel<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-dao-model-to-details.html"><span class="token function">fromDaoModelToDetails</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">daoModel<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-view-entity/index.html">ConversationViewEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation-details/index.html">ConversationDetails</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-445596703%2FFunctions%2F867774983" anchor-label="fromDaoModelToDetailsWithEvents" id="-445596703%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-787782404%2FFunctions%2F-642582577" anchor-label="fromDaoModelToDetailsWithEvents" id="-787782404%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-dao-model-to-details-with-events.html"><span>from</span><wbr><span>Dao</span><wbr><span>Model</span><wbr><span>To</span><wbr><span>Details</span><wbr><span>With</span><wbr><span><span>Events</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-445596703%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-787782404%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-dao-model-to-details-with-events.html"><span class="token function">fromDaoModelToDetailsWithEvents</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">daoModel<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-dao-model-to-details-with-events.html"><span class="token function">fromDaoModelToDetailsWithEvents</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">daoModel<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-details-with-events-entity/index.html">ConversationDetailsWithEventsEntity</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation-details-with-events/index.html">ConversationDetailsWithEvents</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="2139484555%2FFunctions%2F867774983" anchor-label="fromFailedGroupConversationToEntity" id="2139484555%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="1365308155%2FFunctions%2F-642582577" anchor-label="fromFailedGroupConversationToEntity" id="1365308155%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-failed-group-conversation-to-entity.html"><span>from</span><wbr><span>Failed</span><wbr><span>Group</span><wbr><span>Conversation</span><wbr><span>To</span><wbr><span><span>Entity</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2139484555%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1365308155%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-failed-group-conversation-to-entity.html"><span class="token function">fromFailedGroupConversationToEntity</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="brief "><p class="paragraph">Default values and marked as ConversationEntity.hasIncompleteMetadata = true. So later we can re-fetch them.</p></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-failed-group-conversation-to-entity.html"><span class="token function">fromFailedGroupConversationToEntity</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-network-qualified-id/index.html">NetworkQualifiedId</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/index.html">ConversationEntity</a></div><div class="brief "><p class="paragraph">Default values and marked as <a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/has-incomplete-metadata.html">ConversationEntity.hasIncompleteMetadata</a> = true. So later we can re-fetch them.</p></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1824807091%2FFunctions%2F867774983" anchor-label="fromMigrationModel" id="1824807091%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-1010891637%2FFunctions%2F-642582577" anchor-label="fromMigrationModel" id="-1010891637%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-migration-model.html"><span>from</span><wbr><span>Migration</span><wbr><span><span>Model</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1824807091%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1010891637%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-migration-model.html"><span class="token function">fromMigrationModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversation<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-migration-model.html"><span class="token function">fromMigrationModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversation<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/index.html">Conversation</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/index.html">ConversationEntity</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1902591168%2FFunctions%2F867774983" anchor-label="fromModelToDAOAccess" id="-1902591168%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="806972514%2FFunctions%2F-642582577" anchor-label="fromModelToDAOAccess" id="806972514%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-model-to-d-a-o-access.html"><span>from</span><wbr><span>Model</span><wbr><span>To</span><wbr><span><span>DAOAccess</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1902591168%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="806972514%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-model-to-d-a-o-access.html"><span class="token function">fromModelToDAOAccess</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-model-to-d-a-o-access.html"><span class="token function">fromModelToDAOAccess</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-access/index.html">Conversation.Access</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-access/index.html">ConversationEntity.Access</a><span class="token operator">&gt;</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-714065664%2FFunctions%2F867774983" anchor-label="fromModelToDAOAccessRole" id="-714065664%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-2016889714%2FFunctions%2F-642582577" anchor-label="fromModelToDAOAccessRole" id="-2016889714%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="from-model-to-d-a-o-access-role.html"><span>from</span><wbr><span>Model</span><wbr><span>To</span><wbr><span>DAOAccess</span><wbr><span><span>Role</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-714065664%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2016889714%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-model-to-d-a-o-access-role.html"><span class="token function">fromModelToDAOAccessRole</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessRoleList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="from-model-to-d-a-o-access-role.html"><span class="token function">fromModelToDAOAccessRole</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessRoleList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-access-role/index.html">Conversation.AccessRole</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-access-role/index.html">ConversationEntity.AccessRole</a><span class="token operator">&gt;</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1916877576%2FFunctions%2F867774983" anchor-label="legalHoldStatusFromEntity" id="-1916877576%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-370091947%2FFunctions%2F-642582577" anchor-label="legalHoldStatusFromEntity" id="-370091947%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="legal-hold-status-from-entity.html"><span>legal</span><wbr><span>Hold</span><wbr><span>Status</span><wbr><span>From</span><wbr><span><span>Entity</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1916877576%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-370091947%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="legal-hold-status-from-entity.html"><span class="token function">legalHoldStatusFromEntity</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">legalHoldStatus<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="legal-hold-status-from-entity.html"><span class="token function">legalHoldStatusFromEntity</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">legalHoldStatus<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-legal-hold-status/index.html">ConversationEntity.LegalHoldStatus</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-legal-hold-status/index.html">Conversation.LegalHoldStatus</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1257683716%2FFunctions%2F867774983" anchor-label="legalHoldStatusToEntity" id="1257683716%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="196369252%2FFunctions%2F-642582577" anchor-label="legalHoldStatusToEntity" id="196369252%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="legal-hold-status-to-entity.html"><span>legal</span><wbr><span>Hold</span><wbr><span>Status</span><wbr><span>To</span><wbr><span><span>Entity</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1257683716%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="196369252%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="legal-hold-status-to-entity.html"><span class="token function">legalHoldStatusToEntity</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">legalHoldStatus<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="legal-hold-status-to-entity.html"><span class="token function">legalHoldStatusToEntity</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">legalHoldStatus<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-legal-hold-status/index.html">Conversation.LegalHoldStatus</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-legal-hold-status/index.html">ConversationEntity.LegalHoldStatus</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-11427881%2FFunctions%2F867774983" anchor-label="toApiModel" id="-11427881%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-1754249846%2FFunctions%2F-642582577" anchor-label="toApiModel" id="-1754249846%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="to-api-model.html"><span>to</span><wbr><span>Api</span><wbr><span><span>Model</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-11427881%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1754249846%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-api-model.html"><span class="token function">toApiModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessRole<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-api-model.html"><span class="token function">toApiModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">access<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-api-model.html"><span class="token function">toApiModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">protocol<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-api-model.html"><span class="token function">toApiModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">name<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">members<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">teamId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-api-model.html"><span class="token function">toApiModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">access<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-access/index.html">Conversation.Access</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.network.api.model/ConversationAccessDTO///PointingToDeclaration/">ConversationAccessDTO</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-api-model.html"><span class="token function">toApiModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessRole<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-access-role/index.html">Conversation.AccessRole</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.network.api.model/ConversationAccessRoleDTO///PointingToDeclaration/">ConversationAccessRoleDTO</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-api-model.html"><span class="token function">toApiModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">protocol<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-create-conversation-param/-protocol/index.html">CreateConversationParam.Protocol</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.network.api.authenticated.conversation/ConvProtocol///PointingToDeclaration/">ConvProtocol</span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-api-model.html"><span class="token function">toApiModel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">name<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">members<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../logic/com.wire.kalium.logic.data.user/-user-id/index.html">UserId</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">teamId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">options<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-create-conversation-param/index.html">CreateConversationParam</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.network.api.authenticated.conversation/CreateConversationRequest///PointingToDeclaration/">CreateConversationRequest</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1790642398%2FFunctions%2F867774983" anchor-label="toDAOAccess" id="1790642398%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-415266288%2FFunctions%2F-642582577" anchor-label="toDAOAccess" id="-415266288%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="to-d-a-o-access.html"><span>to</span><wbr><span><span>DAOAccess</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1790642398%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-415266288%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-d-a-o-access.html"><span class="token function">toDAOAccess</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-d-a-o-access.html"><span class="token function">toDAOAccess</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="com.wire.kalium.network.api.model/ConversationAccessDTO///PointingToDeclaration/">ConversationAccessDTO</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-access/index.html">ConversationEntity.Access</a><span class="token operator">&gt;</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1434261878%2FFunctions%2F867774983" anchor-label="toDAOAccessRole" id="-1434261878%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-2049340080%2FFunctions%2F-642582577" anchor-label="toDAOAccessRole" id="-2049340080%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="to-d-a-o-access-role.html"><span>to</span><wbr><span>DAOAccess</span><wbr><span><span>Role</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1434261878%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2049340080%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-d-a-o-access-role.html"><span class="token function">toDAOAccessRole</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessRoleList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-d-a-o-access-role.html"><span class="token function">toDAOAccessRole</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">accessRoleList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Set///PointingToDeclaration/">Set</span><span class="token operator">&lt;</span><span data-unresolved-link="com.wire.kalium.network.api.model/ConversationAccessRoleDTO///PointingToDeclaration/">ConversationAccessRoleDTO</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-access-role/index.html">ConversationEntity.AccessRole</a><span class="token operator">&gt;</span></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1311108911%2FFunctions%2F867774983" anchor-label="toDAOGroupState" id="1311108911%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-936267819%2FFunctions%2F-642582577" anchor-label="toDAOGroupState" id="-936267819%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="to-d-a-o-group-state.html"><span>to</span><wbr><span>DAOGroup</span><wbr><span><span>State</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1311108911%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-936267819%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-d-a-o-group-state.html"><span class="token function">toDAOGroupState</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">groupState<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-d-a-o-group-state.html"><span class="token function">toDAOGroupState</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">groupState<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-protocol-info/-m-l-s-capable/-group-state/index.html">Conversation.ProtocolInfo.MLSCapable.GroupState</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-group-state/index.html">ConversationEntity.GroupState</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1548204866%2FFunctions%2F867774983" anchor-label="toDAOProposalTimer" id="1548204866%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-388793960%2FFunctions%2F-642582577" anchor-label="toDAOProposalTimer" id="-388793960%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="to-d-a-o-proposal-timer.html"><span>to</span><wbr><span>DAOProposal</span><wbr><span><span>Timer</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1548204866%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-388793960%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-d-a-o-proposal-timer.html"><span class="token function">toDAOProposalTimer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">proposalTimer<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="to-d-a-o-proposal-timer.html"><span class="token function">toDAOProposalTimer</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">proposalTimer<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-proposal-timer/index.html">ProposalTimer</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-proposal-timer-entity/index.html">ProposalTimerEntity</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="880680162%2FFunctions%2F867774983" anchor-label="verificationStatusFromEntity" id="880680162%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-397748901%2FFunctions%2F-642582577" anchor-label="verificationStatusFromEntity" id="-397748901%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="verification-status-from-entity.html"><span>verification</span><wbr><span>Status</span><wbr><span>From</span><wbr><span><span>Entity</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="880680162%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-397748901%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="verification-status-from-entity.html"><span class="token function">verificationStatusFromEntity</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">verificationStatus<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="verification-status-from-entity.html"><span class="token function">verificationStatusFromEntity</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">verificationStatus<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-verification-status/index.html">ConversationEntity.VerificationStatus</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-verification-status/index.html">Conversation.VerificationStatus</a></div></div>                  </div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1020860842%2FFunctions%2F867774983" anchor-label="verificationStatusToEntity" id="-1020860842%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+<a data-name="-2077690558%2FFunctions%2F-642582577" anchor-label="verificationStatusToEntity" id="-2077690558%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="verification-status-to-entity.html"><span>verification</span><wbr><span>Status</span><wbr><span>To</span><wbr><span><span>Entity</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1020860842%2FFunctions%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2077690558%2FFunctions%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="verification-status-to-entity.html"><span class="token function">verificationStatusToEntity</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">verificationStatus<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="verification-status-to-entity.html"><span class="token function">verificationStatusToEntity</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">verificationStatus<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.conversation/-conversation/-verification-status/index.html">Conversation.VerificationStatus</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao.conversation/-conversation-entity/-verification-status/index.html">ConversationEntity.VerificationStatus</a></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -441,17 +486,21 @@
   </div>
 </div>
     <div class="footer">
-        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
-        <span>© 2026 Copyright</span>
-        <span class="pull-right">
-            <span>Generated by </span>
-            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
-                <span>dokka</span>
-            </a>
-        </span>
-    </div>
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
             </div>
         </div>
     </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
