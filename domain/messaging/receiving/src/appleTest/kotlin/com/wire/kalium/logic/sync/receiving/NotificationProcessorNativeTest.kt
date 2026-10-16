@@ -3386,27 +3386,21 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
-    fun malformedCallingKeepsQueuePending() = runTest {
+    fun malformedCallingIsConsumedWithItsNotification() = runTest {
         for (mls in listOf(false, true)) {
             withContext(Dispatchers.Default) {
                 withFixture(mls) { fixture ->
-                    fixture.seedRemoteMute("admin", own = false)
                     val content = MessageContent.Calling("{")
                     val event = fixture.batch("notification", fixture.event("prefix", fixture.encrypt("prefix")),
                         fixture.event("calling", fixture.encrypt("calling", content)), fixture.event("first", fixture.encrypt("first")))
-                    val tail = fixture.event("tail-notification", fixture.encrypt("tail"))
                     val next = fixture.encrypt("next")
                     fixture.releasePrepared()
-                    repeat(2) {
-                        assertIs<Either.Left<*>>(fixture.receive(listOf(event, tail), event.id))
-                        assertIs<Either.Right<*>>(fixture.open { runtime ->
-                            assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
-                            assertFalse(checkNotNull(runtime.database.eventDAO.getEventById(tail.id)).isProcessed)
-                            assertNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
-                            assertNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
-                            assertTrue(runtime.database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).isEmpty())
-                        })
-                    }
+                    assertIs<Either.Right<*>>(fixture.receive(listOf(event), event.id))
+                    assertIs<Either.Right<*>>(fixture.open { runtime ->
+                        assertTrue(checkNotNull(runtime.database.eventDAO.getEventById(event.id)).isProcessed)
+                        assertNotNull(runtime.database.messageDAO.getMessageById("prefix", CONVERSATION_ID))
+                        assertNotNull(runtime.database.messageDAO.getMessageById("first", CONVERSATION_ID))
+                    })
                     assertIs<Either.Right<*>>(fixture.decryptAndCheck(next, "next"))
                 }
             }
