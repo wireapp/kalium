@@ -46,6 +46,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okio.FileSystem
 import okio.Path
@@ -82,31 +85,36 @@ internal class CreateMPBackupUseCaseImpl(
             val backupFileName = createBackupFileName(selfUser)
             val backupWorkDir = kaliumFileSystem.tempFilePath("$backupFileName-create-workdir")
             val mpBackupExporter = createBackupExporter(selfUser, backupFileName, backupWorkDir.toString())
-            var pageIndex = 0
+            val exporterMutex = Mutex()
 
-            with(backupRepository) {
-                coroutineScope {
-                    async {
-                        getUsers().forEach { user ->
-                            mpBackupExporter.add(user.toBackupUser())
-                        }
+            coroutineScope {
+                launch {
+                    backupRepository.getUsers().forEach { user ->
+                        val backupUser = user.toBackupUser()
+                        exporterMutex.withLock { mpBackupExporter.add(backupUser) }
                     }
-                    async {
-                        getConversations().forEach { conversation ->
-                            mpBackupExporter.add(conversation.toBackupConversation())
-                        }
+                }
+                launch {
+                    backupRepository.getConversations().forEach { conversation ->
+                        val backupConversation = conversation.toBackupConversation()
+                        exporterMutex.withLock { mpBackupExporter.add(backupConversation) }
                     }
-                    async {
-                        getMessages().buffer().collect { (page, totalPages) ->
-                            page.mapNotNull(Message::toBackupMessage)
-                                .forEach { mpBackupExporter.add(it) }
-                            onProgress(pageIndex++.toFloat() / totalPages)
+                }
+                launch {
+                    var pageIndex = 0
+                    backupRepository.getMessages().buffer().collect { (page, totalPages) ->
+                        val backupMessages = page.mapNotNull(Message::toBackupMessage)
+                        exporterMutex.withLock {
+                            backupMessages.forEach(mpBackupExporter::add)
                         }
+                        onProgress(pageIndex++.toFloat() / totalPages)
                     }
-                    async {
-                        getReactions().buffer().collect { (page, _) ->
-                            page.map(MessageReactions::toBackupReaction)
-                                .forEach { mpBackupExporter.add(it) }
+                }
+                launch {
+                    backupRepository.getReactions().buffer().collect { (page, _) ->
+                        val backupReactions = page.map(MessageReactions::toBackupReaction)
+                        exporterMutex.withLock {
+                            backupReactions.forEach(mpBackupExporter::add)
                         }
                     }
                 }
