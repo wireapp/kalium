@@ -571,7 +571,7 @@ countPendingByConversationIdAndVisibility:
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? AND status = 'PENDING';
 
 selectOldestVisibleMessageTimestampByConversationId:
-SELECT MIN(creation_date) FROM Message WHERE conversation_id = ? AND visibility = "VISIBLE";
+SELECT MIN(creation_date) FROM Message WHERE conversation_id = ? AND visibility = 'VISIBLE';
 
 selectByConversationIdAndVisibility:
 -- @CustomKey message_list_:conversationId
@@ -601,11 +601,11 @@ ORDER BY date DESC
 LIMIT :limit OFFSET :offset;
 
 countBackupMessages:
-SELECT count(*) FROM Message WHERE visibility = "VISIBLE" AND expire_after_millis IS NULL AND content_type IN :contentType;
+SELECT count(*) FROM Message WHERE visibility = 'VISIBLE' AND expire_after_millis IS NULL AND content_type IN :contentType;
 
 selectForBackup:
 SELECT * FROM MessageDetailsView
-WHERE visibility = "VISIBLE"
+WHERE visibility = 'VISIBLE'
     AND expireAfterMillis IS NULL
     AND contentType IN :contentType
     AND id > :afterId
@@ -667,14 +667,14 @@ selectPendingEphemeralMessages:
 SELECT * FROM MessageDetailsView
 WHERE expireAfterMillis NOT NULL
 AND selfDeletionEndDate NOT NULL
-AND visibility = "VISIBLE"
+AND visibility = 'VISIBLE'
 AND selfDeletionEndDate > STRFTIME('%s', 'now') * 1000; -- Checks if message end date is higher than current time in millis
 
 selectAlreadyEndedEphemeralMessages:
 SELECT * FROM MessageDetailsView
 WHERE expireAfterMillis NOT NULL
 AND selfDeletionEndDate NOT NULL
-AND visibility = "VISIBLE"
+AND visibility = 'VISIBLE'
 AND selfDeletionEndDate <= STRFTIME('%s', 'now') * 1000; -- Checks if message end date is lower than current time in millis
 
 markSelfDeletionEndDate:
@@ -749,7 +749,7 @@ selectNextAudioMessage:
 SELECT Message.id
 FROM Message LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 WHERE Message.conversation_id = :conversationId
-AND AssetContent.asset_mime_type LIKE "%audio/%"
+AND AssetContent.asset_mime_type LIKE '%audio/%'
 AND Message.creation_date > (SELECT Message.creation_date FROM Message WHERE Message.id = :messageId AND Message.conversation_id = :conversationId)
 ORDER BY Message.creation_date ASC
 LIMIT 1;
