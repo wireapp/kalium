@@ -66,6 +66,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.SFTApi
 import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -2356,6 +2357,7 @@ class CallRepositoryTest {
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val callApi = mock<CallApi>()
+        val sftApi = mock<SFTApi>()
         val conversationRepository = mock<ConversationRepository>()
         val userRepository = mock<UserRepository>()
         val teamRepository = mock<TeamRepository>()
@@ -2376,6 +2378,7 @@ class CallRepositoryTest {
 
         private fun buildCallRepository(): CallRepository = CallDataSource(
             callApi = callApi,
+            sftApi = sftApi,
             serverTimeApi = serverTimeApi,
             callDAO = callDAO,
             qualifiedIdMapper = qualifiedIdMapper,

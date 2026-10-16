@@ -23,6 +23,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.SFTApi
 import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
@@ -66,7 +67,9 @@ import com.wire.kalium.network.api.v6.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v7.authenticated.networkContainer.AuthenticatedNetworkContainerV7
 import com.wire.kalium.network.api.v8.authenticated.networkContainer.AuthenticatedNetworkContainerV8
 import com.wire.kalium.network.api.v9.authenticated.networkContainer.AuthenticatedNetworkContainerV9
+import com.wire.kalium.network.api.vcommon.SFTApiImpl
 import com.wire.kalium.network.HttpTrafficObserver
+import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
@@ -135,6 +138,8 @@ interface AuthenticatedNetworkContainer {
     val userSearchApi: UserSearchApi
 
     val callApi: CallApi
+
+    val sftApi: SFTApi
 
     val connectionApi: ConnectionApi
 
@@ -409,6 +414,10 @@ internal interface AuthenticatedHttpClientProvider {
     val networkClient: AuthenticatedNetworkClient
     val websocketClient: AuthenticatedWebSocketClient
     val networkClientWithoutCompression: AuthenticatedNetworkClient
+
+    /** For SFT servers, which are not Wire backends and must never receive the Wire access token. */
+    val sftNetworkClient: UnboundNetworkClient
+    val sftApi: SFTApi
     suspend fun clearCachedToken()
 }
 
@@ -479,10 +488,13 @@ internal class AuthenticatedHttpClientProviderImpl(
             installCompression = false
         )
     }
+    private val sftNetworkClientDelegate = lazy { UnboundNetworkClient(engine) }
 
     override val networkClient by networkClientDelegate
     override val websocketClient by websocketClientDelegate
     override val networkClientWithoutCompression by networkClientWithoutCompressionDelegate
+    override val sftNetworkClient by sftNetworkClientDelegate
+    override val sftApi: SFTApi get() = SFTApiImpl(sftNetworkClient)
     private val closeMutex = Mutex()
     private var closeFailure: Throwable? = null
     private var closed = false
@@ -497,6 +509,7 @@ internal class AuthenticatedHttpClientProviderImpl(
                 val clients = listOfNotNull(
                     networkClientDelegate.takeIf { it.isInitialized() }?.value?.httpClient,
                     networkClientWithoutCompressionDelegate.takeIf { it.isInitialized() }?.value?.httpClient,
+                    sftNetworkClientDelegate.takeIf { it.isInitialized() }?.value?.httpClient,
                 )
                 clients.forEach { it.close() }
                 clients.forEach { it.coroutineContext.job.join() }

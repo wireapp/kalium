@@ -67,6 +67,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.util.MutexProvider
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.SFTApi
 import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.call.CallDAO
@@ -162,6 +163,7 @@ internal interface CallRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class CallDataSource(
     private val callApi: CallApi,
+    private val sftApi: SFTApi,
     private val serverTimeApi: ServerTimeApi,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val persistMessage: PersistMessageUseCase,
@@ -208,7 +210,7 @@ internal class CallDataSource(
     }
 
     override suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray> = wrapApiRequest {
-        callApi.connectToSFT(url = url, data = data)
+        sftApi.connectToSFT(url = url, data = data)
     }
 
     override fun getCallMetadata(conversationId: ConversationId): CallMetadata? = _callMetadataProfile[conversationId]
