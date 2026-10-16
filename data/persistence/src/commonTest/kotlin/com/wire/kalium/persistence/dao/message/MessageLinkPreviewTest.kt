@@ -40,7 +40,7 @@ class MessageLinkPreviewTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenLinkPreviewWithoutPermanentUrl_whenReadingTheMessage_thenPermanentUrlIsTheUrl() = runTest {
+    fun givenLinkPreviewWithoutPermanentUrl_whenReadingTheMessage_thenPermanentUrlIsTheUrl() = runTest(dispatcher) {
         db.userDAO.upsertUsers(listOf(SELF_USER))
         db.conversationDAO.insertConversations(listOf(CONVERSATION))
         db.messageDAO.insertOrIgnoreMessage(
@@ -55,7 +55,7 @@ class MessageLinkPreviewTest : BaseDatabaseTest() {
             )
         )
         // Kalium stores an empty string for a missing permanent URL; the view falls back only for NULL.
-        db.sqlDriver.execute(null, "UPDATE MessageLinkPreview SET permanent_url = NULL", 0)
+        db.sqlDriver.execute(null, "UPDATE MessageLinkPreview SET permanent_url = NULL", 0).await()
 
         val content = db.messageDAO.getMessageById(MESSAGE_ID, CONVERSATION.id)?.content
 
