@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.asset
 
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.EncryptionFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -40,6 +41,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
@@ -60,12 +62,14 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import okio.Buffer
 import okio.Path
+import okio.Source
 import okio.buffer
 import okio.fakefilesystem.FakeFileSystem
 import okio.use
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -89,6 +93,48 @@ internal class AssetRepositoryTest {
     fun breakDown() {
         Dispatchers.resetMain()
     }
+    @Test
+    fun retriedPublicUploadReopensTheSource() = runTest {
+        verifyRetriedUpload(privateAsset = false)
+    }
+
+    @Test
+    fun retriedEncryptedUploadReopensTheSource() = runTest {
+        verifyRetriedUpload(privateAsset = true)
+    }
+
+    private suspend fun verifyRetriedUpload(privateAsset: Boolean) {
+        val path = fakeKaliumFileSystem.tempFilePath("retry-asset")
+        val payload = "asset payload for a retried upload".encodeToByteArray()
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withRawStoredData(payload, path)
+            .withSuccessfulInsert()
+            .withAssetAuditLogEnabled(false)
+            .arrange()
+        var attempts = 0
+        everySuspend { arrangement.assetApi.uploadAsset(any(), any(), any()) } calls { invocation ->
+            @Suppress("UNCHECKED_CAST")
+            val openSource = invocation.args[1] as () -> Source
+            val first = openSource().buffer().use { it.readByteArray() }
+            attempts++
+            // The transport closes the first request body before retrying after an authentication challenge.
+            val retry = openSource().buffer().use { it.readByteArray() }
+            attempts++
+            assertTrue(first.isNotEmpty())
+            assertContentEquals(first, retry)
+            assertEquals(invocation.args[2] as Long, retry.size.toLong())
+            NetworkResponse.Success(AssetResponse("retry-key", "domain", "expiry", "token"), emptyMap(), 201)
+        }
+        val result = if (privateAsset) {
+            repository.uploadAndPersistPrivateAsset("image/png", path, generateRandomAES256Key(), null)
+                .map { it.first }
+        } else {
+            repository.uploadAndPersistPublicAsset("image/png", path, payload.size.toLong())
+        }
+        result.shouldSucceed { assertEquals("retry-key", it.key) }
+        assertEquals(2, attempts)
+    }
+
     @Test
     fun givenValidParams_whenUploadingPublicAssets_thenShouldSucceedWithAMappedResponse() = runTest {
         // Given

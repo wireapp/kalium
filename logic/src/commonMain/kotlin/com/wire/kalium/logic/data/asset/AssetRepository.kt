@@ -46,7 +46,6 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
-import okio.use
 import kotlin.uuid.Uuid
 
 internal interface AssetRepository {
@@ -273,10 +272,12 @@ internal class AssetDataSource(
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
-                kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath).use { dataSource ->
-                    // we should also consider for avatar images, the compression for preview vs complete picture
-                    assetApi.uploadAsset(metaData, { dataSource }, uploadAssetData.dataSize)
-                }
+                // Authentication retries must reopen the file; the transport closes each attempt's source.
+                assetApi.uploadAsset(
+                    metaData,
+                    { kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath) },
+                    uploadAssetData.dataSize
+                )
             }
         }
             .flatMap { assetResponse ->
