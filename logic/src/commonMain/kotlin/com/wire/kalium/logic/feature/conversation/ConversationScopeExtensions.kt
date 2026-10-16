@@ -24,3 +24,12 @@ public val ConversationScope.getPaginatedFlowOfConversationDetailsWithEventsBySe
         conversationRepository,
         callRepository
     )
+
+public val ConversationScope.getPaginatedFlowOfConversationDetailsWithMembersBySearchQuery:
+        GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase
+    get() = GetPaginatedFlowOfConversationDetailsWithMembersBySearchQueryUseCase(
+        dispatcher,
+        conversationRepository,
+        selfTeamIdProvider,
+        selfUserId
+    )

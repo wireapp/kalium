@@ -22,21 +22,23 @@ import com.wire.kalium.cryptography.utils.CryptoServiceInfo
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import platform.Security.SecRandomCopyBytes
+import platform.Security.errSecSuccess
 import platform.Security.kSecRandomDefault
 import platform.posix.arc4random_uniform
 
 internal actual class SecureRandom actual constructor() {
     actual fun nextBytes(length: Int): ByteArray {
         val bytes = ByteArray(length)
-        // TODO handle failure case
-            bytes.usePinned {
-                SecRandomCopyBytes(
-                    kSecRandomDefault,
-                    length.toULong(),
-                    it.addressOf(0)
-                )
-            }
-
+        if (length == 0) return bytes
+        val status = bytes.usePinned {
+            SecRandomCopyBytes(
+                kSecRandomDefault,
+                length.toULong(),
+                it.addressOf(0)
+            )
+        }
+        // Keys are made of these bytes: on failure, the buffer must not be used as if it were random.
+        check(status == errSecSuccess) { "SecRandomCopyBytes failed with status $status" }
         return bytes
     }
 

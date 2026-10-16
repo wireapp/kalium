@@ -31,4 +31,4 @@ WHERE conversation_id = :conversationId AND message_id = :messageId;
 
 resetAssetTransferStatus:
 DELETE FROM MessageAssetTransferStatus
-WHERE transfer_status = 'UPLOAD_IN_PROGRESS' OR transfer_status = "DOWNLOAD_IN_PROGRESS";
+WHERE transfer_status = 'UPLOAD_IN_PROGRESS' OR transfer_status = 'DOWNLOAD_IN_PROGRESS';

@@ -95,10 +95,11 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
-                    refreshConversationMetadataIfPendingAfterReset(
+                    refreshConversationMetadataIfNeeded(
                         transactionContext = transactionContext,
                         conversation = conversation,
-                        currentPublicKeys = mlsPublicKeys
+                        currentPublicKeys = mlsPublicKeys,
+                        allowJoinByExternalCommit = allowJoinByExternalCommit
                     ).flatMap { refreshedConversation ->
                         joinOrEstablishMLSGroupAndRetry(
                             transactionContext,
@@ -111,22 +112,30 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             })
         }
 
-    private suspend fun refreshConversationMetadataIfPendingAfterReset(
+    private suspend fun refreshConversationMetadataIfNeeded(
         transactionContext: CryptoTransactionContext,
         conversation: Conversation,
-        currentPublicKeys: MLSPublicKeys?
+        currentPublicKeys: MLSPublicKeys?,
+        allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, RefreshedConversation> {
         val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
             ?: return Either.Right(RefreshedConversation(conversation, currentPublicKeys))
+        val needsRefresh = when (protocol.groupState) {
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET -> true
+            // The local epoch still comes from the event that created the conversation (usually 0),
+            // which would establish a new group instead of joining the existing one.
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE -> allowJoinByExternalCommit
+            else -> false
+        }
 
         return when {
-            protocol.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET ->
+            !needsRefresh ->
                 Either.Right(RefreshedConversation(conversation, currentPublicKeys))
 
             conversation.type == Conversation.Type.OneOnOne -> {
                 logger.d("Refreshing oneOnOne conversation metadata before rejoining ${conversation.id.toLogString()}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
-                    fetchMLSOneToOneConversation(transactionContext, members.first()).map { refreshedConversation ->
+                    fetchMLSOneToOneConversation(transactionContext, members.otherThanSelf()).map { refreshedConversation ->
                         RefreshedConversation(
                             conversation = refreshedConversation,
                             publicKeys = refreshedConversation.mlsPublicKeys ?: currentPublicKeys
@@ -179,7 +188,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         // Re-fetch the current epoch and try again
                         if (conversation.type == Conversation.Type.OneOnOne) {
                             conversationRepository.getConversationMembers(conversation.id).flatMap {
-                                fetchMLSOneToOneConversation(transactionContext, it.first()).map {
+                                fetchMLSOneToOneConversation(transactionContext, it.otherThanSelf()).map {
                                     it.mlsPublicKeys
                                 }
                             }
@@ -318,6 +327,9 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
         }
     }
+
+    // One-on-one members include the self user, but the conversation must be fetched with the other user.
+    private fun List<UserId>.otherThanSelf(): UserId = firstOrNull { it != selfUserId } ?: first()
 
     private fun Conversation.logData(
         failure: CoreFailure? = null

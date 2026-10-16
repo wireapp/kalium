@@ -47,6 +47,7 @@ import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -58,12 +59,16 @@ import dev.mokkery.verifySuspend
 import dev.mokkery.every
 import dev.mokkery.mock
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.StandardTestDispatcher
 import okio.buffer
 import okio.Path.Companion.toPath
 import okio.use
@@ -74,6 +79,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.coroutines.CoroutineContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RestoreMPBackupUseCaseTest {
@@ -107,6 +113,80 @@ class RestoreMPBackupUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
         verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
         assertEquals(listOf(0.25f, 0.5f, 0.75f, 1f), progress)
+        assertFalse(arrangement.fileSystem.exists(arrangement.importerWorkFile))
+    }
+
+    @Test
+    fun givenUnavailableMainDispatcher_whenExplicitProgressDispatcherIsProvided_thenAllPagesRestore() = runTest {
+        val progressDispatcher = RecordingDispatcher(StandardTestDispatcher(testScheduler))
+        val unavailableMainDispatchers = object : KaliumDispatcher by TestKaliumDispatcher {
+            override val main: CoroutineDispatcher
+                get() = error("Main dispatcher must not be required for explicitly dispatched progress")
+        }
+        val (arrangement, useCase) = Arrangement(
+            kaliumDispatchers = unavailableMainDispatchers,
+            progressDispatcher = progressDispatcher,
+        ).withSuccessImport().withImporterWorkFile().arrange()
+        val progress = mutableListOf<Float>()
+
+        val result = useCase(arrangement.storedPath, null) {
+            assertTrue(progressDispatcher.executing)
+            progress.add(it)
+        }
+
+        assertEquals(RestoreBackupResult.Success, result)
+        assertEquals(listOf(0.25f, 0.5f, 0.75f, 1f), progress)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
+        verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
+        assertFalse(arrangement.fileSystem.exists(arrangement.importerWorkFile))
+    }
+
+    @Test
+    fun givenNoProgressDispatcherOverride_whenRestoring_thenProgressStillUsesMainDispatcher() = runTest {
+        val mainDispatcher = RecordingDispatcher(StandardTestDispatcher(testScheduler))
+        val mainDispatchers = object : KaliumDispatcher by TestKaliumDispatcher {
+            override val main: CoroutineDispatcher = mainDispatcher
+        }
+        val (arrangement, useCase) = Arrangement(kaliumDispatchers = mainDispatchers)
+            .withSuccessImport()
+            .arrange()
+        val progress = mutableListOf<Float>()
+
+        val result = useCase(arrangement.storedPath, null) {
+            assertTrue(mainDispatcher.executing)
+            progress.add(it)
+        }
+
+        assertEquals(RestoreBackupResult.Success, result)
+        assertEquals(listOf(0.25f, 0.5f, 0.75f, 1f), progress)
+    }
+
+    @Test
+    fun givenExplicitProgressDispatcher_whenCancelledDuringProgress_thenLaterPagesDoNotStart() = runTest {
+        val progressDispatcher = RecordingDispatcher(StandardTestDispatcher(testScheduler))
+        val (arrangement, useCase) = Arrangement(progressDispatcher = progressDispatcher)
+            .withSuccessImport()
+            .withImporterWorkFile()
+            .arrange()
+        val progress = mutableListOf<Float>()
+
+        val restoreJob = launch {
+            useCase(arrangement.storedPath, null) {
+                assertTrue(progressDispatcher.executing)
+                progress.add(it)
+                cancel()
+            }
+        }
+        restoreJob.join()
+
+        assertTrue(restoreJob.isCancelled)
+        assertEquals(listOf(0.25f), progress)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.backupRepository.insertConversations(any()) }
+        verify(VerifyMode.exactly(1)) { arrangement.resultPager.close() }
         assertFalse(arrangement.fileSystem.exists(arrangement.importerWorkFile))
     }
 
@@ -362,7 +442,28 @@ class RestoreMPBackupUseCaseTest {
         assertTrue(insertedMessage.conversationId.domain.isNotBlank())
     }
 
-    private inner class Arrangement {
+    private class RecordingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
+        var executing: Boolean = false
+            private set
+
+        override fun isDispatchNeeded(context: CoroutineContext): Boolean = true
+
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            delegate.dispatch(context, Runnable {
+                executing = true
+                try {
+                    block.run()
+                } finally {
+                    executing = false
+                }
+            })
+        }
+    }
+
+    private inner class Arrangement(
+        private val kaliumDispatchers: KaliumDispatcher = TestKaliumDispatcher,
+        private val progressDispatcher: CoroutineDispatcher? = null,
+    ) {
 
         val backupRepository = mock<BackupRepository>(mode = MockMode.autoUnit)
         val importerProvider = mock<MPBackupImporterProvider>(mode = MockMode.autoUnit)
@@ -539,7 +640,8 @@ class RestoreMPBackupUseCaseTest {
                 backupRepository = backupRepository,
                 kaliumFileSystem = fileSystem,
                 backupImporterProvider = importerProvider,
-                dispatchers = dispatchers
+                dispatchers = kaliumDispatchers,
+                progressDispatcher = progressDispatcher,
             )
         }
     }

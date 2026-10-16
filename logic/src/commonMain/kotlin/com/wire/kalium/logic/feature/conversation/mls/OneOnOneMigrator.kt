@@ -35,6 +35,9 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.failure.NoClientsForUser
 
 internal interface OneOnOneMigrator {
     /**
@@ -44,6 +47,7 @@ internal interface OneOnOneMigrator {
 
     /**
      * Get one-on-one conversation with the user, if not found, create a new one (Proteus still default) and mark it as active.
+     * New conversations require at least one registered recipient client; lookup failures are propagated.
      */
     suspend fun migrateToProteus(user: OtherUser): Either<CoreFailure, ConversationId>
 
@@ -65,6 +69,7 @@ internal class OneOnOneMigratorImpl(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val systemMessageInserter: SystemMessageInserter,
+    private val clientRemoteRepository: ClientRemoteRepository,
 ) : OneOnOneMigrator {
 
     override suspend fun migrateToProteus(user: OtherUser): Either<CoreFailure, ConversationId> =
@@ -77,7 +82,13 @@ internal class OneOnOneMigratorImpl(
             }
         }.fold({ failure ->
             if (failure is StorageFailure.DataNotFound && user.userType.isTeammate()) {
-                conversationGroupRepository.createGroupConversation(usersList = listOf(user.id)).map { it.id }
+                clientRemoteRepository.fetchOtherUserClients(listOf(user.id)).flatMap { clientsByUser ->
+                    if (clientsByUser[user.id.toApi()].isNullOrEmpty()) {
+                        Either.Left(NoClientsForUser(user.id))
+                    } else {
+                        conversationGroupRepository.createGroupConversation(usersList = listOf(user.id)).map { it.id }
+                    }
+                }
             } else {
                 Either.Left(failure)
             }

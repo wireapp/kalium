@@ -139,3 +139,8 @@ END;
 
 selectChanges:
 SELECT changes();
+
+selectMembersForConversations:
+SELECT Member.conversation, Member.role, User.*
+FROM Member JOIN User ON User.qualified_id = Member.user
+WHERE Member.conversation IN :conversationIds;

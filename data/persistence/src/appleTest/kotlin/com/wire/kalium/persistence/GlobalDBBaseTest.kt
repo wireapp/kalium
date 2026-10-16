@@ -20,8 +20,10 @@ package com.wire.kalium.persistence
 
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
+import com.wire.kalium.persistence.db.TestDatabaseFile
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -49,8 +51,9 @@ actual abstract class GlobalDBBaseTest {
                 useGradleSafeSqliterLogging = true
             ),
             StandardTestDispatcher(),
-            null,
-            false
+            // A raw key and WAL, as the SDK gives the global database.
+            GlobalDatabaseSecret(TestDatabaseFile.KEY),
+            enableWAL = true
         )
     }
 }

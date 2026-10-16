@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity.RecurrenceEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrenceDetailsEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingParticipantEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingReminderEntity
 
 internal interface MeetingMapper {
     fun fromApiToDao(meeting: MeetingDTO): MeetingEntity?
@@ -41,6 +42,7 @@ internal interface MeetingMapper {
     fun fromDaoToModel(recurrence: RecurrenceEntity): Meeting.Recurrence
     fun fromModelToDao(recurrence: Meeting.Recurrence): RecurrenceEntity
     fun fromModelToApi(upsertMeeting: UpsertMeeting): UpsertMeetingRequest
+    fun fromDaoToModel(reminder: MeetingReminderEntity): MeetingReminder
 }
 
 @Suppress("TooManyFunctions")
@@ -139,6 +141,14 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
                 until = it.until
             )
         }
+    )
+
+    override fun fromDaoToModel(reminder: MeetingReminderEntity): MeetingReminder = MeetingReminder(
+        occurrenceId = reminder.occurrenceId,
+        meetingId = reminder.meetingId.toModel(),
+        conversationId = reminder.conversationId.toModel(),
+        title = reminder.title,
+        startTime = reminder.startTime
     )
 
     private fun RecurrenceEntity.Frequency.toFrequency(): Meeting.Recurrence.Frequency = when (this) {

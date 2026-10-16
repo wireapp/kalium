@@ -20,7 +20,10 @@ package com.wire.kalium.persistence.dao.conversation
 import androidx.paging.InvalidatingPagingSourceFactory
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
+import com.wire.kalium.persistence.ConversationDetailsWithMembersQueries
+import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.AsyncQueryPagingSource
@@ -32,6 +35,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onEach
+import kotlin.collections.map
+import kotlin.collections.orEmpty
 
 interface ConversationExtensions {
     fun getPagerForConversationDetailsWithEventsSearch(
@@ -50,10 +55,27 @@ interface ConversationExtensions {
         val conversationFilter: ConversationFilterEntity = ConversationFilterEntity.ALL,
         val strictMlsFilter: Boolean = true,
     )
+
+    fun getPagerForConversationDetailsWithMembersSearch(
+        queryConfig: MembersQueryConfig,
+        pagingConfig: PagingConfig,
+        startingOffset: Long = 0,
+    ): KaliumPager<ConversationDetailsWithMembersEntity>
+
+    data class MembersQueryConfig(
+        val searchQuery: String = "",
+        val fromArchive: Boolean = false,
+        val onlyInteractionEnabled: Boolean = false,
+        val onlyTeamId: String? = null,
+        val onlyDomain: String? = null,
+        val strictMlsFilter: Boolean = true,
+    )
 }
 
 internal class ConversationExtensionsImpl internal constructor(
-    private val queries: ConversationDetailsWithEventsQueries,
+    private val conversationDetailsWithEventsQueries: ConversationDetailsWithEventsQueries,
+    private val conversationDetailsWithMembersQueries: ConversationDetailsWithMembersQueries,
+    private val memberQueries: MembersQueries,
     private val mapper: ConversationDetailsWithEventsMapper,
     private val readDispatcher: ReadDispatcher,
 ) : ConversationExtensions {
@@ -108,13 +130,13 @@ internal class ConversationExtensionsImpl internal constructor(
         AsyncQueryPagingSource(
             countQuery =
                 if (searchQuery.isBlank()) {
-                    queries.countConversations(
+                    conversationDetailsWithEventsQueries.countConversations(
                         fromArchive = fromArchive,
                         conversationFilter = conversationFilter.name,
                         strict_mls = if (strictMlsFilter) 1 else 0,
                     )
                 } else {
-                    queries.countConversationDetailsWithEventsFromSearch(
+                    conversationDetailsWithEventsQueries.countConversationDetailsWithEventsFromSearch(
                         fromArchive = fromArchive,
                         onlyInteractionsEnabled = onlyInteractionEnabled,
                         conversationFilter = conversationFilter.name,
@@ -126,7 +148,7 @@ internal class ConversationExtensionsImpl internal constructor(
             initialOffset = initialOffset,
             queryProvider = { limit, offset ->
                 if (searchQuery.isBlank()) {
-                    queries.selectConversationDetailsWithEvents(
+                    conversationDetailsWithEventsQueries.selectConversationDetailsWithEvents(
                         fromArchive = fromArchive,
                         onlyInteractionsEnabled = onlyInteractionEnabled,
                         conversationFilter = conversationFilter.name,
@@ -138,7 +160,7 @@ internal class ConversationExtensionsImpl internal constructor(
                         mapper = mapper::fromViewToModel,
                     )
                 } else {
-                    queries.selectConversationDetailsWithEventsFromSearch(
+                    conversationDetailsWithEventsQueries.selectConversationDetailsWithEventsFromSearch(
                         fromArchive = fromArchive,
                         onlyInteractionsEnabled = onlyInteractionEnabled,
                         conversationFilter = conversationFilter.name,
@@ -154,4 +176,53 @@ internal class ConversationExtensionsImpl internal constructor(
             }
         )
     }
+
+    override fun getPagerForConversationDetailsWithMembersSearch(
+        queryConfig: ConversationExtensions.MembersQueryConfig,
+        pagingConfig: PagingConfig,
+        startingOffset: Long,
+    ): KaliumPager<ConversationDetailsWithMembersEntity> = KaliumPager(
+        pager = Pager(pagingConfig) { membersPagingSource(queryConfig, startingOffset) },
+        pagingSource = membersPagingSource(queryConfig, startingOffset),
+        readDispatcher = readDispatcher,
+    )
+
+    private fun membersPagingSource(config: ConversationExtensions.MembersQueryConfig, initialOffset: Long) =
+        AsyncQueryPagingSource(
+            countQuery = conversationDetailsWithMembersQueries.countConversationDetailsForMemberSearch(
+                fromArchive = config.fromArchive,
+                onlyInteractionsEnabled = if (config.onlyInteractionEnabled) 1L else 0L,
+                strict_mls = if (config.strictMlsFilter) 1 else 0,
+                searchQuery = config.searchQuery,
+                onlyTeamId = config.onlyTeamId,
+                onlyDomain = config.onlyDomain,
+            ),
+            context = readDispatcher.value,
+            initialOffset = initialOffset,
+            queryProvider = { limit, offset ->
+                conversationDetailsWithMembersQueries.selectConversationDetailsForMemberSearch(
+                    fromArchive = config.fromArchive,
+                    onlyInteractionsEnabled = if (config.onlyInteractionEnabled) 1L else 0L,
+                    strict_mls = if (config.strictMlsFilter) 1 else 0,
+                    searchQuery = config.searchQuery,
+                    onlyTeamId = config.onlyTeamId,
+                    onlyDomain = config.onlyDomain,
+                    limit = limit,
+                    offset = offset,
+                    mapper = ConversationMapper::fromViewToModel,
+                )
+            },
+            postProcessor = { conversations ->
+                val members = if (conversations.isEmpty()) emptyMap() else memberQueries
+                    .selectMembersForConversations(conversations.map { it.id }).awaitAsList()
+                    .groupBy { it.conversation }
+                conversations.map { conversation ->
+                    ConversationDetailsWithMembersEntity(
+                        conversationViewEntity = conversation,
+                        members = members[conversation.id].orEmpty().map { it.toMemberWithUserEntity() },
+                    )
+                }
+            },
+            transacter = conversationDetailsWithMembersQueries,
+        )
 }

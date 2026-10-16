@@ -20,12 +20,16 @@ package com.wire.kalium.logic.data.conversation
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
+import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.MembersQueryConfig
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -39,11 +43,22 @@ internal interface ConversationRepositoryExtensions {
         ongoingCallConversationIds: List<ConversationId> = emptyList(),
         ongoingCallConversationIdsFlow: Flow<List<ConversationId>> = flowOf(ongoingCallConversationIds),
     ): Flow<PagingData<ConversationDetailsWithEvents>>
+
+    suspend fun getPaginatedConversationDetailsWithMembersBySearchQuery(
+        queryConfig: ConversationMembersQueryConfig,
+        pagingConfig: PagingConfig,
+        startingOffset: Long,
+        strictMlsFilter: Boolean,
+    ): Flow<PagingData<ConversationDetailsWithMembers>>
+
 }
 
 internal class ConversationRepositoryExtensionsImpl internal constructor(
+    private val selfUserId: UserId,
     private val conversationDAO: ConversationDAO,
-    private val conversationMapper: ConversationMapper
+    private val conversationMapper: ConversationMapper,
+    private val userMapper: UserMapper,
+    private val memberMapper: MemberMapper,
 ) : ConversationRepositoryExtensions {
     override suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
@@ -78,6 +93,43 @@ internal class ConversationRepositoryExtensionsImpl internal constructor(
                 }
         }
     }
+
+    override suspend fun getPaginatedConversationDetailsWithMembersBySearchQuery(
+        queryConfig: ConversationMembersQueryConfig,
+        pagingConfig: PagingConfig,
+        startingOffset: Long,
+        strictMlsFilter: Boolean,
+    ): Flow<PagingData<ConversationDetailsWithMembers>> {
+        val pager = conversationDAO.platformExtensions.getPagerForConversationDetailsWithMembersSearch(
+            queryConfig = MembersQueryConfig(
+                searchQuery = queryConfig.searchQuery,
+                fromArchive = queryConfig.fromArchive,
+                onlyInteractionEnabled = queryConfig.onlyInteractionEnabled,
+                onlyTeamId = queryConfig.onlyTeamId,
+                onlyDomain = queryConfig.onlyDomain,
+                strictMlsFilter = strictMlsFilter,
+            ),
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset,
+        )
+        return pager.pagingDataFlow.map { page ->
+            page.map { entity ->
+                ConversationDetailsWithMembers(
+                    conversationDetails = conversationMapper.fromDaoModelToDetails(entity.conversationViewEntity),
+                    members = entity.members.map { member ->
+                        MemberDetails(
+                            user = when (member.user.id) {
+                                selfUserId.toDao() -> userMapper.fromUserEntityToSelfUser(member.user)
+                                else -> userMapper.fromUserEntityToOtherUser(member.user)
+                            },
+                            role = memberMapper.fromDaoModel(MemberEntity(member.user.id, member.role)).role,
+                        )
+                    },
+                )
+            }
+        }
+    }
+
 }
 
 public data class ConversationQueryConfig(
@@ -86,4 +138,12 @@ public data class ConversationQueryConfig(
     val onlyInteractionEnabled: Boolean = false,
     val newActivitiesOnTop: Boolean = false,
     val conversationFilter: ConversationFilter = ConversationFilter.All,
+)
+
+public data class ConversationMembersQueryConfig(
+    val searchQuery: String = "",
+    val fromArchive: Boolean = false,
+    val onlyInteractionEnabled: Boolean = false,
+    val onlyTeamId: String? = null,
+    val onlyDomain: String? = null,
 )

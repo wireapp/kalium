@@ -47,6 +47,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
@@ -212,6 +213,13 @@ internal interface ConversationRepository {
     suspend fun updateConversationGroupState(groupID: GroupID, groupState: GroupState): Either<StorageFailure, Unit>
     suspend fun updateConversationGroupStateByConversationId(
         conversationId: ConversationId,
+        groupState: GroupState
+    ): Either<StorageFailure, Unit>
+
+    suspend fun updateMLSGroupIdAndState(
+        conversationId: ConversationId,
+        groupID: GroupID,
+        epoch: ULong,
         groupState: GroupState
     ): Either<StorageFailure, Unit>
 
@@ -404,9 +412,10 @@ internal class ConversationDataSource internal constructor(
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
 ) : ConversationRepository {
     override val extensions: ConversationRepositoryExtensions =
-        ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)
+        ConversationRepositoryExtensionsImpl(selfUserId, conversationDAO, conversationMapper, userMapper, memberMapper)
 
     // region Get/Observe by id
 
@@ -680,6 +689,16 @@ internal class ConversationDataSource internal constructor(
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.updateConversationGroupStateByConversationId(groupState.toDao(), conversationId.toDao())
+        }
+
+    override suspend fun updateMLSGroupIdAndState(
+        conversationId: ConversationId,
+        groupID: GroupID,
+        epoch: ULong,
+        groupState: GroupState
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateMLSGroupIdAndState(conversationId.toDao(), groupID.value, epoch.toLong(), groupState.toDao())
         }
 
     override suspend fun updateConversationNotificationDate(

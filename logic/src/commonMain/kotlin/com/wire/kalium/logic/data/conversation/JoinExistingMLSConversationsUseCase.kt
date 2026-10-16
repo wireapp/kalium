@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -43,11 +44,15 @@ import kotlinx.coroutines.delay
 /**
  * Send an external commit to join all MLS conversations for which the user is a member,
  * but has not yet joined the corresponding MLS group.
+ *
+ * @param includePendingWelcome also join conversations still waiting for a Welcome message. Only use it when
+ * that Welcome can no longer arrive, e.g. this client had no key packages or no MLS client when it was added.
  */
 internal interface JoinExistingMLSConversationsUseCase {
     suspend operator fun invoke(
         keepRetryingOnFailure: Boolean = true,
         allowJoinByExternalCommit: Boolean = true,
+        includePendingWelcome: Boolean = false,
     ): Either<CoreFailure, Unit>
 }
 
@@ -74,6 +79,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
     override suspend operator fun invoke(
         keepRetryingOnFailure: Boolean,
         allowJoinByExternalCommit: Boolean,
+        includePendingWelcome: Boolean,
     ): Either<CoreFailure, Unit> =
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
@@ -82,7 +88,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
             Either.Right(Unit)
         } else {
             transactionProvider.transaction("JoinExistingMLSConversations") { transactionContext ->
-                getPendingConversations().flatMap { pendingConversations ->
+                getPendingConversations(includePendingWelcome).flatMap { pendingConversations ->
                     filterSelfMemberConversations(pendingConversations).flatMap { recoverableConversations ->
                         kaliumLogger.d("Requesting to re-join ${recoverableConversations.size} existing MLS conversation(s)")
                         recoverableConversations.chunked(maxConcurrentJoins).foldToEitherWhileRight(Unit) { batch, _ ->
@@ -93,14 +99,17 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
             }
         }
 
-    private suspend fun getPendingConversations(): Either<CoreFailure, List<Conversation>> =
-        conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingJoin ->
-            conversationRepository.getConversationsByGroupState(GroupState.PENDING_AFTER_RESET).flatMap { pendingAfterReset ->
-                conversationRepository.getConversationsByGroupState(GroupState.PENDING_CREATION).flatMap { pendingCreation ->
-                    Either.Right((pendingJoin + pendingAfterReset + pendingCreation).distinctBy { it.id })
-                }
-            }
+    private suspend fun getPendingConversations(includePendingWelcome: Boolean): Either<CoreFailure, List<Conversation>> {
+        val groupStates = buildList {
+            add(GroupState.PENDING_JOIN)
+            add(GroupState.PENDING_AFTER_RESET)
+            add(GroupState.PENDING_CREATION)
+            if (includePendingWelcome) add(GroupState.PENDING_WELCOME_MESSAGE)
         }
+        return groupStates.foldToEitherWhileRight(emptyList<Conversation>()) { groupState, conversations ->
+            conversationRepository.getConversationsByGroupState(groupState).map { conversations + it }
+        }.map { conversations -> conversations.distinctBy { it.id } }
+    }
 
     private suspend fun filterSelfMemberConversations(
         conversations: List<Conversation>,

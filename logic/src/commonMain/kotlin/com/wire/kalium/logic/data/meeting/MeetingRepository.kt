@@ -33,6 +33,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -68,10 +69,13 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
+import kotlin.collections.map
 import kotlin.time.Duration.Companion.days
 
+@Suppress("TooManyFunctions")
 internal interface MeetingRepository {
     suspend fun fetchAndPersistMeetings(
+        transactionContext: CryptoTransactionContext,
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
     ): Either<CoreFailure, List<Meeting>>
@@ -101,14 +105,14 @@ internal interface MeetingRepository {
 
     suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit>
 
-    suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit>
+    suspend fun getMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, List<Meeting>>
 
     suspend fun createNewMeeting(
         meeting: UpsertMeeting,
         generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil(),
         transactionContext: CryptoTransactionContext,
-    ): Either<CoreFailure, MLSAdditionResult>
+    ): Either<CoreFailure, CreateNewMeetingResult>
 
     suspend fun updateMeeting(
         meetingId: MeetingId,
@@ -122,6 +126,10 @@ internal interface MeetingRepository {
         meetingId: MeetingId,
         from: Instant = currentInstant()
     ): Either<StorageFailure, MeetingOccurrence>
+
+    fun observeMeetingReminderChanges(): Flow<Unit>
+    suspend fun getNextMeetingReminder(from: Instant): MeetingReminder?
+    suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminder>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -139,31 +147,38 @@ internal class MeetingDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : MeetingRepository {
     override suspend fun fetchAndPersistMeetings(
+        transactionContext: CryptoTransactionContext,
         generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant
     ): Either<CoreFailure, List<Meeting>> =
         wrapApiRequest {
             meetingApi.fetchMeetings()
-        }.flatMap { meetings ->
-            wrapStorageRequest {
-                meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
-                    .also { meetingsToPersist ->
-                        if (meetingsToPersist.isNotEmpty()) {
-                            val creatorIds = meetingsToPersist.map { it.creatorId.toModel() }.toSet()
-                            // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
-                            // foreign key constraint violation and try to fetch the user details from the server if possible
-                            userRepository.insertOrIgnoreIncompleteUsers(creatorIds.toList())
-                            userRepository.fetchUsersIfUnknownByIds(creatorIds)
-
-                            meetingDAO.upsertMeetings(
-                                meetings = meetingsToPersist,
-                                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
-                                removeMeetingsAbsentFromUpsertList = true,
-                            )
-                        }
-                    }
-                    .map { meetingMapper.fromDaoToModel(it) }
+        }.map { meetings ->
+            meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
+        }.onSuccess { meetingsToPersist ->
+            val creatorIds = meetingsToPersist.map { it.creatorId.toModel() }.toSet()
+            if (creatorIds.isNotEmpty()) {
+                // in case the creator is not yet known, probably deleted, we insert an incomplete user to avoid
+                // foreign key constraint violation and try to fetch the user details from the server if possible
+                userRepository.insertOrIgnoreIncompleteUsers(creatorIds.toList())
+                userRepository.fetchUsersIfUnknownByIds(creatorIds)
             }
+            val conversationIds = meetingsToPersist.map { it.conversationId.toModel() }.distinct()
+            if (conversationIds.isNotEmpty()) {
+                conversationRepository.fetchConversationListDetails(conversationIds).flatMap {
+                    persistConversations(transactionContext, it.conversationsFound, false)
+                }
+            }
+
+            wrapStorageRequest {
+                meetingDAO.upsertMeetings(
+                    meetings = meetingsToPersist,
+                    generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil),
+                    removeMeetingsAbsentFromUpsertList = true,
+                )
+            }
+        }.map {
+            it.map { meetingMapper.fromDaoToModel(it) }
         }
 
     override suspend fun fetchAndPersistMeeting(
@@ -228,10 +243,10 @@ internal class MeetingDataSource(
         meetingDAO.deleteMeeting(meetingId.toDao())
     }
 
-    override suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit> =
+    override suspend fun getMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, List<Meeting>> =
         withContext(NonCancellable) {
             wrapStorageRequest {
-                meetingDAO.deleteMeetingsByConversationId(conversationId.toDao())
+                meetingDAO.getMeetingsByConversationId(conversationId.toDao()).map(meetingMapper::fromDaoToModel)
             }
         }
 
@@ -249,7 +264,7 @@ internal class MeetingDataSource(
         generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant,
         transactionContext: CryptoTransactionContext,
-    ): Either<CoreFailure, MLSAdditionResult> = withContext(NonCancellable) {
+    ): Either<CoreFailure, CreateNewMeetingResult> = withContext(NonCancellable) {
         wrapApiRequest {
             meetingApi.createNewMeeting(request = meetingMapper.fromModelToApi(meeting))
         }.flatMap { response ->
@@ -258,7 +273,7 @@ internal class MeetingDataSource(
                 otherParticipants = meeting.otherParticipants,
                 generateOccurrencesFrom = generateOccurrencesFrom,
                 generateOccurrencesUntil = generateOccurrencesUntil
-            )
+            ).map { CreateNewMeetingResult(response.conversation.id.toModel(), it) }
         }
     }
 
@@ -424,6 +439,14 @@ internal class MeetingDataSource(
         }
     }
 
+    override fun observeMeetingReminderChanges(): Flow<Unit> = meetingDAO.observeMeetingReminderChanges()
+
+    override suspend fun getNextMeetingReminder(from: Instant): MeetingReminder? =
+        meetingDAO.getNextMeetingReminder(from)?.let(meetingMapper::fromDaoToModel)
+
+    override suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminder> =
+        meetingDAO.getMeetingRemindersWithin(startInclusive, endExclusive).map { meetingMapper.fromDaoToModel(it) }
+
     private fun CoreFailure.isMLSRetryableError() = when (this) {
         is NetworkFailure.FederatedBackendFailure.RetryableFailure,
         is CoreFailure.MissingKeyPackages,
@@ -436,6 +459,8 @@ internal class MeetingDataSource(
     data class UpdateConversationNameFailure(val conversationId: ConversationId, val reason: CoreFailure) : CoreFailure.FeatureFailure()
     data object MeetingNotSupportedFailure : CoreFailure.FeatureFailure()
 }
+
+internal data class CreateNewMeetingResult(val conversationId: ConversationId, val mlsAdditionResult: MLSAdditionResult)
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
 private const val OUTDATED_MEETING_RETENTION_DAYS = 30

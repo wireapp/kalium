@@ -38,6 +38,7 @@ import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -64,6 +65,7 @@ internal class RestoreMPBackupUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem,
     private val backupImporterProvider: MPBackupImporterProvider = MPBackupImporterProviderImpl(),
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val progressDispatcher: CoroutineDispatcher? = null,
 ) : RestoreMPBackupUseCase {
 
     override suspend fun invoke(
@@ -129,7 +131,7 @@ internal class RestoreMPBackupUseCaseImpl(
     ): RestoreBackupResult {
         val failure = persistBackupData(pager) { currentPage, totalPages ->
             val progress = if (totalPages == 0) 1f else currentPage.toFloat() / totalPages
-            withContext(dispatchers.main) {
+            withContext(progressDispatcher ?: dispatchers.main) {
                 onProgress(progress.coerceIn(0f, 1f))
             }
         }

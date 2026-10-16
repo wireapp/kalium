@@ -42,6 +42,9 @@ public class MeetingScope internal constructor(
     private val deleteConversation: DeleteConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
 ) {
+    public val maintainMeetingOccurrences: MaintainMeetingOccurrencesUseCase
+        get() = MaintainMeetingOccurrencesUseCaseImpl(dispatcher, meetingRepository)
+
     public val getPaginatedMeetingOccurrenceDetails: GetPaginatedMeetingOccurrencesUseCase
         get() = GetPaginatedMeetingOccurrencesUseCaseImpl(
             dispatcher = dispatcher,
@@ -96,4 +99,7 @@ public class MeetingScope internal constructor(
             resetMLSConversation = resetMLSConversation,
             transactionProvider = transactionProvider,
         )
+
+    public val meetingReminders: MeetingRemindersUseCase
+        get() = MeetingRemindersUseCaseImpl(meetingRepository)
 }
