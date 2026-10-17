@@ -19,10 +19,16 @@ package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.logic.sync.receiving.FakeNotificationApi.Companion.event
 import com.wire.kalium.logic.sync.receiving.FakeNotificationApi.Companion.page
+import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
+import com.wire.kalium.network.api.authenticated.notification.SynchronizationDataDTO
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.awaitCancellation
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.event.EventDAO
+import com.wire.kalium.persistence.dao.event.NewEventEntity
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
@@ -89,9 +95,96 @@ class NotificationCatchUpTest {
         }
     }
 
+    @Test
+    fun consumableCatchUpStoresEachEventBeforeAcknowledgingItUntilItsMarker() = runTest {
+        withDatabase { database ->
+            val api = FakeNotificationApi(emptyList(), emptyMap())
+            val storedAtAck = mutableListOf<Boolean>()
+            api.consumable = { marker ->
+                flowOf(
+                    WebSocketEvent.Open(shouldProcessPendingEvents = false),
+                    consumableEvent("A", 1UL),
+                    // Another session's marker does not end this catch-up.
+                    WebSocketEvent.BinaryPayloadReceived(
+                        ConsumableNotificationResponse.SynchronizationNotification(SynchronizationDataDTO(9UL, "foreign"))
+                    ),
+                    WebSocketEvent.BinaryPayloadReceived(
+                        ConsumableNotificationResponse.SynchronizationNotification(SynchronizationDataDTO(2UL, marker))
+                    ),
+                    consumableEvent("B", 3UL),
+                )
+            }
+            api.acknowledge = {
+                storedAtAck += database.eventDAO.getEventById("A") != null
+                NetworkResponse.Success(Unit, emptyMap(), 200)
+            }
+
+            assertEquals(CatchUpOutcome.LIVE, catchUp(api, database).run(10.seconds, consumable = true))
+
+            // Events after the marker stay unacknowledged and are delivered again.
+            assertEquals(listOf("consume", "ack:1", "ack:9", "ack:2", "close"), api.requests)
+            assertEquals(listOf(true, true, true), storedAtAck)
+            assertEquals(listOf("A"), database.eventIds())
+        }
+    }
+
+    @Test
+    fun missedNotificationsStopWithoutAcknowledgingThem() = runTest {
+        withDatabase { database ->
+            val api = FakeNotificationApi(emptyList(), emptyMap())
+            api.consumable = {
+                flowOf(
+                    WebSocketEvent.Open(shouldProcessPendingEvents = false),
+                    WebSocketEvent.BinaryPayloadReceived(ConsumableNotificationResponse.MissedNotification),
+                )
+            }
+
+            assertEquals(CatchUpOutcome.NEEDS_SLOW_SYNC, catchUp(api, database).run(10.seconds, consumable = true))
+
+            assertEquals(listOf("consume", "close"), api.requests)
+        }
+    }
+
+    @Test
+    fun failedAcknowledgementFailsConsumableCatchUpAfterStoringTheEvent() = runTest {
+        withDatabase { database ->
+            val api = FakeNotificationApi(emptyList(), emptyMap())
+            api.consumable = { flowOf(WebSocketEvent.Open(shouldProcessPendingEvents = false), consumableEvent("A", 1UL)) }
+            api.acknowledge = { NetworkResponse.Error(KaliumException.NoNetwork()) }
+
+            assertEquals(CatchUpOutcome.FAILED, catchUp(api, database).run(10.seconds, consumable = true))
+
+            assertEquals(listOf("consume", "ack:1", "close"), api.requests)
+            assertEquals(listOf("A"), database.eventIds())
+        }
+    }
+
+    @Test
+    fun eventThatCannotBeStoredIsNeverAcknowledged() = runTest {
+        withDatabase { database ->
+            val api = FakeNotificationApi(emptyList(), emptyMap())
+            api.consumable = { flowOf(WebSocketEvent.Open(shouldProcessPendingEvents = false), consumableEvent("A", 1UL)) }
+            val failingStorage = object : EventDAO by database.eventDAO {
+                override suspend fun insertEvents(events: List<NewEventEntity>) = error("Storage unavailable")
+            }
+            val catchUp = NotificationCatchUp(
+                EventIngestion(api, failingStorage, database.metadataDAO, CLIENT_ID),
+                closeWebSockets = { api.requests += "close" },
+            )
+
+            assertEquals(CatchUpOutcome.FAILED, catchUp.run(10.seconds, consumable = true))
+
+            assertEquals(listOf("consume", "close"), api.requests)
+        }
+    }
+
     private fun catchUp(api: FakeNotificationApi, database: UserDatabaseBuilder) = NotificationCatchUp(
         EventIngestion(api, database.eventDAO, database.metadataDAO, CLIENT_ID),
         closeWebSockets = { api.requests += "close" },
+    )
+
+    private fun consumableEvent(id: String, deliveryTag: ULong) = WebSocketEvent.BinaryPayloadReceived<ConsumableNotificationResponse>(
+        ConsumableNotificationResponse.EventNotification(EventDataDTO(deliveryTag, event(id)))
     )
 
     private companion object {

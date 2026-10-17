@@ -41,6 +41,12 @@ internal class FakeNotificationApi(
 ) : NotificationApi {
     val requests = mutableListOf<String>()
 
+    /** Consumable stream for the session's marker. */
+    var consumable: (marker: String) -> Flow<WebSocketEvent<ConsumableNotificationResponse>> = { error("Unused") }
+
+    /** Strict acknowledgement result. */
+    var acknowledge: suspend (EventAcknowledgeRequest) -> NetworkResponse<Unit> = { NetworkResponse.Success(Unit, emptyMap(), 200) }
+
     constructor(websocket: List<WebSocketEvent<EventResponseToStore>>, pages: Map<String?, NotificationResponse>) : this(
         { kotlinx.coroutines.flow.flowOf(*websocket.toTypedArray()) },
         pages.toMutableMap().let { remaining -> { cursor -> checkNotNull(remaining.remove(cursor)) { "Unexpected cursor $cursor" } } },
@@ -64,10 +70,22 @@ internal class FakeNotificationApi(
     override suspend fun consumeLiveEvents(
         clientId: String,
         markerId: String,
-    ): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> = error("Unused")
+    ): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> {
+        requests += "consume"
+        return NetworkResponse.Success(consumable(markerId), emptyMap(), 200)
+    }
 
     override suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) =
-        error("Unused")
+        error("Only strict acknowledgements are expected")
+
+    override suspend fun acknowledgeEventsOnOpenSession(
+        clientId: String,
+        markerId: String,
+        eventAcknowledgeRequest: EventAcknowledgeRequest,
+    ): NetworkResponse<Unit> {
+        requests += "ack:${eventAcknowledgeRequest.data?.deliveryTag}"
+        return acknowledge(eventAcknowledgeRequest)
+    }
 
     private suspend fun page(cursor: String?): NetworkResponse<NotificationResponse> {
         requests += "page:${cursor.orEmpty()}"

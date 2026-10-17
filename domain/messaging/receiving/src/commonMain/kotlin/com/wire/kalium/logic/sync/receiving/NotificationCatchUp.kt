@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /** How a bounded catch-up ended. Stored events are processed in every case, but only [LIVE] caught up. */
 enum class CatchUpOutcome {
@@ -42,6 +44,12 @@ enum class CatchUpOutcome {
      * later events stay on the backend for the next attempt.
      */
     FAILED,
+
+    /**
+     * The backend dropped events for this client. Nothing was acknowledged, so the app's next
+     * connection receives the same signal and recovers with slow sync.
+     */
+    NEEDS_SLOW_SYNC,
 }
 
 /**
@@ -58,7 +66,11 @@ class NotificationCatchUp(
 ) {
     private val logger = kaliumLogger.withTextTag("NotificationCatchUp")
 
-    suspend fun run(budget: Duration): CatchUpOutcome {
+    /** A [consumable] client catches up on its consumable stream instead; see [consume]. */
+    suspend fun run(budget: Duration, consumable: Boolean = false): CatchUpOutcome =
+        if (consumable) consume(budget) else catchUp(budget)
+
+    private suspend fun catchUp(budget: Duration): CatchUpOutcome {
         val connected = try {
             withTimeoutOrNull(budget) { connect() }
         } finally {
@@ -73,6 +85,45 @@ class NotificationCatchUp(
         logger.i("Catch-up finished: $outcome")
         return outcome
     }
+
+    /**
+     * Stores and acknowledges each event on this session until the backend confirms its marker.
+     * Later events stay unacknowledged and are delivered again; there is no REST stream to page.
+     */
+    @OptIn(ExperimentalUuidApi::class)
+    @Suppress("TooGenericExceptionCaught") // Any connection failure leaves stored events to process.
+    private suspend fun consume(budget: Duration): CatchUpOutcome {
+        val outcome = try {
+            withTimeoutOrNull(budget) {
+                val connection = ingestion.consumable(
+                    marker = Uuid.random().toString(),
+                    strict = true,
+                    // Recovery needs slow sync, which only the app can run.
+                    onMissedNotification = { throw MissedNotifications() },
+                )
+                when (connection) {
+                    is Either.Left -> CatchUpOutcome.FAILED
+                    is Either.Right -> {
+                        connection.value.first { it == IngestionPhase.READY }
+                        CatchUpOutcome.LIVE
+                    }
+                }
+            } ?: CatchUpOutcome.BUDGET
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: MissedNotifications) {
+            CatchUpOutcome.NEEDS_SLOW_SYNC
+        } catch (failure: Throwable) {
+            logger.w("Consumable catch-up failed: ${failure::class.simpleName}")
+            CatchUpOutcome.FAILED
+        } finally {
+            withContext(NonCancellable) { closeWebSockets() }
+        }
+        logger.i("Consumable catch-up finished: $outcome")
+        return outcome
+    }
+
+    private class MissedNotifications : RuntimeException("Notifications were missed")
 
     /** True once pending pages are stored with the socket open; false if the socket failed. */
     @Suppress("TooGenericExceptionCaught") // Any socket failure fails the catch-up.

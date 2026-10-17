@@ -94,7 +94,14 @@ class EventIngestion(
     suspend fun legacy(clearProcessedOnFirstEvent: Boolean = false): Either<NetworkFailure, Flow<IngestionPhase>> =
         wrapApiRequest { notificationApi.listenToLiveEvents(clientId) }.map { events ->
             flow {
-                val connection = Connection(this, marker = null, clearProcessedOnFirstEvent, onCaughtUp = {}, onMissedNotification = {})
+                val connection = Connection(
+                    collector = this,
+                    marker = null,
+                    clearProcessedOnFirstEvent = clearProcessedOnFirstEvent,
+                    strict = false,
+                    onCaughtUp = {},
+                    onMissedNotification = {},
+                )
                 events
                     .buffer(capacity = Channel.UNLIMITED, onBufferOverflow = BufferOverflow.SUSPEND)
                     .map { it.asConsumable() }
@@ -105,16 +112,20 @@ class EventIngestion(
     /**
      * Connects the consumable stream with this connection's [marker]. [onCaughtUp] runs when the
      * backend confirms the marker; [onMissedNotification] decides how to recover lost events.
+     * A [strict] connection fails when an event cannot be stored or acknowledged on the open session,
+     * instead of skipping it or opening another session to acknowledge it.
      */
+    @Suppress("LongParameterList")
     suspend fun consumable(
         marker: String,
         clearProcessedOnFirstEvent: Boolean = false,
+        strict: Boolean = false,
         onCaughtUp: () -> Unit = {},
         onMissedNotification: suspend () -> Unit,
     ): Either<NetworkFailure, Flow<IngestionPhase>> =
         wrapApiRequest { notificationApi.consumeLiveEvents(clientId = clientId, markerId = marker) }.map { events ->
             flow {
-                val connection = Connection(this, marker, clearProcessedOnFirstEvent, onCaughtUp, onMissedNotification)
+                val connection = Connection(this, marker, clearProcessedOnFirstEvent, strict, onCaughtUp, onMissedNotification)
                 events.collect { connection.handle(it) }
             }
         }
@@ -169,6 +180,7 @@ class EventIngestion(
         // Present until the backend confirms this connection caught up; legacy streams never have one.
         private var marker: String?,
         private val clearProcessedOnFirstEvent: Boolean,
+        private val strict: Boolean,
         private val onCaughtUp: () -> Unit,
         private val onMissedNotification: suspend () -> Unit,
     ) {
@@ -216,6 +228,9 @@ class EventIngestion(
             logger.d("insert event ${event.id} from WS")
             wrapStorageRequest {
                 eventDAO.insertEvents(listOf(NewEventEntity(event.id, event.payload, event.transient, live)))
+            }.onFailure {
+                // Acknowledging later events would let the backend drop this one.
+                if (strict) throw KaliumSyncException("Live event storage failed", it)
             }.onSuccess {
                 data.deliveryTag?.let { acknowledge(it) }
                 if (!event.transient) wrapStorageRequest { metadataDAO.insertValue(event.id, CURSOR_KEY) }
@@ -239,14 +254,18 @@ class EventIngestion(
         private suspend fun acknowledge(deliveryTag: ULong) {
             logger.d("Handling ackEvent")
             val ackClientId = (currentClientId() as? Either.Right)?.value ?: return
-            notificationApi.acknowledgeEvents(
-                clientId = ackClientId,
-                markerId = marker.orEmpty(),
-                eventAcknowledgeRequest = EventAcknowledgeRequest(
-                    type = AcknowledgeType.ACK,
-                    data = AcknowledgeData(deliveryTag = deliveryTag, multiple = false)
-                )
+            val request = EventAcknowledgeRequest(
+                type = AcknowledgeType.ACK,
+                data = AcknowledgeData(deliveryTag = deliveryTag, multiple = false)
             )
+            if (!strict) {
+                notificationApi.acknowledgeEvents(clientId = ackClientId, markerId = marker.orEmpty(), eventAcknowledgeRequest = request)
+                return
+            }
+            val sent = notificationApi.acknowledgeEventsOnOpenSession(ackClientId, marker.orEmpty(), request)
+            if (!sent.isSuccessful()) {
+                throw KaliumSyncException("Acknowledgement failed", NetworkFailure.ServerMiscommunication(sent.kException))
+            }
         }
     }
 

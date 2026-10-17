@@ -80,4 +80,15 @@ interface NotificationApi : BaseApi {
     suspend fun consumeLiveEvents(clientId: String, markerId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>
     suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest)
 
+    /**
+     * Sends [eventAcknowledgeRequest] on the consumable session that is already open, suspending until it is
+     * queued. Unlike [acknowledgeEvents], never opens a session and reports failure instead of logging it.
+     */
+    suspend fun acknowledgeEventsOnOpenSession(
+        clientId: String,
+        markerId: String,
+        eventAcknowledgeRequest: EventAcknowledgeRequest,
+    ): NetworkResponse<Unit> = getApiNotSupportedError(::acknowledgeEventsOnOpenSession.name, CONSUMABLE_EVENTS_API_VERSION)
 }
+
+private const val CONSUMABLE_EVENTS_API_VERSION = 9

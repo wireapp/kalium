@@ -255,15 +255,16 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
     }
 
     /**
-     * An unfinished catch-up may leave events the socket received, which get no push. A failed one, like
-     * processing that ran out of time, may not have reached the push's own event.
+     * An unfinished catch-up may leave events the socket received, which get no push; missed notifications
+     * mean the backend dropped events until the app's slow sync. A failed catch-up, like processing that ran
+     * out of time, may not have reached the push's own event.
      */
     private suspend fun mayLeaveUnseenEvents(
         runtime: AppleAccountRuntime,
         caughtUp: CatchUpOutcome?,
         received: ReceivedNotificationResult,
         notificationId: String,
-    ): Boolean = caughtUp == CatchUpOutcome.BUDGET || (
+    ): Boolean = caughtUp == CatchUpOutcome.BUDGET || caughtUp == CatchUpOutcome.NEEDS_SLOW_SYNC || (
         (received.stoppedReason == BUDGET || caughtUp == CatchUpOutcome.FAILED) &&
             runtime.database.eventDAO.getEventById(notificationId)?.isProcessed != true
         )

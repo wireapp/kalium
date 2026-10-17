@@ -159,6 +159,15 @@ arrived while pages were fetched, is not alerted; the next sync's paging stores 
 A REST sweep after closing would close the gap; it is left out to match Android
 until the gap shows up in practice.
 
+A client registered for consumable notifications has no REST stream to page. Its
+catch-up consumes its own session: each event is stored before it is acknowledged,
+on that open session only, and the session is live when the backend confirms its
+marker. Events after the marker stay unacknowledged and are delivered again. A
+storage or acknowledgement failure ends catch-up rather than skipping the event. A
+missed-notification signal stops catch-up without acknowledging it, so the app's
+next connection receives it and recovers with slow sync; the host shows a generic
+alert. The capability is not registered in this fork yet.
+
 ## Proportionate replay guarantees
 
 Required permission/member writes, sender authorization, crypto integrity and
