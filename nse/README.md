@@ -35,7 +35,11 @@ certificate pins. Match these build switches to the app's `KaliumConfigs`:
 For each push, create `KaliumNSERequest` with the qualified user identity, target
 notification ID, an additional host `showMessageContent` restriction and a budget
 between 1 and 25,000 milliseconds. Optionally pass this account's currently delivered
-message alerts in `deliveredNotifications`. Call `process` from Swift async code. The
+message alerts in `deliveredNotifications`. Call `process` from Swift async code. Like
+the app, the NSE first catches up over the WebSocket: it opens it, stores the REST pages
+fetched once it is open and closes it at live, then processes the stored queue to its
+end. Without a live socket nothing is fetched, and a push whose event was not processed
+asks for a generic alert ([ADR 11](../docs/adr/0011-nse-account-runtime-ownership.md#bounded-incremental-sync)). The
 [Swift fixture](src/swiftTest/Receive.swift) shows the concrete constructor and call.
 Swift cancellation reaches the owned attempt.
 
@@ -74,7 +78,7 @@ explains their selection.
 The account lease covers all resource use, drain and cleanup. The NSE resumes the
 same `Events` queue as the app, stores whole REST pages atomically and advances the
 app's cursor only for non-transient events. It scans stored pending rows in order
-through the requested target. A message-only notification that fails on network or
+to the end of the queue. A message-only notification that fails on network or
 recoverable MLS state is deferred for 30 seconds, and later notifications that do
 not depend on it can still be processed; see
 [conversation isolation](../docs/NSE_IMPLEMENTATION_STATUS.md#conversation-isolation-and-deferral).

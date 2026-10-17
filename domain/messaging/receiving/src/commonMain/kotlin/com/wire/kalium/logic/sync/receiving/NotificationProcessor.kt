@@ -106,9 +106,13 @@ class NotificationProcessor(
     private val events = database.notificationEventStore
     private val previewImages = ReceivedLinkPreviewImages(options.linkPreviewEnabled, assetApi, assetDirectory)
 
-    /** Only the target can return content. Unsupported earlier events remain unprocessed. */
+    /**
+     * Pages REST up to [targetId] and processes through it. Only the target can return content; unsupported
+     * earlier events remain unprocessed. Test-only: the NSE catches up over the WebSocket and uses
+     * [processToLive]. Remove it once the native receiving tests catch up the same way.
+     */
     @Suppress("TooGenericExceptionCaught")
-    suspend fun process(targetId: String): ReceivedNotificationResult = try {
+    internal suspend fun process(targetId: String): ReceivedNotificationResult = try {
         if (isolateConversations) processIsolatedEvents(targetId) else processEvents(targetId)
     } catch (failure: Throwable) {
         if (failure !is kotlinx.coroutines.CancellationException) diagnostics?.failed(failure)

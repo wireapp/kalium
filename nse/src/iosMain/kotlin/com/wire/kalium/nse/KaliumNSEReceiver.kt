@@ -77,16 +77,7 @@ public data class KaliumNSERequest(
     public val budgetMilliseconds: Long,
     /** The host supplies only delivered message alerts belonging to this request's account. */
     public val deliveredNotifications: List<KaliumNSEDeliveredNotification> = emptyList(),
-    public val syncMode: KaliumNSESyncMode = KaliumNSESyncMode.TARGET,
 )
-
-public enum class KaliumNSESyncMode {
-    /** Fetch and process up to the request's notification only. */
-    TARGET,
-
-    /** Catch up over the WebSocket, close it, then process the stored queue to its end. */
-    TO_LIVE,
-}
 
 public data class KaliumNSEDeliveredNotification(
     public val identifier: String,
@@ -128,7 +119,7 @@ public data class KaliumNSEResult(
      * [KaliumNSEStatus.FAILED] timeouts.
      */
     public val presentGenericAlert: Boolean = false,
-    /** Diagnostic code only: why a sync-to-live attempt stopped. */
+    /** Diagnostic code only: why receiving stopped, or `CATCH_UP_*` when the catch-up did not reach live. */
     public val stoppedReason: String? = null,
 )
 
@@ -231,18 +222,12 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             diagnostics = diagnostics,
         )
         val budget = request.budgetMilliseconds.milliseconds
-        var caughtUp: CatchUpOutcome? = null
-        val received = when (request.syncMode) {
-            KaliumNSESyncMode.TARGET -> processor.process(request.notificationId)
-            KaliumNSESyncMode.TO_LIVE -> {
-                // Soft deadlines leave time to present and to close the runtime within the budget.
-                val outcome = runtime.catchUp(budget * CATCH_UP_SHARE - started.elapsedNow())
-                caughtUp = outcome
-                processor.processToLive(request.notificationId) { started.elapsedNow() > budget * PROCESS_SHARE }.let {
-                    if (outcome == CatchUpOutcome.LIVE || it.stoppedReason != QUEUE_END) it
-                    else it.copy(stoppedReason = "CATCH_UP_${outcome.name}")
-                }
-            }
+        // As the app does, catch up over the WebSocket, then process the stored queue to its end. Soft deadlines
+        // leave time to present and to close the runtime within the budget.
+        val caughtUp = runtime.catchUp(budget * CATCH_UP_SHARE - started.elapsedNow())
+        val received = processor.processToLive(request.notificationId) { started.elapsedNow() > budget * PROCESS_SHARE }.let {
+            if (caughtUp == CatchUpOutcome.LIVE || it.stoppedReason != QUEUE_END) it
+            else it.copy(stoppedReason = "CATCH_UP_${caughtUp.name}")
         }
         val unnotified = if (!received.prefixComplete) emptyList()
         else UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId).take()
@@ -261,7 +246,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
      */
     private suspend fun mayLeaveUnseenEvents(
         runtime: AppleAccountRuntime,
-        caughtUp: CatchUpOutcome?,
+        caughtUp: CatchUpOutcome,
         received: ReceivedNotificationResult,
         notificationId: String,
     ): Boolean = caughtUp == CatchUpOutcome.BUDGET || caughtUp == CatchUpOutcome.NEEDS_SLOW_SYNC || (
