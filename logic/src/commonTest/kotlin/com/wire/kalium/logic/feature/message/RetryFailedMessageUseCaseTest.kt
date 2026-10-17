@@ -52,6 +52,7 @@ import com.wire.kalium.logic.framework.TestMessage.assetMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.message.MessageEntity

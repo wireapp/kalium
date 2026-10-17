@@ -15,32 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
 
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.messaging.sending
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.client.ClientMapper
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.persistence.dao.message.MessageEntity
 
-internal interface MessageSendFailureHandler {
+interface MessageSendFailureHandler {
     /**
      * Handle a failure when attempting to send a message
      * due to contacts and/or clients being removed from conversation and/or added to them.
@@ -71,15 +63,32 @@ internal interface MessageSendFailureHandler {
     )
 }
 
-@Suppress("LongParameterList")
-internal class MessageSendFailureHandlerImpl internal constructor(
-    private val userRepository: UserRepository,
-    private val clientRepository: ClientRepository,
-    private val clientRemoteRepository: ClientRemoteRepository,
-    private val messageRepository: MessageRepository,
-    private val messageSendingScheduler: MessageSendingScheduler,
-    private val fetchConversation: FetchConversationUseCase,
-    private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
+/** Users, clients and members the sender refreshes after the backend rejects a Proteus message. */
+interface ProteusRecipients {
+    /** Deletes [clients] and returns the users left without clients. */
+    suspend fun removeClients(clients: Map<UserId, List<ClientId>>): Either<StorageFailure, List<UserId>>
+
+    suspend fun fetchUsers(userIds: Set<UserId>): Either<CoreFailure, Unit>
+
+    suspend fun fetchConversation(
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit>
+
+    /** Fetches the clients of [userIds] and stores them, removing clients the backend no longer lists. */
+    suspend fun fetchClients(userIds: List<UserId>): Either<CoreFailure, Unit>
+
+    suspend fun markClientsAsValid(clients: Map<UserId, List<ClientId>>): Either<StorageFailure, Unit>
+}
+
+/**
+ * Ports: [recipients] repairs the recipient list; [updateMessageStatus] records the failure;
+ * [scheduleResend] asks the platform to retry pending messages once the network is back.
+ */
+class MessageSendFailureHandlerImpl(
+    private val recipients: ProteusRecipients,
+    private val updateMessageStatus: suspend (MessageEntity.Status, ConversationId, String) -> Either<CoreFailure, Unit>,
+    private val scheduleResend: () -> Unit,
 ) : MessageSendFailureHandler {
 
     override suspend fun handleClientsHaveChangedFailure(
@@ -105,32 +114,23 @@ internal class MessageSendFailureHandlerImpl internal constructor(
     ): Either<CoreFailure, Unit> = when {
             (conversationId == null) -> Either.Right(Unit)
             (sendFailure.deletedClientsOfUsers.isEmpty() && sendFailure.missingClientsOfUsers.isEmpty()) -> Either.Right(Unit)
-            else -> fetchConversation(transactionContext, conversationId)
+            else -> recipients.fetchConversation(transactionContext, conversationId)
         }
 
     private suspend fun handleDeletedClients(deletedClient: Map<UserId, List<ClientId>>): Either<StorageFailure, Set<UserId>> {
         return if (deletedClient.isEmpty()) Either.Right(emptySet())
-        else clientRepository.removeClientsAndReturnUsersWithNoClients(deletedClient).map { it.toSet() }
+        else recipients.removeClients(deletedClient).map { it.toSet() }
     }
 
     private suspend fun syncUserIds(userId: Set<UserId>): Either<CoreFailure, Unit> {
         return if (userId.isEmpty()) Either.Right(Unit)
-        else userRepository.fetchUsersByIds(userId).map { }
+        else recipients.fetchUsers(userId)
     }
 
     private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> =
         if (missingClients.isEmpty()) Either.Right(Unit)
-        else clientRemoteRepository.fetchOtherUserClients(missingClients.keys.toList())
-            .flatMap { fetchedClients ->
-                fetchedClients.map { (userId, clientList) -> clientMapper.toInsertClientParam(clientList, userId) }
-                    .flatten()
-                    .let { insertClientParamList ->
-                        if (insertClientParamList.isEmpty()) Either.Right(Unit)
-                        else clientRepository.storeUserClientListAndRemoveRedundantClients(insertClientParamList)
-                    }.flatMap {
-                        clientRepository.tryMarkClientsAsValid(missingClients)
-                    }
-            }
+        else recipients.fetchClients(missingClients.keys.toList())
+            .flatMap { recipients.markClientsAsValid(missingClients) }
 
     override suspend fun handleFailureAndUpdateMessageStatus(
         failure: CoreFailure,
@@ -142,16 +142,16 @@ internal class MessageSendFailureHandlerImpl internal constructor(
         when {
             failure is NetworkFailure.FederatedBackendFailure -> {
                 kaliumLogger.e("Sending message of type $messageType failed due to federation context availability.")
-                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, messageId)
+                updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, messageId)
             }
 
             failure is NetworkFailure.NoNetworkConnection && scheduleResendIfNoNetwork -> {
                 kaliumLogger.i("Scheduling message for retrying in the future.")
-                messageSendingScheduler.scheduleSendingOfPendingMessages()
+                scheduleResend()
             }
 
             else -> {
-                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageId)
+                updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageId)
             }
         }
         if (failure is CoreFailure.Unknown) {

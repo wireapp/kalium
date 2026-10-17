@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PlainMessageBlob
@@ -48,6 +47,8 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import com.wire.kalium.messaging.sending.MLSMessageCreatorImpl
+import kotlinx.coroutines.flow.first
 
 class MLSMessageCreatorTest {
 
@@ -58,7 +59,6 @@ class MLSMessageCreatorTest {
 
         val (arrangement, creator) = Arrangement()
             .withObserveLegalHoldStatus(Either.Right(Conversation.LegalHoldStatus.DISABLED))
-            .withMapLegalHoldConversationStatus(Conversation.LegalHoldStatus.DISABLED)
             .withEncodeToProtobufReturning(plainData)
             .withMLSGroupConversationExisting(true)
             .withCommitPendingProposals(Either.Right(Unit))
@@ -79,10 +79,6 @@ class MLSMessageCreatorTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
         }
-
-        verify(VerifyMode.exactly(1)) {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }
     }
 
     @Test
@@ -92,7 +88,6 @@ class MLSMessageCreatorTest {
 
         val (arrangement, creator) = Arrangement()
             .withObserveLegalHoldStatus(Either.Right(Conversation.LegalHoldStatus.DISABLED))
-            .withMapLegalHoldConversationStatus(Conversation.LegalHoldStatus.DISABLED)
             .withEncodeToProtobufReturning(plainData)
             .withMLSGroupConversationExisting(false)
             .withJoinExistingConversation(Either.Right(Unit))
@@ -113,10 +108,6 @@ class MLSMessageCreatorTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
         }
-
-        verify(VerifyMode.exactly(1)) {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -124,18 +115,17 @@ class MLSMessageCreatorTest {
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
         val joinExistingConversationUseCase = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
-        val legalHoldStatusMapper = mock<LegalHoldStatusMapper>(mode = MockMode.autoUnit)
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = apply {
             block()
         }.let {
             this to MLSMessageCreatorImpl(
-                conversationRepository,
-                legalHoldStatusMapper,
-                mlsConversationRepository,
-                joinExistingConversationUseCase,
-                SELF_USER_ID,
-                protoContentMapper
+                legalHoldStatus = { conversationRepository.observeLegalHoldStatus(it).first() },
+                commitPendingProposals = mlsConversationRepository::commitPendingProposals,
+                joinConversation = { context, conversationId -> joinExistingConversationUseCase(context, conversationId) },
+                encrypt = mlsConversationRepository::encryptMessage,
+                selfUserId = SELF_USER_ID,
+                protoContentMapper = protoContentMapper
             )
         }
 
@@ -149,12 +139,6 @@ class MLSMessageCreatorTest {
             every {
                 protoContentMapper.encodeToProtobuf(any())
             } returns PlainMessageBlob(plainData)
-        }
-
-        fun withMapLegalHoldConversationStatus(result: Conversation.LegalHoldStatus) = apply {
-            every {
-                legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-            } returns result
         }
 
         suspend fun withMLSEncryptMessage(data: ByteArray) = apply {

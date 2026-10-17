@@ -32,14 +32,13 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
-import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.prekey.ProteusSessionCreator
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
-internal interface SessionEstablisher {
+interface SessionEstablisher {
 
     /**
      * Verifies if this client can send messages to all the client recipients.
@@ -54,9 +53,13 @@ internal interface SessionEstablisher {
     ): Either<CoreFailure, UsersWithoutSessions>
 }
 
-internal class SessionEstablisherImpl internal constructor(
-    private val preKeyRepository: PreKeyRepository,
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+/** [establishSessions] creates sessions for clients that have none, e.g. [ProteusSessionCreator.establishSessions]. */
+class SessionEstablisherImpl(
+    private val establishSessions: suspend (
+        ProteusCoreCryptoContext,
+        Map<UserId, List<ClientId>>
+    ) -> Either<CoreFailure, UsersWithoutSessions>,
+    private val idMapper: IdMapper = IdMapper()
 ) : SessionEstablisher {
     override suspend fun prepareRecipientsForNewOutgoingMessage(
         proteusContext: ProteusCoreCryptoContext,
@@ -66,7 +69,7 @@ internal class SessionEstablisherImpl internal constructor(
             if (it.isEmpty()) {
                 return@flatMap Either.Right(UsersWithoutSessions.EMPTY)
             }
-            preKeyRepository.establishSessions(proteusContext, it)
+            establishSessions(proteusContext, it)
         }
 
     private suspend fun getAllMissingClients(
@@ -107,18 +110,18 @@ internal class SessionEstablisherImpl internal constructor(
     }
 }
 
-internal interface CryptoSessionMapper {
+interface CryptoSessionMapper {
     fun getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(
         preKeyInfoMap: Map<String, Map<String, Map<String, PreKeyDTO?>>>
     ): FilteredRecipient
 }
 
-internal data class FilteredRecipient(
+data class FilteredRecipient(
     val valid: Map<String, Map<String, Map<String, PreKeyCrypto>>>,
     val invalid: List<Pair<QualifiedIDEntity, List<String>>>
 )
 
-internal class CryptoSessionMapperImpl internal constructor(
+class CryptoSessionMapperImpl(
     private val preKeyMapper: PreKeyMapper
 ) : CryptoSessionMapper {
     override fun getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(

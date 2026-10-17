@@ -19,16 +19,10 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapFlowStorageRequest
-import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.mapRight
 import com.wire.kalium.common.logger.kaliumLogger
@@ -42,8 +36,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
-import com.wire.kalium.logic.data.id.NetworkQualifiedId
-import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
@@ -54,15 +46,12 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.messaging.sending.MessageTarget
-import com.wire.kalium.network.api.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.authenticated.message.Parameters
-import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
-import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.messaging.sending.MessageTransport
+import com.wire.kalium.messaging.sending.MessageTransportImpl
+import com.wire.kalium.messaging.sending.OutgoingMessages
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -75,7 +64,7 @@ import kotlin.time.Instant
 import kotlin.collections.map
 
 @Suppress("TooManyFunctions")
-internal interface MessageRepository {
+internal interface MessageRepository : OutgoingMessages, MessageTransport {
     /**
      * this fun should never be used directly, use PersistMessageUseCase() instead
      * @see PersistMessageUseCase
@@ -93,7 +82,6 @@ internal interface MessageRepository {
         message: Message.System
     ): Either<CoreFailure, Unit>
 
-    suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
@@ -112,8 +100,6 @@ internal interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
-
-    suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message>
 
     fun observeMessageById(conversationId: ConversationId, messageUuid: String): Flow<Either<StorageFailure, Message>>
 
@@ -136,33 +122,6 @@ internal interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.entries
     ): Flow<List<Message>>
 
-    /**
-     * Send a Proteus [MessageEnvelope] to the given [conversationId].
-     *
-     * @return [Either.Right] with the server date time in case of success
-     * @return [Either.Left] of a [ProteusSendMessageFailure] if the server rejected the message
-     * @return [Either.Left] of other [CoreFailure] for more generic cases
-     */
-    suspend fun sendEnvelope(
-        conversationId: ConversationId,
-        envelope: MessageEnvelope,
-        messageTarget: MessageTarget,
-    ): Either<CoreFailure, MessageSent>
-
-    /**
-     * Send a Proteus [MessageEnvelope].
-     *
-     * @return [Either.Right] with the server date time in case of success
-     * @return [Either.Left] of a [ProteusSendMessageFailure] if the server rejected the message
-     * @return [Either.Left] of other [CoreFailure] for more generic cases
-     */
-    suspend fun broadcastEnvelope(
-        envelope: MessageEnvelope,
-        messageOption: BroadcastMessageOption
-    ): Either<CoreFailure, Instant>
-
-    suspend fun sendMLSMessage(message: MLSMessageApi.Message): Either<CoreFailure, MessageSent>
-
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
@@ -170,13 +129,6 @@ internal interface MessageRepository {
         untilDateTime: Instant,
         visibility: List<Message.Visibility> = Message.Visibility.entries
     ): Either<CoreFailure, List<String>>
-
-    suspend fun updateTextMessage(
-        conversationId: ConversationId,
-        messageContent: MessageContent.TextEdited,
-        newMessageId: String,
-        editInstant: Instant
-    ): Either<CoreFailure, Unit>
 
     suspend fun updateTextMessage(
         conversationId: ConversationId,
@@ -190,12 +142,6 @@ internal interface MessageRepository {
         newMembers: List<UserId>,
     ): Either<CoreFailure, Unit>
 
-    suspend fun updateMultipartMessage(
-        conversationId: ConversationId,
-        messageContent: MessageContent.MultipartEdited,
-        newMessageId: String,
-        editInstant: Instant
-    ): Either<CoreFailure, Unit>
     suspend fun updateLinkPreviewImageLocalPath(
         conversationId: ConversationId,
         messageId: String,
@@ -213,17 +159,6 @@ internal interface MessageRepository {
         conversationId: ConversationId
     ): Either<CoreFailure, Conversation.ReceiptMode?>
 
-    /**
-     * updates the message status to [MessageEntity.Status.SENT] and optionally sets the message creation date to [serverDate] if not null,
-     * also marks other pending messages and adds millis to their date
-     */
-    suspend fun promoteMessageToSentUpdatingServerTime(
-        conversationId: ConversationId,
-        messageUuid: String,
-        serverDate: Instant?,
-        millis: Long
-    ): Either<CoreFailure, Unit>
-
     suspend fun getAllPendingEphemeralMessages(): Either<CoreFailure, List<Message>>
 
     suspend fun getAllAlreadyEndedEphemeralMessages(): Either<CoreFailure, List<Message>>
@@ -238,18 +173,6 @@ internal interface MessageRepository {
         messageUuid: String,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, MessageEntity.Visibility>>
-
-    suspend fun persistRecipientsDeliveryFailure(
-        conversationId: ConversationId,
-        messageUuid: String,
-        usersWithFailedDeliveryList: List<UserId>
-    ): Either<CoreFailure, Unit>
-
-    suspend fun persistNoClientsToDeliverFailure(
-        conversationId: ConversationId,
-        messageUuid: String,
-        usersWithFailedDeliveryList: List<UserId>
-    ): Either<CoreFailure, Unit>
 
     suspend fun moveMessagesToAnotherConversation(
         originalConversation: ConversationId,
@@ -337,18 +260,25 @@ internal interface MessageRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class MessageDataSource internal constructor(
     private val selfUserId: UserId,
-    private val messageApi: MessageApi,
-    private val mlsMessageApi: MLSMessageApi,
+    messageApi: MessageApi,
+    mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
     nomadMessagePagingCoordinator: NomadMessagePagingCoordinator? = null,
-    private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
+    sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
-    private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
+    sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
     private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
 ) : MessageRepository {
+
+    private val transport = MessageTransportImpl(
+        messageApi,
+        mlsMessageApi,
+        sendMessageFailureMapper,
+        sendMessagePartialFailureMapper
+    )
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(
         messageDAO,
@@ -502,108 +432,15 @@ internal class MessageDataSource internal constructor(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
-    ): Either<CoreFailure, MessageSent> {
-        val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> =
-            envelope.recipients.associate { recipientEntry ->
-                recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
-                    clientPayload.clientId.value to clientPayload.payload.data
-                }
-            }
-
-        return wrapApiRequest {
-            messageApi.qualifiedSendMessage(
-                // TODO(messaging): Handle other MessageOptions, native push, transient and priorities
-                Parameters.QualifiedDefaultParameters(
-                    envelope.senderClientId.value,
-                    recipientMap,
-                    true,
-                    MessagePriority.HIGH,
-                    false,
-                    envelope.dataBlob?.data,
-                    messageTarget.toOption()
-                ),
-                conversationId.toApi(),
-            )
-        }.fold({ networkFailure ->
-            val failure = when {
-                (networkFailure is NetworkFailure.ServerMiscommunication && networkFailure.rootCause is ProteusClientsChangedError) -> {
-                    sendMessageFailureMapper.fromDTO(networkFailure.rootCause as ProteusClientsChangedError)
-                }
-
-                else -> networkFailure
-            }
-            Either.Left(failure)
-        }, { response: QualifiedSendMessageResponse ->
-            Either.Right(sendMessagePartialFailureMapper.fromDTO(response))
-        })
-    }
-
-    private fun MessageTarget.toOption() = when (this) {
-        is MessageTarget.Client -> QualifiedMessageOption.IgnoreAll
-
-        is MessageTarget.Conversation -> if (this.usersToIgnore.isNotEmpty()) {
-            QualifiedMessageOption.IgnoreSome(this.usersToIgnore.map { it.toApi() })
-        } else {
-            QualifiedMessageOption.ReportAll
-        }
-
-        is MessageTarget.Users -> QualifiedMessageOption.ReportSome(this.userId.map { it.toApi() })
-    }
+    ): Either<CoreFailure, MessageSent> = transport.sendEnvelope(conversationId, envelope, messageTarget)
 
     override suspend fun broadcastEnvelope(
         envelope: MessageEnvelope,
         messageOption: BroadcastMessageOption
-    ): Either<CoreFailure, Instant> {
-        val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> =
-            envelope.recipients.associate { recipientEntry ->
-                recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
-                    clientPayload.clientId.value to clientPayload.payload.data
-                }
-            }
+    ): Either<CoreFailure, Instant> = transport.broadcastEnvelope(envelope, messageOption)
 
-        val option = when (messageOption) {
-            is BroadcastMessageOption.IgnoreSome -> QualifiedMessageOption.IgnoreSome(messageOption.userIDs.map { it.toApi() })
-            is BroadcastMessageOption.ReportSome -> QualifiedMessageOption.ReportSome(messageOption.userIDs.map { it.toApi() })
-            is BroadcastMessageOption.ReportAll -> QualifiedMessageOption.ReportAll
-            is BroadcastMessageOption.IgnoreAll -> QualifiedMessageOption.IgnoreAll
-        }
-
-        return wrapApiRequest {
-            messageApi.qualifiedBroadcastMessage(
-                Parameters.QualifiedDefaultParameters(
-                    envelope.senderClientId.value,
-                    recipientMap,
-                    true,
-                    MessagePriority.HIGH,
-                    false,
-                    envelope.dataBlob?.data,
-                    option
-                ),
-            )
-        }.fold({ networkFailure ->
-            val failure = when {
-                (networkFailure is NetworkFailure.ServerMiscommunication && networkFailure.rootCause is ProteusClientsChangedError) -> {
-                    sendMessageFailureMapper.fromDTO(networkFailure.rootCause as ProteusClientsChangedError)
-                }
-
-                else -> networkFailure
-            }
-            Either.Left(failure)
-        }, {
-            Either.Right(it.time)
-        })
-    }
-
-    override suspend fun sendMLSMessage(
-        message: MLSMessageApi.Message
-    ): Either<CoreFailure, MessageSent> =
-        wrapApiRequest {
-            mlsMessageApi.sendMessage(message.value)
-        }.flatMapLeft { networkFailure ->
-            Either.Left(networkFailure.wrapNetworkMlsFailureIfApplicable())
-        }.flatMap { response ->
-            Either.Right(sendMessagePartialFailureMapper.fromMlsDTO(response))
-        }
+    override suspend fun sendMLSMessage(message: MLSMessageApi.Message): Either<CoreFailure, MessageSent> =
+        transport.sendMLSMessage(message)
 
     override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> =
         wrapStorageRequest {

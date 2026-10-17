@@ -25,11 +25,11 @@ import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToClientMap
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 
-internal interface SendMessageFailureMapper {
+interface SendMessageFailureMapper {
     fun fromDTO(error: ProteusClientsChangedError): ProteusSendMessageFailure
 }
 
-internal class SendMessageFailureMapperImpl : SendMessageFailureMapper {
+class SendMessageFailureMapperImpl : SendMessageFailureMapper {
     override fun fromDTO(error: ProteusClientsChangedError): ProteusSendMessageFailure = with(error.errorBody) {
         ProteusSendMessageFailure(
             missingClientsOfUsers = missing.fromNestedMapToSimpleMap(),

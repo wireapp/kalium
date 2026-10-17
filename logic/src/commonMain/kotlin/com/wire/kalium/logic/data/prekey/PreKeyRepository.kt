@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.prekey
 
 import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.cryptography.createSessions
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.ProteusFailure
@@ -29,8 +28,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.logic.data.message.CryptoSessionMapper
-import com.wire.kalium.logic.data.message.CryptoSessionMapperImpl
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onFailure
@@ -40,7 +37,6 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
-import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -139,7 +135,7 @@ internal class PreKeyDataSource(
     private val metadataDAO: MetadataDAO,
     private val preKeyListMapper: PreKeyListMapper = MapperProvider.preKeyListMapper(),
     private val preKeyMapper: PreKeyMapper = MapperProvider.preyKeyMapper()
-) : PreKeyRepository, CryptoSessionMapper by CryptoSessionMapperImpl(MapperProvider.preyKeyMapper()) {
+) : PreKeyRepository {
 
     override suspend fun fetchRemotelyAvailablePrekeys(): Either<CoreFailure, List<Int>> =
         provideCurrentClientId().flatMap { clientId ->
@@ -200,42 +196,13 @@ internal class PreKeyDataSource(
     override suspend fun establishSessions(
         proteusContext: ProteusCoreCryptoContext,
         missingContactClients: Map<UserId, List<ClientId>>
-    ): Either<CoreFailure, UsersWithoutSessions> {
-        if (missingContactClients.isEmpty()) {
-            return Either.Right(UsersWithoutSessions.EMPTY)
-        }
-
-        return preKeysOfClientsByQualifiedUsers(missingContactClients)
-            .flatMap { listUserPrekeysResponse ->
-                establishProteusSessions(proteusContext, listUserPrekeysResponse.qualifiedUserClientPrekeys)
-                    .flatMap {
-                        Either.Right(
-                            preKeyListMapper.fromListPrekeyResponseToUsersWithoutSessions(
-                                listUserPrekeysResponse
-                            )
-                        )
-                    }
-            }
-    }
+    ): Either<CoreFailure, UsersWithoutSessions> =
+        ProteusSessionCreator(preKeyApi, clientDAO).establishSessions(proteusContext, missingContactClients)
 
     internal suspend fun preKeysOfClientsByQualifiedUsers(
         qualifiedIdsMap: Map<UserId, List<ClientId>>
     ): Either<NetworkFailure, ListPrekeysResponse> = wrapApiRequest {
         preKeyApi.getUsersPreKey(preKeyListMapper.toRemoteClientPreKeyInfoTo(qualifiedIdsMap))
-    }
-
-    private suspend fun establishProteusSessions(
-        proteusContext: ProteusCoreCryptoContext,
-        preKeyInfoList: DomainToUserIdToClientsToPreKeyMap
-    ): Either<CoreFailure, Unit> {
-        val (valid, invalid) = getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(preKeyInfoList)
-        return wrapProteusRequest {
-            proteusContext.createSessions(valid)
-        }.also {
-            wrapStorageRequest {
-                clientDAO.tryMarkInvalid(invalid)
-            }
-        }
     }
 
     private companion object {

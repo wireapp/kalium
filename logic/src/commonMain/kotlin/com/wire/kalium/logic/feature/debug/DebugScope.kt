@@ -35,7 +35,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -55,16 +54,16 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.message.ProteusRecipientsDataSource
+import com.wire.kalium.logic.feature.message.SyncedSendingSession
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
+import com.wire.kalium.messaging.sending.MessageSendFailureHandlerImpl
+import com.wire.kalium.messaging.sending.MessageSenderImpl
 import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
-import com.wire.kalium.logic.feature.message.MLSMessageCreator
-import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
-import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
-import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
-import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
-import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
-import com.wire.kalium.logic.feature.message.MessageSenderImpl
+import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
+import com.wire.kalium.messaging.sending.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingInterceptor
 import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
@@ -86,6 +85,9 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import com.wire.kalium.messaging.sending.MLSMessageCreator
+import com.wire.kalium.messaging.sending.MLSMessageCreatorImpl
 
 /*
  * This scope can be used to test client behaviour. Debug functions are not needed for normal client activity.
@@ -178,34 +180,35 @@ public class DebugScope internal constructor(
 
     private val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandlerImpl(
-            userRepository,
-            clientRepository,
-            clientRemoteRepository,
-            messageRepository,
-            messageSendingScheduler,
-            fetchConversationUseCase
+            recipients = ProteusRecipientsDataSource(
+                userRepository,
+                clientRepository,
+                clientRemoteRepository,
+                fetchConversationUseCase
+            ),
+            updateMessageStatus = messageRepository::updateMessageStatus,
+            scheduleResend = messageSendingScheduler::scheduleSendingOfPendingMessages
         )
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(preKeyRepository)
+        get() = SessionEstablisherImpl(preKeyRepository::establishSessions)
 
     private val protoContentMapper: ProtoContentMapper
         get() = ProtoContentMapperImpl(selfUserId = userId)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
-            conversationRepository = conversationRepository,
-            legalHoldStatusMapper = LegalHoldStatusMapperImpl,
+            legalHoldStatus = { conversationRepository.observeLegalHoldStatus(it).first() },
             selfUserId = userId,
             protoContentMapper = protoContentMapper
         )
 
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(
-            conversationRepository = conversationRepository,
-            legalHoldStatusMapper = LegalHoldStatusMapperImpl,
-            mlsConversationRepository = mlsConversationRepository,
-            joinExistingConversationUseCase = joinExistingMLSConversationUseCaseProvider(),
+            legalHoldStatus = { conversationRepository.observeLegalHoldStatus(it).first() },
+            commitPendingProposals = mlsConversationRepository::commitPendingProposals,
+            joinConversation = { context, conversationId -> joinExistingMLSConversationUseCaseProvider()(context, conversationId) },
+            encrypt = mlsConversationRepository::encryptMessage,
             selfUserId = userId,
             protoContentMapper = protoContentMapper
         )
@@ -216,26 +219,23 @@ public class DebugScope internal constructor(
 
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(
-            messageRepository,
-            conversationRepository,
-            syncManager,
-            messageSendFailureHandler,
-            legalHoldHandler,
-            sessionEstablisher,
-            messageEnvelopeCreator,
-            mlsMessageCreator,
-            messageSendingInterceptor,
-            userRepository,
-            staleEpochVerifier,
-            transactionProvider,
-            mlsMissingUsersMessageRejectionHandlerProvider(),
-            { message, expirationData ->
-                ephemeralMessageDeletionHandler.enqueueSelfDeletion(
-                    message,
-                    expirationData
-                )
+            messages = messageRepository,
+            transport = messageRepository,
+            conversations = conversationRepository,
+            session = SyncedSendingSession(syncManager, transactionProvider),
+            messageSendFailureHandler = messageSendFailureHandler,
+            sessionEstablisher = sessionEstablisher,
+            messageEnvelopeCreator = messageEnvelopeCreator,
+            mlsMessageCreator = mlsMessageCreator,
+            prepareMessage = messageSendingInterceptor::prepareMessage,
+            legalHoldEnabledAfter = legalHoldHandler::handleMessageSendFailure,
+            verifyEpoch = { context, conversationId -> staleEpochVerifier.verifyEpoch(context, conversationId) },
+            handleGroupOutOfSync = mlsMissingUsersMessageRejectionHandlerProvider()::handle,
+            broadcastRecipients = userRepository::getAllRecipients,
+            enqueueSelfDeletion = { message, expirationData ->
+                ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData)
             },
-            scope
+            scope = scope
         )
 
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl

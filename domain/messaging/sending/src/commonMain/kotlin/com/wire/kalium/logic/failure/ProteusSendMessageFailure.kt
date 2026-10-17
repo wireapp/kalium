@@ -22,7 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 
-internal data class ProteusSendMessageFailure(
+data class ProteusSendMessageFailure(
     val missingClientsOfUsers: Map<UserId, List<ClientId>>,
     val redundantClientsOfUsers: Map<UserId, List<ClientId>>,
     val deletedClientsOfUsers: Map<UserId, List<ClientId>>,

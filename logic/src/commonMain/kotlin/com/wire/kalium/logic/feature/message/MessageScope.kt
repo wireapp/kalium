@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
+import com.wire.kalium.messaging.sending.MessageSendFailureHandlerImpl
+import com.wire.kalium.messaging.sending.MessageSenderImpl
 import com.wire.kalium.persistence.dao.message.MessageTimelineDAO
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
@@ -35,7 +38,6 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -130,6 +132,11 @@ import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlin.time.Duration.Companion.seconds
+import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
+import com.wire.kalium.messaging.sending.MessageEnvelopeCreatorImpl
+import kotlinx.coroutines.flow.first
+import com.wire.kalium.messaging.sending.MLSMessageCreator
+import com.wire.kalium.messaging.sending.MLSMessageCreatorImpl
 
 @Suppress("LongParameterList")
 public class MessageScope internal constructor(
@@ -180,7 +187,6 @@ public class MessageScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher,
-    private val legalHoldStatusMapper: LegalHoldStatusMapper,
     private val messageTimelineDAO: MessageTimelineDAO,
 ) {
 
@@ -194,31 +200,32 @@ public class MessageScope internal constructor(
 
     internal val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandlerImpl(
-            userRepository,
-            clientRepository,
-            clientRemoteRepository,
-            messageRepository,
-            messageSendingScheduler,
-            fetchConversationUseCase
+            recipients = ProteusRecipientsDataSource(
+                userRepository,
+                clientRepository,
+                clientRemoteRepository,
+                fetchConversationUseCase
+            ),
+            updateMessageStatus = messageRepository::updateMessageStatus,
+            scheduleResend = messageSendingScheduler::scheduleSendingOfPendingMessages
         )
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(preKeyRepository)
+        get() = SessionEstablisherImpl(preKeyRepository::establishSessions)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
-            conversationRepository = conversationRepository,
-            legalHoldStatusMapper = legalHoldStatusMapper,
+            legalHoldStatus = { conversationRepository.observeLegalHoldStatus(it).first() },
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
 
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(
-            conversationRepository = conversationRepository,
-            legalHoldStatusMapper = legalHoldStatusMapper,
-            mlsConversationRepository = mlsConversationRepository,
-            joinExistingConversationUseCase = joinExistingConversationUseCaseProvider(),
+            legalHoldStatus = { conversationRepository.observeLegalHoldStatus(it).first() },
+            commitPendingProposals = mlsConversationRepository::commitPendingProposals,
+            joinConversation = { context, conversationId -> joinExistingConversationUseCaseProvider()(context, conversationId) },
+            encrypt = mlsConversationRepository::encryptMessage,
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
@@ -264,21 +271,23 @@ public class MessageScope internal constructor(
 
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(
-            messageRepository,
-            conversationRepository,
-            syncManager,
-            messageSendFailureHandler,
-            legalHoldHandler,
-            sessionEstablisher,
-            messageEnvelopeCreator,
-            mlsMessageCreator,
-            messageSendingInterceptor,
-            userRepository,
-            staleEpochVerifier,
-            transactionProvider,
-            mlsMissingUsersMessageRejectionHandlerProvider(),
-            { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
-            scope
+            messages = messageRepository,
+            transport = messageRepository,
+            conversations = conversationRepository,
+            session = SyncedSendingSession(syncManager, transactionProvider),
+            messageSendFailureHandler = messageSendFailureHandler,
+            sessionEstablisher = sessionEstablisher,
+            messageEnvelopeCreator = messageEnvelopeCreator,
+            mlsMessageCreator = mlsMessageCreator,
+            prepareMessage = messageSendingInterceptor::prepareMessage,
+            legalHoldEnabledAfter = legalHoldHandler::handleMessageSendFailure,
+            verifyEpoch = { context, conversationId -> staleEpochVerifier.verifyEpoch(context, conversationId) },
+            handleGroupOutOfSync = mlsMissingUsersMessageRejectionHandlerProvider()::handle,
+            broadcastRecipients = userRepository::getAllRecipients,
+            enqueueSelfDeletion = { message, expirationData ->
+                ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData)
+            },
+            scope = scope
         )
 
     internal val persistMessage: PersistMessageUseCase

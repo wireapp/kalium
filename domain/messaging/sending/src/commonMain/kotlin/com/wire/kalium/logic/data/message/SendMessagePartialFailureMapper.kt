@@ -23,19 +23,18 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToClientMap
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
-import kotlin.time.Instant
 
 /**
  * Maps the [QualifiedSendMessageResponse] to a [MessageSent] object.
  * This mapper is useful in case we receive a successful response from the backend, but there are some
  * users that failed to receive the message. ie: federated users and/or conversations.
  */
-internal interface SendMessagePartialFailureMapper {
+interface SendMessagePartialFailureMapper {
     fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse): MessageSent
     fun fromMlsDTO(sendMLSMessageResponse: SendMLSMessageResponse): MessageSent
 }
 
-internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMapper {
+class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMapper {
     override fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse): MessageSent {
         return when (sendMessageResponse) {
             is QualifiedSendMessageResponse.MessageSent -> MessageSent(
@@ -72,9 +71,3 @@ internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMa
                 userIds.map { user -> UserId(user, domain) }
             }?.flatten().orEmpty()
 }
-
-internal data class MessageSent(
-    val time: Instant,
-    val failedToConfirmClients: List<UserId> = listOf(),
-    val missing: List<UserId> = listOf()
-)

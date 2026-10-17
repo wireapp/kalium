@@ -112,7 +112,6 @@ import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCaseImpl
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
@@ -2846,7 +2845,6 @@ public class UserSessionScope internal constructor(
             kaliumConfigs,
             userScopedLogger,
             KaliumDispatcherImpl,
-            LegalHoldStatusMapperImpl,
             userStorage.database.messageTimelineDAO,
         )
     }

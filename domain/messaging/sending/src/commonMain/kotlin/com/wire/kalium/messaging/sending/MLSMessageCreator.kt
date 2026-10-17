@@ -15,33 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
-
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.messaging.sending
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
-import com.wire.kalium.logic.data.client.wrapInMLSContext
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import kotlinx.coroutines.flow.first
 
-internal interface MLSMessageCreator {
+/** Prepares this client's MLS group and encrypts a message for it. */
+interface MLSMessageCreator {
 
     suspend fun prepareMLSGroupAndCreateOutgoingMLSMessage(
         transactionContext: CryptoTransactionContext,
@@ -51,27 +48,33 @@ internal interface MLSMessageCreator {
 
 }
 
+/**
+ * Commits pending proposals, or joins the group when this client is not in it yet, then encrypts.
+ * Ports: [legalHoldStatus] reads the conversation's stored status; [commitPendingProposals] and
+ * [joinConversation] may be app-only work that an extension declines with a failure.
+ */
 @Suppress("LongParameterList")
-internal class MLSMessageCreatorImpl(
-    private val conversationRepository: ConversationRepository,
-    private val legalHoldStatusMapper: LegalHoldStatusMapper,
-    private val mlsConversationRepository: MLSConversationRepository,
-    private val joinExistingConversationUseCase: JoinExistingMLSConversationUseCase,
-    private val selfUserId: UserId,
-    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+class MLSMessageCreatorImpl(
+    private val legalHoldStatus: suspend (ConversationId) -> Either<StorageFailure, Conversation.LegalHoldStatus>,
+    private val commitPendingProposals: suspend (MlsCoreCryptoContext, GroupID) -> Either<CoreFailure, Unit>,
+    private val joinConversation: suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>,
+    private val encrypt: suspend (MlsCoreCryptoContext, GroupID, ByteArray) -> Either<CoreFailure, ByteArray>,
+    selfUserId: UserId,
+    private val protoContentMapper: ProtoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId),
+    private val idMapper: IdMapper = IdMapper()
 ) : MLSMessageCreator {
 
     override suspend fun prepareMLSGroupAndCreateOutgoingMLSMessage(
         transactionContext: CryptoTransactionContext,
         groupId: GroupID,
         message: Message.Sendable
-    ): Either<CoreFailure, MLSMessageApi.Message> = transactionContext.wrapInMLSContext { mlsContext ->
+    ): Either<CoreFailure, MLSMessageApi.Message> {
+        val mlsContext = transactionContext.mls ?: return Either.Left(MLSFailure.Disabled)
         val doesConversationExist = mlsContext.conversationExists(idMapper.toCryptoModel(groupId))
-        if (doesConversationExist) {
-            mlsConversationRepository.commitPendingProposals(mlsContext, groupId)
+        return if (doesConversationExist) {
+            commitPendingProposals(mlsContext, groupId)
         } else {
-            joinExistingConversationUseCase(transactionContext, message.conversationId)
+            joinConversation(transactionContext, message.conversationId)
         }.flatMap {
             createOutgoingMLSMessage(
                 mlsContext = mlsContext,
@@ -92,11 +95,7 @@ internal class MLSMessageCreatorImpl(
             else -> false
         }
 
-        val legalHoldStatus = conversationRepository.observeLegalHoldStatus(
-            message.conversationId
-        ).first().let {
-            legalHoldStatusMapper.mapLegalHoldConversationStatus(it, message)
-        }
+        val legalHoldStatus = declaredLegalHoldStatus(legalHoldStatus(message.conversationId), message)
 
         val content = protoContentMapper.encodeToProtobuf(
             protoContent = ProtoContent.Readable(
@@ -107,7 +106,7 @@ internal class MLSMessageCreatorImpl(
                 legalHoldStatus = legalHoldStatus
             )
         )
-        return mlsConversationRepository.encryptMessage(mlsContext, groupId, content.data)
+        return encrypt(mlsContext, groupId, content.data)
             .map { MLSMessageApi.Message(it) }
     }
 }

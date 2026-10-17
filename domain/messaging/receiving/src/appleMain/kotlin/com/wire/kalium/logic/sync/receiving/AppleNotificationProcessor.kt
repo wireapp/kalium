@@ -8,9 +8,6 @@
 package com.wire.kalium.logic.sync.receiving
 
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
-import com.wire.kalium.cryptography.MLSEpochObserver
-import com.wire.kalium.cryptography.MLSGroupId
-import com.wire.kalium.logic.data.client.toCrypto
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandlerImpl
 import com.wire.kalium.util.InternalKaliumApi
@@ -25,13 +22,29 @@ import kotlinx.coroutines.flow.first
  */
 @InternalKaliumApi
 public suspend fun AppleAccountRuntime.catchUp(budget: kotlin.time.Duration): CatchUpOutcome = NotificationCatchUp(
-    EventIngestion(network.notificationApi, database.eventDAO, database.metadataDAO, prepared.clientId),
+    eventIngestion(),
     closeWebSockets = { network.closeWebSockets() },
-).run(
-    budget,
-    consumable = com.wire.kalium.persistence.client.ClientRegistrationStorageImpl(database.metadataDAO)
-        .observeHasConsumableNotifications().first(),
-)
+).run(budget, consumable = hasConsumableNotifications())
+
+/**
+ * Keeps this owned account live while [block] runs, on the consumable stream when the client registered
+ * that capability; see [LiveHold]. The WebSocket is closed and joined when this returns.
+ */
+@InternalKaliumApi
+public suspend fun <T> AppleAccountRuntime.holdLive(
+    connectBudget: kotlin.time.Duration,
+    block: suspend (started: CatchUpOutcome) -> T,
+): HeldResult<T> = LiveHold(
+    eventIngestion(),
+    closeWebSockets = { network.closeWebSockets() },
+).run(connectBudget, consumable = hasConsumableNotifications(), block)
+
+private fun AppleAccountRuntime.eventIngestion() =
+    EventIngestion(network.notificationApi, database.eventDAO, database.metadataDAO, prepared.clientId)
+
+private suspend fun AppleAccountRuntime.hasConsumableNotifications() =
+    com.wire.kalium.persistence.client.ClientRegistrationStorageImpl(database.metadataDAO)
+        .observeHasConsumableNotifications().first()
 
 /** Receiving composition for an owned, prepared Apple account. */
 @InternalKaliumApi
@@ -41,18 +54,7 @@ public suspend fun AppleAccountRuntime.notificationProcessor(
 ): NotificationProcessor {
     check(prepared.nomadServiceUrl == null) { "Nomad receiving hooks are not implemented" }
     val rejoin = ReceivedMLSRejoin(network.mlsMessageApi, database.metadataDAO, diagnostics)
-    val mls = mlsCoreCrypto?.mlsClient(
-        CryptoQualifiedClientId(prepared.clientId, prepared.userId.toCrypto()),
-        checkNotNull(mlsCipherSuite).toCrypto(),
-        rejoin,
-        object : MLSEpochObserver {
-            override suspend fun onEpochChange(groupId: MLSGroupId, epoch: ULong) {
-                // Required epoch work is checked synchronously in the receiving transaction.
-                // Native observer callbacks arrive asynchronously, including after rollback.
-            }
-        },
-        processingScope,
-    )
+    val mls = mlsClient(rejoin)
     return NotificationProcessor(
         isolateConversations = true,
         database = database,

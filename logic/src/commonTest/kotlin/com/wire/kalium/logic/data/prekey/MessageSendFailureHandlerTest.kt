@@ -34,14 +34,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
-import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
+import com.wire.kalium.logic.feature.message.ProteusRecipientsDataSource
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.messaging.sending.MessageSendFailureHandlerImpl
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -404,13 +405,15 @@ internal class MessageSendFailureHandlerTest {
 
         internal inline fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let {
             this to MessageSendFailureHandlerImpl(
-                userRepository,
-                clientRepository,
-                clientRemoteRepository,
-                messageRepository,
-                messageSendingScheduler,
-                fetchConversation,
-                clientMapper,
+                recipients = ProteusRecipientsDataSource(
+                    userRepository,
+                    clientRepository,
+                    clientRemoteRepository,
+                    fetchConversation,
+                    clientMapper,
+                ),
+                updateMessageStatus = messageRepository::updateMessageStatus,
+                scheduleResend = messageSendingScheduler::scheduleSendingOfPendingMessages,
             )
         }
 

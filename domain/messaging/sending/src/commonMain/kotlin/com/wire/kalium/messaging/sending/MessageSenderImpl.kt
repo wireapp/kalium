@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.messaging.sending
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
@@ -34,59 +34,64 @@ import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.BroadcastMessageOption
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.getType
-import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
-import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.messaging.sending.BroadcastMessage
-import com.wire.kalium.messaging.sending.BroadcastMessageTarget
-import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import kotlin.time.Instant
 
-// TODO(modularisation): Move to :messaging:sending.
-//                       It ain't gonna be easy :)
+/**
+ * Sends a stored message over Proteus or MLS, repairing recipients and retrying when the backend rejects it.
+ *
+ * Ports: [prepareMessage] runs content preparation before encryption; [legalHoldEnabledAfter] runs the client
+ * repair and reports whether legal hold became enabled for the conversation; [verifyEpoch] and
+ * [handleGroupOutOfSync] recover from MLS rejections; [broadcastRecipients] lists the team and other recipients
+ * of a broadcast; [enqueueSelfDeletion] starts the timer of a sent self-deleting message.
+ */
 // TODO(refactor): Split MLS and Proteus logic.
 //                 The Envelope Creation, Sending and Retry mechanisms are tailored to each protocol
 //                 And could live in different implementation classes
 @Suppress("LongParameterList", "TooManyFunctions")
-internal class MessageSenderImpl internal constructor(
-    private val messageRepository: MessageRepository,
-    private val conversationRepository: ConversationRepository,
-    private val syncManager: SyncManager,
+class MessageSenderImpl(
+    private val messages: OutgoingMessages,
+    private val transport: MessageTransport,
+    private val conversations: SendingConversations,
+    private val session: SendingSession,
     private val messageSendFailureHandler: MessageSendFailureHandler,
-    private val legalHoldHandler: LegalHoldHandler,
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
-    private val messageSendingInterceptor: MessageSendingInterceptor,
-    private val userRepository: UserRepository,
-    private val staleEpochVerifier: StaleEpochVerifier,
-    private val transactionProvider: CryptoTransactionProvider,
-    private val mlsMissingUsersMessageRejectionHandler: MLSMissingUsersMessageRejectionHandler,
+    private val prepareMessage: suspend (Message.Sendable) -> Either<CoreFailure, Message.Sendable>,
+    private val legalHoldEnabledAfter: suspend (
+        conversationId: ConversationId,
+        messageInstant: Instant,
+        handleClientsHaveChangedFailure: suspend () -> Either<CoreFailure, Unit>
+    ) -> Either<CoreFailure, Boolean>,
+    private val verifyEpoch: suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>,
+    private val handleGroupOutOfSync: suspend (
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        groupId: GroupID,
+        failure: NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync
+    ) -> Either<CoreFailure, Unit>,
+    private val broadcastRecipients: suspend () -> Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>,
     private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {
@@ -94,9 +99,9 @@ internal class MessageSenderImpl internal constructor(
     private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
 
     override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
-        syncManager.waitUntilLive()
+        session.waitUntilLive()
         return withContext(scope.coroutineContext) {
-            messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
+            messages.getMessageById(conversationId, messageUuid).flatMap { message ->
                 val result =
                     if (message is Message.Regular) {
                         sendMessage(message)
@@ -124,8 +129,8 @@ internal class MessageSenderImpl internal constructor(
     override suspend fun cancelPendingMessage(
         conversationId: ConversationId,
         messageUuid: String
-    ): Either<CoreFailure, Boolean> = transactionProvider.transaction("cancelPendingMessage") {
-        messageRepository.getMessageById(conversationId, messageUuid).fold(
+    ): Either<CoreFailure, Boolean> = session.transaction("cancelPendingMessage") {
+        messages.getMessageById(conversationId, messageUuid).fold(
             { failure ->
                 if (failure == StorageFailure.DataNotFound) Either.Right(true) else Either.Left(failure)
             },
@@ -133,7 +138,7 @@ internal class MessageSenderImpl internal constructor(
                 val isOwnUnedited = current is Message.Regular && current.isSelfMessage &&
                     current.editStatus == Message.EditStatus.NotEdited
                 if (isOwnUnedited && current.status == Message.Status.Pending) {
-                    messageRepository.deleteMessage(messageUuid, conversationId).map { true }
+                    messages.deleteMessage(messageUuid, conversationId).map { true }
                 } else {
                     Either.Right(false)
                 }
@@ -143,7 +148,7 @@ internal class MessageSenderImpl internal constructor(
 
     private suspend fun shouldSend(message: Message.Sendable): Either<CoreFailure, Boolean> {
         if (message !is Message.Regular || message.status != Message.Status.Pending) return Either.Right(true)
-        return messageRepository.getMessageById(message.conversationId, message.id).fold(
+        return messages.getMessageById(message.conversationId, message.id).fold(
             { failure ->
                 if (failure == StorageFailure.DataNotFound) Either.Right(false) else Either.Left(failure)
             },
@@ -156,10 +161,9 @@ internal class MessageSenderImpl internal constructor(
     }
 
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
-        messageSendingInterceptor
-            .prepareMessage(message)
+        prepareMessage(message)
             .flatMap { processedMessage ->
-                transactionProvider.transaction("sendMessage") { transactionContext ->
+                session.transaction("sendMessage") { transactionContext ->
                     // Cancellation uses this same transaction queue. Recheck after entering it, not before waiting.
                     shouldSend(message).flatMap { send ->
                         if (!send) return@flatMap Either.Right(false)
@@ -169,7 +173,7 @@ internal class MessageSenderImpl internal constructor(
                             // If it was the "edit" message type, we need to update the id before we promote it to "sent"
                             val isEditMessage = when (message.content) {
                                 is MessageContent.MultipartEdited -> {
-                                    messageRepository.updateMultipartMessage(
+                                    messages.updateMultipartMessage(
                                         conversationId = processedMessage.conversationId,
                                         messageContent = processedMessage.content as MessageContent.MultipartEdited,
                                         newMessageId = processedMessage.id,
@@ -178,7 +182,7 @@ internal class MessageSenderImpl internal constructor(
                                     true
                                 }
                                 is MessageContent.TextEdited -> {
-                                    messageRepository.updateTextMessage(
+                                    messages.updateTextMessage(
                                         conversationId = processedMessage.conversationId,
                                         messageContent = processedMessage.content as MessageContent.TextEdited,
                                         newMessageId = processedMessage.id,
@@ -188,7 +192,7 @@ internal class MessageSenderImpl internal constructor(
                                 }
                                 else -> false
                             }
-                            messageRepository.promoteMessageToSentUpdatingServerTime(
+                            messages.promoteMessageToSentUpdatingServerTime(
                                 conversationId = processedMessage.conversationId,
                                 messageUuid = processedMessage.id,
                                 // if it's edit then we don't want to change the original message creation time, it's already a server date
@@ -210,7 +214,7 @@ internal class MessageSenderImpl internal constructor(
         target: BroadcastMessageTarget
     ): Either<CoreFailure, Unit> =
         withContext(scope.coroutineContext) {
-            transactionProvider.transaction("broadcastMessage") {
+            session.transaction("broadcastMessage") {
                 attemptToBroadcastWithProteus(it, message, target, remainingAttempts = 2).map { }
             }
         }
@@ -220,7 +224,7 @@ internal class MessageSenderImpl internal constructor(
         message: Message.Sendable,
         messageTarget: MessageTarget = MessageTarget.Conversation()
     ): Either<CoreFailure, Instant> {
-        return conversationRepository
+        return conversations
             .getConversationProtocolInfo(message.conversationId)
             .flatMap { protocolInfo ->
                 when (protocolInfo) {
@@ -259,8 +263,8 @@ internal class MessageSenderImpl internal constructor(
         val conversationId = message.conversationId
         val target = when (messageTarget) {
             is MessageTarget.Client -> Either.Right(messageTarget.recipients)
-            is MessageTarget.Conversation -> conversationRepository.getConversationRecipients(conversationId)
-            is MessageTarget.Users -> conversationRepository.getRecipientById(conversationId, messageTarget.userId)
+            is MessageTarget.Conversation -> conversations.getConversationRecipients(conversationId)
+            is MessageTarget.Users -> conversations.getRecipientById(conversationId, messageTarget.userId)
         }
 
         return target
@@ -290,7 +294,7 @@ internal class MessageSenderImpl internal constructor(
         messageId: String,
         usersWithoutSessions: UsersWithoutSessions
     ): Either<CoreFailure, UsersWithoutSessions> = if (usersWithoutSessions.hasMissingSessions()) {
-        messageRepository.persistNoClientsToDeliverFailure(conversationId, messageId, usersWithoutSessions.users)
+        messages.persistNoClientsToDeliverFailure(conversationId, messageId, usersWithoutSessions.users)
             .flatMap { Either.Right(usersWithoutSessions) }
     } else {
         Either.Right(usersWithoutSessions)
@@ -302,7 +306,7 @@ internal class MessageSenderImpl internal constructor(
         target: BroadcastMessageTarget,
         remainingAttempts: Int,
     ): Either<CoreFailure, Instant> {
-        return userRepository.getAllRecipients().flatMap { (teamRecipients, otherRecipients) ->
+        return broadcastRecipients().flatMap { (teamRecipients, otherRecipients) ->
             val (option, recipients) = getBroadcastParams(
                 message.senderUserId,
                 message.senderClientId,
@@ -342,10 +346,10 @@ internal class MessageSenderImpl internal constructor(
     ): Either<CoreFailure, Instant> =
         mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
             .flatMap { mlsMessage ->
-                messageRepository.sendMLSMessage(mlsMessage).fold({
+                transport.sendMLSMessage(mlsMessage).fold({
                     when (val mlsRejectionCause = (it.wrapNetworkMlsFailureIfApplicable() as? MLSFailure.MessageRejected)?.cause) {
                         is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync -> {
-                            mlsMissingUsersMessageRejectionHandler.handle(
+                            handleGroupOutOfSync(
                                 transactionContext,
                                 message.conversationId,
                                 protocolInfo.groupId,
@@ -363,9 +367,9 @@ internal class MessageSenderImpl internal constructor(
                                     "errorInfo" to "$it"
                                 )
                             )
-                            staleEpochVerifier.verifyEpoch(transactionContext, message.conversationId)
+                            verifyEpoch(transactionContext, message.conversationId)
                                 .flatMap {
-                                    syncManager.waitUntilLiveOrFailure().flatMap { attemptToSend(transactionContext, message) }
+                                    session.waitUntilLiveOrFailure().flatMap { attemptToSend(transactionContext, message) }
                                 }
                         }
                         else -> Either.Left(it)
@@ -410,7 +414,7 @@ internal class MessageSenderImpl internal constructor(
         messageTarget: MessageTarget,
         remainingAttempts: Int
     ): Either<CoreFailure, Instant> =
-        messageRepository
+        transport
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
                 handleProteusError(
@@ -452,7 +456,7 @@ internal class MessageSenderImpl internal constructor(
         target: BroadcastMessageTarget,
         remainingAttempts: Int
     ): Either<CoreFailure, Instant> =
-        messageRepository
+        transport
             .broadcastEnvelope(envelope, option)
             .fold({
                 handleProteusError(
@@ -554,7 +558,7 @@ internal class MessageSenderImpl internal constructor(
         handleClientsHaveChangedFailure: suspend () -> Either<CoreFailure, Unit>
     ) =
         if (conversationId == null) handleClientsHaveChangedFailure().map { false }
-        else legalHoldHandler.handleMessageSendFailure(conversationId, messageInstant, handleClientsHaveChangedFailure)
+        else legalHoldEnabledAfter(conversationId, messageInstant, handleClientsHaveChangedFailure)
 
     private fun getBroadcastParams(
         selfUserId: UserId,
@@ -590,12 +594,12 @@ internal class MessageSenderImpl internal constructor(
             val usersWithoutSessions =
                 messageSent.failedToConfirmClients.filter { failedIds -> failedIds !in envelope.recipients.map { it.userId } }
             if (usersWithoutSessions.isNotEmpty()) {
-                messageRepository.persistNoClientsToDeliverFailure(message.conversationId, message.id, usersWithoutSessions)
+                messages.persistNoClientsToDeliverFailure(message.conversationId, message.id, usersWithoutSessions)
             }
 
             val filteredUsersFailed = messageSent.failedToConfirmClients.minus(usersWithoutSessions.toSet())
             if (filteredUsersFailed.isNotEmpty()) {
-                messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, filteredUsersFailed)
+                messages.persistRecipientsDeliveryFailure(message.conversationId, message.id, filteredUsersFailed)
             } else {
                 Either.Right(Unit)
             }
@@ -604,6 +608,6 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun handleMlsRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
         if (messageSent.failedToConfirmClients.isEmpty()) Either.Right(Unit)
         else {
-            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failedToConfirmClients)
+            messages.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failedToConfirmClients)
         }
 }

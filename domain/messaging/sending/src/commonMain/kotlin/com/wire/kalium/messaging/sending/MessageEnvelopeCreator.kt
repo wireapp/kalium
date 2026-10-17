@@ -16,9 +16,10 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.messaging.sending
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -33,9 +34,8 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.ClientPayload
@@ -46,13 +46,12 @@ import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.messaging.sending.BroadcastMessage
-import kotlinx.coroutines.flow.first
 
-internal interface MessageEnvelopeCreator {
+/** Encrypts a message for each Proteus recipient client, using an external payload when it is too large. */
+interface MessageEnvelopeCreator {
 
     suspend fun createOutgoingEnvelope(
         proteusContext: ProteusCoreCryptoContext,
@@ -68,12 +67,12 @@ internal interface MessageEnvelopeCreator {
 
 }
 
-internal class MessageEnvelopeCreatorImpl(
-    private val conversationRepository: ConversationRepository,
-    private val legalHoldStatusMapper: LegalHoldStatusMapper,
-    private val selfUserId: UserId,
-    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+/** [legalHoldStatus] reads a conversation's stored legal-hold status, which regular messages declare. */
+class MessageEnvelopeCreatorImpl(
+    private val legalHoldStatus: suspend (ConversationId) -> Either<StorageFailure, Conversation.LegalHoldStatus>,
+    selfUserId: UserId,
+    private val protoContentMapper: ProtoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId),
+    private val idMapper: IdMapper = IdMapper()
 ) : MessageEnvelopeCreator {
 
     override suspend fun createOutgoingEnvelope(
@@ -88,11 +87,7 @@ internal class MessageEnvelopeCreatorImpl(
             else -> false
         }
 
-        val legalHoldStatus = conversationRepository.observeLegalHoldStatus(
-            message.conversationId
-        ).first().let {
-            legalHoldStatusMapper.mapLegalHoldConversationStatus(it, message)
-        }
+        val legalHoldStatus = declaredLegalHoldStatus(legalHoldStatus(message.conversationId), message)
 
         val actualMessageContent = ProtoContent.Readable(
             messageUid = message.id,
@@ -177,7 +172,7 @@ internal class MessageEnvelopeCreatorImpl(
         }
     }
 
-    internal companion object {
+    companion object {
         /**
          * An encrypted Proteus message has extra information about the encryption itself.
          * The content after encryption is around 190 bytes larger than the original

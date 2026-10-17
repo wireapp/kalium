@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,19 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.prekey
+package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.logic.data.user.UserId
+import kotlin.time.Instant
 
-internal interface PreKeyMapper {
-    fun fromPreKeyDTO(preyKeyDTO: PreKeyDTO): PreKeyCrypto
-    fun toPreKeyDTO(preKey: PreKeyCrypto): PreKeyDTO
-}
-
-internal class PreKeyMapperImpl : PreKeyMapper {
-    override fun fromPreKeyDTO(preyKeyDTO: PreKeyDTO): PreKeyCrypto =
-        PreKeyCrypto(id = preyKeyDTO.id, pkb = preyKeyDTO.key)
-
-    override fun toPreKeyDTO(preKey: PreKeyCrypto): PreKeyDTO = PreKeyDTO(id = preKey.id, key = preKey.pkb)
-}
+data class MessageSent(
+    val time: Instant,
+    val failedToConfirmClients: List<UserId> = listOf(),
+    val missing: List<UserId> = listOf()
+)

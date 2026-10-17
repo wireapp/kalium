@@ -136,7 +136,7 @@ class SessionEstablisherTest {
         val preKeyRepository = mock<PreKeyRepository>(mode = MockMode.autoUnit)
 
         private val sessionEstablisher: SessionEstablisher =
-            SessionEstablisherImpl(preKeyRepository)
+            SessionEstablisherImpl(preKeyRepository::establishSessions)
 
         suspend fun withEstablishSessions(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
             everySuspend {

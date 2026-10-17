@@ -27,9 +27,9 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -58,6 +58,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
+import com.wire.kalium.messaging.sending.MessageEnvelopeCreatorImpl
+import com.wire.kalium.common.error.StorageFailure
+import kotlinx.coroutines.flow.first
 
 class MessageEnvelopeCreatorTest {
 
@@ -90,10 +94,6 @@ class MessageEnvelopeCreatorTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }
-
-        verify(VerifyMode.exactly(1)) {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
         }
     }
 
@@ -135,10 +135,6 @@ class MessageEnvelopeCreatorTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }
-
-        verify(VerifyMode.exactly(1)) {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
         }
     }
 
@@ -183,10 +179,6 @@ class MessageEnvelopeCreatorTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
         }
-
-        verify(VerifyMode.exactly(1)) {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }
     }
 
     @Test
@@ -224,10 +216,6 @@ class MessageEnvelopeCreatorTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }
-
-        verify(VerifyMode.exactly(1)) {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
         }
     }
 
@@ -273,10 +261,6 @@ class MessageEnvelopeCreatorTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
         }
-
-        verify(VerifyMode.exactly(1)) {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }
     }
 
     @Test
@@ -297,10 +281,6 @@ class MessageEnvelopeCreatorTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
         }
-
-        verify(VerifyMode.exactly(1)) {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }
     }
 
     @Test
@@ -318,10 +298,6 @@ class MessageEnvelopeCreatorTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }
-
-        verify(VerifyMode.exactly(1)) {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
         }
     }
 
@@ -535,17 +511,38 @@ class MessageEnvelopeCreatorTest {
         }
     }
 
+    @Test
+    fun givenStoredLegalHoldStatus_whenCreatingAnEnvelope_thenOnlyRegularMessagesDeclareIt() = runTest {
+        val cases = listOf(
+            Triple(Either.Right(Conversation.LegalHoldStatus.ENABLED), TestMessage.TEXT_MESSAGE, Conversation.LegalHoldStatus.ENABLED),
+            Triple(Either.Left(StorageFailure.DataNotFound), TestMessage.TEXT_MESSAGE, Conversation.LegalHoldStatus.UNKNOWN),
+            Triple(Either.Right(Conversation.LegalHoldStatus.ENABLED), TestMessage.signalingMessage(MessageContent.DeleteMessage("deleted")), Conversation.LegalHoldStatus.UNKNOWN),
+        )
+        for ((stored, message, declared) in cases) {
+            val (arrangement, creator) = Arrangement()
+                .withEncryptBatchedReturning(emptyMap())
+                .withEncodeReadableReturning(PlainMessageBlob(byteArrayOf()))
+                .arrange { every { conversationRepository.observeLegalHoldStatus(any()) } returns flowOf(stored) }
+
+            creator.createOutgoingEnvelope(arrangement.proteusContext, TEST_RECIPIENTS, message)
+
+            verifySuspend {
+                arrangement.protoContentMapper.encodeToProtobuf(
+                    matches { it is ProtoContent.Readable && it.legalHoldStatus == declared }
+                )
+            }
+        }
+    }
+
     private class Arrangement : ProteusCoreCryptoContextArrangement by ProteusCoreCryptoContextArrangementMokkeryImpl() {
         private val selfUserId: UserId = UserId("user-id", "domain")
 
         val proteusClient: ProteusClient = mock(mode = MockMode.autoUnit)
-        private val protoContentMapper: ProtoContentMapper = mock(mode = MockMode.autoUnit)
+        val protoContentMapper: ProtoContentMapper = mock(mode = MockMode.autoUnit)
         val conversationRepository: ConversationRepository = mock(mode = MockMode.autoUnit)
-        val legalHoldStatusMapper: LegalHoldStatusMapper = mock(mode = MockMode.autoUnit)
 
         val messageEnvelopeCreator: MessageEnvelopeCreator = MessageEnvelopeCreatorImpl(
-            conversationRepository = conversationRepository,
-            legalHoldStatusMapper = legalHoldStatusMapper,
+            legalHoldStatus = { conversationRepository.observeLegalHoldStatus(it).first() },
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
@@ -570,9 +567,8 @@ class MessageEnvelopeCreatorTest {
         }
 
         fun arrange(block: Arrangement.() -> Unit = {}) = let {
-            block()
             every { conversationRepository.observeLegalHoldStatus(any()) } returns flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED))
-            every { legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any()) } returns Conversation.LegalHoldStatus.DISABLED
+            block()
 
             this to messageEnvelopeCreator
         }

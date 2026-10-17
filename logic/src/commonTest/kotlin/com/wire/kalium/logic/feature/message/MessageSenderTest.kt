@@ -63,6 +63,8 @@ import com.wire.kalium.logic.util.shouldSucceed
 
 import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.messaging.sending.BroadcastMessageTarget
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
+import com.wire.kalium.messaging.sending.MessageSenderImpl
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
@@ -94,6 +96,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.time.Duration
+import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
+import com.wire.kalium.messaging.sending.MLSMessageCreator
 
 class MessageSenderTest {
     @Test
@@ -1303,25 +1307,25 @@ class MessageSenderTest {
                 withTransactionReturning(Either.Right(Unit))
             }
             this@Arrangement to MessageSenderImpl(
-                messageRepository = messageRepository,
-                conversationRepository = conversationRepository,
-                syncManager = syncManager,
+                messages = messageRepository,
+                transport = messageRepository,
+                conversations = conversationRepository,
+                session = SyncedSendingSession(syncManager, cryptoTransactionProvider),
                 messageSendFailureHandler = messageSendFailureHandler,
-                legalHoldHandler = legalHoldHandler,
                 sessionEstablisher = sessionEstablisher,
                 messageEnvelopeCreator = messageEnvelopeCreator,
                 mlsMessageCreator = mlsMessageCreator,
-                messageSendingInterceptor = messageSendingInterceptor,
-                userRepository = userRepository,
+                prepareMessage = messageSendingInterceptor::prepareMessage,
+                legalHoldEnabledAfter = legalHoldHandler::handleMessageSendFailure,
+                verifyEpoch = { context, conversationId -> staleEpochVerifier.verifyEpoch(context, conversationId) },
+                handleGroupOutOfSync = mlsMissingUsersMessageRejectionHandler::handle,
+                broadcastRecipients = userRepository::getAllRecipients,
                 enqueueSelfDeletion = { message, expirationData ->
                     selfDeleteMessageSenderHandler.enqueueSelfDeletion(
                         message,
                         expirationData
                     )
                 },
-                staleEpochVerifier = staleEpochVerifier,
-                transactionProvider = cryptoTransactionProvider,
-                mlsMissingUsersMessageRejectionHandler = mlsMissingUsersMessageRejectionHandler,
                 scope = testScope
             )
         }

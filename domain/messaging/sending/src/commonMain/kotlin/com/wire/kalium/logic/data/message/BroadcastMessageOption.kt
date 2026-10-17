@@ -15,17 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.prekey
+package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.user.UserId
 
-/**
- * Holder class for an optional list of users ids whose sessions are missing.
- */
-internal data class UsersWithoutSessions(val users: List<UserId>) {
-    internal fun hasMissingSessions() = users.isNotEmpty()
-
-    internal companion object {
-        internal val EMPTY = UsersWithoutSessions(emptyList())
-    }
+sealed class BroadcastMessageOption {
+    data object IgnoreAll : BroadcastMessageOption()
+    data object ReportAll : BroadcastMessageOption()
+    data class IgnoreSome(val userIDs: List<UserId>) : BroadcastMessageOption()
+    data class ReportSome(val userIDs: List<UserId>) : BroadcastMessageOption()
 }

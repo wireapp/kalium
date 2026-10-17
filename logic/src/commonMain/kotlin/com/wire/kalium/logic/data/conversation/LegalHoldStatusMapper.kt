@@ -18,18 +18,11 @@
 
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.LegalHoldStatus
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 
 internal interface LegalHoldStatusMapper {
     fun fromApiModel(legalHoldStatusDTO: LegalHoldStatusDTO): LegalHoldStatus
-    fun mapLegalHoldConversationStatus(
-        legalHoldStatus: Either<StorageFailure, Conversation.LegalHoldStatus>,
-        message: Message.Sendable
-    ): Conversation.LegalHoldStatus
 }
 
 internal object LegalHoldStatusMapperImpl : LegalHoldStatusMapper {
@@ -40,17 +33,4 @@ internal object LegalHoldStatusMapperImpl : LegalHoldStatusMapper {
             LegalHoldStatusDTO.DISABLED -> LegalHoldStatus.DISABLED
             LegalHoldStatusDTO.NO_CONSENT -> LegalHoldStatus.NO_CONSENT
         }
-
-    override fun mapLegalHoldConversationStatus(
-        legalHoldStatus: Either<StorageFailure, Conversation.LegalHoldStatus>,
-        message: Message.Sendable
-    ): Conversation.LegalHoldStatus = when (legalHoldStatus) {
-        is Either.Left -> Conversation.LegalHoldStatus.UNKNOWN
-        is Either.Right -> {
-            when (message) {
-                is Message.Regular -> legalHoldStatus.value
-                else -> Conversation.LegalHoldStatus.UNKNOWN
-            }
-        }
-    }
 }
