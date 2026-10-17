@@ -101,6 +101,44 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenBackupPageWithMissingMessages_whenInserting_thenPreserveReactionsForExistingMessages() = runTest {
+        insertTestUsers()
+        val otherConversationId = TEST_CONVERSATION.id.copy(value = "other-conversation")
+        conversationDAO.insertConversation(TEST_CONVERSATION)
+        conversationDAO.insertConversation(TEST_CONVERSATION.copy(id = otherConversationId))
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
+
+        reactionDAO.insertOrIgnoreReactions(
+            reactions = listOf(
+                MessageReactionsEntity(
+                    TEST_MESSAGE.id, TEST_MESSAGE.conversationId,
+                    listOf(MessageReactionUserEntity("before", SELF_USER_ID)),
+                ),
+                MessageReactionsEntity(
+                    "missing-message", TEST_MESSAGE.conversationId,
+                    listOf(MessageReactionUserEntity("missing", SELF_USER_ID)),
+                ),
+                MessageReactionsEntity(
+                    TEST_MESSAGE.id, otherConversationId,
+                    listOf(MessageReactionUserEntity("wrong-conversation", SELF_USER_ID)),
+                ),
+                MessageReactionsEntity(
+                    TEST_MESSAGE.id, TEST_MESSAGE.conversationId,
+                    listOf(MessageReactionUserEntity("after", SELF_USER_ID)),
+                ),
+            ),
+            instant = Instant.UNIX_FIRST_DATE,
+        )
+
+        assertContentEquals(
+            listOf("after", "before"),
+            reactionDAO.getReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID).sorted(),
+        )
+        assertTrue(reactionDAO.getReaction("missing-message", TEST_MESSAGE.conversationId, SELF_USER_ID).isEmpty())
+        assertTrue(reactionDAO.getReaction(TEST_MESSAGE.id, otherConversationId, SELF_USER_ID).isEmpty())
+    }
+
+    @Test
     fun givenInvalidReactionLateInBackupPage_whenInserting_thenWholePageIsRolledBack() = runTest {
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
