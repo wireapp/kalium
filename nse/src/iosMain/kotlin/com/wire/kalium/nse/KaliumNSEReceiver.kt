@@ -23,6 +23,8 @@ import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.sync.receiving.AppleAccountRuntime
+import com.wire.kalium.logic.sync.receiving.CatchUpOutcome
+import com.wire.kalium.logic.sync.receiving.catchUp
 import com.wire.kalium.logic.sync.receiving.ReceivedCallType
 import com.wire.kalium.logic.sync.receiving.ReceivedMessageResult
 import com.wire.kalium.logic.sync.receiving.ReceivedNotificationResult
@@ -38,6 +40,8 @@ import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeSource
 
 /** Shared configuration must exactly match app preparation, including the canonical App Group root. */
 public data class KaliumNSEConfiguration(
@@ -73,7 +77,16 @@ public data class KaliumNSERequest(
     public val budgetMilliseconds: Long,
     /** The host supplies only delivered message alerts belonging to this request's account. */
     public val deliveredNotifications: List<KaliumNSEDeliveredNotification> = emptyList(),
+    public val syncMode: KaliumNSESyncMode = KaliumNSESyncMode.TARGET,
 )
+
+public enum class KaliumNSESyncMode {
+    /** Fetch and process up to the request's notification only. */
+    TARGET,
+
+    /** Catch up over the WebSocket, close it, then process the stored queue to its end. */
+    TO_LIVE,
+}
 
 public data class KaliumNSEDeliveredNotification(
     public val identifier: String,
@@ -109,6 +122,14 @@ public data class KaliumNSEResult(
      * Kalium has already marked them notified.
      */
     public val alerts: List<KaliumNSEAlert> = emptyList(),
+    /**
+     * Receiving ran out of time or failed to catch up before reaching the request's notification, and has
+     * no alert to show. The host shows a generic alert instead of empty content. Also set on
+     * [KaliumNSEStatus.FAILED] timeouts.
+     */
+    public val presentGenericAlert: Boolean = false,
+    /** Diagnostic code only: why a sync-to-live attempt stopped. */
+    public val stoppedReason: String? = null,
 )
 
 /** A message alert beyond the request's own; text and names are present only when preview is allowed. */
@@ -158,44 +179,94 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) {
             return failure("INVALID_REQUEST").also { diagnostics.record("FAILED", it.failureReason, false) }
         }
-        val outcome = withTimeoutOrNull(request.budgetMilliseconds) {
-            val result = AppleAccountRuntime.use(
-                configuration.rootPath,
-                UserId(request.userValue, request.userDomain),
-                ApplePersistenceConfig(
-                    serviceName = configuration.keychainService,
-                    keychainAccessibility = configuration.keychainAccessibility.toApple(),
-                    accessGroup = configuration.keychainAccessGroup,
-                ),
-                configuration.userAgent,
-                configuration.certificatePins,
-                diagnostics = diagnostics,
-            ) { runtime ->
-                runtime.database.messageDAO.rememberNotificationMessages(request.deliveredNotifications.map { it.messageKey() })
-                val received = runtime.notificationProcessor(
-                    ReceivingOptions(
-                        guestRoomLink = configuration.guestRoomLink,
-                        selfDeletingMessages = configuration.selfDeletingMessages,
-                        drivePermissionsEnabled = configuration.drivePermissionsEnabled,
-                        linkPreviewEnabled = configuration.linkPreviewEnabled,
-                        fileRestrictionState = configuration.allowedFileExtensions?.let {
-                            BuildFileRestrictionState.AllowSome(it)
-                        } ?: BuildFileRestrictionState.NoRestriction
+        val started = TimeSource.Monotonic.markNow()
+        // A result produced before the budget ends survives a slow runtime close: its message alerts are marked notified.
+        var produced: KaliumNSEResult? = null
+        val outcome = try {
+            withTimeoutOrNull(request.budgetMilliseconds) {
+                val result = AppleAccountRuntime.use(
+                    configuration.rootPath,
+                    UserId(request.userValue, request.userDomain),
+                    ApplePersistenceConfig(
+                        serviceName = configuration.keychainService,
+                        keychainAccessibility = configuration.keychainAccessibility.toApple(),
+                        accessGroup = configuration.keychainAccessGroup,
                     ),
+                    configuration.userAgent,
+                    configuration.certificatePins,
                     diagnostics = diagnostics,
-                ).process(request.notificationId)
-                val unnotified = if (!received.prefixComplete) emptyList()
-                else UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId).take()
-                reconcileNotifications(runtime, received, unnotified, request)
-            }
-            when (result) {
-                is Either.Left -> failure(result.value.name)
-                is Either.Right -> result.value
-            }
-        } ?: failure("TIMEOUT")
+                ) { runtime -> receive(runtime, request, diagnostics, started).also { produced = it } }
+                when (result) {
+                    is Either.Left -> failure(result.value.name)
+                    is Either.Right -> result.value
+                }
+            } ?: produced ?: failure("TIMEOUT").copy(presentGenericAlert = true)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (@Suppress("TooGenericExceptionCaught") cleanup: Exception) {
+            // Receiving finished and marked its message alerts notified; only closing the runtime failed.
+            produced ?: throw cleanup
+        }
         diagnostics.record(outcome.status.name, outcome.failureReason, outcome.shouldNotify)
         return outcome
     }
+
+    private suspend fun receive(
+        runtime: AppleAccountRuntime,
+        request: KaliumNSERequest,
+        diagnostics: ReceivingDiagnostics,
+        started: TimeSource.Monotonic.ValueTimeMark,
+    ): KaliumNSEResult {
+        runtime.database.messageDAO.rememberNotificationMessages(request.deliveredNotifications.map { it.messageKey() })
+        val processor = runtime.notificationProcessor(
+            ReceivingOptions(
+                guestRoomLink = configuration.guestRoomLink,
+                selfDeletingMessages = configuration.selfDeletingMessages,
+                drivePermissionsEnabled = configuration.drivePermissionsEnabled,
+                linkPreviewEnabled = configuration.linkPreviewEnabled,
+                fileRestrictionState = configuration.allowedFileExtensions?.let {
+                    BuildFileRestrictionState.AllowSome(it)
+                } ?: BuildFileRestrictionState.NoRestriction
+            ),
+            diagnostics = diagnostics,
+        )
+        val budget = request.budgetMilliseconds.milliseconds
+        var caughtUp: CatchUpOutcome? = null
+        val received = when (request.syncMode) {
+            KaliumNSESyncMode.TARGET -> processor.process(request.notificationId)
+            KaliumNSESyncMode.TO_LIVE -> {
+                // Soft deadlines leave time to present and to close the runtime within the budget.
+                val outcome = runtime.catchUp(budget * CATCH_UP_SHARE - started.elapsedNow())
+                caughtUp = outcome
+                processor.processToLive(request.notificationId) { started.elapsedNow() > budget * PROCESS_SHARE }.let {
+                    if (outcome == CatchUpOutcome.LIVE || it.stoppedReason != QUEUE_END) it
+                    else it.copy(stoppedReason = "CATCH_UP_${outcome.name}")
+                }
+            }
+        }
+        val unnotified = if (!received.prefixComplete) emptyList()
+        else UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId).take()
+        val result = reconcileNotifications(runtime, received, unnotified, request)
+        return result.copy(
+            stoppedReason = received.stoppedReason,
+            presentGenericAlert = !result.shouldNotify && result.alerts.isEmpty() &&
+                mayLeaveUnseenEvents(runtime, caughtUp, received, request.notificationId),
+        )
+    }
+
+    /**
+     * An unfinished catch-up may leave events the socket received, which get no push. A failed one, like
+     * processing that ran out of time, may not have reached the push's own event.
+     */
+    private suspend fun mayLeaveUnseenEvents(
+        runtime: AppleAccountRuntime,
+        caughtUp: CatchUpOutcome?,
+        received: ReceivedNotificationResult,
+        notificationId: String,
+    ): Boolean = caughtUp == CatchUpOutcome.BUDGET || (
+        (received.stoppedReason == BUDGET || caughtUp == CatchUpOutcome.FAILED) &&
+            runtime.database.eventDAO.getEventById(notificationId)?.isProcessed != true
+        )
 
     private suspend fun reconcileNotifications(
         runtime: AppleAccountRuntime,
@@ -352,5 +423,9 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
 
     private companion object {
         const val MAX_BUDGET_MS = 25_000L
+        const val CATCH_UP_SHARE = 0.6
+        const val PROCESS_SHARE = 0.85
+        const val QUEUE_END = "QUEUE_END"
+        const val BUDGET = "BUDGET"
     }
 }

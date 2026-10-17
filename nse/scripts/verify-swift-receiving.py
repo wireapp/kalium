@@ -3,6 +3,7 @@
 
 import argparse
 import base64
+import hashlib
 import json
 import plistlib
 from pathlib import Path
@@ -25,6 +26,8 @@ REPORT = NSE / "build/reports/swift-receiving/result.json"
 
 # CLI selection, native exporter and report path stay together.
 SCENARIOS = {
+    'sync-to-live': ('export', 'sync-to-live-result.json',
+        'Receive through bounded catch-up over a local WebSocket that is closed before processing'),
     'calling-events': ('export-calling', 'calling-result.json',
         'Verify Proteus/MLS calling batches, Swift call results and app reopen'),
     'multiple-payloads': ('export-multiple', 'multiple-result.json',
@@ -195,6 +198,14 @@ extendedKeyUsage=serverAuth
                 for account in accounts:
                     account["linkPreviewEnabled"] = True
                 Path(manifest).write_text(json.dumps(accounts))
+            if options.sync_to_live:
+                for account in accounts:
+                    account["syncToLive"] = True
+                Path(manifest).write_text(json.dumps(accounts))
+            # Sync to live: most recent notification lookups, then socket opens/closes and page fetches in order.
+            last_requests = []
+            sync_events = []
+            socket_bound = False
             if mls_client_mode:
                 for account in accounts:
                     if account["route"].endswith("-read"):
@@ -336,10 +347,22 @@ extendedKeyUsage=serverAuth
                         self.wfile.write(body)
                         metadata_requests.append(metadata_account["route"])
                         return
+                    last_account = next((item for item in accounts if request_path.startswith(f"/{item['route']}/v8/notifications/last?")), None)
+                    if options.sync_to_live and last_account is not None:
+                        last = last_account["response"]["notifications"][-1]
+                        body = json.dumps({"id": last["id"], "payload": last["payload"]}).encode()
+                        self.send_response(200)
+                        self.send_header("Content-Type", "application/json")
+                        self.send_header("Content-Length", str(len(body)))
+                        self.end_headers()
+                        self.wfile.write(body)
+                        last_requests.append(last_account["route"])
+                        return
                     account = next((item for item in accounts if request_path.startswith(f"/{item['route']}/v8/notifications?")), None)
                     if account is None:
                         self.send_error(404)
                         return
+                    sync_events.append([account["route"], "page"])
                     body = json.dumps(account["response"]).encode()
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")
@@ -436,6 +459,53 @@ extendedKeyUsage=serverAuth
             server.socket = tls.wrap_socket(server.socket, server_side=True)
             server_thread = threading.Thread(target=server.serve_forever, daemon=True)
             server_thread.start()
+            if options.sync_to_live:
+                class SocketHandler(BaseHTTPRequestHandler):
+                    protocol_version = "HTTP/1.1"
+
+                    def do_GET(self):
+                        account = next((item for item in accounts if self.path.startswith(f"/{item['route']}/await?")), None)
+                        if account is None or self.headers.get("Upgrade", "").lower() != "websocket":
+                            self.send_error(404)
+                            return
+                        accept = base64.b64encode(hashlib.sha1(
+                            (self.headers["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()).decode()
+                        self.send_response(101, "Switching Protocols")
+                        self.send_header("Upgrade", "websocket")
+                        self.send_header("Connection", "Upgrade")
+                        self.send_header("Sec-WebSocket-Accept", accept)
+                        self.end_headers()
+                        self.wfile.flush()
+                        sync_events.append([account["route"], "open"])
+                        try:
+                            while True:
+                                header = self.rfile.read(2)
+                                if len(header) < 2:
+                                    break
+                                length = header[1] & 0x7F
+                                if length >= 126:
+                                    length = int.from_bytes(self.rfile.read(2 if length == 126 else 8), "big")
+                                self.rfile.read((4 if header[1] & 0x80 else 0) + length)
+                                if header[0] & 0x0F == 0x8:
+                                    self.wfile.write(bytes([0x88, 0]))
+                                    self.wfile.flush()
+                                    break
+                        except OSError:
+                            pass
+                        sync_events.append([account["route"], "closed"])
+                        self.close_connection = True
+
+                    def log_message(self, *_):
+                        pass
+
+                try:
+                    # Ktor's legacy socket always uses the WSS default port.
+                    socket_server = ThreadingHTTPServer(("127.0.0.1", 443), SocketHandler)
+                    socket_server.socket = tls.wrap_socket(socket_server.socket, server_side=True)
+                    threading.Thread(target=socket_server.serve_forever, daemon=True).start()
+                    socket_bound = True
+                except OSError as failure:
+                    raise SystemExit(f"--sync-to-live needs a local WebSocket on port 443 ({failure})")
             sdk = run("xcrun", "--sdk", "iphonesimulator", "--show-sdk-path").strip()
             consumer = work / "receive"
             run("xcrun", "--sdk", "iphonesimulator", "swiftc", "-parse-as-library", "-application-extension", "-sdk", sdk,
@@ -448,7 +518,19 @@ extendedKeyUsage=serverAuth
             print("Running real Swift Proteus and MLS receiving", flush=True)
             output = run("xcrun", "simctl", "spawn", simulator, str(consumer), manifest, timeout=90)
             assert "SWIFT_RECEIVE_PASSED Proteus" in output and "SWIFT_RECEIVE_PASSED MLS" in output
-            assert requests == [account["route"] for account in accounts], requests
+            if options.sync_to_live:
+                for account in accounts:
+                    route = account["route"]
+                    events = [event for event_route, event in sync_events if event_route == route]
+                    # Each attempt pages once its socket is open and closes it at live.
+                    assert events.count("open") == events.count("closed"), events
+                    assert events.count("page") >= max(1, events.count("open")), events
+                    # Receiving and its processed replay each connect once.
+                    assert last_requests.count(route) == 2, last_requests
+                    if socket_bound:
+                        assert events.count("open") == 2, events
+            else:
+                assert requests == [account["route"] for account in accounts], requests
             run("xcrun", "simctl", "spawn", simulator, str(FIXTURE), "verify")
             if x509_server:
                 assert len(x509_server.requests) == prepared_pki_requests, "Receiving unexpectedly fetched PKI data"
@@ -660,6 +742,9 @@ extendedKeyUsage=serverAuth
                 "synchronizationAndReadState": options.synchronization,
                 "ordinaryMetadataActionsAndAppExpirationHandoff": options.ordinary_events,
                 "runtime": "iOS-26-3", "temporarySimulator": simulator,
+                "syncToLiveSocketsAndPages": sync_events if options.sync_to_live else [],
+                "syncToLiveMostRecentRequests": last_requests if options.sync_to_live else [],
+                "syncToLiveLocalSocket": socket_bound,
                 "mlsCommitBeforeText": options.mls_commit,
             }, indent=2) + "\n")
             print("Swift receiving and app handoff verification passed for Proteus and MLS", flush=True)

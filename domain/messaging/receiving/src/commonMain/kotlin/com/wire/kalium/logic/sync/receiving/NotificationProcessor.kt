@@ -71,7 +71,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 /** First bounded server-ordered path. The app retains its gathered-batch transaction boundary. */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 class NotificationProcessor(
     private val database: UserDatabaseBuilder,
     private val notificationApi: NotificationApi,
@@ -110,6 +110,20 @@ class NotificationProcessor(
     @Suppress("TooGenericExceptionCaught")
     suspend fun process(targetId: String): ReceivedNotificationResult = try {
         if (isolateConversations) processIsolatedEvents(targetId) else processEvents(targetId)
+    } catch (failure: Throwable) {
+        if (failure !is kotlinx.coroutines.CancellationException) diagnostics?.failed(failure)
+        throw failure
+    }
+
+    /**
+     * Sync-to-live scan after a bounded catch-up: processes every stored pending event without fetching,
+     * until the queue ends, an ordering barrier or app handoff stops it, or [shouldStop] asks to stop
+     * before the next event. A reached target is presented as by [process]; later messages remain eligible for unnotified alerts.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    suspend fun processToLive(targetId: String?, shouldStop: () -> Boolean): ReceivedNotificationResult = try {
+        check(isolateConversations) { "Sync to live requires the isolated scan" }
+        processIsolatedEvents(targetId, QueueEnd(shouldStop))
     } catch (failure: Throwable) {
         if (failure !is kotlinx.coroutines.CancellationException) diagnostics?.failed(failure)
         throw failure
@@ -184,25 +198,37 @@ class NotificationProcessor(
         )
     }
 
-    /** NSE-only scan: a deferred row remains pending while unrelated messages may pass it. */
-    @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod", "LoopWithTooManyJumpStatements")
-    private suspend fun processIsolatedEvents(targetId: String): ReceivedNotificationResult {
-        require(targetId.isNotBlank())
+    /**
+     * NSE-only scan: a deferred row remains pending while unrelated messages may pass it.
+     * With [queueEnd] it continues past the target to the end of the stored queue instead of fetching.
+     */
+    @Suppress(
+        "ReturnCount",
+        "LongMethod",
+        "CyclomaticComplexMethod",
+        "LoopWithTooManyJumpStatements",
+        "ComplexCondition",
+        "NestedBlockDepth",
+    )
+    private suspend fun processIsolatedEvents(targetId: String?, queueEnd: QueueEnd? = null): ReceivedNotificationResult {
+        require(queueEnd != null || !targetId.isNullOrBlank())
         diagnostics?.stage = "LOAD_QUEUE"
         terminalAccountResult()?.let { return it }
         cleanupConversations()
         previewImages.cleanupAbandoned(database.assetDAO)
-        if (database.eventDAO.getEventById(targetId)?.isProcessed == true) {
+        if (queueEnd == null && database.eventDAO.getEventById(checkNotNull(targetId))?.isProcessed == true) {
             return if (events.nextPending() != null) withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
             else withPendingCalls(null, "ALREADY_PROCESSED")
         }
         database.eventDAO.setAllUnprocessedEventsAsPending()
         var scannedId = 0L
-        var canFetch = true
+        var canFetch = queueEnd == null
         val deferred = mutableSetOf<NotificationDependency>()
         while (true) {
             currentCoroutineContext().ensureActive()
             val next = events.nextPendingAfter(scannedId)
+            if (next == null && queueEnd != null) return queueEnd.result("QUEUE_END", deferred.isEmpty())
+            if (next != null && queueEnd?.shouldStop?.invoke() == true) return queueEnd.result("BUDGET", deferred.isEmpty())
             if (next == null) {
                 check(canFetch) { "Target notification was not found" }
                 diagnostics?.fetching()
@@ -221,18 +247,24 @@ class NotificationProcessor(
                 continue
             }
             if (database.metadataDAO.hasPendingLegalHoldTransitions()) {
-                return withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = NotificationAppWork.LEGAL_HOLD)
+                return queueEnd?.stopped("LEGAL_HOLD_REQUIRES_APP", NotificationAppWork.LEGAL_HOLD)
+                    ?: withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = NotificationAppWork.LEGAL_HOLD)
             }
             scannedId = next.id
             val payload = EventResponseToStore(next.eventId, next.payload, next.transient).toEventResponse().payload
             check(!payload.isNullOrEmpty()) { "A payload is required" }
             val dependencies = dependencies(payload)
-            if (deferred.isNotEmpty() && dependencies == null) return withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
+            if (deferred.isNotEmpty() && dependencies == null) {
+                return queueEnd?.stopped("DEFERRED_ORDERING_BARRIER") ?: withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
+            }
             val retryIn = (events.deferredUntil(next.eventId) ?: 0L) - nowEpochMillis()
             val coolingDown = retryIn in 1..DEFERRED_RETRY_MILLIS
             if (dependencies != null && (coolingDown || dependencies.any { it in deferred })) {
                 deferred += dependencies
-                if (next.eventId == targetId) return withoutPresentation(null, "DEFERRED_CONVERSATION")
+                if (next.eventId == targetId) {
+                    if (queueEnd == null) return withoutPresentation(null, "DEFERRED_CONVERSATION")
+                    queueEnd.reached(null, "DEFERRED_CONVERSATION")
+                }
                 continue
             }
             diagnostics?.beginEvent(next.eventId == targetId, next.eventId)
@@ -244,12 +276,16 @@ class NotificationProcessor(
                 currentCoroutineContext().ensureActive()
                 events.defer(next.eventId, nowEpochMillis() + DEFERRED_RETRY_MILLIS)
                 deferred += checkNotNull(dependencies)
-                if (next.eventId == targetId) return withoutPresentation(null, "DEFERRED_CONVERSATION")
+                if (next.eventId == targetId) {
+                    if (queueEnd == null) return withoutPresentation(null, "DEFERRED_CONVERSATION")
+                    queueEnd.reached(null, "DEFERRED_CONVERSATION")
+                }
                 continue
             } catch (_: NotificationOrderingBarrier) {
-                return withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
+                return queueEnd?.stopped("DEFERRED_ORDERING_BARRIER") ?: withoutPresentation(null, "DEFERRED_ORDERING_BARRIER")
             } catch (handoff: NotificationAppHandoff) {
-                return withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = handoff.work)
+                return queueEnd?.stopped("LEGAL_HOLD_REQUIRES_APP", handoff.work)
+                    ?: withoutPresentation(null, "LEGAL_HOLD_REQUIRES_APP").copy(appWorkPending = handoff.work)
             }
             currentCoroutineContext().ensureActive()
             diagnostics?.stage = "MARK_PROCESSED"
@@ -258,11 +294,45 @@ class NotificationProcessor(
             if (recovery == null) events.markProcessed(listOf(next.eventId), emptyMap())
             else recovery.acknowledge(listOf(next.eventId))
             if (next.eventId == targetId) {
+                if (queueEnd != null) {
+                    queueEnd.reached(effects.message, "DEFERRED_PRESENTATION_POLICY".takeIf { deferred.isNotEmpty() })
+                    continue
+                }
                 return if (deferred.isEmpty()) withPendingCalls(effects.message)
                 else withoutPresentation(effects.message, "DEFERRED_PRESENTATION_POLICY")
             }
         }
     }
+
+    /** Sync-to-live progress: the target's presentation once reached, and when to stop. */
+    private inner class QueueEnd(val shouldStop: () -> Boolean) {
+        private var message: ReceivedMessageResult? = null
+        private var suppression: String? = null
+
+        fun reached(message: ReceivedMessageResult?, suppression: String?) {
+            this.message = message
+            this.suppression = suppression
+        }
+
+        /** Calls are evaluated only when no deferred prefix can hide a self-control. */
+        suspend fun result(stop: String, completePrefix: Boolean): ReceivedNotificationResult {
+            val presented = suppression?.let { withoutPresentation(message, it) }
+            return when {
+                presented != null -> presented
+                completePrefix -> withPendingCalls(message)
+                else -> withoutCalls(message)
+            }.copy(stoppedReason = stop)
+        }
+
+        suspend fun stopped(stop: String, work: NotificationAppWork? = null): ReceivedNotificationResult =
+            (suppression?.let { withoutPresentation(message, it) } ?: withoutCalls(message))
+                .copy(stoppedReason = stop, appWorkPending = work)
+    }
+
+    private suspend fun withoutCalls(message: ReceivedMessageResult?) = ReceivedNotificationResult(
+        message = message,
+        callSignalsPending = CallSignalJournal(database).signals().any { it.submittedGeneration == null },
+    )
 
     /** An opaque MLS payload may hide a buffered self-control (availability or call rejection).
      * Independent canonical writes are safe; alerts and AVS evaluation need the complete prefix.

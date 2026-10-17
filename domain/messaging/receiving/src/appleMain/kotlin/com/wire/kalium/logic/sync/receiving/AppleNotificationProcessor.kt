@@ -17,6 +17,16 @@ import com.wire.kalium.util.InternalKaliumApi
 import okio.FileSystem
 import okio.Path.Companion.toPath
 
+/**
+ * Bounded legacy catch-up for this owned account, before [NotificationProcessor.processToLive].
+ * The WebSocket is closed and joined when this returns.
+ */
+@InternalKaliumApi
+public suspend fun AppleAccountRuntime.catchUp(budget: kotlin.time.Duration): CatchUpOutcome = NotificationCatchUp(
+    EventIngestion(network.notificationApi, database.eventDAO, database.metadataDAO, prepared.clientId),
+    closeWebSockets = { network.closeWebSockets() },
+).run(budget)
+
 /** Receiving composition for an owned, prepared Apple account. */
 @InternalKaliumApi
 public suspend fun AppleAccountRuntime.notificationProcessor(

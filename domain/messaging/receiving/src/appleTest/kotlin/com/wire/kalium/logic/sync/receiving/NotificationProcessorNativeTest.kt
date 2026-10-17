@@ -10168,6 +10168,83 @@ class NotificationProcessorNativeTest {
     }
 
     @Test
+    fun `sync to live processes past the target to the queue end without fetching for both protocols`() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+                val events = listOf("earlier", "target", "later").mapIndexed { index, text ->
+                    fixture.event(text, fixture.encrypt(text), time = TIME + index.seconds)
+                }
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    // The bounded catch-up stores the stream before the scan.
+                    runtime.database.eventDAO.storeFetchedPage(events.map { NewEventEntity(it.id, it.payload, false, false) })
+                })
+                val offline = PageApi(emptyMap())
+
+                val result = fixture.receive(emptyList(), "target", api = offline, isolateConversations = true, toLive = { false })
+
+                assertEquals("target", assertIs<Either.Right<ReceivedMessageResult?>>(result).value?.text)
+                assertEquals("QUEUE_END", fixture.receivedStop)
+                assertTrue(offline.requests.isEmpty())
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertTrue(events.all { checkNotNull(runtime.database.eventDAO.getEventById(it.id)).isProcessed })
+                    assertEquals(listOf("earlier", "target", "later"), UnnotifiedMessageAlerts(runtime.database, SELF) { TIME + 10.seconds }.take().map { it.text })
+                })
+            }
+        }
+    }
+
+    @Test
+    fun `sync to live stops before the next event at its deadline and keeps the tail for both protocols`() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+                val events = listOf("earlier", "target", "later").mapIndexed { index, text ->
+                    fixture.event(text, fixture.encrypt(text), time = TIME + index.seconds)
+                }
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    runtime.database.eventDAO.storeFetchedPage(events.map { NewEventEntity(it.id, it.payload, false, false) })
+                })
+                var checks = 0
+
+                val result = fixture.receive(emptyList(), "target", api = PageApi(emptyMap()), isolateConversations = true,
+                    toLive = { checks++ >= 1 })
+
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
+                assertEquals("BUDGET", fixture.receivedStop)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertEquals(listOf(true, false, false), events.map { checkNotNull(runtime.database.eventDAO.getEventById(it.id)).isProcessed })
+                    assertEquals(listOf("earlier"), UnnotifiedMessageAlerts(runtime.database, SELF) { TIME + 10.seconds }.take().map { it.text })
+                })
+            }
+        }
+    }
+
+    @Test
+    fun `sync to live without its push in the queue still processes every stored event for both protocols`() = runTest {
+        withContext(Dispatchers.Default) {
+            for (mls in listOf(false, true)) withFixture(mls) { fixture ->
+                val events = listOf("first", "second").mapIndexed { index, text ->
+                    fixture.event(text, fixture.encrypt(text), time = TIME + index.seconds)
+                }
+                fixture.releasePrepared()
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    runtime.database.eventDAO.storeFetchedPage(events.map { NewEventEntity(it.id, it.payload, false, false) })
+                })
+
+                val result = fixture.receive(emptyList(), "absent", api = PageApi(emptyMap()), isolateConversations = true,
+                    toLive = { false })
+
+                assertNull(assertIs<Either.Right<ReceivedMessageResult?>>(result).value)
+                assertEquals("QUEUE_END", fixture.receivedStop)
+                assertIs<Either.Right<*>>(fixture.open { runtime ->
+                    assertEquals(listOf("first", "second"), UnnotifiedMessageAlerts(runtime.database, SELF) { TIME + 10.seconds }.take().map { it.text })
+                })
+            }
+        }
+    }
+
+    @Test
     fun `unknown future event is silent and acknowledged for both protocols`() = runTest {
         withContext(Dispatchers.Default) {
             for (mls in listOf(false, true)) withFixture(mls) { fixture ->
@@ -11100,6 +11177,7 @@ class NotificationProcessorNativeTest {
     ) {
         var receivedCalls: List<ReceivedCallResult> = emptyList()
         var receivedAppWork: NotificationAppWork? = null
+        var receivedStop: String? = null
         var receivedCallEvents: List<ReceivedCallEvent> = emptyList()
         private val config = ApplePersistenceConfig(keychainService, keychainAccessibility = null)
         val databaseSecret get() = checkNotNull(GlobalPrefProvider(config).passphraseStorage.existingUserDatabaseSecret(SELF.toDao()))
@@ -12448,7 +12526,10 @@ class NotificationProcessorNativeTest {
             receiver.close()
             ApplePreparedAccountStore(root, SELF).publish(checkNotNull(lease), PreparedAccount(
                 SELF, CLIENT, ServerConfig(
-                    "test", apiEndpoint?.let { ServerConfig.DUMMY.copy(api = it) } ?: ServerConfig.DUMMY,
+                    "test",
+                    // Ktor's legacy socket uses the WSS default port on the endpoint's host and path.
+                    apiEndpoint?.let { ServerConfig.DUMMY.copy(api = it, webSocket = it.replaceFirst(LOCAL_API, "wss://localhost")) }
+                        ?: ServerConfig.DUMMY,
                     ServerConfig.MetaData(false, CommonApiVersionType.Valid(apiVersion), SELF.domain)
                 ),
                 if (mlsEnabled) CIPHER else null, null,
@@ -12529,6 +12610,7 @@ class NotificationProcessorNativeTest {
             isolateConversations: Boolean = false,
             nowEpochMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
             mlsTransport: MLSTransporter? = null,
+            toLive: (() -> Boolean)? = null,
         ) = open { runtime ->
             if (interruption in listOf(Interruption.DELIVERY, Interruption.MARKER, Interruption.SECOND_MESSAGE)) {
                 val trigger = when (interruption) {
@@ -12645,7 +12727,9 @@ class NotificationProcessorNativeTest {
                         else NetworkResponse.Success(fetchProfiles(), emptyMap(), 200)
                     } catch (failure: KaliumException) { NetworkResponse.Error(failure) }
                 },
-            ).process(target).also { receivedCalls = it.calls; receivedAppWork = it.appWorkPending }.message
+            ).let { processor ->
+                if (toLive == null) processor.process(target) else processor.processToLive(target, toLive)
+            }.also { receivedCalls = it.calls; receivedAppWork = it.appWorkPending; receivedStop = it.stoppedReason }.message
         }
 
         suspend fun decryptAndCheck(cipher: ByteArray, value: String, protocolMLS: Boolean = mlsEnabled) = open { runtime ->
@@ -13478,6 +13562,8 @@ class NotificationProcessorNativeTest {
 }
 
 /** Entry point of the test-only simulator executable used by the Swift integration harness. */
+private const val LOCAL_API = "https://localhost:18443"
+
 fun runSwiftReceivingFixture(args: Array<String>) {
     val fixture = NotificationProcessorNativeTest()
     when (args.first()) {

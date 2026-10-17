@@ -135,6 +135,30 @@ operations the fork already completed. Upstream databases already containing
 and commits the schema and version together, as automatic production opens do.
 The NSE still requires the prepared current version and never migrates SQLite.
 
+## Bounded incremental sync
+
+With `KaliumNSESyncMode.TO_LIVE` the NSE runs the app's legacy catch-up protocol
+(`EventIngestion`) before processing, like the Android app's one-shot sync. It opens
+the WebSocket, stores the pending REST pages fetched once it is open, then closes
+and joins the socket at live, so the socket is never open while the NSE processes.
+Pages are fetched only after the socket opens, so no event falls between a page and
+the socket. As in the app, catching up needs the socket: if it fails or does not
+reach live within the catch-up budget, the catch-up fails, and nothing is paged
+without it. Catch-up gets 60% of the attempt's budget; the isolated scan
+then processes the stored queue to its end, without fetching, and stops before the
+next event at 85%. Barriers and app handoffs stop the scan as before. The target
+is presented by the same rules as a target-only attempt, calls are evaluated only
+with a complete prefix. Unread messages use the unnotified-message rules below. When catch-up
+cannot finish, or fails or stops processing before the target with nothing to show,
+the result asks the host for a generic alert: unseen events may remain. The mode is
+opt-in; `TARGET` keeps receiving up to the push's event.
+
+Known gap: the backend sends no push for events it delivers over the open socket.
+A frame the socket delivered but had not stored when it closed, such as one that
+arrived while pages were fetched, is not alerted; the next sync's paging stores it.
+A REST sweep after closing would close the gap; it is left out to match Android
+until the gap shows up in practice.
+
 ## Proportionate replay guarantees
 
 Required permission/member writes, sender authorization, crypto integrity and

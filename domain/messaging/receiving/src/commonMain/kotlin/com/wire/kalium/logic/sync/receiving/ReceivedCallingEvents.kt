@@ -14,6 +14,8 @@ data class ReceivedNotificationResult(
     val appWorkPending: NotificationAppWork? = null,
     /** Every queued event through the target was processed without deferral or app handoff; stored alerts may be presented. */
     val prefixComplete: Boolean = false,
+    /** Why a sync-to-live scan stopped: QUEUE_END, BUDGET, or the barrier or handoff reason. */
+    val stoppedReason: String? = null,
 )
 
 enum class ReceivedCallType { INCOMING, MISSED, CLOSED }
