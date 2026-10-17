@@ -28,9 +28,12 @@ import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncPhase
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembers
+import com.wire.kalium.network.api.authenticated.notification.AcknowledgeType
 import com.wire.kalium.network.api.authenticated.notification.ConsumableNotificationResponse
 import com.wire.kalium.network.api.authenticated.notification.EventAcknowledgeRequest
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.EventDataDTO
+import com.wire.kalium.network.api.authenticated.notification.SynchronizationDataDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.EventResponseToStore
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
@@ -39,6 +42,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.dao.event.EventEntity
 import com.wire.kalium.persistence.dao.event.EventDAO
@@ -49,9 +53,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -486,6 +492,88 @@ class EventRepositoryIntegrationTest {
         assertTrue(harness.unprocessedEventIds().isEmpty())
     }
 
+    @Test
+    fun firstLiveEventAfterOpenDeletesProcessedHistory() = runTest {
+        val harness = newHarness()
+        harness.storeNsePage(listOf("A", "B", "C"))
+        harness.markEventsAsProcessed("A", "B")
+        val api = FakeNotificationApi(
+            listOf(WebSocketEvent.Open(), WebSocketEvent.BinaryPayloadReceived(storedEvent("Y"))),
+            mapOf("C" to listOf(emptyNotificationPage()))
+        )
+        harness.createRepository(api).collectLegacySync()
+        assertEquals(listOf("C", "Y"), harness.allEventIds())
+    }
+
+    @Test
+    fun consumableEventsAreStoredBeforeAcknowledgementAndBecomeLiveAtTheSessionMarker() = runTest {
+        val harness = newHarness()
+        val acks = mutableListOf<Pair<ULong?, List<String>>>()
+        val ackMarkers = mutableListOf<String>()
+        var sessionMarker = ""
+        val api = FakeNotificationApi(emptyList(), emptyMap(), consumableEvents = { marker ->
+            sessionMarker = marker
+            listOf(
+                WebSocketEvent.Open(shouldProcessPendingEvents = false),
+                consumableEvent("A", deliveryTag = 1UL),
+                WebSocketEvent.BinaryPayloadReceived(
+                    ConsumableNotificationResponse.SynchronizationNotification(SynchronizationDataDTO(2UL, "foreign"))
+                ),
+                WebSocketEvent.BinaryPayloadReceived(
+                    ConsumableNotificationResponse.SynchronizationNotification(SynchronizationDataDTO(3UL, marker))
+                ),
+                consumableEvent("B", deliveryTag = 4UL),
+            )
+        }, onAck = { marker, request ->
+            ackMarkers += marker
+            acks += request.data?.deliveryTag to harness.allEventIds()
+        })
+        val repository = harness.createRepository(api, hasConsumableNotifications = true)
+
+        val phases = repository.collectPhases()
+
+        assertEquals(
+            listOf(
+                IncrementalSyncPhase.CatchingUp,
+                IncrementalSyncPhase.CatchingUp,
+                IncrementalSyncPhase.ReadyToProcess,
+                IncrementalSyncPhase.ReadyToProcess,
+            ),
+            phases
+        )
+        assertEquals(listOf("A", "B"), harness.unprocessedEventIds())
+        assertEquals(listOf(false, true), harness.unprocessedLiveFlags())
+        assertEquals<List<Pair<ULong?, List<String>>>>(
+            listOf(1UL to listOf("A"), 2UL to listOf("A"), 3UL to listOf("A"), 4UL to listOf("A", "B")),
+            acks
+        )
+        // The connection's own marker until the backend confirms it, then none.
+        assertEquals(listOf(sessionMarker, sessionMarker, sessionMarker, ""), ackMarkers)
+        assertLastSavedEventId(repository, "B")
+        repository.acknowledgeMissedEvent()
+        assertEquals("", ackMarkers.last())
+    }
+
+    @Test
+    fun missedConsumableNotificationAcknowledgesFullSyncAndRestartsSlowSync() = runTest {
+        val harness = newHarness()
+        val recovery = mutableListOf<String>()
+        var sessionMarker = ""
+        val api = FakeNotificationApi(emptyList(), emptyMap(), consumableEvents = { marker ->
+            sessionMarker = marker
+            listOf(
+                WebSocketEvent.Open(shouldProcessPendingEvents = false),
+                WebSocketEvent.BinaryPayloadReceived(ConsumableNotificationResponse.MissedNotification),
+            )
+        }, onAck = { marker, request -> recovery += "${request.type}:${marker == sessionMarker}" })
+
+        harness.createRepository(api, hasConsumableNotifications = true, restartSlowSync = { recovery += "restart" }).collectPhases()
+
+        // Acknowledge the gap with this connection's marker before restarting slow sync.
+        assertEquals(listOf("${AcknowledgeType.ACK_FULL_SYNC}:true", "restart"), recovery)
+        assertTrue(harness.allEventIds().isEmpty())
+    }
+
     private suspend fun assertLastSavedEventId(repository: EventRepository, expectedId: String) {
         val lastSavedEventId = repository.lastSavedEventId()
         assertTrue(lastSavedEventId is Either.Right)
@@ -499,20 +587,29 @@ class EventRepositoryIntegrationTest {
 
         val eventDAO: EventDAO get() = database.builder.eventDAO
 
-        fun createRepository(notificationApi: NotificationApi, events: EventDAO = eventDAO): EventRepository {
+        fun createRepository(
+            notificationApi: NotificationApi,
+            events: EventDAO = eventDAO,
+            hasConsumableNotifications: Boolean = false,
+            restartSlowSync: () -> Unit = {},
+        ): EventRepository {
             return EventDataSource(
                 notificationApi = notificationApi,
                 metadataDAO = database.builder.metadataDAO,
                 eventDAO = events,
                 currentClientId = CurrentClientIdProvider { Either.Right(TestClient.CLIENT_ID) },
                 selfUserId = TestUser.SELF.id,
-                clientRegistrationStorage = clientRegistrationStorage,
+                clientRegistrationStorage = object : ClientRegistrationStorage by clientRegistrationStorage {
+                    override suspend fun observeHasConsumableNotifications() = flowOf(hasConsumableNotifications)
+                },
                 restartSlowSyncProcessForRecovery = object : RestartSlowSyncProcessForRecoveryUseCase {
-                    override suspend fun invoke() = Unit
+                    override suspend fun invoke() = restartSlowSync()
                 },
                 logger = com.wire.kalium.common.logger.kaliumLogger
             )
         }
+
+        suspend fun allEventIds(): List<String> = database.builder.eventDAO.observeEvents(0).first().map { it.eventId }
 
         suspend fun storeNsePage(ids: List<String>) {
             database.builder.notificationEventStore.storePage(null, ids.map { id ->
@@ -556,7 +653,9 @@ class EventRepositoryIntegrationTest {
 
     private class FakeNotificationApi(
         websocketEvents: List<WebSocketEvent<EventResponseToStore>>,
-        pendingPages: Map<String?, List<NotificationResponse>>
+        pendingPages: Map<String?, List<NotificationResponse>>,
+        private val consumableEvents: (marker: String) -> List<WebSocketEvent<ConsumableNotificationResponse>> = { emptyList() },
+        private val onAck: suspend (markerId: String, EventAcknowledgeRequest) -> Unit = { _, _ -> },
     ) : NotificationApi {
         val requestedCursors = mutableListOf<String?>()
         private val websocketChannel = Channel<WebSocketEvent<EventResponseToStore>>(Channel.UNLIMITED).apply {
@@ -592,15 +691,13 @@ class EventRepositoryIntegrationTest {
         override suspend fun consumeLiveEvents(
             clientId: String,
             markerId: String
-        ): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> {
-            throw UnsupportedOperationException("Not used in legacy notification integration tests")
-        }
+        ): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>> = success(consumableEvents(markerId).asFlow())
 
         override suspend fun acknowledgeEvents(
             clientId: String,
             markerId: String,
             eventAcknowledgeRequest: EventAcknowledgeRequest
-        ) = Unit
+        ) = onAck(markerId, eventAcknowledgeRequest)
 
         private fun nextPendingPage(querySince: String?): NotificationResponse {
             requestedCursors += querySince
@@ -631,6 +728,10 @@ class EventRepositoryIntegrationTest {
             notifications = events
         )
 
+        fun consumableEvent(id: String, deliveryTag: ULong) = WebSocketEvent.BinaryPayloadReceived<ConsumableNotificationResponse>(
+            ConsumableNotificationResponse.EventNotification(EventDataDTO(deliveryTag, storedEvent(id)))
+        )
+
         fun storedEvent(id: String, transient: Boolean = false): EventResponseToStore = EventResponseToStore(
             id = id,
             payload = KtxSerializer.json.encodeToString(listOf(memberJoinEvent(timestampForId(id)))),
@@ -650,6 +751,15 @@ class EventRepositoryIntegrationTest {
             return Instant.fromEpochSeconds(offset)
         }
     }
+}
+
+private suspend fun EventRepository.collectPhases(): List<IncrementalSyncPhase> {
+    val phases = mutableListOf<IncrementalSyncPhase>()
+    when (val liveEventsResult = liveEvents()) {
+        is Either.Left -> error("Expected sync flow to start successfully, but got $liveEventsResult")
+        is Either.Right -> liveEventsResult.value.collect { phases += it }
+    }
+    return phases
 }
 
 private suspend fun EventRepository.collectLegacySync() {
