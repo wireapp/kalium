@@ -19,6 +19,7 @@ import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.combine
 
 /**
  * Message alerts not shown yet, selected like the Android app (ADR 11): unread messages newer than their
@@ -26,11 +27,18 @@ import kotlinx.coroutines.ensureActive
  */
 class UnnotifiedMessageAlerts(
     private val database: UserDatabaseBuilder,
-    private val selfUserId: UserId,
+    val selfUserId: UserId,
     private val timeSource: TimeSource = TimeSource.Monotonic,
     private val now: () -> Instant = { Clock.System.now() },
 ) {
     private val mapper = RegularMessageMapper(selfUserId)
+    val pending = PendingMessageAlerts(database, selfUserId, now)
+
+    /** Wake the current owner for new candidates and durable delivery retries; no polling or extra runtime. */
+    fun observeChanges() = combine(
+        database.messageDAO.observeNotificationMessages(),
+        database.metadataDAO.valueByKeyFlow(PendingMessageAlerts.KEY),
+    ) { _, _ -> Unit }
 
     /** An account-owner-local snapshot. Contains no preview text and must not be serialized for IPC. */
     class Prepared internal constructor(
@@ -80,6 +88,12 @@ class UnnotifiedMessageAlerts(
             candidates.groupBy { it.conversationId }.forEach { (conversationId, unread) ->
                 conversations.updateConversationNotificationDate(conversationId, unread.maxOf { it.date })
             }
+            messages.rememberNotificationMessages(
+                alerts.map {
+                    NotificationMessageKey(it.messageId, QualifiedIDEntity(it.conversationValue, it.conversationDomain))
+                }
+            )
+            PendingMessageAlerts.append(metadata, alerts, now())
             CommitResult.Committed(alerts.asReversed())
         }
     }

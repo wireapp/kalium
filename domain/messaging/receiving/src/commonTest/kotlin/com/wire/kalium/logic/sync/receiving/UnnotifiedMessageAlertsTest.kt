@@ -12,11 +12,15 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -144,6 +148,77 @@ class UnnotifiedMessageAlertsTest {
         fixture { database, alerts, _ ->
             val other = UnnotifiedMessageAlerts(database.builder, self) { time }
             assertFailsWith<IllegalArgumentException> { other.commit(alerts.prepare()) }
+            assertEquals(listOf("first"), alerts.take().map { it.messageId })
+        }
+    }
+
+    @Test
+    fun currentOwnerIsWokenByNewMessagesWithoutPolling() = runTest {
+        fixture { database, alerts, _ ->
+            val seen = Channel<String>(Channel.UNLIMITED)
+            val observation = backgroundScope.launch {
+                alerts.observeChanges().collect {
+                    alerts.take()
+                    val pending = alerts.pending.read()
+                    pending.forEach { seen.send(it.messageId) }
+                    alerts.pending.acknowledge(pending.map {
+                        NotificationMessageKey(it.messageId, QualifiedIDEntity(it.conversationValue, it.conversationDomain))
+                    })
+                }
+            }
+            assertEquals("first", seen.receive())
+            database.builder.messageDAO.insertOrIgnoreMessage(message("later", time + 1.seconds))
+            assertEquals("later", seen.receive())
+            observation.cancel()
+        }
+    }
+
+    @Test
+    fun committedAlertsSurviveRecreationUntilAcknowledged() = runTest {
+        fixture { database, alerts, _ ->
+            alerts.take()
+            val reopened = UnnotifiedMessageAlerts(database.builder, self) { time }
+            assertEquals(listOf("first"), reopened.pending.read().map { it.messageId })
+            assertEquals(emptyList(), reopened.take())
+            database.builder.userPrefsDAO.persistMessageContentPreference(false)
+            assertNull(reopened.pending.read().single().text)
+            reopened.pending.acknowledge(listOf(NotificationMessageKey("first", conversation.id)))
+            assertEquals(emptyList(), reopened.pending.read())
+            assertEquals(emptyList(), alerts.pending.read())
+        }
+    }
+
+    @Test
+    fun readMessageIsRemovedFromPendingDelivery() = runTest {
+        fixture { database, alerts, _ ->
+            alerts.take()
+            database.builder.conversationDAO.updateReadDatesAndGetHasUnreadEvents(mapOf(conversation.id to time))
+            assertEquals(emptyList(), alerts.pending.read())
+        }
+    }
+
+    @Test
+    fun editKeepsDeliveryIdentityAndUsesCurrentContent() = runTest {
+        fixture { database, alerts, _ ->
+            alerts.take()
+            database.builder.messageDAO.updateTextMessageContent(
+                time + 1.seconds, conversation.id, "first", MessageEntityContent.Text("edited text"), "edited-id",
+            )
+            val pending = alerts.pending.read().single()
+            assertEquals("first", pending.messageId)
+            assertEquals("edited text", pending.text)
+            alerts.pending.acknowledge(listOf(NotificationMessageKey("first", conversation.id)))
+            assertEquals(emptyList(), alerts.pending.read())
+        }
+    }
+
+    @Test
+    fun failedPendingWriteRollsBackNotificationCursor() = runTest {
+        fixture { database, alerts, _ ->
+            database.builder.metadataDAO.insertValue("invalid", "apple.pending-message-alerts.v1")
+            assertFailsWith<kotlinx.serialization.SerializationException> { alerts.take() }
+            assertNull(database.builder.conversationDAO.getConversationById(conversation.id)?.lastNotificationDate)
+            database.builder.metadataDAO.deleteValue("apple.pending-message-alerts.v1")
             assertEquals(listOf("first"), alerts.take().map { it.messageId })
         }
     }

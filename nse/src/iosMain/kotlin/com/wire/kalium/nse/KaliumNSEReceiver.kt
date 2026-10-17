@@ -39,6 +39,10 @@ import com.wire.kalium.persistence.dao.message.NotificationMessageKey
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
 import kotlin.time.Duration.Companion.milliseconds
@@ -163,10 +167,21 @@ public data class KaliumNSECall(
     public val isGroupConversation: Boolean = false,
 )
 
+/** Native enqueue acknowledgement while the NSE still holds the exclusive account lease. */
+public interface KaliumNSEMessageDelivery {
+    public suspend fun deliver(alert: KaliumNSEAlert): Boolean
+}
+
 /** Bounded prepared-account receiving. Unsupported earlier work stops the attempt and preserves its processed marker. */
 public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration) {
     @Throws(CancellationException::class)
-    public suspend fun process(request: KaliumNSERequest): KaliumNSEResult {
+    public suspend fun process(request: KaliumNSERequest): KaliumNSEResult = processOwned(request, null)
+
+    @Throws(CancellationException::class)
+    public suspend fun processAndDeliver(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery): KaliumNSEResult =
+        processOwned(request, delivery)
+
+    private suspend fun processOwned(request: KaliumNSERequest, delivery: KaliumNSEMessageDelivery?): KaliumNSEResult {
         val diagnostics = ReceivingDiagnostics()
         if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.notificationId.isBlank()) {
             return failure("INVALID_REQUEST").also { diagnostics.record("FAILED", it.failureReason, false) }
@@ -187,7 +202,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     configuration.userAgent,
                     configuration.certificatePins,
                     diagnostics = diagnostics,
-                ) { runtime -> receive(runtime, request, diagnostics, started).also { produced = it } }
+                ) { runtime -> receive(runtime, request, diagnostics, started, delivery).also { produced = it } }
                 when (result) {
                     is Either.Left -> failure(result.value.name)
                     is Either.Right -> result.value
@@ -208,6 +223,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         request: KaliumNSERequest,
         diagnostics: ReceivingDiagnostics,
         started: TimeSource.Monotonic.ValueTimeMark,
+        delivery: KaliumNSEMessageDelivery?,
     ): KaliumNSEResult {
         runtime.database.messageDAO.rememberNotificationMessages(request.deliveredNotifications.map { it.messageKey() })
         val processor = runtime.notificationProcessor(
@@ -230,9 +246,12 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             if (caughtUp == CatchUpOutcome.LIVE || it.stoppedReason != QUEUE_END) it
             else it.copy(stoppedReason = "CATCH_UP_${caughtUp.name}")
         }
-        val unnotified = if (!received.prefixComplete) emptyList()
-        else UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId).take()
+        val claims = UnnotifiedMessageAlerts(runtime.database, runtime.prepared.userId)
+        claims.pending.acknowledge(request.deliveredNotifications.map { it.messageKey() })
+        if (received.prefixComplete) claims.take()
+        val unnotified = claims.pending.read(request.showMessageContent)
         val result = reconcileNotifications(runtime, received, unnotified, request)
+        if (delivery != null) deliverPending(claims, result.alerts, delivery)
         return result.copy(
             stoppedReason = received.stoppedReason,
             presentGenericAlert = !result.shouldNotify && result.alerts.isEmpty() &&
@@ -255,6 +274,26 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             runtime.database.eventDAO.getEventById(notificationId)?.isProcessed != true
         )
 
+    private suspend fun deliverPending(
+        claims: UnnotifiedMessageAlerts,
+        alerts: List<KaliumNSEAlert>,
+        delivery: KaliumNSEMessageDelivery,
+    ) {
+        for (alert in alerts) {
+            currentCoroutineContext().ensureActive()
+            // Finish an accepted native enqueue before account release, including NSE expiry during the callback.
+            withContext(NonCancellable) {
+                if (delivery.deliver(alert)) {
+                    val key = NotificationMessageKey(
+                        alert.messageId,
+                        QualifiedIDEntity(alert.conversationValue, alert.conversationDomain),
+                    )
+                    claims.pending.acknowledge(listOf(key))
+                }
+            }
+        }
+    }
+
     private suspend fun reconcileNotifications(
         runtime: AppleAccountRuntime,
         processed: ReceivedNotificationResult,
@@ -264,7 +303,7 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         val (received, extras) = presentation(processed, unnotified)
         val preference = runtime.readMessageContentPreference()
         val result = success(received, request.showMessageContent, preference).copy(
-            alerts = extras.map { alert(it, request.showMessageContent, preference) }
+            alerts = unnotified.map { alert(it, request.showMessageContent, preference) }
         )
         val alerted = extras + listOfNotNull(received.messageAlert())
         runtime.database.messageDAO.rememberNotificationMessages(alerted.map { it.messageKey() })

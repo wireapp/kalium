@@ -164,12 +164,25 @@ example when an older server event arrived after the snapshot. Overlapping claim
 use the persisted cursors to avoid returning the same alert twice. Read failures
 in the content preference hide text, names and typed preview labels.
 
+Commitment also stores pending message identities in the same writer transaction.
+`pending.read()` rebuilds current previews from canonical rows, rechecks eligibility
+and removes obsolete entries. `pending.acknowledge()` is called after native enqueue
+succeeds, or when iOS already contains that identity. Pending records contain no
+message text or contact names. The app can observe changes through the existing
+session without polling or opening another runtime. NSE also returns pending
+messages in `alerts`, including its primary message when covered by the queue; the
+native host must suppress a second primary presentation in that case.
+`processAndDeliver` awaits the native enqueue callback and acknowledges acceptance
+before releasing the account lease. Cancellation waits for an already started
+callback and its acknowledgement; a failed enqueue stays pending. The legacy
+`process` entry point only returns presentation data and does not acknowledge it.
+
 A committed result is a claim to present, **not acknowledgement of OS delivery**.
-The existing NSE uses immediate `take`; the app API is a building block for a
-separate bounded host handoff. This change does not implement app/NSE IPC, recover
-a process crash after commitment, or guarantee exactly-once system presentation.
-A future handoff must explicitly handle that delivery boundary before extending
-account ownership in the background. Android notification presentation is unchanged.
+The host must use a stable system request identity and reconcile delivered/pending
+requests before retrying after a crash. iOS has no durable receipt for an alert the
+user already dismissed, so exactly-once visible presentation cannot be guaranteed
+across a crash after enqueue but before acknowledgement. Android presentation is
+unchanged. This API does not extend background execution or implement uploads.
 
 ## Incoming calls
 

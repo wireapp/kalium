@@ -40,6 +40,8 @@ interface MessageDAO {
     suspend fun deleteClearedMessage(conversationId: QualifiedIDEntity, messageId: String)
 
     /** Apple notification identities follow canonical message IDs through edits; Android does not register alerts here. */
+    suspend fun resolveNotificationMessage(messageId: String, conversationId: QualifiedIDEntity): String?
+
     suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>)
 
     /** Canonical deletion/read state for existing delivered alerts; never infers expiry from missing rows. */
@@ -94,6 +96,8 @@ interface MessageDAO {
     ): Flow<List<MessageEntity>>
 
     suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity>
+
+    fun observeNotificationMessages(): Flow<List<NotificationMessageEntity>>
 
     suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int = 10): List<NotificationMessageEntity>
 
