@@ -25,27 +25,18 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.SupportedProtocolEntity
-import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
-import com.wire.kalium.persistence.dao.UserEntity
-import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Instant
 
 class ShareBlockTest {
 
@@ -158,69 +149,9 @@ class ShareBlockTest {
         }
     }
 
-    @Suppress("LongParameterList")
-    private suspend fun conversation(
-        database: UserDatabaseBuilder,
-        id: String,
-        type: ConversationEntity.Type,
-        lastModified: Instant,
-        selfIsMember: Boolean = true,
-        other: UserId = OTHER,
-        change: ConversationEntity.() -> ConversationEntity = { this },
-    ) {
-        val conversationId = QualifiedIDEntity(id, DOMAIN)
-        database.conversationDAO.insertConversation(conversationEntity(conversationId, type, lastModified).change())
-        database.memberDAO.insertMembersWithQualifiedId(
-            listOfNotNull(
-                MemberEntity(SELF.toEntity(), MemberEntity.Role.Admin).takeIf { selfIsMember },
-                MemberEntity(other.toEntity(), MemberEntity.Role.Member),
-            ),
-            conversationId
-        )
-    }
-
-    private suspend fun TestScope.withDatabase(block: suspend (UserDatabaseBuilder) -> Unit) {
-        val database = TestUserDatabase(SELF.toEntity(), StandardTestDispatcher(testScheduler))
-        try {
-            block(database.builder)
-        } finally {
-            database.builder.close()
-            database.delete()
-        }
-    }
-
     private companion object {
-        const val DOMAIN = "wire.com"
-        val SELF = UserId("self", DOMAIN)
-        val OTHER = UserId("other", DOMAIN)
         val BLOCKED = UserId("blocked", DOMAIN)
         val WATCHED = UserId("watched", DOMAIN)
-        val T1 = Instant.parse("2026-10-13T10:00:00Z")
-        val T2 = Instant.parse("2026-10-13T11:00:00Z")
-        val T3 = Instant.parse("2026-10-13T12:00:00Z")
-
-        fun UserId.toEntity() = QualifiedIDEntity(value, domain)
-
-        fun user(id: UserId, connection: ConnectionEntity.State, activeOneOnOne: String? = null) = UserEntity(
-            id = id.toEntity(),
-            name = id.value,
-            handle = id.value,
-            email = null,
-            phone = null,
-            accentId = 1,
-            team = null,
-            connectionStatus = connection,
-            previewAssetId = null,
-            completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.STANDARD,
-            botService = null,
-            deleted = false,
-            expiresAt = null,
-            defederated = false,
-            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS),
-            activeOneOnOneConversationId = activeOneOnOne?.let { QualifiedIDEntity(it, DOMAIN) },
-        )
 
         fun legalHoldClient(userId: UserId) = InsertClientParam(
             userId = userId.toEntity(),
@@ -234,32 +165,6 @@ class ShareBlockTest {
             mlsPublicKeys = null,
             isMLSCapable = false,
             isAsyncNotificationsCapable = false,
-        )
-
-        fun conversationEntity(id: QualifiedIDEntity, type: ConversationEntity.Type, lastModified: Instant) = ConversationEntity(
-            id = id,
-            name = id.value,
-            type = type,
-            teamId = null,
-            protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-            creatorId = SELF.value,
-            lastNotificationDate = null,
-            lastModifiedDate = lastModified,
-            lastReadDate = T1,
-            access = emptyList(),
-            accessRole = emptyList(),
-            receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-            messageTimer = null,
-            userMessageTimer = null,
-            archived = false,
-            archivedInstant = null,
-            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-            channelAccess = null,
-            channelAddPermission = null,
-            wireCell = null,
-            historySharingRetentionSeconds = 0,
         )
     }
 }

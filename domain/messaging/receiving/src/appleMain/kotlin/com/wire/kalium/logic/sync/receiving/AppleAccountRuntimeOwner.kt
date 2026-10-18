@@ -182,25 +182,32 @@ internal class AccountRuntimeLockPaths(rootPath: String) {
 
     val directoryPath: String = "$normalizedRootPath/$LOCK_DIRECTORY_NAME"
 
-    fun filePath(accountId: UserId): String {
-        val canonicalIdentity = buildString {
-            append(LOCK_IDENTITY_VERSION)
-            append(accountId.value.encodeToByteArray().size)
-            append(':')
-            append(accountId.value)
-            append(accountId.domain.encodeToByteArray().size)
-            append(':')
-            append(accountId.domain)
-        }
-        val digest = calcSHA256(canonicalIdentity.encodeToByteArray()).toHexString()
-        return "$directoryPath/account-$digest.lock"
-    }
+    fun filePath(accountId: UserId): String = "$directoryPath/account-${appleAccountFileKey(accountId)}.lock"
 
     private companion object {
         private const val LOCK_DIRECTORY_NAME = "account-runtime-locks"
-        private const val LOCK_IDENTITY_VERSION = "kalium-account-runtime-lock-v1\n"
     }
 }
+
+/**
+ * Names [accountId]'s files outside its account directory, such as its lock: the versioned hash of its qualified
+ * identity. Changing it would point processes at different lock files.
+ */
+@InternalKaliumApi
+public fun appleAccountFileKey(accountId: UserId): String {
+    val canonicalIdentity = buildString {
+        append(ACCOUNT_IDENTITY_VERSION)
+        append(accountId.value.encodeToByteArray().size)
+        append(':')
+        append(accountId.value)
+        append(accountId.domain.encodeToByteArray().size)
+        append(':')
+        append(accountId.domain)
+    }
+    return calcSHA256(canonicalIdentity.encodeToByteArray()).toHexString()
+}
+
+private const val ACCOUNT_IDENTITY_VERSION = "kalium-account-runtime-lock-v1\n"
 
 private fun Int.toAccountRuntimeFailure(): AccountRuntimeFailure = when (this) {
     ENOENT -> AccountRuntimeFailure.MISSING_STORAGE

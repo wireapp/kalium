@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
@@ -53,6 +55,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.uuid.Uuid
@@ -114,19 +117,32 @@ public class SendTextMessageUseCase internal constructor(
         return submission.await()
     }
 
+    /**
+     * Stores [text] as [messageId] in the caller's coroutine and returns whether it was stored; only sending goes on in
+     * the session's scope. Cancelled before the message is stored, it stores and sends nothing. A caller that may
+     * repeat itself checks for the message first (ADR 13).
+     */
+    internal suspend fun store(messageId: String, conversationId: ConversationId, text: String): Boolean =
+        withContext(dispatchers.io) {
+            send(conversationId, text, emptyList(), emptyList(), null, null, messageId, sendLater = true) ==
+                MessageOperationResult.Success
+        }
+
+    @Suppress("LongParameterList")
     private suspend fun send(
         conversationId: ConversationId,
         text: String,
         linkPreviews: List<MessageLinkPreview>,
         mentions: List<MessageMention>,
         quotedMessageId: String?,
-        draftRevision: Long?
+        draftRevision: Long?,
+        generatedMessageUuid: String = Uuid.random().toString(),
+        sendLater: Boolean = false,
     ): MessageOperationResult {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
 
-        val generatedMessageUuid = Uuid.random().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
         val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
             .first()
@@ -165,19 +181,30 @@ public class SendTextMessageUseCase internal constructor(
                 persistedMessageId = message.id
                 // The persisted message now owns retry, even if the screen has gone away.
                 draftRevision?.let { messageDraftRepository.consumePlainText(conversationId, it) }
-                messageSender.sendMessage(message)
+                if (sendLater) {
+                    scope.launch(dispatchers.io) {
+                        messageSender.sendMessage(message).onFailure { markFailed(it, conversationId, message.id) }
+                    }
+                    Either.Right(Unit)
+                } else {
+                    messageSender.sendMessage(message)
+                }
             }
         }.onFailure {
-            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                failure = it,
-                conversationId = conversationId,
-                messageId = generatedMessageUuid,
-                messageType = TYPE,
-                scheduleResendIfNoNetwork = pendingMessagesEnabled,
-            )
+            markFailed(it, conversationId, generatedMessageUuid)
         }.fold(
             { MessageOperationResult.Failure(it, persistedMessageId) },
             { MessageOperationResult.Success }
+        )
+    }
+
+    private suspend fun markFailed(failure: CoreFailure, conversationId: ConversationId, messageId: String) {
+        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+            failure = failure,
+            conversationId = conversationId,
+            messageId = messageId,
+            messageType = TYPE,
+            scheduleResendIfNoNetwork = pendingMessagesEnabled,
         )
     }
 

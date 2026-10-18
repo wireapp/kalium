@@ -420,6 +420,9 @@ public class MessageScope internal constructor(
         )
 
     public val sendAssetMessage: ScheduleNewAssetMessageUseCase
+        get() = scheduleAssetMessage
+
+    internal val scheduleAssetMessage: ScheduleNewAssetMessageUseCaseImpl
         get() = ScheduleNewAssetMessageUseCaseImpl(
             persistNewAssetMessage = persistNewAssetMessageUseCase,
             uploadAsset = uploadAssetUseCase,

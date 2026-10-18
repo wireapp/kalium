@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
     alias(libs.plugins.skie)
+    alias(libs.plugins.kotlin.serialization)
     id("com.wire.kalium.apple-avs-runtime")
 }
 
@@ -74,6 +75,7 @@ kotlin {
             implementation(projects.data.networkModel)
             implementation(libs.coroutines.core)
             implementation(libs.okio.core)
+            implementation(libs.ktxSerialization)
         }
         appleTest.dependencies {
             implementation(kotlin("test"))

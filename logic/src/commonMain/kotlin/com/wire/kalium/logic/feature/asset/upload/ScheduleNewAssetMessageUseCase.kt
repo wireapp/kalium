@@ -88,8 +88,11 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
 
     private var outGoingAssetUploadJob: Job? = null
 
+    override suspend fun invoke(asset: AssetUploadParams): ScheduleNewAssetMessageResult = invoke(asset, Uuid.random().toString())
+
+    /** Schedules [asset] as [messageId], so a caller that may repeat itself can check for the message first (ADR 13). */
     @Suppress("LongMethod", "ReturnCount")
-    override suspend fun invoke(asset: AssetUploadParams): ScheduleNewAssetMessageResult {
+    internal suspend fun invoke(asset: AssetUploadParams, messageId: String): ScheduleNewAssetMessageResult {
 
         validateAsset(asset).onFailure { error -> return error }
 
@@ -98,7 +101,6 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         }
 
         return withContext(dispatcher.io) {
-            val messageId = Uuid.random().toString()
             // We persist the asset with temporary id and message right away so that it can be displayed on the conversation screen loading
             persistNewAssetMessage(messageId, userId, asset)
                 .onSuccess { (currentAssetMessageContent, message) ->

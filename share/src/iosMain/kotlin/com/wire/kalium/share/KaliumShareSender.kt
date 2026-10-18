@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.MessageContentPreference
-import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
@@ -195,27 +194,15 @@ public data class KaliumShareAlert(
  */
 public class KaliumShareSender(private val configuration: KaliumShareConfiguration) {
 
+    /** `BUSY` as [KaliumShareConversations.failureReason] can mean the app owns the account: ask it instead. */
     @Throws(CancellationException::class)
     public suspend fun conversations(userValue: String, userDomain: String): KaliumShareConversations {
         val result = use(UserId(userValue, userDomain)) { runtime ->
-            val selfName = runtime.database.userDAO.getUserDetailsByQualifiedID(QualifiedIDEntity(userValue, userDomain))?.name
-            if (runtime.appLockEnforcedByTeam()) {
-                KaliumShareConversations(emptyList(), selfName, APP_LOCK)
-            } else {
-                KaliumShareConversations(
-                    conversations = runtime.database.shareableConversations().map {
-                        KaliumShareConversation(it.id.value, it.id.domain, it.name, it.type.isGroup, acceptsFiles = it.wireCell == null)
-                    },
-                    selfName = selfName,
-                    files = runtime.database.sharePolicy(runtime.prepared.userId, options().fileRestrictionState)?.let {
-                        KaliumShareFiles(it.allowedExtensions, it.fileSizeLimitBytes, it.imageSizeLimitBytes)
-                    },
-                )
-            }
+            runtime.database.sharePicker(runtime.prepared.userId, options().fileRestrictionState)
         }
         return when (result) {
             is Either.Left -> KaliumShareConversations(emptyList(), failureReason = result.value.name)
-            is Either.Right -> result.value
+            is Either.Right -> result.value.toKalium()
         }
     }
 
@@ -260,7 +247,9 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         produced: (KaliumShareResult) -> Unit,
     ): KaliumShareResult {
         // The extension cannot unlock App Lock, so a team that enforces it keeps sharing in the app.
-        if (runtime.appLockEnforcedByTeam()) return KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = APP_LOCK)
+        if (runtime.database.appLockEnforcedByTeam(options().fileRestrictionState)) {
+            return KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = APP_LOCK)
+        }
         val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
         val uploaded = runtime.uploadSharedFiles(conversationId, files, options().fileRestrictionState) { bytes, total ->
             progress?.uploaded(bytes, total)
@@ -352,19 +341,6 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         return outcome to unnotified
     }
 
-    /** An unreadable setting counts as enforced. */
-    private suspend fun AppleAccountRuntime.appLockEnforcedByTeam(): Boolean {
-        val config = UserConfigDataSource(
-            database.userPrefsDAO,
-            database.userConfigDAO,
-            lazy { options().fileRestrictionState }
-        ).isTeamAppLockEnabled()
-        return when (config) {
-            is Either.Left -> config.value !is StorageFailure.DataNotFound
-            is Either.Right -> config.value.isEnforced
-        }
-    }
-
     /** Stored alerts may be presented only after the queued prefix was processed without deferral or handoff. */
     private suspend fun AppleAccountRuntime.takeUnnotifiedAlerts(processed: ReceivedNotificationResult): List<ReceivedMessageResult> =
         if (!processed.prefixComplete) emptyList()
@@ -431,10 +407,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
     private companion object {
         const val MAX_BUDGET_MS = 60_000L
 
-        /** The app sends at most this many files at once. */
-        const val MAX_ATTACHMENTS = 20
         const val QUEUE_END = "QUEUE_END"
-        const val APP_LOCK = "APP_LOCK"
 
         // Soft deadlines: connect, catch up, send, then close and process what arrived.
         const val CONNECT_SHARE = 0.25
@@ -444,8 +417,13 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
     }
 }
 
+/** The app sends at most this many files at once. */
+internal const val MAX_ATTACHMENTS = 20
+
+private const val APP_LOCK = "APP_LOCK"
+
 /** Null when the file cannot be read. */
-private fun KaliumShareAttachment.toShareFile(): ShareFile? {
+internal fun KaliumShareAttachment.toShareFile(): ShareFile? {
     val size = FileSystem.SYSTEM.metadataOrNull(path.toPath())?.takeIf { it.isRegularFile }?.size ?: return null
     return ShareFile(
         path = path,
@@ -455,6 +433,18 @@ private fun KaliumShareAttachment.toShareFile(): ShareFile? {
         width = width.takeIf { it > 0 },
         height = height.takeIf { it > 0 },
         durationMs = durationMs.takeIf { it > 0 },
+    )
+}
+
+internal fun SharePicker.toKalium() = if (appLock) {
+    KaliumShareConversations(emptyList(), selfName, APP_LOCK)
+} else {
+    KaliumShareConversations(
+        conversations = conversations.map {
+            KaliumShareConversation(it.value, it.domain, it.name, it.isGroup, acceptsFiles = it.acceptsFiles)
+        },
+        selfName = selfName,
+        files = files?.let { KaliumShareFiles(it.allowedExtensions, it.fileSizeLimitBytes, it.imageSizeLimitBytes) },
     )
 }
 

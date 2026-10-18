@@ -663,9 +663,9 @@ public class UserSessionScope internal constructor(
     private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val globalPreferences: GlobalPrefProvider,
     authenticationScopeProvider: AuthenticationScopeProvider,
-    private val rootPathsProvider: RootPathsProvider,
+    internal val rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
-    private val kaliumConfigs: KaliumConfigs,
+    internal val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     private val userStorageProvider: UserStorageProvider,
     private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
@@ -1133,7 +1133,7 @@ public class UserSessionScope internal constructor(
         MessageDraftDataSource(messageDraftDAO = userStorage.database.messageDraftDAO)
     }
 
-    private val slowSyncRepository: SlowSyncRepository by lazy {
+    internal val slowSyncRepository: SlowSyncRepository by lazy {
         SlowSyncRepositoryImpl(userStorage.database.metadataDAO, userScopedLogger)
     }
     internal val incrementalSyncRepository: IncrementalSyncRepository by lazy {

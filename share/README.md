@@ -61,3 +61,24 @@ pending MLS proposals, joining or re-syncing a group, a stale MLS epoch, newly e
 slow sync, returns `OPEN_APP` and leaves the message failed, so the user can retry it in Wire.
 `OFFLINE` and `FAILED` also leave a stored message failed. The extension never schedules retries; the app
 resends a failed file message without uploading it again.
+
+## While the app owns the account
+
+`conversations` and `send` report `BUSY` while another process owns the account. The NSE owns it briefly, but
+the app owns it as long as it is in the foreground or in a call. Then the extension hands the share to the
+app ([ADR 13](../docs/adr/0013-sharing-while-the-app-owns-the-account.md)) through a per-account outbox in the
+App Group:
+
+1. `KaliumShareOutbox.askAppForConversations` asks the app to list the account's conversations, and the host rings the app
+   with a Darwin notification. `appConversations` returns the app's answer once, built by the same code as
+   `conversations`. When the app does not answer, something else owns the account for a moment; retry
+   `conversations`.
+2. `handOff` copies the files (as clones, where the file system allows) next to the request and publishes
+   it, and the host rings the app again. `handOffStatus` follows it: `WAITING` until the app claims it,
+   `CLAIMED` while the app stores it, then `STORED` or `NOT_STORED` with a reason, reported once.
+
+The app runs `serveShareExtension` while it owns an account, live or not. It answers requests for conversations,
+claims handed-off shares and stores them with its composer's use cases, files first, then the text. Each
+item keeps the message ID the extension gave it, so an import interrupted by a background handoff never
+stores a message twice. Once the account caught up, the app checks the conversation and file rules again before it
+stores anything. Requests for conversations are answered meanwhile, on their own.

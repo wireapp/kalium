@@ -156,6 +156,8 @@ kotlin {
             kotlin.exclude("com/wire/kalium/logic/feature/call/**")
             dependencies {
                 implementation(libs.coreCryptoKmp)
+                // The app answers the share extension through its outbox (ADR 13).
+                implementation(projects.share)
             }
         }
         val appleCallSourceDir = "src/appleMain/kotlin/com/wire/kalium/logic/feature/call"

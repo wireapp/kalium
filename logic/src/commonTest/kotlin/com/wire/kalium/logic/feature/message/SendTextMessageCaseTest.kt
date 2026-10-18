@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -453,6 +454,73 @@ class SendTextMessageCaseTest {
         sendTextMessage(TestConversation.ID, "A", draftRevision = 4L)
         verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage.invoke(any()) }
         verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenAMessageId_whenStoringText_thenItIsStoredUnderThatIdBeforeTheSendEnds() = runTest {
+        val sent = CompletableDeferred<Unit>()
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .arrange()
+        everySuspend { arrangement.messageSender.sendMessage(any(), any()) } calls {
+            sent.await()
+            Either.Right(Unit)
+        }
+
+        kotlin.test.assertTrue(sendTextMessage.store("shared-id", TestConversation.ID, "some-text"))
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { it.id == "shared-id" })
+        }
+        sent.complete(Unit)
+        runCurrent()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(matching { it.id == "shared-id" }, any())
+        }
+    }
+
+    @Test
+    fun givenStoringIsCancelledBeforeTheMessageIsStored_whenSyncCompletesLater_thenNothingIsStoredOrSent() = runTest {
+        val slowSync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        every { arrangement.slowSyncRepository.slowSyncStatus } returns slowSync.asStateFlow()
+
+        // The importer is cancelled, for example by going to the background, while the account catches up.
+        val storing = launch { sendTextMessage.store("shared-id", TestConversation.ID, "some-text") }
+        runCurrent()
+        storing.cancelAndJoin()
+        slowSync.value = SlowSyncStatus.Complete
+        runCurrent()
+
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenStorageFails_whenStoringText_thenNothingIsStoredOrSent() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .arrange()
+        everySuspend { arrangement.persistMessage.invoke(any()) } returns Either.Left(StorageFailure.DataNotFound)
+
+        kotlin.test.assertFalse(sendTextMessage.store("shared-id", TestConversation.ID, "some-text"))
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
     }
 
     private class Arrangement(private val coroutineScope: CoroutineScope) {

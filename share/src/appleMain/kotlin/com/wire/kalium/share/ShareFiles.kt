@@ -51,6 +51,8 @@ import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import io.ktor.http.Url
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import okio.Buffer
 import okio.FileSystem
 import okio.ForwardingSource
@@ -85,10 +87,11 @@ internal data class UploadedFile(
 internal enum class FileRefusal { FILE_SHARING_DISABLED, FILE_TYPE_RESTRICTED, FILE_TOO_LARGE }
 
 /** What an account may share as files, read as the app reads it. */
+@Serializable
 internal data class SharePolicy(
     /** Null allows every file type. */
-    val allowedExtensions: List<String>?,
-    val fileSizeLimitBytes: Long,
+    @SerialName("allowedExtensions") val allowedExtensions: List<String>?,
+    @SerialName("fileSizeLimitBytes") val fileSizeLimitBytes: Long,
 ) {
     val imageSizeLimitBytes: Long get() = IMAGE_SIZE_LIMIT_BYTES
 

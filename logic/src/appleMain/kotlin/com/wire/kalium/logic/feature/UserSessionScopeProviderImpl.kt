@@ -24,6 +24,7 @@ import com.wire.kalium.util.AccountResourceAccess
 import com.wire.kalium.cryptography.ReopenableCoreCryptoCentral
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.persistence.db.refreshAfterExternalWrites
+import com.wire.kalium.share.deleteShareOutbox
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.common.functional.Either
@@ -261,6 +262,8 @@ internal actual open class UserSessionScopeProviderImpl(
             prepare()
             super.get(userId)?.stopAccountWork()
             clearLocalData()
+            // Shares handed to the app live outside the account's directory; they leave with the account.
+            deleteShareOutbox(rootPathsProvider.rootPath, userId)
             withContext(NonCancellable) { closeAndRelease(account, userId) }
             true
         }
