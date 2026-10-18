@@ -85,7 +85,8 @@ import okio.Path.Companion.toPath
 public class AppleAccountRuntime private constructor(
     public val prepared: PreparedAccount,
     private val lease: AccountRuntimeLease,
-    internal val assetDirectory: String,
+    /** Where the app keeps the account's asset files. */
+    public val assetDirectory: String,
 ) {
     public val processingScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     public val database: UserDatabaseBuilder get() = checkNotNull(openedDatabase)

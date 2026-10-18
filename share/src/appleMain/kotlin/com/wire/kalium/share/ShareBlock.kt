@@ -49,6 +49,9 @@ internal enum class ShareBlock {
 
     /** This client has no established MLS group; joining or resetting it is app work. */
     MLS_GROUP,
+
+    /** Files only: a Cells conversation takes files through Cells, which only the app uploads to. */
+    CELLS,
 }
 
 /**
@@ -110,26 +113,30 @@ internal fun ConversationViewEntity.shareSelfDeletionTimer(teamTimer: TeamSelfDe
         considerSelfUserSettings = true,
     )
 
-/** A shared text as the app would compose it: pending, from this client, with the conversation's timer. */
+/**
+ * Shared content as the app would compose it: from this client, with the conversation's timer, and pending
+ * unless the extension keeps it in Wire as failed.
+ */
 @Suppress("LongParameterList")
-internal fun sharedTextMessage(
+internal fun sharedMessage(
     id: String,
-    text: String,
+    content: MessageContent.Regular,
     conversationId: ConversationId,
     selfUserId: UserId,
     selfClientId: ClientId,
     now: Instant,
     timer: SelfDeletionTimer,
     expectsReadConfirmation: Boolean,
+    status: Message.Status = Message.Status.Pending,
 ) = Message.Regular(
     id = id,
-    content = MessageContent.Text(value = text),
+    content = content,
     expectsReadConfirmation = expectsReadConfirmation,
     conversationId = conversationId,
     date = now,
     senderUserId = selfUserId,
     senderClientId = selfClientId,
-    status = Message.Status.Pending,
+    status = status,
     editStatus = Message.EditStatus.NotEdited,
     expirationData = timer.duration?.let { Message.ExpirationData(it) },
     isSelfMessage = true,

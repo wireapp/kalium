@@ -92,9 +92,9 @@ class ShareBlockTest {
 
     @Test
     fun sharedTextIsAPendingMessageFromThisClient() {
-        val message = sharedTextMessage(
+        val message = sharedMessage(
             id = "id",
-            text = "https://wire.com",
+            content = MessageContent.Text("https://wire.com"),
             conversationId = ConversationId("group", DOMAIN),
             selfUserId = SELF,
             selfClientId = ClientId("client"),

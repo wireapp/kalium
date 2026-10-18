@@ -20,6 +20,7 @@ package com.wire.kalium.share
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.MessageContentPreference
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.data.id.ConversationId
@@ -42,6 +43,8 @@ import com.wire.kalium.persistence.kmmSettings.KeychainAccessibility
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
+import okio.FileSystem
+import okio.Path.Companion.toPath
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
@@ -77,6 +80,8 @@ public data class KaliumShareConversation(
     public val conversationDomain: String,
     public val name: String?,
     public val isGroup: Boolean,
+    /** False for Cells conversations: they take files through Cells, which only the app uploads to. */
+    public val acceptsFiles: Boolean,
 )
 
 /** [failureReason] is set, and the list empty, when the account could not be opened or its team enforces App Lock. */
@@ -85,16 +90,55 @@ public data class KaliumShareConversations(
     /** The account's own name, to tell accounts apart. */
     public val selfName: String? = null,
     public val failureReason: String? = null,
+    /** What the account may share as files; null when its team disabled file sharing or the setting cannot be read. */
+    public val files: KaliumShareFiles? = null,
 )
 
+/** The account's file rules, as the app applies them. [send] checks them again. */
+public data class KaliumShareFiles(
+    /** Null allows every file type; otherwise the file name's extension must be listed, matching case. */
+    public val allowedExtensions: List<String>?,
+    public val fileSizeLimitBytes: Long,
+    /** Images Wire displays (JPEG, PNG, GIF, WebP) have their own limit, whatever the team. */
+    public val imageSizeLimitBytes: Long,
+) {
+    /** `FILE_TYPE_RESTRICTED` or `FILE_TOO_LARGE` when the account refuses the file, or null. */
+    public fun refusal(name: String, mimeType: String, sizeInBytes: Long): String? =
+        SharePolicy(allowedExtensions, fileSizeLimitBytes).refusal(name, mimeType, sizeInBytes)?.name
+}
+
+/**
+ * A file to share, prepared by the host. Kalium reads [path] while [KaliumShareSender.send] runs and never moves
+ * or deletes it. Dimensions and duration are 0 when unknown.
+ */
+public data class KaliumShareAttachment(
+    public val path: String,
+    /** Sent as the file's name; its extension decides file type restrictions. */
+    public val name: String,
+    public val mimeType: String,
+    /** Images and videos. */
+    public val width: Int = 0,
+    public val height: Int = 0,
+    /** Videos and audio. */
+    public val durationMs: Long = 0,
+)
+
+/** Upload progress over the plain size of all attachments; called from a background thread. */
+public fun interface KaliumShareProgress {
+    public fun uploaded(bytes: Long, totalBytes: Long)
+}
+
+/** [text] may be blank when there are attachments; each attachment is sent as its own message, then the text. */
 public data class KaliumShareRequest(
     public val userValue: String,
     public val userDomain: String,
     public val conversationValue: String,
     public val conversationDomain: String,
     public val text: String,
+    public val attachments: List<KaliumShareAttachment>,
     /** Additional host message-preview restriction for alerts; the saved account choice is read for each request. */
     public val showMessageContent: Boolean,
+    /** Bounds the live hold that sends; uploads run before it, as long as the host lets them. */
     public val budgetMilliseconds: Long,
 )
 
@@ -117,7 +161,10 @@ public enum class KaliumShareStatus {
 
 public data class KaliumShareResult(
     public val status: KaliumShareStatus,
-    /** The stored message, when one was created. */
+    /**
+     * A stored message, when one was created: the first one not sent, or else the last one sent. Messages after
+     * one that was not sent are kept in Wire as failed too.
+     */
     public val messageId: String? = null,
     /** Diagnostic code only; never contains account data or message content. */
     public val failureReason: String? = null,
@@ -142,8 +189,9 @@ public data class KaliumShareAlert(
 )
 
 /**
- * Sends shared text from the share extension through the app's sender (ADR 12). While it sends it holds
- * the account and keeps it live over the WebSocket, then processes what arrived and returns unnotified alerts.
+ * Sends shared text and files from the share extension through the app's sender (ADR 12). It uploads files
+ * first, then holds the account and keeps it live over the WebSocket while it sends, then processes what
+ * arrived and returns unnotified alerts.
  */
 public class KaliumShareSender(private val configuration: KaliumShareConfiguration) {
 
@@ -156,9 +204,12 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             } else {
                 KaliumShareConversations(
                     conversations = runtime.database.shareableConversations().map {
-                        KaliumShareConversation(it.id.value, it.id.domain, it.name, it.type.isGroup)
+                        KaliumShareConversation(it.id.value, it.id.domain, it.name, it.type.isGroup, acceptsFiles = it.wireCell == null)
                     },
                     selfName = selfName,
+                    files = runtime.database.sharePolicy(runtime.prepared.userId, options().fileRestrictionState)?.let {
+                        KaliumShareFiles(it.allowedExtensions, it.fileSizeLimitBytes, it.imageSizeLimitBytes)
+                    },
                 )
             }
         }
@@ -168,25 +219,30 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         }
     }
 
+    /**
+     * Uploads the attachments, reporting [progress], then sends within [KaliumShareRequest.budgetMilliseconds].
+     * Uploads end only when they finish, fail or the host cancels; nothing is stored before every upload succeeded.
+     */
     @Throws(CancellationException::class)
-    public suspend fun send(request: KaliumShareRequest): KaliumShareResult {
-        if (request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.text.isBlank()) return failure("INVALID_REQUEST")
-        val started = TimeSource.Monotonic.markNow()
-        val budget = request.budgetMilliseconds.milliseconds
+    public suspend fun send(request: KaliumShareRequest, progress: KaliumShareProgress?): KaliumShareResult {
+        val files = request.attachments.map { it.toShareFile() }
+        val invalid = when {
+            request.budgetMilliseconds !in 1..MAX_BUDGET_MS || request.attachments.size > MAX_ATTACHMENTS -> "INVALID_REQUEST"
+            request.text.isBlank() && request.attachments.isEmpty() -> "INVALID_REQUEST"
+            null in files -> "FILE_UNREADABLE"
+            else -> null
+        }
+        if (invalid != null) return failure(invalid)
         // A result produced before the budget ends survives a slow runtime close: its message alerts are marked notified.
         var produced: KaliumShareResult? = null
         return try {
-            withTimeoutOrNull(budget) {
-                val result = use(UserId(request.userValue, request.userDomain)) { runtime ->
-                    // The extension cannot unlock App Lock, so a team that enforces it keeps sharing in the app.
-                    if (runtime.appLockEnforcedByTeam()) KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = APP_LOCK)
-                    else share(runtime, request, budget, started).also { produced = it }
-                }
-                when (result) {
-                    is Either.Left -> KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = result.value.name)
-                    is Either.Right -> result.value
-                }
-            } ?: produced ?: failure("TIMEOUT").copy(presentGenericAlert = true)
+            val result = use(UserId(request.userValue, request.userDomain)) { runtime ->
+                uploadAndShare(runtime, request, files.filterNotNull(), progress) { produced = it }
+            }
+            when (result) {
+                is Either.Left -> KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = result.value.name)
+                is Either.Right -> result.value
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (@Suppress("TooGenericExceptionCaught") cleanup: Exception) {
@@ -195,20 +251,55 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         }
     }
 
+    /** Uploading needs no live socket, so it runs before the hold and outside its budget. */
+    private suspend fun uploadAndShare(
+        runtime: AppleAccountRuntime,
+        request: KaliumShareRequest,
+        files: List<ShareFile>,
+        progress: KaliumShareProgress?,
+        produced: (KaliumShareResult) -> Unit,
+    ): KaliumShareResult {
+        // The extension cannot unlock App Lock, so a team that enforces it keeps sharing in the app.
+        if (runtime.appLockEnforcedByTeam()) return KaliumShareResult(KaliumShareStatus.OPEN_APP, failureReason = APP_LOCK)
+        val conversationId = ConversationId(request.conversationValue, request.conversationDomain)
+        val uploaded = runtime.uploadSharedFiles(conversationId, files, options().fileRestrictionState) { bytes, total ->
+            progress?.uploaded(bytes, total)
+        }
+        return uploaded.fold({ KaliumShareResult(it.status.toKalium(), failureReason = it.reason) }) { uploads ->
+            val budget = request.budgetMilliseconds.milliseconds
+            val started = TimeSource.Monotonic.markNow()
+            val sending = ShareSending(runtime, runtime.cryptoTransactions(), options().fileRestrictionState)
+            // Messages stored before the deadline stay in Wire as failed, and the result says so.
+            withTimeoutOrNull(budget) {
+                share(runtime, request, sending, uploads, budget, started).also(produced)
+            } ?: failure("TIMEOUT").copy(presentGenericAlert = true, messageId = sending.firstStoredId)
+        }
+    }
+
+    @Suppress("LongParameterList")
     private suspend fun share(
         runtime: AppleAccountRuntime,
         request: KaliumShareRequest,
+        sending: ShareSending,
+        uploads: List<UploadedFile>,
         budget: Duration,
         started: TimeSource.Monotonic.ValueTimeMark,
     ): KaliumShareResult {
         val processor = runtime.notificationProcessor(options())
-        val sending = ShareSending(runtime, runtime.cryptoTransactions())
         val held = runtime.holdLive(budget * CONNECT_SHARE) { hold ->
             when (hold) {
                 // As the app's sender waits for live, the extension sends only over a live socket.
-                CatchUpOutcome.LIVE -> catchUpAndSend(runtime, processor, sending, request) {
-                    started.elapsedNow() > budget * SEND_BY_SHARE
-                }
+                CatchUpOutcome.LIVE -> catchUpAndSend(
+                    runtime = runtime,
+                    processor = processor,
+                    sending = sending,
+                    request = request,
+                    // The text follows the files, as a caption does.
+                    items = uploads.map { ShareItem.File(it) } +
+                        request.text.takeIf { it.isNotBlank() }?.let { listOf(ShareItem.Text(it)) }.orEmpty(),
+                    shouldStopCatchingUp = { started.elapsedNow() > budget * SEND_BY_SHARE },
+                    shouldStopSending = { started.elapsedNow() > budget * SENT_BY_SHARE },
+                )
                 // Recovering missed events needs slow sync, which only the app runs.
                 CatchUpOutcome.NEEDS_SLOW_SYNC -> ShareOutcome(ShareStatus.OPEN_APP, hold.name) to emptyList()
                 else -> ShareOutcome(ShareStatus.OFFLINE, "CATCH_UP_${hold.name}") to emptyList()
@@ -231,12 +322,7 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
             processed.stoppedReason != QUEUE_END || processed.appWorkPending != null ||
             runtime.database.eventDAO.observeUnprocessedEvents(limit = 1).first().isNotEmpty()
         return KaliumShareResult(
-            status = when (outcome.status) {
-                ShareStatus.SENT -> KaliumShareStatus.SENT
-                ShareStatus.FAILED -> KaliumShareStatus.FAILED
-                ShareStatus.OFFLINE -> KaliumShareStatus.OFFLINE
-                ShareStatus.OPEN_APP -> KaliumShareStatus.OPEN_APP
-            },
+            status = outcome.status.toKalium(),
             messageId = outcome.messageId,
             failureReason = outcome.reason,
             alerts = alerts,
@@ -244,22 +330,25 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
         )
     }
 
-    /** Returns the send's outcome and the unnotified alerts from before the outgoing message was stored. */
+    /** Returns the send's outcome and the unnotified alerts from before the outgoing messages were stored. */
+    @Suppress("LongParameterList")
     private suspend fun catchUpAndSend(
         runtime: AppleAccountRuntime,
         processor: NotificationProcessor,
         sending: ShareSending,
         request: KaliumShareRequest,
-        shouldStop: () -> Boolean,
+        items: List<ShareItem>,
+        shouldStopCatchingUp: () -> Boolean,
+        shouldStopSending: () -> Boolean,
     ): Pair<ShareOutcome, List<ReceivedMessageResult>> {
         // A stale MLS epoch or client list fails the send, so bring the account current first.
-        val processed = processor.processToLive(null, shouldStop)
+        val processed = processor.processToLive(null, shouldStopCatchingUp)
         // Storing the outgoing message marks earlier messages notified, so take their alerts first.
         val unnotified = runtime.takeUnnotifiedAlerts(processed)
         val unfinished = processed.appWorkPending?.name ?: processed.stoppedReason.takeIf { it != QUEUE_END }
         // Unapplied events can carry consent or membership changes; sending would ignore them.
         val outcome = if (unfinished != null) ShareOutcome(ShareStatus.OPEN_APP, "PROCESSING_$unfinished")
-        else sending.send(ConversationId(request.conversationValue, request.conversationDomain), request.text)
+        else sending.send(ConversationId(request.conversationValue, request.conversationDomain), items, shouldStopSending)
         return outcome to unnotified
     }
 
@@ -341,12 +430,37 @@ public class KaliumShareSender(private val configuration: KaliumShareConfigurati
 
     private companion object {
         const val MAX_BUDGET_MS = 60_000L
+
+        /** The app sends at most this many files at once. */
+        const val MAX_ATTACHMENTS = 20
         const val QUEUE_END = "QUEUE_END"
         const val APP_LOCK = "APP_LOCK"
 
-        // Soft deadlines: connect, catch up and send, then close and process what arrived.
+        // Soft deadlines: connect, catch up, send, then close and process what arrived.
         const val CONNECT_SHARE = 0.25
         const val SEND_BY_SHARE = 0.45
+        const val SENT_BY_SHARE = 0.7
         const val PROCESS_SHARE = 0.85
     }
+}
+
+/** Null when the file cannot be read. */
+private fun KaliumShareAttachment.toShareFile(): ShareFile? {
+    val size = FileSystem.SYSTEM.metadataOrNull(path.toPath())?.takeIf { it.isRegularFile }?.size ?: return null
+    return ShareFile(
+        path = path,
+        name = name,
+        mimeType = mimeType,
+        sizeInBytes = size,
+        width = width.takeIf { it > 0 },
+        height = height.takeIf { it > 0 },
+        durationMs = durationMs.takeIf { it > 0 },
+    )
+}
+
+private fun ShareStatus.toKalium() = when (this) {
+    ShareStatus.SENT -> KaliumShareStatus.SENT
+    ShareStatus.FAILED -> KaliumShareStatus.FAILED
+    ShareStatus.OFFLINE -> KaliumShareStatus.OFFLINE
+    ShareStatus.OPEN_APP -> KaliumShareStatus.OPEN_APP
 }

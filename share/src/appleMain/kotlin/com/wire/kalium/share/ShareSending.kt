@@ -31,6 +31,8 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.configuration.UserConfigDataSource
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
@@ -38,7 +40,9 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.RegularMessageMapper
+import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.message.withGroupReceiptMode
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.data.prekey.ProteusSessionCreator
@@ -68,16 +72,25 @@ import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
+/** One message of a share: one uploaded file, or the text. */
+internal sealed interface ShareItem {
+    data class Text(val text: String) : ShareItem
+    data class File(val upload: UploadedFile) : ShareItem
+}
+
 /** How a share ended. Content-free: [reason] is a diagnostic code. */
 internal data class ShareOutcome(val status: ShareStatus, val reason: String? = null, val messageId: String? = null)
 
 internal enum class ShareStatus { SENT, FAILED, OFFLINE, OPEN_APP }
 
+/** Sending goes on after a sent message until the deadline asks to stop. */
+private fun ShareOutcome.sentInTime(shouldStop: () -> Boolean) = status == ShareStatus.SENT && !shouldStop()
+
 /** Work only the app can do. The message stays failed, and the user retries it in Wire. */
 internal class AppRequired(val reason: String) : CoreFailure.FeatureFailure()
 
 /**
- * Sends a shared text from an owned account through the app's sender (ADR 12), composed over the account's
+ * Sends shared text and uploaded files from an owned account through the app's sender (ADR 12), composed over the account's
  * stores. The caller holds the account live and processes stored events first: a stale MLS epoch or client
  * list fails the send, and processing events inside a send's crypto transaction would deadlock.
  */
@@ -85,6 +98,8 @@ internal class AppRequired(val reason: String) : CoreFailure.FeatureFailure()
 internal class ShareSending(
     private val runtime: AppleAccountRuntime,
     crypto: AppleCryptoTransactions,
+    /** The app's build file restriction; the account's file rules are read again after catching up. */
+    private val restriction: BuildFileRestrictionState,
     private val newId: () -> String = { Uuid.random().toString() },
     private val clock: Clock = Clock.System,
 ) {
@@ -139,33 +154,105 @@ internal class ShareSending(
         scope = runtime.processingScope,
     )
 
-    suspend fun send(conversationId: ConversationId, text: String): ShareOutcome {
+    /**
+     * Sends [items] in order, each as its own message. Once one is not sent, or [shouldStop] asks to end, the rest
+     * are kept in Wire as failed, so the user can retry them there. Returns the first outcome other than sent.
+     */
+    /** The first message this share stored, if any: a share its deadline cut short still reports it. */
+    var firstStoredId: String? = null
+        private set
+
+    suspend fun send(conversationId: ConversationId, items: List<ShareItem>, shouldStop: () -> Boolean): ShareOutcome {
+        require(items.isNotEmpty())
         val conversation = database.conversationDAO.getConversationDetailsById(conversationId.toDao())
             ?: return ShareOutcome(ShareStatus.OPEN_APP, ShareBlock.UNAVAILABLE.name)
-        return database.shareBlock(conversation)?.let { ShareOutcome(ShareStatus.OPEN_APP, it.name) }
-            ?: send(conversationId, conversation, text)
+        val block = database.shareBlock(conversation)
+            ?: ShareBlock.CELLS.takeIf { conversation.wireCell != null && items.any { it is ShareItem.File } }
+        return block?.let { ShareOutcome(ShareStatus.OPEN_APP, it.name) }
+            ?: fileRefusal(items)?.let { ShareOutcome(ShareStatus.FAILED, it.name) }
+            ?: sendInOrder(composer(conversationId, conversation), items, shouldStop)
     }
 
-    private suspend fun send(conversationId: ConversationId, conversation: ConversationViewEntity, text: String): ShareOutcome {
+    /** Catching up can apply a change to the account's file rules, such as file sharing turned off. */
+    private suspend fun fileRefusal(items: List<ShareItem>): FileRefusal? {
+        val files = items.filterIsInstance<ShareItem.File>().map { it.upload.file }
+        if (files.isEmpty()) return null
+        val policy = database.sharePolicy(selfUserId, restriction)
+        return files.firstNotNullOfOrNull { policy.refusal(it.name, it.mimeType, it.sizeInBytes) }
+    }
+
+    private suspend fun sendInOrder(composer: Composer, items: List<ShareItem>, shouldStop: () -> Boolean): ShareOutcome {
+        var outcome: ShareOutcome? = null
+        var next = 0
+        try {
+            while (next < items.size && (outcome == null || outcome.sentInTime(shouldStop))) {
+                // Storing is short; the deadline must not cut it between a message and its transfer status.
+                val message = withContext(NonCancellable) { composer.store(items[next], Message.Status.Pending) }
+                next++
+                outcome = send(message)
+            }
+        } catch (cancelled: CancellationException) {
+            // The deadline cut sending short: the rest stay in Wire as failed, so the user can retry them there.
+            withContext(NonCancellable) { items.drop(next).forEach { composer.store(it, Message.Status.Failed) } }
+            throw cancelled
+        }
+        val kept = withContext(NonCancellable) { items.drop(next).map { composer.store(it, Message.Status.Failed) } }
+        val last = checkNotNull(outcome)
+        return if (last.status == ShareStatus.SENT && kept.isNotEmpty()) ShareOutcome(ShareStatus.FAILED, OUT_OF_TIME, kept.first().id)
+        else last
+    }
+
+    /** Reads the settings the app gives each message once, for all items. */
+    private suspend fun composer(conversationId: ConversationId, conversation: ConversationViewEntity): Composer {
         val config = UserConfigDataSource(
             database.userPrefsDAO,
             database.userConfigDAO,
             lazy { BuildFileRestrictionState.NoRestriction }
         )
-        val message = sharedTextMessage(
-            id = newId(),
-            text = text,
+        return Composer(
             conversationId = conversationId,
-            selfUserId = selfUserId,
-            selfClientId = ClientId(runtime.prepared.clientId),
-            now = clock.now(),
             timer = conversation.shareSelfDeletionTimer(config.getTeamSettingsSelfDeletionStatus().getOrNull()?.enforcedSelfDeletionTimer),
             expectsReadConfirmation = config.isReadReceiptsEnabled().first().getOrNull() ?: false,
+            // The app stores the group's receipt mode and sends the user's own choice.
+            groupReceiptMode = database.messageDAO.getReceiptModeFromGroupConversationByQualifiedID(conversationId.toDao())?.toModel(),
         )
-        // The app stores the group's receipt mode and sends the user's own choice.
-        val stored = database.messageDAO.getReceiptModeFromGroupConversationByQualifiedID(conversationId.toDao())
-            ?.let { message.withGroupReceiptMode(it.toModel()) } ?: message
-        database.messageDAO.insertOrIgnoreMessage(messageMapper.toEntity(stored), updateConversationModifiedDate = true)
+    }
+
+    private inner class Composer(
+        val conversationId: ConversationId,
+        val timer: SelfDeletionTimer,
+        val expectsReadConfirmation: Boolean,
+        val groupReceiptMode: Conversation.ReceiptMode?,
+    ) {
+        /** Stores [item] as the app would; a file is already uploaded, and the app shows it from a local copy. */
+        suspend fun store(item: ShareItem, status: Message.Status): Message.Regular {
+            val message = sharedMessage(
+                id = newId(),
+                content = when (item) {
+                    is ShareItem.Text -> MessageContent.Text(value = item.text)
+                    is ShareItem.File -> item.upload.content()
+                },
+                conversationId = conversationId,
+                selfUserId = selfUserId,
+                selfClientId = ClientId(runtime.prepared.clientId),
+                now = clock.now(),
+                timer = timer,
+                expectsReadConfirmation = expectsReadConfirmation,
+                status = status,
+            )
+            if (item is ShareItem.File) item.upload.keepLocalCopy(database, runtime.assetDirectory)
+            val stored = groupReceiptMode?.let { message.withGroupReceiptMode(it) } ?: message
+            database.messageDAO.insertOrIgnoreMessage(messageMapper.toEntity(stored), updateConversationModifiedDate = true)
+            // A failed message with an uploaded asset is resent as is when the user retries it in Wire.
+            if (item is ShareItem.File) {
+                database.messageDAO.updateAssetTransferStatus(AssetTransferStatus.UPLOADED.toDao(), message.id, conversationId.toDao())
+            }
+            if (firstStoredId == null) firstStoredId = message.id
+            return message
+        }
+    }
+
+    private suspend fun send(message: Message.Regular): ShareOutcome {
         val sent = try {
             sender.sendMessage(message)
         } catch (cancelled: CancellationException) {
@@ -187,7 +274,8 @@ internal class ShareSending(
     private suspend fun finish(message: Message.Regular, failure: CoreFailure?): ShareOutcome {
         val sent = database.messageDAO.getMessageById(message.id, message.conversationId.toDao())?.status == MessageEntity.Status.SENT
         if (!sent) {
-            failureHandler.handleFailureAndUpdateMessageStatus(failure ?: FAILED_UNEXPECTEDLY, message.conversationId, message.id, TYPE)
+            val type = if (message.content is MessageContent.Asset) "Asset" else "Text"
+            failureHandler.handleFailureAndUpdateMessageStatus(failure ?: FAILED_UNEXPECTEDLY, message.conversationId, message.id, type)
             val reason = failure ?: FAILED_UNEXPECTEDLY
             return ShareOutcome(reason.shareStatus(), reason.reason(), message.id)
         }
@@ -253,7 +341,7 @@ internal class ShareSending(
     }
 
     private companion object {
-        const val TYPE = "Text"
+        const val OUT_OF_TIME = "OUT_OF_TIME"
         val FAILED_UNEXPECTEDLY = AppRequired("UNEXPECTED")
     }
 }

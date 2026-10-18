@@ -73,6 +73,7 @@ kotlin {
             implementation(projects.data.network)
             implementation(projects.data.networkModel)
             implementation(libs.coroutines.core)
+            implementation(libs.okio.core)
         }
         appleTest.dependencies {
             implementation(kotlin("test"))

@@ -51,8 +51,16 @@ crypto transaction, and processing events there would deadlock, so the extension
 instead of waiting for live.
 
 The first share extension sends text, including links as text, to one conversation chosen from the
-app's conversation list components. Assets follow separately, because uploads can outlive the
-extension.
+app's conversation list components.
+
+Files follow in the same extension. Uploads can outlive a dismissed extension, so the share sheet
+stays open while they run: the extension encrypts and uploads every file before it holds the account
+live, reports progress, and stops when the user cancels. Uploading needs the account's tokens, so the
+extension holds the account meanwhile, but not its socket, and the live hold's budget starts after the
+uploads. Nothing is stored until every upload succeeded; each file then becomes an uploaded asset
+message, so a message that fails to send is retried in the app without uploading again. The extension
+follows the app's file rules: file sharing, allowed types, size limits, and Cells conversations, whose
+files only the app uploads.
 
 ## Plan
 
@@ -70,6 +78,7 @@ app's adapters:
 6. Extension adapters over the slim runtime, and a bounded hold that keeps the socket open, processes
    incoming events and returns unnotified message alerts using ADR 11's existing notification rules.
 7. The share extension: text and link content, the conversation picker, sending and presentation.
+8. Files: uploads before the hold, asset messages, and the app's file rules.
 
 ## Consequences
 
