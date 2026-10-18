@@ -473,6 +473,61 @@ class SlowSyncManagerTest {
         syncJob.cancel()
     }
 
+    @Test
+    fun givenApiVersionChangedOrUnknown_whenPreviouslySynced_thenRunsSlowSync() = runTest {
+        for (previousVersion in listOf(null, 4, 6)) {
+            val (arrangement, manager) = Arrangement().arrange {
+                withSatisfiedCriteria()
+                withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
+                withLastSlowSyncApiVersion(previousVersion)
+                withSlowSyncWorkerReturning(emptyFlow())
+            }
+            manager.performSyncFlow().test {
+                advanceUntilIdle()
+                cancelAndIgnoreRemainingEvents()
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.slowSyncWorker.slowSyncStepsFlow(any())
+                arrangement.slowSyncRepository.setLastSlowSyncApiVersion(5)
+            }
+        }
+    }
+
+    @Test
+    fun givenSameApiVersion_whenPreviouslySynced_thenSkipsSlowSync() = runTest {
+        val (arrangement, manager) = Arrangement().arrange {
+            withSatisfiedCriteria()
+            withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
+        }
+        manager.performSyncFlow().test {
+            advanceUntilIdle()
+            cancelAndIgnoreRemainingEvents()
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.slowSyncWorker.slowSyncStepsFlow(any())
+            arrangement.slowSyncRepository.setLastSlowSyncApiVersion(any())
+        }
+    }
+
+    @Test
+    fun givenApiVersionChanged_whenSyncFails_thenDoesNotRecordNewVersion() = runTest {
+        val (arrangement, manager) = Arrangement().arrange {
+            withSatisfiedCriteria()
+            withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
+            withLastSlowSyncApiVersion(4)
+            withSlowSyncWorkerReturning(flow { throw IOException("sync failed") })
+            withIgnoringFailureRecovery()
+        }
+        manager.performSyncFlow().test {
+            advanceUntilIdle()
+            cancelAndIgnoreRemainingEvents()
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.slowSyncRepository.setLastSlowSyncApiVersion(any())
+            arrangement.slowSyncRepository.setLastSlowSyncCompletionInstant(any())
+        }
+    }
+
     private class Arrangement(
         val exponentialDurationHelper: ExponentialDurationHelper = mock(mode = MockMode.autoUnit),
         private val configureDefaultExponentialDuration: Boolean = true,
@@ -499,6 +554,10 @@ class SlowSyncManagerTest {
             everySuspend {
                 slowSyncRepository.observeLastSlowSyncCompletionInstant()
             } returns lasSyncFlow
+        }
+
+        suspend fun withLastSlowSyncApiVersion(version: Int?) = apply {
+            everySuspend { slowSyncRepository.getLastSlowSyncApiVersion() } returns version
         }
 
         suspend fun withSatisfiedCriteria() = withCriteriaProviderReturning(flowOf(SyncCriteriaResolution.Ready))
@@ -564,7 +623,8 @@ class SlowSyncManagerTest {
             networkStateObserver = networkStateObserver,
             exponentialDurationHelper = exponentialDurationHelper,
             syncMigrationStepsProvider = { syncMigrationStepsProvider },
-            userScopedLogger = kaliumLogger
+            userScopedLogger = kaliumLogger,
+            apiVersion = 5
         )
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = { }) = run {
@@ -574,6 +634,7 @@ class SlowSyncManagerTest {
                 withNextExponentialDuration(1.seconds)
             }
             withLastSlowSyncPerformedOnANewVersion()
+            withLastSlowSyncApiVersion(5)
             apply {
                 everySuspend {
                     slowSyncRepository.setSlowSyncVersion(any())

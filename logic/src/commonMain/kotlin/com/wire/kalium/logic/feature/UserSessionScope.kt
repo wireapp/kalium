@@ -466,6 +466,7 @@ import com.wire.kalium.logic.sync.SyncExecutor
 import com.wire.kalium.logic.sync.SyncExecutorImpl
 import com.wire.kalium.logic.sync.SyncSuspension
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncShutdownCoordinator
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.sync.SyncStateObserverImpl
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
@@ -672,6 +673,7 @@ public class UserSessionScope internal constructor(
     private val platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
+    private val syncShutdownCoordinator: SyncShutdownCoordinator,
     private val enableDurableMLSReceiveRecovery: Boolean = false,
     private val resourceAccess: com.wire.kalium.util.AccountResourceAccess? = null,
     private val coreCryptoCentralFactory: suspend (String, ByteArray) -> com.wire.kalium.cryptography.CoreCryptoCentral = { root, key ->
@@ -864,6 +866,7 @@ public class UserSessionScope internal constructor(
                 )
             )
         }.container
+
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
@@ -1437,7 +1440,8 @@ public class UserSessionScope internal constructor(
             slowSyncManager,
             incrementalSyncManager,
             this,
-            userScopedLogger = userScopedLogger
+            userScopedLogger = userScopedLogger,
+            shutdownCoordinator = syncShutdownCoordinator
         )
     }
 
@@ -1658,13 +1662,14 @@ public class UserSessionScope internal constructor(
 
     private val slowSyncManager: SlowSyncManager by lazy {
         SlowSyncManager(
-            slowSyncCriteriaProvider,
-            slowSyncRepository,
-            slowSyncWorker,
-            slowSyncRecoveryHandler,
-            networkStateObserver,
-            syncMigrationStepsProvider,
-            userScopedLogger,
+            slowSyncCriteriaProvider = slowSyncCriteriaProvider,
+            slowSyncRepository = slowSyncRepository,
+            slowSyncWorker = slowSyncWorker,
+            slowSyncRecoveryHandler = slowSyncRecoveryHandler,
+            networkStateObserver = networkStateObserver,
+            syncMigrationStepsProvider = syncMigrationStepsProvider,
+            userScopedLogger = userScopedLogger,
+            apiVersion = sessionManager.serverConfig().metaData.commonApiVersion.version,
         )
     }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {

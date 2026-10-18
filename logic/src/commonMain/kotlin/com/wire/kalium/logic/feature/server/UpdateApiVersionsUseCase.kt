@@ -19,6 +19,10 @@
 
 package com.wire.kalium.logic.feature.server
 
+import com.wire.kalium.common.error.wrapStorageNullableRequest
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
@@ -27,12 +31,7 @@ import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.persistence.client.AuthTokenStorage
-import io.ktor.util.collections.ConcurrentSet
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -40,8 +39,11 @@ import kotlinx.coroutines.launch
 /**
  * Iterates over all locally stored server configs and update each api version
  */
-internal interface UpdateApiVersionsUseCase {
-    suspend operator fun invoke()
+public interface UpdateApiVersionsUseCase {
+    /** Reports changes to the persisted common API version, rather than other server metadata. */
+    public suspend operator fun invoke(): Result
+
+    public enum class Result { Changed, Unchanged, Failure, }
 }
 
 internal class UpdateApiVersionsUseCaseImpl internal constructor(
@@ -50,20 +52,29 @@ internal class UpdateApiVersionsUseCaseImpl internal constructor(
     private val serverConfigRepoProvider: (serverConfig: ServerConfig, proxyCredentials: ProxyCredentials?) -> ServerConfigRepository,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
 ) : UpdateApiVersionsUseCase {
-    override suspend operator fun invoke() {
-        coroutineScope {
-            val updatedServerId = ConcurrentSet<String>()
-            sessionRepository.validSessionsWithServerConfig().getOrElse {
-                return@coroutineScope
-            }.map { (userId, serverConfig) ->
-                launch {
-                    if (updatedServerId.contains(serverConfig.id)) {
-                        return@launch
-                    }
-                    updatedServerId.add(serverConfig.id)
-                    updateApiForUser(userId, serverConfig)
-                }
-            }.joinAll()
+    override suspend operator fun invoke(): UpdateApiVersionsUseCase.Result = coroutineScope {
+        val before = sessionRepository.validSessionsWithServerConfig().getOrElse {
+            return@coroutineScope UpdateApiVersionsUseCase.Result.Failure
+        }
+        before.entries
+            .distinctBy { it.value.id }
+            .map { (userId, serverConfig) ->
+                launch { updateApiForUser(userId, serverConfig) }
+            }
+            .joinAll()
+
+        val after = sessionRepository.validSessionsWithServerConfig().getOrElse {
+            return@coroutineScope UpdateApiVersionsUseCase.Result.Failure
+        }
+        val apiVersionChanged = after.any { (userId, config) ->
+            val previousConfig = before[userId] ?: return@any false
+            previousConfig.metaData.commonApiVersion.version != config.metaData.commonApiVersion.version
+        }
+
+        if (apiVersionChanged) {
+            UpdateApiVersionsUseCase.Result.Changed
+        } else {
+            UpdateApiVersionsUseCase.Result.Unchanged
         }
     }
 

@@ -22,6 +22,7 @@ public abstract class com/wire/kalium/logic/CoreLogicCommon {
 	public final fun openSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun registerLogger (Lcom/wire/kalium/logger/KaliumLogger$Config;)V
 	public final fun sessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun stopSyncForRestart (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun versionedAuthenticationScope (Lcom/wire/kalium/logic/configuration/server/ServerConfig$Links;)Lcom/wire/kalium/logic/feature/auth/autoVersioningAuth/AutoVersionAuthScopeUseCase;
 }
 
@@ -48,6 +49,7 @@ public final class com/wire/kalium/logic/GlobalKaliumScope : kotlinx/coroutines/
 	public final fun getServerConfigForAccounts ()Lcom/wire/kalium/logic/feature/server/ServerConfigForAccountUseCase;
 	public final fun getSession ()Lcom/wire/kalium/logic/feature/session/SessionScope;
 	public final fun getSetAllPersistentWebSocketEnabled ()Lcom/wire/kalium/logic/feature/user/webSocketStatus/SetPersistentWebSocketForAllUsersUseCase;
+	public final fun getUpdateApiVersions ()Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase;
 	public final fun getUpdateApiVersionsScheduler ()Lcom/wire/kalium/logic/sync/periodic/UpdateApiVersionsScheduler;
 	public final fun getValidateEmailUseCase ()Lcom/wire/kalium/logic/feature/auth/ValidateEmailUseCase;
 	public final fun getValidatePasswordUseCase ()Lcom/wire/kalium/logic/feature/auth/ValidatePasswordUseCase;
@@ -7026,6 +7028,19 @@ public final class com/wire/kalium/logic/feature/server/ServerConfigForAccountUs
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class com/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result : java/lang/Enum {
+	public static final field Changed Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result;
+	public static final field Failure Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result;
+	public static final field Unchanged Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result;
+	public static fun values ()[Lcom/wire/kalium/logic/feature/server/UpdateApiVersionsUseCase$Result;
+}
+
 public abstract interface class com/wire/kalium/logic/feature/service/GetServiceByIdUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/service/ServiceId;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -8269,6 +8284,7 @@ public abstract class com/wire/kalium/logic/sync/SyncExecutor {
 	public fun <init> ()V
 	public abstract fun request (Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun startAndStopSyncAsNeeded ()V
+	public abstract fun stopForRestart (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/sync/SyncRequest {

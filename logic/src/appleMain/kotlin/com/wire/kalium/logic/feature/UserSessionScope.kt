@@ -24,6 +24,7 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.ClientConfigImpl
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.sync.SyncShutdownCoordinator
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
@@ -54,6 +55,7 @@ internal fun UserSessionScope(
     networkStateObserver: NetworkStateObserver,
     logoutCallback: LogoutCallback,
     userAgent: String,
+    syncShutdownCoordinator: SyncShutdownCoordinator,
     coreCryptoCentralFactory: suspend (String, ByteArray) -> com.wire.kalium.cryptography.CoreCryptoCentral = { root, key ->
         com.wire.kalium.cryptography.coreCryptoCentral(root, key)
     },
@@ -79,6 +81,7 @@ internal fun UserSessionScope(
         platformUserStorageProperties,
         networkStateObserver,
         logoutCallback,
+        syncShutdownCoordinator,
         enableDurableMLSReceiveRecovery = true,
         resourceAccess = platformUserStorageProperties.accountResourceAccess,
         coreCryptoCentralFactory = coreCryptoCentralFactory,

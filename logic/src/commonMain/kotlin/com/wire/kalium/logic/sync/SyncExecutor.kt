@@ -27,8 +27,10 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +54,9 @@ import kotlinx.coroutines.sync.withLock
 public abstract class SyncExecutor {
 
     public abstract fun startAndStopSyncAsNeeded()
+
+    /** Permanently stops sync and waits for in-flight event processing to finish. */
+    public abstract suspend fun stopForRestart()
 
     /**
      * Requests Sync to be performed, fetching new events, etc. bringing the user to an online status.
@@ -129,6 +134,7 @@ internal class SyncExecutorImpl(
     private val slowSyncManager: SlowSyncManager,
     private val incrementalSyncManager: IncrementalSyncManager,
     private val scope: CoroutineScope,
+    private val shutdownCoordinator: SyncShutdownCoordinator = SyncShutdownCoordinator(),
     userScopedLogger: KaliumLogger = kaliumLogger,
 ) : SyncExecutor() {
 
@@ -181,7 +187,24 @@ internal class SyncExecutorImpl(
     private val logger by lazy { userScopedLogger.withFeatureId(SYNC).withTextTag("SyncExecutor") }
 
     override fun startAndStopSyncAsNeeded() {
-        scope.launch {
+        executionJob.start()
+    }
+
+    override suspend fun stopForRestart() {
+        logger.i("Stopping account sync for application restart; waiting for processing and cleanup")
+        executionJob.cancelAndJoin()
+        logger.i("Account sync stopped for application restart")
+    }
+
+    private val executionJob: Job by lazy {
+        scope.launch(start = CoroutineStart.LAZY) {
+            shutdownCoordinator.runUnlessStopping {
+                runSyncAsNeeded()
+            }
+        }
+    }
+
+    private suspend fun runSyncAsNeeded() {
             syncRequestDemandFlow.subscriptionCount
                 .runningFold(SyncDemand()) { previous, requesterCount ->
                     val syncState = syncStateObserver.syncState.value
@@ -232,7 +255,6 @@ internal class SyncExecutorImpl(
                         )
                     }
                 }
-        }
     }
 
     /**

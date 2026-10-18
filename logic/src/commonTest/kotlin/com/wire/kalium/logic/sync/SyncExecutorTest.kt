@@ -728,6 +728,26 @@ class SyncExecutorTest {
             syncScope.cancel()
         }
 
+    @Test
+    fun givenActiveSync_whenStoppedForRestart_thenNewRequestsCannotRestartIt() = runTest(TestKaliumDispatcher.default) {
+        val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+        val (arrangement, executor) = Arrangement(syncScope).arrange()
+        executor.startAndStopSyncAsNeeded()
+        executor.request {
+            arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+            advanceUntilIdle()
+            assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+            executor.stopForRestart()
+            assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+            executor.suspendExecution()
+            executor.resumeExecution()
+            executor.startAndStopSyncAsNeeded()
+            executor.request { advanceUntilIdle() }
+            assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+        }
+        syncScope.cancel()
+    }
+
     private class Arrangement(
         val syncScope: CoroutineScope,
         syncStateObserverOverride: SyncStateObserver? = null,

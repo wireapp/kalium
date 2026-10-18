@@ -45,7 +45,7 @@ class UpdateApiVersionsWorkerTest {
     fun givenUpdateCompletes_whenExecutingAWorker_thenReturnSuccess() = runTest {
         everySuspend {
             updateApiVersionsUseCase.invoke()
-        } returns Unit
+        } returns UpdateApiVersionsUseCase.Result.Unchanged
 
         val result = updateApiVersionsWorker.doWork()
 

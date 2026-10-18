@@ -174,7 +174,7 @@ public class GlobalKaliumScope internal constructor(
 
     public val session: SessionScope get() = SessionScope(sessionRepository)
     public val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(customServerConfigRepository)
-    internal val updateApiVersions: UpdateApiVersionsUseCase
+    public val updateApiVersions: UpdateApiVersionsUseCase
         get() = UpdateApiVersionsUseCaseImpl(
             sessionRepository,
             globalPreferences.authTokenStorage,
