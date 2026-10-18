@@ -290,7 +290,7 @@ public class ConversationScope internal constructor(
     internal val observeConnectionList: ObserveConnectionListUseCase
         get() = observePendingConnectionRequests
 
-    internal val observePendingConnectionRequests: ObservePendingConnectionRequestsUseCase
+    public val observePendingConnectionRequests: ObservePendingConnectionRequestsUseCase
         get() = ObservePendingConnectionRequestsUseCaseImpl(connectionRepository)
 
     public val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase

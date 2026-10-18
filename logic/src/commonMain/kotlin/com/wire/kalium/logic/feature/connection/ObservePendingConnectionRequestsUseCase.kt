@@ -38,13 +38,13 @@ internal typealias ObserveConnectionListUseCase = ObservePendingConnectionReques
  *
  * @see ConnectionState
  */
-internal fun interface ObservePendingConnectionRequestsUseCase {
+public fun interface ObservePendingConnectionRequestsUseCase {
     /**
      * Use case [ObservePendingConnectionRequestsUseCase] operation
      *
      * @return a [Flow] with a list of [ConversationDetails] containing all current connections
      */
-    suspend operator fun invoke(): Flow<List<ConversationDetails.Connection>>
+    public suspend operator fun invoke(): Flow<List<ConversationDetails.Connection>>
 }
 
 internal class ObservePendingConnectionRequestsUseCaseImpl internal constructor(
