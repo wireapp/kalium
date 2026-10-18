@@ -97,7 +97,7 @@ class SubconversationDAOTest : BaseDatabaseTest() {
     fun migrationCreatesTableAndPreservesLegacyDataUntilImported() = runTest(dispatcher) {
         db.metadataDAO.insertValue(legacyJson, legacyKey)
         db.sqlDriver.execute(null, "DROP TABLE Subconversation", 0).await()
-        UserDatabase.Schema.migrate(db.sqlDriver, 152, 153).await()
+        UserDatabase.Schema.migrate(db.sqlDriver, 153, 154).await()
         assertEquals(legacyJson, db.metadataDAO.valueByKey(legacyKey))
         assertEquals("first", db.subconversationDAO.getGroupId(conversation, "conference"))
         assertNull(db.metadataDAO.valueByKey(legacyKey))

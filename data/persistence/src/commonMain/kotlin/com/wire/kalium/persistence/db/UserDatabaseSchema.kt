@@ -37,9 +37,9 @@ internal object UserDatabaseSchema : SqlSchema<QueryResult.AsyncValue<Unit>> by 
         var migrationVersion = oldVersion
         if (oldVersion in 144L..149L && oldVersion < newVersion && driver.hasLegacyMeetingSchema()) {
             // The old fork applied local migrations 143..148 without upstream's TZID conversion.
-            // Run both missing upstream migrations, then skip the already completed local operations.
-            UserDatabase.Schema.migrate(driver, 143, 145).await()
-            migrationVersion += 2
+            // Run the three missing upstream migrations, then skip the already completed local operations.
+            UserDatabase.Schema.migrate(driver, 143, 146).await()
+            migrationVersion += 3
         }
         UserDatabase.Schema.migrate(driver, migrationVersion, newVersion, *callbacks).await()
     }

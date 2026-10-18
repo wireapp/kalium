@@ -61,7 +61,7 @@ class PendingDeliveryConfirmationDAOTest : BaseDatabaseTest() {
         try {
             database.metadataDAO.insertValue("preserved", "migration-proof")
             database.sqlDriver.execute(null, "DROP TABLE PendingDeliveryConfirmations", 0)
-            UserDatabase.Schema.migrate(database.sqlDriver, 147, 148).await()
+            UserDatabase.Schema.migrate(database.sqlDriver, 148, 149).await()
             database.pendingDeliveryConfirmationDAO.enqueue(conversation, "after-migration")
             assertEquals("preserved", database.metadataDAO.valueByKey("migration-proof"))
             assertEquals(1, database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).size)

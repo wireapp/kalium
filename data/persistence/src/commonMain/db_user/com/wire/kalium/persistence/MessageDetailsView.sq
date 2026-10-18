@@ -114,7 +114,7 @@ IFNULL(
     (SELECT '[' || GROUP_CONCAT('{
         "url":"' || url || '",
         "urlOffset":' || url_offset || ',
-        "permanentUrl":"' || IFNULL(permanent_url,"' || url || '") || '",
+        "permanentUrl":"' || IFNULL(permanent_url, url) || '",
         "title":"' || title || '",
         "summary":"' || summary || '",
         "imageLocalPath":"' || IFNULL(image_local_path,'') || '",

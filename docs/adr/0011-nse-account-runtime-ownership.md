@@ -121,15 +121,16 @@ durable records exist only where replay would otherwise lose inputs:
 - A conversation clear stores the exact deleted message IDs, so replay never deletes
   later messages. These snapshots are not pruned.
 
-Migrations 148 through 150 retain compatibility with databases
+Migrations 149 through 151 retain compatibility with databases
 created during the earlier implementation and drop the former receipt table.
 Removing those migrations requires a separate compatibility decision.
 
-Upstream migrations 143 (meeting time zones) and 144 (adminless deletion) precede
-the local migrations at 145 through 153. For compatibility,
+Upstream migrations 143 for meeting time zones, 144 for adminless deletion, and
+145 for the link-preview URL fallback precede the local migrations at 146 through
+158. For compatibility,
 older fork databases at versions 144 through 149 still have `Meeting.trial` and
-no `tzid`. App and backup migration inspect those columns, apply both missing
-upstream migrations, and resume at the old version plus two. This skips local
+no `tzid`. App and backup migration inspect those columns, apply the three missing
+upstream migrations, and resume at the old version plus three. This skips local
 operations the fork already completed. Upstream databases already containing
 `tzid` use their original version. Explicit migration binds one writer connection
 and commits the schema and version together, as automatic production opens do.

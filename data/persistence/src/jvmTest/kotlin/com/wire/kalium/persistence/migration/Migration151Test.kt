@@ -21,14 +21,14 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
-class Migration150Test : BaseDatabaseTest() {
+class Migration151Test : BaseDatabaseTest() {
     @Test
     fun `both receipt schema versions upgrade without losing events or required message effects`() = runTest(dispatcher) {
-        for (oldVersion in listOf(149L, 150L)) {
+        for (oldVersion in listOf(150L, 151L)) {
             val database = createDatabase(UserIDEntity("upgrade-$oldVersion", "wire.test"), encryptedDBSecret, true)
             try {
-                var receiptSchema = File("src/commonMain/db_user/migrations/148.sqm").readText()
-                if (oldVersion == 150L) {
+                var receiptSchema = File("src/commonMain/db_user/migrations/149.sqm").readText()
+                if (oldVersion == 151L) {
                     for (column in listOf("message_id", "conversation_value", "conversation_domain")) {
                         receiptSchema = receiptSchema.replace("$column TEXT NOT NULL", "$column TEXT")
                     }
@@ -51,7 +51,7 @@ class Migration150Test : BaseDatabaseTest() {
                 database.pendingDeliveryConfirmationDAO.enqueue(conversation.id, message.id)
                 val before = database.messageDAO.getMessageById("text", conversation.id)
                 // The fixture uses the current schema; replay only the receipt migrations under test.
-                UserDatabase.Schema.awaitMigrate(database.sqlDriver, oldVersion, 151L)
+                UserDatabase.Schema.awaitMigrate(database.sqlDriver, oldVersion, 152L)
                 assertEquals(before, database.messageDAO.getMessageById("text", conversation.id))
                 assertFalse(checkNotNull(database.eventDAO.getEventById("pending")).isProcessed)
                 assertEquals(listOf("text"), database.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10).map { it.messageId })

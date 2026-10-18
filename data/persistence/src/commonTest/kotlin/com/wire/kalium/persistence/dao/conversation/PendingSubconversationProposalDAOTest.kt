@@ -210,7 +210,7 @@ class PendingSubconversationProposalDAOTest : BaseDatabaseTest() {
     fun migrationCreatesIndependentTableAndPreservesLegacyUntilImport() = runTest(dispatcher) {
         db.metadataDAO.insertValue(legacyJson, legacyKey)
         db.sqlDriver.execute(null, "DROP TABLE PendingSubconversationProposal", 0).await()
-        UserDatabase.Schema.migrate(db.sqlDriver, 155, 156).await()
+        UserDatabase.Schema.migrate(db.sqlDriver, 156, 157).await()
         assertEquals(legacyJson, db.metadataDAO.valueByKey(legacyKey))
         assertEquals(listOf(first, second), db.pendingSubconversationProposalDAO.observe().first())
         assertNull(db.metadataDAO.valueByKey(legacyKey))

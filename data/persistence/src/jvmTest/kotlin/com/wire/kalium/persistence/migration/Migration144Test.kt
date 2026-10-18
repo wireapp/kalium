@@ -16,17 +16,17 @@ import kotlin.test.assertEquals
 
 class Migration144Test {
     @Test
-    fun upstreamVersions144And145RunAllRemainingLocalMigrationsOnReopen() = runTest {
-        for (upstreamVersion in listOf(144L, 145L)) withDatabase { file, driver ->
+    fun upstreamVersions144Through146RunAllRemainingLocalMigrationsOnReopen() = runTest {
+        for (upstreamVersion in listOf(144L, 145L, 146L)) withDatabase { file, driver ->
             object : SuspendingTransacterImpl(driver) {}.transaction {
                 UserDatabase.Schema.awaitMigrate(driver, 2, upstreamVersion)
             }
             seedConversation(driver)
-            if (upstreamVersion == 145L) driver.execute(null,
+            if (upstreamVersion >= 145L) driver.execute(null,
                 "INSERT INTO AdminlessGroupDelete VALUES ('conversation@wire.test', 1234)", 0)
             driver.execute(null, "PRAGMA user_version = $upstreamVersion", 0)
             driver.close()
-            reopenAndVerify(file, if (upstreamVersion == 145L) "1234" else null)
+            reopenAndVerify(file, if (upstreamVersion >= 145L) "1234" else null)
         }
     }
 
@@ -41,13 +41,20 @@ class Migration144Test {
             INSERT INTO Message(id, conversation_id, content_type, creation_date, sender_user_id, status, visibility)
             VALUES ('existing', 'conversation@wire.test', 'TEXT', 1, 'creator@wire.test', 'SENT', 'VISIBLE')
         """.trimIndent(), 0)
+        driver.execute(null, """
+            INSERT INTO MessageLinkPreview(message_id, conversation_id, url, url_offset, permanent_url, title, summary)
+            VALUES ('existing', 'conversation@wire.test', 'https://wire.com', 0, NULL, 'Wire', 'Summary')
+        """.trimIndent(), 0)
     }
 
     private fun reopenAndVerify(file: File, timestamp: String?) {
         JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", properties, UserDatabaseSchema.synchronous()).use { driver ->
-            assertEquals(listOf("158"), driver.values("PRAGMA user_version"))
+            assertEquals(listOf("159"), driver.values("PRAGMA user_version"))
             assertEquals(listOf(timestamp), driver.values("SELECT adminlessGroupDeletionTimestamp FROM ConversationDetails"))
             assertEquals(listOf("existing"), driver.values("SELECT id FROM MessageTimelineKey"))
+            assertEquals(listOf("https://wire.com"), driver.values("""
+                SELECT json_extract(linkPreviews, '$[0].permanentUrl') FROM MessageDetailsView WHERE id = 'existing'
+            """.trimIndent()))
             assertEquals(listOf("0"), driver.values("SELECT count(*) FROM PendingDeliveryConfirmations"))
             assertEquals(listOf("MessageNotificationIdentity", "Subconversation", "conversation_list_recency"), driver.values("""
                 SELECT name FROM sqlite_master
