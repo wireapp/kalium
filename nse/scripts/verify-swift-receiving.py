@@ -15,6 +15,8 @@ import threading
 from urllib.parse import parse_qs, urlsplit
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from ios_test_support import create_simulator, delete_simulator, trust_local_certificate
+
 REPO = Path(__file__).resolve().parents[2]
 NSE = REPO / "nse"
 FRAMEWORK = NSE / "build/bin/iosSimulatorArm64/debugFramework"
@@ -161,29 +163,11 @@ def main():
                              if item.get("SupportedPlatformVariant") == "simulator" and "arm64" in item["SupportedArchitectures"])
             embedded_frameworks = work / "Frameworks"
             shutil.copytree(avs_root / avs_slice / "avs.framework", embedded_frameworks / "avs.framework")
-            simulator = run("xcrun", "simctl", "create", "Kalium NSE isolated fixture",
-                            "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro",
-                            "com.apple.CoreSimulator.SimRuntime.iOS-26-3").strip()
-            print("Preparing isolated simulator", flush=True)
+            simulator, runtime = create_simulator("Kalium NSE isolated fixture")
+            print(f"Preparing isolated {runtime} simulator", flush=True)
             run("xcrun", "simctl", "boot", simulator)
             run("xcrun", "simctl", "bootstatus", simulator, "-b", timeout=180)
-            config = work / "tls.cnf"
-            config.write_text("""[req]
-distinguished_name=dn
-x509_extensions=ext
-prompt=no
-[dn]
-CN=Kalium NSE local fixture
-[ext]
-subjectAltName=DNS:localhost,IP:127.0.0.1
-basicConstraints=critical,CA:TRUE
-keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign
-extendedKeyUsage=serverAuth
-""")
-            certificate, key = work / "certificate.pem", work / "key.pem"
-            run("openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", str(key),
-                "-out", str(certificate), "-days", "1", "-config", str(config))
-            run("xcrun", "simctl", "keychain", simulator, "add-root-cert", str(certificate))
+            certificate, key = trust_local_certificate(simulator, work)
             if options.x509_events:
                 from x509_fixture_server import X509FixtureServer
                 x509_server = X509FixtureServer(certificate, key)
@@ -731,7 +715,7 @@ extendedKeyUsage=serverAuth
                 "authenticatedConversationMetadata": metadata_requests,
                 "synchronizationAndReadState": options.synchronization,
                 "ordinaryMetadataActionsAndAppExpirationHandoff": options.ordinary_events,
-                "runtime": "iOS-26-3", "temporarySimulator": simulator,
+                "runtime": runtime, "temporarySimulator": simulator,
                 "syncToLiveSocketsAndPages": sync_events,
                 "syncToLiveMostRecentRequests": last_requests,
                 "syncToLiveLocalSocket": socket_bound,
@@ -748,8 +732,7 @@ extendedKeyUsage=serverAuth
             if server_thread is not None:
                 server_thread.join(timeout=5)
             if simulator is not None:
-                run("xcrun", "simctl", "shutdown", simulator, check=False)
-                run("xcrun", "simctl", "delete", simulator)
+                delete_simulator(simulator)
 
 
 if __name__ == "__main__":

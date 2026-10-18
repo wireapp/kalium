@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+import org.jetbrains.kotlin.gradle.plugin.mpp.AbstractExecutable
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
-import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
 import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 
 @Suppress("DSL_SCOPE_VIOLATION")
@@ -56,15 +56,13 @@ kotlin {
     }
 
     iosSimulatorArm64 {
-        binaries.withType<TestExecutable>().configureEach {
-            val entitlements = rootProject.file("core/cryptography/src/iosTest/entitlements.plist")
-            linkerOpts("-framework", "Security", "-sectcreate", "__TEXT", "__entitlements", entitlements.absolutePath)
-            linkTaskProvider.configure { inputs.file(entitlements) }
-        }
         binaries.executable("swiftAppFixture", listOf(NativeBuildType.DEBUG)) {
             compilation = compilations.getByName("test")
             baseName = "swift-app-verifier"
             entryPoint = "com.wire.kalium.logic.runSwiftReceivingAppVerifier"
+        }
+        // Test and fixture executables, not the KaliumLogic framework.
+        binaries.withType<AbstractExecutable>().configureEach {
             val entitlements = rootProject.file("core/cryptography/src/iosTest/entitlements.plist")
             linkerOpts("-framework", "Security", "-sectcreate", "__TEXT", "__entitlements", entitlements.absolutePath)
             linkTaskProvider.configure { inputs.file(entitlements) }
