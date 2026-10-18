@@ -19,10 +19,7 @@ package com.wire.kalium.benchmarks.persistence
 
 import com.wire.kalium.benchmarks.timeline.MessageTimelineScenario
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.PlatformDatabaseData
-import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import com.wire.kalium.persistence.db.userDatabaseBuilder
 import kotlinx.benchmark.Benchmark
 import kotlinx.benchmark.BenchmarkMode
 import kotlinx.benchmark.Blackhole
@@ -35,7 +32,6 @@ import kotlinx.benchmark.Setup
 import kotlinx.benchmark.State
 import kotlinx.benchmark.TearDown
 import kotlinx.benchmark.Warmup
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.nio.file.Files
@@ -65,10 +61,7 @@ class MessageTimelineBenchmark {
     fun setUp() {
         directory = Files.createTempDirectory("message-timeline-benchmark").toFile()
         val self = UserIDEntity("self", "benchmark.wire.com")
-        db = userDatabaseBuilder(
-            PlatformDatabaseData(StorageData.FileBacked(directory.resolve("timeline.db"))),
-            self, passphrase = null, dispatcher = Dispatchers.IO, enableWAL = true
-        )
+        db = database(directory, self)
         val (count, depth) = position.split(':').map(String::toInt)
         scenario = MessageTimelineScenario(db, self, count, depth, pageSize, profile)
         runBlocking { scenario.setUp() }

@@ -18,7 +18,6 @@ dependencies {
     implementation(projects.data.persistence)
     implementation(projects.logic)
     implementation(libs.coroutines.core)
-    implementation(libs.ktxDateTime)
     implementation(libs.kotlinx.benchmark.runtime)
     implementation(libs.paging.common)
 }

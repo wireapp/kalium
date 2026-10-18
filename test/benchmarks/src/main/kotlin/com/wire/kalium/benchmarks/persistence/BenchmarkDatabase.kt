@@ -19,6 +19,7 @@ package com.wire.kalium.benchmarks.persistence
 
 import com.wire.kalium.benchmarks.fixtures.BenchmarkEntities
 import com.wire.kalium.benchmarks.fixtures.MessageFixture
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
@@ -32,9 +33,12 @@ import org.openjdk.jmh.annotations.Setup
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.TearDown
 
-internal fun database(directory: java.io.File): UserDatabaseBuilder = userDatabaseBuilder(
+internal fun database(
+    directory: java.io.File,
+    userId: UserIDEntity = BenchmarkEntities.selfUser.id,
+): UserDatabaseBuilder = userDatabaseBuilder(
     platformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(directory)),
-    userId = BenchmarkEntities.selfUser.id,
+    userId = userId,
     passphrase = null,
     dispatcher = Dispatchers.IO,
     enableWAL = true,

@@ -18,14 +18,10 @@
 
 package com.wire.kalium.benchmarks.android
 
-import android.content.Context
 import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -36,20 +32,14 @@ import org.junit.runner.RunWith
 class ConversationListWriteBenchmark {
     @get:Rule
     val benchmarkRule = BenchmarkRule()
-    private val context: Context = ApplicationProvider.getApplicationContext()
+    @get:Rule
+    val database = BenchmarkDbRule()
+    private val db get() = database.db
     private val fixture = ConversationListFixture()
-    private lateinit var db: UserDatabaseBuilder
 
     @Before
     fun setUp() = runBlocking {
-        BenchmarkDb.delete(context)
-        db = BenchmarkDb.build(context)
-        fixture.seed(db, context)
-    }
-
-    @After
-    fun tearDown() {
-        if (::db.isInitialized) db.nuke()
+        fixture.seed(db, database.context)
     }
 
     @Test

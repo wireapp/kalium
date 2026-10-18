@@ -19,6 +19,7 @@
 package com.wire.kalium.benchmarks.android
 
 import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.benchmarks.fixtures.BenchmarkEntities
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
@@ -28,12 +29,13 @@ import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.Dispatchers
 import net.zetetic.database.sqlcipher.SQLiteDatabase
+import org.junit.rules.ExternalResource
 
 /**
  * Builds a SQLCipher-encrypted user database matching the production Android path
  * (`userDatabaseBuilder` → `SupportOpenHelperFactory` → libsqlcipher).
  *
- * The passphrase mirrors the one used by `BaseDatabaseTest` in `:data:persistence`.
+ * The passphrase is a fixed raw SQLCipher key, the same one `UserDatabaseRawKeyTest` uses.
  */
 internal object BenchmarkDb {
     val selfUserId: UserIDEntity = BenchmarkEntities.selfUser.id
@@ -63,5 +65,19 @@ internal object BenchmarkDb {
 
     fun delete(context: Context) {
         context.deleteDatabase(FileNameUtil.userDBName(selfUserId))
+    }
+}
+
+/** Deletes any previous benchmark database, builds a fresh one on first use and nukes it after the test. */
+class BenchmarkDbRule : ExternalResource() {
+    val context: Context = ApplicationProvider.getApplicationContext()
+    private val lazyDb = lazy {
+        BenchmarkDb.delete(context)
+        BenchmarkDb.build(context)
+    }
+    val db: UserDatabaseBuilder by lazyDb
+
+    override fun after() {
+        if (lazyDb.isInitialized()) db.nuke()
     }
 }

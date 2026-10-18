@@ -1,7 +1,7 @@
 # Message timeline benchmarks
 
 These benchmarks cover the keyset timeline API from
-[ADR 14](../../docs/adr/0014-keyset-pagination-for-message-timelines.md). No results are recorded yet.
+[ADR 14](../../docs/adr/0014-keyset-pagination-for-message-timelines.md).
 
 The shared fixture runs through JVM file-backed SQLite and Android's existing encrypted SQLCipher
 database builder. Each trial seeds its own database, validates the target page, opens a stable
@@ -62,9 +62,16 @@ configuration explicitly:
 ./gradlew :test:benchmarks:mainMessageTimelineBenchmark -PenableMessageTimelineBenchmarks=true
 ```
 
-For a smaller JVM selection, use the generated JMH runner with `-p position=100000:10000`,
-`-p profile=MIXED`, and `-p pageSize=20`. Add `-prof gc` to report allocation per operation.
-Keep the full JMH JSON output and record the JDK, machine, revision, and database settings.
+For a smaller JVM selection, build the JMH jar and pass JMH parameters to it directly:
+
+```shell
+./gradlew :test:benchmarks:mainBenchmarkJar
+java -jar test/benchmarks/build/benchmarks/main/jars/benchmarks-main-jmh-*-JMH.jar MessageTimelineBenchmark \
+  -p position=100000:10000 -p profile=MIXED -p pageSize=20
+```
+
+Add `-prof gc` to report allocation per operation. Keep the full JMH JSON output (`-rf json`) and
+record the JDK, machine, revision, and database settings.
 
 On Android, choose a release device and select this class explicitly. This example selects one case
 for all five measured operations:

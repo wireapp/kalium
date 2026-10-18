@@ -17,13 +17,10 @@
  */
 package com.wire.kalium.benchmarks.android
 
-import android.content.Context
 import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wire.kalium.benchmarks.timeline.MessageTimelineScenario
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assume.assumeTrue
@@ -39,8 +36,9 @@ class MessageTimelineBenchmark(private val position: String, private val profile
     @get:Rule
     val benchmarkRule = BenchmarkRule()
 
-    private val context: Context = ApplicationProvider.getApplicationContext()
-    private lateinit var db: UserDatabaseBuilder
+    @get:Rule
+    val database = BenchmarkDbRule()
+    private val db get() = database.db
     private lateinit var scenario: MessageTimelineScenario
 
     @Volatile
@@ -49,8 +47,6 @@ class MessageTimelineBenchmark(private val position: String, private val profile
     @Before
     fun setUp() {
         assumeTrue(InstrumentationRegistry.getArguments().getString("runMessageTimelineBenchmarks") == "true")
-        BenchmarkDb.delete(context)
-        db = BenchmarkDb.build(context)
         val (count, depth) = position.split(':').map(String::toInt)
         scenario = MessageTimelineScenario(db, BenchmarkDb.selfUserId, count, depth, pageSize, profile)
         runBlocking { scenario.setUp() }
@@ -85,7 +81,6 @@ class MessageTimelineBenchmark(private val position: String, private val profile
     fun tearDown() {
         lastResult = null
         if (::scenario.isInitialized) scenario.close()
-        if (::db.isInitialized) db.nuke()
     }
 
     companion object {

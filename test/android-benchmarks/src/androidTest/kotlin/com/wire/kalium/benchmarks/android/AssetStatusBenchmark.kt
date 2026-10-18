@@ -18,19 +18,15 @@
 
 package com.wire.kalium.benchmarks.android
 
-import android.content.Context
 import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wire.kalium.benchmarks.fixtures.BenchmarkEntities
 import com.wire.kalium.benchmarks.fixtures.MessageFixture
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -40,23 +36,17 @@ import org.junit.runner.RunWith
 class AssetStatusBenchmark {
     @get:Rule
     val benchmarkRule = BenchmarkRule()
-    private val context: Context = ApplicationProvider.getApplicationContext()
+    @get:Rule
+    val database = BenchmarkDbRule()
+    private val db get() = database.db
     private val fixture = MessageFixture()
-    private lateinit var db: UserDatabaseBuilder
 
     @Before
     fun setUp() = runBlocking {
-        BenchmarkDb.delete(context)
-        db = BenchmarkDb.build(context)
         fixture.seed(db)
         BenchmarkEntities.messages(fixture.messageCount)
             .filter { it.content is MessageEntityContent.Asset }
             .forEach { db.messageDAO.updateAssetTransferStatus(AssetTransferStatusEntity.UPLOADED, it.id, it.conversationId) }
-    }
-
-    @After
-    fun tearDown() {
-        if (::db.isInitialized) db.nuke()
     }
 
     @Test

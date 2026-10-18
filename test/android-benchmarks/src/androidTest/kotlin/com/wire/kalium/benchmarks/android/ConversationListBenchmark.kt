@@ -18,11 +18,9 @@
 
 package com.wire.kalium.benchmarks.android
 
-import android.content.Context
 import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
 import androidx.paging.PagingConfig
-import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.benchmarks.fixtures.firstPage
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -30,9 +28,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationListPositionEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationListQueryEntity
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -52,9 +48,10 @@ class ConversationListBenchmark(
 
     @get:Rule
     val benchmarkRule = BenchmarkRule()
-    private val context: Context = ApplicationProvider.getApplicationContext()
+    @get:Rule
+    val database = BenchmarkDbRule()
+    private val db get() = database.db
     private val fixture = ConversationListFixture()
-    private lateinit var db: UserDatabaseBuilder
     private lateinit var expectedIds: List<QualifiedIDEntity>
     private var offset = 0
     private var position: ConversationListPositionEntity? = null
@@ -74,9 +71,7 @@ class ConversationListBenchmark(
 
     @Before
     fun setUp() = runBlocking {
-        BenchmarkDb.delete(context)
-        db = BenchmarkDb.build(context)
-        fixture.seed(db, context)
+        fixture.seed(db, database.context)
         val eligible = fixture.conversations.filter { conversation ->
             conversation.archived == query.fromArchive && when (scenario) {
                 Scenario.GROUPS -> conversation.type == ConversationEntity.Type.GROUP
@@ -96,11 +91,6 @@ class ConversationListBenchmark(
         position = if (offset == 0) null else eligible[offset + PAGE_SIZE / 2].let {
             ConversationListPositionEntity(it.lastModifiedDate, it.id)
         }
-    }
-
-    @After
-    fun tearDown() {
-        if (::db.isInitialized) db.nuke()
     }
 
     @Test

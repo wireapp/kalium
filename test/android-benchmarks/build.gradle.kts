@@ -84,7 +84,6 @@ dependencies {
     androidTestImplementation(libs.paging.common)
     androidTestImplementation(libs.sql.android.cipher)
     androidTestImplementation(libs.sqlite.androidx)
-    androidTestImplementation(libs.ktxDateTime)
 }
 
 // Override the SQLCipher version used transitively by :data:persistence. Useful when comparing
