@@ -18,7 +18,6 @@ import com.wire.kalium.persistence.db.DbInvalidationController
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import com.wire.kalium.persistence.db.UserDatabaseSchema
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -82,7 +81,7 @@ class Migration143Test {
                 driver.execute(null, "PRAGMA user_version = 144", 0)
             }
             // Open the upstream version through the production driver's automatic migration path.
-            JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", properties, UserDatabaseSchema.synchronous()).use { driver ->
+            JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", properties, UserDatabase.Schema.synchronous()).use { driver ->
                 assertEquals(159L, UserDatabase.Schema.version)
                 assertEquals(listOf(listOf("159")), driver.rows("PRAGMA user_version", 1))
                 assertEquals(listOf(listOf("Europe/Berlin"), listOf("Europe/Berlin")), driver.rows("SELECT tzid FROM Meeting", 1))
@@ -119,7 +118,7 @@ class Migration143Test {
                 )
             }
             // Reopening at the final version must not reapply any of the local CREATE operations.
-            JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", properties, UserDatabaseSchema.synchronous()).use { driver ->
+            JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", properties, UserDatabase.Schema.synchronous()).use { driver ->
                 assertEquals(listOf(listOf("1")), driver.rows("SELECT count(*) FROM PendingDeliveryConfirmations", 1))
                 assertEquals(listOf(listOf("6")), driver.rows("SELECT count(*) FROM MeetingOccurrence", 1))
             }

@@ -5,4 +5,4 @@ Fixed link previews without a permanent URL: `MessageDetailsView` returned the l
   - Behavior: user database migration 145 recreates `MessageDetailsView`; messages read after the update carry the preview URL as `permanentUrl` when `permanent_url` is NULL.
   - Migration: runs automatically with the database schema update.
 
-The later poll view retains its columns and the corrected fallback. Databases from pre-release builds, which numbered the migrations now at 146 through 158 from 145, upgrade through a legacy mapping that skips the operations they already completed.
+The later poll view retains its columns and the corrected fallback.

@@ -9,10 +9,7 @@ Meetings require API v17. Enable development APIs to negotiate v17; API v16 no l
   - Migration: pass the device's current IANA zone when creating a meeting. Preserve the stored meeting zone when editing unless the user changes the schedule's zone.
   - Database: user migration 143 is unchanged. Migration 152 clears recurring occurrence caches once so they regenerate using the stored zone, while preserving one-time occurrences. Offline paging and direct next-occurrence lookup regenerate locally, including series with a missing interval. Global migrations are unchanged.
 
-Pre-release user databases at versions 144 through 149 also receive the
-TZID conversion. Migration distinguishes their old trial column from other
-schemas and skips operations those databases already completed under their earlier numbering. App
-opening and backup migration preserve meeting fields, one-time occurrence IDs,
+App opening and backup migration preserve meeting fields, one-time occurrence IDs,
 messages, read receipts, events and delivery confirmations. Explicit backup
 migration commits the schema version with its transaction. NSE opening still
 requires an app-prepared database.

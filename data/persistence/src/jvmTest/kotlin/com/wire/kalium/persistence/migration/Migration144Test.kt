@@ -7,7 +7,6 @@ import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
-import com.wire.kalium.persistence.db.UserDatabaseSchema
 import kotlinx.coroutines.test.runTest
 import org.sqlite.SQLiteConfig
 import java.io.File
@@ -48,7 +47,7 @@ class Migration144Test {
     }
 
     private fun reopenAndVerify(file: File, timestamp: String?) {
-        JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", properties, UserDatabaseSchema.synchronous()).use { driver ->
+        JdbcSqliteDriver("jdbc:sqlite:${file.absolutePath}", properties, UserDatabase.Schema.synchronous()).use { driver ->
             assertEquals(listOf("159"), driver.values("PRAGMA user_version"))
             assertEquals(listOf(timestamp), driver.values("SELECT adminlessGroupDeletionTimestamp FROM ConversationDetails"))
             assertEquals(listOf("existing"), driver.values("SELECT id FROM MessageTimelineKey"))
