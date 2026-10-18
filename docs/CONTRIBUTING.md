@@ -62,7 +62,19 @@ Always pass the native library path when running JVM tests or the CLI:
 # Aggregate unit-test reports
 ./gradlew runAllUnitTests
 ./gradlew aggregateTestResults
+
+# Generate API documentation
+make doc/generate-kdocs
+
+# Generate and check navigation, visibility and resolved API signatures (requires Python 3)
+make doc/test-kdocs
 ```
+
+API documentation uses Dokka 2.2.0 and is written to `build/dokka/html`. Generate it on macOS
+to resolve Apple platform types. This fork does not deploy API documentation from CI.
+Affected common documentation sets in `cryptography`, `logic`, and `cli` use JVM-backed analysis,
+retaining their declarations and display labels without changing SDK source sets or dependencies.
+Persistence's intermediate Apple documentation sets use native target artifacts to resolve the fork's SQLite bindings.
 
 ## Build Configuration
 
