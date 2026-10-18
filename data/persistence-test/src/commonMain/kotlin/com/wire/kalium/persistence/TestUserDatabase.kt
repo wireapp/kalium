@@ -20,7 +20,9 @@ package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.TestScope
 
 class TestUserDatabase(
     val userId: UserIDEntity,
@@ -36,6 +38,17 @@ class TestUserDatabase(
 
     fun delete() {
         deleteTestDatabase(userId)
+    }
+}
+
+/** Runs [block] with a fresh test database for [userId], then closes and deletes it. */
+suspend fun TestScope.withTestUserDatabase(userId: UserIDEntity, block: suspend (TestUserDatabase) -> Unit) {
+    val database = TestUserDatabase(userId, StandardTestDispatcher(testScheduler))
+    try {
+        block(database)
+    } finally {
+        database.builder.close()
+        database.delete()
     }
 }
 

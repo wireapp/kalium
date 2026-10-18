@@ -41,7 +41,6 @@ import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
@@ -49,8 +48,8 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.withTestUserDatabase
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okio.FileSystem
@@ -270,16 +269,11 @@ class ShareFilesTest {
         return ShareUploads(api, auditLog, temporary, fileSystem, newKey = { key })
     }
 
-    private suspend fun TestScope.withDatabase(block: suspend (UserDatabaseBuilder) -> Unit) {
-        val database = TestUserDatabase(QualifiedIDEntity(SELF.value, SELF.domain), StandardTestDispatcher(testScheduler))
-        try {
-            database.builder.userDAO.upsertUsers(listOf(self(team = null)))
-            block(database.builder)
-        } finally {
-            database.builder.close()
-            database.delete()
+    private suspend fun TestScope.withDatabase(block: suspend (UserDatabaseBuilder) -> Unit) =
+        withTestUserDatabase(QualifiedIDEntity(SELF.value, SELF.domain)) {
+            it.builder.userDAO.upsertUsers(listOf(self(team = null)))
+            block(it.builder)
         }
-    }
 
     /** Records what each upload sends; reading the source fully, as the transport does. */
     private class RecordingAssetApi(private val failWith: KaliumException? = null) : AssetApi {

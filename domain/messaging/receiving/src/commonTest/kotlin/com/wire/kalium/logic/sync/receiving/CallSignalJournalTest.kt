@@ -4,6 +4,7 @@ package com.wire.kalium.logic.sync.receiving
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.withTestUserDatabase
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -231,13 +232,7 @@ class CallSignalJournalTest {
     private fun reference(client: String? = "client") = IncomingCallReference(CONVERSATION, SENDER, client, CALL_TIME.epochSeconds)
 
     private suspend fun TestScope.withJournal(block: suspend (CallSignalJournal, TestUserDatabase) -> Unit) {
-        val database = TestUserDatabase(UserIDEntity("call-identity", "example.com"), StandardTestDispatcher(testScheduler))
-        try {
-            block(CallSignalJournal(database.builder), database)
-        } finally {
-            database.builder.close()
-            database.delete()
-        }
+        withTestUserDatabase(UserIDEntity("call-identity", "example.com")) { block(CallSignalJournal(it.builder), it) }
     }
 
     private companion object {

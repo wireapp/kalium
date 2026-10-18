@@ -1,20 +1,6 @@
 /* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.logic.sync.receiving
 
-import com.wire.kalium.cryptography.ApplicationMessage
-import com.wire.kalium.cryptography.CryptoCredentialRef
-import com.wire.kalium.cryptography.CryptoQualifiedClientId
-import com.wire.kalium.cryptography.CryptoQualifiedID
-import com.wire.kalium.cryptography.E2EIConversationState
-import com.wire.kalium.cryptography.ExternalSenderKey
-import com.wire.kalium.cryptography.MLSCiphersuite
-import com.wire.kalium.cryptography.MLSDecryptResult
-import com.wire.kalium.cryptography.MLSGroupId
-import com.wire.kalium.cryptography.MLSKeyPackage
-import com.wire.kalium.cryptography.MlsCoreCryptoContext
-import com.wire.kalium.cryptography.PlainMessage
-import com.wire.kalium.cryptography.WelcomeMessage
-import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -24,6 +10,7 @@ import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.event.NewEventEntity
+import com.wire.kalium.persistence.withTestUserDatabase
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,7 +18,6 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Instant
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okio.ByteString.Companion.encodeUtf8
@@ -247,13 +233,12 @@ class MLSReceiveReplayReceiptTest {
     }
 
     private suspend fun TestScope.withFixture(block: suspend (Fixture) -> Unit) {
-        val database = TestUserDatabase(UserIDEntity("receipt-test", "example.com"), StandardTestDispatcher(testScheduler))
-        try { block(Fixture(database)) } finally { database.builder.close(); database.delete() }
+        withTestUserDatabase(UserIDEntity("receipt-test", "example.com")) { block(Fixture(it)) }
     }
 
     private class Fixture(val database: TestUserDatabase) {
         val metadata = CountingMetadata(database.builder.metadataDAO)
-        val native = FakeNative()
+        val native = FakeMlsContext()
         var store = MLSReceiveRecoveryStore(metadata, database.builder.notificationEventStore, "client")
         fun reopen() { store = MLSReceiveRecoveryStore(metadata, database.builder.notificationEventStore, "client") }
         suspend fun complete(event: Event.Conversation.NewMLSMessage = EVENT) {
@@ -280,51 +265,6 @@ class MLSReceiveReplayReceiptTest {
             check(writes != failWrite) { "Receipt write failed" }
             delegate.insertValue(value, key)
         }
-    }
-
-    private class FakeNative : MlsCoreCryptoContext {
-        var exists = true
-        var epoch = 2uL
-        var reads = 0
-        var checkpoint: ByteArray? = null
-        var checkpointWrites = 0
-        override suspend fun joinByExternalCommit(publicGroupState: ByteArray): MLSGroupId = error("Use the explicit join callback")
-        override suspend fun conversationEpoch(groupId: MLSGroupId): ULong {
-            reads++
-            assertEquals(GROUP_ID, groupId)
-            return epoch
-        }
-        override suspend fun readTransactionCheckpoint(): ByteArray? { reads++; return checkpoint }
-        override suspend fun writeTransactionCheckpoint(checkpoint: ByteArray) {
-            checkpointWrites++
-            this.checkpoint = checkpoint
-        }
-        override fun getDefaultCipherSuite(): MLSCiphersuite = error("Unexpected native call")
-        override suspend fun generateKeyPackages(amount: Int, credentialRef: CryptoCredentialRef?): List<ByteArray> = error("Unexpected native call")
-        override suspend fun validKeyPackageCount(): ULong = error("Unexpected native call")
-        override suspend fun updateKeyingMaterial(groupId: MLSGroupId) = error("Unexpected native call")
-        override suspend fun conversationExists(groupId: MLSGroupId): Boolean { reads++; return exists }
-        override suspend fun createConversation(groupId: MLSGroupId, externalSenders: ByteArray) = error("Unexpected native call")
-        override suspend fun getExternalSenders(groupId: MLSGroupId): ExternalSenderKey = error("Unexpected native call")
-        override suspend fun wipeConversation(groupId: MLSGroupId) = error("Unexpected native call")
-        override suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId = error("Unexpected native call")
-        override suspend fun commitPendingProposals(groupId: MLSGroupId) = error("Unexpected native call")
-        override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage = error("Unexpected native call")
-        override suspend fun decryptMessage(groupId: String, message: ByteArray): MLSDecryptResult = error("Unexpected native call")
-        override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> = error("Unexpected native call")
-        override suspend fun addMember(groupId: MLSGroupId, membersKeyPackages: List<MLSKeyPackage>) = error("Unexpected native call")
-        override suspend fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>) = error("Unexpected native call")
-        override suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray = error("Unexpected native call")
-        override suspend fun setConversationCredential(groupId: MLSGroupId, credentialRef: CryptoCredentialRef) = error("Unexpected native call")
-        override suspend fun getConversationCredentialRef(groupId: MLSGroupId): CryptoCredentialRef = error("Unexpected native call")
-        override suspend fun removeKeyPackages(credentialRef: CryptoCredentialRef) = error("Unexpected native call")
-        override suspend fun removeCredential(credentialRef: CryptoCredentialRef) = error("Unexpected native call")
-        override suspend fun checkCredentials() = error("Unexpected native call")
-        override suspend fun isE2EIEnabled(): Boolean = error("Unexpected native call")
-        override suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState = error("Unexpected native call")
-        override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<CryptoQualifiedClientId>): List<WireIdentity> = error("Unexpected native call")
-        override suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>> = error("Unexpected native call")
-        override suspend fun removeStaleKeyPackages() = error("Unexpected native call")
     }
 
     private companion object {

@@ -26,12 +26,11 @@ import com.wire.kalium.network.api.base.authenticated.notification.NotificationA
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.withTestUserDatabase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 
 /** Legacy notification stream: [websocket] events, then REST pages by exclusive cursor. */
@@ -107,12 +106,5 @@ internal class FakeNotificationApi(
 
 internal suspend fun UserDatabaseBuilder.eventIds() = eventDAO.observeEvents(0).first().map { it.eventId }
 
-internal suspend fun TestScope.withDatabase(block: suspend (UserDatabaseBuilder) -> Unit) {
-    val database = TestUserDatabase(UserIDEntity("event-ingestion", "example.com"), StandardTestDispatcher(testScheduler))
-    try {
-        block(database.builder)
-    } finally {
-        database.builder.close()
-        database.delete()
-    }
-}
+internal suspend fun TestScope.withDatabase(block: suspend (UserDatabaseBuilder) -> Unit) =
+    withTestUserDatabase(UserIDEntity("event-ingestion", "example.com")) { block(it.builder) }

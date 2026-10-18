@@ -37,7 +37,6 @@ import com.wire.kalium.network.api.model.PushTokenBody
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.model.UserId as NetworkUserId
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
@@ -52,7 +51,7 @@ import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import kotlinx.coroutines.test.StandardTestDispatcher
+import com.wire.kalium.persistence.withTestUserDatabase
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -122,9 +121,8 @@ class StoredSendingPortsTest {
         }
     }
 
-    private suspend fun TestScope.withDatabase(block: suspend (UserDatabaseBuilder) -> Unit) {
-        val database = TestUserDatabase(SELF.toEntity(), StandardTestDispatcher(testScheduler))
-        try {
+    private suspend fun TestScope.withDatabase(block: suspend (UserDatabaseBuilder) -> Unit) =
+        withTestUserDatabase(SELF.toEntity()) { database ->
             with(database.builder) {
                 userDAO.upsertUsers(listOf(user(SELF), user(OTHER)))
                 conversationDAO.insertConversation(conversation())
@@ -134,11 +132,7 @@ class StoredSendingPortsTest {
                 )
             }
             block(database.builder)
-        } finally {
-            database.builder.close()
-            database.delete()
         }
-    }
 
     private class FakeClientApi(private val clients: Map<NetworkUserId, List<SimpleClientResponse>>) : ClientApi {
         val requested = mutableListOf<UserId>()

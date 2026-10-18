@@ -19,7 +19,6 @@
 package com.wire.kalium.share
 
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
@@ -29,7 +28,7 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import kotlinx.coroutines.test.StandardTestDispatcher
+import com.wire.kalium.persistence.withTestUserDatabase
 import kotlinx.coroutines.test.TestScope
 import kotlin.time.Instant
 
@@ -112,12 +111,5 @@ internal suspend fun conversation(
     )
 }
 
-internal suspend fun TestScope.withDatabase(block: suspend (UserDatabaseBuilder) -> Unit) {
-    val database = TestUserDatabase(SELF.toEntity(), StandardTestDispatcher(testScheduler))
-    try {
-        block(database.builder)
-    } finally {
-        database.builder.close()
-        database.delete()
-    }
-}
+internal suspend fun TestScope.withDatabase(block: suspend (UserDatabaseBuilder) -> Unit) =
+    withTestUserDatabase(SELF.toEntity()) { block(it.builder) }
