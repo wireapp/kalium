@@ -182,11 +182,10 @@ internal class CallDataSource(
     private val federatedIdMapper: FederatedIdMapper,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     initialCallMetadataProfile: CallMetadataProfile = CallMetadataProfile(), // For testing purposes
-    initialCallQualityDataProfile: CallQualityDataProfile = CallQualityDataProfile(), // For testing purposes
 ) : CallRepository {
 
     private var _callMetadataProfile: MutableStateFlow<CallMetadataProfile> = MutableStateFlow(initialCallMetadataProfile)
-    private var _callQualityDataProfile: MutableStateFlow<CallQualityDataProfile> = MutableStateFlow(initialCallQualityDataProfile)
+    private var _callQualityDataProfile: MutableStateFlow<CallQualityDataProfile> = MutableStateFlow(CallQualityDataProfile())
 
     private val job = SupervisorJob() // TODO(calling): clear job method
     private val scope = CoroutineScope(job + kaliumDispatchers.io)

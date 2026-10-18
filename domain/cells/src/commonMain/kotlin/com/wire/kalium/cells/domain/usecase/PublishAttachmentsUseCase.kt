@@ -26,8 +26,8 @@ import com.wire.kalium.logic.data.message.MessageAttachment
 
 public interface PublishAttachmentsUseCase {
     /**
-     * For TESTING purposes only.
-     * Use case for publishing all draft attachments and creating public URLs.
+     * Publishes the draft versions of the Cells assets in [attachments]; other attachments are ignored.
+     * Returns the first failure if any publish fails.
      */
     public suspend operator fun invoke(attachments: List<MessageAttachment>): Either<NetworkFailure, Unit>
 }

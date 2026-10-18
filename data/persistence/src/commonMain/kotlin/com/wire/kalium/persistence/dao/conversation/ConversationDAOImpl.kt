@@ -41,7 +41,6 @@ import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DebugKaliumApi
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -388,26 +387,6 @@ internal class ConversationDAOImpl internal constructor(
                 mapper = conversationMapper::fromViewToModel,
             )
             .asFlow()
-            .mapToList()
-            .flowOn(readDispatcher.value)
-    }
-
-    @DebugKaliumApi("Legacy conversation-list query retained for tests and performance benchmarks.")
-    override fun getAllConversationDetailsWithEvents(
-        fromArchive: Boolean,
-        onlyInteractionEnabled: Boolean,
-        newActivitiesOnTop: Boolean,
-        ongoingCallConversationIds: List<QualifiedIDEntity>,
-        strictMLSFilter: Boolean,
-    ): Flow<List<ConversationDetailsWithEventsEntity>> {
-        return conversationDetailsWithEventsQueries.selectAllConversationDetailsWithEvents(
-            fromArchive = fromArchive,
-            onlyInteractionsEnabled = onlyInteractionEnabled,
-            newActivitiesOnTop = newActivitiesOnTop,
-            ongoingCallConversationIds = ongoingCallConversationIds,
-            strict_mls = if (strictMLSFilter) 1 else 0,
-            mapper = conversationDetailsWithEventsMapper::fromViewToModel
-        ).asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
     }

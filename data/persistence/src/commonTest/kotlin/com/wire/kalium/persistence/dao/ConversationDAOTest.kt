@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao
 
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.asset.AssetDAO
@@ -27,7 +29,9 @@ import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
@@ -50,7 +54,6 @@ import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -62,13 +65,13 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(DebugKaliumApi::class)
 @Suppress("LargeClass")
 class ConversationDAOTest : BaseDatabaseTest() {
 
@@ -1309,7 +1312,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(conversationId, result.id)
             assertEquals(ConversationEntity.Type.CONNECTION_PENDING, result.type)
         }
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+        conversationListWithEvents(fromArchive).let {
             assertEquals(1, it.size)
             val result = it.first()
 
@@ -1340,7 +1343,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first().let {
             assertEquals(1, it.size)
         }
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+        conversationListWithEvents(fromArchive).let {
             assertEquals(1, it.size)
         }
     }
@@ -1361,7 +1364,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
         }
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+        conversationListWithEvents(fromArchive).let {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().conversationViewEntity.id)
         }
@@ -1383,7 +1386,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first().let {
             assertEquals(2, it.size)
         }
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+        conversationListWithEvents(fromArchive).let {
             assertEquals(2, it.size)
         }
     }
@@ -1404,7 +1407,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first().let {
             assertEquals(2, it.size)
         }
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+        conversationListWithEvents(fromArchive).let {
             assertEquals(2, it.size)
         }
     }
@@ -1419,7 +1422,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // when
         val result = conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first()
-        val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
+        val resultWithEvents = conversationListWithEvents(fromArchive)
 
         // then
         val expected = conversation.toViewEntity(user1).copy(accentId = 0)
@@ -1450,7 +1453,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // when
         val result = conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first()
-        val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
+        val resultWithEvents = conversationListWithEvents(fromArchive)
 
         // then
         assertEquals(null, result.firstOrNull { it.id == conversation.id })
@@ -1483,7 +1486,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // when
         val result = conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first()
-        val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
+        val resultWithEvents = conversationListWithEvents(fromArchive)
 
         // then
         assertEquals(conversation2.id, result[0].id)
@@ -1520,7 +1523,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // when
         val result = conversationDAO.getAllConversationDetails(fromArchive, ConversationFilterEntity.ALL).first()
-        val resultWithEvents = conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first()
+        val resultWithEvents = conversationListWithEvents(fromArchive)
 
         // then
         assertTrue(result.size == 1)
@@ -1602,7 +1605,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
         }
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive = false).first().let {
+        conversationListWithEvents(fromArchive = false).let {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().conversationViewEntity.id)
         }
@@ -1629,7 +1632,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val draftMessageEntity = newDraftMessageEntity(conversationId = conversationEntity.id)
         messageDraftDAO.upsertMessageDraft(draftMessageEntity)
 
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive = false).first().let {
+        conversationListWithEvents(fromArchive = false).let {
             assertEquals(conversationEntity.id, it.first().conversationViewEntity.id)
             assertEquals(1, it.first().unreadEvents.unreadEvents[UnreadEventTypeEntity.MESSAGE])
             assertEquals(draftMessageEntity.text, it.first().messageDraft?.text)
@@ -1647,7 +1650,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity.id)
         memberDAO.insertMember(member2, conversationEntity.id)
 
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive = false).first().let {
+        conversationListWithEvents(fromArchive = false).let {
             assertEquals(conversationEntity.id, it.first().conversationViewEntity.id)
             assertEquals(0, it.first().unreadEvents.unreadEvents.size)
             assertEquals(null, it.first().messageDraft)
@@ -1679,7 +1682,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val draftMessageEntity = newDraftMessageEntity(conversationId = conversationEntity.id)
         messageDraftDAO.upsertMessageDraft(draftMessageEntity)
 
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive = true).first().let {
+        conversationListWithEvents(fromArchive = true).let {
             assertEquals(conversationEntity.id, it.first().conversationViewEntity.id)
             assertEquals(1, it.first().unreadEvents.unreadEvents[UnreadEventTypeEntity.MESSAGE])
             assertEquals(null, it.first().messageDraft) // do not return draft for archived conversation
@@ -1706,10 +1709,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationDAO.insertConversation(conversationEntity2)
             userDAO.upsertUser(user1)
 
-            conversationDAO.getAllConversationDetailsWithEvents(
+            conversationListWithEvents(
                 newActivitiesOnTop = true,
                 ongoingCallConversationIds = listOf(conversationEntity2.id)
-            ).first().let {
+            ).let {
                 assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with ongoing call
                 assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
             }
@@ -1736,10 +1739,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             olderConversationWithCall.id
         )
 
-        conversationDAO.getAllConversationDetailsWithEvents(
+        conversationListWithEvents(
             newActivitiesOnTop = true,
             ongoingCallConversationIds = listOf(olderConversationWithCall.id)
-        ).first().let {
+        ).let {
             assertEquals(olderConversationWithCall.id, it[0].conversationViewEntity.id)
             assertEquals(newerConversation.id, it[1].conversationViewEntity.id)
         }
@@ -1769,7 +1772,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             date = Instant.fromEpochMilliseconds(1) // message received after last read date so it should be unread
         )
         messageDAO.insertOrIgnoreMessage(messageEntity)
-        conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = true).first().let {
+        conversationListWithEvents(newActivitiesOnTop = true).let {
             assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with unread event
             assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
         }
@@ -1809,7 +1812,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             )
             messageDAO.insertOrIgnoreMessage(messageEntity1)
             messageDAO.insertOrIgnoreMessage(messageEntity2)
-            conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = true).first().let {
+            conversationListWithEvents(newActivitiesOnTop = true).let {
                 assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with not muted new message
                 assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
             }
@@ -1839,7 +1842,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             date = Instant.fromEpochMilliseconds(1) // message received after last read date so it should be unread
         )
         messageDAO.insertOrIgnoreMessage(messageEntity)
-        conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = false).first().let {
+        conversationListWithEvents(newActivitiesOnTop = false).let {
             assertEquals(conversationEntity1.id, it[0].conversationViewEntity.id) // first is the more recent one even if it's already read
             assertEquals(conversationEntity2.id, it[1].conversationViewEntity.id) // second is the other one even if it has unread events
         }
@@ -1871,7 +1874,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2)
         connectionDAO.insertConnection(connectionEntity)
         userDAO.upsertUser(userEntity)
-        conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = true).first().let {
+        conversationListWithEvents(newActivitiesOnTop = true).let {
             assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with received connection request
             assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
         }
@@ -1897,7 +1900,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         connectionDAO.insertConnection(connectionEntity)
         userDAO.upsertUser(userEntity)
-        conversationDAO.getAllConversationDetailsWithEvents(onlyInteractionEnabled = true).first().let {
+        conversationListWithEvents(onlyInteractionEnabled = true).let {
             assertEquals(0, it.size)
         }
     }
@@ -1913,7 +1916,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2)
         userDAO.upsertUser(user1)
         memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), conversationEntity1.id)
-        conversationDAO.getAllConversationDetailsWithEvents(onlyInteractionEnabled = true).first().let {
+        conversationListWithEvents(onlyInteractionEnabled = true).let {
             assertEquals(1, it.size) // self user is a member of only conversation1
             assertEquals(conversationEntity1.id, it.first().conversationViewEntity.id)
         }
@@ -1931,7 +1934,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO.upsertUser(user1.copy(deleted = true))
         memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), conversationEntity1.id)
         memberDAO.insertMember(MemberEntity(user1.id, MemberEntity.Role.Member), conversationEntity1.id)
-        conversationDAO.getAllConversationDetailsWithEvents(onlyInteractionEnabled = true).first().let {
+        conversationListWithEvents(onlyInteractionEnabled = true).let {
             assertEquals(0, it.size)
         }
     }
@@ -2898,7 +2901,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(connectionPendingConversation)
         connectionDAO.insertConnection(connectionEntity)
 
-        conversationDAO.getAllConversationDetailsWithEvents(fromArchive).first().let {
+        conversationListWithEvents(fromArchive).let {
             assertEquals(1, it.size)
             assertEquals(connectionPendingConversation.id, it.first().conversationViewEntity.id)
             assertEquals(ConversationEntity.Type.CONNECTION_PENDING, it.first().conversationViewEntity.type)
@@ -2923,10 +2926,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(mlsConversation)
         memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), mlsConversation.id)
 
-        conversationDAO.getAllConversationDetailsWithEvents(
+        conversationListWithEvents(
             fromArchive = fromArchive,
             strictMLSFilter = true
-        ).first().let {
+        ).let {
             assertEquals(1, it.size)
             assertEquals(mlsConversation.id, it.first().conversationViewEntity.id)
             assertEquals(ConversationEntity.Type.GROUP, it.first().conversationViewEntity.type)
@@ -2952,10 +2955,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(mlsConversation)
         memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), mlsConversation.id)
 
-        conversationDAO.getAllConversationDetailsWithEvents(
+        conversationListWithEvents(
             fromArchive = fromArchive,
             strictMLSFilter = true
-        ).first().let {
+        ).let {
             assertEquals(0, it.size)
         }
     }
@@ -2977,16 +2980,38 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(mlsConversation)
         memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), mlsConversation.id)
 
-        conversationDAO.getAllConversationDetailsWithEvents(
+        conversationListWithEvents(
             fromArchive = fromArchive,
             strictMLSFilter = false
-        ).first().let {
+        ).let {
             assertEquals(1, it.size)
             assertEquals(mlsConversation.id, it.first().conversationViewEntity.id)
             assertEquals(ConversationEntity.Type.GROUP, it.first().conversationViewEntity.type)
             val protocolInfo = it.first().conversationViewEntity.protocolInfo as ConversationEntity.ProtocolInfo.MLS
             assertEquals(ConversationEntity.GroupState.PENDING_JOIN, protocolInfo.groupState)
         }
+    }
+
+    /** Reads the first page of the conversation list through the paged query the app uses. */
+    private suspend fun conversationListWithEvents(
+        fromArchive: Boolean = false,
+        onlyInteractionEnabled: Boolean = false,
+        newActivitiesOnTop: Boolean = false,
+        ongoingCallConversationIds: List<QualifiedIDEntity> = emptyList(),
+        strictMLSFilter: Boolean = true,
+    ): List<ConversationDetailsWithEventsEntity> {
+        val pagingSource = conversationDAO.platformExtensions.getPagerForConversationDetailsWithEventsSearch(
+            queryConfig = ConversationExtensions.QueryConfig(
+                fromArchive = fromArchive,
+                onlyInteractionEnabled = onlyInteractionEnabled,
+                newActivitiesOnTop = newActivitiesOnTop,
+                ongoingCallConversationIds = ongoingCallConversationIds,
+                strictMlsFilter = strictMLSFilter,
+            ),
+            pagingConfig = PagingConfig(CONVERSATION_LIST_PAGE_SIZE),
+        ).pagingSource
+        val page = pagingSource.load(PagingSource.LoadParams.Refresh(null, CONVERSATION_LIST_PAGE_SIZE, false))
+        return assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(page).data
     }
 
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
@@ -3483,6 +3508,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     private companion object {
         const val teamId = "teamId"
+        const val CONVERSATION_LIST_PAGE_SIZE = 100
         val messageTimer = 5000L
 
         val mlsProtocolInfo1 = ConversationEntity.ProtocolInfo.MLS(

@@ -22,7 +22,6 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Instant
 import kotlin.time.Duration
@@ -90,15 +89,6 @@ interface ConversationDAO {
         filter: ConversationFilterEntity,
         strictMLSFilter: Boolean = true,
     ): Flow<List<ConversationViewEntity>>
-
-    @DebugKaliumApi("Legacy conversation-list query retained for tests and performance benchmarks.")
-    fun getAllConversationDetailsWithEvents(
-        fromArchive: Boolean = false,
-        onlyInteractionEnabled: Boolean = false,
-        newActivitiesOnTop: Boolean = false,
-        ongoingCallConversationIds: List<QualifiedIDEntity> = emptyList(),
-        strictMLSFilter: Boolean = true
-    ): Flow<List<ConversationDetailsWithEventsEntity>>
 
     suspend fun getConversationIds(
         type: ConversationEntity.Type,
