@@ -97,7 +97,7 @@ class NotificationProcessor(
     private val evaluateCalls: suspend (List<ReceivedCallEvent>) -> List<ReceivedCallResult>,
     private val diagnostics: ReceivingDiagnostics? = null,
     private val recovery: MLSReceiveRecovery? = null,
-    // Opted in only by the Apple NSE factory. Existing consumers retain prefix processing.
+    // The Apple NSE factory passes true. Prefix processing (false) remains only for the test-only [process] path.
     private val isolateConversations: Boolean = false,
     private val nowEpochMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) {

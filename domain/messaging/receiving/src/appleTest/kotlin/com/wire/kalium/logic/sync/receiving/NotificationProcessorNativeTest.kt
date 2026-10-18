@@ -4615,11 +4615,9 @@ class NotificationProcessorNativeTest {
     @Test
     fun recoveryEffectsReplayStillDecryptsProteusAfterOuterRollback() = recoveryBatchReplay(true, proteusRollback = true)
 
-    fun exportRecoveryTakeover() = recoveryBatchReplay(true, proteusRollback = true, exportTakeover = true)
-
-    private fun recoveryBatchReplay(historicalLeave: Boolean, proteusRollback: Boolean = false, exportTakeover: Boolean = false) = runTest {
+    private fun recoveryBatchReplay(historicalLeave: Boolean, proteusRollback: Boolean = false) = runTest {
         withContext(Dispatchers.Default) {
-            withFixture(true, deleteStorage = !exportTakeover) { fixture ->
+            withFixture(true) { fixture ->
                 val firstCommit = fixture.commit()
                 val secondCommit = fixture.commit()
                 val trigger = fixture.encrypt("trigger")
@@ -4690,21 +4688,6 @@ class NotificationProcessorNativeTest {
                     assertEquals(4uL, checkNotNull(fixture.openMLS(runtime)).transaction { it.conversationEpoch(GROUP_ID) })
                     if (!proteusRollback) fixture.sql("DROP TRIGGER interrupt_receive")
                 })
-                if (exportTakeover) {
-                    val following = fixture.event("following", fixture.encrypt("following"))
-                    assertIs<Either.Right<*>>(fixture.open { runtime ->
-                        runtime.database.eventDAO.insertEvents(listOf(NewEventEntity(following.id, following.payload, false, false)))
-                    })
-                    val manifest = JsonObject(fixture.manifest(notification, byteArrayOf(), byteArrayOf(),
-                        listOf("prefix", "proteus-prefix", "following")) + mapOf(
-                        "recoveryTakeover" to JsonPrimitive(true),
-                        "recoveryWarningId" to JsonPrimitive("mls-recovery:${operation.id}"),
-                    ))
-                    val path = "${NSTemporaryDirectory()}kalium-nse-recovery-takeover.json"
-                    FileSystem.SYSTEM.write(path.toPath()) { writeUtf8(JsonArray(listOf(manifest)).toString()) }
-                    println("NSE_RECOVERY_TAKEOVER_MANIFEST=$path")
-                    return@withFixture
-                }
                 assertIs<Either.Right<*>>(fixture.receive(
                     emptyList(), notification.id, decorateProteusContext = observeProteus,
                     recoveryFactory = recoveryFactory, mlsTransport = transporter))
@@ -13574,7 +13557,6 @@ fun runSwiftReceivingFixture(args: Array<String>) {
         "export-ordinary" -> fixture.exportPreparedAccountsForSwift(ordinary = true)
         "export-membership" -> fixture.exportPreparedAccountsForSwift(membership = true)
         "export-creation" -> fixture.exportPreparedAccountsForSwift(creation = true)
-        "export-recovery-takeover" -> fixture.exportRecoveryTakeover()
         "export-recovery" -> fixture.exportPreparedAccountsForSwift(recovery = true)
         "export-reset" -> fixture.exportPreparedAccountsForSwift(reset = true)
         "export-content" -> fixture.exportPreparedAccountsForSwift(content = true)

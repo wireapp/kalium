@@ -42,9 +42,12 @@ decryption of a newly encrypted follow-up message. Closing verifies that native
 file handles and account ownership are released.
 
 The app uses its existing debug event-ingestion entry point, which invokes the
-real EventProcessor and crypto transaction provider. The NSE process uses its
-real NotificationProcessor with a fixture NotificationApi. This deliberately
-bypasses backend push suppression when WebSocket is connected. It does **not**
+real EventProcessor and crypto transaction provider. The NSE process runs
+NotificationProcessor's test-only target path: it pages the batch from a fixture
+NotificationApi over REST and stops at the target, without isolating conversations.
+The NSE itself catches up over the WebSocket and then scans the stored queue to its
+end with `processToLive`. This deliberately bypasses backend push suppression when
+WebSocket is connected. It does **not**
 validate an actual WebSocket connection, APNs, extension launch/expiry, signed
 App Group entitlements, force-kill recovery, or the WebSocket acknowledgement
 protocol. Injected transaction failures unwind normally; they are not process
