@@ -13,7 +13,9 @@ python3 nse/scripts/stress-mls-receiving.py --simulator SIMULATOR_UUID
 Both fixture binaries are built first. `--skip-build` is for binaries already
 rebuilt from the current sources. Defaults: three repetitions of eight cases,
 200 messages per case, a real MLS epoch update before every ten messages.
-`--messages`, `--rounds`, and `--report` control load and output. Assertions remain
+`--messages`, `--rounds`, and `--report` control load and output. `--case` runs only
+the cases with one ownership/checkpoint order: `before-commit`, `after-commit`,
+`app-first`, `nse-first` or `app-resume`. Assertions remain
 enabled. Per-process logs and a machine-readable report are retained; a partial
 run reports fewer completed than expected cases and exits unsuccessfully.
 

@@ -7,11 +7,11 @@ Meetings require API v17. Enable development APIs to negotiate v17; API v16 no l
   - ABI: meeting model constructors and copy signatures change. Occurrence generation `Count` adds optional `from` and `includeOngoing` arguments. Recompile Kotlin/JVM consumers and rebuild Apple frameworks.
   - Source: supply `tzid` to `Meeting`, `UpsertMeeting`, and `UpsertMeetingRequest`; replace DTO/entity `trial` access with `tzid`. Existing `Meeting` and `UpsertMeeting` component positions remain unchanged.
   - Migration: pass the device's current IANA zone when creating a meeting. Preserve the stored meeting zone when editing unless the user changes the schedule's zone.
-  - Database: upstream user migration 143 stays at 143. The local conversation-list index, message timeline, pending-delivery queue, and receipt compatibility migrations move from 143 through 148 to 146 through 151 in their existing order. Local migration 152 clears recurring occurrence caches once so they regenerate using the stored zone, while preserving one-time occurrences. Offline paging and direct next-occurrence lookup regenerate locally, including series with a missing interval. Global migrations are unchanged.
+  - Database: user migration 143 is unchanged. Migration 152 clears recurring occurrence caches once so they regenerate using the stored zone, while preserving one-time occurrences. Offline paging and direct next-occurrence lookup regenerate locally, including series with a missing interval. Global migrations are unchanged.
 
-Existing Super Kalium user databases at versions 144 through 149 also receive the
-TZID conversion. Migration distinguishes their old trial column from upstream
-schemas and skips local operations already completed before renumbering. App
+Pre-release user databases at versions 144 through 149 also receive the
+TZID conversion. Migration distinguishes their old trial column from other
+schemas and skips operations those databases already completed under their earlier numbering. App
 opening and backup migration preserve meeting fields, one-time occurrence IDs,
 messages, read receipts, events and delivery confirmations. Explicit backup
 migration commits the schema version with its transaction. NSE opening still

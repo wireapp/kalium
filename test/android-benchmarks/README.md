@@ -1,8 +1,8 @@
 # Android persistence benchmarks
 
 These benchmarks use the production SQLCipher database builder and AndroidX Benchmark on a physical
-Android device. The refactored suite has not been run. Use consistent device and build conditions
-when comparing results. JVM timings from [the other runner](../benchmarks/README.md) are a separate baseline.
+Android device. Use consistent device and build conditions when comparing results. JVM timings
+from [the other runner](../benchmarks/README.md) are a separate baseline.
 
 | Benchmark | Measured operation |
 | --- | --- |
@@ -13,6 +13,7 @@ when comparing results. JVM timings from [the other runner](../benchmarks/README
 | `ConcurrentMessageBenchmark` | Insert 5,000 messages individually while another coroutine repeatedly reads 50 rows |
 | `ConversationListBenchmark` | Compare legacy and V2 initial/restore loads of 20 rows |
 | `ConversationListWriteBenchmark` | Insert one message and update conversation recency, with an optional index |
+| `MessageTimelineBenchmark` | Compare offset and keyset message timeline loads; opt-in, see [message timeline benchmarks](../benchmarks/message-timeline.md) |
 
 Message benchmarks share a fixed dataset with the JVM runner. Each write benchmark removes its
 inserted messages and restores conversation dates outside measurement. Databases are closed and
@@ -67,9 +68,9 @@ version when testing an upgrade.
 
 Save AndroidX JSON from this module's `build/outputs`, the commit, device information, and fixture
 metadata from logcat in a separate directory for each run. Keep index modes and datasets separate.
-Compare repeated runs against [ADR 0011](../../docs/adr/0011-keyset-paginated-conversation-list.md),
+Compare repeated runs against [ADR 15](../../docs/adr/0015-keyset-paginated-conversation-list.md),
 reporting search separately. Alternate comparison order when confirming a result.
 
 AndroidX timing samples can average multiple iterations. A p95 calculated from `metrics.timeNs.runs`
 is a percentile of those samples, not individual message-write latencies. Keep the raw samples and
-record the calculation. Start new baselines for the rewritten message benchmarks.
+record the calculation.

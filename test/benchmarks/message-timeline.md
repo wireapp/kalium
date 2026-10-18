@@ -1,7 +1,7 @@
 # Message timeline benchmarks
 
-These benchmarks cover the API introduced by [ADR 11](../../docs/adr/0011-keyset-pagination-for-message-timelines.md).
-They have been added for a later measurement run. No results or speedup claims accompany this change.
+These benchmarks cover the keyset timeline API from
+[ADR 14](../../docs/adr/0014-keyset-pagination-for-message-timelines.md). No results are recorded yet.
 
 The shared fixture runs through JVM file-backed SQLite and Android's existing encrypted SQLCipher
 database builder. Each trial seeds its own database, validates the target page, opens a stable
@@ -51,10 +51,9 @@ The full matrix is large; start with one profile and position on the intended de
 
 The default JVM benchmark configuration excludes this suite. Its dedicated configuration requires
 `-PenableMessageTimelineBenchmarks=true`. Android cases require the `runMessageTimelineBenchmarks`
-instrumentation argument before seeding or measuring anything. Existing benchmark runs keep their
-current selection.
+instrumentation argument before seeding or measuring anything.
 
-## Later measurement runs
+## Run
 
 JVM sample-time measurements report latency distributions, including p50 and p95. Run the dedicated
 configuration explicitly:
@@ -82,5 +81,5 @@ for all five measured operations:
 Keep the Android benchmark JSON and record device, OS, SQLCipher version, revision, and thermal state.
 The fixture runs warm reads after setup validation. Cold starts, retained heap, index/write cost,
 an isolated keyset/full-view control, the iOS production driver, and client scrolling/frame timing
-remain separate measurements in the ADR rollout plan. Database correctness tests already assert
+remain separate measurements listed in the ADR's rollout gates. Database correctness tests already assert
 the indexed cursor plan and batched child queries; these measurements do not replace them.

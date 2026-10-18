@@ -1,4 +1,4 @@
-# 11. Keyset-Paginated Conversation List
+# 15. Keyset-Paginated Conversation List
 
 Date: 2026-09-04
 
@@ -14,7 +14,7 @@ The existing conversation-list flow is a public compatibility surface built on a
 
 Add a separate common Kalium conversation-list flow and leave the legacy flow, models, configuration, and behavior unchanged. The new public API will return a dedicated sealed `ConversationListItem` hierarchy for the four currently paginated sources: all conversations, groups, channels, and one-to-one conversations; archive mode and contains-search remain supported, while favorites and custom folders remain on their existing flows.
 
-The proposed public contract is specified in [Conversation List V2 API Design](../conversation-list-v2-api.md).
+The [conversation list guide](../guides/conversation-list.md) describes the public contract.
 
 Order eligible conversations only by stored `Conversation.last_modified_date` descending and qualified conversation ID ascending. Do not order by name, unread state, pending-connection update time, or joinable calls, and do not change the existing writers of `last_modified_date`. A public `ConversationListPosition` will contain the old activity time and conversation-ID tie-breaker so the app can restore the same approximate ordering neighborhood without following a conversation that later moved.
 

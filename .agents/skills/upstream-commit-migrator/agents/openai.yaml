@@ -1,6 +1,0 @@
-interface:
-  display_name: "Upstream commit migrator"
-  short_description: "Port commits with Astra review and stacked PRs"
-  default_prompt: "Use $upstream-commit-migrator to migrate all pending wireapp/kalium develop commits into Super Kalium sequentially, with GPT-6 Astra xhigh fidelity review, implementation categorization and must-fix corrections, and one stacked PR per commit."
-policy:
-  allow_implicit_invocation: false

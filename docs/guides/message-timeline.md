@@ -1,7 +1,7 @@
 # Loading a message timeline
 
 `session.messages.openMessageTimeline(conversationId)` opens the additive keyset API from
-[ADR 11](../adr/0011-keyset-pagination-for-message-timelines.md). Existing offset APIs continue to
+[ADR 14](../adr/0014-keyset-pagination-for-message-timelines.md). Existing offset APIs continue to
 return full messages with their existing positional behavior.
 
 ## Pages and anchors
@@ -79,7 +79,8 @@ when the view leaves.
 
 `MessageListItem` contains sender display, status, expiry, typed content, reactions, and delivery
 failure recipients. System events reuse the existing typed event values and include member display
-data. Users are deduplicated for each page; missing related users keep their IDs with `isMissing`.
+data. Polls include their votes and voters as `MessageListContent.Poll`. Users are deduplicated
+for each page; missing related users keep their IDs with `isMissing`.
 
 Text and mention ranges remain complete. Link previews keep URL offsets, titles, summaries, image
 dimensions, and local paths. A quoted ID with no quote details means the original is unavailable
@@ -112,5 +113,5 @@ After local older-page exhaustion, apps can use the existing remote-history fetc
 cursor, retry state, and loading indicators separate. Imported messages invalidate the local session.
 
 The new API introduction and offset API deprecation releases are still pending release planning. Support
-both APIs for the adoption period described in ADR 11; deprecation and eventual removal are separate
+both APIs for the adoption period described in ADR 14; deprecation and eventual removal are separate
 release decisions. Benchmark results and client navigation checks remain required before rollout.

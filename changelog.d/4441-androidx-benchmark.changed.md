@@ -1,0 +1,1 @@
+Updated the Android DAO benchmark plugin and instrumentation library to AndroidX Benchmark 1.5.0. This update affects the repository’s Android benchmark tooling and requires no SDK consumer migration.

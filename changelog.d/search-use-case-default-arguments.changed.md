@@ -18,7 +18,7 @@ The persistence `SearchDAO` consolidates its exclusion variants into
 `getKnownContacts`, `searchByName`, and `searchByHandle`, each accepting optional
 conversation, team, and domain filters. Replace the removed DAO methods with
 these methods and pass `excludeConversationId` when needed. The logic search
-repository remains internal in Super Kalium.
+repository remains internal.
 
 ABI: the use-case JVM descriptors remain unchanged; KMP default-argument metadata
 is additive. Persistence DAO signatures change, so direct DAO consumers must

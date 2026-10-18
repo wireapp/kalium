@@ -31,9 +31,9 @@ Always pass the native library path when running JVM tests or the CLI:
 ./gradlew jvmTest -Djava.library.path=./native/libs
 
 # Android unit tests
-./gradlew testDebugUnitTest
+./gradlew testAndroidHostTest
 ./gradlew androidUnitOnlyAffectedTest
-./gradlew :logic:testDebugUnitTest
+./gradlew :logic:testAndroidHostTest
 
 # Single JVM test class
 ./gradlew :logic:jvmTest --tests "com.wire.kalium.logic.feature.auth.LoginUseCaseTest" -Djava.library.path=./native/libs
@@ -41,9 +41,8 @@ Always pass the native library path when running JVM tests or the CLI:
 # Single JVM test method
 ./gradlew :logic:jvmTest --tests "com.wire.kalium.logic.feature.auth.LoginUseCaseTest.givenEmailHasLeadingOrTrailingSpaces*" -Djava.library.path=./native/libs
 
-# iOS tests
-./gradlew iosSimulatorArm64Test
-./gradlew :core:cryptography:iosSimulatorArm64Test
+# iOS tests (see docs/IOS_BUILD.md for tests that need a booted simulator)
+./gradlew :core:util:iosSimulatorArm64Test
 ./gradlew iOSOnlyAffectedTest
 
 # JavaScript tests
@@ -74,7 +73,7 @@ API documentation uses Dokka 2.2.0 and is written to `build/dokka/html`. Generat
 to resolve Apple platform types. This fork does not deploy API documentation from CI.
 Affected common documentation sets in `cryptography`, `logic`, and `cli` use JVM-backed analysis,
 retaining their declarations and display labels without changing SDK source sets or dependencies.
-Persistence's intermediate Apple documentation sets use native target artifacts to resolve the fork's SQLite bindings.
+Persistence's intermediate Apple documentation sets use native target artifacts to resolve the SQLite bindings of Wire's SQLDelight fork (`com.wire.sqldelight`).
 
 ## Build Configuration
 
@@ -113,7 +112,8 @@ fun givenEmailHasLeadingOrTrailingSpaces_whenLoggingIn_thenShouldBeTrimmed()
 
 Reusable test infrastructure:
 
-- `GlobalDBBaseTest` and `BaseDatabaseTest` from `:data:persistence-test`
+- `BaseDatabaseTest` and `GlobalDBBaseTest` in the `:data:persistence` test source sets
+- `TestUserDatabase` and `TestGlobalDatabase` from `:data:persistence-test`
 - `:test:data-mocks` for data-layer fixtures
 - `:test:mocks` for network model mocks
 
@@ -128,8 +128,8 @@ Architectural fitness functions live in `logic/src/jvmTest/kotlin/com/wire/kaliu
 Install the Detekt plugin and configure:
 
 - Configuration file: `<project-root>/detekt/detekt.yml`
-- Baseline file: `<project-root>/detekt/baseline.yml`
-- Plugin jars: `<project-root>/detekt-rules/build/libs/detekt-rules.jar`
+- Baseline file: `<project-root>/detekt/baseline.xml`
+- Plugin jars: the `detekt-formatting`, `detekt-rules-libraries` and `com.wire:detekt-rules` artifacts listed in `buildSrc/src/main/kotlin/scripts/detekt.gradle.kts`
 
 Or run Detekt from the terminal:
 

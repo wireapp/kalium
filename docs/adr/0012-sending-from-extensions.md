@@ -4,7 +4,7 @@ Date: 2026-10-13
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -13,8 +13,9 @@ actions may send replies, read receipts and delivery receipts. Sending requires 
 needs current recipient clients and sessions, and MLS needs the current epoch, otherwise the backend
 rejects the message (Proteus 412, MLS 409 stale message).
 
-ADR 11 gives extensions an exclusive per-account lease and a slim runtime without CoreLogic, and the
-NSE can now catch up to live over the WebSocket (bounded incremental sync). Message sending, however,
+[ADR 11](0011-nse-account-runtime-ownership.md) gives extensions an exclusive per-account lease and a
+slim runtime without CoreLogic, and the NSE can catch up to live over the WebSocket (bounded
+incremental sync). Message sending, however,
 lives in `:logic` (`MessageSenderImpl` and its envelope, session, MLS, failure and legal-hold
 collaborators), coupled to `:logic` repositories and `SyncManager`.
 
@@ -62,27 +63,18 @@ message, so a message that fails to send is retried in the app without uploading
 follows the app's file rules: file sharing, allowed types, size limits, and Cells conversations, whose
 files only the app uploads.
 
-## Plan
+## Implementation
 
-Each step keeps the app's behaviour unchanged. The app's tests keep covering the moved code through the
-app's adapters:
-
-1. Proteus envelope creation (`MessageEnvelopeCreator`, including external payloads), with a port for
-   the conversation's legal-hold status.
-2. Proteus session establishment (`SessionEstablisher`), with a port for pre-key bundles.
-3. MLS message creation (`MLSMessageCreator`), with ports for group lookup, pending proposals and joins.
-4. Send-failure classification and client-list repair for Proteus 412 (`MessageSendFailureHandler`),
-   with ports for users and clients.
-5. The sending orchestration (`MessageSenderImpl`): status updates, retries, legal-hold gate,
-   stale-epoch handling and live waiting, with ports for messages, conversations and a live session.
-6. Extension adapters over the slim runtime, and a bounded hold that keeps the socket open, processes
-   incoming events and returns unnotified message alerts using ADR 11's existing notification rules.
-7. The share extension: text and link content, the conversation picker, sending and presentation.
-8. Files: uploads before the hold, asset messages, and the app's file rules.
+The app's sending was extracted step by step, keeping its behaviour unchanged and its tests covering
+the moved code through the app's adapters: Proteus envelope creation (`MessageEnvelopeCreator`),
+session establishment (`SessionEstablisher`), MLS message creation (`MLSMessageCreator`), send-failure
+handling (`MessageSendFailureHandler`) and the sending orchestration (`MessageSenderImpl`), each with
+narrow ports. Extension adapters over the slim runtime provide a bounded hold that keeps the socket
+open, processes incoming events and returns unnotified message alerts. The share extension sends text
+and files.
 
 ## Consequences
 
-The extraction touches the app's sending path, so every step needs characterization tests before it
-moves code. Notification actions and receipts can reuse the slim sender later. Until the hold is
-validated on signed devices (memory, time and push suppression while the socket is open), the share
-extension stays behind a build flag.
+The app and extensions share one sending path, so changes to it affect both. Notification actions and
+receipts can reuse the slim sender later. The hold still needs validation on signed devices (memory,
+time and push suppression while the socket is open).

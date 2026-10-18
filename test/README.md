@@ -7,7 +7,7 @@ Testing support modules providing mocks, test utilities, and benchmarks.
 - `data-mocks` - Mock data for testing (users, conversations, messages)
 - `benchmarks` - JVM persistence benchmarks using JMH
 - `android-benchmarks` - Android persistence benchmarks using SQLCipher
-- `benchmark-fixtures` - Kotlin fixtures compiled into both benchmark runners
+- `benchmark-fixtures` - Shared Kotlin source directory compiled into both benchmark runners; not a Gradle module
 - `tango-tests` - End-to-end integration tests
 
 **Dependencies:** Can depend on any production module for testing purposes

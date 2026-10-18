@@ -1,4 +1,6 @@
-# Native End-to-End Encrypted Polls
+# 16. Native End-to-End Encrypted Polls
+
+Date: 2026-10-06
 
 ## Status
 

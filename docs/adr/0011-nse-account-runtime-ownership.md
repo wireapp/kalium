@@ -1,6 +1,24 @@
-# Account runtime ownership and receiving replay
+# 11. Account Runtime Ownership and Receiving Replay
+
+Date: 2026-09-22
+
+## Status
+
+Accepted
+
+## Context
+
+On Apple platforms the app, the Notification Service Extension (NSE) and the share extension are
+separate processes that use the same account stores in the App Group: SQLite, CoreCrypto and the
+shared Keychain. Two processes must never use one account's native resources at the same time.
+
+The NSE runs for seconds under tight memory limits. It cannot log in, register a client or migrate
+stores, and it must leave the app's event queue in a state the app can continue from. SQL and
+CoreCrypto are separate stores, so a notification's effects cannot commit atomically across both.
 
 ## Decision
+
+### Account ownership
 
 The Apple app and extensions share one exclusive per-account lease for the entire
 lifetime of account database, network and crypto resources. The lock is a
@@ -15,7 +33,7 @@ Swift facade lives in the iOS-only `:nse` module. Shared mapping and business ru
 remain below logic; app UI, live workers and platform integrations keep their
 existing owners. There is no generic opener bundle or common runtime coordinator.
 
-## Preparation and lifetime
+### Preparation and lifetime
 
 The app awaits `open`; synchronous getters return only active cached sessions.
 Registration and restore invalidate readiness. A terminal account event found by the
@@ -46,10 +64,9 @@ reads the app's existing raw database key (on iOS with its salt) from the shared
 Keychain; both the read-only schema probe and every pooled connection are keyed
 before reading pages. Missing or invalid keys never trigger generation. The iOS
 32-byte readable header and WAL keep shared databases recognizable during
-suspension; macOS uses SQLCipher's default encrypted header. CoreCrypto's available API still
-opens or creates/migrates; readiness is a practical guard, not a stricter native
-contract. [Native limitations](../NSE_IMPLEMENTATION_STATUS.md#native-contracts-that-constrain-receiving)
-record this and the pinned artifact issues.
+suspension; macOS uses SQLCipher's default encrypted header. CoreCrypto's API
+still opens or creates/migrates its store, so readiness is a practical guard, not
+a stricter native contract.
 
 Cancellation stops new work and drains resource users before network, crypto and
 SQLite close. Unlock only after successful cleanup. A failed native free may mark
@@ -60,12 +77,13 @@ destroys the AVS handle and waits for its native shutdown callback before dispos
 the callback reference and releasing account ownership. A cancelled or incomplete
 shutdown retains the handle for a later close attempt. An exception during native
 creation leaves ownership uncertain and retains the account lease until process
-exit. The NSE event-only AVS API instead retains one account/client handle
-and callback context for the process lifetime, matching the iOS NSE branch. Its
-request callbacks are attached only for the serialized start/process/end batch;
-this retained context owns no database, crypto, network resource or account lease. These rules prevent simultaneous native access and use-after-close.
+exit. The NSE event-only AVS API instead retains one account/client handle and
+callback context for the process lifetime. Its request callbacks are attached only
+for the serialized start/process/end batch; this retained context owns no database,
+crypto, network resource or account lease. These rules prevent simultaneous native
+access and use-after-close.
 
-## Queue and transactions
+### Queue and transactions
 
 The app and NSE share `Events` in insertion order. Convert app live rows to pending
 before NSE processing. Store each complete REST page and its fetch cursor in one
@@ -73,13 +91,10 @@ SQLite transaction; only the last non-transient event advances the existing app
 cursor. Resume already stored pending work before fetching more. No separate queue,
 REST ordering table or notification acknowledgement store is added.
 
-The app processes `Events` strictly in order. The NSE may defer a message-only
-notification that fails on network or recoverable MLS state and process later
-notifications that share none of its conversations, Proteus sessions or MLS groups,
-so it can acknowledge rows out of order. Any other failure fails the attempt. After
-a deferral, a non-isolatable notification or a payload that cannot cross the gap is
-an ordering barrier that stops the scan. The [isolation rules](../NSE_IMPLEMENTATION_STATUS.md#conversation-isolation-and-deferral)
-list the deferrable failures and the payloads that can cross a gap.
+The app processes `Events` strictly in order. The NSE may defer some message-only
+notifications and process later independent ones, so it can acknowledge rows out
+of order; see [conversation isolation and deferral](#conversation-isolation-and-deferral).
+Any other failure fails the attempt.
 
 For each notification, the NSE uses the app's Proteus-then-MLS nesting order:
 
@@ -100,12 +115,12 @@ These are separate stores. SQL can commit before native crypto, and MLS can comm
 before Proteus. Retry decrypts again, reapplies required fields and uses canonical
 message IDs/native duplicate handling. MLS payloads covered by a recovery receipt
 are not decrypted again; covered Proteus payloads are decrypted to advance the
-session, but their effects are skipped. A stored system message acknowledges only its own content, not
-the notification or every adjacent write. Reset, recreate-after-wipe and
-deleted-peer guards remain where losing metadata or a native group would destroy
-replay inputs.
+session, but their effects are skipped. A stored system message acknowledges only
+its own content, not the notification or every adjacent write. Reset,
+recreate-after-wipe and deleted-peer guards remain where losing metadata or a native
+group would destroy replay inputs.
 
-There are no NotificationReceipts, general outcome journals or startup recovery
+There are no notification receipts, general outcome journals or startup recovery
 mode. Besides the call signal journal and the account invalidation marker, narrow
 durable records exist only where replay would otherwise lose inputs:
 
@@ -121,22 +136,43 @@ durable records exist only where replay would otherwise lose inputs:
 - A conversation clear stores the exact deleted message IDs, so replay never deletes
   later messages. These snapshots are not pruned.
 
-Migrations 149 through 151 retain compatibility with databases
-created during the earlier implementation and drop the former receipt table.
-Removing those migrations requires a separate compatibility decision.
+The NSE requires the prepared current schema version and never migrates SQLite.
 
-Upstream migrations 143 for meeting time zones, 144 for adminless deletion, and
-145 for the link-preview URL fallback precede the local migrations at 146 through
-158. For compatibility,
-older fork databases at versions 144 through 149 still have `Meeting.trial` and
-no `tzid`. App and backup migration inspect those columns, apply the three missing
-upstream migrations, and resume at the old version plus three. This skips local
-operations the fork already completed. Upstream databases already containing
-`tzid` use their original version. Explicit migration binds one writer connection
-and commits the schema and version together, as automatic production opens do.
-The NSE still requires the prepared current version and never migrates SQLite.
+### Conversation isolation and deferral
 
-## Bounded incremental sync
+Only the Apple NSE enables this scan. It walks every pending row in insertion order.
+A notification is isolatable when every payload is a Proteus or MLS new message in a
+known, non-self conversation. Its dependencies are those conversations, the Proteus
+sender sessions and the MLS groups.
+
+An isolatable notification is deferred when, before persistence, it fails with no
+network, a federation failure, a 5xx response, or MLS `WrongEpoch`,
+`UnmergedPendingGroup`, `CommitForMissingProposal`, `ConversationNotFound` or
+`OrphanWelcome`, and every payload it decoded before the failure can cross a gap.
+Otherwise the failure fails the attempt. On deferral the native transactions roll
+back, a 30-second retry hint is stored in Metadata (`nse-deferred-v1:<eventId>`,
+removed on acknowledgement) and the scan continues. Later notifications that share
+a dependency with a deferred one are skipped. `check`/`error` failures, SQL errors
+and native commit errors never defer.
+
+After a deferral, a later notification can be processed only when every decoded
+payload can cross the gap: Text, Knock, Location, Asset, Composite, Poll, Multipart,
+Ignored and Unknown content, or Creation, System, Profiles, DecryptionFailure,
+Proposal and ClearProposalTimer payloads. Any other payload, or a non-isolatable
+notification, is an ordering barrier and stops the scan. Results stay `SUCCESS`
+and silent:
+
+- `DEFERRED_CONVERSATION`: the target was deferred or skipped.
+- `DEFERRED_ORDERING_BARRIER`: the scan stopped at a barrier, or the target was
+  already processed while other rows remain pending.
+- `DEFERRED_PRESENTATION_POLICY`: the target was processed after a deferral. Alert
+  fields are cleared, AVS is not evaluated and only `callSignalsPending` is set.
+
+Encrypted remote mute and in-call emoji are NSE no-ops but still pass through common
+decryption and replay handling, and count as conversation dependencies. Typing is
+skipped at DTO dispatch and adds no dependency.
+
+### Bounded incremental sync
 
 For every push the NSE runs the app's legacy catch-up protocol
 (`EventIngestion`) before processing, like the Android app's one-shot sync. It opens
@@ -147,18 +183,11 @@ the socket. As in the app, catching up needs the socket: if it fails or does not
 reach live within the catch-up budget, the catch-up fails, and nothing is paged
 without it. Catch-up gets 60% of the attempt's budget; the isolated scan
 then processes the stored queue to its end, without fetching, and stops before the
-next event at 85%. Barriers and app handoffs stop the scan as before. The target
-is presented by the same rules as before, calls are evaluated only
-with a complete prefix. Unread messages use the unnotified-message rules below. When catch-up
-cannot finish, or fails or stops processing before the target with nothing to show,
-the result asks the host for a generic alert: unseen events may remain. There is no
-REST-only receiving mode.
-
-Known gap: the backend sends no push for events it delivers over the open socket.
-A frame the socket delivered but had not stored when it closed, such as one that
-arrived while pages were fetched, is not alerted; the next sync's paging stores it.
-A REST sweep after closing would close the gap; it is left out to match Android
-until the gap shows up in practice.
+next event at 85%. Barriers and app handoffs stop the scan. Calls are evaluated only
+with a complete prefix. Unread messages use the unnotified-message rules below. When
+catch-up cannot finish, or fails or stops processing before the target with nothing
+to show, the result asks the host for a generic alert: unseen events may remain.
+There is no REST-only receiving mode.
 
 A client registered for consumable notifications has no REST stream to page. Its
 catch-up consumes its own session: each event is stored before it is acknowledged,
@@ -167,9 +196,9 @@ marker. Events after the marker stay unacknowledged and are delivered again. A
 storage or acknowledgement failure ends catch-up rather than skipping the event. A
 missed-notification signal stops catch-up without acknowledging it, so the app's
 next connection receives it and recovers with slow sync; the host shows a generic
-alert. The capability is not registered in this fork yet.
+alert. No Kalium caller registers this capability yet.
 
-## Proportionate replay guarantees
+### Proportionate replay guarantees
 
 Required permission/member writes, sender authorization, crypto integrity and
 physical cleanup remain enforced. Exact access-change, promotion and connection-
@@ -195,7 +224,7 @@ Download/image failure leaves text usable; cancellation still unwinds the attemp
 Unreferenced temporary files are cleaned, and required deletion keeps stored paths
 until file cleanup succeeds. No preview queue or detached worker is added.
 
-## App handoffs and presentation
+### App handoffs and presentation
 
 Use existing durable app consumers: pending deliveries, proposal timers/native
 pending proposals, expiration metadata, asset/Cells records, client-change rows
@@ -244,18 +273,39 @@ alerted messages and returns delivered identifiers whose message is now deleted 
 read, for the host to remove; updating delivered alerts remains optional. The host
 owns the single system completion callback.
 
-The [coverage table](../NSE_IMPLEMENTATION_STATUS.md#current-coverage) names remaining
-native, backend and consumer dependencies. Destructive MLS replay cannot be enabled
-by discarding its required effects. Incoming calling uses the iOS branch’s presentation flow:
-collect committed signals through the target, evaluate one AVS batch after sync,
-and return its callbacks to the Swift CallKit reporter. Committed signals are retained
-in the existing account Call signal journal for replay through the full app engine.
-Both AVS adapters use the journal's first ready start matching the incoming callback
-reference, including caller client when supplied. Native generations do not advance
-selection through tied starts. The incoming lookup is read-only; besides storing
-committed signals, the NSE writes only a once-per-signal missed-call claim. The full
-app engine owns ringing and termination,
-and replay preserves terminal presentations. Identical callback
-references cannot distinguish separate real calls because AVS exposes no message or
-session identity. As with ordinary alerts, interruption after processing can lose
-presentation; exactly-once reporting is not claimed. The host awaits reporting before completion.
+### Incoming calls
+
+The NSE collects committed calling signals through the target, evaluates one AVS
+event-only batch after sync and returns its callbacks for the host to report to
+CallKit. Committed signals are retained in the account's call signal journal for
+replay through the full app engine, which owns ringing and termination. Besides
+storing committed signals, the NSE writes only a once-per-signal missed-call claim.
+AVS exposes no message or session identity, so identical callback references cannot
+distinguish separate real calls. As with ordinary alerts, interruption after
+processing can lose presentation; exactly-once reporting is not claimed.
+
+## Consequences
+
+The NSE receives a bounded, known set of event families; the
+[NSE README](../../nse/README.md#what-the-nse-receives) lists them with the
+dependencies that keep the rest pending. Destructive MLS replay cannot be enabled by
+discarding its required effects.
+
+Known gaps follow from the decisions above:
+
+- The backend sends no push for events it delivers over the open socket. A frame
+  the socket delivered but had not stored when it closed, such as one that arrived
+  while pages were fetched, is not alerted; the next sync's paging stores it. A REST
+  sweep after closing would close the gap; it is left out to match Android until the
+  gap shows up in practice.
+- An external commit can succeed remotely before local failure. Only wrong-epoch
+  recovery has a durable intent; other establishment commits need the returned
+  events or welcome for replay, and legacy teammate creation needs an idempotent
+  backend operation or authenticated reconciliation.
+- CoreCrypto reports malformed MLS input and provider/store failures as the same
+  `Other` error, so the NSE cannot turn either into a failed-message row.
+- Saving a CRL does not replace earlier in-memory sources or clear native
+  certificate-status caches. An already-used environment can keep a VALID status; a
+  fresh environment reads the saved revocation.
+- Simulator tests do not cover APNs delivery, the real extension lifecycle, shared
+  protected Keychain access or signed-device budgets.

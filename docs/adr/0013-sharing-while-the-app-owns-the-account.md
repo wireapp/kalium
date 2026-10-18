@@ -4,13 +4,13 @@ Date: 2026-10-17
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
-ADR 11 lets one process at a time own an account: the app while it is in the foreground or in a call,
-otherwise the NSE or the share extension, briefly. ADR 12 lets the share extension send by owning the
-account and keeping it live.
+[ADR 11](0011-nse-account-runtime-ownership.md) lets one process at a time own an account: the app while it is in the foreground or in a call,
+otherwise the NSE or the share extension, briefly. [ADR 12](0012-sending-from-extensions.md) lets the share extension send by
+owning the account and keeping it live.
 
 When the app owns the account, the share extension cannot. This is a normal situation: the user shares
 from inside Wire to Wire, shares from another app during a Wire call, or uses iPad split view with Wire
@@ -73,14 +73,15 @@ the sheet says Wire will send it when Wire is opened. The sheet offers no cancel
 account. It would not tell it that the app will take the share, and checking two locks one after the
 other races with the app releasing them. The app's claim answers both.
 
-## Plan
+## Implementation
 
-1. Kalium: the outbox (entries, claims, results and snapshots) in the share module, which the
-   extension and the app both use. The app's text and asset use cases accept a message ID.
-2. Kalium: the app's importer and snapshot writer, which take the app's sending as ports.
-3. App: Darwin notifications, with the importer running in each account's foreground and call work.
-4. Share extension: the snapshot picker, handing the share to the app, waiting for the app's answer,
-   and falling back as described above.
+Kalium's share module holds the outbox (entries, claims, results and snapshots), which the extension and
+the app both use, and the app's importer and snapshot writer, which take the app's sending as ports.
+The app runs them with `serveShareExtension`, which stores each item through the composer's text and
+asset use cases under the item's message ID. The iOS app posts and observes the Darwin
+notifications and runs the importer in each account's foreground and call work; the share extension
+shows the snapshot picker, hands the share to the app, waits for its answer and falls back as described
+above.
 
 ## Consequences
 

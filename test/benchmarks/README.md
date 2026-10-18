@@ -18,7 +18,7 @@ presentation, and collection teardown. Cancelled paging sources are invalidated 
 to detach their database listeners. These are warm database initial/restore loads.
 
 The [message timeline suite](message-timeline.md) compares the existing offset path with keyset page
-assembly and list mapping on JVM and Android. It is opt-in and has not been run yet.
+assembly and list mapping on JVM and Android. It is opt-in.
 
 Compile the sources and generated JMH runner without running benchmarks:
 
@@ -37,8 +37,3 @@ Timing settings live in `build.gradle.kts`: three warmup iterations and ten meas
 one second each, reporting average milliseconds per operation. Raw JSON reports are under
 `test/benchmarks/build/reports/benchmarks`. Keep the report with the commit, JVM version, and machine
 information. The manual CI workflow uploads the raw reports; it does not enforce performance gates.
-
-This refactor changes fixtures and measurement boundaries. Start new baselines when running it.
-The former `messageRead` and `persistence` Gradle configurations are replaced by `benchmarkFilter`.
-The CoreLogic construction experiment and ignored stopwatch tests were removed. Asset-status reads
-and concurrent message writes/reads are covered by the Android suite.

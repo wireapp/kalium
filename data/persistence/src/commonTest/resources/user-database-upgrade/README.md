@@ -1,7 +1,7 @@
 # User database upgrade fixtures
 
 These SQLite files were generated with the compiled production schema from the
-exact preceding Super Kalium commit
+exact preceding commit
 `24f4a09e6b38af31b9bcb0d537f1f76b61958182`.
 
 Fixture names and stored versions describe that historical parent. They remain
