@@ -1,0 +1,146 @@
+name: "JVM & JS Tests"
+
+on:
+  merge_group:
+  pull_request:
+    types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+  push:
+    branches: # Runs on develop to have the coverage diff on every PR
+      - 'develop'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
+  cancel-in-progress: true
+
+env:
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
+jobs:
+  detekt:
+    name: Detekt
+    uses: ./.github/workflows/codestyle.yml
+
+  gradle-run-tests:
+    name: Gradle Run Tests
+    needs: [ detekt ]
+    permissions:
+      contents: read # required to read repository metadata in private repositories
+      issues: read # required to find related pull requests in private repositories
+      checks: write # required to publish unit test check runs
+      pull-requests: write # required to publish pull request comments
+    runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: -Dorg.gradle.caching=true
+    # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
+    container: kubazwire/cryptobox:1.0.0@sha256:4791e83cd7c76418e623c5ba17e9396efacf4f742d960a340eb08a106263334b
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build the CLI App
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew :sample:cli:compileKotlinJvm -Djava.library.path=$LD_LIBRARY_PATH
+
+      - name: Build the samples
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew :sample:samples:compileKotlinJvm
+
+      - name: Test JVM with Gradle
+        run: ./gradlew jvmTest koverXmlReportJvmOnly -Djava.library.path=$LD_LIBRARY_PATH
+
+      - name: Test JS with Gradle
+        run: |
+          ./gradlew --stop
+          ./gradlew jsTest --no-daemon -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
+
+      - name: Archive Test Reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: test-reports
+          path: ./**/build/reports/tests/**
+
+      - name: Archive Test Results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: test-results
+          path: ./**/build/test-results/**/*.xml
+
+      - name: Install Pip for test result publishing
+        run: |
+          apt-get update
+          apt-get install -y -qq --no-install-recommends python3-pip python3-venv
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action/linux@c950f6fb443cb5af20a377fd0dfaa78838901040
+        if: ${{ always() }}
+        with:
+          files: |
+            **/build/test-results/**/*.xml
+
+      - name: Install Git
+        run: apt-get update && apt-get install -y -qq git
+
+      - name: Upload test report to codecov
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: "build/reports/kover/reportJvmOnly.xml"
+
+      - name: Archive Kover report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: kover-report
+          path: build/reports/kover/reportJvmOnly.xml
+
+      - name: Cleanup Gradle Cache
+        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
+        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
+        run: |
+          rm -f ~/.gradle/caches/modules-2/modules-2.lock
+          rm -f ~/.gradle/caches/modules-2/gc.properties
+
+  upload-test-results-datadadog:
+    name: Upload Test Results Datadadog
+    runs-on: ubuntu-latest
+    needs: gradle-run-tests
+    if: always()
+
+    steps:
+      - name: Download tests results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        continue-on-error: true
+      - name: Display structure of downloaded files
+        run: ls -R
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 24.19.0
+      - name: Install datadog-ci
+        run: npm install -g @datadog/datadog-ci
+      - name: "Upload results"
+        env:
+          DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_ENV: ci
+          DATADOG_SITE: datadoghq.eu
+        run: |
+          find . -name "*.xml" -type f | sed 's/ /\\ /g' | tr '\n' ' ' | xargs -L 1 datadog-ci junit upload --service kalium-jvm .

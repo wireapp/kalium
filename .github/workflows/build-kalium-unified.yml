@@ -1,0 +1,379 @@
+name: "Build Kalium"
+
+on:
+  workflow_call:
+    inputs:
+      build-config:
+        description: "JSON array of build targets to execute"
+        required: true
+        type: string
+      run-quality-checks:
+        description: "Run quality gates (detekt, tests) before building"
+        required: false
+        type: boolean
+        default: true
+      concurrency-group-suffix:
+        description: "Suffix for the concurrency group"
+        required: true
+        type: string
+
+permissions:
+  contents: read # required for actions/checkout to read workflow sources
+  actions: read # required for reading workflow metadata and called workflows
+
+concurrency:
+  group: build-kalium-unified-${{ github.ref }}-${{ inputs.concurrency-group-suffix }}
+  cancel-in-progress: true
+
+jobs:
+  workflow-security:
+    name: Workflow security analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # required for actions/checkout to read workflow sources
+      actions: read # required for zizmor online audits in private repositories
+      security-events: write # required for SARIF upload
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        id: zizmor
+        uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
+        with:
+          inputs: .github/workflows/build-kalium-unified.yml
+          version: 1.26.1
+          persona: pedantic
+          min-severity: informational
+          min-confidence: low
+          config: .github/zizmor.yml
+
+      - name: Fail if zizmor reported findings
+        env:
+          sarifFilePath: ${{ steps.zizmor.outputs.output-file }}
+        run: |
+          findingsCount="$(jq '[.runs[].results[]] | length' "$sarifFilePath")"
+          echo "zizmor findings: $findingsCount"
+          test "$findingsCount" -eq 0
+
+  resolve-build-config:
+    name: Resolve build config
+    runs-on: ubuntu-latest
+    outputs:
+      build-config: ${{ steps.resolve.outputs.build-config }}
+    steps:
+      - name: Resolve build config
+        id: resolve
+        shell: bash
+        env:
+          INPUT_CONFIG: ${{ inputs.build-config }}
+        run: |
+          if ! echo "$INPUT_CONFIG" | jq -e 'type == "array" and all(.[]; type == "string")' > /dev/null; then
+            echo "::error::build-config must be a JSON array of string build targets"
+            exit 1
+          fi
+
+          RESOLVED_CONFIG='[]'
+          while IFS= read -r build_target; do
+            case "$build_target" in
+              logic-android-aar)
+                BUILD_MATRIX_ENTRY='{"build-target":"logic-android-aar","platform":"android-aar","runner":"ubuntu-latest","gradle-tasks":":logic:bundleAndroidMainAar","artifact-glob":"logic/build/outputs/aar/*.aar","xcframework-dir":"","artifact-name":"logic-android-aar"}'
+                ;;
+              logic-kmp)
+                BUILD_MATRIX_ENTRY='{"build-target":"logic-kmp","platform":"kmp","runner":"macos-15","gradle-tasks":":logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar :logic:assembleKaliumLogicReleaseXCFramework","artifact-glob":"logic/build/outputs/aar/*.aar logic/build/libs/*.jar","xcframework-dir":"logic/build/XCFrameworks/release/KaliumLogic.xcframework","artifact-name":"logic-kmp"}'
+                ;;
+              *)
+                echo "::error::Unsupported build target: $build_target"
+                exit 1
+                ;;
+            esac
+
+            RESOLVED_CONFIG=$(jq -c --argjson entry "$BUILD_MATRIX_ENTRY" '. + [$entry]' <<< "$RESOLVED_CONFIG")
+          done < <(echo "$INPUT_CONFIG" | jq -r '.[]')
+
+          echo "build-config=$RESOLVED_CONFIG" >> "$GITHUB_OUTPUT"
+
+  # ── Quality Gates ──────────────────────────────────────────────
+  detekt:
+    name: Detekt
+    if: inputs.run-quality-checks
+    needs: [workflow-security]
+    uses: ./.github/workflows/codestyle.yml
+
+  jvm-tests:
+    name: JVM tests
+    if: inputs.run-quality-checks
+    needs: [detekt]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Run JVM tests
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./gradlew jvmTest -Djava.library.path=./native/libs
+
+  android-tests:
+    name: Android unit tests
+    if: inputs.run-quality-checks
+    needs: [detekt]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          enable-kvm: true
+
+      - name: Run Android unit tests
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./gradlew testAndroidHostTest
+
+  android-connected-tests:
+    name: Android connected tests
+    if: inputs.run-quality-checks
+    needs: [detekt]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-level: [31]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Free Disk Space Before Build
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          echo "Disk space after cleanup:"
+          df -h
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build the samples
+        run: |
+          ./gradlew :sample:samples:compileAndroidDeviceTestSources
+
+      - name: Get AVD info
+        uses: ./.github/actions/get-avd-info
+        id: avd-info
+        with:
+          api-level: ${{ matrix.api-level }}
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Android Instrumentation Tests
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: ${{ steps.avd-info.outputs.arch }}
+          target: ${{ steps.avd-info.outputs.target }}
+          cores: 4
+          ram-size: 4096M
+          heap-size: 2048M
+          disable-animations: true
+          script: ./gradlew connectedAndroidDeviceTest
+
+  ios-tests:
+    name: iOS tests
+    if: inputs.run-quality-checks
+    needs: [detekt]
+    runs-on: macos-15
+    steps:
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: "16.1.0"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Run logic iOS simulator tests
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./gradlew iosSimulatorArm64Test
+
+  # ── Build Matrix ───────────────────────────────────────────────
+  build:
+    name: "Build ${{ matrix.platform }}"
+    needs: [workflow-security, resolve-build-config, jvm-tests, android-tests, android-connected-tests, ios-tests]
+    permissions:
+      contents: read # required for actions/checkout to read workflow sources
+      id-token: write # required for artifact provenance attestations
+      attestations: write # required for artifact provenance attestations
+      artifact-metadata: write # required for artifact provenance metadata
+    # When quality checks are skipped, run immediately
+    if: |
+      always() &&
+      needs.workflow-security.result == 'success' &&
+      needs.resolve-build-config.result == 'success' &&
+      (inputs.run-quality-checks == false || (needs.jvm-tests.result == 'success' && needs.android-tests.result == 'success' && needs.android-connected-tests.result == 'success' && needs.ios-tests.result == 'success'))
+    runs-on: ${{ matrix.runner || (matrix.platform == 'ios' && 'macos-15' || 'ubuntu-latest') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.resolve-build-config.outputs.build-config) }}
+    steps:
+      - name: Setup Xcode
+        if: runner.os == 'macOS'
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: "16.1.0"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build artifacts
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GRADLE_TASKS: ${{ matrix.gradle-tasks }}
+        run: |
+          read -ra GRADLE_ARGS <<< "$GRADLE_TASKS"
+          ./gradlew "${GRADLE_ARGS[@]}"
+
+      - name: Post-build — collect file artifacts
+        if: matrix.artifact-glob != ''
+        env:
+          ARTIFACT_GLOB: ${{ matrix.artifact-glob }}
+          ARTIFACT_NAME: ${{ matrix.artifact-name }}
+        run: |
+          ARTIFACT_DIR="release/$ARTIFACT_NAME"
+          mkdir -p "$ARTIFACT_DIR"
+          IFS=' ' read -ra GLOBS <<< "$ARTIFACT_GLOB"
+          for glob in "${GLOBS[@]}"; do
+            dir=$(dirname "$glob")
+            pattern=$(basename "$glob")
+            find "$dir" -maxdepth 1 -name "$pattern" -exec cp {} "$ARTIFACT_DIR/" \;
+          done
+          test -n "$(ls -A "$ARTIFACT_DIR")"
+
+      - name: Post-build — zip XCFramework
+        if: matrix.xcframework-dir != ''
+        env:
+          ARTIFACT_NAME: ${{ matrix.artifact-name }}
+          XCFRAMEWORK_DIR: ${{ matrix.xcframework-dir }}
+        run: |
+          if [ ! -d "$XCFRAMEWORK_DIR" ]; then
+            echo "::error::XCFramework not found at $XCFRAMEWORK_DIR"
+            exit 1
+          fi
+          ARTIFACT_DIR="release/$ARTIFACT_NAME"
+          mkdir -p "$ARTIFACT_DIR"
+          PARENT_DIR=$(dirname "$XCFRAMEWORK_DIR")
+          FRAMEWORK_NAME=$(basename "$XCFRAMEWORK_DIR")
+          (cd "$PARENT_DIR" && zip -rXq "${FRAMEWORK_NAME}.zip" "$FRAMEWORK_NAME")
+          mv "${PARENT_DIR}/${FRAMEWORK_NAME}.zip" "$ARTIFACT_DIR/"
+
+      - name: Post-build — generate checksums
+        if: matrix.artifact-name != ''
+        env:
+          ARTIFACT_NAME: ${{ matrix.artifact-name }}
+        run: |
+          ARTIFACT_DIR="release/$ARTIFACT_NAME"
+          CHECKSUM_FILE="$ARTIFACT_NAME-SHA256SUMS.txt"
+
+          (
+            cd "$ARTIFACT_DIR"
+            shopt -s nullglob
+            files=(./*)
+            filtered=()
+
+            for file in "${files[@]}"; do
+              base_name=$(basename "$file")
+              if [ -f "$file" ] && [ "$base_name" != "$CHECKSUM_FILE" ]; then
+                filtered+=("$file")
+              fi
+            done
+
+            if [ "${#filtered[@]}" -eq 0 ]; then
+              echo "::error::No artifacts found to checksum in $ARTIFACT_DIR"
+              exit 1
+            fi
+
+            shasum -a 256 "${filtered[@]}" | sed 's#  \./#  #' > "$CHECKSUM_FILE"
+          )
+
+          test -s "$ARTIFACT_DIR/$CHECKSUM_FILE"
+
+      - name: Post-build — attest release artifacts
+        id: attest
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-checksums: release/${{ matrix.artifact-name }}/${{ matrix.artifact-name }}-SHA256SUMS.txt
+
+      - name: Post-build — persist attestation bundle
+        if: steps.attest.outputs.bundle-path != ''
+        env:
+          ARTIFACT_NAME: ${{ matrix.artifact-name }}
+          ATTESTATION_BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          cp "$ATTESTATION_BUNDLE_PATH" \
+            "release/$ARTIFACT_NAME/$ARTIFACT_NAME-provenance-bundle.json"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: release/${{ matrix.artifact-name }}/*
+          retention-days: 3
+
+      - name: Build summary
+        env:
+          ARTIFACT_NAME: ${{ matrix.artifact-name }}
+          ATTESTATION_URL: ${{ steps.attest.outputs.attestation-url }}
+          GRADLE_TASKS: ${{ matrix.gradle-tasks }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          echo "## Build Summary — $PLATFORM" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifact**: $ARTIFACT_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "**Gradle tasks**: \`$GRADLE_TASKS\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Checksums**: \`$ARTIFACT_NAME-SHA256SUMS.txt\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Attestation**: $ATTESTATION_URL" >> $GITHUB_STEP_SUMMARY
+          echo "**Generated files**:" >> $GITHUB_STEP_SUMMARY
+          ls "release/$ARTIFACT_NAME/" | while read file; do
+            echo "- \`$file\`" >> $GITHUB_STEP_SUMMARY
+          done

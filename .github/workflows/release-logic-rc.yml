@@ -1,0 +1,131 @@
+name: Release Logic Artifacts (RC)
+
+on:
+  push:
+    tags:
+      - "v*-rc*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read # required by reusable validation/build workflows
+  actions: read # required by reusable workflow metadata reads
+
+jobs:
+  validate-tag:
+    name: Validate Tag
+    if: github.repository == 'wireapp/kalium'
+    uses: ./.github/workflows/validate-release-tag.yml
+    with:
+      tag-name: ${{ github.ref_name }}
+
+  build:
+    name: Build
+    needs: validate-tag
+    permissions:
+      contents: read # required for actions/checkout to read workflow sources
+      actions: read # required for zizmor online audits in private repositories
+      id-token: write # required for artifact provenance attestations
+      attestations: write # required for artifact provenance attestations
+      artifact-metadata: write # required for artifact provenance metadata
+      security-events: write # required for SARIF upload
+    uses: ./.github/workflows/build-kalium-unified.yml
+    with:
+      concurrency-group-suffix: release-rc
+      run-quality-checks: true
+      build-config: |
+        [
+          "logic-android-aar",
+          "logic-kmp"
+        ]
+
+  deploy:
+    name: Deploy
+    needs: build
+    permissions:
+      contents: write # required to create/update GitHub releases
+      actions: read # required to download workflow artifacts
+    uses: ./.github/workflows/deploy-kalium.yml
+    with:
+      tag-name: ${{ github.ref_name }}
+      prerelease: true
+      release-name: "Release Candidate ${{ github.ref_name }}"
+      release-body: |
+        ## Release Candidate for ${{ github.ref_name }}
+
+        This is a **pre-release** for testing purposes.
+
+        **Note**: This is not a final release. Use for testing only.
+      deployment-targets: |
+        [
+          {
+            "type": "github-release",
+            "artifacts": "logic-*",
+            "fail-on-unmatched": true
+          }
+        ]
+
+  publish-wire-maven:
+    name: Publish Wire Maven
+    needs: build
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: macos-15
+    if: github.repository == 'wireapp/kalium'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
+        with:
+          xcode-version: "16.1.0"
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: arn:aws:iam::093205192929:role/gh-actions-maven-publish-kalium
+          aws-region: us-east-1
+
+      - name: Resolve Maven version
+        env:
+          INPUT_TAG_NAME: ${{ github.ref_name }}
+        run: |
+          case "$INPUT_TAG_NAME" in
+            v*) version="${INPUT_TAG_NAME#v}" ;;
+            *)
+              echo "::error::Wire Maven publish tags must start with v: $INPUT_TAG_NAME"
+              exit 1
+              ;;
+          esac
+          echo "KALIUM_PUBLISH_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Publish Gradle publications to local staging repository
+        env:
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.PGP_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.PGP_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
+        run: |
+          ./gradlew publishAllPublicationsToMavenCentralStagingRepository \
+            -Pkalium.publish.version="$KALIUM_PUBLISH_VERSION" \
+            -Pkalium.mavenCentral.signingRequired=true
+
+      - name: Upload to Wire S3
+        run: |
+          aws s3 sync build/maven-central-staging s3://maven-wire-com
+
+      - name: Wire Maven summary
+        if: always()
+        run: |
+          echo "## Wire Maven Publish" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version**: ${KALIUM_PUBLISH_VERSION}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Repository**: https://maven.wire.com" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Note**: Artifacts may take up to 60 seconds to appear due to CDN caching." >> "$GITHUB_STEP_SUMMARY"
