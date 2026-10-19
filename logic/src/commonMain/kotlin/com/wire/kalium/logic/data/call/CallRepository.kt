@@ -61,11 +61,13 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.PendingSubconversationProposals
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.util.MutexProvider
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.SFTApi
 import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.call.CallDAO
@@ -93,8 +95,8 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.math.max
 import kotlin.time.toDuration
 import kotlin.uuid.Uuid
@@ -161,6 +163,7 @@ internal interface CallRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class CallDataSource(
     private val callApi: CallApi,
+    private val sftApi: SFTApi,
     private val serverTimeApi: ServerTimeApi,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val persistMessage: PersistMessageUseCase,
@@ -173,16 +176,16 @@ internal class CallDataSource(
     private val teamRepository: TeamRepository,
     private val joinSubconversation: JoinSubconversationUseCase,
     private val leaveSubconversation: LeaveSubconversationUseCase,
+    private val subgroupProposals: PendingSubconversationProposals,
     private val transactionProvider: CryptoTransactionProvider,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     initialCallMetadataProfile: CallMetadataProfile = CallMetadataProfile(), // For testing purposes
-    initialCallQualityDataProfile: CallQualityDataProfile = CallQualityDataProfile(), // For testing purposes
 ) : CallRepository {
 
     private var _callMetadataProfile: MutableStateFlow<CallMetadataProfile> = MutableStateFlow(initialCallMetadataProfile)
-    private var _callQualityDataProfile: MutableStateFlow<CallQualityDataProfile> = MutableStateFlow(initialCallQualityDataProfile)
+    private var _callQualityDataProfile: MutableStateFlow<CallQualityDataProfile> = MutableStateFlow(CallQualityDataProfile())
 
     private val job = SupervisorJob() // TODO(calling): clear job method
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
@@ -206,7 +209,7 @@ internal class CallDataSource(
     }
 
     override suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray> = wrapApiRequest {
-        callApi.connectToSFT(url = url, data = data)
+        sftApi.connectToSFT(url = url, data = data)
     }
 
     override fun getCallMetadata(conversationId: ConversationId): CallMetadata? = _callMetadataProfile[conversationId]
@@ -693,7 +696,12 @@ internal class CallDataSource(
         transactionProvider.mlsTransaction("leaveSubconversation") { mlsContext ->
             leaveSubconversation(mlsContext, conversationId, CALL_SUBCONVERSATION_ID)
         }
-            .onSuccess {
+            .onSuccess { pendingProposal ->
+                // Acknowledge the marked token only after the outer native transaction commits.
+                pendingProposal?.let {
+                    // The durable leave intent lets the scheduler retry a failed SQL acknowledgement.
+                    wrapStorageRequest { subgroupProposals.acknowledge(it) }
+                }
                 callingLogger.i("Successfully left MLS conference")
             }
             .onFailure {

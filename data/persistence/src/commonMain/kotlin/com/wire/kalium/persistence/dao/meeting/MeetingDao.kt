@@ -31,14 +31,14 @@ import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import com.wire.kalium.persistence.db.WriteDispatcher
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 interface MeetingDao {
     suspend fun upsertMeetings(
@@ -55,9 +55,9 @@ interface MeetingDao {
         startingOffset: Long,
         from: Instant,
     ): KaliumPager<MeetingOccurrenceDetailsEntity>
-
     suspend fun deleteMeeting(meetingId: QualifiedIDEntity)
     suspend fun getMeetingsByConversationId(conversationId: QualifiedIDEntity): List<MeetingEntity>
+    suspend fun deleteMeetingsByConversationId(conversationId: QualifiedIDEntity)
     suspend fun getNextUnfinishedMeetingOccurrenceDetailsId(meetingId: QualifiedIDEntity, from: Instant): String?
     suspend fun getMeeting(meetingId: QualifiedIDEntity): MeetingEntity?
     fun observeMeetingReminderChanges(): Flow<Unit>
@@ -65,6 +65,7 @@ interface MeetingDao {
     suspend fun getMeetingRemindersWithin(startInclusive: Instant, endExclusive: Instant): List<MeetingReminderEntity>
 }
 
+@Suppress("TooManyFunctions")
 internal class MeetingDaoImpl(
     private val meetingsQueries: MeetingsQueries,
     private val readDispatcher: ReadDispatcher,
@@ -105,9 +106,6 @@ internal class MeetingDaoImpl(
                 meetingsQueries.insertGeneratedOccurrences(
                     meetings = meetings,
                     limit = generateOccurrencesWindow,
-                    shouldRegenerateOccurrences = meetings.associate {
-                        it.meetingId to (it.meetingId in meetingIdsRequiringOccurrenceRefresh)
-                    },
                 )
 
                 if (removeMeetingsAbsentFromUpsertList) {
@@ -133,7 +131,6 @@ internal class MeetingDaoImpl(
                     meetingsQueries.insertGeneratedOccurrences(
                         meetings = meetings,
                         limit = generateOccurrencesWindow,
-                        shouldRegenerateOccurrences = meetings.associate { it.meetingId to false },
                     )
                 }
             }
@@ -188,10 +185,24 @@ internal class MeetingDaoImpl(
                 .awaitAsList()
         }
 
+    override suspend fun deleteMeetingsByConversationId(conversationId: QualifiedIDEntity) {
+        withContext(writeDispatcher.value) {
+            meetingsQueries.deleteMeetingsByConversationId(conversationId)
+        }
+    }
+
     override suspend fun getNextUnfinishedMeetingOccurrenceDetailsId(meetingId: QualifiedIDEntity, from: Instant): String? =
-        withContext(readDispatcher.value) {
-            meetingsQueries.selectNextUnfinishedMeetingOccurrenceDetailsId(meetingId = meetingId, fromDate = from)
-                .awaitAsOneOrNull()
+        withContext(writeDispatcher.value) {
+            meetingsQueries.transactionWithResult {
+                val meeting = meetingsQueries.selectMeetingByIds(listOf(meetingId), MeetingMapper::fromViewToModel)
+                    .awaitAsOneOrNull() ?: return@transactionWithResult null
+                meetingsQueries.insertGeneratedOccurrences(
+                    meetings = listOf(meeting),
+                    limit = GenerationLimit.Count(1, from = from, includeOngoing = true),
+                )
+                meetingsQueries.selectNextUnfinishedMeetingOccurrenceDetailsId(meetingId = meetingId, fromDate = from)
+                    .awaitAsOneOrNull()
+            }
         }
 
     override suspend fun getMeeting(meetingId: QualifiedIDEntity): MeetingEntity? = withContext(readDispatcher.value) {
@@ -251,27 +262,23 @@ private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
 internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
     meetings: List<MeetingEntity>,
     limit: GenerationLimit,
-    shouldRegenerateOccurrences: Map<QualifiedIDEntity, Boolean>,
-): Int {
-    val lastGeneratedStarts = meetings.mapNotNull { meeting ->
-        when (shouldRegenerateOccurrences[meeting.meetingId]) {
-            true -> null
-            else -> selectLastGeneratedOccurrenceStart(meeting.meetingId).awaitAsOneOrNull()?.let { meeting.meetingId to it }
-        }
-    }.toMap()
-
-    return MeetingOccurrencesGenerator.generate(
+) {
+    // Cached rows can cover different date ranges. Recompute the requested range and retain existing IDs.
+    val occurrences = MeetingOccurrencesGenerator.generate(
         meetings = meetings,
-        lastGeneratedStarts = lastGeneratedStarts,
+        lastGeneratedStarts = emptyMap(),
         limit = limit,
-    ).onEach { occurrence ->
-        insertMeetingOccurrence(
-            occurrence_id = occurrence.occurrenceId,
-            meeting_id = occurrence.meetingId,
-            occurrence_start = occurrence.occurrenceStart,
-            occurrence_end = occurrence.occurrenceEnd
-        )
-    }.size
+    )
+    occurrences.forEach { occurrence ->
+        if (selectMeetingOccurrenceIdByStart(occurrence.meetingId, occurrence.occurrenceStart).awaitAsOneOrNull() == null) {
+            insertMeetingOccurrence(
+                occurrence_id = occurrence.occurrenceId,
+                meeting_id = occurrence.meetingId,
+                occurrence_start = occurrence.occurrenceStart,
+                occurrence_end = occurrence.occurrenceEnd
+            )
+        }
+    }
 }
 
 private fun Meeting.hasSameScheduleAs(meeting: MeetingEntity): Boolean =

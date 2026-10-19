@@ -39,6 +39,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
@@ -56,8 +57,9 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class ConversationEventReceiverTest {
     @Test
@@ -96,6 +98,18 @@ class ConversationEventReceiverTest {
         }
 
         result.shouldSucceed()
+    }
+
+    @Test
+    fun givenNewMLSMessageHandlerFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
+        val event = TestEvent.newMLSMessageEvent(Instant.DISTANT_FUTURE)
+        val (arrangement, receiver) = Arrangement().arrange {
+            everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), eq(event), any()) } returns Either.Left(failure)
+        }
+
+        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+        receiver.onEvent(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
+            .shouldFail { assertEquals(failure, it) }
     }
 
     @Test
@@ -235,6 +249,18 @@ class ConversationEventReceiverTest {
     }
 
     @Test
+    fun givenMLSWelcomeHandlerFails_thenOnlyDurableReceivePropagatesFailure() = runTest {
+        val event = TestEvent.newMLSWelcomeEvent()
+        val (arrangement, receiver) = Arrangement().arrange {
+            everySuspend { mlsWelcomeEventHandler.handle(any(), eq(event)) } returns Either.Left(failure)
+        }
+
+        receiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
+        receiver.onEvent(DurableMLSReceiveContext(arrangement.transactionContext), event, TestEvent.liveDeliveryInfo)
+            .shouldFail { assertEquals(failure, it) }
+    }
+
+    @Test
     fun givenRenamedConversationEvent_whenOnEventInvoked_thenRenamedConversationHandlerShouldBeCalled() = runTest {
         val renamedConversationEvent = TestEvent.renamedConversation()
 
@@ -272,7 +298,7 @@ class ConversationEventReceiverTest {
         }
 
     @Test
-    fun givenConversationMessageTimerEvent_whenOnEventInvoked_thenPropagateConversationMessageTimerEventHandlerResult() =
+    fun givenConversationMessageTimerFailure_whenOnEventInvoked_thenPropagatesRequiredFailure() =
         runTest {
             val conversationMessageTimerEvent = TestEvent.timerChanged()
 
@@ -287,10 +313,10 @@ class ConversationEventReceiverTest {
             )
 
             verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.conversationMessageTimerEventHandler.handle(eq(conversationMessageTimerEvent))
+                arrangement.conversationMessageTimerEventHandler.handle(eq(conversationMessageTimerEvent), eq(false))
             }
 
-            result.shouldFail()
+            result.shouldFail { assertEquals(failure, it) }
         }
 
     @Test
@@ -573,7 +599,7 @@ class ConversationEventReceiverTest {
 
         private suspend fun withDefaultSuccessfulHandlers() {
             everySuspend { newMessageEventHandler.handleNewProteusMessage(any(), any(), any()) } returns Unit
-            everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), any(), any()) } returns Unit
+            everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), any(), any()) } returns Either.Right(Unit)
             everySuspend { newMessageEventHandler.flushPendingSideEffects() } returns Unit
             everySuspend { newConversationEventHandler.handle(any(), any()) } returns Unit
             everySuspend { deletedConversationEventHandler.handle(any(), any()) } returns Unit
@@ -582,8 +608,8 @@ class ConversationEventReceiverTest {
             everySuspend { memberLeaveEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { mlsWelcomeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
-            everySuspend { renamedConversationEventHandler.handle(any()) } returns Unit
-            everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Unit
+            everySuspend { renamedConversationEventHandler.handle(any()) } returns Either.Right(Unit)
+            everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Either.Right(Unit)
             everySuspend { protocolUpdateEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { channelAddPermissionUpdateEventHandler.handle(any()) } returns Either.Right(Unit)
             everySuspend { mlsResetConversationEventHandler.handle(any(), any()) } returns Unit
@@ -603,7 +629,7 @@ class ConversationEventReceiverTest {
 
         suspend fun withConversationMessageTimerFailed() = apply {
             everySuspend {
-                conversationMessageTimerEventHandler.handle(any())
+                conversationMessageTimerEventHandler.handle(any(), eq(false))
             } returns Either.Left(failure)
         }
 

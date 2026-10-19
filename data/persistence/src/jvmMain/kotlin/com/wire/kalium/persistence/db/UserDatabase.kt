@@ -86,7 +86,7 @@ actual fun userDatabaseDriverByPath(
     path: String,
     passphrase: UserDBSecret?,
     enableWAL: Boolean
-): SqlDriver = databaseDriver(path) {
+): SqlDriver = databaseDriver("jdbc:sqlite:$path") {
     isWALEnabled = enableWAL
     areForeignKeyConstraintsEnforced = true
 }

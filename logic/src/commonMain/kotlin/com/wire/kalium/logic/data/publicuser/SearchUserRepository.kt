@@ -138,49 +138,55 @@ internal class SearchUserRepositoryImpl(
 
     override suspend fun getKnownContacts(
         searchUsersOptions: SearchUsersOptions
-    ): Either<CoreFailure, List<UserSearchDetails>> = selfTeamIdProvider().flatMap { selfTeamId ->
-        wrapStorageRequest {
-            searchDAO.getKnownContacts(
-                excludeConversationId = searchUsersOptions.conversationMembersExcluded?.toDao(),
-                onlyTeamId = if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamId?.value else null,
-                onlyDomain = if (searchUsersOptions.onlySelfTeamAndDomain) selfUserId.domain else null,
-            )
+    ): Either<CoreFailure, List<UserSearchDetails>> =
+        (if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamIdProvider() else Either.Right(null)).flatMap { selfTeamId ->
+            if (searchUsersOptions.onlySelfTeamAndDomain && selfTeamId == null) return@flatMap Either.Right(emptyList())
+            wrapStorageRequest {
+                searchDAO.getKnownContacts(
+                    excludeConversationId = searchUsersOptions.conversationMembersExcluded?.toDao(),
+                    onlyTeamId = if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamId?.value else null,
+                    onlyDomain = if (searchUsersOptions.onlySelfTeamAndDomain) selfUserId.domain else null,
+                )
+            }
+        }.map {
+            it.map(userMapper::fromSearchEntityToUserSearchDetails)
         }
-    }.map {
-        it.map(userMapper::fromSearchEntityToUserSearchDetails)
-    }
 
     override suspend fun searchLocalByName(
         name: String,
         searchUsersOptions: SearchUsersOptions
-    ): Either<CoreFailure, List<UserSearchDetails>> = selfTeamIdProvider().flatMap { selfTeamId ->
-        wrapStorageRequest {
-            searchDAO.searchByName(
-                searchQuery = name,
-                excludeConversationId = searchUsersOptions.conversationMembersExcluded?.toDao(),
-                onlyTeamId = if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamId?.value else null,
-                onlyDomain = if (searchUsersOptions.onlySelfTeamAndDomain) selfUserId.domain else null,
-            )
+    ): Either<CoreFailure, List<UserSearchDetails>> =
+        (if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamIdProvider() else Either.Right(null)).flatMap { selfTeamId ->
+            if (searchUsersOptions.onlySelfTeamAndDomain && selfTeamId == null) return@flatMap Either.Right(emptyList())
+            wrapStorageRequest {
+                searchDAO.searchByName(
+                    searchQuery = name,
+                    excludeConversationId = searchUsersOptions.conversationMembersExcluded?.toDao(),
+                    onlyTeamId = if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamId?.value else null,
+                    onlyDomain = if (searchUsersOptions.onlySelfTeamAndDomain) selfUserId.domain else null,
+                )
+            }
+        }.map {
+            it.map(userMapper::fromSearchEntityToUserSearchDetails)
         }
-    }.map {
-        it.map(userMapper::fromSearchEntityToUserSearchDetails)
-    }
 
     override suspend fun searchLocalByHandle(
         handle: String,
         searchUsersOptions: SearchUsersOptions
-    ): Either<CoreFailure, List<UserSearchDetails>> = selfTeamIdProvider().flatMap { selfTeamId ->
-        wrapStorageRequest {
-            searchDAO.searchByHandle(
-                searchQuery = handle,
-                excludeConversationId = searchUsersOptions.conversationMembersExcluded?.toDao(),
-                onlyTeamId = if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamId?.value else null,
-                onlyDomain = if (searchUsersOptions.onlySelfTeamAndDomain) selfUserId.domain else null,
-            )
+    ): Either<CoreFailure, List<UserSearchDetails>> =
+        (if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamIdProvider() else Either.Right(null)).flatMap { selfTeamId ->
+            if (searchUsersOptions.onlySelfTeamAndDomain && selfTeamId == null) return@flatMap Either.Right(emptyList())
+            wrapStorageRequest {
+                searchDAO.searchByHandle(
+                    searchQuery = handle,
+                    excludeConversationId = searchUsersOptions.conversationMembersExcluded?.toDao(),
+                    onlyTeamId = if (searchUsersOptions.onlySelfTeamAndDomain) selfTeamId?.value else null,
+                    onlyDomain = if (searchUsersOptions.onlySelfTeamAndDomain) selfUserId.domain else null,
+                )
+            }
+        }.map {
+            it.map(userMapper::fromSearchEntityToUserSearchDetails)
         }
-    }.map {
-        it.map(userMapper::fromSearchEntityToUserSearchDetails)
-    }
 
     private suspend fun updateLocalUsers(
         userProfileDTOList: List<UserProfileDTO>,

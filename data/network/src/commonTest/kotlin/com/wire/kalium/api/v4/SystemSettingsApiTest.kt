@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.networkContainer.TransientAuthenticatedNetworkContainer
 import com.wire.kalium.network.utils.NetworkResponse
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
@@ -36,7 +37,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlin.test.assertNull
+import kotlin.test.assertFailsWith
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.assertIs
 
 internal class SystemSettingsApiTest {
@@ -45,9 +49,12 @@ internal class SystemSettingsApiTest {
     @Test
     fun freshBearerTokenAndSelectedApiVersionAreUsed() = runTest {
         val session = sessionManager.session()
-        val config = configForVersion(18)
+        val config = configForVersion(18).let { it.copy(links = it.links.copy(api = "https://selected.example:8443/custom/")) }
         val engine = MockEngine { request ->
-            assertEquals("/v18/system/settings", request.url.encodedPath)
+            assertEquals("/custom/v18/system/settings", request.url.encodedPath)
+            assertEquals("selected.example", request.url.host)
+            assertEquals(8443, request.url.port)
+            assertNull(request.headers[HttpHeaders.Cookie])
             assertEquals("Bearer ${session.accessToken}", request.headers[HttpHeaders.Authorization])
             respondJson("""{"ssoIdpChangeDetectionEnabled":true}""")
         }
@@ -58,7 +65,7 @@ internal class SystemSettingsApiTest {
         assertIs<NetworkResponse.Success<SystemSettingsResponse>>(result)
         assertEquals(true, result.value.ssoIdpChangeDetectionEnabled)
         container.close()
-        assertFalse(engine.coroutineContext[Job]!!.isActive)
+        assertTrue(engine.coroutineContext[Job]!!.isCompleted)
     }
 
     @Test
@@ -121,6 +128,38 @@ internal class SystemSettingsApiTest {
         }
     }
 
+    @Test
+    fun productionApiVersions16Through18RemainSupported() = runTest {
+        for (version in 16..18) {
+            val engine = MockEngine { request ->
+                assertEquals("/v$version/system/settings", request.url.encodedPath)
+                respondJson("{}")
+            }
+            val container = container(sessionManager.session(), configForVersion(version), engine)
+            try {
+                assertIs<NetworkResponse.Success<SystemSettingsResponse>>(container.systemSettingsApi.settings())
+            } finally {
+                container.close()
+            }
+        }
+    }
+
+    @Test
+    fun clientConstructionFailureClosesTheOwnedEngine() = runTest {
+        val engine = MockEngine { respondJson("{}") }
+        val failure = IllegalStateException("client construction failed")
+        val failingEngine = object : HttpClientEngine by engine {
+            override val coroutineContext: CoroutineContext get() = throw failure
+        }
+
+        val result = assertFailsWith<IllegalStateException> {
+            container(sessionManager.session(), configForVersion(18), failingEngine)
+        }
+
+        assertEquals(failure, result)
+        assertTrue(engine.coroutineContext[Job]!!.isCompleted)
+    }
+
     private fun configForVersion(version: Int) = sessionManager.serverConfig().let {
         it.copy(metaData = it.metaData.copy(commonApiVersion = ApiVersionDTO.Valid(version)))
     }
@@ -128,7 +167,7 @@ internal class SystemSettingsApiTest {
     private fun container(
         session: SessionDTO,
         config: ServerConfigDTO,
-        engine: MockEngine,
+        engine: HttpClientEngine,
     ) = TransientAuthenticatedNetworkContainer.create(
         session = session,
         serverConfigDTO = config,

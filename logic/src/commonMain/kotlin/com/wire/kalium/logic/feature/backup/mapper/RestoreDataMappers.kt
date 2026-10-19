@@ -37,7 +37,7 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 internal fun BackupQualifiedId.toQualifiedIdOrNull(context: String): QualifiedID? {
     if (domain.isBlank()) {

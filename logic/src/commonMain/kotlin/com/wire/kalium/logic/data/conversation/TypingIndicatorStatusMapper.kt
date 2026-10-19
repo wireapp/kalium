@@ -20,11 +20,6 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatus
 import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
 
-internal fun TypingIndicatorStatus.toModel(): Conversation.TypingIndicatorMode = when (this) {
-    TypingIndicatorStatus.STARTED -> Conversation.TypingIndicatorMode.STARTED
-    TypingIndicatorStatus.STOPPED -> Conversation.TypingIndicatorMode.STOPPED
-}
-
 internal fun Conversation.TypingIndicatorMode.toApi(): TypingIndicatorStatus = when (this) {
     Conversation.TypingIndicatorMode.STARTED -> TypingIndicatorStatus.STARTED
     Conversation.TypingIndicatorMode.STOPPED -> TypingIndicatorStatus.STOPPED

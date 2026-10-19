@@ -15,7 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+import org.jetbrains.kotlin.gradle.plugin.mpp.AbstractExecutable
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -52,6 +55,20 @@ kotlin {
         }
     }
 
+    iosSimulatorArm64 {
+        binaries.executable("swiftAppFixture", listOf(NativeBuildType.DEBUG)) {
+            compilation = compilations.getByName("test")
+            baseName = "swift-app-verifier"
+            entryPoint = "com.wire.kalium.logic.runSwiftReceivingAppVerifier"
+        }
+        // Test and fixture executables, not the KaliumLogic framework.
+        binaries.withType<AbstractExecutable>().configureEach {
+            val entitlements = rootProject.file("core/cryptography/src/iosTest/entitlements.plist")
+            linkerOpts("-framework", "Security", "-sectcreate", "__TEXT", "__entitlements", entitlements.absolutePath)
+            linkTaskProvider.configure { inputs.file(entitlements) }
+        }
+    }
+
     val xcf = XCFramework("KaliumLogic")
     val appleTargets = listOf(iosArm64(), iosSimulatorArm64(), macosArm64())
     appleTargets.forEach {
@@ -71,6 +88,7 @@ kotlin {
                 implementation(projects.data.network)
                 api(projects.core.data)
                 implementation(projects.data.dataMappers)
+                api(projects.domain.messaging.receiving)
                 api(projects.data.networkUtil)
                 implementation(projects.core.cryptography)
                 implementation(projects.data.persistence)
@@ -136,6 +154,8 @@ kotlin {
             kotlin.exclude("com/wire/kalium/logic/feature/call/**")
             dependencies {
                 implementation(libs.coreCryptoKmp)
+                // The app answers the share extension through its outbox (ADR 13).
+                implementation(projects.share)
             }
         }
         val appleCallSourceDir = "src/appleMain/kotlin/com/wire/kalium/logic/feature/call"
@@ -179,4 +199,9 @@ kotlin {
             }
         }
     }
+}
+
+// Account session integration tests use CoreCrypto and require the simulator Keychain service.
+tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+    standalone.set(false)
 }

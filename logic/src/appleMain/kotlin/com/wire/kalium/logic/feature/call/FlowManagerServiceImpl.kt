@@ -22,9 +22,15 @@ import com.wire.kalium.calling.AppleAvsFlowManager
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.LocalVideoPreviewAttachment
+import com.wire.kalium.logic.feature.LocalVideoPreviewAttachmentOwner
+import com.wire.kalium.logic.feature.RemoteVideoViewAttachment
+import com.wire.kalium.logic.feature.RemoteVideoViewAttachmentOwner
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformRotation
 import com.wire.kalium.logic.util.PlatformView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal actual open class FlowManagerServiceImpl(
     appContext: PlatformContext
@@ -32,23 +38,64 @@ internal actual open class FlowManagerServiceImpl(
     private val flowManager by lazy {
         AppleAvsFlowManager()
     }
-
-    actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
-        if (!flowManager.attachPlatformVideoView(view)) {
-            kaliumLogger.w("AVS iOS: setVideoPreview ignored because view is null")
-            return
+    private val remoteViews by lazy {
+        RemoteVideoViewAttachmentOwner(
+            attachNative = { view, userId, clientId -> flowManager.attachPlatformRemoteVideoView(view, userId, clientId) },
+            detachNative = { view -> flowManager.detachPlatformRemoteVideoView(view) },
+        )
+    }
+    private val localPreview by lazy {
+        LocalVideoPreviewAttachmentOwner(
+            attachNative = { view -> flowManager.attachPlatformLocalVideoPreview(view) },
+            detachNative = { view -> flowManager.detachPlatformLocalVideoPreview(view) },
+            startNativeCapture = { flowManager.startLocalVideoCapture() },
+            stopNativeCapture = { flowManager.stopLocalVideoCapture() },
+        )
+    }
+    private val cameraController by lazy {
+        AppleCameraController { deviceId, conversationId ->
+            flowManager.setVideoCaptureDevice(deviceId, conversationId)
         }
-        callingLogger.i("AVS iOS: attached remote video view for conversation=${conversationId.value}")
+    }
+    private var legacyPreview: LocalVideoPreviewAttachment? = null
+
+    internal suspend fun attachRemoteVideoView(
+        view: PlatformView,
+        userId: String,
+        clientId: String,
+    ): RemoteVideoViewAttachment = withContext(Dispatchers.Main) {
+        remoteViews.attach(view, userId, clientId)
     }
 
-    actual override suspend fun flipToFrontCamera(conversationId: ConversationId) {
-        flowManager.setVideoCaptureDevice(deviceId = "front", forConversation = conversationId.toString())
-        callingLogger.i("AVS iOS: switched to front camera for conversation=${conversationId.value}")
+    internal suspend fun attachLocalVideoPreview(view: PlatformView): LocalVideoPreviewAttachment =
+        withContext(Dispatchers.Main) { localPreview.attach(view) }
+
+    actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) =
+        withContext(Dispatchers.Main) {
+            if (view.hasNativeView()) {
+                legacyPreview = localPreview.attach(view)
+            } else {
+                legacyPreview?.let(localPreview::detach)
+                legacyPreview = null
+            }
+            callingLogger.i("AVS Apple: updated local video preview for conversation=${conversationId.value}")
+        }
+
+    actual override suspend fun flipToFrontCamera(conversationId: ConversationId) = withContext(Dispatchers.Main) {
+        selectCamera(AppleCameraPosition.FRONT, conversationId)
     }
 
-    actual override suspend fun flipToBackCamera(conversationId: ConversationId) {
-        flowManager.setVideoCaptureDevice(deviceId = "back", forConversation = conversationId.toString())
-        callingLogger.i("AVS iOS: switched to back camera for conversation=${conversationId.value}")
+    actual override suspend fun flipToBackCamera(conversationId: ConversationId) = withContext(Dispatchers.Main) {
+        selectCamera(AppleCameraPosition.BACK, conversationId)
+    }
+
+    private fun selectCamera(position: AppleCameraPosition, conversationId: ConversationId) {
+        val camera = position.name.lowercase()
+        if (cameraController.select(position, conversationId.toString())) {
+            callingLogger.i("AVS Apple: switched to $camera camera for conversation=${conversationId.value}")
+        } else {
+            callingLogger.w("AVS Apple: $camera camera unavailable for conversation=${conversationId.value}")
+        }
     }
 
     actual override suspend fun setUIRotation(rotation: PlatformRotation) {

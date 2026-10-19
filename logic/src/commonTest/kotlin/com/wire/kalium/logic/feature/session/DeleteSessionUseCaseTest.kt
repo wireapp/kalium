@@ -33,15 +33,12 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class DeleteSessionUseCaseTest {
 
-    // TODO: re-enable when we have the ability to mock the UserSessionScopeProvider
-    @Ignore
     @Test
     fun givenSuccess_WhenDeletingSessionLocally_thenSuccessAndResourcesAreFreed() = runTest {
 
@@ -55,11 +52,7 @@ class DeleteSessionUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.sessionRepository.deleteSession(eq(userId))
-        }
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrange.userSessionScopeProvider.delete(eq(userId))
+            arrange.userSessionScopeProvider.deleteSession(eq(userId), eq(arrange.sessionRepository))
         }
     }
 
@@ -78,7 +71,7 @@ class DeleteSessionUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrange.sessionRepository.deleteSession(any())
+            arrange.userSessionScopeProvider.deleteSession(eq(userId), eq(arrange.sessionRepository))
         }
 
         verifySuspend(VerifyMode.not) {
@@ -95,17 +88,14 @@ class DeleteSessionUseCaseTest {
 
         suspend fun withSessionDeleteSuccess(userId: UserId): Arrangement = apply {
             everySuspend {
-                sessionRepository.deleteSession(eq(userId))
+                userSessionScopeProvider.deleteSession(eq(userId), eq(sessionRepository))
             } returns Either.Right(Unit)
 
-            everySuspend {
-                userSessionScopeProvider.delete(eq(userId))
-            } returns Unit
         }
 
         suspend fun withSessionDeleteFailure(userId: UserId, error: StorageFailure): Arrangement = apply {
             everySuspend {
-                sessionRepository.deleteSession(eq(userId))
+                userSessionScopeProvider.deleteSession(eq(userId), eq(sessionRepository))
             } returns Either.Left(error)
         }
 

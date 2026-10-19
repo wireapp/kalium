@@ -23,6 +23,11 @@ import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import app.cash.sqldelight.driver.native.wrapConnection
 import co.touchlab.sqliter.DatabaseConfiguration
+import co.touchlab.sqliter.DatabaseConnection
+import co.touchlab.sqliter.DatabaseManager
+import co.touchlab.sqliter.createDatabaseManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import co.touchlab.sqliter.JournalMode
 import co.touchlab.sqliter.interop.Logger
 import kotlinx.cinterop.toKString
@@ -33,7 +38,8 @@ import platform.posix.getenv
 
 actual data class PlatformDatabaseData(
     val storageData: StorageData,
-    val useGradleSafeSqliterLogging: Boolean = false
+    val useGradleSafeSqliterLogging: Boolean = false,
+    val accountResourceAccess: com.wire.kalium.util.AccountResourceAccess? = null
 )
 
 sealed class StorageData {
@@ -84,7 +90,39 @@ fun databaseDriver(
             onCreateConnection = { connection -> sqlCipherKey?.let(connection::setSqlCipherKey) }
         )
     )
-    return NativeSqliteDriver(configuration, maxReaderConnections = NATIVE_MAX_READER_CONNECTIONS)
+    return nativeDatabaseDriver(configuration, maxReaderConnections = NATIVE_MAX_READER_CONNECTIONS)
+}
+
+/** Track connection creation, including connections that fail before SQLDelight registers them. */
+internal fun nativeDatabaseDriver(configuration: DatabaseConfiguration, maxReaderConnections: Int): SqlDriver {
+    val manager = createDatabaseManager(configuration)
+    val failure = MutableStateFlow<Throwable?>(null)
+    val connections = MutableStateFlow<List<DatabaseConnection>>(emptyList())
+    val trackedManager = object : DatabaseManager by manager {
+        override fun createMultiThreadedConnection(): DatabaseConnection = track { manager.createMultiThreadedConnection() }
+        override fun createSingleThreadedConnection(): DatabaseConnection = track { manager.createSingleThreadedConnection() }
+
+        @Suppress("TooGenericExceptionCaught")
+        private fun track(create: () -> DatabaseConnection): DatabaseConnection = try {
+            create().also { connection -> connections.update { it + connection } }
+        } catch (cause: Throwable) {
+            failure.compareAndSet(null, cause)
+            throw cause
+        }
+    }
+    val driver = NativeSqliteDriver(trackedManager, maxReaderConnections)
+    return object : SqlDriver by driver {
+        @Suppress("TooGenericExceptionCaught")
+        override fun close() {
+            try {
+                driver.close()
+                check(connections.value.all { it.closed }) { "A native connection did not reach its pool for cleanup" }
+            } catch (cause: Throwable) {
+                failure.compareAndSet(null, cause)
+            }
+            failure.value?.let { throw IllegalStateException("Native database cleanup cannot be established", it) }
+        }
+    }
 }
 
 private object GradleSafeSqliterLogger : Logger {

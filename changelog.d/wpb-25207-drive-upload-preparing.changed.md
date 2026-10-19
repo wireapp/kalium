@@ -1,0 +1,6 @@
+Drive upload coordinators can track files while local staging is in progress with `beginPreparing`, `attachPreparedRequest`, and `failPreparing`. Preparing work counts toward `hasActiveUploads` and is retained by dismissal. Upload items expose their conversation from creation; cancel-all, retry-all-failed, and dismiss-all also accept a conversation ID. Existing no-argument actions retain their cross-conversation behavior.
+
+  - ABI: breaking changes to `CellUploadItem` constructor/copy signatures and new coordinator methods; recompile consumers.
+  - Source: `CellUploadItem.conversationId` is required, `request` is nullable, and exhaustive state matches must handle `CellUploadState.Preparing`. Custom coordinator implementations must implement the new methods.
+  - Behavior: preparing files become visible after the coordinator processes their registration; preparing items enter the transfer queue once their staged request is attached. Cancel actions continue to apply to queued/running transfers, as upstream.
+  - Migration: register a file before staging, attach its staged request on success or call `failPreparing` on failure; handle null requests while preparing and provide the conversation root segment when constructing items. The queue remains in memory; native hosts still own background execution and account/resource lifetimes.

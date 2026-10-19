@@ -1,6 +1,6 @@
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import kotlinx.datetime.Instant;
+import kotlin.time.Instant;
 
 CREATE TABLE Meeting (
     meeting_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -59,11 +59,10 @@ SELECT *
 FROM Meeting
 WHERE meeting_id IN ?;
 
-selectLastGeneratedOccurrenceStart:
-SELECT occurrence_start
+selectMeetingOccurrenceIdByStart:
+SELECT occurrence_id
 FROM MeetingOccurrence
-WHERE meeting_id = ?
-ORDER BY occurrence_start DESC
+WHERE meeting_id = :meetingId AND occurrence_start = :occurrenceStart
 LIMIT 1;
 
 deleteMeeting:
@@ -79,6 +78,9 @@ WHERE meeting_id NOT IN :meetingIds;
 
 selectMeetingsByConversationId:
 SELECT * FROM Meeting WHERE conversation_id = ?;
+
+deleteMeetingsByConversationId:
+DELETE FROM Meeting WHERE conversation_id = ?;
 
 deleteMeetingOccurrences:
 DELETE FROM MeetingOccurrence
@@ -104,7 +106,7 @@ WHERE occurrence_end <= :outdatedThreshold;
 selectRecurringMeetings:
 SELECT *
 FROM Meeting
-WHERE recurrence_interval IS NOT NULL;
+WHERE recurrence_frequency IS NOT NULL;
 
 selectMeetingOccurrencesByMeetingId:
 SELECT *

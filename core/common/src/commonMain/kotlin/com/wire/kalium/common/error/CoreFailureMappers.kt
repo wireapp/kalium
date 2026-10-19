@@ -30,6 +30,7 @@ import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.MLSError
+import com.wire.kalium.network.exceptions.isPlatformProxyFailure
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.io.IOException
 import kotlinx.coroutines.flow.Flow
@@ -82,7 +83,8 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
                 exception is MLSError -> Either.Left(mapMLSError(exception))
 
                 // todo SocketException is platform specific so need to wrap it in our own exceptions
-                exception.cause?.message?.contains(SOCKS_EXCEPTION, true) == true -> {
+                exception.cause?.isPlatformProxyFailure() == true ||
+                    exception.cause?.message?.contains(SOCKS_EXCEPTION, true) == true -> {
                     Either.Left(NetworkFailure.ProxyError(exception.cause))
                 }
 

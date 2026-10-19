@@ -91,7 +91,8 @@ internal class UserSearchApiWrapperImpl(
         val filteredContactResponse = userSearchResponse.documents.filter { contactDTO ->
             val isSelfUser = contactDTO.qualifiedID.toModel() == selfUserId
             val isExcludedConversationMember = conversationMembersId.contains(contactDTO.qualifiedID.toModel())
-            val isSameTeamAndDomain = contactDTO.team == selfTeamId?.value && contactDTO.qualifiedID.domain == selfUserId.domain
+            val isSameTeamAndDomain = selfTeamId != null && contactDTO.team == selfTeamId.value &&
+                contactDTO.qualifiedID.domain == selfUserId.domain
 
             !isSelfUser && !isExcludedConversationMember && (!searchUsersOptions.onlySelfTeamAndDomain || isSameTeamAndDomain)
         }

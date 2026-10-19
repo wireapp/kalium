@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
@@ -33,7 +32,6 @@ import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.ManagedByDTO
 import com.wire.kalium.network.api.model.SelfUserDTO
-import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
@@ -51,7 +49,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Suppress("TooManyFunctions")
 internal interface UserMapper {
@@ -80,8 +78,6 @@ internal interface UserMapper {
         updateRequest: UserUpdateRequest,
         selfUserId: UserId,
     ): PartialUserEntity
-
-    fun fromUserUpdateEventToPartialUserEntity(event: Event.User.Update): PartialUserEntity
 
     fun fromSelfUserDtoToUserEntity(
         userDTO: SelfUserDTO,
@@ -332,28 +328,7 @@ internal class UserMapperImpl(
         userTypeEntity: UserTypeEntity,
         selfUserId: UserId,
         selfTeamId: TeamId?
-    ) = UserEntity(
-        id = idMapper.fromApiToDao(userProfile.id),
-        name = userProfile.name,
-        handle = userProfile.handle,
-        email = userProfile.email,
-        phone = null,
-        accentId = userProfile.accentId,
-        team = userProfile.teamId,
-        previewAssetId = userProfile.assets.getPreviewAssetOrNull()
-            ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
-        completeAssetId = userProfile.assets.getCompleteAssetOrNull()
-            ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
-        connectionStatus = connectionState,
-        availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = userTypeEntity,
-        botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
-        deleted = userProfile.deleted ?: false,
-        expiresAt = userProfile.expiresAt?.let { Instant.parse(it) },
-        defederated = false,
-        supportedProtocols = userProfile.supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS),
-        activeOneOnOneConversationId = null
-    )
+    ) = userProfile.toUserEntity(connectionState, userTypeEntity)
 
     override fun fromUserProfileDtoToOtherUser(userProfile: UserProfileDTO, selfUserId: UserId, selfTeamId: TeamId?): OtherUser =
         OtherUser(
@@ -392,45 +367,11 @@ internal class UserMapperImpl(
             supportedProtocols = userProfile.supportedProtocols?.toModel() ?: setOf(SupportedProtocol.PROTEUS),
         )
 
-    override fun fromUserUpdateEventToPartialUserEntity(event: Event.User.Update): PartialUserEntity =
-        PartialUserEntity(
-            email = event.email,
-            name = event.name,
-            handle = event.handle,
-            accentId = event.accentId,
-            previewAssetId = event.previewAssetId?.let { QualifiedIDEntity(it, event.userId.domain) },
-            completeAssetId = event.completeAssetId?.let { QualifiedIDEntity(it, event.userId.domain) },
-            supportedProtocols = event.supportedProtocols?.toDao(),
-            id = event.userId.toDao()
-        )
-
     /**
      * Default values and marked as [UserEntity.hasIncompleteMetadata] = true.
      * So later we can re-fetch them.
      */
-    override fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity {
-        return UserEntity(
-            id = userId.toDao(),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 1,
-            team = null,
-            connectionStatus = ConnectionEntity.State.ACCEPTED,
-            previewAssetId = null,
-            completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.STANDARD,
-            botService = null,
-            deleted = false,
-            hasIncompleteMetadata = true,
-            expiresAt = null,
-            defederated = false,
-            supportedProtocols = null,
-            activeOneOnOneConversationId = null
-        )
-    }
+    override fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity = userId.toIncompleteUserEntity()
 
     override fun fromSearchEntityToUserSearchDetails(searchEntity: UserSearchEntity) = UserSearchDetails(
         id = searchEntity.id.toModel(),
@@ -448,33 +389,3 @@ internal class UserMapperImpl(
         else -> null
     }
 }
-
-internal fun SupportedProtocol.toApi() = when (this) {
-    SupportedProtocol.MLS -> SupportedProtocolDTO.MLS
-    SupportedProtocol.PROTEUS -> SupportedProtocolDTO.PROTEUS
-}
-
-internal fun SupportedProtocol.toDao() = when (this) {
-    SupportedProtocol.MLS -> SupportedProtocolEntity.MLS
-    SupportedProtocol.PROTEUS -> SupportedProtocolEntity.PROTEUS
-}
-
-internal fun SupportedProtocolDTO.toModel() = when (this) {
-    SupportedProtocolDTO.MLS -> SupportedProtocol.MLS
-    SupportedProtocolDTO.PROTEUS -> SupportedProtocol.PROTEUS
-}
-
-internal fun SupportedProtocolDTO.toDao() = when (this) {
-    SupportedProtocolDTO.MLS -> SupportedProtocolEntity.MLS
-    SupportedProtocolDTO.PROTEUS -> SupportedProtocolEntity.PROTEUS
-}
-
-internal fun SupportedProtocolEntity.toModel() = when (this) {
-    SupportedProtocolEntity.MLS -> SupportedProtocol.MLS
-    SupportedProtocolEntity.PROTEUS -> SupportedProtocol.PROTEUS
-}
-
-internal fun List<SupportedProtocolDTO>.toDao() = this.map { it.toDao() }.toSet()
-internal fun List<SupportedProtocolDTO>.toModel() = this.map { it.toModel() }.toSet()
-internal fun Set<SupportedProtocol>.toDao() = this.map { it.toDao() }.toSet()
-internal fun Set<SupportedProtocolEntity>.toModel() = this.map { it.toModel() }.toSet()

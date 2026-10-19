@@ -51,3 +51,15 @@ LIMIT ?;
 deleteUnprocessedLiveEventsByIds:
 DELETE FROM Events
 WHERE is_processed = 0 AND is_live = 1 AND event_id IN ?;
+
+selectUnprocessedEventsAfter:
+SELECT * FROM Events
+WHERE is_processed = 0 AND id > :afterId
+ORDER BY id ASC
+LIMIT :pageSize;
+
+selectUnprocessedEventAfter:
+SELECT * FROM Events
+WHERE is_processed = 0 AND id > :afterId
+ORDER BY id ASC
+LIMIT 1;

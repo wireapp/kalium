@@ -26,7 +26,7 @@ import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.random.Random
 
 @Suppress("LongParameterList")

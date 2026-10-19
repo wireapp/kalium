@@ -34,7 +34,7 @@ class GetCallConversationTypeProviderTest {
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                     epoch = 1.toULong(),
                     cipherSuite = CipherSuite.fromTag(1),
-                    keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
+                    keyingMaterialLastUpdate = kotlin.time.Instant.DISTANT_PAST
                 )
             )
         }
@@ -59,7 +59,7 @@ class GetCallConversationTypeProviderTest {
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                     epoch = 1.toULong(),
                     cipherSuite = CipherSuite.fromTag(1),
-                    keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
+                    keyingMaterialLastUpdate = kotlin.time.Instant.DISTANT_PAST
                 )
             )
         }
@@ -182,7 +182,7 @@ class GetCallConversationTypeProviderTest {
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                     epoch = 1.toULong(),
                     cipherSuite = CipherSuite.fromTag(1),
-                    keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
+                    keyingMaterialLastUpdate = kotlin.time.Instant.DISTANT_PAST
                 )
             )
         }
@@ -234,7 +234,7 @@ class GetCallConversationTypeProviderTest {
                     groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                     epoch = 1.toULong(),
                     cipherSuite = CipherSuite.fromTag(1),
-                    keyingMaterialLastUpdate = kotlinx.datetime.Instant.DISTANT_PAST
+                    keyingMaterialLastUpdate = kotlin.time.Instant.DISTANT_PAST
                 )
             )
             withShouldUseSFTForOneOnOneCalls()

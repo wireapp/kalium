@@ -19,15 +19,24 @@ package com.wire.kalium.cells.data
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.MockRequestHandler
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.request.HttpRequestData
 import io.ktor.client.request.HttpResponseData
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException as KtorIOException
 import okio.FileSystem
 import okio.ForwardingFileSystem
 import okio.IOException
@@ -40,21 +49,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class CellsS3ClientMultipartAbortTest {
-
-    @Test
-    fun givenSuccessfulMultipartUpload_whenUploading_thenUploadIsNotAborted() = runTest {
-        val (fileSystem, uploadPath) = createMultipartUploadFile()
-        val recorder = MultipartRecorder()
-        val client = multipartClient(recorder = recorder, fileSystem = fileSystem)
-
-        client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
-
-        assertEquals(1, recorder.createCount)
-        assertEquals(listOf(1, 2), recorder.partNumbers)
-        assertEquals(1, recorder.completeCount)
-        assertTrue(recorder.abortedUploadIds.isEmpty())
-    }
 
     @Test
     fun givenSourceReadFailure_whenUploadingMultipart_thenUploadIsAborted() = runTest {
@@ -69,7 +65,10 @@ class CellsS3ClientMultipartAbortTest {
             client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
         }
 
-        assertContains(exception.message.orEmpty(), "read failed")
+        // Wrapped as a local-source failure (not a connectivity one), with the original error as its cause.
+        assertContains(exception.message.orEmpty(), "Failed to open upload source")
+        assertContains(exception.cause?.message.orEmpty(), "read failed")
+        assertTrue(exception !is NoNetworkConnectionException)
         assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
         assertTrue(recorder.partNumbers.isEmpty())
         assertEquals(0, recorder.completeCount)
@@ -92,28 +91,10 @@ class CellsS3ClientMultipartAbortTest {
         }
 
         assertContains(exception.message.orEmpty(), "Upload multipart part failed: 403")
+        assertTrue(exception !is NoNetworkConnectionException)
         assertEquals(listOf(1, 2), recorder.partNumbers)
         assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
         assertEquals(0, recorder.completeCount)
-    }
-
-    @Test
-    fun givenCompletionFailure_whenUploadingMultipart_thenUploadIsAborted() = runTest {
-        val (fileSystem, uploadPath) = createMultipartUploadFile()
-        val recorder = MultipartRecorder()
-        val client = multipartClient(
-            recorder = recorder,
-            fileSystem = fileSystem,
-            completeStatus = HttpStatusCode.BadRequest,
-        )
-
-        val exception = assertFailsWith<IOException> {
-            client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
-        }
-
-        assertContains(exception.message.orEmpty(), "Complete multipart upload failed: 400")
-        assertEquals(1, recorder.completeCount)
-        assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
     }
 
     @Test
@@ -152,21 +133,217 @@ class CellsS3ClientMultipartAbortTest {
         assertTrue(recorder.partNumbers.isEmpty())
     }
 
+    @Test
+    fun givenCancelledUploadJob_whenUploadingMultipart_thenAbortsBeforePropagatingOriginalCancellation() = runTest {
+        val (fileSystem, uploadPath) = createMultipartUploadFile()
+        val recorder = MultipartRecorder()
+        val partStarted = CompletableDeferred<Unit>()
+        val cancellation = CancellationException("upload cancelled")
+        var failure: CancellationException? = null
+        val client = createClient(
+            httpClient = testHttpClient { request ->
+                if (request.method == HttpMethod.Put) {
+                    partStarted.complete(Unit)
+                    awaitCancellation()
+                } else {
+                    respondToMultipartRequest(
+                        request, recorder, TEST_UPLOAD_ID, { HttpStatusCode.OK },
+                        HttpStatusCode.NoContent,
+                    )
+                }
+            },
+            fileSystem = fileSystem,
+            config = fixedDateConfig(maxRegularUploadSize = 1, multipartChunkSize = CHUNK_SIZE),
+        )
+
+        val upload = launch {
+            try {
+                client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
+            } catch (cause: CancellationException) {
+                failure = cause
+                throw cause
+            }
+        }
+        partStarted.await()
+        upload.cancel(cancellation)
+        upload.join()
+
+        assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
+        assertTrue(generateSequence<Throwable>(assertNotNull(failure)) { it.cause }.any { it === cancellation })
+        assertEquals(0, recorder.completeCount)
+    }
+
+    @Test
+    fun givenStalledAbortRequest_whenUploadingFails_thenCleanupFinishesAndPreservesOriginalFailure() = runTest {
+        val (fileSystem, uploadPath) = createMultipartUploadFile()
+        val recorder = MultipartRecorder()
+        var abortFinished = false
+        val client = createClient(
+            httpClient = testHttpClient { request ->
+                if (request.method == HttpMethod.Delete) {
+                    recorder.abortedUploadIds += assertNotNull(request.url.parameters["uploadId"])
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        abortFinished = true
+                    }
+                } else {
+                    respondToMultipartRequest(
+                        request, recorder, TEST_UPLOAD_ID, { HttpStatusCode.Forbidden },
+                        HttpStatusCode.NoContent,
+                    )
+                }
+            },
+            fileSystem = fileSystem,
+            config = fixedDateConfig(maxRegularUploadSize = 1, multipartChunkSize = CHUNK_SIZE),
+        )
+
+        val exception = assertFailsWith<IOException> {
+            client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
+        }
+
+        assertContains(exception.message.orEmpty(), "Upload multipart part failed: 403")
+        assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
+        assertTrue(abortFinished)
+        assertEquals(ABORT_TIMEOUT_MILLIS, testScheduler.currentTime)
+    }
+
+    @Test
+    fun givenUnauthorizedAbortResponse_whenUploadingFails_thenRefreshesOnceAndSignsAbortForTheSameObject() = runTest {
+        val (fileSystem, uploadPath) = createMultipartUploadFile()
+        val recorder = MultipartRecorder()
+        val credentialsProvider = FakeS3CredentialsProvider()
+        val abortAuthorizationHeaders = mutableListOf<String>()
+        val client = createClient(
+            httpClient = testHttpClient { request ->
+                val abortStatus = if (request.method == HttpMethod.Delete) {
+                    assertEquals("https://cells.example.test/io/folder/a%20file.txt?uploadId=$TEST_UPLOAD_ID", request.url.toString())
+                    assertEquals("cells.example.test", request.headers[HttpHeaders.Host])
+                    assertEquals("20260701T120102Z", request.headers["x-amz-date"])
+                    abortAuthorizationHeaders += assertNotNull(request.headers[HttpHeaders.Authorization])
+                    if (abortAuthorizationHeaders.size == 1) HttpStatusCode.Unauthorized else HttpStatusCode.NoContent
+                } else {
+                    HttpStatusCode.NoContent
+                }
+                respondToMultipartRequest(
+                    request, recorder, TEST_UPLOAD_ID, { HttpStatusCode.Forbidden },
+                    abortStatus,
+                )
+            },
+            fileSystem = fileSystem,
+            credentialsProvider = credentialsProvider,
+            config = fixedDateConfig(maxRegularUploadSize = 1, multipartChunkSize = CHUNK_SIZE),
+        )
+
+        val exception = assertFailsWith<IOException> {
+            client.upload(uploadPath, cellNode(path = "folder/a file.txt"), onProgressUpdate = {})
+        }
+
+        assertContains(exception.message.orEmpty(), "Upload multipart part failed: 403")
+        assertEquals(listOf(TEST_UPLOAD_ID, TEST_UPLOAD_ID), recorder.abortedUploadIds)
+        assertEquals(1, credentialsProvider.refreshCount)
+        assertEquals(listOf(TEST_ACCESS_TOKEN), credentialsProvider.rejectedAccessKeyIds)
+        assertContains(abortAuthorizationHeaders.first(), "Credential=$TEST_ACCESS_TOKEN/")
+        assertContains(abortAuthorizationHeaders.last(), "Credential=${REFRESHED_TOKEN_PREFIX}1/")
+        abortAuthorizationHeaders.forEach { assertContains(it, "SignedHeaders=host;x-amz-content-sha256;x-amz-date") }
+    }
+
+    // Keep the mock HTTP requests and cleanup deadline on the same virtual clock.
+    private fun TestScope.testHttpClient(handler: MockRequestHandler): HttpClient = HttpClient(MockEngine) {
+        engine {
+            dispatcher = StandardTestDispatcher(testScheduler)
+            addHandler(handler)
+        }
+    }
+
+    @Test
+    fun givenConnectivityFailureDuringPartUpload_whenUploadingMultipart_thenUploadIsNotAborted() = runTest {
+        val (fileSystem, uploadPath) = createMultipartUploadFile()
+        val recorder = MultipartRecorder()
+        val client = multipartClient(
+            recorder = recorder,
+            fileSystem = fileSystem,
+            failPart = { partNumber -> SocketTimeoutException("simulated connection drop").takeIf { partNumber == 2 } },
+        )
+
+        val exception = assertFailsWith<NoNetworkConnectionException> {
+            client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
+        }
+
+        assertTrue(exception is NoNetworkConnectionException)
+        assertTrue(recorder.abortedUploadIds.isEmpty())
+        assertEquals(listOf(1), recorder.partNumbers)
+        assertEquals(0, recorder.completeCount)
+    }
+
+    @Test
+    fun givenGenericNetworkIOExceptionDuringPartUpload_whenUploadingMultipart_thenItIsClassifiedAsConnectivityFailure() = runTest {
+        // Regression test: an android.net wifi-off failure (UnknownHostException, ConnectException, ...) is
+        // on the JVM a plain java.io.IOException, not Ktor's ConnectTimeoutException/SocketTimeoutException
+        // specifically. A previous version of uploadParts()'s error handling caught this generic case and
+        // wrongly reclassified it as a local file problem instead of a connectivity one.
+        val (fileSystem, uploadPath) = createMultipartUploadFile()
+        val recorder = MultipartRecorder()
+        val client = multipartClient(
+            recorder = recorder,
+            fileSystem = fileSystem,
+            failPart = { partNumber -> KtorIOException("simulated network drop").takeIf { partNumber == 2 } },
+        )
+
+        val exception = assertFailsWith<NoNetworkConnectionException> {
+            client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
+        }
+
+        assertTrue(exception is NoNetworkConnectionException)
+        assertTrue(recorder.abortedUploadIds.isEmpty())
+    }
+
+    @Test
+    fun givenConnectivityFailureDuringPartUpload_whenRetrying_thenAlreadyUploadedPartsAreNotResent() = runTest {
+        val (fileSystem, uploadPath) = createMultipartUploadFile()
+        val recorder = MultipartRecorder()
+        // Stays true for every internal retry attempt within the first client.upload() call, so that call
+        // genuinely exhausts its retries and fails, instead of the mock engine's own failure silently
+        // succeeding on requestWithStatusRetry's 2nd/3rd attempt within the same outer call.
+        var failPart2 = true
+        val client = multipartClient(
+            recorder = recorder,
+            fileSystem = fileSystem,
+            failPart = { partNumber -> SocketTimeoutException("simulated connection drop").takeIf { partNumber == 2 && failPart2 } },
+        )
+        val node = cellNode(path = "upload.txt")
+
+        assertFailsWith<NoNetworkConnectionException> {
+            client.upload(uploadPath, node, onProgressUpdate = {})
+        }
+        assertEquals(listOf(1), recorder.partNumbers)
+
+        // Retry on the same client/node: part 1 must not be re-uploaded.
+        failPart2 = false
+        client.upload(uploadPath, node, onProgressUpdate = {})
+
+        assertEquals(1, recorder.createCount)
+        assertEquals(listOf(1, 2), recorder.partNumbers)
+        assertEquals(1, recorder.completeCount)
+        assertTrue(recorder.abortedUploadIds.isEmpty())
+    }
+
     private fun createMultipartUploadFile() = createUploadFile(ByteArray(UPLOAD_SIZE) { it.toByte() })
 
-    private fun multipartClient(
+    private fun TestScope.multipartClient(
         recorder: MultipartRecorder,
         fileSystem: FileSystem,
         uploadId: String? = TEST_UPLOAD_ID,
         partStatus: (Int) -> HttpStatusCode = { HttpStatusCode.OK },
-        completeStatus: HttpStatusCode = HttpStatusCode.OK,
         abortStatus: HttpStatusCode = HttpStatusCode.NoContent,
+        // Evaluated on every attempt (including internal retries), unlike partStatus which only affects
+        // the HTTP response: this simulates the request never reaching the server at all. Returning an
+        // exception throws it instead of responding.
+        failPart: (Int) -> Throwable? = { null },
     ): CellsS3Client = createClient(
-        httpClient = HttpClient(
-            MockEngine { request ->
-                respondToMultipartRequest(request, recorder, uploadId, partStatus, completeStatus, abortStatus)
-            }
-        ),
+        httpClient = testHttpClient { request ->
+            respondToMultipartRequest(request, recorder, uploadId, partStatus, abortStatus, failPart)
+        },
         fileSystem = fileSystem,
         config = fixedDateConfig(maxRegularUploadSize = 1, multipartChunkSize = CHUNK_SIZE),
     )
@@ -176,8 +353,8 @@ class CellsS3ClientMultipartAbortTest {
         recorder: MultipartRecorder,
         uploadId: String?,
         partStatus: (Int) -> HttpStatusCode,
-        completeStatus: HttpStatusCode,
         abortStatus: HttpStatusCode,
+        failPart: (Int) -> Throwable? = { null },
     ): HttpResponseData = when {
         request.method == HttpMethod.Post && request.url.parameters.names().contains("uploads") -> {
             recorder.createCount++
@@ -186,6 +363,7 @@ class CellsS3ClientMultipartAbortTest {
 
         request.method == HttpMethod.Put -> {
             val partNumber = assertNotNull(request.url.parameters["partNumber"]).toInt()
+            failPart(partNumber)?.let { throw it }
             recorder.partNumbers += partNumber
             respond(
                 content = "",
@@ -201,7 +379,7 @@ class CellsS3ClientMultipartAbortTest {
 
         request.method == HttpMethod.Post -> {
             recorder.completeCount++
-            respond(content = "<CompleteMultipartUploadResult/>", status = completeStatus)
+            respond(content = "<CompleteMultipartUploadResult/>", status = HttpStatusCode.OK)
         }
 
         else -> error("Unexpected request: ${request.method} ${request.url}")
@@ -225,5 +403,6 @@ class CellsS3ClientMultipartAbortTest {
         const val UPLOAD_SIZE = 8
         const val CHUNK_SIZE = 4L
         const val ABORT_ATTEMPTS = 3
+        const val ABORT_TIMEOUT_MILLIS = 30_000L
     }
 }

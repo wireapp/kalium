@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.meeting
 import com.wire.kalium.logic.data.meeting.MeetingReminder
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /** Reads locally stored meeting occurrences for scheduling reminder notifications. */
 public interface MeetingRemindersUseCase {

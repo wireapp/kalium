@@ -59,7 +59,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test

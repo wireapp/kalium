@@ -79,10 +79,8 @@ public data class KaliumConfigs(
      * Should NOT be set in production mobile/web clients.
      */
     val callConfigTransformer: ((String) -> String)? = null,
-    val drivePermissionsEnabled: Boolean = false
+    val drivePermissionsEnabled: Boolean = false,
+    // Opt-in hook to observe real HTTP traffic (including bodies) for debugging purposes.
+    // See HttpTrafficObserver's documentation for how this differs from KaliumHttpLogger.
+    val httpTrafficObserver: HttpTrafficObserver? = null,
 )
-
-public sealed interface BuildFileRestrictionState {
-    public data object NoRestriction : BuildFileRestrictionState
-    public data class AllowSome(val allowedType: List<String>) : BuildFileRestrictionState
-}

@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 class CallMetadataProfile(
     data: Map<ConversationId, CallMetadata> = emptyMap()
@@ -66,7 +66,8 @@ data class CallMetadata(
             hasEstablishedAudio = participant.hasEstablishedAudio,
             avatarAssetId = user?.completePicture,
             userType = user?.userType ?: UserTypeInfo.Regular(UserType.NONE),
-            accentId = user?.accentId ?: 0
+            accentId = user?.accentId ?: 0,
+            isVideoPaused = participant.isVideoPaused
         )
     }
 }

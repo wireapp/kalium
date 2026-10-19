@@ -34,11 +34,8 @@ import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.async
 
 /**
  * Logs out the user from the current session
@@ -58,6 +55,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val clientRepository: ClientRepository,
     private val userConfigRepository: UserConfigRepository,
     private val userId: QualifiedID,
+    private val sessionScope: CoroutineScope,
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val clearClientDataUseCase: ClearClientDataUseCase,
     private val clearUserDataUseCase: ClearUserDataUseCase,
@@ -76,70 +74,60 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
 
     override suspend operator fun invoke(reason: LogoutReason, waitUntilCompletes: Boolean) {
-        globalCoroutineScope.launch {
-            getEstablishedCallsUseCase().firstOrNull()?.forEach {
-                endCallUseCase(it.conversationId)
+        val completion = globalCoroutineScope.async {
+            if (userSessionScopeProvider.logout(userId, sessionScope, { prepareLogout(reason) }, { clearLocalData(reason) })) {
+                logoutCallback(userId, reason)
             }
-
-            if (reason != LogoutReason.SESSION_EXPIRED) {
-                deregisterTokenUseCase()
-                logoutRepository.logout()
+        }
+        if (waitUntilCompletes) {
+            completion.await()
+        } else {
+            completion.invokeOnCompletion { failure ->
+                if (failure != null) kaliumLogger.withTextTag(TAG).e("Logout did not complete", failure)
             }
-
-            sessionRepository.logout(userId = userId, reason)
-            logoutRepository.onLogout(reason)
-            userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
-            userConfigRepository.clearE2EISettings()
-            drainSessionScope()
-
-            when (reason) {
-                LogoutReason.SELF_HARD_LOGOUT -> wipeAllData()
-                LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT -> {
-                    if (kaliumConfigs.wipeOnDeviceRemoval) {
-                        wipeAllData()
-                    } else {
-                        wipeTokenAndMetadata()
-                    }
-                }
-
-                LogoutReason.SESSION_EXPIRED -> {
-                    if (kaliumConfigs.wipeOnCookieInvalid || isNomadEnabled()) {
-                        kaliumLogger.withTextTag(TAG).d("Wiping all data due to session expiration configuration")
-                        wipeAllData()
-                    } else {
-                        clearCurrentClientIdAndFirebaseTokenFlag()
-                    }
-                }
-
-                LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
-                LogoutReason.MIGRATION_TO_CC_FAILED -> prepareForCoreCryptoMigrationRecovery()
-            }.also {
-                kaliumLogger.withTextTag(TAG).d("Logout reason: $reason")
-            }
-
-            userSessionScopeProvider.delete(userId)
-            logoutCallback(userId, reason)
-        }.let { if (waitUntilCompletes) it.join() else it }
+        }
     }
 
-    private suspend fun drainSessionScope() {
-        userSessionScopeProvider.get(userId)?.also { scope ->
-            if (scope.isCellsInitialized) {
-                val uploadCoordinator = scope.cells.uploadCoordinator
-                uploadCoordinator.cancelAll()
-                uploadCoordinator.dismissAll()
-                scope.cells.cancel()
-            }
-            scope.cancel()
-            scope.coroutineContext[Job]?.let { job ->
-                // don't want to wait indefinitely in case of any issues with the session scope, so we use a timeout and log if it happens
-                val drained = withTimeoutOrNull(SCOPE_DRAIN_TIMEOUT_MS) { job.join() }
-                if (drained == null) {
-                    kaliumLogger.withTextTag(TAG).w(
-                        "UserSessionScope did not drain within ${SCOPE_DRAIN_TIMEOUT_MS}ms; proceeding anyway"
-                    )
+    private suspend fun prepareLogout(reason: LogoutReason) {
+        getEstablishedCallsUseCase().firstOrNull()?.forEach {
+            endCallUseCase(it.conversationId)
+        }
+
+        if (reason != LogoutReason.SESSION_EXPIRED) {
+            deregisterTokenUseCase()
+            logoutRepository.logout()
+        }
+
+        sessionRepository.logout(userId = userId, reason)
+        logoutRepository.onLogout(reason)
+        userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
+        userConfigRepository.clearE2EISettings()
+    }
+
+    private suspend fun clearLocalData(reason: LogoutReason) {
+        when (reason) {
+            LogoutReason.SELF_HARD_LOGOUT -> wipeAllData()
+            LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT -> {
+                if (kaliumConfigs.wipeOnDeviceRemoval) {
+                    wipeAllData()
+                } else {
+                    wipeTokenAndMetadata()
                 }
             }
+
+            LogoutReason.SESSION_EXPIRED -> {
+                if (kaliumConfigs.wipeOnCookieInvalid || isNomadEnabled()) {
+                    kaliumLogger.withTextTag(TAG).d("Wiping all data due to session expiration configuration")
+                    wipeAllData()
+                } else {
+                    clearCurrentClientIdAndFirebaseTokenFlag()
+                }
+            }
+
+            LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
+            LogoutReason.MIGRATION_TO_CC_FAILED -> prepareForCoreCryptoMigrationRecovery()
+        }.also {
+            kaliumLogger.withTextTag(TAG).d("Logout reason: $reason")
         }
     }
 

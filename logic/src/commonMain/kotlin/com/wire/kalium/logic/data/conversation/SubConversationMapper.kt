@@ -21,7 +21,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal fun SubconversationResponse.toModel(): SubConversation {
     return SubConversation(

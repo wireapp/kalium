@@ -33,7 +33,8 @@ public interface SaveNotificationTokenUseCase {
      * @param token the push notification token
      * @param type the type being ie: "GCM, APNS"
      * @param applicationId the application id (ie, internal) for which the token is valid
-     * @return the [Result] with the result of the operation
+     * @return success after persisting the token and attempting to mark valid accounts for backend registration.
+     * Failures to mark individual accounts are not propagated. Backend upload is asynchronous.
      */
     public suspend operator fun invoke(token: String, type: String, applicationId: String): Result
 }
@@ -52,12 +53,11 @@ internal class SaveNotificationTokenUseCaseImpl(
         notificationTokenRepository.persistNotificationToken(token, type, applicationId).fold({
             Result.Failure.Generic(it)
         }, {
-            // we need to update FirebaseFlag for each user, so it will be updated on BE side too
+            // Every account must schedule registration even when the app token has not changed.
             observeValidAccounts()
                 .first()
                 .forEach { (selfUser, _) ->
-                    userSessionScopeProvider.getOrCreate(selfUser.id)
-                        .pushTokenRepository
+                    userSessionScopeProvider.open(selfUser.id) { pushTokenRepository }
                         .setUpdateFirebaseTokenFlag(true)
                 }
             Result.Success

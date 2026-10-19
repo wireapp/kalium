@@ -54,14 +54,6 @@ import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import io.ktor.client.HttpClient
-import io.ktor.client.request.headers
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsBytes
-import io.ktor.http.HttpMethod
-import io.ktor.http.URLBuilder
-import io.ktor.http.Url
-import io.ktor.http.encodedPath
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
@@ -266,10 +258,11 @@ private data class E2EIRepositoryDependencies(
     suspend fun discoveryUrl(): Either<E2EIFailure, String> = userConfigRepository.getE2EISettings().fold(
         { E2EIFailure.MissingTeamSettings.left() },
         { settings ->
+            val discoverUrl = settings.discoverUrl
             when {
                 !settings.isRequired -> E2EIFailure.Disabled.left()
-                settings.discoverUrl.isNullOrBlank() -> E2EIFailure.MissingDiscoveryUrl.left()
-                else -> settings.discoverUrl.right()
+                discoverUrl.isNullOrBlank() -> E2EIFailure.MissingDiscoveryUrl.left()
+                else -> discoverUrl.right()
             }
         }
     )
@@ -729,49 +722,19 @@ private class KaliumPkiEnvironmentHooks(
     private val directGetUrls: Set<String>
 ) : PkiEnvironmentHooks {
 
-    private val normalizedDirectGetUrls = directGetUrls.mapTo(mutableSetOf(), ::normalizePkiUrl)
+    private val requests = PkiHttpRequests(
+        dependencies.userConfigRepository,
+        dependencies.acmeApi,
+        dependencies.pkiHttpClient,
+        directGetUrls
+    )
 
     override suspend fun httpRequest(
         method: PkiHttpMethod,
         url: String,
         headers: List<PkiHttpHeader>,
         body: ByteArray
-    ): PkiHttpResponse {
-        if (method == PkiHttpMethod.GET && normalizePkiUrl(url) !in normalizedDirectGetUrls) {
-            val settings = dependencies.userConfigRepository.getE2EISettings().fold(
-                { throw PkiHookFailure("Getting E2EI settings for the CRL request failed: $it") },
-                { it }
-            )
-            val proxyUrl = settings.crlProxy?.takeIf { settings.shouldUseProxy && it.isNotBlank() }
-            if (proxyUrl != null) {
-                return wrapApiRequest { dependencies.acmeApi.getClientDomainCRL(url, proxyUrl) }.fold(
-                    { throw PkiHookFailure("Getting the CRL through the configured proxy failed: $it") },
-                    { crl ->
-                        PkiHttpResponse(
-                            status = 200.toUShort(),
-                            headers = emptyList(),
-                            body = crl
-                        )
-                    }
-                )
-            }
-        }
-
-        val response = dependencies.pkiHttpClient.request(url) {
-            this.method = method.toKtor()
-            headers {
-                headers.forEach { header -> append(header.name, header.value) }
-            }
-            if (body.isNotEmpty()) setBody(body)
-        }
-        return PkiHttpResponse(
-            status = response.status.value.toUShort(),
-            headers = response.headers.entries().flatMap { (name, values) ->
-                values.map { value -> PkiHttpHeader(name, value) }
-            },
-            body = response.bodyAsBytes()
-        )
-    }
+    ): PkiHttpResponse = requests.request(method, url, headers, body)
 
     override suspend fun authenticate(
         idp: String,
@@ -801,20 +764,4 @@ private class KaliumPkiEnvironmentHooks(
         )
     }
 
-    private fun PkiHttpMethod.toKtor(): HttpMethod = when (this) {
-        PkiHttpMethod.GET -> HttpMethod.Get
-        PkiHttpMethod.POST -> HttpMethod.Post
-        PkiHttpMethod.PUT -> HttpMethod.Put
-        PkiHttpMethod.DELETE -> HttpMethod.Delete
-        PkiHttpMethod.PATCH -> HttpMethod.Patch
-        PkiHttpMethod.HEAD -> HttpMethod.Head
-    }
 }
-
-private fun normalizePkiUrl(value: String): String = URLBuilder(Url(value)).apply {
-    // Rust's `url::Url` renders an authority-only HTTP(S) URL with a `/`, while Ktor keeps
-    // the path empty. Treat those two spellings as the same exact discovery endpoint.
-    if (encodedPath.isEmpty()) encodedPath = "/"
-}.build().toString()
-
-private class PkiHookFailure(message: String) : Exception(message)

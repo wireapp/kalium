@@ -33,12 +33,14 @@ import okhttp3.ConnectionSpec
 import okhttp3.Dispatcher
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
+import okio.BufferedSink
+import okio.ForwardingSink
 import okio.GzipSource
 import okio.buffer
-import java.io.IOException
 import java.net.Authenticator
 import java.net.InetSocketAddress
 import java.net.PasswordAuthentication
@@ -121,23 +123,49 @@ actual fun defaultHttpEngine(
 internal fun httpTrafficObserverInterceptor(observer: HttpTrafficObserver): Interceptor = Interceptor { chain ->
     val request = chain.request()
 
-    val requestBody = request.body?.let { body ->
-        try {
-            val buffer = Buffer()
-            body.writeTo(buffer)
-            buffer.readByteArray()
-        } catch (e: IOException) {
-            null
-        }
+    var requestReported = false
+    fun reportRequest(body: ByteArray?) {
+        requestReported = true
+        observer.onRequest(request.method, request.url.toString(), request.headers.toMultimap(), body)
     }
-    observer.onRequest(
-        method = request.method,
-        url = request.url.toString(),
-        headers = request.headers.toMultimap(),
-        body = requestBody,
-    )
 
-    val response = chain.proceed(request)
+    val body = request.body
+    val observedRequest = if (body == null || body.isDuplex()) {
+        // Duplex writes can continue after the response arrives. Do not buffer or delay them.
+        reportRequest(null)
+        request
+    } else {
+        request.newBuilder().method(
+            request.method,
+            object : RequestBody() {
+                override fun contentType() = body.contentType()
+                override fun contentLength() = body.contentLength()
+                override fun isOneShot() = body.isOneShot()
+
+                override fun writeTo(sink: BufferedSink) {
+                    val captured = Buffer()
+                    val forwardingSink = object : ForwardingSink(sink) {
+                        override fun write(source: Buffer, byteCount: Long) {
+                            source.copyTo(captured, 0, byteCount)
+                            super.write(source, byteCount)
+                        }
+                    }.buffer()
+                    // Capture the actual send. Reading first would consume Ktor's one-shot uploads.
+                    body.writeTo(forwardingSink)
+                    forwardingSink.flush()
+                    reportRequest(captured.readByteArray())
+                }
+            }
+        ).build()
+    }
+
+    val response = try {
+        chain.proceed(observedRequest)
+    } finally {
+        // An early final response to Expect: 100-continue can skip writeTo entirely.
+        // Failed sends also need request metadata without consuming the upload body.
+        if (!requestReported) reportRequest(null)
+    }
     val (responseBytes, observableResponse) = readAndRewrapBody(response, response.body)
 
     observer.onResponse(
@@ -154,10 +182,14 @@ internal fun httpTrafficObserverInterceptor(observer: HttpTrafficObserver): Inte
 private fun readAndRewrapBody(response: Response, body: okhttp3.ResponseBody): Pair<ByteArray, Response> {
     val contentEncoding = response.header(CONTENT_ENCODING_HEADER)
     val isGzip = GZIP_ENCODING.equals(contentEncoding, ignoreCase = true)
-    val bytes = if (isGzip) {
-        if (body.contentLength() != 0L) GzipSource(body.source()).buffer().readByteArray() else ByteArray(0)
-    } else {
-        if (body.contentLength() != 0L) body.bytes() else ByteArray(0)
+    val bytes = body.use {
+        if (body.contentLength() == 0L) {
+            ByteArray(0)
+        } else if (isGzip) {
+            GzipSource(body.source()).buffer().use { it.readByteArray() }
+        } else {
+            body.bytes()
+        }
     }
     val responseBuilder = response.newBuilder().body(bytes.toResponseBody(body.contentType()))
     if (isGzip) {

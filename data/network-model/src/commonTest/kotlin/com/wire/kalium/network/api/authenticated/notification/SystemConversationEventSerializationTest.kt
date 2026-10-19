@@ -1,117 +1,124 @@
-/*
- * Wire
- * Copyright (C) 2026 Wire Swiss GmbH
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see http://www.gnu.org/licenses/.
- */
-
+/* Wire, Copyright (C) 2026 Wire Swiss GmbH, SPDX-License-Identifier: GPL-3.0-or-later */
 package com.wire.kalium.network.api.authenticated.notification
 
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.tools.KtxSerializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertNull
+import kotlin.time.Instant
 
 class SystemConversationEventSerializationTest {
-
     @Test
-    fun givenSystemDeleteWithoutQualifiedFrom_whenDeserializing_thenSenderIsNull() {
-        val result = KtxSerializer.json.decodeFromString<EventContentDTO>(systemDeleteJson())
-
-        val event = assertIs<EventContentDTO.Conversation.SystemDeletedConversationDTO>(result)
-        assertNull(event.qualifiedFrom)
-        assertEquals(CONVERSATION_ID, event.qualifiedConversation.value)
-    }
-
-    @Test
-    fun givenSystemDeleteWithQualifiedFrom_whenDeserializing_thenSenderIsPreserved() {
-        val result = KtxSerializer.json.decodeFromString<EventContentDTO>(
-            systemDeleteJson(qualifiedFromJson = QUALIFIED_FROM_JSON)
+    fun adminlessRemindersPreserveTheirFieldsAndOptionalSender() {
+        assertEquals(
+            EventContentDTO.Conversation.AdminlessDeleteReminderDTO(
+                conversation = "conversation", data = AdminlessDeleteReminderData(DELETION_TIME), from = "user",
+                qualifiedConversation = CONVERSATION, qualifiedFrom = SENDER, teamId = "team", time = TIME, via = "user",
+            ),
+            decode("adminless-reminder", SENDER_FIELD, REMINDER_DATA),
         )
 
-        val event = assertIs<EventContentDTO.Conversation.SystemDeletedConversationDTO>(result)
-        assertEquals(USER_ID, event.qualifiedFrom?.value)
+        for ((sender, expected) in SENDERS) {
+            assertEquals(
+                EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO(
+                    conversation = "conversation", data = AdminlessDeleteReminderData(DELETION_TIME), from = "user",
+                    qualifiedConversation = CONVERSATION, qualifiedFrom = expected, teamId = "team", time = TIME, via = "user",
+                ),
+                decode("system.adminless-reminder", sender, REMINDER_DATA),
+            )
+        }
     }
 
     @Test
-    fun givenSystemMemberUpdateWithoutQualifiedFrom_whenDeserializing_thenSenderIsNull() {
-        val result = KtxSerializer.json.decodeFromString<EventContentDTO>(systemMemberUpdateJson())
-
-        val event = assertIs<EventContentDTO.Conversation.SystemMemberUpdateDTO>(result)
-        assertNull(event.qualifiedFrom)
-        assertEquals(TARGET_USER_ID, event.roleChange.qualifiedUserId.value)
+    fun regularAdminlessReminderAcceptsMissingNullAndPresentTeam() {
+        for ((teamField, expectedTeam) in TEAM_FIELDS) {
+            val reminder = assertIs<EventContentDTO.Conversation.AdminlessDeleteReminderDTO>(
+                decode("adminless-reminder", SENDER_FIELD, REMINDER_DATA, "\"from\":\"user\", $teamField")
+            )
+            assertEquals(expectedTeam, reminder.teamId)
+            assertEquals("user", reminder.from)
+            assertEquals(SENDER, reminder.qualifiedFrom)
+            assertEquals(CONVERSATION, reminder.qualifiedConversation)
+            assertEquals("conversation", reminder.conversation)
+            assertEquals(DELETION_TIME, reminder.data.deletionScheduledFor)
+            assertEquals(TIME, reminder.time)
+            assertEquals("user", reminder.via)
+        }
     }
 
     @Test
-    fun givenSystemMemberUpdateWithQualifiedFrom_whenDeserializing_thenSenderIsPreserved() {
-        val result = KtxSerializer.json.decodeFromString<EventContentDTO>(
-            systemMemberUpdateJson(qualifiedFromJson = QUALIFIED_FROM_JSON)
-        )
-
-        val event = assertIs<EventContentDTO.Conversation.SystemMemberUpdateDTO>(result)
-        assertEquals(USER_ID, event.qualifiedFrom?.value)
+    fun systemDeletionAndMembershipAcceptMissingNullAndPresentSenders() {
+        for ((sender, expected) in SENDERS) {
+            val deletion = assertIs<EventContentDTO.Conversation.SystemDeletedConversationDTO>(decode("system.delete", sender))
+            assertEquals(CONVERSATION, deletion.qualifiedConversation)
+            assertEquals(expected, deletion.qualifiedFrom)
+            val member = assertIs<EventContentDTO.Conversation.SystemMemberUpdateDTO>(
+                decode("system.member-update", sender, ROLE_DATA)
+            )
+            assertEquals(expected, member.qualifiedFrom)
+            assertEquals(SENDER, member.roleChange.qualifiedUserId)
+            assertEquals("wire_admin", member.roleChange.role)
+        }
     }
 
-    private fun systemDeleteJson(qualifiedFromJson: String = "") = """
-        {
-          "type": "conversation.system.delete",
-          "qualified_conversation": {
-            "id": "$CONVERSATION_ID",
-            "domain": "$DOMAIN"
-          },
-          $qualifiedFromJson
-          "time": "$TIME"
+    @Test
+    fun systemAdminlessReminderAcceptsMissingNullAndPresentFromAndTeam() {
+        for ((fromField, expectedFrom) in FROM_FIELDS) for ((teamField, expectedTeam) in TEAM_FIELDS) {
+            val reminder = assertIs<EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO>(
+                decode("system.adminless-reminder", "", REMINDER_DATA, "$fromField $teamField")
+            )
+            assertEquals(expectedFrom, reminder.from)
+            assertEquals(expectedTeam, reminder.teamId)
+            assertEquals(null, reminder.qualifiedFrom)
+            assertEquals(CONVERSATION, reminder.qualifiedConversation)
+            assertEquals("conversation", reminder.conversation)
+            assertEquals(DELETION_TIME, reminder.data.deletionScheduledFor)
+            assertEquals(TIME, reminder.time)
+            assertEquals("user", reminder.via)
         }
-    """.trimIndent()
+    }
 
-    private fun systemMemberUpdateJson(qualifiedFromJson: String = "") = """
-        {
-          "type": "conversation.system.member-update",
-          "qualified_conversation": {
-            "id": "$CONVERSATION_ID",
-            "domain": "$DOMAIN"
-          },
-          $qualifiedFromJson
-          "time": "$TIME",
-          "from": "system",
-          "data": {
-            "target": "$TARGET_USER_ID",
-            "qualified_target": {
-              "id": "$TARGET_USER_ID",
-              "domain": "$DOMAIN"
-            },
-            "conversation_role": "wire_admin",
-            "otr_muted_ref": null,
-            "otr_muted_status": null,
-            "otr_archived": null,
-            "otr_archived_ref": null
-          }
+    @Test
+    fun systemMemberUpdateAcceptsMissingNullAndPresentFrom() {
+        for ((fromField, expectedFrom) in FROM_FIELDS) {
+            val member = assertIs<EventContentDTO.Conversation.SystemMemberUpdateDTO>(
+                decode("system.member-update", "", ROLE_DATA, fromField)
+            )
+            assertEquals(expectedFrom, member.from)
+            assertEquals(null, member.qualifiedFrom)
+            assertEquals(CONVERSATION, member.qualifiedConversation)
+            assertEquals(TIME.toString(), member.time)
+            assertEquals(SENDER, member.roleChange.qualifiedUserId)
+            assertEquals("wire_admin", member.roleChange.role)
         }
-    """.trimIndent()
+    }
+
+    private fun decode(
+        type: String,
+        sender: String,
+        data: String = "",
+        fields: String = """"from":"user","team":"team",""",
+    ) = KtxSerializer.json.decodeFromString<EventContentDTO>("""{
+        "type":"conversation.$type","conversation":"conversation","via":"user",
+        $fields
+        "qualified_conversation":{"id":"conversation","domain":"wire.test"},
+        $sender $data "time":"$TIME"
+    }""")
 
     private companion object {
-        const val CONVERSATION_ID = "conversation-id"
-        const val USER_ID = "user-id"
-        const val TARGET_USER_ID = "target-user-id"
-        const val DOMAIN = "example.com"
-        const val TIME = "2026-07-30T10:00:00.000Z"
-        const val QUALIFIED_FROM_JSON = """
-            "qualified_from": {
-              "id": "$USER_ID",
-              "domain": "$DOMAIN"
-            },
-        """
+        val CONVERSATION = ConversationId("conversation", "wire.test")
+        val SENDER = UserId("user", "wire.test")
+        val TIME = Instant.parse("2026-07-16T12:00:00Z")
+        val DELETION_TIME = Instant.parse("2026-07-20T12:00:00Z")
+        const val SENDER_FIELD = """"qualified_from":{"id":"user","domain":"wire.test"},"""
+        val FROM_FIELDS = listOf("" to null, """"from":null,""" to null, """"from":"user",""" to "user")
+        val TEAM_FIELDS = listOf("" to null, """"team":null,""" to null, """"team":"team",""" to "team")
+        val SENDERS = listOf("" to null, """"qualified_from":null,""" to null, SENDER_FIELD to SENDER)
+        val REMINDER_DATA = """"data":{"deletion_scheduled_for":"$DELETION_TIME"},"""
+        const val ROLE_DATA = """"data":{"target":"user","qualified_target":{"id":"user","domain":"wire.test"},
+            "conversation_role":"wire_admin","otr_muted_ref":null,"otr_muted_status":null,
+            "otr_archived":null,"otr_archived_ref":null},"""
     }
 }

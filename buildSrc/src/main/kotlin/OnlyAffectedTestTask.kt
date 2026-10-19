@@ -109,7 +109,14 @@ open class OnlyAffectedTestTask : DefaultTask() {
                 add("-Dorg.gradle.logging.level=lifecycle")
                 add("--console=plain")
                 if (configuration == TestTaskConfiguration.ANDROID_INSTRUMENTED_TEST_TASK) {
-                    add("--max-workers=2")
+                    // The child build must keep the caller's CI memory and compiler limits.
+                    add("--max-workers=${minOf(2, project.gradle.startParameter.maxWorkerCount)}")
+                    project.gradle.startParameter.systemPropertiesArgs["org.gradle.jvmargs"]?.let {
+                        add("-Dorg.gradle.jvmargs=$it")
+                    }
+                    project.providers.gradleProperty("kotlin.compiler.execution.strategy").orNull?.let {
+                        add("-Pkotlin.compiler.execution.strategy=$it")
+                    }
                 }
                 addAll(targetTasks)
             }

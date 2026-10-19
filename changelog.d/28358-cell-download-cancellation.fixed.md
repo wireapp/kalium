@@ -1,0 +1,1 @@
+Cancelled cell attachment downloads now reset their transfer status to `NOT_DOWNLOADED`, allowing the attachment to be downloaded again. Cancellation still propagates and does not save a local file path.

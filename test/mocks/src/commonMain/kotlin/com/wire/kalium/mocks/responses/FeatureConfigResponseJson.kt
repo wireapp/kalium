@@ -30,7 +30,7 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConf
 import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.tools.KtxSerializer
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 object FeatureConfigResponseJson {
     private const val VERIFICATION_EXPIRATION = 1_000_000L

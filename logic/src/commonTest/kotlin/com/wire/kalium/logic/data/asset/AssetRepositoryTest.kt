@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.asset
 
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.EncryptionFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
@@ -40,6 +41,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
@@ -60,11 +62,14 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import okio.Buffer
 import okio.Path
+import okio.Source
 import okio.buffer
+import okio.fakefilesystem.FakeFileSystem
 import okio.use
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -88,6 +93,48 @@ internal class AssetRepositoryTest {
     fun breakDown() {
         Dispatchers.resetMain()
     }
+    @Test
+    fun retriedPublicUploadReopensTheSource() = runTest {
+        verifyRetriedUpload(privateAsset = false)
+    }
+
+    @Test
+    fun retriedEncryptedUploadReopensTheSource() = runTest {
+        verifyRetriedUpload(privateAsset = true)
+    }
+
+    private suspend fun verifyRetriedUpload(privateAsset: Boolean) {
+        val path = fakeKaliumFileSystem.tempFilePath("retry-asset")
+        val payload = "asset payload for a retried upload".encodeToByteArray()
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withRawStoredData(payload, path)
+            .withSuccessfulInsert()
+            .withAssetAuditLogEnabled(false)
+            .arrange()
+        var attempts = 0
+        everySuspend { arrangement.assetApi.uploadAsset(any(), any(), any()) } calls { invocation ->
+            @Suppress("UNCHECKED_CAST")
+            val openSource = invocation.args[1] as () -> Source
+            val first = openSource().buffer().use { it.readByteArray() }
+            attempts++
+            // The transport closes the first request body before retrying after an authentication challenge.
+            val retry = openSource().buffer().use { it.readByteArray() }
+            attempts++
+            assertTrue(first.isNotEmpty())
+            assertContentEquals(first, retry)
+            assertEquals(invocation.args[2] as Long, retry.size.toLong())
+            NetworkResponse.Success(AssetResponse("retry-key", "domain", "expiry", "token"), emptyMap(), 201)
+        }
+        val result = if (privateAsset) {
+            repository.uploadAndPersistPrivateAsset("image/png", path, generateRandomAES256Key(), null)
+                .map { it.first }
+        } else {
+            repository.uploadAndPersistPublicAsset("image/png", path, payload.size.toLong())
+        }
+        result.shouldSucceed { assertEquals("retry-key", it.key) }
+        assertEquals(2, attempts)
+    }
+
     @Test
     fun givenValidParams_whenUploadingPublicAssets_thenShouldSucceedWithAMappedResponse() = runTest {
         // Given
@@ -359,6 +406,7 @@ internal class AssetRepositoryTest {
 
             val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
                 .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetPath, assetRawData.size.toLong()))
+                .withRawStoredData(assetRawData, assetPath)
                 .arrange()
 
             // When
@@ -524,6 +572,7 @@ internal class AssetRepositoryTest {
 
         val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
             .withSuccessfulDownload(listOf(assetKey))
+            .withRawStoredData(expectedImage, dummyPath)
             .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, dummyPath, expectedImage.size.toLong()))
             .arrange()
         // When
@@ -632,6 +681,44 @@ internal class AssetRepositoryTest {
 
         // Then
         assertEquals(false, fakeKaliumFileSystem!!.exists(assetFile))
+    }
+
+    @Test
+    fun failedFileDeletionPreservesTheAssetRecordForRetry() = runTest {
+        val fileSystem = FakeFileSystem()
+        val kaliumFileSystem = FakeKaliumFileSystem(fileSystem)
+        fileSystem.allowDeletingOpenFiles = false
+        val assetKey = UserAssetId("locked-asset", "domain")
+        val path = kaliumFileSystem.providePersistentAssetPath(assetKey.value)
+        val (arrangement, repository) = Arrangement(kaliumFileSystem)
+            .withRawStoredData(byteArrayOf(1), path)
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, path, 1))
+            .withSuccessDeleteLocallyResponse()
+            .arrange()
+
+        kaliumFileSystem.source(path).use {
+            repository.deleteAssetLocally(assetKey.value).shouldFail()
+            verifySuspend(VerifyMode.not) { arrangement.assetDAO.deleteAsset(any()) }
+            assertTrue(kaliumFileSystem.exists(path))
+        }
+
+        repository.deleteAssetLocally(assetKey.value).shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetDAO.deleteAsset(assetKey.value) }
+        assertEquals(false, kaliumFileSystem.exists(path))
+    }
+
+    @Test
+    fun missingFileDoesNotPreventRemovingItsCacheRecord() = runTest {
+        val assetKey = UserAssetId("missing-file", "domain")
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.value)
+        val (arrangement, repository) = Arrangement(fakeKaliumFileSystem)
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, path, 1))
+            .withSuccessDeleteLocallyResponse()
+            .arrange()
+
+        repository.deleteAssetLocally(assetKey.value).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.assetDAO.deleteAsset(assetKey.value) }
     }
 
     @Test

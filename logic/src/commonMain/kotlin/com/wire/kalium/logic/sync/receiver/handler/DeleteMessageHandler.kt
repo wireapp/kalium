@@ -17,14 +17,17 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 
@@ -38,6 +41,7 @@ internal interface DeleteMessageHandler {
 
 internal class DeleteMessageHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
+    private val messageDAO: MessageDAO,
     private val assetRepository: AssetRepository,
     private val notificationEventsManager: NotificationEventsManager,
     private val selfUserId: UserId,
@@ -49,32 +53,17 @@ internal class DeleteMessageHandlerImpl internal constructor(
         senderUserId: UserId
     ) {
         messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
-            val isSelfSender = messageToRemove.senderUserId == selfUserId
-            val isOriginalEphemeral = (messageToRemove as? Message.Regular)?.expirationData != null
-            if (isSelfSender && isOriginalEphemeral) {
-                /*
-                 * if self is the sender and the message is ephemeral, delete the message
-                 * without verifying the sender of the delete message
-                 */
-                messageRepository.deleteMessage(
-                    messageUuid = messageToRemove.id,
-                    conversationId = messageToRemove.conversationId
-                )
-            } else if (isSenderVerified(messageToRemove, senderUserId)) {
-                if (isOriginalEphemeral) {
-                    messageRepository.deleteMessage(
-                        messageUuid = messageToRemove.id,
-                        conversationId = messageToRemove.conversationId
-                    )
-                } else {
-                    notificationEventsManager.scheduleDeleteMessageNotification(messageToRemove)
-                    messageRepository.markMessageAsDeleted(
-                        messageUuid = messageToRemove.id,
-                        conversationId = messageToRemove.conversationId
-                    )
+            val deletion = messageToRemove.receivedDeletion(senderUserId, selfUserId)
+            messageDAO.applyReceivedDeletion(messageToRemove.id, conversationId.toDao(), deletion).onSuccess { notify ->
+                if (notify) notificationEventsManager.scheduleDeleteMessageNotification(messageToRemove)
+                if (deletion != ReceivedMessageDeletion.NONE) {
+                    (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { asset ->
+                        assetRepository.deleteAssetLocally(asset.assetId).onFailure {
+                            kaliumLogger.w("Deleted message asset cleanup failed: $it")
+                        }
+                    }
                 }
             }
-            removeAssetIfExists(messageToRemove)
         }
         persistenceEventHookNotifier.onMessageDeleted(
             MessageDeleteEventData(conversationId, content.messageId),
@@ -82,17 +71,4 @@ internal class DeleteMessageHandlerImpl internal constructor(
         )
     }
 
-    /**
-     * checks if the sender of the delete message is the same as the sender of the message to be deleted
-     */
-    private fun isSenderVerified(
-        message: Message,
-        deleteMessageSenderId: UserId
-    ): Boolean = (deleteMessageSenderId == message.senderUserId || deleteMessageSenderId == selfUserId)
-
-    private suspend fun removeAssetIfExists(messageToRemove: Message) {
-        (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-            assetRepository.deleteAssetLocally(assetId = assetToRemove.assetId)
-        }
-    }
 }

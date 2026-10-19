@@ -252,7 +252,8 @@ interface UnauthenticatedNetworkContainer {
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
-                    developmentApiEnabled = developmentApiEnabled
+                    developmentApiEnabled = developmentApiEnabled,
+                    engine = engine,
                 )
 
                 18 -> UnauthenticatedNetworkContainerV18(

@@ -109,7 +109,7 @@ class ConversationFolderDAOImpl internal constructor(
     }
 
     override suspend fun getFavoriteConversationFolder(): ConversationFolderEntity? {
-        return conversationFoldersQueries.getFavoriteFolder { id, name, folderType ->
+        return conversationFoldersQueries.getFavoriteFolder { id, name, folderType, _ ->
             ConversationFolderEntity(id, name, folderType)
         }
             .awaitAsOneOrNull()
@@ -120,11 +120,12 @@ class ConversationFolderDAOImpl internal constructor(
             conversationFoldersQueries.transaction {
                 conversationFoldersQueries.clearLabeledConversations()
                 conversationFoldersQueries.clearFolders()
-                folderWithConversationsList.forEach { folderWithConversations ->
-                    conversationFoldersQueries.upsertFolder(
+                folderWithConversationsList.forEachIndexed { position, folderWithConversations ->
+                    conversationFoldersQueries.upsertFolderAt(
                         folderWithConversations.id,
                         folderWithConversations.name,
-                        folderWithConversations.type
+                        folderWithConversations.type,
+                        position.toLong()
                     )
                     folderWithConversations.conversationIdList.forEach { conversationId ->
                         conversationFoldersQueries.insertLabeledConversation(

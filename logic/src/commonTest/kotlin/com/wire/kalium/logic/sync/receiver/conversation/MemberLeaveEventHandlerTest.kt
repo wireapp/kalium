@@ -65,7 +65,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 
 internal class MemberLeaveEventHandlerTest {
@@ -415,7 +415,7 @@ internal class MemberLeaveEventHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.getMeetingsByConversationId(event.conversationId)
-            arrangement.meetingRepository.deleteMeetingLocally(meeting.meetingId)
+            arrangement.meetingRepository.deleteMeetingsByConversationId(event.conversationId)
             arrangement.notifications.scheduleMeetingNotification(cancelNotification)
         }
     }
@@ -441,12 +441,12 @@ internal class MemberLeaveEventHandlerTest {
         verifySuspend(VerifyMode.not) {
             arrangement.meetingRepository.getMeetingsByConversationId(any())
             arrangement.notifications.scheduleMeetingNotification(any())
-            arrangement.meetingRepository.deleteMeetingLocally(any())
+            arrangement.meetingRepository.deleteMeetingsByConversationId(any())
         }
     }
 
     @Test
-    fun givenMeetingLookupFailure_whenSelfRemoved_thenDoNotNotifyOrDeleteMeetings() = runTest {
+    fun givenMeetingLookupFailure_whenSelfRemoved_thenDeleteMeetingsWithoutNotification() = runTest {
         val event = memberLeaveEvent(MemberLeaveReason.Removed)
         val (arrangement, handler) = Arrangement().arrange {
             withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
@@ -459,7 +459,24 @@ internal class MemberLeaveEventHandlerTest {
         handler.handle(arrangement.transactionContext, event).shouldSucceed()
 
         verifySuspend(VerifyMode.not) { arrangement.notifications.scheduleMeetingNotification(any()) }
-        verifySuspend(VerifyMode.not) { arrangement.meetingRepository.deleteMeetingLocally(any()) }
+        verifySuspend { arrangement.meetingRepository.deleteMeetingsByConversationId(event.conversationId) }
+    }
+
+    @Test
+    fun givenMeetingDeletionFailure_whenSelfRemoved_thenReturnFailureWithoutNotification() = runTest {
+        val event = memberLeaveEvent(MemberLeaveReason.Removed)
+        val failure = StorageFailure.Generic(IllegalStateException("delete failed"))
+        val (arrangement, handler) = Arrangement().arrange {
+            withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            withPersistingMessage(Either.Right(Unit))
+            withDeleteMembersByQualifiedID(event.removedList.size.toLong())
+            withGetConversationProtocolInfo(Either.Right(Conversation.ProtocolInfo.Proteus))
+            withGetMeetingsByConversationId(Either.Right(listOf(meeting)))
+            everySuspend { meetingRepository.deleteMeetingsByConversationId(event.conversationId) } returns Either.Left(failure)
+        }
+
+        kotlin.test.assertSame(failure, (handler.handle(arrangement.transactionContext, event) as Either.Left).value)
+        verifySuspend(VerifyMode.not) { arrangement.notifications.scheduleMeetingNotification(any()) }
     }
 
     private class Arrangement {
@@ -487,7 +504,7 @@ internal class MemberLeaveEventHandlerTest {
             } returns (Unit)
             every { transactionContext.mls } returns (mlsContext)
             withGetMeetingsByConversationId(Either.Right(emptyList()))
-            everySuspend { meetingRepository.deleteMeetingLocally(any()) } returns Either.Right(Unit)
+            everySuspend { meetingRepository.deleteMeetingsByConversationId(any()) } returns Either.Right(Unit)
             block()
             memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
                 memberDAO = memberDAO,

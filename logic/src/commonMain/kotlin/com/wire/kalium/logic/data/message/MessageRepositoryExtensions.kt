@@ -33,7 +33,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 internal interface MessageRepositoryExtensions {
     suspend fun getPaginatedMessagesByConversationIdAndVisibility(

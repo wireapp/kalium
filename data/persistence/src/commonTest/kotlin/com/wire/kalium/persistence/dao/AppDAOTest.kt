@@ -66,6 +66,19 @@ class AppDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenCachedApps_whenUpsertingPartialOrEmptyResults_thenOtherAppsArePreserved() = runTest(dispatcher) {
+        db.appDAO.upsertApps(listOf(app1, app2))
+        val updatedApp = app1.copy(name = "Updated App")
+
+        db.appDAO.upsertApps(listOf(updatedApp, app3))
+        db.appDAO.upsertApps(emptyList())
+
+        assertEquals(updatedApp, db.appDAO.byId(app1.id))
+        assertEquals(app2, db.appDAO.byId(app2.id))
+        assertEquals(app3, db.appDAO.byId(app3.id))
+    }
+
+    @Test
     fun givenExistingAppInConversation_whenCheckingIfAppIsMember_thenReturn() = runTest(dispatcher) {
         val selfUser = newUserEntity(selfUserId)
         val groupConversation =

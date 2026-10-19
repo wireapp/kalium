@@ -52,4 +52,19 @@ class CoreCryptoMessageRejectedMapperTest {
         assertEquals(MLSFailure.Other(reason), result.failure)
         assertSame(original, result.cause)
     }
+
+    @Test
+    fun givenFederationConflictTransportRejection_whenCommonizing_thenPreservesDomains() {
+        val domains = listOf("backend-a.example", "backend-b.example")
+        val serializedReason = MLSTransportFailureSerialization.serialize(
+            NetworkFailure.FederatedBackendFailure.ConflictingBackends(domains)
+        )
+        val original = CoreCryptoException.Mls(MlsException.MessageRejected(serializedReason))
+
+        val result = commonizeMLSException(original)
+
+        assertEquals(MLSFailure.FederatedBackendConflict(domains), result.failure)
+        assertSame(original, result.cause)
+    }
+
 }

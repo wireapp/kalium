@@ -36,13 +36,13 @@ import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.content.ButtonContentQueries
+import com.wire.kalium.persistence.content.PollContentQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
@@ -57,9 +57,10 @@ import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class MessageDAOImpl internal constructor(
@@ -77,7 +78,8 @@ internal class MessageDAOImpl internal constructor(
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
     private val assetStatusQueries: MessageAssetTransferStatusQueries,
-    private val buttonContentQueries: ButtonContentQueries
+    private val buttonContentQueries: ButtonContentQueries,
+    private val pollContentQueries: PollContentQueries,
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
         queries,
@@ -86,6 +88,7 @@ internal class MessageDAOImpl internal constructor(
         unreadEventsQueries,
         conversationsQueries,
         buttonContentQueries,
+        pollContentQueries,
         selfUserId
     ) {
     private val mapper = MessageMapper
@@ -104,28 +107,36 @@ internal class MessageDAOImpl internal constructor(
     }
 
     private fun withMultipartAttachments(messages: List<MessageEntity>): List<MessageEntity> {
-        val multipartIds = messages
+        val multipartMessagesByConversation = messages
             .filterIsInstance<MessageEntity.Regular>()
             .filter { it.content is MessageEntityContent.Multipart }
-            .map { it.id }
+            .groupBy { it.conversationId }
 
-        if (multipartIds.isEmpty()) return messages
+        if (multipartMessagesByConversation.isEmpty()) return messages
 
-        val attachmentsByMessageId: Map<String, List<MessageAttachmentEntity>> =
+        val attachmentsByConversation = multipartMessagesByConversation.mapValues { (conversationId, multipartMessages) ->
             attachmentsQueries
-                .getAttachmentsForMessages(multipartIds, MessageAttachmentMapper::toDaoWithMessageId)
+                .getAttachmentsForMessages(conversationId, multipartMessages.map { it.id }, MessageAttachmentMapper::toDaoWithMessageId)
                 .executeAsList()
                 .groupBy(keySelector = { it.first }, valueTransform = { it.second })
+        }
 
         return messages.map { message ->
             val regularMessage = message as? MessageEntity.Regular ?: return@map message
             val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return@map message
             regularMessage.copy(
                 content = multipartContent.copy(
-                    attachments = attachmentsByMessageId[regularMessage.id] ?: emptyList()
+                    attachments = attachmentsByConversation[regularMessage.conversationId]?.get(regularMessage.id).orEmpty()
                 )
             )
         }
+    }
+
+    override suspend fun getMessageIdsThrough(conversationId: QualifiedIDEntity, through: Instant, pageSize: Long): List<String> =
+        withContext(readDispatcher.value) { queries.selectMessageIdsThrough(conversationId, through, pageSize).awaitAsList() }
+
+    override suspend fun deleteClearedMessage(conversationId: QualifiedIDEntity, messageId: String) {
+        withContext(writeDispatcher.value) { queries.deleteClearedMessage(conversationId, messageId).await() }
     }
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) {
@@ -136,11 +147,13 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
-            queries.markMessageAsDeleted(
-                message_id = id,
-                conversation_id = conversationsId
-            ).await()
-            unreadEventsQueries.deleteUnreadEvent(id, conversationsId)
+            queries.transaction {
+                queries.markMessageAsDeleted(
+                    message_id = id,
+                    conversation_id = conversationsId
+                ).await()
+                unreadEventsQueries.deleteUnreadEvent(id, conversationsId)
+            }
         }
     }
 
@@ -150,27 +163,46 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun insertReceivedMessage(
+        message: MessageEntity.Regular,
+        updateConversationOrder: Boolean
+    ) = withContext(writeDispatcher.value) {
+        queries.transaction {
+            if (!queries.messageExists(message.id, message.conversationId).awaitAsOne()) {
+                insertReceivedMessageInTransaction(message, updateConversationOrder)
+            } else if (isValidAssetMessageUpdate(message)) {
+                // Reuse the app's preview-to-valid-keys rule. A completed asset is immutable here.
+                insertReceivedMessageInTransaction(message, updateConversationOrder)
+            }
+            // Do not recreate unread state or update conversation dates on replay.
+            // These effects committed with the original message.
+        }
+    }
+
     override suspend fun insertOrIgnoreMessage(
         message: MessageEntity,
         updateConversationModifiedDate: Boolean
     ) = withContext(writeDispatcher.value) {
         queries.transactionWithResult {
-            val messageCreationInstant = message.date
-
-            insertInDB(message)
-
-            val needsToBeNotified = nonSuspendNeedsToBeNotified(message.id, message.conversationId)
-            if (!needsToBeNotified) {
-                conversationsQueries.updateConversationNotificationsDate(messageCreationInstant, message.conversationId)
-            }
-
-            if (updateConversationModifiedDate) {
-                conversationsQueries.updateConversationModifiedDate(messageCreationInstant, message.conversationId)
-            }
-
-            if (needsToBeNotified) InsertMessageResult.INSERTED_NEED_TO_NOTIFY_USER
-            else InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
+            insertReceivedMessageInTransaction(message, updateConversationModifiedDate)
         }
+    }
+
+    /** Caller owns the write dispatcher and transaction, including any required follow-up records. */
+    private suspend fun insertReceivedMessageInTransaction(
+        message: MessageEntity,
+        updateConversationModifiedDate: Boolean,
+    ): InsertMessageResult {
+        insertInDB(message)
+        val needsToBeNotified = nonSuspendNeedsToBeNotified(message.id, message.conversationId)
+        if (!needsToBeNotified) {
+            conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
+        }
+        if (updateConversationModifiedDate) {
+            conversationsQueries.updateConversationModifiedDate(message.date, message.conversationId)
+        }
+        return if (needsToBeNotified) InsertMessageResult.INSERTED_NEED_TO_NOTIFY_USER
+        else InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
     }
 
     override suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity) = withContext(readDispatcher.value) {
@@ -186,13 +218,31 @@ internal class MessageDAOImpl internal constructor(
         checkAssetUpdate: Boolean,
     ) = withContext(writeDispatcher.value) {
         queries.transaction {
+            // Restore does not update existing assets or unread events. Avoid an INSERT and
+            // SELECT changes() per duplicate, keeping the lookup in the same write transaction.
+            val existing = if (!checkAssetUpdate && !withUnreadEvents) existingRegularMessages(messages) else emptySet()
             messages.forEach {
+                if (it is MessageEntity.Regular && (it.conversationId to it.id) in existing) return@forEach
                 insertInDB(
                     message = it,
-                    withUnreadEvents = withUnreadEvents
+                    withUnreadEvents = withUnreadEvents,
+                    checkAssetUpdate = checkAssetUpdate,
                 )
             }
         }
+    }
+
+    private suspend fun existingRegularMessages(messages: List<MessageEntity>): Set<Pair<QualifiedIDEntity, String>> {
+        val existing = mutableSetOf<Pair<QualifiedIDEntity, String>>()
+        messages.filterIsInstance<MessageEntity.Regular>().groupBy { it.conversationId }.forEach { (conversationId, page) ->
+            // Leave room for the conversation bind parameter on SQLite builds with a 999-variable limit.
+            page.map { it.id }.distinct().chunked(EXISTING_MESSAGE_IDS_BATCH_SIZE).forEach { ids ->
+                queries.selectExistingMessageIds(conversationId, ids).awaitAsList().forEach { id ->
+                    existing.add(conversationId to id)
+                }
+            }
+        }
+        return existing
     }
 
     override suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System) {
@@ -327,6 +377,10 @@ internal class MessageDAOImpl internal constructor(
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).awaitAsOneOrNull()?.let(::withMultipartAttachments)
     }
 
+    override suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity> = withContext(readDispatcher.value) {
+        queries.selectConversationIdsByMessageId(id).awaitAsList()
+    }
+
     override fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
             .asFlow()
@@ -397,6 +451,25 @@ internal class MessageDAOImpl internal constructor(
             ).associateBy { it.conversationId }
         }
 
+    override suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>) {
+        if (messages.isEmpty()) return
+        withContext(writeDispatcher.value) {
+            notificationQueries.transaction {
+                messages.distinct().forEach {
+                    notificationQueries.rememberNotificationMessage(it.messageId, it.conversationId)
+                }
+            }
+        }
+    }
+
+    override fun observeNotificationRemovalCandidates(messageIds: List<String>): Flow<List<NotificationMessageKey>> =
+        if (messageIds.isEmpty()) flowOf(emptyList()) else
+        notificationQueries.getNotificationRemovalCandidates(messageIds, ::NotificationMessageKey)
+            .asFlow()
+            .mapToList()
+            .distinctUntilChanged()
+            .flowOn(readDispatcher.value)
+
     override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): List<NotificationMessageEntity> =
         withContext(readDispatcher.value) {
             notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
@@ -435,7 +508,8 @@ internal class MessageDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         currentMessageId: String,
         newTextContent: MessageEntityContent.Text,
-        newMessageId: String
+        newMessageId: String,
+        updateStatus: MessageEntity.Status?,
     ): Unit = withContext(writeDispatcher.value) {
         queries.transaction {
             updateTextMessageContentInDB(
@@ -445,6 +519,7 @@ internal class MessageDAOImpl internal constructor(
                 newTextContent = newTextContent,
                 newMessageId = newMessageId
             )
+            updateStatus?.let { queries.updateMessageStatus(it, newMessageId, conversationId) }
         }
     }
 
@@ -543,7 +618,13 @@ internal class MessageDAOImpl internal constructor(
         messageId: String,
         newMembers: List<QualifiedIDEntity>
     ): Unit = withContext(writeDispatcher.value) {
-        queries.updateSystemMessageLegalHoldMembers(QualifiedIDListAdapter.encode(newMembers), messageId, conversationId)
+        queries.transaction {
+            val current = queries.selectById(messageId, conversationId, mapper::toEntityMessageFromView).awaitAsOneOrNull()
+            val content = current?.content as? MessageEntityContent.LegalHold
+            // Both live handlers and durable replay only add members. Preserve additions made since a replay plan was saved.
+            val members = (content?.memberUserIdList.orEmpty() + newMembers).distinct()
+            queries.updateSystemMessageLegalHoldMembers(QualifiedIDListAdapter.encode(members), messageId, conversationId)
+        }
     }
 
     override fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
@@ -812,14 +893,21 @@ internal class MessageDAOImpl internal constructor(
                 buttonContentQueries.deleteAllButtons(conversationId, currentMessageId)
 
                 // update the message content associated with the composite message
-                text?.let { textContent ->
+                if (text != null) {
+                    // A composite may initially contain only buttons, without a text-content row.
+                    queries.insertMessageTextContent(currentMessageId, conversationId, text.messageBody, null, false)
                     updateTextMessageContentInDB(
                         editInstant = editInstant,
                         conversationId = conversationId,
                         currentMessageId = currentMessageId,
-                        newTextContent = textContent,
+                        newTextContent = text,
                         newMessageId = newMessageId
                     )
+                } else {
+                    // Button-only edits still replace the wire identity. Keep existing text metadata.
+                    queries.markMessageAsEdited(editInstant, currentMessageId, conversationId)
+                    queries.updateMessageId(newMessageId, currentMessageId, conversationId)
+                    queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)
                 }
 
                 // insert new buttons if any
@@ -857,3 +945,5 @@ internal class MessageDAOImpl internal constructor(
         readDispatcher,
     )
 }
+
+private const val EXISTING_MESSAGE_IDS_BATCH_SIZE = 900

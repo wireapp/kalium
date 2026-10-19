@@ -19,12 +19,22 @@
 package com.wire.kalium.logic.feature.auth.sso
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
+import com.wire.kalium.logic.data.session.SessionMapperImpl
+import kotlinx.coroutines.CancellationException
+import kotlin.test.assertFailsWith
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.settings.PendingLoginSystemSettingsRepository
 import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.model.UserSsoIdDTO
+import com.wire.kalium.network.api.model.ManagedByDTO
+import com.wire.kalium.logic.data.user.SsoId
+import com.wire.kalium.logic.data.user.SsoManagedBy
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -41,7 +51,7 @@ class GetSSOLoginSessionUseCaseTest {
     private val repository = mock<SSOLoginRepository>(MockMode.autoUnit)
     private val login = AuthenticationResultDTO(
         SessionDTO(TestUser.SELF_USER_DTO.id, "Bearer", "fresh-token", "refresh-token", null),
-        TestUser.SELF_USER_DTO,
+        TestUser.SELF_USER_DTO.copy(ssoID = UserSsoIdDTO("external-id", "subject", "tenant"), managedByDTO = ManagedByDTO.SCIM),
     )
     private val settingsRepository = mock<PendingLoginSystemSettingsRepository>()
     private val useCase = GetSSOLoginSessionUseCaseImpl(repository, null, settingsRepository)
@@ -66,7 +76,8 @@ class GetSSOLoginSessionUseCaseTest {
 
             assertIs<SSOLoginSessionResult.Success>(result)
             assertEquals(enabled, result.isIdpChangeDetectionEnabled)
-            assertEquals("fresh-token", result.accountTokens.accessToken.value)
+            assertEquals(SessionMapperImpl().fromSessionDTO(login.sessionDTO), result.accountTokens)
+            verifySuspend { settingsRepository.isIdpChangeDetectionEnabled(result.accountTokens) }
         }
     }
 
@@ -80,5 +91,50 @@ class GetSSOLoginSessionUseCaseTest {
 
         assertIs<SSOLoginSessionResult.Failure.Generic>(result)
         assertEquals(failure, result.genericFailure)
+    }
+
+    @Test
+    fun loginFailureSkipsSettingsAndPreservesInvalidCookieMapping() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
+        everySuspend { repository.provideLoginSession("cookie") } returns Either.Left(failure)
+
+        assertIs<SSOLoginSessionResult.Failure.InvalidCookie>(useCase("cookie", true))
+        verifySuspend(VerifyMode.not) { settingsRepository.isIdpChangeDetectionEnabled(any()) }
+    }
+
+    @Test
+    fun genericLoginFailureSkipsSettings() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
+        everySuspend { repository.provideLoginSession("cookie") } returns Either.Left(failure)
+
+        val result = useCase("cookie", true)
+
+        assertIs<SSOLoginSessionResult.Failure.Generic>(result)
+        assertEquals(failure, result.genericFailure)
+        verifySuspend(VerifyMode.not) { settingsRepository.isIdpChangeDetectionEnabled(any()) }
+    }
+
+    @Test
+    fun pendingSettingsCancellationIsPropagated() = runTest {
+        everySuspend { repository.provideLoginSession("cookie") } returns Either.Right(login)
+        val cancelledSettings = PendingLoginSystemSettingsRepository { throw CancellationException("cancelled") }
+        val useCase = GetSSOLoginSessionUseCaseImpl(repository, null, cancelledSettings)
+
+        assertFailsWith<CancellationException> { useCase("cookie", true) }
+    }
+
+    @Test
+    fun pendingSettingsPreserveProxyCredentialsAndUserMetadata() = runTest {
+        val proxy = ProxyCredentials("proxy-user", "proxy-password")
+        everySuspend { repository.provideLoginSession("cookie") } returns Either.Right(login)
+        everySuspend { settingsRepository.isIdpChangeDetectionEnabled(any()) } returns Either.Right(true)
+        val useCase = GetSSOLoginSessionUseCaseImpl(repository, proxy, settingsRepository)
+
+        val result = useCase("cookie", true)
+
+        assertIs<SSOLoginSessionResult.Success>(result)
+        assertEquals(proxy, result.proxyCredentials)
+        assertEquals(SsoId("external-id", "subject", "tenant"), result.ssoId)
+        assertEquals(SsoManagedBy.SCIM, result.managedBy)
     }
 }

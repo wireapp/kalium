@@ -30,6 +30,13 @@ fun inMemoryUserConfigStorage(): UserConfigStorage = UserConfigStorageImpl(
 class FakeUserConfigStorage(
     val backingStorage: MutableMap<String, Any> = mutableMapOf()
 ) : UserConfigStorage {
+    override suspend fun readMessageContentPreference(): Boolean? =
+        (backingStorage[UserConfigStorage.UserPreferences.MESSAGE_CONTENT_ENABLED.key] as String?)?.toBooleanStrict()
+
+    override suspend fun persistMessageContentPreference(enabled: Boolean) {
+        backingStorage[UserConfigStorage.UserPreferences.MESSAGE_CONTENT_ENABLED.key] = enabled.toString()
+    }
+
     override suspend fun persistAppLockStatus(
         isEnforced: Boolean,
         inactivityTimeoutSecs: Int,

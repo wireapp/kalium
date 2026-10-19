@@ -61,7 +61,7 @@ public class RequestSecondFactorVerificationCodeUseCase internal constructor(
             && it.kaliumException is KaliumException.InvalidRequestError
             && (it.kaliumException as KaliumException.InvalidRequestError).isTooManyRequests()
         ) {
-            Result.Failure.TooManyRequests
+            Result.Failure.TooManyRequests((it.kaliumException as KaliumException.InvalidRequestError).retryAfterSeconds)
         } else {
             Result.Failure.Generic(it)
         }
@@ -81,7 +81,7 @@ public class RequestSecondFactorVerificationCodeUseCase internal constructor(
              * From a UI point of view, you might be able to proceed and request
              * the 2FA code to the user anyway
              */
-            public data object TooManyRequests : Result
+            public data class TooManyRequests(val retryAfterSeconds: Int? = null) : Result
         }
     }
 }

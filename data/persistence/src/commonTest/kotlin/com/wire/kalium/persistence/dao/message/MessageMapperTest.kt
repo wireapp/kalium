@@ -27,7 +27,7 @@ import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -189,6 +189,10 @@ class MessageMapperTest {
             recipientsFailedWithNoClientsList: List<QualifiedIDEntity>? = null,
             recipientsFailedDeliveryList: List<QualifiedIDEntity>? = null,
             buttonsJson: String = "[]",
+            pollQuestion: String? = null,
+            pollAllowMultipleAnswers: Boolean? = null,
+            pollOptionsJson: String? = null,
+            pollVotesJson: String = "[]",
             federationDomainList: List<String>? = null,
             federationType: MessageEntity.FederationType? = null,
             conversationProtocolChanged: ConversationEntity.Protocol? = null,
@@ -283,6 +287,10 @@ class MessageMapperTest {
                 recipientsFailedWithNoClientsList,
                 recipientsFailedDeliveryList,
                 buttonsJson,
+                pollQuestion,
+                pollAllowMultipleAnswers,
+                pollOptionsJson,
+                pollVotesJson,
                 federationDomainList?.let { StringListAdapter.encode(it) },
                 federationType?.name,
                 conversationProtocolChanged?.name,

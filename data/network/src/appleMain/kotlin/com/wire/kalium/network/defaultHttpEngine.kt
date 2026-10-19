@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.ProxyBuilder
 import io.ktor.client.engine.darwin.Darwin
 import io.ktor.client.engine.darwin.certificates.CertificatePinner
 
@@ -32,17 +33,14 @@ actual fun defaultHttpEngine(
     certificatePinning: CertificatePinning,
     httpTrafficObserver: HttpTrafficObserver?,
 ): HttpClientEngine {
-    // Not implemented on iOS/macOS: the Darwin engine doesn't expose an OkHttp-style interceptor
-    // seam. This hook is currently only wired up on JVM/Android.
-    if (serverConfigDTOApiProxy != null) {
-        throw IllegalArgumentException("Proxy is not supported on iOS")
-    }
-    if (proxyCredentials != null) {
-        throw IllegalArgumentException("Proxy is not supported on iOS")
-    }
-
     return Darwin.create {
         pipelining = true
+        serverConfigDTOApiProxy?.let { apiProxy ->
+            proxy = ProxyBuilder.socks(apiProxy.host, apiProxy.port)
+            configureSession {
+                configureSocksProxyAuthentication(proxyCredentials.takeIf { apiProxy.needsAuthentication })
+            }
+        }
 
         if (certificatePinning.isNotEmpty()) {
             val certPinner: CertificatePinner = CertificatePinner.Builder().apply {

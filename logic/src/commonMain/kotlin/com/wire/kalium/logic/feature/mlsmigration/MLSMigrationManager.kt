@@ -25,8 +25,6 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
-import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
@@ -34,7 +32,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncStateObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 
 /**
  * Orchestrates the migration from proteus to MLS.
@@ -90,12 +87,4 @@ internal class MLSMigrationManagerImpl internal constructor(
             }
             Either.Right(Unit)
         }
-}
-
-internal fun MLSMigrationModel.hasMigrationStarted(): Boolean {
-    return status == Status.ENABLED && startTime?.let { Clock.System.now() > it } ?: false
-}
-
-internal fun MLSMigrationModel.hasMigrationEnded(): Boolean {
-    return status == Status.ENABLED && endTime?.let { Clock.System.now() > it } ?: false
 }

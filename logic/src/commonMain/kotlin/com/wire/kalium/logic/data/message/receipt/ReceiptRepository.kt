@@ -19,24 +19,13 @@
 package com.wire.kalium.logic.data.message.receipt
 
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
 
 internal interface ReceiptRepository {
-    suspend fun persistReceipts(
-        userId: UserId,
-        conversationId: ConversationId,
-        date: Instant,
-        type: ReceiptType,
-        messageIds: List<String>
-    )
-
     fun observeMessageReceipts(
         conversationId: ConversationId,
         messageId: String,
@@ -46,25 +35,8 @@ internal interface ReceiptRepository {
 
 internal class ReceiptRepositoryImpl(
     private val receiptDAO: ReceiptDAO,
-    private val receiptsMapper: ReceiptsMapper = MapperProvider.receiptsMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val receiptsMapper: ReceiptsMapper = MapperProvider.receiptsMapper()
 ) : ReceiptRepository {
-
-    override suspend fun persistReceipts(
-        userId: UserId,
-        conversationId: ConversationId,
-        date: Instant,
-        type: ReceiptType,
-        messageIds: List<String>
-    ) {
-        receiptDAO.insertReceipts(
-            userId = userId.toDao(),
-            conversationId = conversationId.toDao(),
-            date = date,
-            type = receiptsMapper.toTypeEntity(type),
-            messageIds = messageIds
-        )
-    }
 
     override fun observeMessageReceipts(
         conversationId: ConversationId,

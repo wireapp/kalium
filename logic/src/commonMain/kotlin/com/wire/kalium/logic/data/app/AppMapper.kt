@@ -17,16 +17,13 @@
  */
 package com.wire.kalium.logic.data.app
 
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.toAppEntity
 import com.wire.kalium.network.api.model.UserProfileDTO
-import com.wire.kalium.network.api.model.getCompleteAssetOrNull
-import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.AppEntity
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
 internal interface AppMapper {
 
@@ -37,27 +34,7 @@ internal interface AppMapper {
 
 internal class AppMapperImpl : AppMapper {
 
-    override fun fromUserProfileToAppEntity(userProfileDTO: UserProfileDTO): AppEntity {
-        return AppEntity(
-            id = userProfileDTO.id.toDao(),
-            name = userProfileDTO.name,
-            description = userProfileDTO.app?.description.orEmpty(),
-            category = userProfileDTO.app?.category,
-            teamId = userProfileDTO.teamId,
-            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.let {
-                QualifiedIDEntity(
-                    value = it.key,
-                    domain = userProfileDTO.id.domain
-                )
-            },
-            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.let {
-                QualifiedIDEntity(
-                    value = it.key,
-                    domain = userProfileDTO.id.domain
-                )
-            }
-        )
-    }
+    override fun fromUserProfileToAppEntity(userProfileDTO: UserProfileDTO): AppEntity = userProfileDTO.toAppEntity()
 
     override fun fromDaoToModel(appEntity: AppEntity, creator: String?): AppDetails = with(appEntity) {
         AppDetails(

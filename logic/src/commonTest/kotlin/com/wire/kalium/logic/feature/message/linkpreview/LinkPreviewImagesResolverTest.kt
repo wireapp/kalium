@@ -41,7 +41,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import okio.Path.Companion.toPath
 import kotlin.test.Test
 

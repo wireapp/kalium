@@ -505,7 +505,6 @@
     <ID>NoConsecutiveBlankLines:MLSMessageUnpackerTest.kt$MLSMessageUnpackerTest.Arrangement$ </ID>
     <ID>NoConsecutiveBlankLines:MLSMigrationConfigHandlerTest.kt$ </ID>
     <ID>NoConsecutiveBlankLines:MemberDAOTest.kt$MemberDAOTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MessageDAOBenchmarkTest.kt$MessageDAOBenchmarkTest$ </ID>
     <ID>NoConsecutiveBlankLines:MessageDAOTest.kt$MessageDAOTest$ </ID>
     <ID>NoConsecutiveBlankLines:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest$ </ID>
     <ID>NoConsecutiveBlankLines:MessageMapperUserTypeMappingTest.kt$ </ID>

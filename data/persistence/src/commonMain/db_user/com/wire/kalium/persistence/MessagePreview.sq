@@ -23,7 +23,7 @@ SELECT
     Conversation.name AS conversationName,
     (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
     TextContent.is_quoting_self AS isQuotingSelfUser,
-    TextContent.text_body AS text,
+    COALESCE(TextContent.text_body, PollContent.question) AS text,
     AssetContent.asset_mime_type AS assetMimeType,
     (Message.creation_date > Conversation.last_read_date) AS isUnread,
     IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
@@ -40,6 +40,8 @@ LEFT JOIN MessageAssetContent AS AssetContent
     ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent
     ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN PollContent
+    ON Message.id = PollContent.message_id AND Message.conversation_id = PollContent.conversation_id
 WHERE Message.id IN (
     SELECT LatestMessage.id
     FROM Message AS LatestMessage
@@ -57,7 +59,8 @@ WHERE Message.id IN (
             'CONVERSATION_DEGRADED_PROTEUS',
             'CONVERSATION_VERIFIED_MLS',
             'CONVERSATION_VERIFIED_PROTEUS',
-            'LOCATION'
+            'LOCATION',
+            'POLL'
         )
     GROUP BY LatestMessage.conversation_id
     HAVING LatestMessage.creation_date = MAX(LatestMessage.creation_date)

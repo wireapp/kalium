@@ -29,12 +29,13 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.uuid.Uuid
 

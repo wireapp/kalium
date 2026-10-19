@@ -22,7 +22,7 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,6 +39,20 @@ class ConnectionDaoTest : BaseDatabaseTest() {
     fun setUp() {
         deleteDatabase(selfUserId)
         db = createDatabase(selfUserId, encryptedDBSecret, true)
+    }
+
+    @Test
+    fun connectionDeletionAlsoRemovesConversationAndPendingDelivery() = runTest {
+        val conversation = com.wire.kalium.persistence.utils.stubs.newConversationEntity(connection1.qualifiedConversationId)
+        db.conversationDAO.insertConversation(conversation)
+        db.connectionDAO.insertConnection(connection1)
+        db.pendingDeliveryConfirmationDAO.enqueue(conversation.id, "pending-message")
+
+        db.connectionDAO.deleteConnectionDataAndConversation(conversation.id)
+
+        assertEquals(null, db.connectionDAO.getConnection(conversation.id))
+        assertEquals(null, db.conversationDAO.getConversationById(conversation.id))
+        assertEquals(emptyList(), db.pendingDeliveryConfirmationDAO.getPendingAfter(0, 10))
     }
 
     @Test

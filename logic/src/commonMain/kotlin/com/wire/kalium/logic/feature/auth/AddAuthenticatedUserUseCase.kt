@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 
 /**
@@ -42,6 +43,7 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 public class AddAuthenticatedUserUseCase internal constructor(
     private val sessionRepository: SessionRepository,
     private val serverConfigurationDAO: ServerConfigurationDAO,
+    private val userSessionScopeProvider: UserSessionScopeProvider,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) {
     public sealed class Result {
@@ -114,7 +116,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
         currentIdpId != null && previousIdpId != currentIdpId
 
     private suspend fun storeUser(session: StoreSessionParam): Result =
-        sessionRepository.storeSession(session).onSuccess {
+        userSessionScopeProvider.storeSession(session, sessionRepository).onSuccess {
             sessionRepository.updateCurrentSession(session.accountTokens.userId)
         }.fold(
             { Result.Failure.Generic(it) },

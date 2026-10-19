@@ -24,7 +24,7 @@ import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data object ConversationMapper {
     // suppressed because the method cannot be shortened and there are unused parameters because sql view returns some duplicated fields
@@ -203,6 +203,7 @@ data object ConversationMapper {
         receiptMode = receiptMode,
         messageTimer = messageTimer,
         userMessageTimer = userMessageTimer,
+        hasIncompleteMetadata = incompleteMetadata,
         archived = archived,
         archivedInstant = archivedDateTime,
         mlsVerificationStatus = verificationStatus,
@@ -277,6 +278,7 @@ data object ConversationMapper {
         receiptMode = receipt_mode,
         messageTimer = message_timer,
         userMessageTimer = user_message_timer,
+        hasIncompleteMetadata = incomplete_metadata,
         archived = archived,
         archivedInstant = archived_date_time,
         mlsVerificationStatus = verification_status,

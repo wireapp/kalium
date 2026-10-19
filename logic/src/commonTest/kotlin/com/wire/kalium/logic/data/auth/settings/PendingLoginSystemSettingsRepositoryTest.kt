@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.auth.settings
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.user.UserId
@@ -32,12 +33,18 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withContext
+import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
 
 class PendingLoginSystemSettingsRepositoryTest {
@@ -52,7 +59,7 @@ class PendingLoginSystemSettingsRepositoryTest {
         val repository = repository(engine)
 
         assertEquals(Either.Right(true), repository.isIdpChangeDetectionEnabled(accountTokens))
-        assertFalse(engine.coroutineContext[Job]!!.isActive)
+        assertTrue(engine.coroutineContext[Job]!!.isCompleted)
     }
 
     @Test
@@ -66,7 +73,7 @@ class PendingLoginSystemSettingsRepositoryTest {
             val repository = repository(engine)
 
             assertEquals(Either.Right(false), repository.isIdpChangeDetectionEnabled(accountTokens))
-            assertFalse(engine.coroutineContext[Job]!!.isActive)
+            assertTrue(engine.coroutineContext[Job]!!.isCompleted)
         }
     }
 
@@ -94,7 +101,7 @@ class PendingLoginSystemSettingsRepositoryTest {
 
             assertIs<Either.Left<*>>(repository.isIdpChangeDetectionEnabled(accountTokens))
             assertEquals(expectedRequests, requestCount)
-            assertFalse(engine.coroutineContext[Job]!!.isActive)
+            assertTrue(engine.coroutineContext[Job]!!.isCompleted)
         }
     }
 
@@ -104,7 +111,44 @@ class PendingLoginSystemSettingsRepositoryTest {
         val repository = repository(engine)
 
         assertFailsWith<CancellationException> { repository.isIdpChangeDetectionEnabled(accountTokens) }
-        assertFalse(engine.coroutineContext[Job]!!.isActive)
+        assertTrue(engine.coroutineContext[Job]!!.isCompleted)
+    }
+
+    @Test
+    fun callerCancellationCancelsThePendingRequestAndClosesResources() = runTest {
+        val started = CompletableDeferred<Unit>()
+        val finished = CompletableDeferred<Unit>()
+        val engine = MockEngine {
+            started.complete(Unit)
+            try {
+                awaitCancellation()
+            } finally {
+                finished.complete(Unit)
+            }
+        }
+        val repository = repository(engine)
+        val request = launch { repository.isIdpChangeDetectionEnabled(accountTokens) }
+        started.await()
+
+        request.cancel()
+        request.join()
+
+        assertTrue(engine.coroutineContext[Job]!!.isCompleted)
+        // Ktor runs the handler in a separate call job; engine shutdown does not join that job.
+        withContext(Dispatchers.Default) {
+            withTimeout(5_000) { finished.await() }
+        }
+    }
+
+    @Test
+    fun factoryFailureIsReportedAsUnknown() = runTest {
+        val failure = IllegalStateException("creation failed")
+        val repository = PendingLoginSystemSettingsRepositoryImpl(containerFactory = { throw failure })
+
+        val result = repository.isIdpChangeDetectionEnabled(accountTokens)
+
+        assertIs<Either.Left<CoreFailure>>(result)
+        assertEquals(CoreFailure.Unknown(failure), result.value)
     }
 
     private fun repository(engine: MockEngine, apiVersion: Int = 18) = PendingLoginSystemSettingsRepositoryImpl(

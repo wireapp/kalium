@@ -1,369 +1,154 @@
-# Building Kalium for iOS
+# Building Kalium for Apple platforms
 
-This guide covers building Kalium for iOS targets using Kotlin Multiplatform.
+This guide covers building Kalium's Apple frameworks and running its Apple tests.
 
 ## Requirements
 
-- **macOS on Apple Silicon** (Intel Macs are not supported)
-- **JDK 21** (e.g., openjdk-21-jdk)
-- **Xcode** with command-line tools installed
-- **CocoaPods** (optional, for framework integration)
+- macOS on Apple Silicon (Intel Macs are not supported)
+- JDK 21
+- Xcode with command-line tools (`xcode-select --install`)
+- Python 3, only for the simulator test runner
 
-## CoreCrypto
+## Targets
 
-The official CoreCrypto KMP library (`com.wire:core-crypto-kmp`) is wired into shared source sets and provides the native binaries required by the supported Apple targets. No platform-selection Gradle property is required.
+Every library module built with the `kalium.library` convention plugin enables these
+targets (`buildSrc/src/main/kotlin/com/wire/kalium/plugins/CommonDarwinConfig.kt`):
 
-## Supported iOS Targets
+| Target | Use |
+| --- | --- |
+| `iosArm64` | iPhone and iPad devices |
+| `iosSimulatorArm64` | iOS Simulator on Apple Silicon |
+| `macosArm64` | macOS on Apple Silicon |
 
-Kalium supports the following Apple targets:
+Apple binaries link the system SQLite (`-lsqlite3`). Shared Apple code lives in
+`appleMain`, iOS-only code in `iosMain`, and tests in `appleTest` or `iosTest`.
 
-| Target | Architecture | Description |
-|--------|-------------|-------------|
-| `iosArm64` | ARM64 | Physical iOS devices (iPhone, iPad) |
-| `iosSimulatorArm64` | ARM64 | iOS Simulator on Apple Silicon Macs |
-| `macosArm64` | ARM64 | macOS on Apple Silicon |
+## Native dependencies
 
-## Build Commands
+- **CoreCrypto** comes from `com.wire:core-crypto-kmp` and is linked statically.
+- **AVS** bindings come from `com.wire:avs-kmp`, but the runtime is the dynamic
+  `avs.framework`, which the app or extension must embed. The
+  `com.wire.kalium.apple-avs-runtime` plugin (an included build in
+  `plugins/apple-avs-runtime`) downloads, verifies, links and embeds the matching
+  runtime. `:logic`, `:nse`, `:share`, `:domain:calling`,
+  `:domain:calling-notifications` and `:domain:messaging:receiving` apply it. See the
+  [plugin guide](../plugins/apple-avs-runtime/README.md).
 
-### Building Libraries
+Both versions are pinned in `gradle/libs.versions.toml` (`core-crypto` and `avs`).
 
-Build the Kotlin library for a specific iOS target:
+## Frameworks
+
+Three modules produce frameworks for Swift:
+
+| Module | Framework | Targets | For |
+| --- | --- | --- | --- |
+| `:logic` | `KaliumLogic` | iOS device, iOS simulator, macOS | The app |
+| `:nse` | `KaliumNSE` | iOS device, iOS simulator | The Notification Service Extension ([guide](../nse/README.md)) |
+| `:share` | `KaliumShare` | iOS device, iOS simulator | The share extension ([guide](../share/README.md)) |
+
+Build an XCFramework with all its slices:
 
 ```bash
-# For physical iOS devices (ARM64)
-./gradlew :logic:compileKotlinIosArm64
+./gradlew :logic:assembleKaliumLogicDebugXCFramework
+./gradlew :logic:assembleKaliumLogicReleaseXCFramework
 
-# For iOS Simulator on Apple Silicon Mac
-./gradlew :logic:compileKotlinIosSimulatorArm64
+./gradlew :nse:assembleKaliumNSEReleaseXCFramework
+./gradlew :share:assembleKaliumShareReleaseXCFramework
 ```
 
-### Building All iOS Targets
+Gradle writes each XCFramework to `<module>/build/XCFrameworks/<debug|release>/`.
 
-To compile all iOS targets for a module:
+`KaliumNSE` and `KaliumShare` are linked with `-application_extension`. Pass
+`-Pwire.ios.simulatorOnly=true` or `-Pwire.ios.deviceOnly=true` to put only one slice
+in their XCFrameworks and skip linking the other. The two flags cannot be combined, and
+`:logic` ignores them.
 
-```bash
-./gradlew :logic:compileKotlinIosArm64 :logic:compileKotlinIosSimulatorArm64
-```
-
-### Running iOS Tests
-
-Run tests on the iOS simulator:
+To build a single framework instead, use the Kotlin link task for one target:
 
 ```bash
-# On Apple Silicon Mac (recommended)
-./gradlew iosSimulatorArm64Test
-
-# Run tests for a specific module
-./gradlew :core:cryptography:iosSimulatorArm64Test
-./gradlew :data:persistence:iosSimulatorArm64Test
-```
-
-### Building Frameworks
-
-Build a debug framework for integration with Xcode projects:
-
-```bash
-# For iOS device
-./gradlew :logic:linkDebugFrameworkIosArm64
-
-# For iOS Simulator (Apple Silicon)
 ./gradlew :logic:linkDebugFrameworkIosSimulatorArm64
-
+# logic/build/bin/iosSimulatorArm64/debugFramework/KaliumLogic.framework
 ```
 
-Build a release framework:
+## Using the frameworks in Xcode
+
+1. Build the XCFramework for the configuration you need.
+2. Add it to the target under **Frameworks, Libraries, and Embedded Content** and set
+   **Embed** to **Embed & Sign**.
+3. Embed AVS for the module that produced the framework. Generate its Xcode
+   configuration once after cloning, updating or cleaning:
+
+   ```bash
+   ./gradlew :logic:generateAvsXcodeConfig
+   ```
+
+   Include `logic/build/kalium-apple-avs-runtime/xcode/KaliumAvsRuntime.xcconfig` in the
+   target's configuration, then add a Run Script phase after the framework is embedded:
+
+   ```bash
+   KALIUM_DIR="$SRCROOT/Frameworks/kalium"
+   "$KALIUM_DIR/gradlew" -p "$KALIUM_DIR" :logic:embedAvsForXcode
+   ```
+
+   Extensions use the same tasks on their own module, for example
+   `:nse:generateAvsXcodeConfig` and `:nse:embedAvsForXcode`. Copying only the Kalium
+   framework does not include AVS.
+4. Import the module by its framework name:
+
+   ```swift
+   import KaliumLogic
+   ```
+
+The [plugin guide](../plugins/apple-avs-runtime/README.md) covers consumers that build
+their own KMP framework, offline archives, caching and dSYMs.
+
+### Kalium as a Git submodule
 
 ```bash
-./gradlew :logic:linkReleaseFrameworkIosArm64
-./gradlew :logic:linkReleaseFrameworkIosSimulatorArm64
-```
-
-## Module-Specific Notes
-
-### Core Cryptography Module
-
-The `:core:cryptography` module has additional iOS-specific configuration:
-
-- Links against the `Security` framework for cryptographic operations
-- Uses libsodium bindings for multiplatform cryptography
-
-```kotlin
-iosArm64 {
-    binaries.all {
-        linkerOpts("-framework", "Security")
-    }
-}
-```
-
-### All Native Targets
-
-All native (Apple) targets link against SQLite:
-
-```kotlin
-linkerOpts("-lsqlite3")
-```
-
-## Project Structure
-
-iOS-specific source code is organized in the following source sets:
-
-```
-module/
-├── src/
-│   ├── commonMain/       # Shared code across all platforms
-│   ├── commonTest/       # Shared tests
-│   ├── appleMain/        # Shared code for all Apple platforms (iOS + macOS)
-│   ├── iosMain/          # iOS-specific code (all iOS targets)
-│   ├── iosArm64Main/     # iOS device-specific code
-│   ├── iosSimulatorArm64Main/  # iOS Simulator (Apple Silicon) specific code
-│   └── iosTest/          # iOS-specific tests
-```
-
-## Integrating with iOS Projects
-
-### Dynamic AVS runtime
-
-Kalium keeps CoreCrypto statically linked, but Apple AVS must be linked and
-embedded as the matching dynamic `avs.framework`. The
-`com.wire.kalium.apple-avs-runtime` plugin owns the compatible AVS version and
-checksum; applications must not configure them independently. It is already
-applied to `:logic`, so submodule consumers generate the Xcode configuration
-with `:logic:generateAvsXcodeConfig` and embed with `:logic:embedAvsForXcode`.
-
-Setup for both the submodule and Maven paths, plus the caching and dSYM
-behavior, is documented in the
-[plugin setup guide](../plugins/apple-avs-runtime/README.md).
-
-### Using the Framework
-
-After building the framework, locate it at:
-
-```
-logic/build/bin/iosArm64/debugFramework/logic.framework
-# or
-logic/build/bin/iosSimulatorArm64/debugFramework/logic.framework
-```
-
-Add the framework to your Xcode project:
-
-1. Drag the `.framework` into your Xcode project
-2. Ensure it's added to "Frameworks, Libraries, and Embedded Content"
-3. Set "Embed" to "Embed & Sign"
-
-### Using with CocoaPods
-
-For CocoaPods integration, you may need to configure a podspec. The Kotlin Multiplatform Gradle plugin can generate one:
-
-```bash
-./gradlew :logic:podspec
-```
-
-## Using Kalium as a Git Submodule
-
-If you want to include Kalium directly in your iOS project as a submodule, follow these steps.
-
-### Adding the Submodule
-
-```bash
-cd /path/to/your/ios-project
 git submodule add https://github.com/wireapp/kalium.git Frameworks/kalium
 git submodule update --init --recursive
 ```
 
-### Project Structure
+Run the Gradle commands above with `Frameworks/kalium/gradlew -p Frameworks/kalium`.
+Pinning the submodule also pins CoreCrypto, the AVS bindings and the AVS runtime.
 
-Your iOS project structure should look like:
+## Running Apple tests
 
-```
-YourIOSApp/
-├── YourIOSApp/
-│   ├── AppDelegate.swift
-│   └── ...
-├── YourIOSApp.xcodeproj
-├── Frameworks/
-│   └── kalium/                 # Kalium submodule
-│       ├── logic/
-│       ├── core/
-│       ├── gradlew
-│       └── ...
-└── ...
-```
-
-### Building the Framework from Submodule
-
-Navigate to the submodule and build the framework:
+Run one module's tests with its target test task:
 
 ```bash
-cd Frameworks/kalium
-
-# Build for iOS Simulator (Apple Silicon)
-./gradlew :logic:linkDebugFrameworkIosSimulatorArm64
-
-# Build for iOS device
-./gradlew :logic:linkDebugFrameworkIosArm64
+./gradlew :core:util:iosSimulatorArm64Test
+./gradlew :share:macosArm64Test
 ```
 
-### Xcode Configuration
-
-#### Option 1: Manual Framework Integration
-
-1. In Xcode, go to your target's **General** tab
-2. Under **Frameworks, Libraries, and Embedded Content**, click **+**
-3. Click **Add Other...** → **Add Files...**
-4. Navigate to `Frameworks/kalium/logic/build/bin/iosSimulatorArm64/debugFramework/`
-5. Select `logic.framework` and click **Add**
-6. Set **Embed** to **Embed & Sign**
-
-Add the framework search path in **Build Settings**:
-
-```
-FRAMEWORK_SEARCH_PATHS = $(PROJECT_DIR)/Frameworks/kalium/logic/build/bin/$(CURRENT_ARCH)/debugFramework
-```
-
-#### Option 2: Build Phase Script (Recommended)
-
-Add a **Run Script** build phase that builds the framework automatically:
-
-1. In Xcode, select your target → **Build Phases**
-2. Click **+** → **New Run Script Phase**
-3. Move it **before** "Compile Sources"
-4. Add the following script:
+Tests in `:core:cryptography`, `:domain:messaging:receiving` and `:logic` use the
+simulator Keychain, which a standalone simulator process cannot reach, so they need a
+booted simulator (`standalone = false`). CI runs all simulator tests with
+`nse/scripts/run-ios-tests.py`. It creates a disposable iPhone simulator, trusts a local
+X.509 fixture certificate, starts the fixture server and runs
+`./gradlew iosSimulatorArm64Test --device <simulator>`, forwarding any extra arguments to
+Gradle:
 
 ```bash
-#!/bin/bash
-set -e
-
-KALIUM_DIR="${PROJECT_DIR}/Frameworks/kalium"
-cd "$KALIUM_DIR"
-
-# Determine which target to build based on the SDK
-if [ "$PLATFORM_NAME" = "iphonesimulator" ]; then
-    TARGET="iosSimulatorArm64"
-else
-    TARGET="iosArm64"
-fi
-
-# Build configuration
-if [ "$CONFIGURATION" = "Release" ]; then
-    BUILD_TYPE="Release"
-else
-    BUILD_TYPE="Debug"
-fi
-
-echo "Building Kalium for $TARGET ($BUILD_TYPE)..."
-./gradlew :logic:link${BUILD_TYPE}Framework${TARGET^} --no-daemon -q
-
-# Copy framework to derived data
-FRAMEWORK_SRC="$KALIUM_DIR/logic/build/bin/$TARGET/${BUILD_TYPE,,}Framework/logic.framework"
-FRAMEWORK_DST="${BUILT_PRODUCTS_DIR}/logic.framework"
-
-if [ -d "$FRAMEWORK_SRC" ]; then
-    rm -rf "$FRAMEWORK_DST"
-    cp -R "$FRAMEWORK_SRC" "$FRAMEWORK_DST"
-    echo "Framework copied to $FRAMEWORK_DST"
-fi
+python3 -m venv .venv
+.venv/bin/pip install -r nse/scripts/requirements-ios-tests.txt
+.venv/bin/python nse/scripts/run-ios-tests.py --continue
 ```
 
-5. Add input files (for incremental builds):
-   ```
-   $(PROJECT_DIR)/Frameworks/kalium/logic/src/
-   ```
+CI then runs `macosArm64Test` for the modules with macOS-only code: `:core:logger`,
+`:logic` and `:share`, plus `AppleAccountRuntimeOwnerTest` in `:domain:messaging:receiving`.
+The rest of the receiving suite runs on the simulator only, because its X.509 tests need the
+fixture certificate that `run-ios-tests.py` trusts on the simulator.
 
-6. Add output files:
-   ```
-   $(BUILT_PRODUCTS_DIR)/logic.framework
-   ```
-
-### Creating an XCFramework
-
-For distributing or supporting multiple architectures in a single bundle, create an XCFramework:
-
-```bash
-cd Frameworks/kalium
-
-# Build all iOS frameworks
-./gradlew :logic:linkReleaseFrameworkIosArm64
-./gradlew :logic:linkReleaseFrameworkIosSimulatorArm64
-
-# Create XCFramework
-xcodebuild -create-xcframework \
-    -framework logic/build/bin/iosArm64/releaseFramework/logic.framework \
-    -framework logic/build/bin/iosSimulatorArm64/releaseFramework/logic.framework \
-    -output logic/build/logic.xcframework
-```
-
-### Updating the Submodule
-
-To update Kalium to the latest version:
-
-```bash
-cd Frameworks/kalium
-git fetch origin
-git checkout develop  # or a specific tag/commit
-git pull
-
-# Return to your project root
-cd ../..
-git add Frameworks/kalium
-git commit -m "Update Kalium submodule"
-```
-
-### Swift Package Manager (Experimental)
-
-If you prefer SPM over submodules, you can reference the built XCFramework:
-
-### Importing in Swift
-
-Once integrated, import and use Kalium in your Swift code:
-
-```swift
-import KaliumLogic
-
-// Use Kalium classes and functions
-// Note: Kotlin classes are accessible with their full package path
-```
+`./gradlew iOSOnlyAffectedTest` runs `iosSimulatorArm64Test` for the affected modules when
+affected-module data is available, and for all modules otherwise.
 
 ## Troubleshooting
 
-### Common Issues
-
-**Build fails with missing SQLite:**
-
-Ensure Xcode command-line tools are installed:
-```bash
-xcode-select --install
-```
-
-**Simulator tests fail to run:**
-
-1. Ensure you have a simulator runtime installed matching your target
-2. Check available simulators: `xcrun simctl list devices`
-
-**Framework not found in Xcode:**
-
-1. Verify the framework was built successfully
-2. Check the framework search paths in Xcode build settings
-3. Ensure you're building on Apple Silicon (Intel Macs are not supported)
-
-### Checking Available Tasks
-
-List all iOS-related Gradle tasks:
-
-```bash
-./gradlew tasks --all | grep -i ios
-```
-
-## Current Status
-
-iOS support in Kalium is partial. The following modules have iOS targets enabled:
-
-- `:core:cryptography`
-- `:core:logger`
-- `:core:util`
-- `:data:persistence`
-- `:data:network`
-- `:data:protobuf`
-- `:domain:backup`
-- `:logic`
-
-Some features may have limited or no implementation on iOS. Check individual module source sets for platform-specific implementations.
+- **SQLite or Security link errors:** install the Xcode command-line tools and check
+  `xcode-select -p`.
+- **No simulator found:** install an iOS Simulator runtime for the selected Xcode and check
+  `xcrun simctl list runtimes`.
+- **AVS missing at launch:** the target did not run `embedAvsForXcode` for the module that
+  produced its framework.
+- **Listing tasks:** `./gradlew :logic:tasks --all | grep -i xcframework`.

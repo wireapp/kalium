@@ -1,0 +1,3 @@
+-- Pre-TZID recurring starts used the viewer's zone. Regenerate them from the meeting start in its stored zone.
+DELETE FROM MeetingOccurrence
+WHERE meeting_id IN (SELECT meeting_id FROM Meeting WHERE recurrence_frequency IS NOT NULL);

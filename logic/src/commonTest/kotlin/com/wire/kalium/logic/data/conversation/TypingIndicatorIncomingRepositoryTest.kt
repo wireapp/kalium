@@ -110,6 +110,17 @@ class TypingIndicatorIncomingRepositoryTest {
             )
         }
 
+    @Test
+    fun disabledTypingStillRemovesExistingUsersButDoesNotAddNewUsers() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, repository) = Arrangement().withTypingIndicatorStatus().arrange()
+        repository.addTypingUserInConversation(conversationOne, expectedUserTypingOne)
+        arrangement.withTypingIndicatorStatus(false)
+        repository.addTypingUserInConversation(conversationOne, expectedUserTypingTwo)
+        assertEquals(setOf(expectedUserTypingOne), repository.observeUsersTyping(conversationOne).firstOrNull())
+        repository.removeTypingUserInConversation(conversationOne, expectedUserTypingOne)
+        assertEquals(emptySet(), repository.observeUsersTyping(conversationOne).firstOrNull())
+    }
+
     private class Arrangement {
         val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
 

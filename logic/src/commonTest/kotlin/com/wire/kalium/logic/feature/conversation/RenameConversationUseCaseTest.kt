@@ -39,7 +39,7 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertIs
 
@@ -84,6 +84,10 @@ class RenameConversationUseCaseTest {
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
         val renamedConversationEventHandler = mock<RenamedConversationEventHandler>(mode = MockMode.autoUnit)
+
+        init {
+            everySuspend { renamedConversationEventHandler.handle(any()) } returns Either.Right(Unit)
+        }
 
         val selfUserId = USER_ID
 

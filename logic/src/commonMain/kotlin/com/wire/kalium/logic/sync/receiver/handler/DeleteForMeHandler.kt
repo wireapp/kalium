@@ -22,7 +22,8 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
@@ -36,7 +37,7 @@ internal interface DeleteForMeHandler {
 }
 
 internal class DeleteForMeHandlerImpl internal constructor(
-    private val messageRepository: MessageRepository,
+    private val messageDAO: MessageDAO,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val selfUserId: UserId,
@@ -46,18 +47,17 @@ internal class DeleteForMeHandlerImpl internal constructor(
         message: Message.Signaling,
         messageContent: MessageContent.DeleteForMe
     ) {
-        if (isMessageSentInSelfConversation(message)) {
-            messageRepository.deleteMessage(
-                messageUuid = messageContent.messageId,
-                conversationId = messageContent.conversationId
-            )
-            persistenceEventHookNotifier.onMessageDeleted(
-                MessageDeleteEventData(messageContent.conversationId, messageContent.messageId),
-                selfUserId
-            )
-        } else {
-            kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
-                .i(message = "Delete message sender is not verified: $messageContent")
+        val inSelfConversation = isMessageSentInSelfConversation(message)
+        deleteMessageForMe(messageDAO, messageContent, inSelfConversation).onSuccess { deleted ->
+            if (deleted) {
+                persistenceEventHookNotifier.onMessageDeleted(
+                    MessageDeleteEventData(messageContent.conversationId, messageContent.messageId),
+                    selfUserId
+                )
+            } else {
+                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
+                    .i(message = "Delete message sender is not verified: $messageContent")
+            }
         }
     }
 

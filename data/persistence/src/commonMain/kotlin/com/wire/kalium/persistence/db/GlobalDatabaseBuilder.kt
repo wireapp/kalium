@@ -44,6 +44,8 @@ class GlobalDatabaseBuilder internal constructor(
     private val platformDatabaseData: PlatformDatabaseData,
     private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
 ) {
+    private var closeFailure: Throwable? = null
+    private var closed = false
 
     internal val database: GlobalDatabase = GlobalDatabase(
         sqlDriver,
@@ -76,8 +78,22 @@ class GlobalDatabaseBuilder internal constructor(
         get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries, queriesContext)
 
     fun nuke(): Boolean {
-        sqlDriver.close()
+        close()
         return nuke(platformDatabaseData)
+    }
+
+    /** Stop and await all database users before closing. A failed close remains a failure on subsequent calls. */
+    @Suppress("TooGenericExceptionCaught")
+    fun close() {
+        closeFailure?.let { throw it }
+        if (closed) return
+        try {
+            sqlDriver.close()
+            closed = true
+        } catch (failure: Throwable) {
+            closeFailure = failure
+            throw failure
+        }
     }
 }
 

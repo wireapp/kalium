@@ -1,0 +1,26 @@
+CREATE TABLE Subconversation (
+    conversation_id TEXT NOT NULL,
+    conversation_domain TEXT NOT NULL,
+    subconversation_id TEXT NOT NULL,
+    group_id TEXT NOT NULL,
+    PRIMARY KEY (conversation_id, conversation_domain, subconversation_id)
+);
+
+CREATE INDEX subconversation_group_id ON Subconversation(group_id);
+
+upsert:
+INSERT INTO Subconversation(conversation_id, conversation_domain, subconversation_id, group_id)
+VALUES (?, ?, ?, ?)
+ON CONFLICT(conversation_id, conversation_domain, subconversation_id)
+DO UPDATE SET group_id = excluded.group_id;
+
+selectGroup:
+SELECT group_id FROM Subconversation
+WHERE conversation_id = ? AND conversation_domain = ? AND subconversation_id = ?;
+
+containsGroup:
+SELECT EXISTS(SELECT 1 FROM Subconversation WHERE group_id = ?);
+
+deleteMapping:
+DELETE FROM Subconversation
+WHERE conversation_id = ? AND conversation_domain = ? AND subconversation_id = ?;

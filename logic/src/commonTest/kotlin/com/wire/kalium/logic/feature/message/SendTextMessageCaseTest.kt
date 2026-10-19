@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -41,6 +43,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import dev.mokkery.MockMode
 import dev.mokkery.matcher.any
@@ -50,8 +53,13 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import dev.mokkery.every
 import dev.mokkery.matcher.matching
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -115,12 +123,14 @@ class SendTextMessageCaseTest {
 
         // Then
         result.toEither().shouldFail()
+        val failedMessageId = kotlin.test.assertIs<MessageOperationResult.Failure>(result).messageId
+        kotlin.test.assertNotNull(failedMessageId)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { it.id == failedMessageId })
+        }
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertyRepository.getReadReceiptsStatus()
-        }
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.persistMessage.invoke(any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
@@ -355,7 +365,166 @@ class SendTextMessageCaseTest {
         }
     }
 
+    @Test
+    fun givenPersistenceFailure_whenSendingText_thenNoRetryIdentityIsReturned() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .arrange()
+        everySuspend { arrangement.persistMessage.invoke(any()) } returns
+            Either.Left(com.wire.kalium.common.error.StorageFailure.DataNotFound)
+
+        val result = sendTextMessage(TestConversation.ID, "not persisted", draftRevision = 12L)
+
+        verifySuspend(VerifyMode.not) { arrangement.messageDraftRepository.consumePlainText(any(), any()) }
+        kotlin.test.assertNull(kotlin.test.assertIs<MessageOperationResult.Failure>(result).messageId)
+        verifySuspend(VerifyMode.not) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenPersistedText_whenTheScreenCallerIsCancelled_thenDomainDeliveryContinues() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .arrange()
+        val deliveryGate = CompletableDeferred<Unit>()
+        val delivered = CompletableDeferred<Unit>()
+        everySuspend { arrangement.messageSender.sendMessage(any(), any()) } calls {
+            deliveryGate.await()
+            delivered.complete(Unit)
+            Either.Right(Unit)
+        }
+        val screenCaller = launch { sendTextMessage(TestConversation.ID, "durable", draftRevision = 12L) }
+        runCurrent()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage.invoke(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageDraftRepository.consumePlainText(TestConversation.ID, 12L) }
+        screenCaller.cancelAndJoin()
+        deliveryGate.complete(Unit)
+        runCurrent()
+        kotlin.test.assertTrue(delivered.isCompleted)
+    }
+
+    @Test
+    fun givenPendingDraft_whenCallerLeavesBeforePersistenceAndReenters_thenOnlyOneMessageIsPersisted() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        val syncGate = CompletableDeferred<Unit>()
+        everySuspend { arrangement.currentClientIdProvider.invoke() } calls {
+            syncGate.await()
+            Either.Right(TestClient.CLIENT_ID)
+        }
+        val firstScreen = launch { sendTextMessage(TestConversation.ID, "A", draftRevision = 4L) }
+        runCurrent()
+        firstScreen.cancelAndJoin()
+        val reopenedScreen = launch { sendTextMessage(TestConversation.ID, "A", draftRevision = 4L) }
+        runCurrent()
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+        syncGate.complete(Unit)
+        reopenedScreen.join()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage.invoke(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenAnAlreadyConsumedRevision_whenAStalePreparedSubmissionResumes_thenNoDuplicateIsPersisted() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        var consumed = false
+        everySuspend { arrangement.messageDraftRepository.isPlainTextConsumed(any(), any()) } calls { consumed }
+        everySuspend { arrangement.messageDraftRepository.consumePlainText(any(), any()) } calls { consumed = true }
+        sendTextMessage(TestConversation.ID, "A", draftRevision = 4L)
+        runCurrent()
+        sendTextMessage(TestConversation.ID, "A", draftRevision = 4L)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage.invoke(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenAMessageId_whenStoringText_thenItIsStoredUnderThatIdBeforeTheSendEnds() = runTest {
+        val sent = CompletableDeferred<Unit>()
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .arrange()
+        everySuspend { arrangement.messageSender.sendMessage(any(), any()) } calls {
+            sent.await()
+            Either.Right(Unit)
+        }
+
+        kotlin.test.assertTrue(sendTextMessage.store("shared-id", TestConversation.ID, "some-text"))
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { it.id == "shared-id" })
+        }
+        sent.complete(Unit)
+        runCurrent()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(matching { it.id == "shared-id" }, any())
+        }
+    }
+
+    @Test
+    fun givenStoringIsCancelledBeforeTheMessageIsStored_whenSyncCompletesLater_thenNothingIsStoredOrSent() = runTest {
+        val slowSync = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        every { arrangement.slowSyncRepository.slowSyncStatus } returns slowSync.asStateFlow()
+
+        // The importer is cancelled, for example by going to the background, while the account catches up.
+        val storing = launch { sendTextMessage.store("shared-id", TestConversation.ID, "some-text") }
+        runCurrent()
+        storing.cancelAndJoin()
+        slowSync.value = SlowSyncStatus.Complete
+        runCurrent()
+
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage.invoke(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenStorageFails_whenStoringText_thenNothingIsStoredOrSent() = runTest {
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .arrange()
+        everySuspend { arrangement.persistMessage.invoke(any()) } returns Either.Left(StorageFailure.DataNotFound)
+
+        kotlin.test.assertFalse(sendTextMessage.store("shared-id", TestConversation.ID, "some-text"))
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
     private class Arrangement(private val coroutineScope: CoroutineScope) {
+        val messageDraftRepository = mock<MessageDraftRepository>(mode = MockMode.autoUnit)
         val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
         val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
         val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
@@ -428,8 +597,11 @@ class SendTextMessageCaseTest {
             pendingMessages = false
         }
 
-        fun arrange() = this to SendTextMessageUseCase(
+        suspend fun arrange(): Pair<Arrangement, SendTextMessageUseCase> {
+            everySuspend { messageDraftRepository.isPlainTextConsumed(any(), any()) } returns false
+            return this to SendTextMessageUseCase(
             persistMessage = persistMessage,
+            messageDraftRepository = messageDraftRepository,
             selfUserId = TestUser.SELF.id,
             provideClientId = currentClientIdProvider,
             assetDataSource = assetRepository,
@@ -441,7 +613,8 @@ class SendTextMessageCaseTest {
             scope = coroutineScope,
             dispatchers = coroutineScope.testKaliumDispatcher,
             pendingMessagesEnabled = pendingMessages
-        )
+            )
+        }
     }
 
     private companion object {

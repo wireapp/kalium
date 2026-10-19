@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.meeting
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.Event
@@ -43,23 +44,25 @@ internal class MeetingDeleteEventHandlerImpl(
     override suspend fun handle(event: Event.Meeting.Delete): Either<StorageFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
 
-        meetingRepository.getMeeting(event.meetingId).onSuccess { meeting ->
-            notificationEventsManager.scheduleMeetingNotification(
-                LocalNotification.Meeting.Cancel(
-                    eventId = event.id,
-                    meetingId = meeting.meetingId,
-                    conversationId = meeting.conversationId,
-                    meetingTitle = meeting.title,
-                    author = event.senderUserId?.let {
-                        userRepository.observeUser(it).firstOrNull()?.toLocalNotificationMessageAuthor()
-                    },
-                    time = event.dateTime,
-                )
-            )
-        }
-
+        val meeting = meetingRepository.getMeeting(event.meetingId).getOrNull()
         return meetingRepository.deleteMeetingLocally(event.meetingId)
-            .onSuccess { eventLogger.logSuccess() }
+            .onSuccess {
+                meeting?.let {
+                    notificationEventsManager.scheduleMeetingNotification(
+                        LocalNotification.Meeting.Cancel(
+                            eventId = event.id,
+                            meetingId = meeting.meetingId,
+                            conversationId = meeting.conversationId,
+                            meetingTitle = meeting.title,
+                            author = event.senderUserId?.let {
+                                userRepository.observeUser(it).firstOrNull()?.toLocalNotificationMessageAuthor()
+                            },
+                            time = event.dateTime,
+                        )
+                    )
+                }
+                eventLogger.logSuccess()
+            }
             .onFailure { eventLogger.logFailure(it) }
     }
 }

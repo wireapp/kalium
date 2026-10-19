@@ -39,7 +39,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

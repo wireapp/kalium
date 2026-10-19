@@ -20,8 +20,11 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrFail
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
@@ -34,19 +37,21 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.conversation.proposalCommitDeadline
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.message.PlainMessageBlob
-import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
-import kotlinx.datetime.Instant
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isConversationNotFound
 import kotlin.io.encoding.Base64
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 internal interface MLSMessageUnpacker {
     suspend fun unpackMlsMessage(
@@ -88,33 +93,13 @@ internal class MLSMessageUnpackerImpl(
         bundle: DecryptedMessageBundle,
         conversationId: ConversationId,
         messageInstant: Instant
-    ): MessageUnpackResult = when (bundle) {
-        is DecryptedMessageBundle.Text -> {
-            val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(bundle.applicationMessage.message))
-            if (protoContent !is ProtoContent.Readable) {
-                throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
-            }
-            MessageUnpackResult.ApplicationMessage(
-                conversationId = conversationId,
-                instant = messageInstant,
-                senderUserId = bundle.applicationMessage.senderID,
-                senderClientId = bundle.applicationMessage.senderClientID,
-                content = protoContent
-            )
-        }
-
-        is DecryptedMessageBundle.Proposal -> {
+    ): MessageUnpackResult {
+        if (bundle is DecryptedMessageBundle.Proposal) {
             bundle.commitDelay?.let {
-                handlePendingProposal(
-                    timestamp = messageInstant,
-                    groupId = bundle.groupID,
-                    commitDelay = it
-                )
+                handlePendingProposal(messageInstant, bundle.groupID, it)
             }
-            MessageUnpackResult.HandshakeMessage
         }
-
-        is DecryptedMessageBundle.Commit -> MessageUnpackResult.HandshakeMessage
+        return bundle.unpack(conversationId, messageInstant, protoContentMapper)
     }
 
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
@@ -128,19 +113,20 @@ internal class MLSMessageUnpackerImpl(
         )
         pendingProposalScheduler.scheduleCommit(
             groupId,
-            timestamp.plus(commitDelay.seconds)
+            proposalCommitDeadline(timestamp, commitDelay)
         )
     }
 
     private suspend fun messageFromMLSMessage(
         mlsContext: MlsCoreCryptoContext,
         messageEvent: Event.Conversation.NewMLSMessage
-    ): Either<CoreFailure, List<DecryptedMessageBundle>> =
+    ): Either<CoreFailure, List<DecryptedMessageBundle>> {
         messageEvent.subconversationId?.let { subConversationId ->
-            subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subConversationId)?.let { groupID ->
+            return resolveSubconversationGroup(mlsContext, messageEvent.conversationId, subConversationId).flatMap { groupID ->
                 logger.logStructuredJson(
-                    KaliumLogLevel.DEBUG, "Decrypting MLS for SubConversation",
-                        mapOf(
+                    KaliumLogLevel.DEBUG,
+                    "Decrypting MLS for SubConversation",
+                    mapOf(
                         "conversationId" to messageEvent.conversationId.toLogString(),
                         "subConversationId" to subConversationId.toLogString(),
                         "groupID" to groupID.toLogString()
@@ -148,11 +134,13 @@ internal class MLSMessageUnpackerImpl(
                 )
                 decryptMessageAndLogIfBuffered(mlsContext, messageEvent, groupID)
             }
-        } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
+        }
+        return conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
                 logger.logStructuredJson(
-                    KaliumLogLevel.DEBUG, "Decrypting MLS for Conversation",
-                        mapOf(
+                    KaliumLogLevel.DEBUG,
+                    "Decrypting MLS for Conversation",
+                    mapOf(
                         "conversationId" to messageEvent.conversationId.toLogString(),
                         "groupID" to protocolInfo.groupId.toLogString(),
                         "protocolInfo" to protocolInfo.toLogMap()
@@ -163,6 +151,48 @@ internal class MLSMessageUnpackerImpl(
                 Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
+    }
+
+    @Suppress("ReturnCount", "ThrowsCount") // Keep terminal skips separate from failures that must retain the event.
+    private suspend fun resolveSubconversationGroup(
+        mlsContext: MlsCoreCryptoContext,
+        conversationId: ConversationId,
+        subconversationId: SubconversationId,
+    ): Either<CoreFailure, GroupID> {
+        subconversationRepository.getSubconversationInfo(conversationId, subconversationId)?.let {
+            return Either.Right(it)
+        }
+
+        val remote = subconversationRepository.fetchRemoteSubConversationDetails(conversationId, subconversationId)
+            .getOrFail { failure ->
+                if (failure.isConversationNotFoundFailure()) return Either.Left(MLSFailure.ConversationNotFound)
+                throw KaliumSyncException("Failed to recover subconversation mapping", failure)
+            }
+        if (remote.parentId != conversationId || remote.id != subconversationId) {
+            throw KaliumSyncException("Subconversation identity mismatch", MLSFailure.InvalidGroupId)
+        }
+
+        val nativeGroupExists = wrapMLSRequest {
+            mlsContext.conversationExists(remote.groupId.toCrypto())
+        }.getOrFail { failure ->
+            throw KaliumSyncException("Failed to inspect native subconversation state", failure)
+        }
+        // Leaving a subgroup removes its native state. Keep delayed events on the existing
+        // ConversationNotFound/ignore path instead of attempting an external join.
+        if (!nativeGroupExists) return Either.Left(MLSFailure.ConversationNotFound)
+
+        subconversationRepository.insertSubconversation(conversationId, subconversationId, remote.groupId)
+        logger.logStructuredJson(
+            KaliumLogLevel.DEBUG,
+            "Recovered MLS SubConversation mapping",
+            mapOf(
+                "conversationId" to conversationId.toLogString(),
+                "subConversationId" to subconversationId.toLogString(),
+                "groupID" to remote.groupId.toLogString(),
+            )
+        )
+        return Either.Right(remote.groupId)
+    }
 
     private suspend fun decryptMessageAndLogIfBuffered(
         mlsContext: MlsCoreCryptoContext,
@@ -189,4 +219,10 @@ internal class MLSMessageUnpackerImpl(
         )
         return result
     }
+}
+
+private fun NetworkFailure.isConversationNotFoundFailure(): Boolean {
+    val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)
+        ?.kaliumException as? KaliumException.InvalidRequestError
+    return invalidRequest?.isConversationNotFound() == true
 }

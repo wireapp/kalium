@@ -18,6 +18,11 @@
 
 import com.wire.kalium.plugins.appleTargets
 import org.gradle.api.tasks.Sync
+import org.gradle.api.attributes.Usage
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompileCommon
+import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -43,6 +48,39 @@ dependencies {
     coreCryptoJvmNativeArtifacts(libs.coreCryptoJvm)
 }
 
+// The shared implementation needs CoreCrypto's common declarations during metadata
+// compilation. Keep this compiler-only input separate from the platform bindings:
+// JVM and Android deliberately use their standalone generated bindings.
+val coreCryptoCommonMetadata by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+    attributes {
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named("kotlin-metadata"))
+        attribute(KotlinPlatformType.attribute, KotlinPlatformType.common)
+    }
+}
+dependencies {
+    coreCryptoCommonMetadata(libs.coreCryptoKmp)
+}
+val coreCryptoMetadataDirectory = layout.buildDirectory.dir("generated/coreCryptoCommonMetadata")
+val extractCoreCryptoCommonMetadata by tasks.registering(Sync::class) {
+    from({ coreCryptoCommonMetadata.map(::zipTree) }) {
+        include("commonMain/**")
+    }
+    into(coreCryptoMetadataDirectory)
+    doLast {
+        check(destinationDir.resolve("commonMain/default/manifest").isFile) {
+            "CoreCrypto metadata artifact no longer contains the expected commonMain KLIB"
+        }
+    }
+}
+tasks.withType<KotlinCompileCommon>().configureEach {
+    if (name == "compileNonJsMainKotlinMetadata") {
+        libraries.from(extractCoreCryptoCommonMetadata.map { it.destinationDir.resolve("commonMain") })
+    }
+}
+
 val coreCryptoJvmNativeResources = layout.buildDirectory.dir("generated/coreCryptoJvmNativeResources")
 val extractCoreCryptoJvmNativeResources by tasks.registering(Sync::class) {
     from({ coreCryptoJvmNativeArtifacts.map(::zipTree) }) {
@@ -61,6 +99,12 @@ kotlin {
     iosSimulatorArm64 {
         binaries.all {
             linkerOpts("-framework", "Security")
+        }
+        binaries.withType<TestExecutable>().configureEach {
+            // CoreCrypto's iOS WAL salt uses Keychain. Simulator test executables need an identity.
+            val testEntitlements = file("src/iosTest/entitlements.plist")
+            linkerOpts("-sectcreate", "__TEXT", "__entitlements", testEntitlements.absolutePath)
+            linkTaskProvider.configure { inputs.file(testEntitlements) }
         }
     }
     macosArm64 {
@@ -130,6 +174,7 @@ kotlin {
         val appleMain by getting {
             dependsOn(nonJsMain)
             dependencies {
+                implementation(projects.core.util)
                 implementation(libs.coreCryptoKmp)
             }
         }
@@ -144,6 +189,11 @@ kotlin {
 
 tasks.named("jvmProcessResources") {
     dependsOn(extractCoreCryptoJvmNativeResources)
+}
+
+tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+    // Standalone simulator processes cannot reach the Keychain service used by CoreCrypto.
+    standalone.set(false)
 }
 
 project.appleTargets().forEach {

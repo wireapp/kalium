@@ -76,6 +76,8 @@ import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCas
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.folder.ManageConversationFolderUseCase
+import com.wire.kalium.logic.feature.conversation.folder.ManageConversationFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCase
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCase
@@ -103,6 +105,7 @@ import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveSelfUserUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
@@ -190,6 +193,13 @@ public class ConversationScope internal constructor(
 
     public val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
+
+    public val observeConversationRoleForUser: ObserveConversationRoleForUserUseCase
+        get() = ObserveConversationRoleForUserUseCase(
+            observeConversationMembers,
+            observeConversationDetails,
+            ObserveSelfUserUseCaseImpl(userRepository),
+        )
 
     public val getConversationProtocolInfo: GetConversationProtocolInfoUseCase
         get() = GetConversationProtocolInfoUseCase(conversationRepository)
@@ -280,7 +290,7 @@ public class ConversationScope internal constructor(
     internal val observeConnectionList: ObserveConnectionListUseCase
         get() = observePendingConnectionRequests
 
-    internal val observePendingConnectionRequests: ObservePendingConnectionRequestsUseCase
+    public val observePendingConnectionRequests: ObservePendingConnectionRequestsUseCase
         get() = ObservePendingConnectionRequestsUseCaseImpl(connectionRepository)
 
     public val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
@@ -484,6 +494,8 @@ public class ConversationScope internal constructor(
         get() = RemoveConversationFromFolderUseCaseImpl(conversationFolderRepository)
     public val createConversationFolder: CreateConversationFolderUseCase
         get() = CreateConversationFolderUseCaseImpl(conversationFolderRepository)
+    public val manageConversationFolder: ManageConversationFolderUseCase
+        get() = ManageConversationFolderUseCaseImpl(conversationFolderRepository)
 
     public val isSelfUserViewerOnConversation: IsSelfUserViewerOnConversationUseCase
         get() = IsSelfUserViewerOnConversationUseCase(

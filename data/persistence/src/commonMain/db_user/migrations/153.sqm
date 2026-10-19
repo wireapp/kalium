@@ -1,0 +1,9 @@
+CREATE TABLE Subconversation (
+    conversation_id TEXT NOT NULL,
+    conversation_domain TEXT NOT NULL,
+    subconversation_id TEXT NOT NULL,
+    group_id TEXT NOT NULL,
+    PRIMARY KEY (conversation_id, conversation_domain, subconversation_id)
+);
+
+CREATE INDEX subconversation_group_id ON Subconversation(group_id);

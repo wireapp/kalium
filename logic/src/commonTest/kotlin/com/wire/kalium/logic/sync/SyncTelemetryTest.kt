@@ -29,7 +29,7 @@ import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertContains

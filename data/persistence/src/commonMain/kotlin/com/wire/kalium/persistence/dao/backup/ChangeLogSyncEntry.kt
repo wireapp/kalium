@@ -23,7 +23,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionsSyncEntity
 import com.wire.kalium.persistence.dao.receipt.MessageReadReceiptsSyncEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * A remote-backup changelog event enriched with the data needed for proto encoding.

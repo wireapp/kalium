@@ -1,0 +1,1 @@
+MLS conversation creation and retry retain the conflict result and cleanup conversation ID when acknowledging pending work fails. Explicit discard returns false when either cleanup write fails, allowing callers to retry. Cancellation still propagates. No API or schema changes.

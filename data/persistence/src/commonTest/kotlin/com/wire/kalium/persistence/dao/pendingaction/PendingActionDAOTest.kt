@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertFails
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -40,6 +41,76 @@ class PendingActionDAOTest : BaseDatabaseTest() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
         pendingActionDAO = db.pendingActionDAO
+    }
+
+    @Test
+    fun conversationClearRequestsSurviveReopenAndRecoveryActionAcknowledgement() = runTest(dispatcher) {
+        val account = UserIDEntity("pending-clear", "wire.com")
+        deleteDatabase(account)
+        val database = createDatabase(account, encryptedDBSecret, true)
+        try {
+            database.writeMessageEffects {
+                pendingActions.upsert(PendingActionType.CLEAR_CONVERSATION_CONTENT, user1, 100L)
+                pendingActions.upsert(PendingActionType.DELETE_CONVERSATION_LOCALLY, user2, 200L)
+                // Replaying an event upserts one action rather than duplicating work.
+                pendingActions.upsert(PendingActionType.CLEAR_CONVERSATION_CONTENT, user1, 100L)
+                pendingActions.upsert(PendingActionType.JOIN_MLS_GROUP_CONVERSATION, user1, 300L)
+            }
+        } finally {
+            database.close()
+        }
+        val reopened = createDatabase(account, encryptedDBSecret, true)
+        try {
+            // Existing app recovery consumers only acknowledge their own action types.
+            reopened.pendingActionDAO.deleteByActionType(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION)
+            reopened.pendingActionDAO.deleteByActionTypeAndIds(PendingActionType.JOIN_MLS_GROUP_CONVERSATION, listOf(user1))
+            assertEquals(
+                listOf(PendingActionEntity(user1, 100L)),
+                reopened.pendingActionDAO.getByActionType(PendingActionType.CLEAR_CONVERSATION_CONTENT),
+            )
+            assertEquals(
+                listOf(PendingActionEntity(user2, 200L)),
+                reopened.pendingActionDAO.getByActionType(PendingActionType.DELETE_CONVERSATION_LOCALLY),
+            )
+        } finally {
+            reopened.close()
+        }
+    }
+
+    @Test
+    fun conversationClearActionRollsBackWithOtherReceivingEffects() = runTest(dispatcher) {
+        val account = UserIDEntity("pending-clear-rollback", "wire.com")
+        deleteDatabase(account)
+        val database = createDatabase(account, encryptedDBSecret, true)
+        try {
+            assertFails {
+                database.writeMessageEffects {
+                    pendingActions.upsert(PendingActionType.CLEAR_CONVERSATION_CONTENT, user1, 100L)
+                    error("Later notification effect failed")
+                }
+            }
+            assertTrue(database.pendingActionDAO.getByActionType(PendingActionType.CLEAR_CONVERSATION_CONTENT).isEmpty())
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun ordinaryRecoveryActionRetainsItsExistingTimestampReplacementPolicy() = runTest(dispatcher) {
+        pendingActionDAO.upsert(actionType, user1, 200L)
+        pendingActionDAO.upsert(actionType, user1, 100L)
+        assertEquals(listOf(PendingActionEntity(user1, 100L)), pendingActionDAO.getByActionType(actionType))
+    }
+
+    @Test
+    fun staleReplayAndAcknowledgementPreserveNewerIntent() = runTest(dispatcher) {
+        val type = PendingActionType.CLEAR_CONVERSATION_CONTENT
+        pendingActionDAO.upsert(type, user1, 200L)
+        pendingActionDAO.upsert(type, user1, 100L)
+        pendingActionDAO.acknowledge(type, PendingActionEntity(user1, 100L))
+        assertEquals(listOf(PendingActionEntity(user1, 200L)), pendingActionDAO.getByActionType(type))
+        pendingActionDAO.acknowledge(type, PendingActionEntity(user1, 200L))
+        assertTrue(pendingActionDAO.getByActionType(type).isEmpty())
     }
 
     @Test

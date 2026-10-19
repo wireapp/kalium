@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 internal object EditMessageBuilder {
@@ -28,7 +28,7 @@ internal object EditMessageBuilder {
         originalMessage: Message.Regular,
         originalContent: MessageContent.Text,
         editedMessageId: String = Uuid.random().toString(),
-        date: kotlinx.datetime.Instant = Clock.System.now(),
+        date: kotlin.time.Instant = Clock.System.now(),
     ): Message.Signaling = Message.Signaling(
         id = editedMessageId,
         content = MessageContent.TextEdited(

@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.meeting
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.meeting.Meeting.Recurrence.Companion.SUPPORTED_RECURRENCES
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.meeting.UpsertMeetingRequest
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
@@ -47,29 +46,9 @@ internal interface MeetingMapper {
 
 @Suppress("TooManyFunctions")
 internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : MeetingMapper {
-    override fun fromApiToDao(meeting: MeetingDTO): MeetingEntity? {
-        val recurrence = meeting.recurrence?.let { fromApiToDao(it) }
-        return if (meeting.recurrence != null && recurrence == null) {
-            null // it means the recurrence is not supported, so the meeting is ignored
-        } else {
-            MeetingEntity(
-                meetingId = idMapper.fromApiToDao(meeting.meetingId),
-                conversationId = idMapper.fromApiToDao(meeting.conversationId),
-                creatorId = idMapper.fromApiToDao(meeting.creatorId),
-                createdAt = meeting.createdAt,
-                updatedAt = meeting.updatedAt,
-                title = meeting.title,
-                startTime = meeting.startTime,
-                endTime = meeting.endTime,
-                tzid = meeting.tzid,
-                recurrence = recurrence
-            )
-        }
-    }
+    override fun fromApiToDao(meeting: MeetingDTO): MeetingEntity? = meeting.toMeetingEntity()
 
-    override fun fromApiToDao(recurrence: MeetingRecurrenceDTO): RecurrenceEntity? = recurrence.frequency.toDaoFrequency()
-        ?.let { RecurrenceEntity(frequency = it, interval = recurrence.interval, until = recurrence.until) }
-        ?.takeIf { it.isSupported() }
+    override fun fromApiToDao(recurrence: MeetingRecurrenceDTO): RecurrenceEntity? = recurrence.toMeetingRecurrenceEntity()
 
     override fun fromDaoToApi(recurrence: RecurrenceEntity): MeetingRecurrenceDTO =
         MeetingRecurrenceDTO(frequency = recurrence.frequency.toApiFrequency(), interval = recurrence.interval, until = recurrence.until)
@@ -109,12 +88,12 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         participants = meeting.participants.map { fromDaoToModel(it) }
     )
 
-    private fun fromDaoToModel(avatar: MeetingParticipantEntity): MeetingOccurrence.Participant =
+    private fun fromDaoToModel(participant: MeetingParticipantEntity): MeetingOccurrence.Participant =
         MeetingOccurrence.Participant(
-            userId = avatar.userId.toModel(),
-            name = avatar.name,
-            accentColor = avatar.accentColor,
-            assetId = avatar.previewAssetId?.toModel()
+            userId = participant.userId.toModel(),
+            name = participant.name,
+            accentColor = participant.accentColor,
+            assetId = participant.previewAssetId?.toModel()
         )
 
     override fun fromDaoToModel(recurrence: RecurrenceEntity): Meeting.Recurrence = Meeting.Recurrence(
@@ -161,19 +140,9 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         Meeting.Recurrence.Frequency.WEEKLY -> RecurrenceEntity.Frequency.WEEKLY
     }
 
-    private fun MeetingFrequencyDTO.toDaoFrequency(): RecurrenceEntity.Frequency? = when (this) {
-        MeetingFrequencyDTO.DAILY -> RecurrenceEntity.Frequency.DAILY
-        MeetingFrequencyDTO.WEEKLY -> RecurrenceEntity.Frequency.WEEKLY
-        MeetingFrequencyDTO.MONTHLY,
-        MeetingFrequencyDTO.YEARLY -> null
-    }
-
     private fun RecurrenceEntity.Frequency.toApiFrequency(): MeetingFrequencyDTO = when (this) {
         RecurrenceEntity.Frequency.DAILY -> MeetingFrequencyDTO.DAILY
         RecurrenceEntity.Frequency.WEEKLY -> MeetingFrequencyDTO.WEEKLY
     }
 
-    private fun RecurrenceEntity.isSupported() = fromDaoToModel(this).let {
-        it.frequency to it.interval in SUPPORTED_RECURRENCES
-    }
 }

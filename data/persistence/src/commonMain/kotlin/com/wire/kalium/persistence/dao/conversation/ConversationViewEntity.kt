@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ChannelAccess
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ChannelAddPermission
 import com.wire.kalium.persistence.dao.member.MemberEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Suppress("FunctionParameterNaming")
 data class ConversationViewEntity(

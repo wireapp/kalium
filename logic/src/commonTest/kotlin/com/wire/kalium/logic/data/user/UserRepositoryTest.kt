@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.BATCH_SIZE
@@ -57,6 +58,8 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.model.UserTypeDTO
+import com.wire.kalium.network.api.model.AppDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.AppDAO
@@ -824,6 +827,24 @@ class UserRepositoryTest {
             assertIs<StorageFailure.Generic>(it)
             assertEquals(exception, it.rootCause)
         }
+    }
+
+    @Test
+    fun givenExternalAppNotInTeamMembers_whenFetchingProfile_thenAppIsPersisted() = runTest {
+        val profile = TestUser.USER_PROFILE_DTO.copy(
+            teamId = "another-team",
+            type = UserTypeDTO.APP,
+            app = AppDTO("external app", "category")
+        )
+        val (arrangement, repository) = Arrangement().withSuccessfulGetUsersInfo(profile).arrange()
+        everySuspend { arrangement.selfTeamIdProvider.invoke() }.returns(Either.Right(TeamId("self-team")))
+
+        repository.fetchUserInfo(profile.id.toModel()).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.appDAO.upsertApps(eq(listOf(profile.toAppEntity())))
+        }
+        verifySuspend(VerifyMode.not) { arrangement.teamsApi.getTeamMembersByIds(any(), any()) }
     }
 
     private class Arrangement {

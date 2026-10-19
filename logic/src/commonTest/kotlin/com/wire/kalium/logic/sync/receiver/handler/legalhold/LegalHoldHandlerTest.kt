@@ -48,6 +48,8 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import com.wire.kalium.persistence.dao.MetadataDAO
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.every
@@ -61,12 +63,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -297,7 +300,7 @@ class LegalHoldHandlerTest {
         handler.handleDisable(legalHoldEventDisabled)
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(any(), any())
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(any(), any(), any())
 
         }
     }
@@ -312,7 +315,7 @@ class LegalHoldHandlerTest {
         handler.handleDisable(legalHoldEventDisabled.copy(userId = TestUser.OTHER_USER_ID))
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(any(), any())
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(any(), any(), any())
 
         }
     }
@@ -327,7 +330,7 @@ class LegalHoldHandlerTest {
         handler.handleDisable(legalHoldEventDisabled.copy(userId = TestUser.OTHER_USER_ID))
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(any(), any())
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(any(), any(), any())
 
         }
     }
@@ -344,7 +347,7 @@ class LegalHoldHandlerTest {
         handler.handleEnable(legalHoldEventEnabled.copy(userId = TestUser.OTHER_USER_ID))
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(any(), any())
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(any(), any(), any())
 
         }
     }
@@ -362,7 +365,7 @@ class LegalHoldHandlerTest {
         handler.handleEnable(legalHoldEventEnabled.copy(userId = TestUser.OTHER_USER_ID_2))
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(any(), any())
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(any(), any(), any())
 
         }
     }
@@ -378,7 +381,7 @@ class LegalHoldHandlerTest {
         handler.handleEnable(legalHoldEventEnabled.copy(userId = TestUser.OTHER_USER_ID))
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(any(), any())
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(any(), any(), any())
 
         }
     }
@@ -395,7 +398,7 @@ class LegalHoldHandlerTest {
         handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.DISABLED), false)
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(any(), any())
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(any(), any(), any())
 
         }
     }
@@ -411,7 +414,7 @@ class LegalHoldHandlerTest {
         handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED), false)
         // then
         verifySuspend {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(eq(TestConversation.CONVERSATION.id), any())
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(eq(TestConversation.CONVERSATION.id), any(), any())
 
         }
     }
@@ -428,7 +431,7 @@ class LegalHoldHandlerTest {
         handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED), false)
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(any(), any())
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(any(), any(), any())
 
         }
     }
@@ -444,7 +447,7 @@ class LegalHoldHandlerTest {
         handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.DISABLED), false)
         // then
         verifySuspend {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(eq(TestConversation.CONVERSATION.id), any())
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(eq(TestConversation.CONVERSATION.id), any(), any())
 
         }
     }
@@ -464,7 +467,7 @@ class LegalHoldHandlerTest {
             arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(
                 eq(TestConversation.CONVERSATION.id),
                 eq(message.instant - 1.milliseconds)
-            )
+            , any())
 
         }
     }
@@ -587,7 +590,7 @@ class LegalHoldHandlerTest {
             assertEquals(true, it)
         }
         verifySuspend {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(eq(conversationId), any())
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(eq(conversationId), any(), any())
 
         }
     }
@@ -612,7 +615,7 @@ class LegalHoldHandlerTest {
             assertEquals(false, it)
         }
         verifySuspend {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(eq(conversationId), any())
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(eq(conversationId), any(), any())
 
         }
     }
@@ -637,7 +640,7 @@ class LegalHoldHandlerTest {
             arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(
                 eq(conversationId),
                 eq(dateTime - 1.milliseconds)
-            )
+            , any())
 
         }
     }
@@ -662,11 +665,11 @@ class LegalHoldHandlerTest {
             assertEquals(false, it)
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(eq(conversationId), any())
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(eq(conversationId), any(), any())
 
         }
         verifySuspend(VerifyMode.not) {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(eq(conversationId), any())
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(eq(conversationId), any(), any())
 
         }
     }
@@ -724,20 +727,20 @@ class LegalHoldHandlerTest {
         result.shouldSucceed()
         if (handleEnabledForConversationInvoked) {
             verifySuspend {
-                arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(eq(conversationId), any())
+                arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(eq(conversationId), any(), any())
             }
         } else {
             verifySuspend(VerifyMode.not) {
-                arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(eq(conversationId), any())
+                arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(eq(conversationId), any(), any())
             }
         }
         if (handleDisabledForConversationInvoked) {
             verifySuspend {
-                arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(eq(conversationId), any())
+                arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(eq(conversationId), any(), any())
             }
         } else {
             verifySuspend(VerifyMode.not) {
-                arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(eq(conversationId), any())
+                arrangement.legalHoldSystemMessagesHandler.handleDisabledForConversation(eq(conversationId), any(), any())
             }
         }
     }
@@ -1028,9 +1031,23 @@ class LegalHoldHandlerTest {
         val membersHavingLegalHoldClient = mock<MembersHavingLegalHoldClientUseCase>()
         val legalHoldSystemMessagesHandler = mock<LegalHoldSystemMessagesHandler>(mode = MockMode.autoUnit)
         val observeSyncState = mock<ObserveSyncStateUseCase>()
+        val metadata = mock<MetadataDAO>()
+        private val records = mutableMapOf<String, String>()
 
         init {
             runBlocking {
+                everySuspend { metadata.valueByKey(any()) } calls { records[it.args[0] as String] }
+                everySuspend { metadata.insertValue(any(), any()) } calls {
+                    records[it.args[1] as String] = it.args[0] as String
+                }
+                everySuspend { conversationRepository.getConversationById(any()) } returns Either.Right(TestConversation.CONVERSATION)
+                everySuspend { legalHoldSystemMessagesHandler.prepareUserTransition(any(), any(), any(), any()) } returns emptyList()
+                everySuspend { legalHoldSystemMessagesHandler.handleUserTransition(any(), any(), any(), any(), any()) } calls {
+                    val user = it.args[0] as com.wire.kalium.logic.data.user.UserId
+                    val instant = it.args[3] as Instant
+                    if (it.args[1] as Boolean) legalHoldSystemMessagesHandler.handleEnabledForUser(user, instant)
+                    else legalHoldSystemMessagesHandler.handleDisabledForUser(user, instant)
+                }
                 withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
                 withFetchSelfClientsFromRemoteSuccess()
                 withDeleteLegalHoldRequestSuccess()
@@ -1045,12 +1062,20 @@ class LegalHoldHandlerTest {
             this to LegalHoldHandlerImpl(
                 selfUserId = TestUser.SELF.id,
                 fetchUsersClientsFromRemote = fetchUsersClientsFromRemote,
-                fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
                 observeLegalHoldStateForUser = observeLegalHoldStateForUser,
                 membersHavingLegalHoldClient = membersHavingLegalHoldClient,
                 conversationRepository = conversationRepository,
                 userConfigRepository = userConfigRepository,
                 legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
+                transitions = LegalHoldTransitionJournal(metadata),
+                userTransitions = LegalHoldUserTransitionJournal(metadata),
+                legalHoldClients = object : com.wire.kalium.logic.data.client.LegalHoldClients {
+                    override suspend fun isEnabled(userId: com.wire.kalium.logic.data.user.UserId) =
+                        observeLegalHoldStateForUser(userId).first() == LegalHoldState.Enabled
+                    override suspend fun refresh(userId: com.wire.kalium.logic.data.user.UserId) {
+                        if (userId == TestUser.SELF.id) fetchSelfClientsFromRemote() else fetchUsersClientsFromRemote(listOf(userId))
+                    }
+                },
                 observeSyncState = observeSyncState,
                 kaliumDispatcher = testDispatchers,
             )

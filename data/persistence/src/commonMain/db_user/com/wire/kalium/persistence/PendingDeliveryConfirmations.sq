@@ -1,0 +1,21 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+
+CREATE TABLE PendingDeliveryConfirmations (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    message_id TEXT NOT NULL,
+    UNIQUE (conversation_id, message_id)
+);
+
+insertOrIgnore:
+INSERT OR IGNORE INTO PendingDeliveryConfirmations(conversation_id, message_id)
+VALUES (?, ?);
+
+selectPendingAfter:
+SELECT * FROM PendingDeliveryConfirmations
+WHERE id > ?
+ORDER BY id ASC
+LIMIT ?;
+
+deleteByIds:
+DELETE FROM PendingDeliveryConfirmations WHERE id IN ?;

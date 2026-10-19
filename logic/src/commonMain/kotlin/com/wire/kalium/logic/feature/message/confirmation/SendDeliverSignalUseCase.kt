@@ -32,7 +32,7 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.messaging.sending.MessageSender
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 /**

@@ -18,7 +18,7 @@
 
 package com.wire.kalium.util.serialization
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder

@@ -18,96 +18,48 @@
 
 package com.wire.kalium.logic.sync.incremental
 
-import com.wire.kalium.common.functional.foldToEitherWhileRight
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.onEach
 
-/**
- * Gathers and processes IncrementalSync events.
- */
+/** Gathers app event batches and publishes incremental sync progress. */
 internal interface IncrementalSyncWorker {
-    /**
-     * Upon collection, will start collecting and processing events,
-     * emitting the source of current events.
-     */
+    /** Collection starts receiving and processing, emitting the source of current events. */
     suspend fun processEventsFlow(): Flow<EventSource>
 }
 
 internal class IncrementalSyncWorkerImpl(
     private val eventGatherer: EventGatherer,
-    private val eventProcessor: EventProcessor,
-    private val transactionProvider: CryptoTransactionProvider,
-    private val databaseBuilder: UserDatabaseBuilder,
-    private val eventRepository: EventRepository,
+    private val batchProcessor: EventBatchProcessor,
     logger: KaliumLogger = kaliumLogger,
+    private val consumePendingAccountInvalidation: suspend () -> Boolean = { false },
+    private val consumePendingLegalHoldTransitions: suspend () -> Unit = {},
+    private val consumePendingConversationCleanup: suspend () -> Unit = {},
 ) : IncrementalSyncWorker {
-
     private val logger = logger.withFeatureId(SYNC)
 
     override suspend fun processEventsFlow(): Flow<EventSource> = channelFlow {
-        // We start as PENDING
         send(EventSource.PENDING)
+        // Removed credentials may never connect; the existing logout owner runs first.
+        if (consumePendingAccountInvalidation()) awaitCancellation()
+        consumePendingConversationCleanup()
+        consumePendingLegalHoldTransitions()
 
-        kaliumLogger.d("$TAG gatherEvents starting...")
+        logger.d("$TAG gatherEvents starting...")
         eventGatherer.gatherEvents()
-            // If we ever become Up-To-Date, move to LIVE
-            .onEach { eventStreamData ->
-                if (eventStreamData is EventStreamData.IsUpToDate) {
-                    send(EventSource.LIVE) // We are LIVE!!!!!!
-                }
-            }
+            .onEach { if (it is EventStreamData.IsUpToDate) send(EventSource.LIVE) }
             .filterIsInstance<EventStreamData.NewEvents>()
             .collect { streamData ->
-                withContext(NonCancellable) {
-                    val envelopes = streamData.eventList
-                    kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
-                    transactionProvider.transaction("processEvents") { context ->
-                        databaseBuilder.dbInvalidationController.runMuted {
-                            envelopes.map { envelope -> eventProcessor.processEvent(context, envelope) }
-                                .foldToEitherWhileRight(mutableListOf<String>()) { eventEither, acc ->
-                                    eventEither.map { eventId ->
-                                        eventId?.let(acc::add)
-                                        acc
-                                    }
-                                }
-                                .flatMap { eventIds ->
-                                    eventProcessor.flushPendingSideEffects().map { eventIds }
-                                }
-                        }
-                    }
-                        .onSuccess { eventIds ->
-                            if (eventIds.isEmpty()) {
-                                logger.i("No events to mark as processed")
-                                return@onSuccess
-                            }
-
-                            eventRepository.setEventsAsProcessed(eventIds)
-                                .onSuccess {
-                                    logger.i("${eventIds.size} events set as processed")
-                                }
-                        }
-                        .onFailure {
-                            throw KaliumSyncException("Processing failed", it)
-                        }
-                }
+                logger.d("$TAG Received ${streamData.eventList.size} events to process")
+                batchProcessor.processBatch(streamData.eventList)
             }
-        logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
+        logger.i("SYNC Finished gathering and processing events")
     }.distinctUntilChanged()
 
     companion object {

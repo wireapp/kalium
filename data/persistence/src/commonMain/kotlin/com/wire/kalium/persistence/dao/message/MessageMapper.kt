@@ -37,7 +37,7 @@ import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.isDebug
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerializationException
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
@@ -106,6 +106,11 @@ object MessageMapper {
             MessageEntity.ContentType.COMPOSITE -> MessagePreviewEntityContent.Composite(
                 senderName = senderName,
                 messageBody = text
+            )
+
+            MessageEntity.ContentType.POLL -> MessagePreviewEntityContent.Poll(
+                senderName = senderName,
+                question = text
             )
 
             MessageEntity.ContentType.TEXT -> when {
@@ -385,7 +390,12 @@ object MessageMapper {
                 conversationId = conversationId,
                 date = date,
                 senderUserId = senderUserId,
-                senderClientId = senderClientId.requireField("senderClientId"),
+                // Deleted system messages map to the same empty regular tombstone, without an original client ID.
+                senderClientId = if (visibility == MessageEntity.Visibility.DELETED) {
+                    senderClientId.orEmpty()
+                } else {
+                    senderClientId.requireField("senderClientId")
+                },
                 status = status,
                 editStatus = mapEditStatus(lastEdit),
                 expireAfterMs = expireAfterMillis,
@@ -541,6 +551,10 @@ object MessageMapper {
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
         buttonsJson: String,
+        pollQuestion: String?,
+        pollAllowMultipleAnswers: Boolean?,
+        pollOptionsJson: String?,
+        pollVotesJson: String,
         federationDomainList: String?,
         federationType: String?,
         conversationProtocolChanged: String?,
@@ -634,6 +648,10 @@ object MessageMapper {
         recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
         recipientsFailedDeliveryList = recipientsFailedDeliveryList,
         buttonsJson = buttonsJson,
+        pollQuestion = pollQuestion,
+        pollAllowMultipleAnswers = pollAllowMultipleAnswers,
+        pollOptionsJson = pollOptionsJson,
+        pollVotesJson = pollVotesJson,
         federationDomainList = federationDomainList,
         federationType = federationType,
         conversationProtocolChanged = conversationProtocolChanged,
@@ -730,6 +748,10 @@ object MessageMapper {
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
         buttonsJson: String,
+        pollQuestion: String?,
+        pollAllowMultipleAnswers: Boolean?,
+        pollOptionsJson: String?,
+        pollVotesJson: String,
         federationDomainList: String?,
         federationType: String?,
         conversationProtocolChanged: String?,
@@ -847,6 +869,13 @@ object MessageMapper {
                     JsonSerializer().decodeFromString(buttonsJson)
                 )
             }
+
+            MessageEntity.ContentType.POLL -> MessageEntityContent.Poll(
+                question = pollQuestion.requireField("pollQuestion"),
+                options = PollContentJson.decodeOptions(pollOptionsJson.requireField("pollOptionsJson")),
+                allowMultipleAnswers = pollAllowMultipleAnswers ?: false,
+                votes = PollContentJson.decodeVotes(pollVotesJson)
+            )
 
             MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(conversationName.orEmpty())
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessageEntityContent.TeamMemberRemoved(senderName.orEmpty())

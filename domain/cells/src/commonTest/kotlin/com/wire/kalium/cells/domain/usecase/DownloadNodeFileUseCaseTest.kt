@@ -17,9 +17,6 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import dev.mokkery.MockMode
-import dev.mokkery.answering.returns
-import dev.mokkery.answering.throws
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCaseImpl
@@ -29,18 +26,29 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.verifySuspend
-import dev.mokkery.verify.VerifyMode
 import dev.mokkery.mock
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.test.runTest
-import okio.Path
-import okio.Path.Companion.toPath
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
+import okio.Path
+import okio.Path.Companion.toPath
 
 class DownloadNodeFileUseCaseTest {
 
@@ -183,6 +191,40 @@ class DownloadNodeFileUseCaseTest {
         }
 
         verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.attachmentsRepository.saveLocalPath(any(), any())
+        }
+    }
+
+    @Test
+    fun givenActiveDownload_whenCoroutineCancelled_thenStatusResetCompletes() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withAssetPath()
+            .arrange()
+        val downloadStarted = CompletableDeferred<Unit>()
+        var resetCompleted = false
+        everySuspend { arrangement.cellsRepository.downloadFile(any(), any(), any()) } calls {
+            downloadStarted.complete(Unit)
+            awaitCancellation()
+        }
+        everySuspend {
+            arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_DOWNLOADED)
+        } calls {
+            currentCoroutineContext().ensureActive()
+            yield()
+            resetCompleted = true
+            Unit.right()
+        }
+
+        val download = launch {
+            useCase(assetId, conversationId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
+        }
+        downloadStarted.await()
+        download.cancelAndJoin()
+
+        assertTrue(download.isCancelled)
+        assertTrue(resetCompleted)
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
             arrangement.attachmentsRepository.saveLocalPath(any(), any())
         }
     }

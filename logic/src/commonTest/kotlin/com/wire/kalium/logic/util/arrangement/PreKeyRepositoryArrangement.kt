@@ -28,7 +28,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal interface PreKeyRepositoryArrangement {
     val preKeyRepository: PreKeyRepository

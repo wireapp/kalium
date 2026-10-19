@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.EditMessageBuilder
-import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 
 /**
@@ -66,6 +66,7 @@ internal class SendPendingMessagesUseCaseImpl(
 
                             is MessageContent.Location,
                             is MessageContent.Multipart,
+                            is MessageContent.Poll,
                             is MessageContent.Text -> messageSender.sendPendingMessage(message.conversationId, message.id)
 
                             else -> {

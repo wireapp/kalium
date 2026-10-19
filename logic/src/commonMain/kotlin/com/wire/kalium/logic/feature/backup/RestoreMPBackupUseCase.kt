@@ -33,15 +33,18 @@ import com.wire.kalium.logic.feature.backup.mapper.toUser
 import com.wire.kalium.logic.feature.backup.provider.ImportResult
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProviderImpl
+import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okio.IOException
 import okio.Path
@@ -59,10 +62,14 @@ public interface RestoreMPBackupUseCase {
     public suspend operator fun invoke(backupFilePath: Path, password: String?, onProgress: (Float) -> Unit): RestoreBackupResult
 }
 
+@Suppress("LongParameterList")
 internal class RestoreMPBackupUseCaseImpl(
     private val selfUserId: UserId,
     private val backupRepository: BackupRepository,
     private val kaliumFileSystem: KaliumFileSystem,
+    private val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase,
+    private val userSessionScope: CoroutineScope,
+    private val waitUntilSyncLive: suspend () -> Unit,
     private val backupImporterProvider: MPBackupImporterProvider = MPBackupImporterProviderImpl(),
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val progressDispatcher: CoroutineDispatcher? = null,
@@ -120,7 +127,23 @@ internal class RestoreMPBackupUseCaseImpl(
             )
         } finally {
             withContext(NonCancellable) {
-                kaliumFileSystem.deleteContents(backupWorkDir)
+                runCatching { kaliumFileSystem.deleteContents(backupWorkDir) }
+                    .onFailure { kaliumLogger.e("Failed to clean backup restore work directory", it) }
+            }
+        }
+    }
+
+    private fun refreshRestoredConversationMetadata() {
+        // The session owns this work: dismissing the restore screen must not cancel it,
+        // while logout must. Network work never delays or changes the restore result.
+        userSessionScope.launch(dispatchers.io) {
+            try {
+                waitUntilSyncLive()
+                refreshConversationsWithoutMetadata()
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (_: Exception) {
+                kaliumLogger.w("Failed to refresh restored conversation metadata; metadata remains retryable")
             }
         }
     }
@@ -142,6 +165,7 @@ internal class RestoreMPBackupUseCaseImpl(
             )
         }
         currentCoroutineContext().ensureActive()
+        refreshRestoredConversationMetadata()
         return RestoreBackupResult.Success
     }
 

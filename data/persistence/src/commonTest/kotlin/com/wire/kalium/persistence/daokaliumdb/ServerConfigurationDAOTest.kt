@@ -174,7 +174,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         globalDatabaseBuilder.serverConfigurationDAO.configById(oldConfig.id)
             .also { actual ->
                 assertEquals(expected.metaData.federation, actual!!.metaData.federation)
-                assertEquals(expected.metaData.apiVersion, actual!!.metaData.apiVersion)
+                assertEquals(expected.metaData.apiVersion, actual.metaData.apiVersion)
             }
     }
 

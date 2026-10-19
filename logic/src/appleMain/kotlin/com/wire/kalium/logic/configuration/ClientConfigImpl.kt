@@ -32,8 +32,7 @@ import platform.darwin.sysctlbyname
 
 internal actual open class ClientConfigImpl : ClientConfig {
     actual override fun deviceType(): DeviceType {
-        // TODO: Figure out the actual darwin device type
-        return DeviceType.Desktop
+        return DeviceType.Phone
     }
 
     actual override fun deviceModelName(): String {
@@ -63,6 +62,6 @@ internal actual open class ClientConfigImpl : ClientConfig {
     }
 
     actual override fun clientType(): ClientType {
-        return ClientType.Temporary
+        return ClientType.Permanent
     }
 }

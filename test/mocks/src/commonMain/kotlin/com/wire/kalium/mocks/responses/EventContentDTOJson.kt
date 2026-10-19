@@ -35,7 +35,7 @@ import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.tools.KtxSerializer
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 object EventContentDTOJson {
 

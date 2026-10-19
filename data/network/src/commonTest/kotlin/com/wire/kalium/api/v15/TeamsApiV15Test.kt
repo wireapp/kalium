@@ -20,12 +20,17 @@ package com.wire.kalium.api.v15
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.network.api.v15.authenticated.TeamsApiV15
+import com.wire.kalium.network.api.v14.authenticated.TeamsApiV14
+import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertContains
+import kotlin.test.fail
 import kotlin.test.assertIs
 
 internal class TeamsApiV15Test : ApiTest() {
@@ -37,6 +42,8 @@ internal class TeamsApiV15Test : ApiTest() {
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
+                assertNoQueryParams()
+                assertAuthorizationHeaderExist()
                 assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/$PATH_APPS")
             }
         )
@@ -45,7 +52,18 @@ internal class TeamsApiV15Test : ApiTest() {
 
         assertIs<NetworkResponse.Success<List<UserProfileDTO>>>(response)
         assertEquals(1, response.value.size)
-        assertEquals(DUMMY_USER_ID, response.value.first().id.value)
+        assertEquals(DUMMY_USER_ID, response.value.single().id.value)
+        assertEquals("domain.com", response.value.single().id.domain)
+        assertEquals(UserTypeDTO.APP, response.value.single().type)
+        assertEquals("productivity", response.value.single().app?.category)
+    }
+
+    @Test
+    fun givenApiV14_whenGettingApps_thenNoRequestIsSent() = runTest {
+        val client = mockAuthenticatedNetworkClient("", HttpStatusCode.OK,
+            assertion = { fail("Unsupported apps endpoint must not send a request") })
+        val error = assertIs<NetworkResponse.Error>(TeamsApiV14(client).getTeamApps(DUMMY_TEAM_ID))
+        assertContains(assertIs<APINotSupported>(error.kException).errorBody, "API V15")
     }
 
     private companion object {

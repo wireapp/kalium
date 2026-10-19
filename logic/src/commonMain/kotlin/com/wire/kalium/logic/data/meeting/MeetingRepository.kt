@@ -68,9 +68,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
-import kotlin.collections.map
-import kotlin.time.Duration.Companion.days
+import kotlin.time.Instant
 
 @Suppress("TooManyFunctions")
 internal interface MeetingRepository {
@@ -106,6 +104,8 @@ internal interface MeetingRepository {
     suspend fun deleteMeetingLocally(meetingId: MeetingId): Either<StorageFailure, Unit>
 
     suspend fun getMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, List<Meeting>>
+
+    suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit>
 
     suspend fun createNewMeeting(
         meeting: UpsertMeeting,
@@ -247,6 +247,13 @@ internal class MeetingDataSource(
         withContext(NonCancellable) {
             wrapStorageRequest {
                 meetingDAO.getMeetingsByConversationId(conversationId.toDao()).map(meetingMapper::fromDaoToModel)
+            }
+        }
+
+    override suspend fun deleteMeetingsByConversationId(conversationId: ConversationId): Either<StorageFailure, Unit> =
+        withContext(NonCancellable) {
+            wrapStorageRequest {
+                meetingDAO.deleteMeetingsByConversationId(conversationId.toDao())
             }
         }
 
@@ -461,8 +468,3 @@ internal class MeetingDataSource(
 }
 
 internal data class CreateNewMeetingResult(val conversationId: ConversationId, val mlsAdditionResult: MLSAdditionResult)
-
-private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
-private const val OUTDATED_MEETING_RETENTION_DAYS = 30
-private fun occurrenceGenerationUntil() = currentInstant().asStartOfDay().plus((OCCURRENCE_GENERATION_WINDOW_DAYS + 1).days)
-private fun occurrenceOutdatedThreshold() = currentInstant().asStartOfDay().minus(OUTDATED_MEETING_RETENTION_DAYS.days)

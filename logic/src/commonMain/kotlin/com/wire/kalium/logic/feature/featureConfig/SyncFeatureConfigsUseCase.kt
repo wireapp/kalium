@@ -47,12 +47,13 @@ import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigH
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 
-/**
- * This use case is to get the file sharing status of the team management settings from the server and
- * save it in the local storage (in Android case is shared preference)
- */
+/** Fetch and apply the team's feature settings. */
 internal interface SyncFeatureConfigsUseCase {
+    /** Apply every setting, returning the first failure after the refresh finishes. */
     suspend operator fun invoke(): Either<CoreFailure, Unit>
+
+    /** Persist server policy before a client exists, stopping on failure. Slow sync updates protocols after registration. */
+    suspend fun beforeClientRegistration(): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -78,36 +79,62 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val preventAdminlessGroupsConfigHandler: PreventAdminlessGroupsConfigHandler,
     private val meetingsConfigHandler: MeetingsConfigHandler,
 ) : SyncFeatureConfigsUseCase {
-    override suspend operator fun invoke(): Either<CoreFailure, Unit> =
-        featureConfigRepository.getFeatureConfigs().flatMap { it ->
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> = sync(duringClientRegistration = false)
+
+    override suspend fun beforeClientRegistration(): Either<CoreFailure, Unit> = sync(duringClientRegistration = true)
+
+    private suspend fun sync(duringClientRegistration: Boolean): Either<CoreFailure, Unit> =
+        featureConfigRepository.getFeatureConfigs().flatMap { config ->
+            var firstFailure: CoreFailure? = null
+            suspend fun applyConfiguration(handler: suspend () -> Either<CoreFailure, Unit>) {
+                if (duringClientRegistration && firstFailure != null) return
+                handler().onFailure { failure ->
+                    if (firstFailure == null) firstFailure = failure
+                }
+            }
+
             // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
-            guestRoomConfigHandler.handle(it.guestRoomLinkModel)
-            fileSharingConfigHandler.handle(it.fileSharingModel)
-            mlsConfigHandler.handle(it.mlsModel, duringSlowSync = true)
-            it.mlsMigrationModel?.let { mlsMigrationConfigHandler.handle(it, duringSlowSync = true) }
-            classifiedDomainsConfigHandler.handle(it.classifiedDomainsModel)
-            conferenceCallingConfigHandler.handle(it.conferenceCallingModel)
-            passwordChallengeConfigHandler.handle(it.secondFactorPasswordChallengeModel)
-            selfDeletingMessagesConfigHandler.handle(it.selfDeletingMessagesModel)
-            it.e2EIModel.let { e2EIModel -> e2EIConfigHandler.handle(e2EIModel) }
-            appLockConfigHandler.handle(it.appLockModel)
-            channelsConfigHandler.handle(it.channelsModel)
-            it.consumableNotificationsModel?.let { consumableNotificationsModel ->
-                consumableNotificationsConfigHandler.handle(
-                    consumableNotificationsModel
+            applyConfiguration {
+                guestRoomConfigHandler.handle(config.guestRoomLinkModel, requirePreviousState = duringClientRegistration)
+            }
+            applyConfiguration {
+                fileSharingConfigHandler.handle(config.fileSharingModel, requirePreviousState = duringClientRegistration)
+            }
+            applyConfiguration {
+                mlsConfigHandler.handle(
+                    config.mlsModel,
+                    duringSlowSync = true,
+                    duringClientRegistration = duringClientRegistration
                 )
             }
-            it.allowedGlobalOperationsModel?.let { model -> allowedGlobalOperationsHandler.handle(model) }
-            cellsConfigHandler.handle(it.cellsModel)
-            cellsConfigHandler.handle(it.cellsInternalModel)
-            it.appsModel?.let { appsModel ->
-                appsFeatureHandler.handle(appsModel)
+            config.mlsMigrationModel?.let {
+                applyConfiguration { mlsMigrationConfigHandler.handle(it, duringSlowSync = true) }
             }
-            enableUserProfileQRCodeConfigHandler.handle(it.enableUserProfileQRCodeConfigModel)
-            assetAuditLogConfigHandler.handle(it.assetAuditLogConfigModel)
-            preventAdminlessGroupsConfigHandler.handle(it.preventAdminlessGroupsModel)
-            meetingsConfigHandler.handle(it.meetingsConfigModel)
-            Either.Right(Unit)
+            applyConfiguration { classifiedDomainsConfigHandler.handle(config.classifiedDomainsModel) }
+            applyConfiguration { conferenceCallingConfigHandler.handle(config.conferenceCallingModel) }
+            applyConfiguration { passwordChallengeConfigHandler.handle(config.secondFactorPasswordChallengeModel) }
+            applyConfiguration {
+                selfDeletingMessagesConfigHandler.handle(config.selfDeletingMessagesModel, requirePreviousState = duringClientRegistration)
+            }
+            applyConfiguration { e2EIConfigHandler.handle(config.e2EIModel) }
+            applyConfiguration {
+                appLockConfigHandler.handle(config.appLockModel, requirePreviousState = duringClientRegistration)
+            }
+            applyConfiguration { channelsConfigHandler.handle(config.channelsModel) }
+            config.consumableNotificationsModel?.let {
+                applyConfiguration { consumableNotificationsConfigHandler.handle(it) }
+            }
+            config.allowedGlobalOperationsModel?.let {
+                applyConfiguration { allowedGlobalOperationsHandler.handle(it) }
+            }
+            applyConfiguration { cellsConfigHandler.handle(config.cellsModel) }
+            applyConfiguration { cellsConfigHandler.handle(config.cellsInternalModel) }
+            config.appsModel?.let { applyConfiguration { appsFeatureHandler.handle(it) } }
+            applyConfiguration { enableUserProfileQRCodeConfigHandler.handle(config.enableUserProfileQRCodeConfigModel) }
+            applyConfiguration { assetAuditLogConfigHandler.handle(config.assetAuditLogConfigModel) }
+            applyConfiguration { preventAdminlessGroupsConfigHandler.handle(config.preventAdminlessGroupsModel) }
+            applyConfiguration { meetingsConfigHandler.handle(config.meetingsConfigModel) }
+            firstFailure?.let { Either.Left(it) } ?: Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
                 networkFailure is NetworkFailure.ServerMiscommunication &&

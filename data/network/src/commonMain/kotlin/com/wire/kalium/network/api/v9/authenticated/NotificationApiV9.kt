@@ -31,7 +31,13 @@ import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.SYNC_MA
 import com.wire.kalium.network.api.v8.authenticated.NotificationApiV8
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.channels.ClosedSendChannelException
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.CancellationException
 import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setWSSUrl
@@ -86,6 +92,25 @@ internal open class NotificationApiV9 internal constructor(
             } else {
                 kaliumLogger.e("Failed to send acknowledge event $json", result.exceptionOrNull())
             }
+        }
+    }
+
+    override suspend fun acknowledgeEventsOnOpenSession(
+        clientId: String,
+        markerId: String,
+        eventAcknowledgeRequest: EventAcknowledgeRequest,
+    ): NetworkResponse<Unit> {
+        val open = mutex.withLock { session }
+            ?: return NetworkResponse.Error(KaliumException.GenericError(IllegalStateException("No open consumable session")))
+        return try {
+            open.outgoing.send(Frame.Text(KtxSerializer.json.encodeToJsonElement(eventAcknowledgeRequest).toString()))
+            NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value)
+        } catch (closed: ClosedSendChannelException) {
+            NetworkResponse.Error(KaliumException.GenericError(closed))
+        } catch (cancelled: CancellationException) {
+            // A failed session cancels its outgoing channel; only the caller's own cancellation propagates.
+            currentCoroutineContext().ensureActive()
+            NetworkResponse.Error(KaliumException.GenericError(cancelled))
         }
     }
 

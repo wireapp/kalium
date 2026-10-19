@@ -22,6 +22,8 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
@@ -37,10 +39,12 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.DurableMLSReceiveContext
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
+import com.wire.kalium.logic.util.createEventProcessingLogger
 
 internal interface ConversationEventReceiver : EventReceiver<Event.Conversation> {
     suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> = Either.Right(Unit)
@@ -85,8 +89,8 @@ internal class ConversationEventReceiverImpl(
             }
 
             is Event.Conversation.NewMLSMessage -> {
-                newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
-                Either.Right(Unit)
+                val result = newMessageHandler.handleNewMLSMessage(transactionContext, event, deliveryInfo)
+                if (transactionContext is DurableMLSReceiveContext) result else Either.Right(Unit)
             }
 
             is Event.Conversation.NewConversation -> {
@@ -111,8 +115,8 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.MemberChanged -> memberChangeHandler.handle(transactionContext, event)
 
             is Event.Conversation.MLSWelcome -> {
-                mlsWelcomeHandler.handle(transactionContext, event)
-                Either.Right(Unit)
+                val result = mlsWelcomeHandler.handle(transactionContext, event)
+                if (transactionContext is DurableMLSReceiveContext) result else Either.Right(Unit)
             }
 
             is Event.Conversation.RenamedConversation -> {
@@ -131,7 +135,10 @@ internal class ConversationEventReceiverImpl(
             }
 
             is Event.Conversation.AccessUpdate -> accessUpdateEventHandler.handle(event)
-            is Event.Conversation.ConversationMessageTimer -> conversationMessageTimerEventHandler.handle(event)
+            is Event.Conversation.ConversationMessageTimer -> {
+                conversationMessageTimerEventHandler.handle(event, requireSystemMessagePersistence = false)
+                    .onFailure { kaliumLogger.createEventProcessingLogger(event).logFailure(it) }
+            }
             is Event.Conversation.CodeDeleted -> codeDeletedHandler.handle(event)
             is Event.Conversation.CodeUpdated -> codeUpdatedHandler.handle(event)
             is Event.Conversation.TypingIndicator -> typingIndicatorHandler.handle(event)

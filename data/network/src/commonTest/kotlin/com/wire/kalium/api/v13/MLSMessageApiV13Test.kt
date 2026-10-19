@@ -81,6 +81,49 @@ internal class MLSMessageApiV13Test : ApiTest() {
         assertEquals(expected, mlsError.errorBody)
     }
 
+    @Test
+    fun givenMessageFailsWithNonFederatingBackends_whenSending_thenPreservesConflictDomains() = runTest {
+        val expected = FederationErrorResponse.Conflict(listOf("backend-a.example", "backend-b.example"))
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = ErrorResponseJson.validFederationConflictingBackends(expected).rawJson,
+            statusCode = HttpStatusCode.Conflict,
+            assertion = {
+                assertPost()
+                assertContentType(ContentType.Message.Mls)
+                assertPathEqual("mls/messages")
+            },
+        )
+
+        val result = MLSMessageApiV13(networkClient).sendMessage("Message".encodeToByteArray())
+
+        val error = assertIs<NetworkResponse.Error>(result)
+        val federationError = assertIs<FederationError>(error.kException)
+        assertEquals(expected, federationError.errorResponse)
+    }
+
+    @Test
+    fun givenMessageFailsWithGroupOutOfSync_whenSending_thenPreservesMlsError() = runTest {
+        val expected = MLSErrorResponse.GroupOutOfSync(
+            missingUsers = listOf(UserId("user-id", "backend.example")),
+            message = "Group is out of sync",
+        )
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = KtxSerializer.json.encodeToString(MLSErrorResponse.serializer(), expected),
+            statusCode = HttpStatusCode.Conflict,
+            assertion = {
+                assertPost()
+                assertContentType(ContentType.Message.Mls)
+                assertPathEqual("mls/messages")
+            },
+        )
+
+        val result = MLSMessageApiV13(networkClient).sendMessage("Message".encodeToByteArray())
+
+        val error = assertIs<NetworkResponse.Error>(result)
+        val mlsError = assertIs<MLSError>(error.kException)
+        assertEquals(expected, mlsError.errorBody)
+    }
+
     private companion object {
         const val PATH_COMMIT_BUNDLES = "mls/commit-bundles"
         val COMMIT_BUNDLE = MLSMessageApi.CommitBundle("CommitBundle".encodeToByteArray())

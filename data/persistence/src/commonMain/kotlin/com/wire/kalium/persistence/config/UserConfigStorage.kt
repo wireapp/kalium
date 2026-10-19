@@ -44,7 +44,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
@@ -205,7 +205,14 @@ interface UserConfigStorage {
     fun e2EINotificationTimeFlow(): Flow<Long?>
     suspend fun updateE2EINotificationTime(timeStamp: Long)
 
+    /** Null means no saved choice; unreadable or malformed values throw instead of using a default. */
+    suspend fun readMessageContentPreference(): Boolean?
+
+    /** Completes only after the account-local choice has been persisted. */
+    suspend fun persistMessageContentPreference(enabled: Boolean)
+
     enum class UserPreferences(val key: String) {
+        MESSAGE_CONTENT_ENABLED("message_content_enabled"),
         FILE_SHARING("file_sharing"),
         GUEST_ROOM_LINK("guest_room_link"),
         ENABLE_CLASSIFIED_DOMAINS("enable_classified_domains"),
@@ -327,6 +334,13 @@ data class WireCellsConfigEntity(
 class UserConfigStorageImpl constructor(
     private val kaliumPreferences: KaliumPreferences
 ) : UserConfigStorage {
+
+    override suspend fun readMessageContentPreference(): Boolean? =
+        kaliumPreferences.getString(UserConfigStorage.UserPreferences.MESSAGE_CONTENT_ENABLED.key)?.toBooleanStrict()
+
+    override suspend fun persistMessageContentPreference(enabled: Boolean) {
+        kaliumPreferences.putString(UserConfigStorage.UserPreferences.MESSAGE_CONTENT_ENABLED.key, enabled.toString())
+    }
 
     private val areReadReceiptsEnabledFlow =
         MutableSharedFlow<Unit>(

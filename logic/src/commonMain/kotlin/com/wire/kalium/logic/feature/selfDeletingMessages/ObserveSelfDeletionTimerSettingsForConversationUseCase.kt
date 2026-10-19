@@ -17,16 +17,13 @@
  */
 package com.wire.kalium.logic.feature.selfDeletingMessages
 
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
-import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
-import com.wire.kalium.logic.util.isPositiveNotNull
+import com.wire.kalium.messaging.sending.outgoingSelfDeletionTimer
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
@@ -61,33 +58,17 @@ internal class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl intern
                     flowOf(SelfDeletionTimer.Disabled)
                 } else {
                     userConfigRepository.observeTeamSettingsSelfDeletingStatus().combine(
-                            conversationRepository.observeConversationById(conversationId)
-                        ) { teamSettings, conversationDetailsEither ->
-                            teamSettings.fold({
-                                onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
-                            }, {
-                                when (val deletionTimer = it.enforcedSelfDeletionTimer) {
-                                    TeamSelfDeleteTimer.Disabled -> SelfDeletionTimer.Disabled
-                                    TeamSelfDeleteTimer.Enabled -> onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
-                                    is TeamSelfDeleteTimer.Enforced -> SelfDeletionTimer.Enforced.ByTeam(
-                                        deletionTimer.enforcedDuration
-                                    )
-                                }
-                            })
-                        }
+                        conversationRepository.observeConversationById(conversationId)
+                    ) { teamSettings, conversationDetailsEither ->
+                        val conversation = conversationDetailsEither.getOrNull()
+                        outgoingSelfDeletionTimer(
+                            teamTimer = teamSettings.getOrNull()?.enforcedSelfDeletionTimer,
+                            groupTimer = conversation?.messageTimer,
+                            userTimer = conversation?.userMessageTimer,
+                            considerSelfUserSettings = considerSelfUserSettings,
+                        )
+                    }
                 }
             })
         }
-
-    private fun onTeamEnabled(conversation: Either<StorageFailure, Conversation>, considerSelfUserSettings: Boolean): SelfDeletionTimer =
-        conversation.fold({
-            SelfDeletionTimer.Enabled(null)
-        }, {
-            val messageTimer = it.messageTimer
-            when {
-                messageTimer.isPositiveNotNull() -> SelfDeletionTimer.Enforced.ByGroup(messageTimer)
-                considerSelfUserSettings && it.userMessageTimer.isPositiveNotNull() -> SelfDeletionTimer.Enabled(it.userMessageTimer)
-                else -> SelfDeletionTimer.Enabled(null)
-            }
-        })
 }

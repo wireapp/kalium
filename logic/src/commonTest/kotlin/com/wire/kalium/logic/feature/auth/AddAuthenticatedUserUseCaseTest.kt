@@ -41,9 +41,9 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.calls
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.matching
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
 import dev.mokkery.every
@@ -228,36 +228,7 @@ class AddAuthenticatedUserUseCaseTest {
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.SsoIdentityChanged>(actual)
         verifySuspend(VerifyMode.not) {
             arrangement.sessionRepository.storeSession(any())
-        }
-    }
-
-    @Test
-    fun givenRetainedAccountWithIdpId_whenLoginSuppliesNoIdpId_thenExistingFlowContinues() = runTest {
-        val (arrangement, addAuthenticatedUser) = Arrangement()
-            .withDoesValidNomadAccountExistResult(Either.Right(false))
-            .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
-            .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
-            .withFullAccountInfoResult(
-                TEST_USERID,
-                Either.Right(retainedAccount(ssoIdentityProviderId = TEST_IDP_ID))
-            )
-            .withStoreSessionResult(
-                TEST_SERVER_CONFIG.id,
-                TEST_SSO_ID,
-                TEST_AUTH_TOKENS,
-                PROXY_CREDENTIALS,
-                null,
-                Either.Right(Unit),
-                ssoIdentityProviderId = null,
-            )
-            .withUpdateCurrentSessionResult(TEST_USERID, Either.Right(Unit))
-            .arrange()
-
-        val actual = addAuthenticatedUser(defaultSessionParam(ssoIdentityProviderId = null))
-
-        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.sessionRepository.storeSession(any())
+            arrangement.userSessionScopeProvider.storeSession(any(), any())
         }
     }
 
@@ -267,7 +238,7 @@ class AddAuthenticatedUserUseCaseTest {
             .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(TEST_USERID, Either.Right(false))
             .withDoesSessionExistResult(TEST_USERID, Either.Right(true))
-            .withFullAccountInfoResult(TEST_USERID, Either.Right(retainedAccount()))
+            .withFullAccountInfoResult(TEST_USERID, Either.Right(retainedAccount(ssoIdentityProviderId = TEST_IDP_ID)))
             .withStoreSessionResult(
                 TEST_SERVER_CONFIG.id,
                 TEST_SSO_ID,
@@ -603,9 +574,15 @@ class AddAuthenticatedUserUseCaseTest {
         val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
         val serverConfigurationDAO = mock<ServerConfigurationDAO>(mode = MockMode.autoUnit)
 
-        private val addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(sessionRepository, serverConfigurationDAO)
+        val userSessionScopeProvider = mock<com.wire.kalium.logic.feature.UserSessionScopeProvider>(mode = MockMode.autoUnit)
+        private val addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(
+            sessionRepository, serverConfigurationDAO, userSessionScopeProvider
+        )
 
         init {
+            everySuspend { userSessionScopeProvider.storeSession(any(), sessionRepository) } calls { invocation ->
+                sessionRepository.storeSession(invocation.args[0] as StoreSessionParam)
+            }
             everySuspend { sessionRepository.doesSessionExist(any()) } returns Either.Right(false)
         }
 

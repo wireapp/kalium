@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 object MockConversation {
     private const val conversationValue = "valueConvo"

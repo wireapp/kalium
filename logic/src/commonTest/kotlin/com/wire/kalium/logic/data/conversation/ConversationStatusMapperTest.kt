@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

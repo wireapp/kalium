@@ -72,10 +72,14 @@ public interface CellUploadManager {
  * Information about the upload of the file.
  * @param progress upload progress
  * @param uploadFailed true if the upload failed
+ * @param isConnectivityIssue true if [uploadFailed] was caused by the device losing its connection, as
+ * opposed to any other failure (bad request, server error, missing local file). Lets callers tell a failure
+ * that's worth waiting out and auto-retrying apart from one that needs the user to act.
  */
 public data class CellUploadInfo(
     val progress: Float = 0f,
     val uploadFailed: Boolean = false,
+    val isConnectivityIssue: Boolean = false,
 )
 
 public sealed interface CellUploadEvent {

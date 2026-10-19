@@ -27,7 +27,7 @@ import com.wire.kalium.util.DateTimeUtil.currentInstant
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * This use case observes and returns a flow of paginated meeting occurrences.

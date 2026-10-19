@@ -28,6 +28,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CoreCryptoCentral
+import com.wire.kalium.cryptography.CoreCryptoOpenCleanupException
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
@@ -42,11 +43,13 @@ import com.wire.kalium.util.InternalCryptoAccess
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 internal interface ProteusClientProvider : CryptoBackupExporter {
     suspend fun clearLocalFiles()
+    suspend fun close()
 
     /**
      * Returns the ProteusClient or creates new one if doesn't exists.
@@ -60,21 +63,36 @@ internal interface ProteusClientProvider : CryptoBackupExporter {
     suspend fun getOrError(): Either<CoreFailure, ProteusClient>
 }
 
+@Suppress("LongParameterList") // Inject the native factory without changing provider consumers.
 internal class ProteusClientProviderImpl(
     private val rootProteusPath: String,
     private val userId: UserId,
     private val passphraseStorage: PassphraseStorage,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
+    private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler,
+    private val coreCryptoCentralFactory: suspend (String, ByteArray) -> CoreCryptoCentral = { root, key -> coreCryptoCentral(root, key) }
 ) : ProteusClientProvider, CryptoBackupExporter {
 
     private var _proteusClient: ProteusClient? = null
     private var _coreCryptoCentral: CoreCryptoCentral? = null
+    private var openFailure: Throwable? = null
     private val mutex = Mutex()
 
     override suspend fun clearLocalFiles() {
         mutex.withLock { removeLocalFiles() }
+    }
+
+    override suspend fun close() = withContext(NonCancellable) {
+        mutex.withLock { closeClients() }
+    }
+
+    private suspend fun closeClients() {
+        openFailure?.let { throw it }
+        // Initialization may have opened the central before a Proteus client could be returned.
+        _coreCryptoCentral?.close() ?: _proteusClient?.close()
+        _proteusClient = null
+        _coreCryptoCentral = null
     }
 
     override suspend fun getOrCreate(): ProteusClient {
@@ -106,14 +124,15 @@ internal class ProteusClientProviderImpl(
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun createProteusClient(): ProteusClient {
+        openFailure?.let { throw it }
+        _coreCryptoCentral?.let { return getCentralProteusClientOrError(it) }
         val central = try {
 
             val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath)
-            coreCryptoCentral(
-                rootDir = rootProteusPath,
-                passphrase = dbSecret.passphrase,
-            )
+            coreCryptoCentralFactory(rootProteusPath, dbSecret.passphrase)
         } catch (e: Exception) {
+            // Only a failed cleanup can leave native resources open. Other failures can be retried.
+            if (e is CoreCryptoOpenCleanupException) openFailure = e
             val logMap = mapOf(
                 "userId" to userId.value.obfuscateId(),
                 "exception" to e,
@@ -149,9 +168,7 @@ internal class ProteusClientProviderImpl(
      */
     private suspend fun removeLocalFiles() {
         withContext(dispatcher.io) {
-            _proteusClient?.close()
-            _proteusClient = null
-            _coreCryptoCentral = null
+            closeClients()
             FileUtil.deleteDirectory(rootProteusPath)
         }
     }

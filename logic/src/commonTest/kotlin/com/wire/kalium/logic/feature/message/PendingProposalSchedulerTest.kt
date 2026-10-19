@@ -17,18 +17,21 @@
  */
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatten
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.message.PendingSubconversationProposal
+import com.wire.kalium.logic.data.message.PendingSubconversationProposals
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatten
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -36,13 +39,20 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlin.coroutines.CoroutineContext
+import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
@@ -52,12 +62,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
-import kotlinx.datetime.Instant
-import kotlin.coroutines.CoroutineContext
-import kotlin.test.Test
-import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PendingProposalSchedulerTest {
@@ -80,7 +87,7 @@ class PendingProposalSchedulerTest {
     }
 
     @Test
-    fun givenSubconversation_onScheduleCommit_thenProposalTimerIsScheduledInMemory() = runTest {
+    fun givenSubconversation_onScheduleCommit_thenProposalTimerIsPersisted() = runTest {
         val (arrangement, pendingProposalsScheduler) = Arrangement()
             .withSubconversationRepositoryContainsGroup(Arrangement.PROPOSAL_TIMER.groupID)
             .withScheduleProposalTimerSuccessful()
@@ -89,7 +96,7 @@ class PendingProposalSchedulerTest {
         pendingProposalsScheduler.scheduleCommit(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.mlsConversationRepository.setProposalTimer(eq(Arrangement.PROPOSAL_TIMER), eq(true))
+            arrangement.subgroupProposals.schedule(eq(Arrangement.PROPOSAL_TIMER.groupID), eq(Arrangement.PROPOSAL_TIMER.timestamp))
         }
     }
 
@@ -275,10 +282,99 @@ class PendingProposalSchedulerTest {
         }
     }
 
+    @Test
+    fun givenLeaveRequestedAndNativeSubconversationExists_whenTimerExpires_thenPendingProposalIsCommitted() = runTest {
+        val record = Arrangement.leaveRequestedProposal()
+        val (arrangement, _) = Arrangement()
+            .withPendingSubconversationProposal(record)
+            .withNativeConversationExists(true)
+            .withCommitPendingProposalsSuccessful()
+            .arrange(testDispatcher(), backgroundScope.coroutineContext)
+
+        arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+        runCurrent()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsContext.conversationExists(any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(record.group))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.subgroupProposals.acknowledge(eq(record))
+        }
+    }
+
+    @Test
+    fun givenLeaveRequested_whenNativeLookupFails_thenPendingProposalIsRetained() = runTest {
+        val record = Arrangement.leaveRequestedProposal()
+        val (arrangement, _) = Arrangement()
+            .withPendingSubconversationProposal(record)
+            .withNativeConversationLookupFailing()
+            .arrange(testDispatcher(), backgroundScope.coroutineContext)
+
+        arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+        runCurrent()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsContext.conversationExists(any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.subgroupProposals.acknowledge(any())
+        }
+    }
+
+    @Test
+    fun givenLeaveRequestedAndNativeSubconversationMissing_whenTransactionCommits_thenPendingProposalIsAcknowledged() =
+        runTest {
+            val record = Arrangement.leaveRequestedProposal()
+            val transactionCanCommit = CompletableDeferred<Unit>()
+            val (arrangement, _) = Arrangement()
+                .withPendingSubconversationProposal(record)
+                .withNativeConversationExists(false)
+                .arrange(testDispatcher(), backgroundScope.coroutineContext)
+            everySuspend {
+                arrangement.cryptoTransactionProvider.transaction<Unit>(any(), any())
+            } calls {
+                @Suppress("UNCHECKED_CAST")
+                val block = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, Unit>
+                block(arrangement.transactionContext).also { transactionCanCommit.await() }
+            }
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            runCurrent()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.mlsContext.conversationExists(any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.mlsConversationRepository.commitPendingProposals(any(), any())
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.subgroupProposals.acknowledge(any())
+            }
+
+            transactionCanCommit.complete(Unit)
+            runCurrent()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.subgroupProposals.acknowledge(eq(record))
+            }
+        }
+
     private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
         val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val subgroupProposals = mock<PendingSubconversationProposals>(mode = MockMode.autoUnit)
+
+        init {
+            everySuspend { subgroupProposals.observe() } returns flowOf(emptyList())
+        }
+
         val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange(
@@ -289,6 +385,7 @@ class PendingProposalSchedulerTest {
             lazy { mlsConversationRepository },
             lazy { subconversationRepository },
             cryptoTransactionProvider,
+            subgroupProposals,
             testDispatcher,
             parentContext,
         ).also {
@@ -325,6 +422,20 @@ class PendingProposalSchedulerTest {
             } returns Either.Left(failure)
         }
 
+        suspend fun withPendingSubconversationProposal(record: PendingSubconversationProposal) = apply {
+            everySuspend { subgroupProposals.observe() } returns flowOf(listOf(record))
+            everySuspend { subgroupProposals.isCurrent(eq(record)) } returns true
+            withScheduledProposalTimers(emptyList())
+        }
+
+        suspend fun withNativeConversationExists(exists: Boolean) = apply {
+            everySuspend { mlsContext.conversationExists(any()) } returns exists
+        }
+
+        suspend fun withNativeConversationLookupFailing() = apply {
+            everySuspend { mlsContext.conversationExists(any()) } throws IllegalStateException("Native lookup failed")
+        }
+
         suspend fun withClearProposalTimerSuccessful() = apply {
             everySuspend {
                 mlsConversationRepository.clearProposalTimer(any())
@@ -348,6 +459,13 @@ class PendingProposalSchedulerTest {
             val INSTANT_NEAR_FUTURE = DateTimeUtil.currentInstant().plus(5.seconds)
             val INSTANT_FUTURE = Instant.DISTANT_FUTURE
             val PROPOSAL_TIMER = ProposalTimer(MockConversation.GROUP_ID, INSTANT_FUTURE)
+
+            fun leaveRequestedProposal() = PendingSubconversationProposal(
+                group = MockConversation.GROUP_ID,
+                deadline = INSTANT_PAST,
+                token = "leave-requested",
+                leaveRequested = true,
+            )
         }
     }
 }

@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 enum class InsertMessageResult {
     INSERTED_INTO_MUTED_CONVERSATION, INSERTED_NEED_TO_NOTIFY_USER
@@ -36,10 +36,22 @@ enum class InsertMessageResult {
 
 @Suppress("TooManyFunctions")
 interface MessageDAO {
+    suspend fun getMessageIdsThrough(conversationId: QualifiedIDEntity, through: Instant, pageSize: Long): List<String>
+    suspend fun deleteClearedMessage(conversationId: QualifiedIDEntity, messageId: String)
+
+    /** Apple notification identities follow canonical message IDs through edits; Android does not register alerts here. */
+    suspend fun rememberNotificationMessages(messages: List<NotificationMessageKey>)
+
+    /** Canonical deletion/read state for existing delivered alerts; never infers expiry from missing rows. */
+    fun observeNotificationRemovalCandidates(messageIds: List<String>): Flow<List<NotificationMessageKey>>
+
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
     suspend fun updateAssetTransferStatus(transferStatus: AssetTransferStatusEntity, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteAllMessages()
+
+    /** Atomically insert a new message or complete an asset preview; canonical duplicates have no repeated effects. */
+    suspend fun insertReceivedMessage(message: MessageEntity.Regular, updateConversationOrder: Boolean)
 
     /**
      * Inserts the message, or ignores if there's already a message with the same [MessageEntity.id] and [MessageEntity.conversationId].
@@ -71,6 +83,7 @@ interface MessageDAO {
 
     suspend fun updateMessagesStatus(status: MessageEntity.Status, id: List<String>, conversationId: QualifiedIDEntity)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity?
+    suspend fun getConversationIdsWithMessage(id: String): List<ConversationIDEntity>
     fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
     suspend fun getOldestVisibleMessageTimestampByConversationId(conversationId: ConversationIDEntity): Long?
     fun getMessagesByConversationAndVisibility(
@@ -96,7 +109,8 @@ interface MessageDAO {
         conversationId: QualifiedIDEntity,
         currentMessageId: String,
         newTextContent: MessageEntityContent.Text,
-        newMessageId: String
+        newMessageId: String,
+        updateStatus: MessageEntity.Status? = null,
     )
     suspend fun updateLinkPreviewImageLocalPath(
         conversationId: QualifiedIDEntity,
@@ -226,3 +240,6 @@ interface MessageDAO {
 
     suspend fun updateAudioMessageNormalizedLoudness(conversationId: QualifiedIDEntity, messageId: String, normalizedLoudness: ByteArray)
 }
+
+/** Message identities are scoped to a conversation and this DAO's account. */
+data class NotificationMessageKey(val messageId: String, val conversationId: QualifiedIDEntity)

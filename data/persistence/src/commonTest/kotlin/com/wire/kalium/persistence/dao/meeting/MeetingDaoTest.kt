@@ -20,12 +20,15 @@ package com.wire.kalium.persistence.dao.meeting
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import app.cash.turbine.test
-import app.cash.sqldelight.async.coroutines.awaitAsList
-import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.MeetingsQueries
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
+import kotlin.test.assertTrue
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitMigrate
+import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.MeetingsQueries
+import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity.RecurrenceEntity.Frequency
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
@@ -33,14 +36,14 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlinx.coroutines.flow.first
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -57,6 +60,254 @@ class MeetingDaoTest : BaseDatabaseTest() {
         databaseBuilder = createDatabase(SELF_USER_ID, encryptedDBSecret, enableWAL = true)
         meetingDao = databaseBuilder.meetingDao
         meetingsQueries = databaseBuilder.database.meetingsQueries
+    }
+
+
+    @Test
+    fun givenQualifiedConversations_whenSnapshottingThenDeleting_thenKeepOtherDomainsAndDeleteOccurrences() = runTest(dispatcher) {
+        val start = Instant.parse("2026-10-01T09:00:00Z")
+        val first = newMeeting(startTime = start).copy(updatedAt = start)
+        val second = first.copy(meetingId = QualifiedIDEntity("second", first.meetingId.domain))
+        val otherDomain = first.copy(
+            meetingId = QualifiedIDEntity(first.meetingId.value, "other.example"),
+            conversationId = QualifiedIDEntity(first.conversationId.value, "other.example"),
+        )
+        listOf(first, second, otherDomain).forEach { insertMeetingDependencies(it) }
+        meetingDao.upsertMeetings(listOf(first, second, otherDomain), GenerationLimit.Window(start - 1.days, start + 1.days))
+
+        val snapshot = meetingDao.getMeetingsByConversationId(first.conversationId)
+        assertEquals(setOf(first, second), snapshot.toSet())
+        meetingDao.deleteMeetingsByConversationId(first.conversationId)
+
+        assertEquals(emptyList(), meetingDao.getMeetingsByConversationId(first.conversationId))
+        assertTrue(occurrencesFor(first).isEmpty())
+        assertTrue(occurrencesFor(second).isEmpty())
+        assertEquals(listOf(otherDomain), meetingDao.getMeetingsByConversationId(otherDomain.conversationId))
+        assertEquals(listOf(first, second).toSet(), snapshot.toSet())
+        assertTrue(occurrencesFor(otherDomain).isNotEmpty())
+    }
+
+    @Test
+    fun changingOnlyTzidRegeneratesOccurrencesAndSurvivesReopen() = runTest(dispatcher) {
+        val meeting = newMeeting(
+            startTime = Instant.parse("2026-10-24T08:00:00Z"),
+            tzid = "Europe/Berlin",
+            recurrence = MeetingEntity.RecurrenceEntity(Frequency.DAILY, 1, null)
+        )
+        val window = GenerationLimit.Window(meeting.startTime, Instant.parse("2026-10-26T10:00:00Z"))
+        insertMeetingDependencies(meeting)
+        meetingDao.upsertMeetings(listOf(meeting), window)
+        assertContentEquals(
+            listOf("2026-10-24T08:00:00Z", "2026-10-25T09:00:00Z", "2026-10-26T09:00:00Z").map(Instant::parse),
+            occurrencesFor(meeting).map { it.occurrence_start }
+        )
+        val edited = meeting.copy(tzid = "Asia/Kolkata")
+        meetingDao.upsertMeetings(listOf(edited), window)
+        val starts = listOf("2026-10-24T08:00:00Z", "2026-10-25T08:00:00Z", "2026-10-26T08:00:00Z").map(Instant::parse)
+        assertContentEquals(starts, occurrencesFor(meeting).map { it.occurrence_start })
+        databaseBuilder.close()
+        databaseBuilder = createDatabase(SELF_USER_ID, encryptedDBSecret, enableWAL = true)
+        meetingDao = databaseBuilder.meetingDao
+        meetingsQueries = databaseBuilder.database.meetingsQueries
+        assertEquals(edited.copy(updatedAt = edited.createdAt), meetingDao.getMeeting(meeting.meetingId))
+        assertContentEquals(starts, occurrencesFor(meeting).map { it.occurrence_start })
+    }
+
+    @Test
+    fun legacyRecurringCacheUpgradeRegeneratesAfterUnchangedSyncAndPreservesOneTimeOccurrence() = runTest(dispatcher) {
+        val series = newMeeting(
+            startTime = Instant.parse("2026-10-24T08:00:00Z"),
+            endTime = Instant.parse("2026-10-24T09:00:00Z"),
+            tzid = "Europe/Berlin",
+            recurrence = MeetingEntity.RecurrenceEntity(Frequency.DAILY, 1, null),
+        )
+        val oneTime = newMeeting(meetingId = QualifiedIDEntity("one-time", "wire.com"), startTime = series.startTime)
+        val window = GenerationLimit.Window(series.startTime, Instant.parse("2026-10-26T10:00:00Z"))
+        insertMeetingDependencies(series)
+        meetingDao.upsertMeetings(listOf(series, oneTime), window)
+        val oneTimeOccurrences = occurrencesFor(oneTime)
+        meetingsQueries.deleteMeetingOccurrences(series.meetingId)
+        repeat(3) { day ->
+            meetingsQueries.insertMeetingOccurrence(
+                "legacy-$day", series.meetingId, series.startTime + day.days, series.endTime + day.days,
+            )
+        }
+
+        // This local migration must also repair databases that already applied upstream's TZID migration.
+        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 152, 153)
+        assertEquals(emptyList(), occurrencesFor(series))
+        assertEquals(oneTimeOccurrences, occurrencesFor(oneTime))
+        meetingDao.upsertMeetings(listOf(series, oneTime), window)
+        meetingDao.insertMissingOccurrences(GenerationLimit.Window(series.startTime, Instant.parse("2026-10-28T10:00:00Z")))
+        val regenerated = occurrencesFor(series)
+        assertContentEquals(
+            listOf("2026-10-24T08:00:00Z", "2026-10-25T09:00:00Z", "2026-10-26T09:00:00Z",
+                "2026-10-27T09:00:00Z", "2026-10-28T09:00:00Z").map(Instant::parse),
+            regenerated.map { it.occurrence_start },
+        )
+        assertEquals(series.copy(updatedAt = series.createdAt), meetingDao.getMeeting(series.meetingId))
+        databaseBuilder.close()
+        databaseBuilder = createDatabase(SELF_USER_ID, encryptedDBSecret, enableWAL = true)
+        meetingDao = databaseBuilder.meetingDao
+        meetingsQueries = databaseBuilder.database.meetingsQueries
+        assertEquals(regenerated, occurrencesFor(series))
+        assertEquals(oneTimeOccurrences, occurrencesFor(oneTime))
+    }
+
+    @Test
+    fun firstOfflinePageAfterCacheUpgradeGeneratesUpcomingStartsAndCanAppend() = assertOfflinePagingAfterUpgrade(interval = 1)
+
+    @Test
+    fun firstOfflinePageAfterCacheUpgradeSupportsDefaultRecurrenceInterval() = assertOfflinePagingAfterUpgrade(interval = null)
+
+    private fun assertOfflinePagingAfterUpgrade(interval: Long?) = runTest(dispatcher) {
+        val series = newMeeting(
+            startTime = Instant.parse("2026-01-01T09:00:00Z"), tzid = "Europe/Berlin",
+            recurrence = MeetingEntity.RecurrenceEntity(Frequency.DAILY, interval, null),
+        )
+        insertMeetingDependencies(series)
+        insertMeetingWithoutOccurrences(series)
+        meetingsQueries.insertMeetingOccurrence(
+            "legacy-upcoming", series.meetingId, Instant.parse("2026-10-25T08:00:00Z"), Instant.parse("2026-10-25T09:00:00Z"),
+        )
+        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 152, 153)
+
+        // Load locally before any meeting sync. Starts overlapping the list boundary must not consume its count.
+        val pagingSource = meetingDao.getPaginatedMeetingOccurrenceDetails(
+            PagingConfig(pageSize = 3, prefetchDistance = 1), startingOffset = 0, from = Instant.parse("2026-10-24T08:30:00Z"),
+        ).pagingSource
+        val first = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            pagingSource.load(PagingSource.LoadParams.Refresh(key = null, loadSize = 3, placeholdersEnabled = false)),
+        )
+        assertContentEquals(
+            listOf("2026-10-25T09:00:00Z", "2026-10-26T09:00:00Z", "2026-10-27T09:00:00Z").map(Instant::parse),
+            first.data.map { it.occurrence.occurrenceStart },
+        )
+        assertEquals(3, first.nextKey)
+        assertEquals(1, first.itemsAfter)
+        val next = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            pagingSource.load(PagingSource.LoadParams.Append(key = checkNotNull(first.nextKey), loadSize = 3, placeholdersEnabled = false)),
+        )
+        assertContentEquals(
+            listOf("2026-10-28T09:00:00Z", "2026-10-29T09:00:00Z", "2026-10-30T09:00:00Z").map(Instant::parse),
+            next.data.map { it.occurrence.occurrenceStart },
+        )
+    }
+
+    @Test
+    fun directOfflineLookupAfterCacheUpgradeFindsOngoingAndFutureOccurrencesWithoutPagingOrSync() = runTest(dispatcher) {
+        val dates = listOf(
+            Triple(Frequency.DAILY, "2026-10-25T09:00:00Z", "2026-10-26T09:00:00Z"),
+            Triple(Frequency.WEEKLY, "2026-10-29T09:00:00Z", "2026-11-05T09:00:00Z"),
+        )
+        insertMeetingDependencies(newMeeting())
+        for ((frequency, ongoingStart, futureStart) in dates) {
+            for (interval in listOf(1L, null)) {
+                val ongoing = Instant.parse(ongoingStart)
+                val requests = listOf(ongoing + 30.minutes to ongoing, ongoing + 1.hours to Instant.parse(futureStart))
+                for ((index, request) in requests.withIndex()) {
+                    val series = newMeeting(
+                        meetingId = QualifiedIDEntity("lookup-$frequency-$interval-$index", "wire.com"),
+                        startTime = Instant.parse("2026-01-01T09:00:00Z"), tzid = "Europe/Berlin",
+                        recurrence = MeetingEntity.RecurrenceEntity(frequency, interval, null),
+                    )
+                    insertMeetingWithoutOccurrences(series)
+                    meetingsQueries.insertMeetingOccurrence("legacy-${series.meetingId.value}", series.meetingId, ongoing, ongoing + 1.hours)
+                    UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 152, 153)
+
+                    val id = checkNotNull(meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(series.meetingId, request.first))
+                    val occurrence = checkNotNull(meetingDao.getMeetingOccurrenceDetailsFlow(id).first()).occurrence
+                    assertEquals(request.second, occurrence.occurrenceStart)
+                    assertEquals(request.second + 1.hours, occurrence.occurrenceEnd)
+                    assertEquals(id, meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(series.meetingId, request.first))
+                    assertEquals(1, occurrencesFor(series).size)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun retainedOneTimeRowsDoNotHideEarlierRecurringOccurrencesAfterUpgrade() = runTest(dispatcher) {
+        val series = newMeeting(
+            startTime = Instant.parse("2026-10-24T08:00:00Z"),
+            recurrence = MeetingEntity.RecurrenceEntity(Frequency.DAILY, 1, null),
+        )
+        insertMeetingDependencies(series)
+        insertMeetingWithoutOccurrences(series)
+        val oneTimeMeetings = (0..3).map {
+            newMeeting(meetingId = QualifiedIDEntity("one-time-$it", "wire.com"), startTime = Instant.parse("2026-11-01T09:00:00Z") + it.days)
+        }
+        meetingDao.upsertMeetings(
+            oneTimeMeetings, GenerationLimit.Window(Instant.parse("2026-10-25T00:00:00Z"), Instant.parse("2026-11-10T00:00:00Z")),
+        )
+        val preserved = oneTimeMeetings.associate { it.meetingId to occurrencesFor(it) }
+        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 152, 153)
+
+        val page = firstLocalPage(Instant.parse("2026-10-25T00:00:00Z"))
+        assertContentEquals(
+            listOf("2026-10-25T09:00:00Z", "2026-10-26T09:00:00Z", "2026-10-27T09:00:00Z").map(Instant::parse),
+            page.data.map { it.occurrence.occurrenceStart },
+        )
+        for (meeting in oneTimeMeetings) assertEquals(preserved[meeting.meetingId], occurrencesFor(meeting))
+    }
+
+    @Test
+    fun lookupThenPagingAndUnchangedSyncFillEarlierDatesWithoutReplacingIds() = runTest(dispatcher) {
+        val series = newMeeting(
+            startTime = Instant.parse("2026-10-24T08:00:00Z"),
+            recurrence = MeetingEntity.RecurrenceEntity(Frequency.DAILY, 1, null),
+        )
+        insertMeetingDependencies(series)
+        insertMeetingWithoutOccurrences(series)
+        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 152, 153)
+        val nextId = checkNotNull(meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(series.meetingId, Instant.parse("2026-10-26T12:00:00Z")))
+        assertEquals(Instant.parse("2026-10-27T09:00:00Z"), occurrencesFor(series).single().occurrence_start)
+
+        val page = firstLocalPage(Instant.parse("2026-10-26T00:00:00Z"))
+        assertContentEquals(
+            listOf("2026-10-26T09:00:00Z", "2026-10-27T09:00:00Z", "2026-10-28T09:00:00Z").map(Instant::parse),
+            page.data.map { it.occurrence.occurrenceStart },
+        )
+        assertEquals(nextId, page.data[1].occurrence.occurrenceId)
+        val cached = occurrencesFor(series)
+        val window = GenerationLimit.Window(Instant.parse("2026-10-25T00:00:00Z"), Instant.parse("2026-10-28T00:00:00Z"))
+        meetingDao.upsertMeetings(listOf(series), window)
+        meetingDao.insertMissingOccurrences(window)
+        val completed = occurrencesFor(series)
+        assertEquals(Instant.parse("2026-10-25T09:00:00Z"), completed.first().occurrence_start)
+        assertEquals(cached, completed.drop(1))
+        val ongoingId = meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(series.meetingId, Instant.parse("2026-10-26T09:30:00Z"))
+        assertEquals(cached.first().occurrence_id, ongoingId)
+        assertEquals(completed, occurrencesFor(series))
+    }
+
+    @Test
+    fun pagingThenLookupFindsAnOvernightOngoingOccurrenceBeforeThePageBoundary() = runTest(dispatcher) {
+        val series = newMeeting(
+            startTime = Instant.parse("2026-01-01T23:00:00Z"), endTime = Instant.parse("2026-01-02T03:00:00Z"),
+            recurrence = MeetingEntity.RecurrenceEntity(Frequency.DAILY, null, null),
+        )
+        insertMeetingDependencies(series)
+        insertMeetingWithoutOccurrences(series)
+        UserDatabase.Schema.awaitMigrate(databaseBuilder.sqlDriver, 152, 153)
+        val from = Instant.parse("2026-10-25T00:00:00Z")
+        val page = firstLocalPage(from)
+        assertEquals(Instant.parse("2026-10-25T23:00:00Z"), page.data.first().occurrence.occurrenceStart)
+        val cached = occurrencesFor(series)
+
+        val ongoingId = checkNotNull(meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(series.meetingId, from))
+        val ongoing = checkNotNull(meetingDao.getMeetingOccurrenceDetailsFlow(ongoingId).first()).occurrence
+        assertEquals(Instant.parse("2026-10-24T22:00:00Z"), ongoing.occurrenceStart)
+        assertEquals(Instant.parse("2026-10-25T02:00:00Z"), ongoing.occurrenceEnd)
+        assertEquals(cached, occurrencesFor(series).drop(1))
+        meetingDao.upsertMeetings(listOf(series), GenerationLimit.Window(from, Instant.parse("2026-10-27T04:00:00Z")))
+        assertEquals(ongoingId, meetingDao.getNextUnfinishedMeetingOccurrenceDetailsId(series.meetingId, from))
+        assertEquals(cached, occurrencesFor(series).drop(1))
+    }
+
+    private suspend fun firstLocalPage(from: Instant): PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity> {
+        val source = meetingDao.getPaginatedMeetingOccurrenceDetails(PagingConfig(pageSize = 3, prefetchDistance = 1), 0, from).pagingSource
+        return assertIs(source.load(PagingSource.LoadParams.Refresh(key = null, loadSize = 3, placeholdersEnabled = false)))
     }
 
     @Test
@@ -494,6 +745,21 @@ class MeetingDaoTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenStoredMeeting_whenUpsertingEmptyListWithRemoveAbsent_thenMeetingAndOccurrencesAreDeleted() = runTest(dispatcher) {
+        val now = Clock.System.now()
+        val meeting = newMeeting(startTime = now + 1.days)
+        val window = GenerationLimit.Window(now, now + GENERATION_DAYS.days)
+        insertMeetingDependencies(meeting)
+        meetingDao.upsertMeetings(listOf(meeting), window)
+        assertEquals(true, occurrencesFor(meeting).isNotEmpty())
+
+        meetingDao.upsertMeetings(emptyList(), window, removeMeetingsAbsentFromUpsertList = true)
+
+        assertEquals(false, isMeetingStored(meeting))
+        assertEquals(true, occurrencesFor(meeting).isEmpty())
+    }
+
+    @Test
     fun givenOneOnOneMeeting_whenLoadingAndUpdatingAvatars_thenAllMembersAreReturnedAndPagingInvalidates() = runTest(dispatcher) {
         val meeting = newMeeting()
         insertAvatarMeeting(meeting, ConversationEntity.Type.ONE_ON_ONE)
@@ -538,6 +804,85 @@ class MeetingDaoTest : BaseDatabaseTest() {
             }
             source.invalidate()
         }
+    }
+
+    @Test
+    fun mixedAvatarsAndDeletedMembersStayConsistentAcrossPagingAndObservation() = runTest(dispatcher) {
+        val meeting = newMeeting()
+        insertAvatarMeeting(meeting, ConversationEntity.Type.MEETING)
+        val avatar = QualifiedIDEntity("avatar", "assets.example")
+        val unnamedId = QualifiedIDEntity("unnamed", "other.example")
+        val deletedId = QualifiedIDEntity("deleted", "wire.com")
+        databaseBuilder.userDAO.upsertUser(newUserEntity(CREATOR_ID).copy(name = "Alex", accentId = 3, previewAssetId = avatar))
+        databaseBuilder.userDAO.upsertUser(newUserEntity(unnamedId).copy(name = null, accentId = 7))
+        databaseBuilder.userDAO.upsertUser(newUserEntity(deletedId).copy(deleted = true, previewAssetId = avatar))
+        databaseBuilder.memberDAO.insertMembersWithQualifiedId(
+            listOf(MemberEntity(unnamedId, MemberEntity.Role.Member), MemberEntity(deletedId, MemberEntity.Role.Member)),
+            meeting.conversationId
+        )
+        val expected = listOf(
+            MeetingParticipantEntity(meeting.conversationId, CREATOR_ID, "Alex", 3, avatar),
+            MeetingParticipantEntity(meeting.conversationId, SELF_USER_ID, "usertest", 1, null),
+            MeetingParticipantEntity(meeting.conversationId, unnamedId, "", 7, null)
+        )
+        val source = meetingDao.getPaginatedMeetingOccurrenceDetails(PagingConfig(10), 0, meeting.startTime).pagingSource
+        val page = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            source.load(PagingSource.LoadParams.Refresh(null, 10, false))
+        )
+        assertEquals(expected, page.data.single().participants)
+        meetingDao.getMeetingOccurrenceDetailsFlow(occurrencesFor(meeting).single().occurrence_id).test {
+            assertEquals(expected, awaitItem()?.participants)
+            databaseBuilder.userDAO.markAsDeleted(listOf(CREATOR_ID))
+            // The fork's conversation-list keys may also refresh the outer occurrence query.
+            var current = awaitItem()
+            while (current?.participants?.any { it.userId == CREATOR_ID } == true) current = awaitItem()
+            assertEquals(expected.drop(1), current?.participants)
+            assertTrue(source.invalid)
+            val refreshed = meetingDao.getPaginatedMeetingOccurrenceDetails(PagingConfig(10), 0, meeting.startTime).pagingSource
+            val refreshedPage = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+                refreshed.load(PagingSource.LoadParams.Refresh(null, 10, false))
+            )
+            assertEquals(current?.participants, refreshedPage.data.single().participants)
+            refreshed.invalidate()
+            databaseBuilder.memberDAO.deleteMemberByQualifiedID(unnamedId, meeting.conversationId)
+            current = awaitItem()
+            while (current?.participants?.any { it.userId == unnamedId } == true) current = awaitItem()
+            assertEquals(listOf(expected[1]), current?.participants)
+            meetingDao.deleteMeeting(meeting.meetingId)
+            while (awaitItem() != null) { /* Wait for deletion after any queued participant emission. */ }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun participantPagingKeepsDifferentConversationsSeparate() = runTest(dispatcher) {
+        val first = newMeeting()
+        val second = newMeeting(
+            meetingId = QualifiedIDEntity("second", "wire.com"),
+            conversationId = QualifiedIDEntity("other-conversation", "wire.com"),
+            startTime = first.startTime + 1.hours
+        )
+        insertAvatarMeeting(first, ConversationEntity.Type.GROUP)
+        insertAvatarMeeting(second, ConversationEntity.Type.CHANNEL)
+        databaseBuilder.memberDAO.deleteMemberByQualifiedID(CREATOR_ID, second.conversationId)
+        val source = meetingDao.getPaginatedMeetingOccurrenceDetails(PagingConfig(1, prefetchDistance = 0), 0, first.startTime).pagingSource
+        val firstPage = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            source.load(PagingSource.LoadParams.Refresh(null, 1, false))
+        )
+        assertEquals(first.meetingId, firstPage.data.single().meeting.meetingId)
+        assertEquals(listOf(CREATOR_ID, SELF_USER_ID), firstPage.data.single().participants.map { it.userId })
+        val secondPage = assertIs<PagingSource.LoadResult.Page<Int, MeetingOccurrenceDetailsEntity>>(
+            source.load(PagingSource.LoadParams.Append(requireNotNull(firstPage.nextKey), 1, false))
+        )
+        assertEquals(second.meetingId, secondPage.data.single().meeting.meetingId)
+        assertEquals(listOf(SELF_USER_ID), secondPage.data.single().participants.map { it.userId })
+        assertEquals(listOf(second.conversationId), secondPage.data.single().participants.map { it.conversationId })
+        source.invalidate()
+    }
+
+    @Test
+    fun missingOccurrenceEmitsNull() = runTest(dispatcher) {
+        assertEquals(null, meetingDao.getMeetingOccurrenceDetailsFlow("missing").first())
     }
 
     @Test

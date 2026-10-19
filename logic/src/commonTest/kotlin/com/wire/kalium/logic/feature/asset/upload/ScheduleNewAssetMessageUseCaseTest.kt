@@ -31,11 +31,11 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
-import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns

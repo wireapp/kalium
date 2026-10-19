@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.message.receipt
 
 import com.wire.kalium.logic.data.id.ConversationId
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * The input of a conversation time-event.

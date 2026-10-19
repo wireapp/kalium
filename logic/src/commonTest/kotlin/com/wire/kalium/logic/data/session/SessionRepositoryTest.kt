@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.session
 
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.shouldSucceed
@@ -26,6 +28,8 @@ import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.calls
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -35,6 +39,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class SessionRepositoryTest {
 
@@ -77,6 +82,17 @@ class SessionRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.isNativePushSupportedByServer(eq(TEST_USER_ID.toDao()))
         }
+    }
+
+    @Test
+    fun sessionDeletionReportsKeychainTokenRemovalFailure() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        every { arrangement.authTokenStorage.deleteToken(any()) } calls {
+            throw IllegalStateException("Keychain is unavailable")
+        }
+        val failure = assertIs<Either.Left<*>>(repository.deleteSession(TEST_USER_ID))
+        assertIs<StorageFailure.Generic>(failure.value)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.accountsDAO.deleteAccount(TEST_USER_ID.toDao()) }
     }
 
     private class Arrangement {

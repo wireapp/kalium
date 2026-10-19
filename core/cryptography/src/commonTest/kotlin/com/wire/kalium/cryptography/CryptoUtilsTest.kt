@@ -27,6 +27,7 @@ import com.wire.kalium.cryptography.utils.decryptFileWithAES256
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import okio.Buffer
 import okio.Path.Companion.toPath
 import okio.buffer
 import okio.fakefilesystem.FakeFileSystem
@@ -38,6 +39,24 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class CryptoUtilsTest {
+    @Test
+    @IgnoreJS
+    @IgnoreAndroidInstrumented
+    fun givenFileSizes_whenEncrypted_reportedSizeIncludesIVAndPadding() {
+        val key = generateRandomAES256Key()
+        for (size in listOf(0, 1, 15, 16, 17, 8191, 8192, 8193, 32769)) {
+            val input = ByteArray(size) { (it % 251).toByte() }
+            val encrypted = Buffer()
+
+            val reportedSize = encryptFileWithAES256(Buffer().write(input), key, encrypted)
+
+            assertEquals(encrypted.size, reportedSize, "Encrypted size for $size plaintext bytes")
+            val decrypted = Buffer()
+            assertEquals(size.toLong(), decryptFileWithAES256(encrypted, decrypted, key))
+            assertContentEquals(input, decrypted.readByteArray())
+        }
+    }
+
     @Test
     @IgnoreJS
     @IgnoreAndroidInstrumented

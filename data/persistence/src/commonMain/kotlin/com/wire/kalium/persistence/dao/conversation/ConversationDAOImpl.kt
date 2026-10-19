@@ -18,6 +18,9 @@
 
 package com.wire.kalium.persistence.dao.conversation
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
@@ -25,6 +28,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationDetailsQueries
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.ConversationDetailsWithMembersQueries
+import com.wire.kalium.persistence.ConversationListQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
@@ -37,13 +41,12 @@ import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DebugKaliumApi
+import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
-import kotlin.time.Duration
+import kotlin.time.Instant
 
 internal const val MLS_DEFAULT_EPOCH = 0L
 internal const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI = 0L
@@ -58,6 +61,7 @@ internal class ConversationDAOImpl internal constructor(
     private val conversationDetailsQueries: ConversationDetailsQueries,
     private val conversationDetailsWithEventsQueries: ConversationDetailsWithEventsQueries,
     private val conversationDetailsWithMembersQueries: ConversationDetailsWithMembersQueries,
+    private val conversationListQueries: ConversationListQueries,
     private val memberQueries: MembersQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val readDispatcher: ReadDispatcher,
@@ -72,6 +76,14 @@ internal class ConversationDAOImpl internal constructor(
         conversationDetailsWithEventsMapper,
         readDispatcher,
     )
+
+    override fun observeConversationListItems(
+        pagingConfig: PagingConfig,
+        query: ConversationListQueryEntity,
+        initialPosition: ConversationListPositionEntity?,
+    ): Flow<PagingData<ConversationListItemEntity>> = Pager(pagingConfig, initialKey = initialPosition) {
+        ConversationListPagingSource(conversationListQueries, query, readDispatcher)
+    }.flow
 
     // region Get/Observe by ID
 
@@ -160,6 +172,16 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.transaction {
             for (conversationEntity: ConversationEntity in conversationEntities) {
                 nonSuspendingInsertConversation(conversationEntity)
+            }
+        }
+    }
+
+    override suspend fun insertIncompleteConversationsOrBumpLastModified(
+        datesByConversation: Map<QualifiedIDEntity, Instant>
+    ) = withContext(writeDispatcher.value) {
+        conversationQueries.transaction {
+            datesByConversation.forEach { (id, date) ->
+                conversationQueries.insertIncompleteConversationOrBumpLastModifiedDate(id, date)
             }
         }
     }
@@ -369,26 +391,6 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(readDispatcher.value)
     }
 
-    @DebugKaliumApi("Legacy conversation-list query retained for tests and performance benchmarks.")
-    override fun getAllConversationDetailsWithEvents(
-        fromArchive: Boolean,
-        onlyInteractionEnabled: Boolean,
-        newActivitiesOnTop: Boolean,
-        ongoingCallConversationIds: List<QualifiedIDEntity>,
-        strictMLSFilter: Boolean,
-    ): Flow<List<ConversationDetailsWithEventsEntity>> {
-        return conversationDetailsWithEventsQueries.selectAllConversationDetailsWithEvents(
-            fromArchive = fromArchive,
-            onlyInteractionsEnabled = onlyInteractionEnabled,
-            newActivitiesOnTop = newActivitiesOnTop,
-            ongoingCallConversationIds = ongoingCallConversationIds,
-            strict_mls = if (strictMLSFilter) 1 else 0,
-            mapper = conversationDetailsWithEventsMapper::fromViewToModel
-        ).asFlow()
-            .mapToList()
-            .flowOn(readDispatcher.value)
-    }
-
     override suspend fun getCellName(conversationId: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
         conversationQueries.getCellName(conversationId).awaitAsOneOrNull()?.wire_cell
     }
@@ -438,6 +440,13 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).awaitAsOneOrNull()
         }
 
+    override suspend fun getConversationMLSInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo.MLS? =
+        withContext(readDispatcher.value) {
+            conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID) { _, groupId, state, epoch, keyUpdate, cipher ->
+                ConversationEntity.ProtocolInfo.MLS(groupId.orEmpty(), state, epoch.toULong(), keyUpdate, cipher)
+            }.awaitAsOneOrNull()
+        }
+
     override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? = withContext(readDispatcher.value) {
         conversationQueries.selectByGroupId(groupID, mapper = conversationMapper::toConversationEntity)
             .awaitAsOneOrNull()
@@ -455,7 +464,7 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         conversationQueries.transactionWithResult {
-            conversationQueries.deleteConversation(qualifiedID)
+            conversationQueries.deleteConversation(qualifiedID).await()
             conversationQueries.selectChanges().awaitAsOne() > 0
         }
     }
@@ -796,7 +805,7 @@ internal class ConversationDAOImpl internal constructor(
             buildMap(conversationDates.size) {
                 conversationDates.forEach { (conversationId, date) ->
                     unreadEventsQueries.deleteUnreadEvents(date, conversationId)
-                    conversationQueries.updateConversationReadDate(date, conversationId)
+                    conversationQueries.advanceConversationReadDate(date, conversationId)
                     put(conversationId, unreadEventsQueries.getHasUnreadEventsForConversation(conversationId).awaitAsOneOrNull() ?: false)
                 }
             }

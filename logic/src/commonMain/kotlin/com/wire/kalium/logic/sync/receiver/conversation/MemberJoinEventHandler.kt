@@ -31,8 +31,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -40,7 +38,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlin.uuid.Uuid
 
 internal interface MemberJoinEventHandler {
     suspend fun handle(
@@ -150,16 +147,6 @@ internal class MemberJoinEventHandlerImpl(
     }
 
     private suspend fun addMemberAddedSystemMessage(event: Event.Conversation.MemberJoin) {
-        val message = Message.System(
-            id = event.id.ifEmpty { Uuid.random().toString() },
-            content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
-            conversationId = event.conversationId,
-            date = event.dateTime,
-            senderUserId = event.addedBy,
-            status = Message.Status.Sent,
-            visibility = Message.Visibility.VISIBLE,
-            expirationData = null
-        )
-        persistMessage(message)
+        persistMessage(event.memberAddedMessage())
     }
 }

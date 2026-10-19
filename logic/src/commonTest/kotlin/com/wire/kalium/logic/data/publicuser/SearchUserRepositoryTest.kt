@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.publicuser
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
@@ -61,8 +62,10 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
@@ -300,6 +303,65 @@ class SearchUserRepositoryTest {
     }
 
     @Test
+    fun givenUsersWithSameIdInDifferentDomains_whenSearchingPublicContacts_thenOnlyMatchingConnectionStateIsUsed() = runTest {
+        val remoteUser = USER_PROFILE_DTO.copy(teamId = "otherTeamId", name = "updated name")
+        val federatedUser = remoteUser.copy(id = remoteUser.id.copy(domain = "otherDomain"))
+        val localUser = TestUser.DETAILS_ENTITY.copy(
+            id = UserIDEntity(remoteUser.id.value, remoteUser.id.domain),
+            name = "old name",
+            team = "otherTeamId",
+            connectionStatus = ConnectionEntity.State.SENT
+        )
+        val (arrangement, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                withGetMultipleUsersResult(
+                    NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(remoteUser, federatedUser)), mapOf(), 200)
+                )
+                withGetUsersDetailsByQualifiedIdListResult(listOf(localUser))
+            }
+        val userMapper = MapperProvider.userMapper()
+
+        searchUserRepository.searchUserRemoteDirectory(
+            TEST_QUERY,
+            TEST_DOMAIN,
+            null,
+            SearchUsersOptions.Default
+        ).shouldSucceed { result ->
+            assertEquals(
+                listOf(
+                    userMapper.fromUserProfileDtoToOtherUser(remoteUser, TestUser.SELF.id, TestUser.SELF.teamId)
+                        .copy(connectionStatus = ConnectionState.SENT),
+                    userMapper.fromUserProfileDtoToOtherUser(federatedUser, TestUser.SELF.id, TestUser.SELF.teamId)
+                ),
+                result.result
+            )
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userDAO.getUsersDetailsByQualifiedIDList(
+                listOf(localUser.id, UserIDEntity(federatedUser.id.value, federatedUser.id.domain))
+            )
+        }
+    }
+
+    @Test
+    fun givenLocalConnectionLookupCancelled_whenSearchingPublicContacts_thenCancellationPropagates() = runTest {
+        val (_, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                withGetMultipleUsersResult(NetworkResponse.Success(USER_RESPONSE, mapOf(), 200))
+                withGetUsersDetailsByQualifiedIdListFailure(CancellationException("cancelled lookup"))
+            }
+
+        assertFailsWith<CancellationException> {
+            searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default)
+        }
+    }
+
+    @Test
     fun givenAValidUserSearchWithEmptyResults_WhenSearchingSomeText_ThenResultIsAnEmptyList() =
         runTest {
             // given
@@ -427,7 +489,7 @@ class SearchUserRepositoryTest {
         }
         val (arrangement, searchUserRepository) = Arrangement()
             .arrange {
-                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withTeamId(Either.Left(StorageFailure.DataNotFound))
                 withGetKnownContacts(searchResult)
             }
 
@@ -440,10 +502,11 @@ class SearchUserRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchDAO.getKnownContacts()
         }
+        verifySuspend(VerifyMode.not) { arrangement.selfTeamIdProvider.invoke() }
     }
 
     @Test
-    fun givenExcludedConversation_whenCallingGetKnownContacts_thenTheCorrectDAOFunctionIsCalled() = runTest {
+    fun givenExcludedConversationAndRestrictedSearch_whenCallingGetKnownContacts_thenTheCorrectDAOFunctionIsCalled() = runTest {
         // given
         val conversationId = ConversationId("conversationId", "domain")
         val searchResult = listOf(
@@ -477,13 +540,19 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        searchUserRepository.getKnownContacts(SearchUsersOptions(conversationMembersExcluded = conversationId)).shouldSucceed {
+        searchUserRepository.getKnownContacts(
+            SearchUsersOptions(conversationMembersExcluded = conversationId, onlySelfTeamAndDomain = true)
+        ).shouldSucceed {
             assertEquals(expected, it)
         }
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchDAO.getKnownContacts(excludeConversationId = conversationId.toDao())
+            arrangement.searchDAO.getKnownContacts(
+                onlyTeamId = TestUser.SELF.teamId!!.value,
+                onlyDomain = TestUser.SELF.id.domain,
+                excludeConversationId = conversationId.toDao()
+            )
         }
     }
 
@@ -516,7 +585,7 @@ class SearchUserRepositoryTest {
         }
         val (arrangement, searchUserRepository) = Arrangement()
             .arrange {
-                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withTeamId(Either.Left(StorageFailure.DataNotFound))
                 withSearchByName(searchResult)
             }
 
@@ -529,10 +598,11 @@ class SearchUserRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchDAO.searchByName(searchQuery = "name")
         }
+        verifySuspend(VerifyMode.not) { arrangement.selfTeamIdProvider.invoke() }
     }
 
     @Test
-    fun givenExcludedConversation_whenCallingSearchLocalByName_thenTheCorrectDAOFunctionIsCalled() = runTest {
+    fun givenExcludedConversationAndRestrictedSearch_whenCallingSearchLocalByName_thenTheCorrectDAOFunctionIsCalled() = runTest {
         // given
         val conversationId = ConversationId("conversationId", "domain")
         val searchResult = listOf(
@@ -566,13 +636,21 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        searchUserRepository.searchLocalByName("name", SearchUsersOptions(conversationMembersExcluded = conversationId)).shouldSucceed {
+        searchUserRepository.searchLocalByName(
+            "name",
+            SearchUsersOptions(conversationMembersExcluded = conversationId, onlySelfTeamAndDomain = true)
+        ).shouldSucceed {
             assertEquals(expected, it)
         }
 
         // then
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchDAO.searchByName(searchQuery = "name", excludeConversationId = conversationId.toDao())
+            arrangement.searchDAO.searchByName(
+                onlyTeamId = TestUser.SELF.teamId!!.value,
+                onlyDomain = TestUser.SELF.id.domain,
+                searchQuery = "name",
+                excludeConversationId = conversationId.toDao()
+            )
         }
     }
 
@@ -581,7 +659,7 @@ class SearchUserRepositoryTest {
         val (arrangement, searchUserRepository) = Arrangement()
             .arrange {
                 withSearchByHandle(emptyList())
-                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withTeamId(Either.Left(StorageFailure.DataNotFound))
             }
 
         searchUserRepository.searchLocalByHandle("handle", SearchUsersOptions.Default).shouldSucceed()
@@ -589,10 +667,11 @@ class SearchUserRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchDAO.searchByHandle(searchQuery = "handle")
         }
+        verifySuspend(VerifyMode.not) { arrangement.selfTeamIdProvider.invoke() }
     }
 
     @Test
-    fun givenSearchQueryAndConversation_thenSearchingByHandle_thenCorrectDaoFunctionIsCalled() = runTest {
+    fun givenSearchQueryAndConversationAndRestrictedSearch_thenSearchingByHandle_thenCorrectDaoFunctionIsCalled() = runTest {
         val conversationId = ConversationId("conversationId", "domain")
         val (arrangement, searchUserRepository) = Arrangement()
             .arrange {
@@ -600,15 +679,37 @@ class SearchUserRepositoryTest {
                 withTeamId(Either.Right(TestUser.SELF.teamId))
             }
 
-        searchUserRepository.searchLocalByHandle("handle", SearchUsersOptions(conversationMembersExcluded = conversationId))
-            .shouldSucceed()
+        searchUserRepository.searchLocalByHandle(
+            "handle",
+            SearchUsersOptions(conversationMembersExcluded = conversationId, onlySelfTeamAndDomain = true)
+        ).shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchDAO.searchByHandle(searchQuery = "handle", excludeConversationId = conversationId.toDao())
+            arrangement.searchDAO.searchByHandle(
+                onlyTeamId = TestUser.SELF.teamId!!.value,
+                onlyDomain = TestUser.SELF.id.domain,
+                searchQuery = "handle",
+                excludeConversationId = conversationId.toDao()
+            )
         }
     }
 
-    internal class Arrangement : SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
+    @Test
+    fun givenNoSelfTeam_whenSearchingLocallyWithinSelfTeam_thenEveryQueryReturnsNoCandidates() = runTest {
+        val (arrangement, repository) = Arrangement().arrange { withTeamId(Either.Right(null)) }
+        val options = SearchUsersOptions(onlySelfTeamAndDomain = true)
+        repository.getKnownContacts(options).shouldSucceed { assertEquals(emptyList(), it) }
+        repository.searchLocalByName("name", options).shouldSucceed { assertEquals(emptyList(), it) }
+        repository.searchLocalByHandle("handle", options).shouldSucceed { assertEquals(emptyList(), it) }
+        verifySuspend(VerifyMode.not) {
+            arrangement.searchDAO.getKnownContacts(any(), any(), any())
+            arrangement.searchDAO.searchByName(any(), any(), any(), any())
+            arrangement.searchDAO.searchByHandle(any(), any(), any(), any())
+        }
+    }
+
+    internal class Arrangement :
+        SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
         SearchDAOArrangement by SearchDAOArrangementImpl() {
         internal val userDetailsApi: UserDetailsApi = mock<UserDetailsApi>(mode = MockMode.autoUnit)
         internal val userSearchApiWrapper: UserSearchApiWrapper = mock<UserSearchApiWrapper>(mode = MockMode.autoUnit)

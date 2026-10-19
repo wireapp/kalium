@@ -40,10 +40,25 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.test.Test
 
 class CallingMessageHandlerTest {
+
+    @Test
+    fun givenMalformedCallingJson_whenHandling_thenSkipItAndHandleTheFollowingMessage() = runTest {
+        val (arrangement, handler) = Arrangement().arrange()
+        handler.handle(CALLING_MESSAGE, CALLING_CONTENT.copy(value = "{"))
+        verifySuspend(VerifyMode.not) {
+            arrangement.callManager.onCallingMessageReceived(any(), any())
+            arrangement.muteCallUseCase.invoke(any(), any())
+        }
+
+        handler.handle(CALLING_MESSAGE, CALLING_CONTENT)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callManager.onCallingMessageReceived(CALLING_MESSAGE, CALLING_CONTENT)
+        }
+    }
 
     @Test
     fun givenCallingMessage_whenHandling_thenHandleInCallManager_andDoNotCallMute() = runTest {

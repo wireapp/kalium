@@ -22,7 +22,7 @@ SELECT
     u.name AS senderName,
     u.preview_asset_id AS senderPreviewAssetId,
     c.name AS conversationName,
-    tc.text_body AS text,
+    COALESCE(tc.text_body, pc.question) AS text,
     tc.is_quoting_self AS isQuotingSelf,
     ac.asset_mime_type AS assetMimeType,
     c.muted_status AS mutedStatus,
@@ -40,12 +40,50 @@ LEFT JOIN MessageAssetContent ac
     ON ac.message_id = uc.messageId AND ac.conversation_id = uc.messageConversationId
 LEFT JOIN MessageTextContent tc
     ON tc.message_id = uc.messageId AND tc.conversation_id = uc.messageConversationId
+LEFT JOIN PollContent pc
+    ON pc.message_id = uc.messageId AND pc.conversation_id = uc.messageConversationId
 WHERE
     uc.row_num <= 10 -- there is a bug in sqldelight where you can't use a parameter here
     AND c.muted_status != 'ALL_MUTED'
     AND c.archived = 0
     AND uc.unreadCreationDate > COALESCE(c.last_notified_date, 0)
     AND m.visibility = 'VISIBLE'
-    AND m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION')
+    AND m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION', 'POLL')
     AND NOT EXISTS (SELECT 1 FROM SelfUser WHERE id = m.sender_user_id)
 ORDER BY m.creation_date DESC;
+
+CREATE TABLE MessageNotificationIdentity (
+    notification_message_id TEXT NOT NULL,
+    conversation_id TEXT NOT NULL,
+    current_message_id TEXT NOT NULL,
+    PRIMARY KEY (notification_message_id, conversation_id),
+    FOREIGN KEY (current_message_id, conversation_id) REFERENCES Message(id, conversation_id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- Keep FK checks bounded on every platform, including accounts with many historical alerts.
+CREATE INDEX message_notification_identity_current ON MessageNotificationIdentity(current_message_id, conversation_id);
+
+-- Only Apple hosts register notification identities. Existing aliases must survive
+-- stale snapshots and follow subsequent message edits through the composite FK.
+rememberNotificationMessage:
+INSERT OR IGNORE INTO MessageNotificationIdentity(notification_message_id, conversation_id, current_message_id)
+SELECT id, conversation_id, id FROM Message
+WHERE id = :message_id AND conversation_id = :conversation_id;
+
+-- Missing rows are not evidence of deletion: ephemeral expiry also removes rows.
+getNotificationRemovalCandidates:
+SELECT m.id, m.conversation_id
+FROM Message m
+JOIN Conversation c ON c.qualified_id = m.conversation_id
+WHERE m.id IN :message_ids
+AND ((m.visibility = 'DELETED' AND m.expire_after_millis IS NULL)
+     OR m.creation_date <= c.last_read_date)
+UNION
+SELECT n.notification_message_id AS id, m.conversation_id
+FROM MessageNotificationIdentity n
+JOIN Message m ON m.id = n.current_message_id AND m.conversation_id = n.conversation_id
+JOIN Conversation c ON c.qualified_id = m.conversation_id
+WHERE n.notification_message_id IN :message_ids
+AND ((m.visibility = 'DELETED' AND m.expire_after_millis IS NULL)
+     OR m.creation_date <= c.last_read_date);

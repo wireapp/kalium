@@ -24,7 +24,7 @@ import platform.AppKit.NSView
  * Native macOS view wrapper used by calling APIs that need a platform rendering surface.
  *
  * For AVS video calls, the macOS UI owns the [NSView] lifecycle and passes it through this wrapper.
- * Kalium forwards [view] to AVS so remote video can be rendered into the native UI surface.
+ * Kalium forwards [view] to AVS for remote rendering or local camera preview.
  */
 public actual class PlatformView(
     public val view: NSView?

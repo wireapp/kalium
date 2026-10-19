@@ -35,8 +35,6 @@ import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.newclient.NewClientEntity
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
@@ -68,20 +66,7 @@ internal class ClientMapper(
     )
 
     // TODO: mapping directly form DTO to domain object is not ideal since we lose verification information
-    internal fun fromClientDto(client: ClientDTO): Client = Client(
-        id = ClientId(client.clientId),
-        type = fromClientTypeDTO(client.type),
-        registrationTime = Instant.parse(client.registrationTime),
-        lastActive = client.lastActive?.let { Instant.parse(it).coerceAtMost(Clock.System.now()) },
-        deviceType = fromDeviceTypeDTO(client.deviceType),
-        label = client.label,
-        model = client.model,
-        isVerified = false,
-        isValid = true,
-        mlsPublicKeys = client.mlsPublicKeys,
-        isMLSCapable = client.mlsPublicKeys?.isNotEmpty() ?: false,
-        isAsyncNotificationsCapable = client.capabilities.contains(ClientCapabilityDTO.ConsumableNotifications)
-    )
+    internal fun fromClientDto(client: ClientDTO): Client = clientFromDTO(client)
 
     internal fun fromClientEntity(clientEntity: ClientEntity): Client = with(clientEntity) {
         Client(
@@ -137,21 +122,7 @@ internal class ClientMapper(
         }
 
     internal fun toInsertClientParam(client: ClientDTO, userIdDTO: UserIdDTO): InsertClientParam =
-        with(client) {
-            InsertClientParam(
-                userId = userIdDTO.toDao(),
-                id = clientId,
-                deviceType = toDeviceTypeEntity(deviceType),
-                clientType = toClientTypeEntity(type),
-                label = label,
-                model = model,
-                registrationDate = Instant.parse(registrationTime),
-                lastActive = lastActive?.let { Instant.parse(it).coerceAtMost(Clock.System.now()) },
-                mlsPublicKeys = mlsPublicKeys,
-                isMLSCapable = mlsPublicKeys?.isNotEmpty() ?: false,
-                isAsyncNotificationsCapable = client.capabilities.contains(ClientCapabilityDTO.ConsumableNotifications)
-            )
-        }
+        client.selfClientParameters(UserId(userIdDTO.value, userIdDTO.domain))
 
     internal fun toInsertClientParam(userId: UserId, clientId: List<ClientId>): List<InsertClientParam> =
         clientId.map {
@@ -171,30 +142,12 @@ internal class ClientMapper(
         }
 
     internal fun toInsertClientParam(userId: UserId, event: Event.User.NewClient): InsertClientParam =
-        InsertClientParam(
-            userId = userId.toDao(),
-            id = event.client.id.value,
-            deviceType = event.client.deviceType?.let { toDeviceTypeEntity(it) },
-            clientType = event.client.type?.let { toClientTypeEntity(it) },
-            label = event.client.label,
-            model = event.client.model,
-            registrationDate = event.client.registrationTime,
-            lastActive = event.client.lastActive,
-            mlsPublicKeys = null,
-            isMLSCapable = event.client.isMLSCapable,
-            isAsyncNotificationsCapable = event.client.isAsyncNotificationsCapable
-        )
+        event.client.newClientParameters(userId)
 
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {
         ClientType.Temporary -> ClientTypeDTO.Temporary
         ClientType.Permanent -> ClientTypeDTO.Permanent
         ClientType.LegalHold -> ClientTypeDTO.LegalHold
-    }
-
-    private fun fromClientTypeDTO(clientTypeDTO: ClientTypeDTO): ClientType = when (clientTypeDTO) {
-        ClientTypeDTO.Temporary -> ClientType.Temporary
-        ClientTypeDTO.Permanent -> ClientType.Permanent
-        ClientTypeDTO.LegalHold -> ClientType.LegalHold
     }
 
     private fun fromClientTypeEntity(clientTypeEntity: ClientTypeEntity): ClientType = when (clientTypeEntity) {
@@ -228,14 +181,6 @@ internal class ClientMapper(
         DeviceType.Unknown -> DeviceTypeDTO.Unknown
     }
 
-    private fun fromDeviceTypeDTO(deviceTypeDTO: DeviceTypeDTO): DeviceType = when (deviceTypeDTO) {
-        DeviceTypeDTO.Phone -> DeviceType.Phone
-        DeviceTypeDTO.Tablet -> DeviceType.Tablet
-        DeviceTypeDTO.Desktop -> DeviceType.Desktop
-        DeviceTypeDTO.LegalHold -> DeviceType.LegalHold
-        DeviceTypeDTO.Unknown -> DeviceType.Unknown
-    }
-
     internal fun fromDeviceTypeEntity(deviceTypeEntity: DeviceTypeEntity?): DeviceType = when (deviceTypeEntity) {
         DeviceTypeEntity.Phone -> DeviceType.Phone
         DeviceTypeEntity.Tablet -> DeviceType.Tablet
@@ -244,13 +189,7 @@ internal class ClientMapper(
         DeviceTypeEntity.Unknown, null -> DeviceType.Unknown
     }
 
-    internal fun toDeviceTypeEntity(deviceTypeEntity: DeviceType): DeviceTypeEntity = when (deviceTypeEntity) {
-        DeviceType.Phone -> DeviceTypeEntity.Phone
-        DeviceType.Tablet -> DeviceTypeEntity.Tablet
-        DeviceType.Desktop -> DeviceTypeEntity.Desktop
-        DeviceType.LegalHold -> DeviceTypeEntity.LegalHold
-        DeviceType.Unknown -> DeviceTypeEntity.Unknown
-    }
+    internal fun toDeviceTypeEntity(deviceTypeEntity: DeviceType): DeviceTypeEntity = deviceTypeEntity.toDeviceEntity()
 
     internal fun toDeviceTypeEntity(deviceTypeDTO: DeviceTypeDTO): DeviceTypeEntity = when (deviceTypeDTO) {
         DeviceTypeDTO.Phone -> DeviceTypeEntity.Phone
@@ -266,9 +205,6 @@ internal class ClientMapper(
         ClientTypeDTO.LegalHold -> ClientTypeEntity.LegalHold
     }
 
-    internal fun toClientTypeEntity(clientType: ClientType): ClientTypeEntity = when (clientType) {
-        ClientType.Temporary -> ClientTypeEntity.Temporary
-        ClientType.Permanent -> ClientTypeEntity.Permanent
-        ClientType.LegalHold -> ClientTypeEntity.LegalHold
-    }
+    internal fun toClientTypeEntity(clientType: ClientType): ClientTypeEntity = clientType.toClientEntity()
+
 }

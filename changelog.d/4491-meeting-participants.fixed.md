@@ -1,0 +1,4 @@
+Meeting occurrences now return all non-deleted conversation participants, including users without an avatar, in both paging and observation on Android and Apple. Each participant supplies their user ID, name, accent color and optional asset ID.
+
+  - ABI and source: breaking changes to `MeetingOccurrence` and persistence meeting entities. `ConversationType.Meeting` and `OneOnOne` are now objects; their avatar constructor/properties are removed. The occurrence constructor and `copy` gain a required `participants` list. Recompile consumers.
+  - Migration: read `occurrence.participants` instead of the conversation type avatar properties; use each participant’s nullable `assetId` for a picture and name/accent color for a fallback. Add `participants` when constructing occurrences. Participant selection can use `userId`; self is included, deleted users are excluded.

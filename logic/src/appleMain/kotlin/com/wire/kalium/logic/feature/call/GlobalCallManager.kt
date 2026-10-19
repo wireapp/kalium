@@ -60,7 +60,7 @@ internal actual class GlobalCallManager actual constructor(
     platformContext: PlatformContext
 ) : CallNetworkChangeManager(scope, networkStateObserver) {
 
-    private val flowManagerService by lazy { FlowManagerServiceImpl(platformContext) }
+    internal val flowManagerService by lazy { FlowManagerServiceImpl(platformContext) }
     private val mediaManagerService by lazy { MediaManagerServiceImpl(platformContext) }
     private var hasEnabledCallingClient = false
 
@@ -146,7 +146,7 @@ private object DisabledAppleCallManager : CallManager {
         conversationTypeCalling: ConversationTypeCalling,
         isAudioCbr: Boolean,
         isMeeting: Boolean
-    ) = Unit
+    ): Unit = throw CallStartException("Apple calling is disabled")
 
     override suspend fun answerCall(conversationId: ConversationId, isAudioCbr: Boolean, isVideoCall: Boolean) = Unit
     override suspend fun endCall(conversationId: ConversationId) = Unit

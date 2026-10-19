@@ -76,7 +76,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 class EventRepositoryTest {
 

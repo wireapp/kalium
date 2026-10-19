@@ -19,7 +19,6 @@
 
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAccess
 import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
@@ -30,6 +29,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.MessagePreviewContent
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
@@ -43,12 +43,10 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
-import com.wire.kalium.network.api.authenticated.conversation.ConversationHistorySettingsDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.authenticated.conversation.GroupConversationType
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.authenticated.conversation.cellEnabled
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -57,18 +55,17 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ProtocolInfo
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Type.Unknown
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationListItemEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.util.requireField
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
+import kotlin.time.Instant
 
 internal interface ConversationMapper {
     fun fromApiModelToDaoModel(
@@ -81,6 +78,7 @@ internal interface ConversationMapper {
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(daoModel: ConversationViewEntity): ConversationDetails
+    fun fromListItemEntity(entity: ConversationListItemEntity): ConversationListItem
     fun fromDaoModelToDetailsWithEvents(daoModel: ConversationDetailsWithEventsEntity): ConversationDetailsWithEvents
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
@@ -125,43 +123,8 @@ internal class ConversationMapperImpl(
         apiModel: ConversationResponse,
         mlsGroupState: GroupState?,
         selfUserTeamId: TeamId?,
-    ): ConversationEntity {
-        val conversationId = idMapper.fromApiToDao(apiModel.id)
-        val type = apiModel.toConversationType(selfUserTeamId)
-        return ConversationEntity(
-            id = conversationId,
-            name = apiModel.name,
-            type = type,
-            teamId = apiModel.teamId,
-            protocolInfo = apiModel.getProtocolInfo(mlsGroupState),
-            mutedStatus = conversationStatusMapper.fromMutedStatusApiToDaoModel(apiModel.members.self?.otrMutedStatus),
-            mutedTime = apiModel.members.self?.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
-            removedBy = null,
-            creatorId = apiModel.creator ?: selfUserId.value, // NOTE mls 1-1 does not have the creator field set.
-            lastReadDate = Instant.UNIX_FIRST_DATE,
-            lastNotificationDate = null,
-            lastModifiedDate = Instant.parse(apiModel.lastEventTime),
-            access = apiModel.access.map { it.toDAO() },
-            accessRole = (apiModel.accessRole ?: ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL)
-                .map { it.toDAO() },
-            receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
-            messageTimer = apiModel.messageTimer,
-            userMessageTimer = null, // user picked self deletion timer is only persisted locally
-            hasIncompleteMetadata = false,
-            archived = apiModel.members.self?.otrArchived ?: false,
-            archivedInstant = apiModel.members.self?.otrArchivedRef?.let { Instant.parse(it) },
-            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-            channelAccess = null, // TODO: implement when api is ready
-            channelAddPermission = apiModel.channelAddUserPermissionTypeDTO?.toDAO(),
-            wireCell = conversationId.toString().takeIf { apiModel.cellEnabled() }, // TODO refactor to boolean in WPB-16946
-            historySharingRetentionSeconds = when (val historySharingSettings = apiModel.historySharingSettings) {
-                ConversationHistorySettingsDTO.Private -> 0
-                is ConversationHistorySettingsDTO.ShareWithNewMembers -> historySharingSettings.depth.inWholeSeconds
-            }
-        )
-    }
+    ): ConversationEntity = ConversationResponseMapper(selfUserId, idMapper, conversationStatusMapper, receiptModeMapper)
+        .fromApiModelToDaoModel(apiModel, mlsGroupState, selfUserTeamId)
 
     private fun fromConversationViewToEntity(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
         val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
@@ -371,6 +334,52 @@ internal class ConversationMapperImpl(
             }
         }
 
+    override fun fromListItemEntity(entity: ConversationListItemEntity): ConversationListItem = with(entity) {
+        val id = position.conversationId.toModel()
+        val time = position.activityTime
+        val user = otherUser?.let {
+            ConversationListUser(
+                id = it.id.toModel(),
+                name = it.name,
+                avatarAssetId = it.avatarAssetId?.toModel(),
+                accentId = it.accentId,
+                availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(it.availabilityStatus),
+                userType = domainUserTypeMapper.fromUserTypeEntity(it.userType),
+                connectionStatus = connectionStatusMapper.fromDaoModel(it.connectionStatus),
+                deleted = it.deleted,
+                defederated = it.defederated,
+            )
+        }
+        val muted = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus)
+        val legalHold = legalHoldStatusFromEntity(legalHoldStatus)
+        val unread = ConversationListUnreadState(unreadMessages, unreadMentions, unreadReplies, unreadMissedCalls, unreadKnocks)
+        val draftText = draftText
+        val lastMessage = lastMessage
+        val preview = when {
+            draftText != null -> ConversationListPreview(MessagePreviewContent.Draft(draftText), isSelfMessage = true)
+            lastMessage != null -> messageMapper.fromEntityToMessagePreview(lastMessage).let {
+                ConversationListPreview(it.content, it.isSelfMessage)
+            }
+            else -> null
+        }
+        when (type) {
+            ConversationEntity.Type.GROUP ->
+                ConversationListItem.RegularGroup(
+                    id, time, name, isSelfUserMember, muted, legalHold, unread, preview, adminlessGroupDeletionTimestamp,
+                )
+            ConversationEntity.Type.CHANNEL -> ConversationListItem.Channel(
+                id, time, name, isSelfUserMember,
+                if (channelAccess == ConversationEntity.ChannelAccess.PUBLIC) ConversationListChannelAccess.PUBLIC
+                else ConversationListChannelAccess.PRIVATE,
+                muted, legalHold, unread, preview, adminlessGroupDeletionTimestamp,
+            )
+            ConversationEntity.Type.ONE_ON_ONE ->
+                ConversationListItem.OneOnOne(id, time, requireNotNull(user), muted, legalHold, unread, preview)
+            ConversationEntity.Type.CONNECTION_PENDING -> ConversationListItem.PendingConnection(id, time, requireNotNull(user))
+            else -> error("Unsupported conversation list type: $type")
+        }
+    }
+
     override fun fromDaoModelToDetailsWithEvents(daoModel: ConversationDetailsWithEventsEntity): ConversationDetailsWithEvents =
         ConversationDetailsWithEvents(
             conversationDetails = fromDaoModelToDetails(daoModel.conversationViewEntity),
@@ -544,28 +553,6 @@ internal class ConversationMapperImpl(
         historySharingRetentionSeconds = 0, // We can have no history sharing when they're failed.
     )
 
-    private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
-        return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(
-                groupId = groupId ?: "",
-                groupState = mlsGroupState ?: GroupState.PENDING_JOIN,
-                epoch = epoch ?: 0UL,
-                keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                cipherSuite = ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
-            )
-
-            ConvProtocol.MIXED -> ProtocolInfo.Mixed(
-                groupId ?: "",
-                mlsGroupState ?: GroupState.PENDING_JOIN,
-                epoch ?: 0UL,
-                keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
-            )
-
-            ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
-        }
-    }
-
     override fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus) =
         Conversation.VerificationStatus.valueOf(verificationStatus.name)
 
@@ -603,39 +590,6 @@ internal class ConversationMapperImpl(
         accessRoleList.map { it.toModel() }.toSet()
 }
 
-internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {
-    return when (type) {
-        ConversationResponse.Type.SELF -> ConversationEntity.Type.SELF
-        ConversationResponse.Type.GROUP -> {
-            // Fake team 1:1 conversations
-            val onlyOneOtherMember = members.otherMembers.size == 1
-            val noCustomName = name.isNullOrBlank()
-            val belongsToSelfTeam = selfUserTeamId != null && selfUserTeamId.value == teamId
-            val isTeamOneOne = onlyOneOtherMember && noCustomName && belongsToSelfTeam
-            if (isTeamOneOne) {
-                ConversationEntity.Type.ONE_ON_ONE
-            } else {
-                when (val groupType = conversationGroupType) {
-                    is ConversationResponse.GroupType.Channel -> ConversationEntity.Type.CHANNEL
-                    is ConversationResponse.GroupType.Meeting -> ConversationEntity.Type.MEETING
-                    is ConversationResponse.GroupType.Unknown -> Unknown(groupType.value)
-                    ConversationResponse.GroupType.RegularGroup -> ConversationEntity.Type.GROUP
-                    // is not one in one and have no group type, we can assume it is a regular group
-                    null -> ConversationEntity.Type.GROUP
-                }
-            }
-        }
-
-        ConversationResponse.Type.ONE_TO_ONE -> ConversationEntity.Type.ONE_ON_ONE
-        ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
-    }
-}
-
-internal fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
-    ChannelAddPermission.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
-    ChannelAddPermission.EVERYONE -> ConversationEntity.ChannelAddPermission.EVERYONE
-}
-
 internal fun ConversationEntity.ChannelAddPermission.toModelChannelPermission(): ChannelAddPermission = when (this) {
     ConversationEntity.ChannelAddPermission.ADMINS -> ChannelAddPermission.ADMINS
     ConversationEntity.ChannelAddPermission.EVERYONE -> ChannelAddPermission.EVERYONE
@@ -655,22 +609,6 @@ internal fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = w
 
     ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.ConnectionPending
     is ConversationEntity.Type.Unknown -> throw IllegalArgumentException("Unexpected conversation type: $name")
-}
-
-private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = when (this) {
-    ConversationAccessRoleDTO.TEAM_MEMBER -> ConversationEntity.AccessRole.TEAM_MEMBER
-    ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
-    ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
-    ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
-    ConversationAccessRoleDTO.EXTERNAL -> ConversationEntity.AccessRole.EXTERNAL
-}
-
-private fun ConversationAccessDTO.toDAO(): ConversationEntity.Access = when (this) {
-    ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
-    ConversationAccessDTO.CODE -> ConversationEntity.Access.CODE
-    ConversationAccessDTO.INVITE -> ConversationEntity.Access.INVITE
-    ConversationAccessDTO.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
-    ConversationAccessDTO.LINK -> ConversationEntity.Access.LINK
 }
 
 private fun ConversationEntity.Access.toDAO(): Conversation.Access = when (this) {
@@ -706,48 +644,10 @@ internal fun Conversation.Type.toDAO(): ConversationEntity.Type = when (this) {
     Conversation.Type.ConnectionPending -> ConversationEntity.Type.CONNECTION_PENDING
 }
 
-private fun Conversation.AccessRole.toDAO(): ConversationEntity.AccessRole = when (this) {
-    Conversation.AccessRole.TEAM_MEMBER -> ConversationEntity.AccessRole.TEAM_MEMBER
-    Conversation.AccessRole.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
-    Conversation.AccessRole.GUEST -> ConversationEntity.AccessRole.GUEST
-    Conversation.AccessRole.SERVICE -> ConversationEntity.AccessRole.SERVICE
-    Conversation.AccessRole.EXTERNAL -> ConversationEntity.AccessRole.EXTERNAL
-}
-
-private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this) {
-    Conversation.Access.PRIVATE -> ConversationEntity.Access.PRIVATE
-    Conversation.Access.INVITE -> ConversationEntity.Access.INVITE
-    Conversation.Access.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
-    Conversation.Access.LINK -> ConversationEntity.Access.LINK
-    Conversation.Access.CODE -> ConversationEntity.Access.CODE
-}
-
-private fun ConversationAccessDTO.toModel(): Conversation.Access = when (this) {
-    ConversationAccessDTO.PRIVATE -> Conversation.Access.PRIVATE
-    ConversationAccessDTO.CODE -> Conversation.Access.CODE
-    ConversationAccessDTO.INVITE -> Conversation.Access.INVITE
-    ConversationAccessDTO.SELF_INVITE -> Conversation.Access.SELF_INVITE
-    ConversationAccessDTO.LINK -> Conversation.Access.LINK
-}
-
-private fun ConversationAccessRoleDTO.toModel(): Conversation.AccessRole = when (this) {
-    ConversationAccessRoleDTO.TEAM_MEMBER -> Conversation.AccessRole.TEAM_MEMBER
-    ConversationAccessRoleDTO.NON_TEAM_MEMBER -> Conversation.AccessRole.NON_TEAM_MEMBER
-    ConversationAccessRoleDTO.GUEST -> Conversation.AccessRole.GUEST
-    ConversationAccessRoleDTO.SERVICE -> Conversation.AccessRole.SERVICE
-    ConversationAccessRoleDTO.EXTERNAL -> Conversation.AccessRole.EXTERNAL
-}
-
 internal fun Conversation.Protocol.toApi(): ConvProtocol = when (this) {
     Conversation.Protocol.PROTEUS -> ConvProtocol.PROTEUS
     Conversation.Protocol.MIXED -> ConvProtocol.MIXED
     Conversation.Protocol.MLS -> ConvProtocol.MLS
-}
-
-internal fun Conversation.Protocol.toDao(): Protocol = when (this) {
-    Conversation.Protocol.PROTEUS -> Protocol.PROTEUS
-    Conversation.Protocol.MIXED -> Protocol.MIXED
-    Conversation.Protocol.MLS -> Protocol.MLS
 }
 
 internal fun ConvProtocol.toModel(): Conversation.Protocol = when (this) {
@@ -756,31 +656,15 @@ internal fun ConvProtocol.toModel(): Conversation.Protocol = when (this) {
     ConvProtocol.MLS -> Conversation.Protocol.MLS
 }
 
-internal fun ChannelAddPermissionTypeDTO.toModel(): ChannelAddPermission = when (this) {
-    ChannelAddPermissionTypeDTO.ADMINS -> ChannelAddPermission.ADMINS
-    ChannelAddPermissionTypeDTO.EVERYONE -> ChannelAddPermission.EVERYONE
-}
-
 internal fun ChannelAddPermission.toApi(): ChannelAddPermissionTypeDTO = when (this) {
     ChannelAddPermission.ADMINS -> ChannelAddPermissionTypeDTO.ADMINS
     ChannelAddPermission.EVERYONE -> ChannelAddPermissionTypeDTO.EVERYONE
-}
-
-private fun ChannelAddPermissionTypeDTO.toDAO(): ConversationEntity.ChannelAddPermission = when (this) {
-    ChannelAddPermissionTypeDTO.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
-    ChannelAddPermissionTypeDTO.EVERYONE -> ConversationEntity.ChannelAddPermission.EVERYONE
 }
 
 internal fun Protocol.toModel(): Conversation.Protocol = when (this) {
     Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
     Protocol.MIXED -> Conversation.Protocol.MIXED
     Protocol.MLS -> Conversation.Protocol.MLS
-}
-
-internal fun E2EIConversationState.toModel(): Conversation.VerificationStatus = when (this) {
-    E2EIConversationState.VERIFIED -> Conversation.VerificationStatus.VERIFIED
-    E2EIConversationState.NOT_VERIFIED -> Conversation.VerificationStatus.NOT_VERIFIED
-    E2EIConversationState.NOT_ENABLED -> Conversation.VerificationStatus.NOT_VERIFIED
 }
 
 internal fun ConversationEntity.VerificationStatus.toModel(): Conversation.VerificationStatus = when (this) {

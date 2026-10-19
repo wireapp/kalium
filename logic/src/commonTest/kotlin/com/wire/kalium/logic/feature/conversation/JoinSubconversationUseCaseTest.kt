@@ -50,7 +50,7 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.test.Test
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration

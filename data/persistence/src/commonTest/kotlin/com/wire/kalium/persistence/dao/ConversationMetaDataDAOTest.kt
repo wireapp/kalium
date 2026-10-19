@@ -22,7 +22,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

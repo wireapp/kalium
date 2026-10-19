@@ -35,6 +35,7 @@ public interface SearchUsersByHandleUseCase {
      * @param searchHandle The search query.
      * @param excludingMembersOfConversation The conversation to exclude its members from the search.
      * @param onlySelfTeamAndDomain Only search in the self user team and domain if true.
+     * Returns no candidates if self has no team.
      * @param customDomain The custom domain to search in if null the search will be on the self user domain.
      */
     public suspend operator fun invoke(

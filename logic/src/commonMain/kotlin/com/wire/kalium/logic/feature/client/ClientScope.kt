@@ -37,6 +37,8 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
+import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import kotlinx.coroutines.CoroutineScope
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseImpl
@@ -78,6 +80,8 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val userConfigRepository: UserConfigRepository,
     private val transactionProvider: CryptoTransactionProvider,
     private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
+    private val originatingScope: CoroutineScope,
+    private val userSessionScopeProvider: UserSessionScopeProvider,
 ) {
 
     @OptIn(DelicateKaliumApi::class)
@@ -164,7 +168,10 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase,
             cachedClientIdClearer,
-            syncFeatureConfigsUseCase
+            syncFeatureConfigsUseCase,
+            selfUserId,
+            originatingScope,
+            userSessionScopeProvider,
         )
 
     public val remoteClientFingerPrint: ClientFingerprintUseCase

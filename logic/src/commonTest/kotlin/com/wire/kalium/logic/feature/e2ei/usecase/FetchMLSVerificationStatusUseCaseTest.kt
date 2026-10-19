@@ -52,7 +52,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)

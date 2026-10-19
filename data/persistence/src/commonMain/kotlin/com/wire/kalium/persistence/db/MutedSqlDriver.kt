@@ -27,7 +27,7 @@ import app.cash.sqldelight.db.SqlDriver
  * By intercepting notifyListeners here, we effectively "mute" query invalidations globally without touching DAOs.
  */
 class MutedSqlDriver(
-    private val delegate: SqlDriver,
+    internal val delegate: SqlDriver,
     val invalidationController: DbInvalidationController,
 ) : SqlDriver by delegate {
 

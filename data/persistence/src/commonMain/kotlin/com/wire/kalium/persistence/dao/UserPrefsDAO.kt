@@ -48,6 +48,13 @@ import kotlinx.coroutines.flow.map
 internal class UserPrefsDAO(
     private val metadataDAO: MetadataDAO,
 ) : UserConfigStorage {
+    override suspend fun readMessageContentPreference(): Boolean? =
+        metadataDAO.valueByKey(UserConfigStorage.UserPreferences.MESSAGE_CONTENT_ENABLED.key)?.toBooleanStrict()
+
+    override suspend fun persistMessageContentPreference(enabled: Boolean) {
+        metadataDAO.insertValue(value = enabled.toString(), key = UserConfigStorage.UserPreferences.MESSAGE_CONTENT_ENABLED.key)
+    }
+
     override suspend fun persistAppLockStatus(
         isEnforced: Boolean,
         inactivityTimeoutSecs: Second,

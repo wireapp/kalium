@@ -30,6 +30,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.client.ClientIdDTO
 import com.wire.kalium.network.api.authenticated.keypackage.LastPreKeyDTO
@@ -49,6 +50,8 @@ import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.AppDAO
+import com.wire.kalium.persistence.dao.AppEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceDAO
@@ -277,7 +280,7 @@ class TeamRepositoryTest {
             type = UserTypeDTO.APP,
             app = AppDTO(description = "description", category = "category")
         )
-        val (arrangement, teamRepository) = Arrangement().withApiGetTeamAppsSuccess(listOf(appProfile)).arrange()
+        val (arrangement, teamRepository) = Arrangement().withApiGetTeamAppsSuccess(listOf(appProfile, TestUser.USER_PROFILE_DTO)).arrange()
 
         // when
         val result = teamRepository.fetchAppsByTeamId(teamId = TeamId(value = "teamId"))
@@ -285,10 +288,24 @@ class TeamRepositoryTest {
         // then
         result.shouldSucceed()
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.userDAO.upsertUsers(any())
+            arrangement.userDAO.upsertUsers(matches { users ->
+                users.size == 1 && users.single().id == QualifiedIDEntity("appId", appProfile.id.domain) &&
+                    users.single().userType == UserTypeEntity.APP &&
+                    users.single().connectionStatus == ConnectionEntity.State.ACCEPTED
+            })
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.appDAO.upsertApps(any())
+            arrangement.appDAO.upsertApps(eq(listOf(
+                AppEntity(
+                    id = QualifiedIDEntity("appId", appProfile.id.domain),
+                    name = appProfile.name,
+                    description = "description",
+                    category = "category",
+                    teamId = appProfile.teamId,
+                    previewAssetId = QualifiedIDEntity("value1", appProfile.id.domain),
+                    completeAssetId = QualifiedIDEntity("value2", appProfile.id.domain)
+                )
+            )))
         }
     }
 
@@ -439,6 +456,23 @@ class TeamRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamDAO.updateTeam(eq(TestTeam.TEAM_ENTITY))
         }
+    }
+
+    @Test
+    fun givenAppAndCollaboratorApiErrors_whenFetching_thenNoUsersOrAppsAreWritten() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        everySuspend { arrangement.teamsApi.getTeamApps(any()) }
+            .returns(NetworkResponse.Error(TestNetworkException.generic))
+        everySuspend { arrangement.teamsApi.getTeamCollaborators(any()) }
+            .returns(NetworkResponse.Error(TestNetworkException.generic))
+
+        repository.fetchAppsByTeamId(TeamId("teamId")).shouldFail()
+        repository.fetchCollaboratorsByTeamId(TeamId("teamId")).shouldFail()
+
+        verifySuspend(VerifyMode.not) { arrangement.userDAO.upsertUsers(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.appDAO.upsertApps(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userDAO.insertOrIgnoreIncompleteUsers(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userDAO.upsertConnectionStatuses(any()) }
     }
 
     private class Arrangement {

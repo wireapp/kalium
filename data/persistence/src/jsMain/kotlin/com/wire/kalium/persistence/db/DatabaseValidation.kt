@@ -19,32 +19,12 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.async.coroutines.await
-import app.cash.sqldelight.async.coroutines.awaitMigrate
 import app.cash.sqldelight.async.coroutines.awaitQuery
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
-import kotlin.coroutines.cancellation.CancellationException
 
-@Suppress("TooGenericExceptionCaught")
-actual suspend fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.AsyncValue<Unit>>): Boolean {
-    val oldVersion = awaitQuery(null, "PRAGMA user_version;", {
-        it.next().await()
-        it.getLong(0)
-    }, 0) ?: return false
-
-    val newVersion = sqlSchema.version
-    return try {
-        if (oldVersion != newVersion) {
-            sqlSchema.awaitMigrate(this, oldVersion, newVersion)
-        }
-        true
-    } catch (exception: CancellationException) {
-        throw exception
-    } catch (_: Exception) {
-        false
-    }
-}
+actual suspend fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.AsyncValue<Unit>>): Boolean = migrateSchema(sqlSchema)
 
 actual suspend fun SqlDriver.checkFKViolations(): Boolean {
     var result = false

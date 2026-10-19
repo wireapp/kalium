@@ -43,7 +43,7 @@ import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal open class FakeMessageRepository : MessageRepository {
 

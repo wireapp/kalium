@@ -19,12 +19,15 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.toEntity
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
@@ -35,26 +38,30 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.CancellationException
 import okio.IOException
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 
 class ConversationMessageTimerEventHandlerTest {
 
     @Test
     fun givenAConversationMessageTimerEvent_whenItGetsUpdated_thenShouldPersistSystemMessage() = runTest {
-        val event = TestEvent.timerChanged()
+        val event = TestEvent.timerChanged().copy(systemMessageId = "eventId:2")
         val (arrangement, eventHandler) = Arrangement()
             .withConversationUpdateMessageTimer()
             .withPersistMessage(Either.Right(Unit))
             .arrange()
 
-        eventHandler.handle(event)
+        assertEquals(Either.Right(Unit), eventHandler.handle(event, requireSystemMessagePersistence = false))
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
                 persistMessageUseCase.invoke(
                     eq(Message.System(
-                    event.id,
+                    event.systemMessageId,
                     MessageContent.ConversationMessageTimerChanged(
                         messageTimer = event.messageTimer
                     ),
@@ -77,7 +84,7 @@ class ConversationMessageTimerEventHandlerTest {
             .withPersistMessage(Either.Right(Unit))
             .arrange()
 
-        eventHandler.handle(event)
+        assertIs<Either.Left<*>>(eventHandler.handle(event, requireSystemMessagePersistence = false))
 
         with(arrangement) {
             verifySuspend(VerifyMode.not) {
@@ -86,13 +93,75 @@ class ConversationMessageTimerEventHandlerTest {
         }
     }
 
+    @Test
+    fun systemMessageFailureIsBestEffortForTheApp() = runTest {
+        val (_, handler) = Arrangement()
+            .withPersistMessage(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        assertEquals(Either.Right(Unit), handler.handle(TestEvent.timerChanged(), requireSystemMessagePersistence = false))
+    }
+
+    @Test
+    fun systemMessageFailureIsRequiredByDefaultForNSE() = runTest {
+        val failure = Either.Left(StorageFailure.DataNotFound)
+        val (_, handler) = Arrangement().withPersistMessage(failure).arrange()
+
+        assertEquals(failure, handler.handle(TestEvent.timerChanged()))
+    }
+
+    @Test
+    fun replayDoesNotRegressTimerOrPersistAgainInEitherPolicy() = runTest {
+        val event = TestEvent.timerChanged().copy(systemMessageId = "eventId:2")
+        for (required in listOf(false, true)) {
+            val (arrangement, handler) = Arrangement().arrange()
+            everySuspend { arrangement.messageDAO.getMessageById(any(), any()) } returns Message.System(
+                id = event.systemMessageId,
+                content = MessageContent.ConversationMessageTimerChanged(event.messageTimer),
+                conversationId = event.conversationId,
+                date = event.dateTime,
+                senderUserId = event.senderUserId,
+                status = Message.Status.Sent,
+                expirationData = null,
+            ).toEntity()
+
+            assertEquals(Either.Right(Unit), handler.handle(event, requireSystemMessagePersistence = required))
+
+            verifySuspend(VerifyMode.not) { arrangement.conversationDAO.updateMessageTimer(any(), any()) }
+            verifySuspend(VerifyMode.not) { arrangement.persistMessageUseCase.invoke(any()) }
+        }
+    }
+
+    @Test
+    fun replayReadFailureRemainsRequiredForTheApp() = runTest {
+        val (arrangement, handler) = Arrangement().arrange()
+        everySuspend { arrangement.messageDAO.getMessageById(any(), any()) } throws IOException("Replay read failed")
+
+        assertIs<Either.Left<*>>(handler.handle(TestEvent.timerChanged(), requireSystemMessagePersistence = false))
+
+        verifySuspend(VerifyMode.not) { arrangement.conversationDAO.updateMessageTimer(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.persistMessageUseCase.invoke(any()) }
+    }
+
+    @Test
+    fun cancellationDuringOptionalSystemMessagePersistenceIsPropagated() = runTest {
+        val (arrangement, handler) = Arrangement().arrange()
+        everySuspend { arrangement.persistMessageUseCase.invoke(any()) } throws CancellationException("Cancelled")
+
+        assertFailsWith<CancellationException> {
+            handler.handle(TestEvent.timerChanged(), requireSystemMessagePersistence = false)
+        }
+    }
+
     private class Arrangement {
 
         val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
+        val messageDAO = mock<MessageDAO>(mode = MockMode.autofill)
         val persistMessageUseCase = mock<PersistMessageUseCase>()
 
         private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler = ConversationMessageTimerEventHandlerImpl(
             conversationDAO,
+            messageDAO,
             persistMessageUseCase
         )
 

@@ -43,6 +43,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class MemberChangeEventHandlerTest {
 
@@ -107,6 +108,18 @@ class MemberChangeEventHandlerTest {
                 eq(event.archivedConversationChangedTime)
             )
         }
+    }
+
+    @Test
+    fun preferenceWriteFailuresAreReturnedToTheReceiver() = runTest {
+        val failure = Either.Left(StorageFailure.Generic(IllegalStateException("write failed")))
+        val (arrangement, eventHandler) = Arrangement()
+            .withUpdateMutedStatusLocally(failure)
+            .withUpdateArchivedStatusLocally(failure)
+            .arrange()
+
+        assertEquals(failure, eventHandler.handle(arrangement.transactionContext, TestEvent.memberChangeMutedStatus()))
+        assertEquals(failure, eventHandler.handle(arrangement.transactionContext, TestEvent.memberChangeArchivedStatus()))
     }
 
     @Test

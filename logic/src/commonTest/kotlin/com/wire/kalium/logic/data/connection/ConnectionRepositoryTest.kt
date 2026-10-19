@@ -78,7 +78,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @OptIn(ConversationPersistenceApi::class)
 class ConnectionRepositoryTest {

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserAssetId
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Kalium local data classes that contains all the necessary data for displaying Notifications,
@@ -72,23 +72,21 @@ sealed class LocalNotification(open val conversationId: ConversationId) {
 
     }
 
-    sealed class Conversation(override val conversationId: ConversationId) : LocalNotification(conversationId) {
-        data class NewMessages(
-            val id: ConversationId,
-            val conversationName: String?,
-            val messages: List<LocalNotificationMessage>,
-            val isOneToOneConversation: Boolean,
-            val isReplyAllowed: Boolean = false
-        ) : Conversation(id)
+    data class Conversation(
+        val id: ConversationId,
+        val conversationName: String?,
+        val messages: List<LocalNotificationMessage>,
+        val isOneToOneConversation: Boolean,
+        val isReplyAllowed: Boolean = false
+    ) : LocalNotification(id)
 
-        data class UpdateMessage(
-            override val conversationId: ConversationId,
-            val messageId: String,
-            val action: LocalNotificationUpdateMessageAction
-        ) : Conversation(conversationId)
+    data class UpdateMessage(
+        override val conversationId: ConversationId,
+        val messageId: String,
+        val action: LocalNotificationUpdateMessageAction
+    ) : LocalNotification(conversationId)
 
-        data class Seen(override val conversationId: ConversationId) : Conversation(conversationId)
-    }
+    data class ConversationSeen(override val conversationId: ConversationId) : LocalNotification(conversationId)
 }
 
 sealed class LocalNotificationUpdateMessageAction {

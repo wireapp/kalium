@@ -5,11 +5,19 @@ XCFramework, links it to Kotlin/Native binaries, and provides Xcode tasks for
 embedding and signing it. The matching AVS version and checksum are baked into
 the plugin; consumers must not configure them. The plugin also propagates the
 minimum macOS version required by the selected AVS binary to Kotlin/Native and
-the generated Xcode configuration. AVS 10.4.32 requires macOS 15.0.
+the generated Xcode configuration.
+
+The AVS version comes from `avs` in `gradle/libs.versions.toml`. Its checksum and
+minimum macOS version are registered in this plugin's `build.gradle.kts`; a version
+without an entry there fails the build.
 
 ## Kalium as a Git submodule
 
-Kalium includes the plugin and applies it to `:logic`. If the application's
+Kalium includes the plugin and applies it to every module that links AVS:
+`:logic`, `:nse`, `:share`, `:domain:calling`, `:domain:calling-notifications` and
+`:domain:messaging:receiving`. Each module that produces a framework has its own
+`generateAvsXcodeConfig` and `embedAvsForXcode` tasks; the steps below use `:logic`,
+and the extensions use `:nse` and `:share` the same way. If the application's
 own KMP module produces the final framework, expose the bundled plugin with
 `pluginManagement.includeBuild("Frameworks/kalium/plugins/apple-avs-runtime")`
 and apply it to that module too.
@@ -143,6 +151,6 @@ cache elsewhere, set `kalium.avs.cacheDirectory` to an absolute path.
 
 ## Prebuilt XCFramework and SwiftPM
 
-The Gradle plugin does not run for prebuilt-only consumers. SwiftPM must
-declare both Kalium and AVS as binary targets; see
-[ADR 0010](../../docs/adr/0010-distribute-kalium-and-avs-with-swift-package-manager.md).
+The Gradle plugin does not run for prebuilt-only consumers. They must link and
+embed the matching `avs.framework` themselves, next to the Kalium XCFramework.
+This repository does not provide a SwiftPM package.

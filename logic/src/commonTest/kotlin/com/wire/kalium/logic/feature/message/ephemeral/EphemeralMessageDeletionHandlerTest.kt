@@ -34,11 +34,14 @@ import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration
@@ -717,6 +720,37 @@ class EphemeralMessageDeletionHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))
+        }
+    }
+
+    @Test
+    fun accountCancellationDrainsPendingDeletionAndPreventsLaterStorageAccess() = runTest(testDispatcher.default) {
+        val accountJob = SupervisorJob()
+        val accountScope = CoroutineScope(accountJob + testDispatcher.default)
+        val message = TestMessage.TEXT_MESSAGE.copy(
+            expirationData = Message.ExpirationData(10.seconds, Message.ExpirationData.SelfDeletionStatus.NotStarted),
+            status = Message.Status.Sent,
+        )
+        val (arrangement, handler) = Arrangement(accountScope, testDispatcher)
+            .withMessageRepositoryReturningMessage(message)
+            .withMessageRepositoryMarkingSelfDeletionEndDate()
+            .withDeletingMessage()
+            .arrange()
+        handler.startSelfDeletion(message.conversationId, message.id)
+        runCurrent()
+        accountJob.cancelAndJoin()
+        advanceUntilIdle()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.markSelfDeletionEndDate(message.conversationId, message.id, any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(any(), any())
+            arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(any(), any())
+        }
+        handler.startSelfDeletion(message.conversationId, "after-close")
+        runCurrent()
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageRepository.getMessageById(message.conversationId, "after-close")
         }
     }
 

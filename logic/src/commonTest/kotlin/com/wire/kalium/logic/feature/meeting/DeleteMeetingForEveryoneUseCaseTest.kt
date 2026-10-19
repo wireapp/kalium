@@ -33,16 +33,20 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertFailsWith
+import kotlin.test.assertSame
 
 class DeleteMeetingForEveryoneUseCaseTest {
 
@@ -170,6 +174,32 @@ class DeleteMeetingForEveryoneUseCaseTest {
         }
         verifySuspend(VerifyMode.not) {
             arrangement.deleteConversation(any(), any())
+        }
+    }
+
+    @Test
+    fun cancellationDuringMeetingLookupPropagatesBeforeAnyDeletion() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange()
+        val cancellation = CancellationException("lookup cancelled")
+        everySuspend { arrangement.meetingRepository.getMeeting(MEETING_ID) } throws cancellation
+
+        assertSame(cancellation, assertFailsWith<CancellationException> { useCase(MEETING_ID) })
+        verifySuspend(VerifyMode.not) {
+            arrangement.meetingRepository.deleteMeeting(any())
+            arrangement.deleteConversation(any(), any())
+        }
+    }
+
+    @Test
+    fun cancellationDuringCleanupPropagatesAfterRemoteDeletion() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange()
+        val cancellation = CancellationException("cleanup cancelled")
+        everySuspend { arrangement.deleteConversation(arrangement.transactionContext, CONVERSATION_ID) } throws cancellation
+
+        assertSame(cancellation, assertFailsWith<CancellationException> { useCase(MEETING_ID) })
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.meetingRepository.deleteMeeting(MEETING_ID)
+            arrangement.deleteConversation(arrangement.transactionContext, CONVERSATION_ID)
         }
     }
 

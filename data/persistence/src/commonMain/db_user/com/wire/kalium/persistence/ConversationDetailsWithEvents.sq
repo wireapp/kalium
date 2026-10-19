@@ -43,7 +43,7 @@ SELECT
     CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS lastMessageUpdateConversationName,
     COUNT(Mention.user_id) > 0 AS lastMessageIsMentioningSelfUser,
     TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
-    TextContent.text_body AS lastMessageText,
+    COALESCE(TextContent.text_body, PollContent.question) AS lastMessageText,
     AssetContent.asset_mime_type AS lastMessageAssetMimeType
 FROM ConversationDetails
 LEFT JOIN UnreadEventCountsGrouped
@@ -64,6 +64,8 @@ LEFT JOIN MessageAssetContent AS AssetContent
     ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent
     ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN PollContent
+    ON LastMessage.message_id = PollContent.message_id AND LastMessage.conversation_id = PollContent.conversation_id
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
@@ -75,35 +77,6 @@ WHERE
     AND ConversationDetails.isActive
     AND ConversationDetails.deletedLocally = 0
 GROUP BY ConversationDetails.qualifiedId;
-
-selectAllConversationDetailsWithEvents:
--- @CustomKey conversation_list_membership
--- @CustomKey conversation_list_order
--- @CustomKey conversation_list_last_message
--- @CustomKey conversation_list_unread
--- @CustomKey conversation_list_folders
-SELECT * FROM ConversationDetailsWithEvents
-WHERE archived = :fromArchive
-    -- :strict_mls is 0 or 1
-    AND (
-      protocol IN ('PROTEUS','MIXED')
-      OR (
-        protocol = 'MLS'
-        AND ( :strict_mls = 0
-              OR mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET') )
-      )
-    )
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-ORDER BY
-    CASE
-        WHEN :newActivitiesOnTop AND qualifiedId IN :ongoingCallConversationIds
-        THEN 1
-        WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow
-        ELSE 0
-    END DESC,
-    lastModifiedDate DESC,
-    name IS NULL,
-    name COLLATE NOCASE ASC;
 
 selectConversationDetailsWithEvents:
 -- @CustomKey conversation_list_membership

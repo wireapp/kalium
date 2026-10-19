@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal interface AnalyticsRepository {
     suspend fun getContactsAmountCached(): Either<StorageFailure, Int>

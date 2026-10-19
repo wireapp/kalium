@@ -20,7 +20,7 @@ package com.wire.kalium.network.api.authenticated.message
 
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.model.QualifiedID
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

@@ -31,7 +31,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationNotFound
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 public interface UpdateConversationArchivedStatusUseCase {
     /**

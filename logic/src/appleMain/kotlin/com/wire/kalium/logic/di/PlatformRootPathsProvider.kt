@@ -16,12 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:OptIn(com.wire.kalium.util.InternalKaliumApi::class)
+
 package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.sync.receiving.appleAccountPath
 
 internal actual class PlatformRootPathsProvider actual constructor(rootPath: String) : RootPathsProvider(rootPath) {
-    actual override fun rootAccountPath(userId: UserId): String = "$rootPath/${userId.domain}/${userId.value}"
+    actual override fun rootAccountPath(userId: UserId): String = appleAccountPath(rootPath, userId)
     actual override fun rootProteusPath(userId: UserId): String = "${rootAccountPath(userId)}/proteus"
     actual override fun rootMLSPath(userId: UserId): String = "${rootAccountPath(userId)}/mls"
 

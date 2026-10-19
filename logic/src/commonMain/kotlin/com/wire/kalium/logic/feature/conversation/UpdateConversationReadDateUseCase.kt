@@ -46,8 +46,8 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * This use case will update last read date for a conversation.

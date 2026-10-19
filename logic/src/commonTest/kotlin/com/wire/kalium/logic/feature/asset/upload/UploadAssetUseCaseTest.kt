@@ -32,9 +32,9 @@ import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
-import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns

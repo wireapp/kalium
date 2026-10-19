@@ -51,6 +51,7 @@ import com.wire.kalium.persistence.MessageSystemContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.NewClient
+import com.wire.kalium.persistence.PendingDeliveryConfirmations
 import com.wire.kalium.persistence.PendingActions
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
@@ -75,6 +76,8 @@ import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
 import com.wire.kalium.persistence.adapter.SupportedProtocolSetAdapter
 import com.wire.kalium.persistence.content.ButtonContent
+import com.wire.kalium.persistence.content.PollContent
+import com.wire.kalium.persistence.content.PollVoteContent
 
 internal object TableMapper {
     val adminlessGroupDeleteAdapter = AdminlessGroupDelete.Adapter(
@@ -223,6 +226,16 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter
     )
 
+    val pollContentAdapter = PollContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
+    )
+
+    val pollVoteContentAdapter = PollVoteContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        voter_user_idAdapter = QualifiedIDAdapter,
+        creation_dateAdapter = InstantTypeAdapter
+    )
+
     val messageConversationLocationContentAdapter = MessageConversationLocationContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         latitudeAdapter = FloatColumnAdapter,
@@ -286,6 +299,8 @@ internal object TableMapper {
         preview_asset_idAdapter = QualifiedIDAdapter,
         complete_asset_idAdapter = QualifiedIDAdapter
     )
+
+    val pendingDeliveryConfirmationsAdapter = PendingDeliveryConfirmations.Adapter(conversation_idAdapter = QualifiedIDAdapter)
 
     val pendingActionsAdapter = PendingActions.Adapter(
         action_typeAdapter = PendingActionTypeAdapter,

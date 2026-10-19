@@ -28,8 +28,6 @@ import com.wire.kalium.logic.data.meeting.MeetingDataSource
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.EventProcessingLogger
-import com.wire.kalium.network.exceptions.KaliumException.InvalidRequestError
-import com.wire.kalium.network.exceptions.isMeetingNotFound
 
 /** Returns the persisted meeting, or null when the event is skipped because the meeting is missing or unsupported. */
 internal suspend fun MeetingRepository.handleMeetingFetchAndUpsert(
@@ -69,6 +67,3 @@ internal suspend fun MeetingRepository.handleMeetingFetchAndUpsert(
             }
         }
     }
-
-internal fun CoreFailure.isMeetingNotFound(): Boolean =
-    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? InvalidRequestError)?.isMeetingNotFound() == true

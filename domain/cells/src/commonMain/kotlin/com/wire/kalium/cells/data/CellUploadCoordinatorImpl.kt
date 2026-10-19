@@ -26,9 +26,12 @@ import com.wire.kalium.cells.domain.CellUploadState
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.isActive
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -55,11 +58,12 @@ import kotlin.uuid.Uuid
  * `init`, which drains [commands]. Public methods only post commands, so queue and slot accounting are
  * free of locks and process in a deterministic order.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class CellUploadCoordinatorImpl internal constructor(
     private val uploadManager: CellUploadManager,
     private val cellsRepository: CellsRepository,
     private val scope: CoroutineScope,
+    private val networkStateObserver: NetworkStateObserver,
     private val maxConcurrentUploads: Int = MAX_CONCURRENT_UPLOADS,
     private val largeFileThresholdBytes: Long = LARGE_FILE_THRESHOLD_BYTES,
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
@@ -84,6 +88,15 @@ internal class CellUploadCoordinatorImpl internal constructor(
             for (command in commands) {
                 handle(command)
                 startEligibleUploads()
+            }
+        }
+        // StateFlow only emits on actual changes, so this fires exactly on transitions into being connected,
+        // not on every stable "still connected" tick.
+        scope.launch {
+            networkStateObserver.observeNetworkState().collect { state ->
+                if (state is NetworkState.ConnectedWithInternet) {
+                    commands.trySend(Command.ResumePaused)
+                }
             }
         }
     }
@@ -155,13 +168,19 @@ internal class CellUploadCoordinatorImpl internal constructor(
             is Command.BeginPreparing -> addPreparingItem(command.id, command.fileName, command.conversationId)
             is Command.AttachRequest -> attachRequest(command.id, command.request)
             is Command.FailPreparing -> removePreparingItem(command.id)
-            is Command.NodeCreated -> updateItem(command.id) {
-                copy(nodeUuid = command.nodeUuid, versionId = command.versionId)
+            is Command.NodeCreated -> {
+                updateItem(command.id) { copy(nodeUuid = command.nodeUuid, versionId = command.versionId) }
+                // Cancellation can arrive while pre-checking, before the worker announces its draft.
+                // The manager owns the transfer separately, so cancelling the worker alone cannot stop it.
+                if (_uploads.value.firstOrNull { it.id == command.id }?.state !is CellUploadState.Uploading) {
+                    uploadManager.cancelUpload(command.nodeUuid)
+                }
             }
 
             is Command.Progress -> updateProgress(command.id, command.progress)
             is Command.TransferCompleted -> publishAndFinish(command.id)
             is Command.Finished -> finishItem(command.id, command.outcome)
+            Command.ResumePaused -> resumeAllPaused()
         }
     }
 
@@ -230,8 +249,9 @@ internal class CellUploadCoordinatorImpl internal constructor(
         val request = checkNotNull(item.request) { "Queued item ${item.id} has no request" }
         val destNodePath = "${request.destinationFolderPath}/${request.fileName}"
         return uploadManager.upload(request.localPath, request.sizeBytes, destNodePath).nullableFold(
-            {
-                commands.trySend(Command.Finished(item.id, CellUploadState.Failed))
+            { failure ->
+                val outcome = if (failure is NetworkFailure.NoNetworkConnection) CellUploadState.Paused else CellUploadState.Failed
+                commands.trySend(Command.Finished(item.id, outcome))
                 null
             },
             { node ->
@@ -248,13 +268,13 @@ internal class CellUploadCoordinatorImpl internal constructor(
             commands.trySend(Command.TransferCompleted(itemId))
             return@coroutineScope
         }
-        val collector = launch { collectEvents(itemId, events) }
+        val collector = launch { collectEvents(itemId, nodeUuid, events) }
         yield()
         reportOutcomeReachedBeforeSubscribing(itemId, nodeUuid)
         collector.join()
     }
 
-    private suspend fun collectEvents(itemId: String, events: Flow<CellUploadEvent>) {
+    private suspend fun collectEvents(itemId: String, nodeUuid: String, events: Flow<CellUploadEvent>) {
         // Collection deliberately continues past the terminal event: cancelUpload() emits into a flow with
         // no buffer, so it would suspend forever if nothing were listening. The scheduler cancels this
         // coroutine once it has recorded the outcome.
@@ -262,7 +282,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
             when (event) {
                 is CellUploadEvent.UploadProgress -> commands.trySend(Command.Progress(itemId, event.progress))
                 CellUploadEvent.UploadCompleted -> commands.trySend(Command.TransferCompleted(itemId))
-                CellUploadEvent.UploadError -> commands.trySend(Command.Finished(itemId, CellUploadState.Failed))
+                CellUploadEvent.UploadError -> commands.trySend(Command.Finished(itemId, failureOutcome(nodeUuid)))
                 // The scheduler marks the item cancelled itself, since it is the only thing that cancels.
                 CellUploadEvent.UploadCancelled -> Unit
             }
@@ -278,17 +298,21 @@ internal class CellUploadCoordinatorImpl internal constructor(
         val info = uploadManager.getUploadInfo(nodeUuid)
         when {
             info == null -> commands.trySend(Command.TransferCompleted(itemId))
-            info.uploadFailed -> commands.trySend(Command.Finished(itemId, CellUploadState.Failed))
+            info.uploadFailed -> commands.trySend(Command.Finished(itemId, failureOutcome(nodeUuid)))
             else -> Unit
         }
     }
+
+    /** [CellUploadState.Paused] when the manager recorded the failure as a lost connection, else [CellUploadState.Failed]. */
+    private fun failureOutcome(nodeUuid: String): CellUploadState =
+        if (uploadManager.getUploadInfo(nodeUuid)?.isConnectivityIssue == true) CellUploadState.Paused else CellUploadState.Failed
 
     /**
      * The transfer succeeded, but the node it created is still a draft (`x-amz-meta-draft-mode: true`) and
      * stays invisible in its folder until published. Only publishing counts as the upload finishing.
      */
     private suspend fun publishAndFinish(id: String) {
-        val item = _uploads.value.firstOrNull { it.id == id } ?: return
+        val item = _uploads.value.firstOrNull { it.id == id && it.state is CellUploadState.Uploading } ?: return
         val nodeUuid = item.nodeUuid
         val versionId = item.versionId
         if (nodeUuid == null || versionId == null) {
@@ -303,7 +327,8 @@ internal class CellUploadCoordinatorImpl internal constructor(
     private suspend fun cancelItem(id: String) {
         val item = _uploads.value.firstOrNull { it.id == id } ?: return
         when (item.state) {
-            CellUploadState.Queued -> Unit
+            // Nothing live to abort: Queued never started a transfer, Paused already lost it.
+            CellUploadState.Queued, CellUploadState.Paused -> Unit
             // Aborts the real transfer. The worker is still draining events here, which is what lets the
             // manager's cancellation event through; stopping it first would hang this call.
             is CellUploadState.Uploading -> item.nodeUuid?.let { uploadManager.cancelUpload(it) }
@@ -315,8 +340,15 @@ internal class CellUploadCoordinatorImpl internal constructor(
 
     private suspend fun cancelAllItems(conversationId: String?) {
         _uploads.value
-            .filter { it.matches(conversationId) && (it.state is CellUploadState.Queued || it.state is CellUploadState.Uploading) }
+            .filter { it.matches(conversationId) && it.state.isActive && it.state !is CellUploadState.Preparing }
             .forEach { cancelItem(it.id) }
+    }
+
+    /** Every item parked in [CellUploadState.Paused] goes back to the real queue and gets picked up normally. */
+    private fun resumeAllPaused() {
+        _uploads.update { items ->
+            items.map { if (it.state is CellUploadState.Paused) it.copy(state = CellUploadState.Queued) else it }
+        }
     }
 
     private fun requeueFailed(id: String) {
@@ -397,6 +429,7 @@ internal class CellUploadCoordinatorImpl internal constructor(
         data class Progress(val id: String, val progress: Float) : Command
         data class TransferCompleted(val id: String) : Command
         data class Finished(val id: String, val outcome: CellUploadState) : Command
+        data object ResumePaused : Command
     }
 }
 

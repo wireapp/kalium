@@ -22,7 +22,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class Client(
     val userId: QualifiedIDEntity,

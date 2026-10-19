@@ -53,12 +53,14 @@ import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.verifySuspend
 import dev.mokkery.every
 import dev.mokkery.mock
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -70,6 +72,10 @@ import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -187,6 +193,25 @@ class CreateMPBackupUseCaseTest {
         val result = useCase("test_password") {}
 
         assertTrue(result is CreateBackupResult.Failure)
+    }
+
+    @Test
+    fun givenExportCancellation_whenCreatingBackup_thenCancellationIsRethrown() = runTest {
+        val (arrangement, useCase) = Arrangement().withExporter().withMessages(listOf(TEXT_MESSAGE)).arrange()
+        val cancellation = CancellationException("Export cancelled")
+        everySuspend { arrangement.exporter.finalize(any()) } throws cancellation
+
+        assertEquals(cancellation.message, assertFailsWith<CancellationException> { useCase("") {} }.message)
+    }
+
+    @Test
+    fun givenExportException_whenCreatingBackup_thenFailureIsReturned() = runTest {
+        val (arrangement, useCase) = Arrangement().withExporter().withMessages(listOf(TEXT_MESSAGE)).arrange()
+        val failure = IllegalStateException("Export failed")
+        everySuspend { arrangement.exporter.finalize(any()) } throws failure
+
+        val result = assertIs<CreateBackupResult.Failure>(useCase("") {})
+        assertSame(failure, assertIs<CoreFailure.Unknown>(result.coreFailure).rootCause)
     }
 
     private inner class Arrangement {

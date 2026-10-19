@@ -24,12 +24,18 @@ import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.fakes.sync.FakeIncrementalSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSlowSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSyncStateObserver
+import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -367,6 +373,127 @@ class SyncExecutorTest {
     }
 
     @Test
+    fun givenRunningSync_whenSuspendingExecution_thenSyncHasStoppedOnReturnAndRestartsOnResume() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+                advanceUntilIdle()
+                assertEquals(1, arrangement.incrementalSyncManager.fakeSyncFlow.subscriptionCount.value)
+
+                syncExecutor.suspendExecution()
+
+                // Suspension itself waits for the cancelled sync to finish.
+                assertEquals(0, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+                assertEquals(0, arrangement.incrementalSyncManager.fakeSyncFlow.subscriptionCount.value)
+                assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+
+                syncExecutor.resumeExecution()
+                advanceUntilIdle()
+                assertEquals(2, arrangement.slowSyncManager.performSyncFlowCount)
+                assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenSuspendedExecution_whenNewRequestStarts_thenSyncWaitsForResume() = runTest(TestKaliumDispatcher.default) {
+        val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+        val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+        syncExecutor.startAndStopSyncAsNeeded()
+        syncExecutor.suspendExecution()
+
+        syncExecutor.request {
+            advanceUntilIdle()
+            assertEquals(0, arrangement.slowSyncManager.performSyncFlowCount)
+
+            syncExecutor.resumeExecution()
+            advanceUntilIdle()
+            assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+        }
+        syncScope.cancel()
+    }
+
+    @Test
+    fun givenNewerSuspension_whenOlderSuspensionIsCancelled_thenSyncStaysStopped() = runTest(TestKaliumDispatcher.default) {
+        val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+        val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+        syncExecutor.startAndStopSyncAsNeeded()
+
+        syncExecutor.request {
+            advanceUntilIdle()
+            val older = syncExecutor.suspendExecution()
+            syncExecutor.suspendExecution()
+            older.cancel()
+            advanceUntilIdle()
+
+            assertEquals(1, arrangement.slowSyncManager.performSyncFlowCount)
+            assertEquals(0, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+        }
+        syncScope.cancel()
+    }
+
+    @Test
+    fun givenSyncSlowToStop_whenSuspensionIsCancelled_thenSyncRestarts() = runTest(TestKaliumDispatcher.default) {
+        val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+        val stopped = CompletableDeferred<Unit>()
+        var started = 0
+        val slowSyncManager = object : SlowSyncManager {
+            override fun performSyncFlow(): Flow<SlowSyncStatus> = flow {
+                started++
+                try {
+                    awaitCancellation()
+                } finally {
+                    withContext(NonCancellable) { stopped.await() }
+                }
+            }
+
+            override fun resetRetryBackoff() = Unit
+        }
+        val syncExecutor = SyncExecutorImpl(FakeSyncStateObserver(), slowSyncManager, FakeIncrementalSyncManager(), syncScope)
+
+        syncExecutor.startAndStopSyncAsNeeded()
+
+        syncExecutor.request {
+            advanceUntilIdle()
+            val suspending = launch { syncExecutor.suspendExecution() }
+            advanceUntilIdle()
+            assertFalse(suspending.isCompleted)
+
+            suspending.cancel()
+            stopped.complete(Unit)
+            advanceUntilIdle()
+            assertEquals(2, started)
+        }
+        syncScope.cancel()
+    }
+
+    @Test
+    fun givenNoRequests_whenExecutionResumes_thenShouldNotStartSync() = runTest(TestKaliumDispatcher.default) {
+        val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+        val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+        syncExecutor.startAndStopSyncAsNeeded()
+        syncExecutor.request {
+            advanceUntilIdle()
+        }
+        advanceUntilIdle()
+        syncExecutor.suspendExecution()
+        syncExecutor.resumeExecution()
+        advanceUntilIdle()
+
+        assertEquals(1, arrangement.slowSyncManager.performSyncFlowCount)
+        assertEquals(0, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+        syncScope.cancel()
+    }
+
+    @Test
     fun givenKeepSyncAlwaysOn_whenRequestBlockEnds_thenShouldKeepSync() = runTest(TestKaliumDispatcher.default) {
         val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
         val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
@@ -600,6 +727,26 @@ class SyncExecutorTest {
             }
             syncScope.cancel()
         }
+
+    @Test
+    fun givenActiveSync_whenStoppedForRestart_thenNewRequestsCannotRestartIt() = runTest(TestKaliumDispatcher.default) {
+        val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+        val (arrangement, executor) = Arrangement(syncScope).arrange()
+        executor.startAndStopSyncAsNeeded()
+        executor.request {
+            arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+            advanceUntilIdle()
+            assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+            executor.stopForRestart()
+            assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+            executor.suspendExecution()
+            executor.resumeExecution()
+            executor.startAndStopSyncAsNeeded()
+            executor.request { advanceUntilIdle() }
+            assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+        }
+        syncScope.cancel()
+    }
 
     private class Arrangement(
         val syncScope: CoroutineScope,

@@ -23,12 +23,14 @@ import com.wire.kalium.network.api.authenticated.teams.TeamCollaboratorDTO
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.v10.authenticated.TeamsApiV10
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.isSuccessful
+import com.wire.kalium.network.exceptions.APINotSupported
+import com.wire.kalium.network.api.v9.authenticated.TeamsApiV9
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
+import kotlin.test.assertContains
+import kotlin.test.fail
 import kotlin.test.assertIs
 
 internal class TeamsApiV10Test : ApiTest() {
@@ -41,6 +43,7 @@ internal class TeamsApiV10Test : ApiTest() {
             assertion = {
                 assertGet()
                 assertNoQueryParams()
+                assertAuthorizationHeaderExist()
                 assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/$PATH_COLLABORATORS")
             }
         )
@@ -53,7 +56,7 @@ internal class TeamsApiV10Test : ApiTest() {
                 TeamCollaboratorDTO(
                     nonQualifiedUserId = DUMMY_USER_ID,
                     teamId = DUMMY_TEAM_ID,
-                    permissions = listOf(CollaboratorPermissionDTO.CREATE_TEAM_CONVERSATION)
+                    permissions = listOf(CollaboratorPermissionDTO.CREATE_TEAM_CONVERSATION, CollaboratorPermissionDTO.IMPLICIT_CONNECTION)
                 )
             ),
             response.value
@@ -61,11 +64,11 @@ internal class TeamsApiV10Test : ApiTest() {
     }
 
     @Test
-    fun givenApiV10_whenGettingTeamApps_thenRequestShouldStillNotBeSupported() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient("", statusCode = HttpStatusCode.OK)
-        val teamsApi: TeamsApi = TeamsApiV10(networkClient)
-        val response = teamsApi.getTeamApps(DUMMY_TEAM_ID)
-        assertFalse(response.isSuccessful())
+    fun givenApiV9_whenGettingCollaborators_thenNoRequestIsSent() = runTest {
+        val client = mockAuthenticatedNetworkClient("", HttpStatusCode.OK,
+            assertion = { fail("Unsupported collaborators endpoint must not send a request") })
+        val error = assertIs<NetworkResponse.Error>(TeamsApiV9(client).getTeamCollaborators(DUMMY_TEAM_ID))
+        assertContains(assertIs<APINotSupported>(error.kException).errorBody, "API V10")
     }
 
     private companion object {
@@ -78,7 +81,7 @@ internal class TeamsApiV10Test : ApiTest() {
                 {
                     "user": "$DUMMY_USER_ID",
                     "team": "$DUMMY_TEAM_ID",
-                    "permissions": ["create_team_conversation"],
+                    "permissions": ["create_team_conversation", "implicit_connection"],
                     "unused_future_field": true
                 }
             ]

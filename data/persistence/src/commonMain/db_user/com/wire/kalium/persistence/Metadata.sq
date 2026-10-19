@@ -22,6 +22,9 @@ DELETE FROM Metadata WHERE key = :key;
 selectAllMetadata:
 SELECT * FROM Metadata;
 
+selectByKeyRange:
+SELECT * FROM Metadata WHERE key >= :fromInclusive AND key < :untilExclusive ORDER BY key;
+
 deleteAllExcept:
 DELETE FROM Metadata WHERE key NOT IN ?;
 

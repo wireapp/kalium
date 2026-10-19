@@ -17,12 +17,14 @@
  */
 package com.wire.kalium.util
 
-import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class TzidUtilTest {
+open class TzidUtilTest {
 
     @Test
     fun givenSupportedTimezone_whenCheckingSupport_thenReturnsTrue() {
@@ -67,4 +69,30 @@ class TzidUtilTest {
         // 2026-03-29 at 02:00 in New York is still in DST, so it remains -4UTC, so 10:00-04:00
         assertEquals(Instant.parse("2026-03-29T10:00:00-04:00"), result2NY)
     }
+    @Test
+    fun aliasesAndZonesWithoutDstPreserveLocalTimeAndPrecision() {
+        val start = Instant.parse("2026-03-07T15:00:00.123456789Z")
+        assertEquals(
+            TzidUtil.plusDaysOrNull(start, 1, "America/New_York"),
+            TzidUtil.plusDaysOrNull(start, 1, "US/Eastern")
+        )
+        assertEquals(Instant.parse("2026-03-08T14:00:00.123456789Z"), TzidUtil.plusDaysOrNull(start, 1, "US/Eastern"))
+        assertEquals(Instant.parse("2026-03-08T15:00:00.123456789Z"), TzidUtil.plusDaysOrNull(start, 1, "Asia/Kolkata"))
+        assertEquals(
+            TzidUtil.plusDaysOrNull(start, 1, "Asia/Kolkata"),
+            TzidUtil.plusDaysOrNull(start, 1, "Asia/Calcutta")
+        )
+        assertNull(TzidUtil.plusDaysOrNull(start, 1, ""))
+    }
+
+    @Test
+    fun berlinSeriesChangesViewerTimeAcrossDifferentHemisphereDstDates() {
+        val start = Instant.parse("2026-09-30T08:00:00Z")
+        val occurrences = listOf(0, 7, 28).map { days ->
+            requireNotNull(TzidUtil.plusDaysOrNull(start, days, "Europe/Berlin"))
+        }
+        assertEquals(listOf(10, 10, 10), occurrences.map { it.toLocalDateTime(TimeZone.of("Europe/Berlin")).hour })
+        assertEquals(listOf(18, 19, 20), occurrences.map { it.toLocalDateTime(TimeZone.of("Australia/Sydney")).hour })
+    }
+
 }

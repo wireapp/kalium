@@ -81,6 +81,8 @@ internal class CellsDataSource internal constructor(
             Either.Right(Unit)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: NoNetworkConnectionException) {
+            Either.Left(NetworkFailure.NoNetworkConnection(e.cause))
         } catch (e: Exception) {
             Either.Left(NetworkFailure.ServerMiscommunication(e))
         }

@@ -17,6 +17,12 @@
  */
 package com.wire.kalium.logic.data.meeting
 
+import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
+import com.wire.kalium.network.api.model.MeetingId
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.UserId
+import kotlinx.datetime.TimeZone
+import kotlin.time.Instant
 import com.wire.kalium.network.api.authenticated.meeting.MeetingFrequencyDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingRecurrenceDTO
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity
@@ -27,6 +33,31 @@ import kotlin.test.assertNull
 
 class MeetingMapperTest {
     private val mapper = MeetingMapperImpl()
+
+
+    @Test
+    fun appAndReceivingMappersPreserveZoneFromPayloadThroughStorageAndModel() {
+        val start = Instant.parse("2026-10-24T08:00:00Z")
+        for (tzid in listOf("Europe/Berlin", "US/Eastern", "Unsupported/TZID")) {
+            val dto = MeetingDTO(
+                meetingId = MeetingId("meeting", "wire.com"), conversationId = ConversationId("conversation", "wire.com"),
+                creatorId = UserId("creator", "wire.com"), createdAt = start, updatedAt = null,
+                title = "Meeting", startTime = start, endTime = start, recurrence = null, tzid = tzid
+            )
+            val entity = assertNotNull(dto.toMeetingEntity())
+            assertEquals(entity, mapper.fromApiToDao(dto))
+            assertEquals(tzid, entity.tzid)
+            assertEquals(tzid, mapper.fromDaoToModel(entity).tzid)
+        }
+    }
+
+    @Test
+    fun creatorDeviceZoneAndUpdatedZoneReachTheApiRequest() {
+        val start = Instant.parse("2026-10-24T08:00:00Z")
+        val created = UpsertMeeting("Meeting", start, start, null, emptyList(), TimeZone.currentSystemDefault().id)
+        assertEquals(TimeZone.currentSystemDefault().id, mapper.fromModelToApi(created).tzid)
+        assertEquals("Australia/Sydney", mapper.fromModelToApi(created.copy(tzid = "Australia/Sydney")).tzid)
+    }
 
     @Test
     fun givenSupportedRecurrences_whenMapping_thenReturnsRecurrenceEntity() {

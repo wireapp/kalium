@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorTest.Arrangement.Companion.otherMembersIds
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -45,11 +47,41 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 class NewGroupConversationSystemMessagesCreatorTest {
+
+    @Test
+    fun givenRequiredWriteFailure_whenCreatingForEvent_thenReturnFailureAndStillAttemptLaterAppMessages() = runTest {
+        val attempted = mutableListOf<MessageContent>()
+        val failure = Either.Left(StorageFailure.DataNotFound)
+        val creator = NewGroupConversationSystemMessagesCreatorImpl(
+            PersistMessageUseCase { message ->
+                attempted += message.content
+                if (attempted.size == 1) failure else Either.Right(Unit)
+            },
+            { Either.Right(TestTeam.TEAM_ID) },
+            QualifiedIdMapper(TestUser.SELF.id),
+            TestUser.SELF.id,
+        )
+        val event = Event.Conversation.NewConversation(
+            id = "creation",
+            conversationId = TestConversation.ID,
+            dateTime = Instant.UNIX_FIRST_DATE,
+            conversation = TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP),
+            senderUserId = TestUser.SELF.id,
+        )
+
+        assertEquals(failure, creator.createForEvent(event, TestTeam.TEAM_ID))
+        assertEquals(MessageContent.ConversationStartedUnverifiedWarning, attempted.first())
+        assertTrue(attempted.contains(MessageContent.ConversationCreated))
+        assertTrue(attempted.any { it is MessageContent.MemberChange.CreationAdded })
+        assertTrue(attempted.any { it is MessageContent.NewConversationReceiptMode })
+    }
 
     @Test
     fun givenAGroupConversation_whenPersistingAndValid_ThenShouldCreateAStartedSystemMessage() = runTest {

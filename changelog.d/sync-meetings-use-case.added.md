@@ -2,5 +2,5 @@ Added public `UserSessionScope.syncMeetingsUseCase` and `SyncMeetingsUseCase` so
 
   - ABI: additive.
   - Source: additive.
-  - Behavior: synchronization removes locally stored meetings when the backend returns an empty list.
+  - Behavior: synchronization prepares meeting conversations before storing meetings and removes locally stored meetings when the backend returns an empty or wholly unsupported list. Only meeting-list fetch errors fail synchronization; conversation and meeting persistence failures remain best effort, as in slow sync.
   - Migration: no action required; consumers can call `UserSessionScope.syncMeetingsUseCase()` to trigger synchronization.

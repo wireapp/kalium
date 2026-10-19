@@ -62,10 +62,10 @@ import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadConnectionStatusUpdate
 import com.wire.kalium.persistence.dao.ConnectionDAO
+import com.wire.kalium.logic.data.conversation.pendingConversation
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.ConversationPersistenceApi
@@ -299,31 +299,7 @@ internal class ConnectionDataSource(
                 /* TODO: we had to do it manually, the server won't give us for received connections
                      as the final solution we need to ignore the conversation part, but now? we can't! */
                 conversationDAO.insertConversation(
-                    conversationEntity = ConversationEntity(
-                        id = connection.qualifiedConversationId.toDao(),
-                        name = null,
-                        type = ConversationEntity.Type.CONNECTION_PENDING,
-                        teamId = null,
-                        protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                        creatorId = connection.from,
-                        lastNotificationDate = null,
-                        lastModifiedDate = connection.lastUpdate,
-                        lastReadDate = connection.lastUpdate,
-                        access = emptyList(),
-                        accessRole = emptyList(),
-                        receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-                        messageTimer = null,
-                        userMessageTimer = null,
-                        archived = false,
-                        archivedInstant = null,
-                        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-                        channelAccess = null,
-                        channelAddPermission = null,
-                        wireCell = null,
-                        historySharingRetentionSeconds = 0,
-                    )
+                    conversationEntity = connectionMapper.modelToDao(connection).pendingConversation()
                 )
             }
 

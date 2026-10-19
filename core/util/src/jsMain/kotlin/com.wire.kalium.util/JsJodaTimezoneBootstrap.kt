@@ -24,5 +24,7 @@ package com.wire.kalium.util
 @JsNonModule
 private external val jsJodaTimezone: dynamic
 
-// Load js-joda's IANA TZID data when the JS util artifact is initialized.
-private val jsJodaTimezoneBootstrap = jsJodaTimezone
+// Referencing the module from the bridge also retains its data under JS dead-code elimination.
+internal fun ensureJsTimezoneDataLoaded() {
+    jsJodaTimezone
+}

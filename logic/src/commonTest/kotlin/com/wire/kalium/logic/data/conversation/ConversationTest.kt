@@ -63,6 +63,63 @@ class ConversationTest {
     }
 
     @Test
+    fun givenChannelWithBothGuestRolesButOnlyInviteAccess_thenGuestAccessIsDisabled() {
+        val conversation = TestConversation.CONVERSATION.copy(
+            type = Conversation.Type.Group.Channel,
+            accessRole = listOf(Conversation.AccessRole.GUEST, Conversation.AccessRole.NON_TEAM_MEMBER),
+            access = listOf(Conversation.Access.INVITE)
+        )
+        assertFalse(conversation.isGuestAccessEnabled())
+    }
+
+    @Test
+    fun givenConversationWithCodeAccessButNoGuestRole_thenGuestAccessIsDisabled() {
+        val conversation = TestConversation.CONVERSATION.copy(
+            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER),
+            access = listOf(Conversation.Access.CODE)
+        )
+        assertFalse(conversation.isGuestAccessEnabled())
+    }
+
+    @Test
+    fun givenConversationWithCodeAccessButNoNonTeamMemberRole_thenGuestAccessIsDisabled() {
+        val conversation = TestConversation.CONVERSATION.copy(
+            accessRole = listOf(Conversation.AccessRole.GUEST),
+            access = listOf(Conversation.Access.CODE)
+        )
+        assertFalse(conversation.isGuestAccessEnabled())
+    }
+
+    @Test
+    fun givenConversationWithBothGuestRolesAndCodeAccess_thenGuestAccessIsEnabled() {
+        val conversation = TestConversation.CONVERSATION.copy(
+            accessRole = listOf(
+                Conversation.AccessRole.TEAM_MEMBER,
+                Conversation.AccessRole.GUEST,
+                Conversation.AccessRole.NON_TEAM_MEMBER,
+                Conversation.AccessRole.SERVICE
+            ),
+            access = listOf(Conversation.Access.INVITE, Conversation.Access.CODE)
+        )
+        assertTrue(conversation.isGuestAccessEnabled())
+    }
+
+    @Test
+    fun givenConversationWithBothGuestRolesAndLinkAccess_thenGuestAccessIsDisabled() {
+        val conversation = TestConversation.CONVERSATION.copy(
+            accessRole = listOf(Conversation.AccessRole.GUEST, Conversation.AccessRole.NON_TEAM_MEMBER),
+            access = listOf(Conversation.Access.LINK)
+        )
+        assertFalse(conversation.isGuestAccessEnabled())
+    }
+
+    @Test
+    fun givenConversationWithEmptyAccessAndRoles_thenGuestAccessIsDisabled() {
+        val conversation = TestConversation.CONVERSATION.copy(accessRole = emptyList(), access = emptyList())
+        assertFalse(conversation.isGuestAccessEnabled())
+    }
+
+    @Test
     fun givenACombinationOfFlags_thenTheSetOfAccessRolesIsCorrect() {
 
         var accessRoles = Conversation.accessRolesFor(guestAllowed = false, servicesAllowed = false, nonTeamMembersAllowed = false)

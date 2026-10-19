@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.backup
 
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
@@ -19,13 +21,14 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.Duration.Companion.seconds
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -100,6 +103,60 @@ class BackupDataSourceTest {
         // Then
         assertEquals(testMessages.size, result.data.size)
         assertTrue(result.totalPages > 0)
+    }
+
+    @Test
+    fun givenMissingSender_whenImportingMessages_thenPreserveMessagesAndExistingProfiles() = runTest {
+        val knownUser = createTestUser("known")
+        val missingUser = UserId("missing", userId.domain)
+        val conversation = createTestConversation("restore")
+        subject.insertUsers(listOf(knownUser))
+        subject.insertConversations(listOf(conversation))
+        val messages = listOf(
+            createTestMessage(conversation.id, "known-message", knownUser.id),
+            createTestMessage(conversation.id, "missing-message", missingUser),
+        )
+
+        repeat(2) { subject.insertMessages(messages) }
+
+        assertEquals(messages.map { it.id }.toSet(), subject.getMessages().first().data.map { it.id }.toSet())
+        assertEquals(knownUser, subject.getUsers().single { it.id == knownUser.id })
+        assertTrue(subject.getUsers().any { it.id == missingUser })
+    }
+
+    @Test
+    fun givenMissingConversationAndSender_whenRestoringTwice_thenPreserveHistoryAndKnownMetadata() = runTest {
+        val knownConversation = createTestConversation("known")
+        subject.insertConversations(listOf(knownConversation))
+        val dao = testDatabase.builder.conversationDAO
+        val knownId = QualifiedIDEntity(knownConversation.id.value, userId.domain)
+        val knownBefore = assertNotNull(dao.getConversationById(knownId))
+        val missingId = QualifiedID("missing", userId.domain)
+        val messages = listOf(
+            createTestMessage(knownConversation.id, "known-message", userId),
+            createTestMessage(missingId, "orphan-message", userId),
+            createTestMessage(missingId, "older-message", userId).copy(date = Instant.UNIX_FIRST_DATE),
+        )
+
+        repeat(2) { assertTrue(subject.insertMessages(messages) is Either.Right) }
+
+        val restored = subject.getMessages().toList().flatMap { it.data }
+        assertEquals(messages.map { it.id }.toSet(), restored.map { it.id }.toSet())
+        assertEquals(messages.size, restored.size)
+        val placeholder = assertNotNull(dao.getConversationById(QualifiedIDEntity(missingId.value, missingId.domain)))
+        assertTrue(placeholder.hasIncompleteMetadata)
+        assertTrue(testDatabase.builder.memberDAO.getConversationMembers(placeholder.id).isEmpty())
+        assertEquals(messages[1].date, placeholder.lastModifiedDate)
+        val knownAfter = assertNotNull(dao.getConversationById(knownId))
+        assertEquals(knownBefore.copy(lastModifiedDate = knownAfter.lastModifiedDate), knownAfter)
+
+        // The regular sync write must be able to replace the incomplete metadata later.
+        val hydrated = knownBefore.copy(id = placeholder.id)
+        dao.insertConversation(hydrated)
+        assertEquals(
+            hydrated.copy(lastModifiedDate = placeholder.lastModifiedDate, lastReadDate = placeholder.lastReadDate),
+            dao.getConversationById(placeholder.id)
+        )
     }
 
     @Test
@@ -189,6 +246,35 @@ class BackupDataSourceTest {
         val result = subject.getReactions().first().data.single().reactions.map { it.emoji }
 
         assertContentEquals(listOf("existing", "new"), result.sorted())
+    }
+
+    @Test
+    fun givenDeletedReactedMessage_whenRestoringExportedPage_thenKeepValidReactions() = runTest {
+        val conversation = createTestConversation("backup")
+        val conversationId = QualifiedIDEntity(conversation.id.value, conversation.id.domain)
+        val visible = createTestMessage(conversation.id, "visible", userId)
+        val deleted = createTestMessage(conversation.id, "deleted", userId)
+        subject.insertUsers(listOf(createTestUser(userId.value)))
+        subject.insertConversations(listOf(conversation))
+        subject.insertMessages(listOf(visible, deleted))
+        subject.insertReactions(listOf(visible, deleted).map { message ->
+            MessageReactions(message.id, conversation.id, listOf(MessageReactionWithUsers("reaction", listOf(userId))))
+        })
+        testDatabase.builder.messageDAO.markMessageAsDeleted(deleted.id, conversationId)
+
+        val messages = subject.getMessages().toList().flatMap { it.data }
+        val reactions = subject.getReactions().toList().flatMap { it.data }
+        assertEquals(listOf(visible.id), messages.map { it.id })
+        assertEquals(setOf(visible.id, deleted.id), reactions.map { it.messageId }.toSet())
+
+        // Restore the exported history into an empty message table, as on a fresh client.
+        testDatabase.builder.messageDAO.deleteMessage(visible.id, conversationId)
+        testDatabase.builder.messageDAO.deleteMessage(deleted.id, conversationId)
+        assertIs<Either.Right<Unit>>(subject.insertMessages(messages))
+        repeat(2) { assertIs<Either.Right<Unit>>(subject.insertReactions(reactions)) }
+
+        val restored = subject.getReactions().toList().flatMap { it.data }
+        assertEquals(listOf(reactions.single { it.messageId == visible.id }), restored)
     }
 
     private fun createTestUser(id: String) = TestUser.OTHER.copy(id = UserId(id, userId.domain))

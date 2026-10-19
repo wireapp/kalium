@@ -30,7 +30,7 @@ import com.wire.kalium.messaging.hooks.ReactionEventData
 import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

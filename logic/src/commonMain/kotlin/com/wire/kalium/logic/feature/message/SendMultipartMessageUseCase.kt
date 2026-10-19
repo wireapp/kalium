@@ -57,6 +57,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.asset.upload.AssetUploadParams
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -64,7 +65,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import okio.Path.Companion.toPath
 import kotlin.time.Duration
 import kotlin.uuid.Uuid

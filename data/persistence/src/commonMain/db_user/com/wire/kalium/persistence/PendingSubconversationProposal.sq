@@ -1,0 +1,31 @@
+CREATE TABLE PendingSubconversationProposal (
+    group_id TEXT NOT NULL PRIMARY KEY,
+    deadline TEXT NOT NULL,
+    token TEXT NOT NULL,
+    leave_requested INTEGER NOT NULL DEFAULT 0 CHECK (leave_requested IN (0, 1))
+);
+
+upsert:
+INSERT INTO PendingSubconversationProposal(group_id, deadline, token, leave_requested)
+VALUES (?, ?, ?, ?)
+ON CONFLICT(group_id) DO UPDATE SET
+    deadline = excluded.deadline,
+    token = excluded.token,
+    leave_requested = excluded.leave_requested;
+
+selectAll:
+SELECT * FROM PendingSubconversationProposal ORDER BY group_id;
+
+selectCurrent:
+SELECT * FROM PendingSubconversationProposal WHERE group_id = ?;
+
+markForRetirement:
+UPDATE PendingSubconversationProposal SET leave_requested = 1
+WHERE group_id = ? AND deadline = ? AND token = ? AND leave_requested = ?;
+
+acknowledge:
+DELETE FROM PendingSubconversationProposal
+WHERE group_id = ? AND deadline = ? AND token = ? AND leave_requested = ?;
+
+clear:
+DELETE FROM PendingSubconversationProposal;

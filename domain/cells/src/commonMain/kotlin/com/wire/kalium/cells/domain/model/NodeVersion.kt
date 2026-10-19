@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.cells.domain.model
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 public data class NodeVersion(
     val id: String,

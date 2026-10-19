@@ -48,7 +48,7 @@ import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import okio.Path
 
 @Suppress("MaxLineLength")

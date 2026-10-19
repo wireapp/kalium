@@ -43,8 +43,10 @@ Feature domains and business workflows:
 
 - `:domain:backup`
 - `:domain:calling`
+- `:domain:calling-notifications`: call notification decisions from AVS's event API, without a running call engine
 - `:domain:cells`
 - `:domain:conversation-history`
+- `:domain:messaging:hooks`: callbacks for persisted messages and crypto state changes
 - `:domain:messaging:sending`
 - `:domain:messaging:receiving`
 - `:domain:nomaddevice`
@@ -65,12 +67,20 @@ Rules for `:logic`:
 - Define use cases as interfaces or functional interfaces in the relevant package.
 - Keep implementation classes close to their public contract unless an existing package pattern says otherwise.
 
+### Apple extension modules
+
+Each module produces a framework for an iOS app extension. They use the domain modules directly, without `CoreLogic`:
+
+- `:nse`: `KaliumNSE`, receiving for the Notification Service Extension ([guide](../nse/README.md))
+- `:share`: `KaliumShare`, sending from the share extension ([guide](../share/README.md)). `:logic` also depends on it on Apple, so the app can serve shares while it owns the account.
+
 ### Support Modules
 
 - `:sample:cli`: command-line app for manual testing and debugging
 - `:sample:samples`: small API usage examples
 - `:tools:*`: developer tools
 - `:test:*`: mocks, fixtures, benchmarks, and integration-test support
+- `plugins/apple-avs-runtime`: included Gradle build with the plugin that links and embeds the Apple AVS runtime ([guide](../plugins/apple-avs-runtime/README.md))
 
 ## Source Sets
 

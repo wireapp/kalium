@@ -25,7 +25,10 @@ import com.wire.kalium.cryptography.utils.CryptoServiceInfo
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
+import com.wire.kalium.persistence.dbPassphrase.USER_DB_PASSPHRASE_PREFIX_V2
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.persistence.dbPassphrase.PROTEUS_DB_PASSPHRASE_PREFIX_V2
+import com.wire.kalium.persistence.dbPassphrase.MLS_DB_PASSPHRASE_PREFIX_V2
 import kotlin.io.encoding.Base64
 
 internal expect class SecureRandom internal constructor() {
@@ -238,10 +241,7 @@ internal class SecurityHelperImpl(
         const val GLOBAL_DB_PASSPHRASE_ALIAS = "global_db_passphrase_alias"
         const val GLOBAL_DB_PASSPHRASE_ALIAS_V2 = "global_db_passphrase_alias_v2"
         const val USER_DB_PASSPHRASE_PREFIX = "user_db_secret_alias"
-        const val USER_DB_PASSPHRASE_PREFIX_V2 = "user_db_secret_alias_v2"
         const val MLS_DB_PASSPHRASE_PREFIX = "mls_db_secret_alias"
-        const val MLS_DB_PASSPHRASE_PREFIX_V2 = "mls_db_secret_alias_v2"
         const val PROTEUS_DB_PASSPHRASE_PREFIX = "proteus_db_secret_alias"
-        const val PROTEUS_DB_PASSPHRASE_PREFIX_V2 = "proteus_db_secret_alias_v2"
     }
 }

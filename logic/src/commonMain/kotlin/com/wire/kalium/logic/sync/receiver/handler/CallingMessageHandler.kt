@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.decodeCallingValue
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.ShouldRemoteMuteChecker
@@ -57,7 +58,7 @@ internal class CallingMessageHandlerImpl internal constructor(
         } else {
             message.conversationId
         }
-        val callingValue = json.decodeFromString<MessageContent.Calling.CallingValue>(content.value)
+        val callingValue = content.decodeCallingValue(json).getOrNull() ?: return
         when (callingValue.type) {
             REMOTE_MUTE_TYPE -> handleRemoteMuteMessage(
                 message = message,

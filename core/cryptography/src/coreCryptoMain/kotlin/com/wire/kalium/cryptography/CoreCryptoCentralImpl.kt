@@ -23,6 +23,9 @@ import com.wire.crypto.CommitBundle
 import com.wire.crypto.ClientId
 import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
+import com.wire.crypto.CoreCryptoCommand
+import com.wire.crypto.CoreCryptoException
+import com.wire.crypto.CoreCryptoFfiInterface
 import com.wire.crypto.CoreCryptoContext
 import com.wire.crypto.CoreCryptoLogLevel
 import com.wire.crypto.CoreCryptoLogger
@@ -44,8 +47,10 @@ import com.wire.crypto.newFromCredentialRef
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.io.encoding.Base64
 import com.wire.crypto.MlsTransportException as CoreCryptoMlsTransportException
@@ -79,6 +84,7 @@ class CoreCryptoCentralImpl(
     private val pkiEnvironmentMutex = Mutex()
     private var pkiEnvironment: PkiEnvironment? = null
     private var ownedResourcesClosed = false
+    private var closeFailure: Throwable? = null
 
     suspend fun <T> transaction(name: String, block: suspend (context: CoreCryptoContext) -> T): T = cc.transaction(name) {
         block(it)
@@ -94,6 +100,7 @@ class CoreCryptoCentralImpl(
         val coreCryptoClientId = clientId.toCoreCryptoClientId()
         val coreCryptoTransport = mlsTransporter.toCoreCryptoTransport()
 
+        clearConversationCache()
         cc.transaction("mlsInit") { context ->
             context.mlsInit(coreCryptoClientId, coreCryptoTransport)
         }
@@ -117,6 +124,20 @@ class CoreCryptoCentralImpl(
             defaultCipherSuite = defaultCipherSuite.toCrypto(),
             onClose = ::close
         )
+    }
+
+    override suspend fun hasCredential(clientId: CryptoQualifiedClientId, cipherSuite: MLSCiphersuite): Boolean {
+        val nativeClientId = clientId.toCoreCryptoClientId()
+        try {
+            val credentials = cc.findCredentials(clientId = nativeClientId, cipherSuite = cipherSuite.toCrypto())
+            try {
+                return credentials.isNotEmpty()
+            } finally {
+                credentials.forEach { it.close() }
+            }
+        } finally {
+            nativeClientId.close()
+        }
     }
 
     override suspend fun proteusClient(): ProteusClient {
@@ -214,29 +235,48 @@ class CoreCryptoCentralImpl(
         }
     }
 
-    override suspend fun close() = pkiEnvironmentMutex.withLock {
-        if (!ownedResourcesClosed) {
+    override suspend fun close(): Unit = withContext(NonCancellable) {
+        pkiEnvironmentMutex.withLock {
+            closeFailure?.let { throw it }
+            if (ownedResourcesClosed) return@withLock
             try {
+                clearConversationCache()
                 cc.close()
-            } finally {
-                closeOwnedResources()
+                pkiEnvironment?.close()
+                pkiEnvironment = null
+                database.close()
+                ownedResourcesClosed = true
+            } catch (exception: Throwable) {
+                // UniFFI marks a handle destroyed before freeing it. Another close may be a
+                // no-op after a failure, so it cannot establish that ownership is safe to release.
+                // Keep dependencies alive and preserve the failure for the account owner.
+                closeFailure = exception
+                throw exception
             }
         }
     }
 
-    private fun closeOwnedResources() {
-        if (ownedResourcesClosed) return
-        ownedResourcesClosed = true
-        val environment = pkiEnvironment
-        pkiEnvironment = null
+    private suspend fun clearConversationCache() {
+        // CoreCrypto 10.5.1 caches conversations that retain their owning MLS session.
+        // Clear the cache before replacing or closing a session; persisted groups stay unchanged.
+        val nativeClient: CoreCryptoFfiInterface = cc
         try {
-            environment?.close()
-        } finally {
-            database.close()
+            nativeClient.transactionFfi(object : CoreCryptoCommand {
+                override suspend fun execute(context: CoreCryptoContext) {
+                    context.close()
+                    throw IllegalStateException(CLOSE_CACHE_ROLLBACK)
+                }
+            })
+            error("Expected the cache cleanup transaction to roll back")
+        } catch (failure: CoreCryptoException.TransactionFailed) {
+            // Use the raw API: the high-level wrapper hides native rollback failures behind
+            // the original callback exception, which cannot prove cleanup succeeded.
+            if (!failure.error.contains(CLOSE_CACHE_ROLLBACK)) throw failure
         }
     }
 
     companion object {
+        private const val CLOSE_CACHE_ROLLBACK = "kalium-clear-conversation-cache"
         const val KEYSTORE_NAME = "keystore"
     }
 }

@@ -32,6 +32,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.CoreCryptoCentral
+import com.wire.kalium.cryptography.CoreCryptoOpenCleanupException
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.MLSClient
@@ -51,6 +52,7 @@ import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -64,6 +66,7 @@ internal interface MLSClientProvider : CryptoBackupExporter {
     suspend fun getCoreCrypto(clientId: ClientId? = null): Either<CoreFailure, CoreCryptoCentral>
 
     suspend fun clearLocalFiles()
+    suspend fun close()
     suspend fun getOrFetchMLSConfig(): Either<CoreFailure, SupportedCipherSuite>
 }
 
@@ -86,6 +89,7 @@ internal class MLSClientProviderImpl(
 
     private var mlsClient: MLSClient? = null
     private var coreCryptoCentral: CoreCryptoCentral? = null
+    private var openFailure: Throwable? = null
 
     private val mlsClientMutex = Mutex()
     private val coreCryptoCentralMutex = Mutex()
@@ -124,29 +128,35 @@ internal class MLSClientProviderImpl(
         }
     }
 
-    override suspend fun clearLocalFiles() {
+    override suspend fun close() = withContext(NonCancellable) {
         mlsClientMutex.withLock {
             coreCryptoCentralMutex.withLock {
-                val currentMLSClient = mlsClient
-                val currentCoreCrypto = coreCryptoCentral
-                try {
-                    if (currentMLSClient != null) {
-                        currentMLSClient.close()
-                    } else {
-                        currentCoreCrypto?.close()
-                    }
-                } finally {
-                    mlsClient = null
-                    coreCryptoCentral = null
-                    FileUtil.deleteDirectory(rootKeyStorePath)
-                }
+                closeClients()
             }
         }
+    }
+
+    override suspend fun clearLocalFiles(): Unit = withContext(NonCancellable) {
+        mlsClientMutex.withLock {
+            coreCryptoCentralMutex.withLock {
+                closeClients()
+                FileUtil.deleteDirectory(rootKeyStorePath)
+                Unit
+            }
+        }
+    }
+
+    private suspend fun closeClients() {
+        openFailure?.let { throw it }
+        mlsClient?.close() ?: coreCryptoCentral?.close()
+        mlsClient = null
+        coreCryptoCentral = null
     }
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun getCoreCrypto(clientId: ClientId?) = coreCryptoCentralMutex.withLock {
         withContext(dispatchers.io) {
+            openFailure?.let { return@withContext Either.Left(CoreFailure.Unknown(it)) }
             val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
 
             val location = "$rootKeyStorePath/${currentClientId.value}".also {
@@ -163,6 +173,8 @@ internal class MLSClientProviderImpl(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
+                    // Only a failed cleanup can leave native resources open. Other failures can be retried.
+                    if (e is CoreCryptoOpenCleanupException) openFailure = e
                     val logMap = mapOf(
                         "exception" to e,
                         "message" to e.message,

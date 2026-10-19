@@ -31,6 +31,10 @@ import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.job
+import kotlinx.coroutines.withContext
 
 /**
  * A short-lived authenticated container for requests made before a user session is stored.
@@ -41,13 +45,20 @@ class TransientAuthenticatedNetworkContainer private constructor(
     private val networkClient: AuthenticatedNetworkClient,
     private val engine: HttpClientEngine,
 ) {
-    fun close() {
-        networkClient.httpClient.close()
-        engine.close()
+    suspend fun close(): Unit = withContext(NonCancellable) {
+        val client = networkClient.httpClient
+        client.coroutineContext.job.cancel()
+        try {
+            client.close()
+            client.coroutineContext.job.join()
+        } finally {
+            engine.close()
+            engine.coroutineContext[Job]?.join()
+        }
     }
 
     companion object {
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "TooGenericExceptionCaught")
         fun create(
             session: SessionDTO,
             serverConfigDTO: ServerConfigDTO,
@@ -66,32 +77,37 @@ class TransientAuthenticatedNetworkContainer private constructor(
                 certificatePinning = certificatePinning,
                 httpTrafficObserver = httpTrafficObserver,
             )
-            val bearerAuthProvider = BearerAuthProvider(
-                refreshTokens = { null },
-                loadTokens = {
-                    BearerTokens(
-                        accessToken = session.accessToken,
-                        refreshToken = session.refreshToken,
-                    )
-                },
-                sendWithoutRequestCallback = { true },
-                realm = null,
-            )
-            val networkClient = AuthenticatedNetworkClient(
-                engine = engine,
-                serverConfigDTO = serverConfigDTO,
-                bearerAuthProvider = bearerAuthProvider,
-                kaliumLogger = kaliumLogger,
-            )
+            return try {
+                val bearerAuthProvider = BearerAuthProvider(
+                    refreshTokens = { null },
+                    loadTokens = {
+                        BearerTokens(
+                            accessToken = session.accessToken,
+                            refreshToken = session.refreshToken,
+                        )
+                    },
+                    sendWithoutRequestCallback = { true },
+                    realm = null,
+                )
+                val networkClient = AuthenticatedNetworkClient(
+                    engine = engine,
+                    serverConfigDTO = serverConfigDTO,
+                    bearerAuthProvider = bearerAuthProvider,
+                    kaliumLogger = kaliumLogger,
+                )
 
-            return TransientAuthenticatedNetworkContainer(
-                systemSettingsApi = SystemSettingsApiImpl(
+                TransientAuthenticatedNetworkContainer(
+                    systemSettingsApi = SystemSettingsApiImpl(
+                        networkClient = networkClient,
+                        apiVersion = serverConfigDTO.metaData.commonApiVersion.version,
+                    ),
                     networkClient = networkClient,
-                    apiVersion = serverConfigDTO.metaData.commonApiVersion.version,
-                ),
-                networkClient = networkClient,
-                engine = engine,
-            )
+                    engine = engine,
+                )
+            } catch (failure: Throwable) {
+                engine.close()
+                throw failure
+            }
         }
     }
 }

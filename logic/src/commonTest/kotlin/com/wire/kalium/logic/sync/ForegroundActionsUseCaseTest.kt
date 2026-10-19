@@ -101,7 +101,7 @@ internal class ForegroundActionsUseCaseTest {
         }
 
         suspend fun withActionResults(actionResults: ActionResults) = apply {
-            everySuspend { updateApiVersionsUseCase() } returns Unit
+            everySuspend { updateApiVersionsUseCase() } returns UpdateApiVersionsUseCase.Result.Unchanged
             everySuspend { userConfigSyncWorker.doWork() } returns actionResults.userConfigSyncWorkerResult
             everySuspend { syncCertificateRevocationListUseCase() } returns Unit
             everySuspend { observeCertificateRevocationForSelfClient() } returns Unit

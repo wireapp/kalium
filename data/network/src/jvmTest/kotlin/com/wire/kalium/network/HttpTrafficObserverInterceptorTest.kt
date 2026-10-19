@@ -24,16 +24,21 @@ import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
+import okio.BufferedSink
 import okio.GzipSink
 import okio.buffer
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 
 class HttpTrafficObserverInterceptorTest {
 
@@ -120,6 +125,49 @@ class HttpTrafficObserverInterceptorTest {
         assertNull(observedBody)
     }
 
+    @Test
+    fun duplexUploadIsForwardedWithoutInspectionOrASecondWrite() {
+        val observer = RecordingTrafficObserver()
+        var writes = 0
+        val body = object : RequestBody() {
+            override fun contentType() = "text/plain".toMediaType()
+            override fun isDuplex() = true
+            override fun writeTo(sink: BufferedSink) {
+                writes++
+                sink.writeUtf8("duplex payload")
+            }
+        }
+        val request = Request.Builder().url("https://example.com/duplex").post(body).build()
+        val chain = fakeChain(request) { sent ->
+            assertSame(body, sent.body)
+            assertEquals(1, writes)
+            okResponseFor(sent, "response")
+        }
+        val result = httpTrafficObserverInterceptor(observer).intercept(chain)
+        assertNull(observer.requestBody)
+        assertEquals(listOf("request", "response"), observer.events)
+        assertEquals("response", result.body.string())
+    }
+
+    @Test
+    fun failedUploadStillReportsRequestMetadataWithoutAResponseCallback() {
+        val observer = RecordingTrafficObserver()
+        val body = object : RequestBody() {
+            override fun contentType() = "text/plain".toMediaType()
+            override fun writeTo(sink: BufferedSink) {
+                sink.writeUtf8("partial upload")
+                throw IOException("Upload failed")
+            }
+        }
+        val request = Request.Builder().url("https://example.com/upload").post(body).build()
+        val chain = fakeChain(request) { error("Failed upload must not receive a response") }
+        assertFailsWith<IOException> { httpTrafficObserverInterceptor(observer).intercept(chain) }
+        assertEquals(listOf("request"), observer.events)
+        assertEquals("POST", observer.requestMethod)
+        assertEquals("https://example.com/upload", observer.requestUrl)
+        assertNull(observer.requestBody)
+    }
+
     private fun gzip(content: String): ByteArray {
         val buffer = Buffer()
         GzipSink(buffer).buffer().use { it.writeUtf8(content) }
@@ -141,7 +189,10 @@ class HttpTrafficObserverInterceptorTest {
             override fun call(): Call = throw NotImplementedError()
             override fun connectTimeoutMillis(): Int = 0
             override fun connection(): Connection? = null
-            override fun proceed(request: Request): Response = respond(request)
+            override fun proceed(request: Request): Response {
+                request.body?.writeTo(Buffer())
+                return respond(request)
+            }
             override fun readTimeoutMillis(): Int = 0
             override fun request(): Request = request
             override fun withConnectTimeout(timeout: Int, unit: TimeUnit): Interceptor.Chain = this

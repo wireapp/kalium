@@ -30,6 +30,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(projects.core.data)
+                implementation(projects.core.common)
                 implementation(projects.data.protobuf)
                 implementation(projects.data.persistence)
                 implementation(projects.core.cryptography)
@@ -37,6 +38,7 @@ kotlin {
                 implementation(projects.core.util)
 
                 implementation(libs.coroutines.core)
+                implementation(libs.okio.core)
                 implementation(libs.ktxDateTime)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktor.serialization)

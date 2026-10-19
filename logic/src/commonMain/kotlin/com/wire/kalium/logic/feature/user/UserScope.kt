@@ -227,6 +227,12 @@ public class UserScope internal constructor(
             sessionRepository = sessionRepository
         )
 
+    public val getMessageContentPreference: GetMessageContentPreferenceUseCase
+        get() = GetMessageContentPreferenceUseCase(userConfigRepository)
+
+    public val setMessageContentPreference: SetMessageContentPreferenceUseCase
+        get() = SetMessageContentPreferenceUseCase(userConfigRepository)
+
     public val observeReadReceiptsEnabled: ObserveReadReceiptsEnabledUseCase
         get() = ObserveReadReceiptsEnabledUseCaseImpl(
             userPropertyRepository = userPropertyRepository

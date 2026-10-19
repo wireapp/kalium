@@ -39,7 +39,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.meeting.MeetingRepository
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.notification.LocalNotification
@@ -101,24 +100,15 @@ internal class MemberLeaveEventHandlerImpl(
                 }
 
                 resolveMessageContent(event).let { content ->
-                    Message.System(
-                        id = event.id,
-                        content = content,
-                        conversationId = event.conversationId,
-                        date = event.dateTime,
-                        senderUserId = event.removedBy,
-                        status = Message.Status.Sent,
-                        visibility = Message.Visibility.VISIBLE,
-                        expirationData = null
-                    ).let {
+                    event.memberRemovedMessage(content).let {
                         persistMessage(it)
                         Either.Right(Unit)
                     }
                 }
                 legalHoldHandler.handleConversationMembersChanged(event.conversationId)
             }
+            .flatMap { deleteMeetingsIfNeeded(event) }
             .onSuccess {
-                deleteMeetingsIfNeeded(event)
                 eventLogger.logSuccess()
             }.onFailure {
                 eventLogger.logFailure(it)
@@ -128,7 +118,7 @@ internal class MemberLeaveEventHandlerImpl(
     private suspend fun resolveMessageContent(event: Event.Conversation.MemberLeave): MessageContent.System {
         return when (event.reason) {
             MemberLeaveReason.Left,
-            MemberLeaveReason.Removed -> MessageContent.MemberChange.Removed(members = event.removedList)
+            MemberLeaveReason.Removed -> memberRemovalContent(event.reason, event.removedList, false)
 
             MemberLeaveReason.UserDeleted -> handleUserDeleted(event)
         }
@@ -138,13 +128,13 @@ internal class MemberLeaveEventHandlerImpl(
         val teamId = selfTeamIdProvider().getOrNull()
 
         return when {
-            teamId == null -> MessageContent.MemberChange.Removed(members = event.removedList)
+            teamId == null -> memberRemovalContent(event.reason, event.removedList, false)
             userRepository.isAtLeastOneUserATeamMember(
                 event.removedList,
                 teamId
-            ).getOrElse(false) -> MessageContent.MemberChange.RemovedFromTeam(members = event.removedList)
+            ).getOrElse(false) -> memberRemovalContent(event.reason, event.removedList, true)
 
-            else -> MessageContent.MemberChange.Removed(members = event.removedList)
+            else -> memberRemovalContent(event.reason, event.removedList, false)
         }
     }
 
@@ -175,22 +165,24 @@ internal class MemberLeaveEventHandlerImpl(
             )
         }
 
-    private suspend fun deleteMeetingsIfNeeded(event: Event.Conversation.MemberLeave) {
-        if (selfUserId in event.removedList) {
-            meetingRepository.getMeetingsByConversationId(event.conversationId).map { meetings ->
-                meetings.forEach { meeting ->
-                    notificationEventsManager.scheduleMeetingNotification(
-                        LocalNotification.Meeting.Cancel(
-                            eventId = event.id,
-                            meetingId = meeting.meetingId,
-                            conversationId = meeting.conversationId,
-                            meetingTitle = meeting.title,
-                            author = userRepository.observeUser(event.removedBy).firstOrNull()?.toLocalNotificationMessageAuthor(),
-                            time = event.dateTime,
-                        )
+    private suspend fun deleteMeetingsIfNeeded(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> {
+        if (selfUserId !in event.removedList) return Either.Right(Unit)
+        // Notification metadata is optional; failure to read it must not prevent required deletion.
+        val meetings = meetingRepository.getMeetingsByConversationId(event.conversationId).getOrElse { emptyList() }
+        return meetingRepository.deleteMeetingsByConversationId(event.conversationId).onSuccess {
+            val author = if (meetings.isEmpty()) null else
+                userRepository.observeUser(event.removedBy).firstOrNull()?.toLocalNotificationMessageAuthor()
+            meetings.forEach { meeting ->
+                notificationEventsManager.scheduleMeetingNotification(
+                    LocalNotification.Meeting.Cancel(
+                        eventId = event.id,
+                        meetingId = meeting.meetingId,
+                        conversationId = meeting.conversationId,
+                        meetingTitle = meeting.title,
+                        author = author,
+                        time = event.dateTime,
                     )
-                    meetingRepository.deleteMeetingLocally(meeting.meetingId)
-                }
+                )
             }
         }
     }

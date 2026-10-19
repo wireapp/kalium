@@ -29,7 +29,7 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal interface ReactionRepository {
     suspend fun persistReaction(

@@ -148,6 +148,7 @@ import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCase
 import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.UserDAO
@@ -174,6 +175,7 @@ public class CellsScope(
     private val sessionManager: SessionManager,
     private val accessTokenApi: AccessTokenApi,
     private val userId: UserId,
+    private val networkStateObserver: NetworkStateObserver,
 ) : CoroutineScope {
 
     public data class CellScopeDao(
@@ -274,6 +276,7 @@ public class CellsScope(
             uploadManager = uploadManager,
             cellsRepository = cellsRepository,
             scope = this,
+            networkStateObserver = networkStateObserver,
         )
     }
 

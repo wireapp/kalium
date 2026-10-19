@@ -1,0 +1,613 @@
+/*
+ * Wire
+ * Copyright (C) 2024 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+
+package com.wire.kalium.messaging.sending
+
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
+import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.MessageId
+import com.wire.kalium.logic.data.message.BroadcastMessageOption
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEnvelope
+import com.wire.kalium.logic.data.message.MessageSent
+import com.wire.kalium.logic.data.message.SessionEstablisher
+import com.wire.kalium.logic.data.message.getType
+import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
+import com.wire.kalium.logic.failure.ProteusSendMessageFailure
+import com.wire.kalium.util.DateTimeUtil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.withContext
+import kotlin.time.Instant
+
+/**
+ * Sends a stored message over Proteus or MLS, repairing recipients and retrying when the backend rejects it.
+ *
+ * Ports: [prepareMessage] runs content preparation before encryption; [legalHoldEnabledAfter] runs the client
+ * repair and reports whether legal hold became enabled for the conversation; [verifyEpoch] and
+ * [handleGroupOutOfSync] recover from MLS rejections; [broadcastRecipients] lists the team and other recipients
+ * of a broadcast; [enqueueSelfDeletion] starts the timer of a sent self-deleting message.
+ */
+// TODO(refactor): Split MLS and Proteus logic.
+//                 The Envelope Creation, Sending and Retry mechanisms are tailored to each protocol
+//                 And could live in different implementation classes
+@Suppress("LongParameterList", "TooManyFunctions")
+class MessageSenderImpl(
+    private val messages: OutgoingMessages,
+    private val transport: MessageTransport,
+    private val conversations: SendingConversations,
+    private val session: SendingSession,
+    private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val sessionEstablisher: SessionEstablisher,
+    private val messageEnvelopeCreator: MessageEnvelopeCreator,
+    private val mlsMessageCreator: MLSMessageCreator,
+    private val prepareMessage: suspend (Message.Sendable) -> Either<CoreFailure, Message.Sendable>,
+    private val legalHoldEnabledAfter: suspend (
+        conversationId: ConversationId,
+        messageInstant: Instant,
+        handleClientsHaveChangedFailure: suspend () -> Either<CoreFailure, Unit>
+    ) -> Either<CoreFailure, Boolean>,
+    private val verifyEpoch: suspend (CryptoTransactionContext, ConversationId) -> Either<CoreFailure, Unit>,
+    private val handleGroupOutOfSync: suspend (
+        transactionContext: CryptoTransactionContext,
+        conversationId: ConversationId,
+        groupId: GroupID,
+        failure: NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync
+    ) -> Either<CoreFailure, Unit>,
+    private val broadcastRecipients: suspend () -> Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>,
+    private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
+    private val scope: CoroutineScope
+) : MessageSender {
+
+    private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
+
+    override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
+        session.waitUntilLive()
+        return withContext(scope.coroutineContext) {
+            messages.getMessageById(conversationId, messageUuid).flatMap { message ->
+                val result =
+                    if (message is Message.Regular) {
+                        sendMessage(message)
+                    } else {
+                        Either.Left(
+                            StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages"))
+                        )
+                    }
+                result
+                    .onFailure {
+                        val type = message.content.getType()
+                        logger.i("Failed to send message of type $type. Failure = $it")
+                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                            failure = it,
+                            conversationId = conversationId,
+                            messageId = messageUuid,
+                            messageType = type,
+                            scheduleResendIfNoNetwork = false // Right now we do not allow automatic resending of failed pending messages.
+                        )
+                    }
+            }
+        }
+    }
+
+    override suspend fun cancelPendingMessage(
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Boolean> = session.transaction("cancelPendingMessage") {
+        messages.getMessageById(conversationId, messageUuid).fold(
+            { failure ->
+                if (failure == StorageFailure.DataNotFound) Either.Right(true) else Either.Left(failure)
+            },
+            { current ->
+                val isOwnUnedited = current is Message.Regular && current.isSelfMessage &&
+                    current.editStatus == Message.EditStatus.NotEdited
+                if (isOwnUnedited && current.status == Message.Status.Pending) {
+                    messages.deleteMessage(messageUuid, conversationId).map { true }
+                } else {
+                    Either.Right(false)
+                }
+            }
+        )
+    }
+
+    private suspend fun shouldSend(message: Message.Sendable): Either<CoreFailure, Boolean> {
+        if (message !is Message.Regular || message.status != Message.Status.Pending) return Either.Right(true)
+        return messages.getMessageById(message.conversationId, message.id).fold(
+            { failure ->
+                if (failure == StorageFailure.DataNotFound) Either.Right(false) else Either.Left(failure)
+            },
+            { current ->
+                val isEdit = message.content is MessageContent.TextEdited || message.content is MessageContent.MultipartEdited
+                val isVisible = current is Message.Regular && current.visibility == Message.Visibility.VISIBLE
+                Either.Right(isVisible && (current.status == Message.Status.Pending || isEdit))
+            }
+        )
+    }
+
+    override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
+        prepareMessage(message)
+            .flatMap { processedMessage ->
+                session.transaction("sendMessage") { transactionContext ->
+                    // Cancellation uses this same transaction queue. Recheck after entering it, not before waiting.
+                    shouldSend(message).flatMap { send ->
+                        if (!send) return@flatMap Either.Right(false)
+                        attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
+                            val localDate = message.date
+                            val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                            // If it was the "edit" message type, we need to update the id before we promote it to "sent"
+                            val isEditMessage = when (message.content) {
+                                is MessageContent.MultipartEdited -> {
+                                    messages.updateMultipartMessage(
+                                        conversationId = processedMessage.conversationId,
+                                        messageContent = processedMessage.content as MessageContent.MultipartEdited,
+                                        newMessageId = processedMessage.id,
+                                        editInstant = processedMessage.date
+                                    )
+                                    true
+                                }
+                                is MessageContent.TextEdited -> {
+                                    messages.updateTextMessage(
+                                        conversationId = processedMessage.conversationId,
+                                        messageContent = processedMessage.content as MessageContent.TextEdited,
+                                        newMessageId = processedMessage.id,
+                                        editInstant = processedMessage.date
+                                    )
+                                    true
+                                }
+                                else -> false
+                            }
+                            messages.promoteMessageToSentUpdatingServerTime(
+                                conversationId = processedMessage.conversationId,
+                                messageUuid = processedMessage.id,
+                                // if it's edit then we don't want to change the original message creation time, it's already a server date
+                                serverDate = if (!isEditMessage) serverDate else null,
+                                millis = millis
+                            )
+                            true
+                        }
+                    }
+                }.onSuccess { sent ->
+                    if (sent) startSelfDeletionIfNeeded(message)
+                }.map { Unit }
+            }.onFailure {
+                logger.e("Failed to send message ${message::class.qualifiedName}. Failure = $it")
+            }
+
+    override suspend fun broadcastMessage(
+        message: BroadcastMessage,
+        target: BroadcastMessageTarget
+    ): Either<CoreFailure, Unit> =
+        withContext(scope.coroutineContext) {
+            session.transaction("broadcastMessage") {
+                attemptToBroadcastWithProteus(it, message, target, remainingAttempts = 2).map { }
+            }
+        }
+
+    private suspend fun attemptToSend(
+        transactionContext: CryptoTransactionContext,
+        message: Message.Sendable,
+        messageTarget: MessageTarget = MessageTarget.Conversation()
+    ): Either<CoreFailure, Instant> {
+        return conversations
+            .getConversationProtocolInfo(message.conversationId)
+            .flatMap { protocolInfo ->
+                when (protocolInfo) {
+                    is Conversation.ProtocolInfo.MLS -> {
+                        if (
+                            message.content is MessageContent.Calling &&
+                            protocolInfo.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET
+                        ) {
+                            logger.i("Skipping calling message while MLS reset is pending")
+                            Either.Right(message.date)
+                        } else {
+                            attemptToSendWithMLS(transactionContext, protocolInfo, message)
+                        }
+                    }
+
+                    is Conversation.ProtocolInfo.Proteus, is Conversation.ProtocolInfo.Mixed -> {
+                        // TODO(messaging): make this thread safe (per user)
+                        attemptToSendWithProteus(transactionContext, message, messageTarget, remainingAttempts = 1)
+                    }
+                }
+            }
+    }
+
+    private fun startSelfDeletionIfNeeded(message: Message.Sendable) {
+        message.expirationData?.let { expirationData ->
+            enqueueSelfDeletion(message, expirationData)
+        }
+    }
+
+    private suspend fun attemptToSendWithProteus(
+        transactionContext: CryptoTransactionContext,
+        message: Message.Sendable,
+        messageTarget: MessageTarget,
+        remainingAttempts: Int
+    ): Either<CoreFailure, Instant> {
+        val conversationId = message.conversationId
+        val target = when (messageTarget) {
+            is MessageTarget.Client -> Either.Right(messageTarget.recipients)
+            is MessageTarget.Conversation -> conversations.getConversationRecipients(conversationId)
+            is MessageTarget.Users -> conversations.getRecipientById(conversationId, messageTarget.userId)
+        }
+
+        return target
+            .flatMap { recipients ->
+                sessionEstablisher
+                    .prepareRecipientsForNewOutgoingMessage(transactionContext.proteus, recipients)
+                    .flatMap { handleUsersWithNoClientsToDeliver(conversationId, message.id, it) }
+                    .map { recipients to it }
+            }.flatMap { (recipients, usersWithoutSessions) ->
+                messageEnvelopeCreator
+                    .createOutgoingEnvelope(transactionContext.proteus, recipients, message)
+                    .flatMap { envelope: MessageEnvelope ->
+                        val updatedMessageTarget = when (messageTarget) {
+                            is MessageTarget.Client,
+                            is MessageTarget.Users -> messageTarget
+
+                            is MessageTarget.Conversation ->
+                                MessageTarget.Conversation((messageTarget.usersToIgnore + usersWithoutSessions.users).toSet())
+                        }
+                        trySendingProteusEnvelope(transactionContext, envelope, message, updatedMessageTarget, remainingAttempts)
+                    }
+            }
+    }
+
+    private suspend fun handleUsersWithNoClientsToDeliver(
+        conversationId: ConversationId,
+        messageId: String,
+        usersWithoutSessions: UsersWithoutSessions
+    ): Either<CoreFailure, UsersWithoutSessions> = if (usersWithoutSessions.hasMissingSessions()) {
+        messages.persistNoClientsToDeliverFailure(conversationId, messageId, usersWithoutSessions.users)
+            .flatMap { Either.Right(usersWithoutSessions) }
+    } else {
+        Either.Right(usersWithoutSessions)
+    }
+
+    private suspend fun attemptToBroadcastWithProteus(
+        transactionContext: CryptoTransactionContext,
+        message: BroadcastMessage,
+        target: BroadcastMessageTarget,
+        remainingAttempts: Int,
+    ): Either<CoreFailure, Instant> {
+        return broadcastRecipients().flatMap { (teamRecipients, otherRecipients) ->
+            val (option, recipients) = getBroadcastParams(
+                message.senderUserId,
+                message.senderClientId,
+                target,
+                teamRecipients,
+                otherRecipients
+            )
+
+            sessionEstablisher
+                .prepareRecipientsForNewOutgoingMessage(transactionContext.proteus, recipients)
+                .flatMap { _ ->
+                    messageEnvelopeCreator
+                        .createOutgoingBroadcastEnvelope(transactionContext.proteus, recipients, message)
+                        .flatMap { envelope ->
+                            tryBroadcastProteusEnvelope(
+                                transactionContext,
+                                envelope,
+                                message,
+                                option,
+                                target,
+                                remainingAttempts
+                            )
+                        }
+                }
+        }
+    }
+
+    /**
+     * Attempts to send a MLS application message
+     *
+     * Will handle re-trying on "mls-stale-message" after we are live again or fail if we are not syncing.
+     */
+    private suspend fun attemptToSendWithMLS(
+        transactionContext: CryptoTransactionContext,
+        protocolInfo: Conversation.ProtocolInfo.MLS,
+        message: Message.Sendable
+    ): Either<CoreFailure, Instant> =
+        mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
+            .flatMap { mlsMessage ->
+                transport.sendMLSMessage(mlsMessage).fold({
+                    when (val mlsRejectionCause = (it.wrapNetworkMlsFailureIfApplicable() as? MLSFailure.MessageRejected)?.cause) {
+                        is NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync -> {
+                            handleGroupOutOfSync(
+                                transactionContext,
+                                message.conversationId,
+                                protocolInfo.groupId,
+                                mlsRejectionCause
+                            ).flatMap { attemptToSend(transactionContext, message) }
+                        }
+                        is NetworkFailure.MlsMessageRejectedFailure.StaleMessage -> {
+                            logger.logStructuredJson(
+                                level = KaliumLogLevel.WARN,
+                                leadingMessage = "Message Send Stale",
+                                jsonStringKeyValues = mapOf(
+                                    "message" to message.toLogString(),
+                                    "protocolInfo" to protocolInfo.toLogMap(),
+                                    "protocol" to CreateConversationParam.Protocol.MLS.name,
+                                    "errorInfo" to "$it"
+                                )
+                            )
+                            verifyEpoch(transactionContext, message.conversationId)
+                                .flatMap {
+                                    session.waitUntilLiveOrFailure().flatMap { attemptToSend(transactionContext, message) }
+                                }
+                        }
+                        else -> Either.Left(it)
+                    }
+                }, { messageSent ->
+                    handleMlsRecipientsDeliveryFailure(message, messageSent).flatMap {
+                        Either.Right(messageSent.time)
+                    }
+                })
+            }
+            .onFailure {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.ERROR,
+                    leadingMessage = "Message Send Failure",
+                    jsonStringKeyValues = mapOf(
+                        "message" to message.toLogString(),
+                        "protocolInfo" to protocolInfo.toLogMap(),
+                        "protocol" to CreateConversationParam.Protocol.MLS.name,
+                        "errorInfo" to "$it"
+                    )
+                )
+            }.onSuccess {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.INFO,
+                    leadingMessage = "Message Send Success",
+                    jsonStringKeyValues = mapOf(
+                        "message" to message.toLogString(),
+                        "protocolInfo" to protocolInfo.toLogMap(),
+                        "protocol" to CreateConversationParam.Protocol.MLS.name,
+                    )
+                )
+            }
+
+    /**
+     * Attempts to send a Proteus envelope
+     * Will handle the failure and retry in case of [ProteusSendMessageFailure].
+     */
+    private suspend fun trySendingProteusEnvelope(
+        transactionContext: CryptoTransactionContext,
+        envelope: MessageEnvelope,
+        message: Message.Sendable,
+        messageTarget: MessageTarget,
+        remainingAttempts: Int
+    ): Either<CoreFailure, Instant> =
+        transport
+            .sendEnvelope(message.conversationId, envelope, messageTarget)
+            .fold({
+                handleProteusError(
+                    transactionContext = transactionContext,
+                    failure = it,
+                    action = "Send",
+                    messageLogString = message.toLogString(),
+                    messageId = message.id,
+                    messageInstant = message.date,
+                    conversationId = message.conversationId,
+                    remainingAttempts = remainingAttempts
+                ) { remainingAttempts ->
+                    attemptToSendWithProteus(transactionContext, message, messageTarget, remainingAttempts)
+                }
+            }, { messageSent ->
+                handleRecipientsDeliveryFailure(envelope, message, messageSent).flatMap {
+                    Either.Right(messageSent.time)
+                }
+            }).onSuccess {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.INFO,
+                    leadingMessage = "Message Send Success",
+                    jsonStringKeyValues = mapOf(
+                        "message" to message.toLogString(),
+                        "protocol" to CreateConversationParam.Protocol.PROTEUS.name
+                    )
+                )
+            }
+
+    /**
+     * Attempts to send a Proteus envelope without need to provide a specific conversationId
+     * Will handle the failure and retry in case of [ProteusSendMessageFailure].
+     */
+    private suspend fun tryBroadcastProteusEnvelope(
+        transactionContext: CryptoTransactionContext,
+        envelope: MessageEnvelope,
+        message: BroadcastMessage,
+        option: BroadcastMessageOption,
+        target: BroadcastMessageTarget,
+        remainingAttempts: Int
+    ): Either<CoreFailure, Instant> =
+        transport
+            .broadcastEnvelope(envelope, option)
+            .fold({
+                handleProteusError(
+                    transactionContext,
+                    it,
+                    "Broadcast",
+                    message.toLogString(),
+                    message.id,
+                    message.date,
+                    null,
+                    remainingAttempts = 1
+                ) {
+                    attemptToBroadcastWithProteus(
+                        transactionContext,
+                        message,
+                        target,
+                        remainingAttempts
+                    )
+                }
+            }, {
+                Either.Right(it)
+            }).onSuccess {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.INFO,
+                    leadingMessage = "Message Broadcast Success",
+                    jsonStringKeyValues = mapOf(
+                        "message" to message.toLogString(),
+                        "protocol" to CreateConversationParam.Protocol.PROTEUS.name
+                    )
+                )
+            }
+
+    private suspend fun handleProteusError(
+        transactionContext: CryptoTransactionContext,
+        failure: CoreFailure,
+        action: String, // Send or Broadcast
+        messageLogString: String,
+        messageId: MessageId,
+        messageInstant: Instant,
+        conversationId: ConversationId?,
+        remainingAttempts: Int,
+        retry: suspend (remainingAttempts: Int) -> Either<CoreFailure, Instant>
+    ): Either<CoreFailure, Instant> =
+        when (failure) {
+            is ProteusSendMessageFailure -> {
+                logger.w(
+                    "Proteus $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                )
+                handleLegalHoldChanges(conversationId, messageInstant) {
+                    messageSendFailureHandler
+                        .handleClientsHaveChangedFailure(transactionContext, failure, conversationId)
+                }
+                    .flatMap { legalHoldEnabled ->
+                        when {
+                            legalHoldEnabled -> {
+                                logger.w(
+                                    "Legal hold enabled, no retry after Proteus $action " +
+                                            "Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                                )
+                                Either.Left(LegalHoldEnabledForConversationFailure(messageId))
+                            }
+
+                            remainingAttempts > 0 -> {
+                                logger.w(
+                                    "Retrying (remaining attempts: $remainingAttempts) after Proteus $action " +
+                                            "Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                                )
+                                retry(remainingAttempts - 1)
+                            }
+
+                            else -> {
+                                logger.e(
+                                    "No remaining attempts to retry after Proteus $action " +
+                                            "Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                                )
+                                Either.Left(failure)
+                            }
+                        }
+                    }
+                    .onFailure {
+                        val logLine = "Fatal Proteus $action Failure: { \"message\" : \"${messageLogString}\"" +
+                                " , " +
+                                "\"errorInfo\" : \"${it}\"}"
+                        logger.e(logLine)
+                    }
+            }
+
+            else -> {
+                logger.e(
+                    "Message $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                )
+                Either.Left(failure)
+            }
+        }
+
+    private suspend fun handleLegalHoldChanges(
+        conversationId: ConversationId?,
+        messageInstant: Instant,
+        handleClientsHaveChangedFailure: suspend () -> Either<CoreFailure, Unit>
+    ) =
+        if (conversationId == null) handleClientsHaveChangedFailure().map { false }
+        else legalHoldEnabledAfter(conversationId, messageInstant, handleClientsHaveChangedFailure)
+
+    private fun getBroadcastParams(
+        selfUserId: UserId,
+        selfClientId: ClientId,
+        target: BroadcastMessageTarget,
+        teamRecipients: List<Recipient>,
+        otherRecipients: List<Recipient>
+    ): Pair<BroadcastMessageOption, List<Recipient>> {
+
+        val broadcastRecipients = when (target) {
+            is BroadcastMessageTarget.AllUsers -> teamRecipients + otherRecipients
+            is BroadcastMessageTarget.OnlyTeam -> teamRecipients
+        }
+            .toSet()
+            .map { recipient ->
+                if (recipient.id == selfUserId) {
+                    recipient.copy(clients = recipient.clients.filter { it != selfClientId })
+                } else {
+                    recipient
+                }
+            }
+            .take(target.limit)
+
+        return BroadcastMessageOption.ReportSome(broadcastRecipients.map { it.id }) to broadcastRecipients
+    }
+
+    /**
+     * At this point the message was SENT, here we are mapping/persisting the recipients that couldn't get the message.
+     */
+    private suspend fun handleRecipientsDeliveryFailure(envelope: MessageEnvelope, message: Message, messageSent: MessageSent) =
+        if (messageSent.failedToConfirmClients.isEmpty()) Either.Right(Unit)
+        else {
+            val usersWithoutSessions =
+                messageSent.failedToConfirmClients.filter { failedIds -> failedIds !in envelope.recipients.map { it.userId } }
+            if (usersWithoutSessions.isNotEmpty()) {
+                messages.persistNoClientsToDeliverFailure(message.conversationId, message.id, usersWithoutSessions)
+            }
+
+            val filteredUsersFailed = messageSent.failedToConfirmClients.minus(usersWithoutSessions.toSet())
+            if (filteredUsersFailed.isNotEmpty()) {
+                messages.persistRecipientsDeliveryFailure(message.conversationId, message.id, filteredUsersFailed)
+            } else {
+                Either.Right(Unit)
+            }
+        }
+
+    private suspend fun handleMlsRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
+        if (messageSent.failedToConfirmClients.isEmpty()) Either.Right(Unit)
+        else {
+            messages.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failedToConfirmClients)
+        }
+}

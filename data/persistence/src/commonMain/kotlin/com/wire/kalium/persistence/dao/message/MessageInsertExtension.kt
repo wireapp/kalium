@@ -18,6 +18,7 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.async.coroutines.await
 
@@ -29,10 +30,10 @@ import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.content.ButtonContentQueries
+import com.wire.kalium.persistence.content.PollContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
-import kotlinx.datetime.Instant
-import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Instant
 
 internal fun MessageEntityContent.Asset.hasValidRemoteData() =
     assetId.isNotEmpty() && assetOtrKey.isNotEmpty() && assetSha256Key.isNotEmpty()
@@ -62,6 +63,7 @@ internal class MessageInsertExtensionImpl(
     private val unreadEventsQueries: UnreadEventsQueries,
     private val conversationsQueries: ConversationsQueries,
     private val buttonContentQueries: ButtonContentQueries,
+    private val pollContentQueries: PollContentQueries,
     private val selfUserIDEntity: UserIDEntity
 ) : MessageInsertExtension {
 
@@ -103,24 +105,19 @@ internal class MessageInsertExtensionImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     override suspend fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean) {
-        try {
-            insertBaseMessageOrError(message)
-            insertMessageContent(message)
-            if (withUnreadEvents) {
-                insertUnreadEvent(message)
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            /* no-op */
+        // The caller owns one write transaction. Ignore only an existing identity; every other
+        // base/content/unread failure must roll back that transaction and reach its caller.
+        if (!insertBaseMessage(message)) return
+        insertMessageContent(message)
+        if (withUnreadEvents) {
+            insertUnreadEvent(message)
         }
     }
 
-    private suspend fun insertBaseMessageOrError(message: MessageEntity) {
+    private suspend fun insertBaseMessage(message: MessageEntity): Boolean {
         // do not add withContext
-        messagesQueries.insertMessage(
+        messagesQueries.insertOrIgnoreMessage(
             id = message.id,
             conversation_id = message.conversationId,
             creation_date = message.date,
@@ -136,6 +133,7 @@ internal class MessageInsertExtensionImpl(
             expire_after_millis = if (message is MessageEntity.Regular) message.expireAfterMs else null,
             self_deletion_end_date = if (message is MessageEntity.Regular) message.selfDeletionEndDate else null
         )
+        return messagesQueries.selectChanges().awaitAsOne() > 0
     }
 
     @Suppress("LongMethod", "ComplexMethod")
@@ -281,6 +279,7 @@ internal class MessageInsertExtensionImpl(
             )
 
             is MessageEntityContent.Composite -> insertCompositeMessage(content, message)
+            is MessageEntityContent.Poll -> insertPollMessage(content, message)
             is MessageEntityContent.ConversationCreated,
             is MessageEntityContent.MLSWrongEpochWarning -> {
                 /* no-op */
@@ -458,6 +457,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.Asset,
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.Composite,
+                is MessageEntityContent.Poll,
                 is MessageEntityContent.Location,
                 is MessageEntityContent.Multipart,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
@@ -565,6 +565,19 @@ internal class MessageInsertExtensionImpl(
         }
     }
 
+    private suspend fun insertPollMessage(
+        content: MessageEntityContent.Poll,
+        message: MessageEntity
+    ) {
+        pollContentQueries.insertPoll(
+            message_id = message.id,
+            conversation_id = message.conversationId,
+            question = content.question,
+            options_json = PollContentJson.encodeOptions(content.options),
+            allow_multiple_answers = content.allowMultipleAnswers
+        )
+    }
+
     @Suppress("ComplexMethod")
     override fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> MessageEntity.ContentType.TEXT
@@ -588,6 +601,7 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationDegradedMLS -> MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS
         is MessageEntityContent.ConversationDegradedProteus -> MessageEntity.ContentType.CONVERSATION_DEGRADED_PROTEUS
         is MessageEntityContent.Composite -> MessageEntity.ContentType.COMPOSITE
+        is MessageEntityContent.Poll -> MessageEntity.ContentType.POLL
         is MessageEntityContent.Federation -> MessageEntity.ContentType.FEDERATION
         MessageEntityContent.ConversationVerifiedMLS -> MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS
         MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS

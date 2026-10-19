@@ -24,13 +24,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 
 internal interface UserClientRepositoryProvider {
-    fun provide(userId: UserId): ClientRepository
+    suspend fun provide(userId: UserId): ClientRepository
 }
 
 internal class UserClientRepositoryProviderImpl(
     private val userSessionScopeProvider: UserSessionScopeProvider
 ) : UserClientRepositoryProvider {
-    override fun provide(userId: UserId): ClientRepository =
-        userSessionScopeProvider.getOrCreate(userId).clientRepository
+    override suspend fun provide(userId: UserId): ClientRepository =
+        userSessionScopeProvider.open(userId).clientRepository
 
 }

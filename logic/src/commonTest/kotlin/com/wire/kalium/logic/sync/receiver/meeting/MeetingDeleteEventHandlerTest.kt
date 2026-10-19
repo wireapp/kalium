@@ -82,6 +82,7 @@ class MeetingDeleteEventHandlerTest {
         val result = handler.handle(event)
 
         assertSame(failure, assertIs<Either.Left<StorageFailure>>(result).value)
+        verifySuspend(VerifyMode.not) { arrangement.notifications.scheduleMeetingNotification(any()) }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingRepository.deleteMeetingLocally(event.meetingId)
         }
@@ -99,6 +100,30 @@ class MeetingDeleteEventHandlerTest {
 
         verifySuspend(VerifyMode.not) { arrangement.notifications.scheduleMeetingNotification(any()) }
         verifySuspend { arrangement.meetingRepository.deleteMeetingLocally(event.meetingId) }
+    }
+
+    @Test
+    fun givenKnownSender_whenDeleted_thenUseSenderInsteadOfMeetingCreator() = runTest {
+        val event = meetingDeleteEvent().copy(senderUserId = TestUser.OTHER_USER_ID)
+        val meeting = meeting(event)
+        val (arrangement, handler) = Arrangement()
+            .withGetMeetingReturning(event, Either.Right(meeting))
+            .withDeleteMeetingLocallyReturning(event, Either.Right(Unit))
+            .withObserveUserReturning(TestUser.OTHER_USER_ID, flowOf(TestUser.OTHER))
+            .arrange()
+
+        handler.handle(event)
+
+        verifySuspend {
+            arrangement.notifications.scheduleMeetingNotification(
+                LocalNotification.Meeting.Cancel(
+                    event.id, meeting.meetingId, meeting.conversationId, meeting.title,
+                    com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor(
+                        TestUser.OTHER.name.orEmpty(), TestUser.OTHER.previewPicture
+                    ), event.dateTime
+                )
+            )
+        }
     }
 
     private fun meeting(event: Event.Meeting.Delete) = Meeting(

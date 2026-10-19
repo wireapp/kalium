@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -227,6 +227,40 @@ sealed interface MessageContent {
         val textContent: Text?,
         val buttonList: List<Button>
     ) : Regular()
+
+    /**
+     * A native end-to-end encrypted poll. The message id is the poll id.
+     * [votes] holds the latest vote of each user, derived locally from received [PollVote] messages.
+     */
+    data class Poll(
+        val question: String,
+        val options: List<Option>,
+        val allowMultipleAnswers: Boolean,
+        val votes: List<Vote> = emptyList()
+    ) : Regular() {
+        data class Option(
+            val id: String,
+            val text: String
+        )
+
+        /**
+         * A user's current selection. An empty [selectedOptionIds] means the user retracted their vote.
+         */
+        data class Vote(
+            val voterId: UserId,
+            val selectedOptionIds: List<String>,
+            val date: Instant
+        )
+    }
+
+    /**
+     * Replaces the sender's vote in the [Poll] with id [referencedMessageId].
+     * An empty [selectedOptionIds] retracts the vote.
+     */
+    data class PollVote(
+        val referencedMessageId: MessageId,
+        val selectedOptionIds: List<String>
+    ) : Signaling
 
     /**
      * Notifies the author of a [Composite] message that a user has
@@ -496,6 +530,8 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ConversationDegradedMLS -> "ConversationVerification.Degraded.MLS"
     is MessageContent.ConversationDegradedProteus -> "ConversationVerification.Degraded.Proteus"
     is MessageContent.Composite -> "Composite"
+    is MessageContent.Poll -> "Poll"
+    is MessageContent.PollVote -> "PollVote"
     is MessageContent.ButtonAction -> "ButtonAction"
     is MessageContent.ButtonActionConfirmation -> "ButtonActionConfirmation"
     is MessageContent.MemberChange.FederationRemoved -> "MemberChange.FederationRemoved"
@@ -538,6 +574,8 @@ sealed interface MessagePreviewContent {
         data class Text(override val username: String?, val messageBody: String) : WithUser
 
         data class Composite(override val username: String?, val messageBody: String?) : WithUser
+
+        data class Poll(override val username: String?, val question: String?) : WithUser
 
         data class Asset(override val username: String?, val type: AssetType) : WithUser
 

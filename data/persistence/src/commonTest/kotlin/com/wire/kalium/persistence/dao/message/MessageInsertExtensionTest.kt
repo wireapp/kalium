@@ -26,7 +26,7 @@ import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -58,6 +58,7 @@ class MessageInsertExtensionTest : BaseDatabaseTest() {
             db.database.unreadEventsQueries,
             db.database.conversationsQueries,
             db.database.buttonContentQueries,
+            db.database.pollContentQueries,
             selfUserId
         )
     }

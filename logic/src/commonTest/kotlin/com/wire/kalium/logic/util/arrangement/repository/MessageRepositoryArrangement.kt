@@ -32,7 +32,7 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal interface MessageRepositoryArrangement {
 

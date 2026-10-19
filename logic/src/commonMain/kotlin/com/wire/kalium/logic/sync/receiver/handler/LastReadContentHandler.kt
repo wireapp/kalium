@@ -23,15 +23,11 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Instant
 
 internal interface LastReadContentHandler {
     suspend fun handle(
@@ -51,42 +47,21 @@ internal class LastReadContentHandlerImpl internal constructor(
 ) : LastReadContentHandler {
 
     private val logger = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
-    private val pendingLastReadByConversation = mutableMapOf<ConversationId, Instant>()
-    private val pendingLastReadMutex = Mutex()
+    private val updates = LastReadUpdates(selfUserId)
 
-    override suspend fun handle(
-        message: Message.Signaling,
-        messageContent: MessageContent.LastRead
-    ) {
-        val isMessageComingFromOtherClient = message.senderUserId == selfUserId
-        val isMessageDestinedForSelfConversation: Boolean = isMessageSentInSelfConversation(message)
-
-        if (isMessageComingFromOtherClient && isMessageDestinedForSelfConversation) {
-            pendingLastReadMutex.withLock {
-                val currentPending = pendingLastReadByConversation[messageContent.conversationId]
-                if (currentPending == null || messageContent.time > currentPending) {
-                    pendingLastReadByConversation[messageContent.conversationId] = messageContent.time
-                }
-            }
-        }
+    override suspend fun handle(message: Message.Signaling, messageContent: MessageContent.LastRead) {
+        updates.add(message, messageContent, isMessageSentInSelfConversation(message))
     }
 
     override suspend fun flushPendingLastReads() {
-        val pending = pendingLastReadMutex.withLock {
-            if (pendingLastReadByConversation.isEmpty()) {
-                emptyMap()
-            } else {
-                pendingLastReadByConversation.toMap().also {
-                    pendingLastReadByConversation.clear()
-                }
-            }
-        }
+        val pending = updates.snapshot()
         if (pending.isEmpty()) return
         logger.d("$TAG Flushing LastRead updates")
 
         conversationRepository
             .updateReadDatesAndGetHasUnreadEvents(pending)
             .onSuccess { hasUnreadByConversation ->
+                updates.persisted(pending)
                 hasUnreadByConversation.forEach { (conversationId, hasUnreadEvents) ->
                     if (!hasUnreadEvents) {
                         notificationEventsManager.scheduleConversationSeenNotification(conversationId)

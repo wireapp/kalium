@@ -68,7 +68,11 @@ internal class DeletedConversationEventHandlerImpl(
                     )
                 )
             }
-            .map { it to meetingRepository.getMeetingsByConversationId(it.id).getOrElse { emptyList() } }
+            .map { conversation ->
+                conversation to if (conversation.type == Conversation.Type.Group.Meeting) {
+                    meetingRepository.getMeetingsByConversationId(conversation.id).getOrElse { emptyList() }
+                } else emptyList()
+            }
             .flatMap { (conversation, meetings) ->
                 deleteConversation(transactionContext, event.conversationId)
                     .onFailure {
@@ -86,9 +90,7 @@ internal class DeletedConversationEventHandlerImpl(
                                         meetingId = meeting.meetingId,
                                         conversationId = meeting.conversationId,
                                         meetingTitle = meeting.title,
-                                        author = event.senderUserId?.let {
-                                            userRepository.observeUser(it).firstOrNull()?.toLocalNotificationMessageAuthor()
-                                        },
+                                        author = senderUser?.toLocalNotificationMessageAuthor(),
                                         time = event.dateTime,
                                     )
                                 )

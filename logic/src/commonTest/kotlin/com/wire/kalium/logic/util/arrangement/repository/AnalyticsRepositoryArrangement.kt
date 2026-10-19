@@ -25,7 +25,7 @@ import dev.mokkery.everySuspend
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal interface AnalyticsRepositoryArrangement {

@@ -25,6 +25,7 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.conversation.PendingSubconversationProposalDAO
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -57,7 +58,8 @@ internal interface LogoutRepository {
 
 internal class LogoutDataSource(
     private val logoutApi: LogoutApi,
-    private val metadataDAO: MetadataDAO
+    private val metadataDAO: MetadataDAO,
+    private val pendingSubconversationProposalDAO: PendingSubconversationProposalDAO,
 ) : LogoutRepository {
 
     private val logoutEventsChannel = Channel<LogoutReason>(capacity = Channel.CONFLATED)
@@ -71,6 +73,7 @@ internal class LogoutDataSource(
 
     override suspend fun clearClientRelatedLocalMetadata() {
         wrapStorageRequest {
+            pendingSubconversationProposalDAO.clear()
             metadataDAO.clear(
                 keysToKeep = listOf(
                     ClientRegistrationStorageImpl.RETAINED_CLIENT_ID_KEY,

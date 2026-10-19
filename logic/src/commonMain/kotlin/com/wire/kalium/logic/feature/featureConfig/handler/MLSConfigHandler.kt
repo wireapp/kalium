@@ -20,12 +20,8 @@ package com.wire.kalium.logic.feature.featureConfig.handler
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSModel
-import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
@@ -37,35 +33,18 @@ internal class MLSConfigHandler(
     internal suspend fun handle(
         mlsConfig: MLSModel,
         duringSlowSync: Boolean,
-        transactionContext: CryptoTransactionContext? = null
-    ): Either<CoreFailure, Unit> {
-        val mlsEnabled = mlsConfig.status == Status.ENABLED
-        val isMLSSupported = mlsConfig.supportedProtocols.contains(SupportedProtocol.MLS)
-        val previousSupportedProtocols = userConfigRepository.getSupportedProtocols().getOrElse(setOf(SupportedProtocol.PROTEUS))
-        val supportedProtocolsHasChanged = !previousSupportedProtocols.equals(mlsConfig.supportedProtocols)
-        val supportedCipherSuite = mlsConfig.supportedCipherSuite
-
-        return userConfigRepository.setMLSEnabled(mlsEnabled && isMLSSupported)
-            .flatMap {
-                userConfigRepository.setDefaultProtocol(if (mlsEnabled) mlsConfig.defaultProtocol else SupportedProtocol.PROTEUS)
-            }.flatMap {
-                userConfigRepository.setSupportedProtocols(mlsConfig.supportedProtocols)
-            }.flatMap {
-                if (supportedProtocolsHasChanged) {
-                    if (transactionContext != null) {
-                        updateSupportedProtocolsAndResolveOneOnOnes(transactionContext, !duringSlowSync)
-                    } else {
-                        transactionProvider.transaction("MLSConfigHandler") { ctx ->
-                            updateSupportedProtocolsAndResolveOneOnOnes(ctx, !duringSlowSync)
-                        }
-                    }
-                } else {
-                    Either.Right(Unit)
-                }
-            }.flatMap {
-                supportedCipherSuite?.let {
-                    userConfigRepository.setSupportedCipherSuite(it)
-                } ?: Either.Right(Unit)
+        transactionContext: CryptoTransactionContext? = null,
+        duringClientRegistration: Boolean = false,
+    ): Either<CoreFailure, Unit> = userConfigRepository.applyMLSConfiguration(mlsConfig) {
+        if (duringClientRegistration) {
+            // There is no registered crypto client yet. SlowSyncWorker updates supported protocols after registration.
+            Either.Right(Unit)
+        } else if (transactionContext != null) {
+            updateSupportedProtocolsAndResolveOneOnOnes(transactionContext, !duringSlowSync)
+        } else {
+            transactionProvider.transaction("MLSConfigHandler") { ctx ->
+                updateSupportedProtocolsAndResolveOneOnOnes(ctx, !duringSlowSync)
             }
+        }
     }
 }

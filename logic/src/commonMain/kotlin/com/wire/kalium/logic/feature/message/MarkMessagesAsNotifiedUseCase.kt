@@ -22,7 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.fold
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.

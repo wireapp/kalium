@@ -34,25 +34,21 @@ import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.staticCFunction
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.usePinned
+import platform.Foundation.NSRecursiveLock
 
 internal actual fun createPlatformAvsCallNotificationProcessor(
     selfUserId: String,
     selfClientId: String,
     callbacks: AvsCallNotificationCallbacks
 ): AvsCallNotificationProcessor {
-    val stableRef = StableRef.create(callbacks)
     return runCatching {
-        val handle = wcall_event_create(
-            userid = selfUserId,
-            clientid = selfClientId,
-            incomingh = incomingHandler,
-            missedh = missedHandler,
-            closeh = closeHandler,
-            arg = stableRef.asCPointer()
-        )
-        DefaultAvsCallNotificationProcessor(AppleAvsCallNotificationNativeGateway(handle, stableRef))
+        withEventLock {
+            val account = eventAccounts.getOrPut(selfUserId to selfClientId) {
+                AppleAvsEventAccount(selfUserId, selfClientId)
+            }
+            AppleAvsCallNotificationProcessor(account, callbacks)
+        }
     }.getOrElse { throwable ->
-        stableRef.dispose()
         FailedAvsCallNotificationProcessor(
             AvsCallNotificationProcessingFailure.NativeFailure(
                 operation = AvsCallNotificationNativeOperation.Create,
@@ -62,9 +58,77 @@ internal actual fun createPlatformAvsCallNotificationProcessor(
     }
 }
 
+// AVS retains the original context for each identity. There is no event-handle destroy API:
+// end evaluates a batch, it does not free the handle. Match wire-ios feat/avs_for_nse by
+// retaining one handle/context per account and client until the process exits.
+private val eventAccounts = mutableMapOf<Pair<String, String>, AppleAvsEventAccount>()
+private val eventLock = NSRecursiveLock()
+
+private inline fun <T> withEventLock(block: () -> T): T {
+    eventLock.lock()
+    return try {
+        block()
+    } finally {
+        eventLock.unlock()
+    }
+}
+
+private class AppleAvsEventAccount(selfUserId: String, selfClientId: String) {
+    var callbacks: AvsCallNotificationCallbacks? = null
+
+    // This reference is intentionally permanent; request callbacks are attached only during a batch.
+    private val context = StableRef.create(this)
+    private val handle = wcall_event_create(
+        userid = selfUserId,
+        clientid = selfClientId,
+        incomingh = incomingHandler,
+        missedh = missedHandler,
+        closeh = closeHandler,
+        arg = context.asCPointer()
+    )
+    init {
+        if (handle == 0u) {
+            context.dispose()
+            error("AVS returned an invalid event handle")
+        }
+    }
+
+    // Match the iOS event loop: an expired or malformed call must not hide later valid calls.
+    val processor = DefaultAvsCallNotificationProcessor(
+        AppleAvsCallNotificationNativeGateway(handle),
+        continueAfterEventFailure = true,
+    )
+}
+
+private class AppleAvsCallNotificationProcessor(
+    private val account: AppleAvsEventAccount,
+    private var callbacks: AvsCallNotificationCallbacks?
+) : AvsCallNotificationProcessor {
+    override fun process(notifications: List<AvsCallNotification>): AvsCallNotificationProcessingResult = withEventLock {
+        val currentCallbacks = callbacks
+        if (currentCallbacks == null || account.callbacks != null) {
+            return@withEventLock AvsCallNotificationProcessingResult.Failure(
+                AvsCallNotificationProcessingFailure.NativeFailure(
+                    operation = AvsCallNotificationNativeOperation.Start,
+                    message = if (currentCallbacks == null) "Processor is closed" else "Account is already processing calling events"
+                )
+            )
+        }
+        account.callbacks = currentCallbacks
+        try {
+            account.processor.process(notifications)
+        } finally {
+            account.callbacks = null
+        }
+    }
+
+    override fun close(): Unit = withEventLock {
+        callbacks = null
+    }
+}
+
 private class AppleAvsCallNotificationNativeGateway(
-    private val handle: UInt,
-    private val callbacksRef: StableRef<AvsCallNotificationCallbacks>
+    private val handle: UInt
 ) : AvsCallNotificationNativeGateway {
 
     override fun start(): AvsCallNotificationNativeResult = runCatching {
@@ -110,9 +174,7 @@ private class AppleAvsCallNotificationNativeGateway(
         it.toNativeFailure(AvsCallNotificationNativeOperation.End)
     }
 
-    override fun close() {
-        callbacksRef.dispose()
-    }
+    override fun close() = Unit
 }
 
 private class FailedAvsCallNotificationProcessor(
@@ -137,7 +199,7 @@ private fun Throwable.toNativeFailure(
     )
 
 private fun callbacks(arg: COpaquePointer?): AvsCallNotificationCallbacks? =
-    arg?.asStableRef<AvsCallNotificationCallbacks>()?.get()
+    arg?.asStableRef<AppleAvsEventAccount>()?.get()?.callbacks
 
 private fun CPointer<ByteVar>?.string(): String = this?.toKString().orEmpty()
 

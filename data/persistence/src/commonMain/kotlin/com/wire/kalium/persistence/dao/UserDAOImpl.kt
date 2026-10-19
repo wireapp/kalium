@@ -21,8 +21,9 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
-
 import app.cash.sqldelight.coroutines.asFlow
+import com.wire.kalium.persistence.User as SQLDelightUser
+import com.wire.kalium.persistence.UserDetails as SQLDelightUserDetails
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -33,9 +34,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
-import com.wire.kalium.persistence.User as SQLDelightUser
-import com.wire.kalium.persistence.UserDetails as SQLDelightUserDetails
+import kotlin.time.Instant
 
 class UserMapper {
     fun toDetailsModel(user: SQLDelightUserDetails): UserDetailsEntity {
@@ -166,6 +165,7 @@ class UserDAOImpl internal constructor(
     private val userQueries: UsersQueries,
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
+    private val rollbackUnchangedUpserts: Boolean = true,
 ) : UserDAO {
 
     val mapper = UserMapper()
@@ -255,7 +255,7 @@ class UserDAOImpl internal constructor(
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(writeDispatcher.value) {
         userQueries.transaction {
-            val anyInsertedOrModified = users.map { user ->
+            val changed = users.map { user ->
                 if (user.deleted) {
                     // mark as deleted and remove from groups
                     safeMarkAsDeletedAndRemoveFromGroupConversation(user.id)
@@ -263,10 +263,8 @@ class UserDAOImpl internal constructor(
                     insertUser(user)
                 }
             }.any { it }
-            if (!anyInsertedOrModified) {
-                // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
-                this.rollback()
-            }
+            // A DAO in an enclosing receiving transaction must preserve its other effects.
+            if (!changed && rollbackUnchangedUpserts) rollback()
         }
     }
 

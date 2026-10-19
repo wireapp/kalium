@@ -22,6 +22,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.selectOneOnOneProtocol
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
@@ -56,12 +57,7 @@ internal class OneOnOneProtocolSelectorImpl(
                         "commonProtocols = $commonProtocols"
             )
 
-            return when {
-                commonProtocols.contains(SupportedProtocol.MLS) -> Either.Right(SupportedProtocol.MLS)
-                commonProtocols.contains(SupportedProtocol.PROTEUS) -> Either.Right(SupportedProtocol.PROTEUS)
-                selfUserProtocols.contains(SupportedProtocol.MLS) -> Either.Left(CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate)
-                else -> Either.Left(CoreFailure.NoCommonProtocolFound.SelfNeedToUpdate)
-            }
+            return selectOneOnOneProtocol(selfUserProtocols, otherUserProtocols)
         }
 
     private companion object {

@@ -28,6 +28,12 @@ import com.wire.kalium.util.InternalKaliumApi
  * headers and never read bodies, by design, since those are meant to be safe to enable in
  * production logs. [HttpTrafficObserver] is for consumers (e.g. a developer debugging tool) that
  * need full visibility and can be trusted with unredacted traffic.
+ *
+ * Supported on JVM/Android only. Apple/JS ignore this hook. Non-duplex request bodies are
+ * captured as they are sent; duplex, unsent or failed upload bodies are reported as null.
+ * Gzip responses are decoded
+ * before observation and remain readable by callers. Callbacks run on the transport thread
+ * and must not throw. Opting in buffers complete bodies in memory, so use only for debugging.
  */
 interface HttpTrafficObserver {
     @InternalKaliumApi

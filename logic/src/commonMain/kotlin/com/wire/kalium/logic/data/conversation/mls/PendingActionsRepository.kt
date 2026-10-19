@@ -23,10 +23,12 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+// Only the two recovery action types below are consumed by the app. NSE conversation-clear
+// actions intentionally remain pending: their app handling is a no-op until cleanup is implemented.
 internal interface PendingActionsRepository {
     suspend fun enqueuePendingOneOnOneResolution(userId: UserId)
     suspend fun getPendingOneOnOneResolutions(): List<UserId>

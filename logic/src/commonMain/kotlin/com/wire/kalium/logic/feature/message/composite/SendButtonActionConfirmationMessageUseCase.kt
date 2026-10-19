@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 /**

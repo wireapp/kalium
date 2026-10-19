@@ -210,11 +210,11 @@ class ObserveNewClientsUseCaseTest {
                     observeValidAccounts.invoke()
                 } returns flowOf(listOf())
 
-                every {
+                everySuspend {
                     userClientRepositoryProvider.provide(eq(TestUser.USER_ID))
                 } returns clientRepository1
 
-                every {
+                everySuspend {
                     userClientRepositoryProvider.provide(eq(TestUser.OTHER_USER_ID))
                 } returns clientRepository2
             }

@@ -18,14 +18,19 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.CoreCrypto
+import com.wire.crypto.CoreCryptoCommand
 import com.wire.crypto.CoreCryptoContext
+import com.wire.crypto.CoreCryptoException
+import com.wire.crypto.CoreCryptoFfiInterface
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.random.Random
 import kotlin.random.nextUInt
 import kotlin.time.Duration.Companion.seconds
@@ -43,9 +48,14 @@ internal suspend fun <T> CoreCrypto.transaction(
     withContext(Dispatchers.Default) {
         val workUniqueId = "$workIdentifier;${Random.nextUInt()}"
         val asyncLockWork = async {
-            val result = transaction {
+            val result = transactionWithRollbackPolicy {
                 kaliumLogger.d("CC Transaction '$workUniqueId' started.")
-                block(it)
+                try {
+                    block(it)
+                } finally {
+                    // The callback owns a UniFFI context handle that otherwise waits for GC.
+                    it.close()
+                }
             }
             kaliumLogger.d("CC Transaction '$workUniqueId' completed.")
             result
@@ -69,3 +79,44 @@ internal suspend fun <T> CoreCrypto.transaction(
         asyncLockWork.await()
     }
 }
+
+private suspend fun <T> CoreCrypto.transactionWithRollbackPolicy(block: suspend (CoreCryptoContext) -> T): T =
+    if (currentCoroutineContext()[RequireConfirmedCryptoRollback.Key] != null) {
+        transactionWithConfirmedRollback(block)
+    } else {
+        transaction(block)
+    }
+
+@Suppress("TooGenericExceptionCaught", "UNCHECKED_CAST")
+private suspend fun <T> CoreCrypto.transactionWithConfirmedRollback(block: suspend (CoreCryptoContext) -> T): T =
+    withContext(NonCancellable) {
+        var result: T? = null
+        var callbackCompleted = false
+        var callbackFailure: Throwable? = null
+        val nativeClient: CoreCryptoFfiInterface = this@transactionWithConfirmedRollback
+        try {
+            nativeClient.transactionFfi(object : CoreCryptoCommand {
+                override suspend fun execute(context: CoreCryptoContext) {
+                    try {
+                        result = block(context)
+                        callbackCompleted = true
+                    } catch (failure: Throwable) {
+                        callbackFailure = failure
+                        // Typed CoreCrypto exceptions cross UniFFI unchanged. A nonnative sentinel
+                        // makes successful abort return TransactionFailed for every callback error.
+                        throw CryptoRollbackRequested()
+                    }
+                }
+            })
+        } catch (failure: CoreCryptoException.TransactionFailed) {
+            // CoreCrypto 10.5.1 returns the callback error only after abort succeeds.
+            // Other native errors (including abort and commit failures) must win.
+            throw callbackFailure ?: failure
+        }
+        check(callbackFailure == null && callbackCompleted) {
+            "CoreCrypto returned without confirming the transaction outcome"
+        }
+        result as T
+    }
+
+private class CryptoRollbackRequested : Exception("kalium-confirm-crypto-rollback")

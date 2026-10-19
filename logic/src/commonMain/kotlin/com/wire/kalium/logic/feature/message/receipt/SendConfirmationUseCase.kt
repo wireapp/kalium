@@ -39,8 +39,8 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 

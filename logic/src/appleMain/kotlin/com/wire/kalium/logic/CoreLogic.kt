@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -43,7 +45,6 @@ import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.cancel
 
 public actual class CoreLogic(
     rootPath: String,
@@ -111,15 +112,33 @@ public actual class CoreLogic(
             networkStateObserver,
             logoutCallbackManager,
             userAgent,
-            keychainConfig
+            keychainConfig,
+            syncShutdownCoordinator,
         )
     }
 
     public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    actual override suspend fun deleteSessionScope(userId: UserId) {
-        userSessionScopeProvider.value.get(userId)?.cancel()
+    actual override suspend fun deleteSessionScope(userId: UserId) = releaseSessionScope(userId)
+
+    /** Revalidate an owned, synced session for notification receiving after app restoration. */
+    public suspend fun prepareSessionForNotifications(userId: UserId, scope: UserSessionScope): Either<CoreFailure, Unit> =
+        userSessionScopeProvider.value.prepareReceiving(userId, scope)
+
+    /**
+     * Pause account writes and native crypto while retaining the session and database readers.
+     * The host must stop foreground sync and exclude accounts with active calls first.
+     */
+    public suspend fun suspendSessionScope(userId: UserId) {
+        (userSessionScopeProvider.value as UserSessionScopeProviderImpl).suspendForBackground(userId)
+    }
+
+    /**
+     * Fully close an account after the host has cancelled and joined its users and collectors.
+     * Failure keeps the account unavailable until process exit.
+     */
+    public suspend fun releaseSessionScope(userId: UserId) {
         userSessionScopeProvider.value.delete(userId)
     }
 

@@ -62,4 +62,10 @@ internal class PendingActionDAOImpl(
             pendingActionsQueries.deleteByActionType(action_type = actionType)
         }
     }
+
+    override suspend fun acknowledge(actionType: PendingActionType, action: PendingActionEntity) {
+        withContext(writeDispatcher.value) {
+            pendingActionsQueries.acknowledge(actionType, action.qualifiedId, action.createdAt)
+        }
+    }
 }

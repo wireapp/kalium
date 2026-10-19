@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class SubConversation(
     val id: SubconversationId,

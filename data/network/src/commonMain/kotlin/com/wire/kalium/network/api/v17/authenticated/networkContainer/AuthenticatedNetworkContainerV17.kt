@@ -103,6 +103,7 @@ internal class AuthenticatedNetworkContainerV17 internal constructor(
         nomadServiceUrl = nomadServiceUrl,
         accessTokenApi = { httpClient -> AccessTokenApiV17(httpClient) },
         engine = engine,
+        ownsEngine = mockEngine == null,
         kaliumLogger = kaliumLogger,
         webSocketSessionProvider = if (mockWebSocketSession != null) {
             { _, _ -> mockWebSocketSession }

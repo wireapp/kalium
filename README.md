@@ -1,7 +1,6 @@
 # Kalium
 
-[![JVM & JS Tests](https://github.com/wireapp/kalium/actions/workflows/gradle-jvm-tests.yml/badge.svg)](https://github.com/wireapp/kalium/actions/workflows/gradle-jvm-tests.yml)
-[![codecov](https://codecov.io/gh/wireapp/kalium/branch/develop/graph/badge.svg?token=UWQ1P7DY7I)](https://codecov.io/gh/wireapp/kalium)
+[![CI](https://github.com/wireapp/super-kalium/actions/workflows/ci.yml/badge.svg)](https://github.com/wireapp/super-kalium/actions/workflows/ci.yml)
 
 Kalium is Wire's Kotlin Multiplatform SDK for messaging, end-to-end encryption, conversation state, backup, calling integration, and Wire backend access.
 
@@ -25,7 +24,7 @@ Use the version from GitHub releases or Maven Central metadata.
 | --- | --- | --- |
 | Android | Supported | Main production target. |
 | JVM | Supported | Used by tests, tools, and the CLI sample. |
-| iOS/macOS Apple Silicon | Supported | Uses the official CoreCrypto KMP dependency; see [iOS build guide](docs/IOS_BUILD.md). |
+| iOS/macOS Apple Silicon | Supported | Frameworks for the app, the Notification Service Extension and the share extension; see the [Apple build guide](docs/IOS_BUILD.md). |
 | JavaScript | Limited | Experimental and module-dependent. |
 
 ## Build From Source
@@ -78,6 +77,7 @@ Kalium is split by layer:
 - `data:*` contains networking, persistence, protobuf, and data mappers.
 - `domain:*` contains feature domains such as messaging, backup, calling, cells, work, and user storage.
 - `logic` is the public SDK entry point used by clients.
+- `nse` and `share` build the frameworks for the iOS Notification Service Extension and share extension.
 - `sample:*`, `tools:*`, and `test:*` contain development support code.
 
 For module boundaries and source-set details, see [architecture](docs/ARCHITECTURE.md).
@@ -86,6 +86,12 @@ For module boundaries and source-set details, see [architecture](docs/ARCHITECTU
 
 - [Contributor setup](docs/CONTRIBUTING.md)
 - [Architecture](docs/ARCHITECTURE.md)
-- [iOS builds](docs/IOS_BUILD.md)
+- [Apple builds](docs/IOS_BUILD.md)
+- [Apple AVS runtime plugin](plugins/apple-avs-runtime/README.md)
+- [Notification Service Extension](nse/README.md)
+- [Share extension](share/README.md)
+- [Message timeline](docs/guides/message-timeline.md)
+- [Conversation list](docs/guides/conversation-list.md)
+- [Apple call tracing](docs/guides/apple-call-tracing.md)
 - [CLI sample](sample/cli/README.md)
 - [Architecture decision records](docs/adr/)

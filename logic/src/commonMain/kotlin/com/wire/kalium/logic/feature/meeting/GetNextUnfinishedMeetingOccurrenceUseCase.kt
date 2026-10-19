@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.util.DateTimeUtil.currentInstant
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 /**
  * Use case for finding the next soonest unfinished occurrence of a meeting at the given point in time.

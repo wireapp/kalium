@@ -20,19 +20,16 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.conversation.Conversation.Member.Role.Admin
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.EventLoggingStatus
@@ -53,7 +50,7 @@ internal class MemberChangeEventHandlerImpl(
 
     override suspend fun handle(
         transactionContext: CryptoTransactionContext,
-        event: Event.Conversation.MemberChanged
+        event: Event.Conversation.MemberChanged,
     ): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         return when (event) {
@@ -62,9 +59,7 @@ internal class MemberChangeEventHandlerImpl(
                     event.conversationId,
                     event.mutedConversationStatus,
                     event.mutedConversationChangedTime
-                ).onSuccess {
-                    eventLogger.logSuccess()
-                }
+                ).onSuccess { eventLogger.logSuccess() }
             }
 
             is Event.Conversation.MemberChanged.MemberArchivedStatusChanged -> {
@@ -72,9 +67,7 @@ internal class MemberChangeEventHandlerImpl(
                     event.conversationId,
                     event.isArchiving,
                     event.archivedConversationChangedTime
-                ).onSuccess {
-                    eventLogger.logSuccess()
-                }
+                ).onSuccess { eventLogger.logSuccess() }
             }
 
             is Event.Conversation.MemberChanged.MemberChangedRole -> {
@@ -118,7 +111,7 @@ internal class MemberChangeEventHandlerImpl(
             }
             .onFailure { eventLogger.logFailure(it) }
             .onSuccess {
-                if (currentRole != Admin && event.member?.role == Admin) {
+                if (isPromotionToAdmin(currentRole, event.member?.role)) {
                     persistPromoteToAdmin(event)
                 }
                 eventLogger.logSuccess()
@@ -128,20 +121,6 @@ internal class MemberChangeEventHandlerImpl(
     private suspend fun persistPromoteToAdmin(
         event: Event.Conversation.MemberChanged.MemberChangedRole,
     ) {
-        val promotedMember = event.member ?: return
-        persistMessage(
-            Message.System(
-                id = event.id,
-                content = MessageContent.MemberChange.UserPromotedToAdmin(
-                    members = listOf(promotedMember.id)
-                ),
-                conversationId = event.conversationId,
-                date = event.dateTime,
-                senderUserId = selfUserId,
-                status = Message.Status.Sent,
-                visibility = Message.Visibility.VISIBLE,
-                expirationData = null
-            )
-        )
+        event.memberPromotedMessage(selfUserId)?.let { persistMessage(it) }
     }
 }

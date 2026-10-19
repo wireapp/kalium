@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.app
 
 import app.cash.turbine.test
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
@@ -57,6 +58,8 @@ import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertFailsWith
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -262,8 +265,8 @@ class AppRepositoryTest {
         val failedId = NetworkQualifiedID("failed-user", Arrangement.DOMAIN)
         val (arrangement, appRepository) = Arrangement()
             .withTeamApps(listOf(teamApp))
-            .withCollaborators(listOf("team-app", "collaborator-app", "regular-user", "failed-user"))
-            .withUsers(ListUsersDTO(listOf(failedId), listOf(collaboratorApp, regularCollaborator)))
+            .withCollaborators(listOf("team-app", "collaborator-app", "collaborator-app", "regular-user", "failed-user"))
+            .withUsers(ListUsersDTO(listOf(failedId), listOf(collaboratorApp, collaboratorApp, regularCollaborator)))
             .withUpsertAppsSuccess()
             .arrange()
 
@@ -271,11 +274,11 @@ class AppRepositoryTest {
 
         verifySuspend {
             arrangement.userDetailsApi.getMultipleUsers(matches { request ->
-                (request as QualifiedUserIdListRequest).qualifiedIds.map { it.value }.toSet() ==
-                        setOf("collaborator-app", "regular-user", "failed-user")
+                (request as QualifiedUserIdListRequest).qualifiedIds ==
+                    listOf("collaborator-app", "regular-user", "failed-user").map { NetworkQualifiedID(it, Arrangement.DOMAIN) }
             })
             arrangement.appDAO.upsertApps(matches { apps ->
-                apps.map { it.id.value }.toSet() == setOf("team-app", "collaborator-app")
+                apps.map { it.id.value } == listOf("team-app", "collaborator-app")
             })
         }
     }
@@ -306,7 +309,18 @@ class AppRepositoryTest {
 
         appRepository.syncApps(TeamId(Arrangement.TEAM_ID), includeTeamApps = false).shouldSucceed()
 
-        verifySuspend(VerifyMode.exactly(2)) { arrangement.userDetailsApi.getMultipleUsers(any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userDetailsApi.getMultipleUsers(matches { request ->
+                (request as QualifiedUserIdListRequest).qualifiedIds ==
+                    collaboratorIds.take(500).map { NetworkQualifiedID(it, Arrangement.DOMAIN) }
+            })
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userDetailsApi.getMultipleUsers(matches { request ->
+                (request as QualifiedUserIdListRequest).qualifiedIds ==
+                    listOf(NetworkQualifiedID(collaboratorIds.last(), Arrangement.DOMAIN))
+            })
+        }
     }
 
     @Test
@@ -339,6 +353,91 @@ class AppRepositoryTest {
         appRepository.syncApps(TeamId(Arrangement.TEAM_ID), includeTeamApps = true).shouldFail()
 
         verifySuspend(VerifyMode.exactly(0)) { arrangement.appDAO.upsertApps(any()) }
+    }
+
+    @Test
+    fun givenTeamAppsFailure_whenSyncing_thenNoCollaboratorsOrStorageAreRequested() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        val error = KaliumException.GenericError(IllegalStateException("team apps failure"))
+        everySuspend { arrangement.teamsApi.getTeamApps(any()) } returns NetworkResponse.Error(error)
+
+        repository.syncApps(TeamId(Arrangement.TEAM_ID), true).shouldFail {
+            assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).kaliumException)
+        }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.teamsApi.getTeamCollaborators(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.appDAO.upsertApps(any()) }
+    }
+
+    @Test
+    fun givenLaterProfileBatchFailure_whenSyncing_thenEarlierResultsAreNotPersisted() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withCollaborators((1..1001).map { "collaborator-$it" })
+            .arrange()
+        val firstProfile = Arrangement.appProfile("collaborator-1", UserTypeDTO.APP)
+        everySuspend { arrangement.userDetailsApi.getMultipleUsers(matches { request ->
+            (request as QualifiedUserIdListRequest).qualifiedIds.first().value == "collaborator-1"
+        }) } returns NetworkResponse.Success(ListUsersDTO(emptyList(), listOf(firstProfile)), emptyMap(), 200)
+        val error = KaliumException.GenericError(IllegalStateException("profile failure"))
+        everySuspend { arrangement.userDetailsApi.getMultipleUsers(matches { request ->
+            (request as QualifiedUserIdListRequest).qualifiedIds.first().value == "collaborator-501"
+        }) } returns NetworkResponse.Error(error)
+
+        repository.syncApps(TeamId(Arrangement.TEAM_ID), false).shouldFail {
+            assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).kaliumException)
+        }
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.userDetailsApi.getMultipleUsers(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.appDAO.upsertApps(any()) }
+    }
+
+    @Test
+    fun givenOtherPermissionErrors_whenSyncing_thenErrorsArePropagatedWithoutChangingCache() = runTest {
+        for (response in listOf(
+            GenericAPIErrorResponse(403, "Forbidden", "access-denied"),
+            GenericAPIErrorResponse(401, "Unauthorized", "insufficient-permissions")
+        )) {
+            val error = KaliumException.InvalidRequestError(response)
+            val (arrangement, repository) = Arrangement().withCollaboratorFailure(error).arrange()
+
+            repository.syncApps(TeamId(Arrangement.TEAM_ID), false).shouldFail {
+                assertEquals(error, assertIs<NetworkFailure.ServerMiscommunication>(it).kaliumException)
+            }
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.appDAO.upsertApps(any()) }
+        }
+    }
+
+    @Test
+    fun givenStorageFailure_whenSyncing_thenFailureIsPropagated() = runTest {
+        val (arrangement, repository) = Arrangement().withCollaborators(emptyList()).arrange()
+        val error = IllegalStateException("storage failure")
+        everySuspend { arrangement.appDAO.upsertApps(any()) } throws error
+
+        repository.syncApps(TeamId(Arrangement.TEAM_ID), false).shouldFail {
+            assertEquals(StorageFailure.Generic(error), it)
+        }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.userDetailsApi.getMultipleUsers(any()) }
+    }
+
+    @Test
+    fun givenProfileRequestCancellation_whenSyncing_thenCancellationIsRethrownWithoutStorageWrite() = runTest {
+        val (arrangement, repository) = Arrangement().withCollaborators(listOf("app")).arrange()
+        val cancellation = CancellationException("profile cancelled")
+        everySuspend { arrangement.userDetailsApi.getMultipleUsers(any()) } throws cancellation
+
+        assertEquals(cancellation, assertFailsWith<CancellationException> {
+            repository.syncApps(TeamId(Arrangement.TEAM_ID), false)
+        })
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.appDAO.upsertApps(any()) }
+    }
+
+    @Test
+    fun givenStorageCancellation_whenSyncing_thenCancellationIsRethrown() = runTest {
+        val (arrangement, repository) = Arrangement().withCollaborators(emptyList()).arrange()
+        val cancellation = CancellationException("storage cancelled")
+        everySuspend { arrangement.appDAO.upsertApps(any()) } throws cancellation
+
+        assertEquals(cancellation, assertFailsWith<CancellationException> {
+            repository.syncApps(TeamId(Arrangement.TEAM_ID), false)
+        })
     }
 
     private class Arrangement {

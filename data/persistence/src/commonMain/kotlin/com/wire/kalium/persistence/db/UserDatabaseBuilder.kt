@@ -51,20 +51,30 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserPrefsDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
+import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
+import com.wire.kalium.persistence.dao.backup.NomadMessagesDAOImpl
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAOImpl
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallDAOImpl
+import com.wire.kalium.persistence.dao.cellfile.CellFileDao
+import com.wire.kalium.persistence.dao.cellfile.CellFileDaoImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
+import com.wire.kalium.persistence.dao.conversation.PendingSubconversationProposalDAO
+import com.wire.kalium.persistence.dao.conversation.PendingSubconversationProposalDAOImpl
+import com.wire.kalium.persistence.dao.conversation.SubconversationDAO
+import com.wire.kalium.persistence.dao.conversation.SubconversationDAOImpl
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAOImpl
 import com.wire.kalium.persistence.dao.event.EventDAO
 import com.wire.kalium.persistence.dao.event.EventDAOImpl
+import com.wire.kalium.persistence.dao.meeting.MeetingDao
+import com.wire.kalium.persistence.dao.meeting.MeetingDaoImpl
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberDAOImpl
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
@@ -73,6 +83,11 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
+import com.wire.kalium.persistence.dao.message.MessageTimelineDAO
+import com.wire.kalium.persistence.dao.message.PendingDeliveryConfirmationDAO
+import com.wire.kalium.persistence.dao.message.PendingDeliveryConfirmationDAOImpl
+import com.wire.kalium.persistence.dao.message.PollMessageDAO
+import com.wire.kalium.persistence.dao.message.PollMessageDAOImpl
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDaoImpl
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
@@ -80,14 +95,8 @@ import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftD
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDaoImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
-import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
-import com.wire.kalium.persistence.dao.backup.NomadMessagesDAOImpl
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAOImpl
-import com.wire.kalium.persistence.dao.cellfile.CellFileDao
-import com.wire.kalium.persistence.dao.cellfile.CellFileDaoImpl
-import com.wire.kalium.persistence.dao.meeting.MeetingDao
-import com.wire.kalium.persistence.dao.meeting.MeetingDaoImpl
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDaoImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -98,8 +107,9 @@ import com.wire.kalium.persistence.db.feeders.MentionsFeeder
 import com.wire.kalium.persistence.db.feeders.MessagesFeeder
 import com.wire.kalium.persistence.db.feeders.ReactionsFeeder
 import com.wire.kalium.persistence.db.feeders.UnreadEventsFeeder
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlin.jvm.JvmInline
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 
 @JvmInline
 value class UserDBSecret(val value: ByteArray)
@@ -158,8 +168,11 @@ class UserDatabaseBuilder internal constructor(
     dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
     private val isEncrypted: Boolean,
-    val dbInvalidationController: DbInvalidationController
+    val dbInvalidationController: DbInvalidationController,
+    initializeSelfUser: Boolean = true,
 ) {
+    private var closeFailure: Throwable? = null
+    private var closed = false
 
     internal val database: UserDatabase = UserDatabase(
         driver = sqlDriver,
@@ -186,6 +199,8 @@ class UserDatabaseBuilder internal constructor(
         NewClientAdapter = TableMapper.newClientAdapter,
         MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter,
         ButtonContentAdapter = TableMapper.buttonContentAdapter,
+        PollContentAdapter = TableMapper.pollContentAdapter,
+        PollVoteContentAdapter = TableMapper.pollVoteContentAdapter,
         MessageConversationLocationContentAdapter = TableMapper.messageConversationLocationContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
         MessageAssetTransferStatusAdapter = TableMapper.messageAssetTransferStatusAdapter,
@@ -199,13 +214,14 @@ class UserDatabaseBuilder internal constructor(
         MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
         RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter,
         AppAdapter = TableMapper.appAdapter,
+        PendingDeliveryConfirmationsAdapter = TableMapper.pendingDeliveryConfirmationsAdapter,
         PendingActionsAdapter = TableMapper.pendingActionsAdapter,
         MeetingAdapter = TableMapper.meetingAdapter,
         MeetingOccurrenceAdapter = TableMapper.meetingOccurrenceAdapter,
     )
 
     init {
-        sqlDriver.execute(
+        if (initializeSelfUser) sqlDriver.execute(
             identifier = null,
             sql = "INSERT OR IGNORE INTO SelfUser(id) VALUES(?);",
             parameters = 1
@@ -219,6 +235,10 @@ class UserDatabaseBuilder internal constructor(
 
     val userDAO: UserDAO
         get() = UserDAOImpl(database.usersQueries, readDispatcher, writeDispatcher)
+
+    val messageTimelineDAO: MessageTimelineDAO by lazy {
+        MessageTimelineDAO(database.messageTimelineQueries, sqlDriver, readDispatcher)
+    }
 
     val messageMetaDataDAO: MessageMetadataDAO
         get() = MessageMetadataDAOImpl(database.messageMetadataQueries, readDispatcher)
@@ -235,24 +255,34 @@ class UserDatabaseBuilder internal constructor(
             writeDispatcher,
         )
 
+    val pendingDeliveryConfirmationDAO: PendingDeliveryConfirmationDAO
+        get() = PendingDeliveryConfirmationDAOImpl(database.pendingDeliveryConfirmationsQueries, readDispatcher, writeDispatcher)
+
     val eventDAO: EventDAO
         get() = EventDAOImpl(
             database.eventsQueries,
+            database.metadataQueries,
             readDispatcher,
             writeDispatcher,
         )
 
+    val notificationEventStore: com.wire.kalium.persistence.dao.event.NotificationEventStore
+        get() = com.wire.kalium.persistence.dao.event.NotificationEventStore(database, readDispatcher, writeDispatcher)
+
     val conversationDAO: ConversationDAO
-        get() = ConversationDAOImpl(
-            database.conversationsQueries,
-            database.conversationDetailsQueries,
-            database.conversationDetailsWithEventsQueries,
-            database.conversationDetailsWithMembersQueries,
-            database.membersQueries,
-            database.unreadEventsQueries,
-            readDispatcher,
-            writeDispatcher,
-        )
+        get() = conversationDAO(readDispatcher)
+
+    private fun conversationDAO(readDispatcher: ReadDispatcher): ConversationDAO = ConversationDAOImpl(
+        database.conversationsQueries,
+        database.conversationDetailsQueries,
+        database.conversationDetailsWithEventsQueries,
+        database.conversationDetailsWithMembersQueries,
+        database.conversationListQueries,
+        database.membersQueries,
+        database.unreadEventsQueries,
+        readDispatcher,
+        writeDispatcher,
+    )
 
     val conversationFolderDAO: ConversationFolderDAO
         get() = ConversationFolderDAOImpl(
@@ -276,6 +306,14 @@ class UserDatabaseBuilder internal constructor(
             readDispatcher,
             writeDispatcher,
         )
+
+    val pendingSubconversationProposalDAO: PendingSubconversationProposalDAO by lazy {
+        PendingSubconversationProposalDAOImpl(database, readDispatcher, writeDispatcher)
+    }
+
+    val subconversationDAO: SubconversationDAO by lazy {
+        SubconversationDAOImpl(database, readDispatcher, writeDispatcher)
+    }
 
     val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(
@@ -326,23 +364,76 @@ class UserDatabaseBuilder internal constructor(
         get() = CallDAOImpl(database.callsQueries, readDispatcher, writeDispatcher)
 
     val messageDAO: MessageDAO
-        get() = MessageDAOImpl(
-            database.messagesQueries,
-            database.messageAttachmentsQueries,
-            database.messageAssetViewQueries,
-            database.notificationQueries,
-            database.conversationsQueries,
-            database.unreadEventsQueries,
-            database.messagePreviewQueries,
-            database.cellFilesQueries,
-            userId,
-            database.reactionsQueries,
-            database.usersQueries,
-            readDispatcher,
-            writeDispatcher,
-            database.messageAssetTransferStatusQueries,
-            database.buttonContentQueries
-        )
+        get() = messageDAO(readDispatcher)
+
+    private fun messageDAO(readDispatcher: ReadDispatcher): MessageDAO = MessageDAOImpl(
+        database.messagesQueries,
+        database.messageAttachmentsQueries,
+        database.messageAssetViewQueries,
+        database.notificationQueries,
+        database.conversationsQueries,
+        database.unreadEventsQueries,
+        database.messagePreviewQueries,
+        database.cellFilesQueries,
+        userId,
+        database.reactionsQueries,
+        database.usersQueries,
+        readDispatcher,
+        writeDispatcher,
+        database.messageAssetTransferStatusQueries,
+        database.buttonContentQueries,
+        database.pollContentQueries,
+    )
+
+    /**
+     * Apply ordered receiving effects on the writer connection. The supplied DAOs use the same
+     * dispatcher for reads and writes, so native transactions never hop to a reader thread.
+     * Local file cleanup may run before its SQL references are removed. Callers awaiting network
+     * work here must supply a fixed thread dispatcher for the native SQLite driver (as the NSE does).
+     */
+    suspend fun <T> writeMessageEffects(block: suspend MessageEffectDAOs.() -> T): T = withContext(writeDispatcher.value) {
+        val transactionReads = ReadDispatcher(writeDispatcher.value)
+        val transactionMetadata = MetadataDAOImpl(database.metadataQueries, writeDispatcher, transactionReads)
+        database.transactionWithResult {
+            MessageEffectDAOs(
+                conversations = conversationDAO(transactionReads),
+                messages = messageDAO(transactionReads),
+                composites = CompositeMessageDAOImpl(database.buttonContentQueries, writeDispatcher),
+                polls = PollMessageDAOImpl(database.pollContentQueries, transactionReads, writeDispatcher),
+                assets = AssetDAOImpl(database.assetsQueries, transactionReads, writeDispatcher),
+                pendingActions = PendingActionDAOImpl(database.pendingActionsQueries, transactionReads, writeDispatcher),
+                reactions = ReactionDAOImpl(database.reactionsQueries, transactionReads, writeDispatcher),
+                deliveries = PendingDeliveryConfirmationDAOImpl(
+                    database.pendingDeliveryConfirmationsQueries,
+                    transactionReads,
+                    writeDispatcher
+                ),
+                receipts = ReceiptDAOImpl(database.receiptsQueries, TableMapper.receiptAdapter, transactionReads, writeDispatcher),
+                users = UserDAOImpl(database.usersQueries, transactionReads, writeDispatcher, rollbackUnchangedUpserts = false),
+                prefs = UserPrefsDAO(transactionMetadata),
+                config = UserConfigDAOImpl(transactionMetadata),
+                folders = ConversationFolderDAOImpl(database.conversationFoldersQueries, transactionReads, writeDispatcher),
+                metadata = transactionMetadata,
+                members = MemberDAOImpl(
+                    database.membersQueries,
+                    database.usersQueries,
+                    database.conversationsQueries,
+                    transactionReads,
+                    writeDispatcher
+                ),
+                meetings = MeetingDaoImpl(database.meetingsQueries, transactionReads, writeDispatcher),
+                apps = AppDAOImpl(database.appsQueries, transactionReads, writeDispatcher),
+                clients = ClientDAOImpl(database.clientsQueries, transactionReads, writeDispatcher, rollbackUnchangedUpserts = false),
+                newClients = NewClientDAOImpl(database.newClientQueries, transactionReads, writeDispatcher),
+                connections = ConnectionDAOImpl(
+                    database.connectionsQueries,
+                    database.conversationsQueries,
+                    transactionReads,
+                    writeDispatcher
+                ),
+            ).block()
+        }
+    }
 
     val messageDraftDAO = MessageDraftDAOImpl(
         database.messageDraftsQueries,
@@ -351,6 +442,9 @@ class UserDatabaseBuilder internal constructor(
         readDispatcher,
         writeDispatcher,
     )
+
+    val pollMessageDAO: PollMessageDAO
+        get() = PollMessageDAOImpl(database.pollContentQueries, readDispatcher, writeDispatcher)
 
     val assetDAO: AssetDAO
         get() = AssetDAOImpl(
@@ -434,8 +528,22 @@ class UserDatabaseBuilder internal constructor(
      * drops DB connection and delete the DB file
      */
     fun nuke(): Boolean {
-        sqlDriver.close()
+        close()
         return nuke(userId, platformDatabaseData)
+    }
+
+    /** Stop and await all database users before closing. Failed native cleanup must never appear successful on retry. */
+    @Suppress("TooGenericExceptionCaught")
+    fun close() {
+        closeFailure?.let { throw it }
+        if (closed) return
+        try {
+            sqlDriver.close()
+            closed = true
+        } catch (failure: Throwable) {
+            closeFailure = failure
+            throw failure
+        }
     }
 
     private companion object {
@@ -465,3 +573,28 @@ expect suspend fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.AsyncValue
  * @return true if the database have fk violations, false otherwise
  */
 expect suspend fun SqlDriver.checkFKViolations(): Boolean
+
+/** Canonical DAOs bound to the caller's single writer transaction, including all reads. */
+@Suppress("LongParameterList")
+class MessageEffectDAOs internal constructor(
+    val conversations: ConversationDAO,
+    val messages: MessageDAO,
+    val reactions: ReactionDAO,
+    val composites: CompositeMessageDAO,
+    val polls: PollMessageDAO,
+    val assets: AssetDAO,
+    val pendingActions: PendingActionDAO,
+    val deliveries: PendingDeliveryConfirmationDAO,
+    val receipts: ReceiptDAO,
+    val users: UserDAO,
+    val prefs: UserConfigStorage,
+    val config: UserConfigDAO,
+    val folders: ConversationFolderDAO,
+    val metadata: MetadataDAO,
+    val members: MemberDAO,
+    val meetings: MeetingDao,
+    val apps: AppDAO,
+    val clients: ClientDAO,
+    val newClients: NewClientDAO,
+    val connections: ConnectionDAO,
+)

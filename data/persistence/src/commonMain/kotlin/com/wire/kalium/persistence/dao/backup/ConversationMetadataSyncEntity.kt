@@ -19,7 +19,7 @@
 package com.wire.kalium.persistence.dao.backup
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class ConversationMetadataSyncEntity(
     val conversationId: QualifiedIDEntity,

@@ -47,9 +47,11 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
+@Suppress("TooManyFunctions")
 internal interface ConversationFolderRepository {
 
     suspend fun getFavoriteConversationFolder(): Either<CoreFailure, ConversationFolder>
@@ -67,19 +69,38 @@ internal interface ConversationFolderRepository {
     suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit>
     fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
     suspend fun addFolder(folder: ConversationFolder): Either<CoreFailure, Unit>
+    suspend fun getFolder(folderId: String): Either<CoreFailure, FolderWithConversations>
+    suspend fun updateMembership(
+        folderId: String,
+        added: Set<QualifiedID>,
+        removed: Set<QualifiedID>,
+    ): Either<CoreFailure, ConversationFolder>
+    suspend fun saveFolder(
+        folder: ConversationFolder,
+        added: Set<QualifiedID>,
+        removed: Set<QualifiedID>,
+    ): Either<CoreFailure, Unit>
+    suspend fun deleteFolderAndSync(folderId: String): Either<CoreFailure, Unit>
+
+    /** Moves the given folders into the listed order, within the places they already occupy. */
+    suspend fun reorderFolders(folderIds: List<String>): Either<CoreFailure, Unit>
 }
 
+@Suppress("TooManyFunctions")
 internal class ConversationFolderDataSource internal constructor(
     private val conversationFolderDAO: ConversationFolderDAO,
     private val userPropertiesApi: PropertiesApi,
     private val selfUserId: QualifiedID,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) : ConversationFolderRepository {
+    private val folderMutationMutex = Mutex()
 
     override suspend fun updateConversationFolders(folderWithConversations: List<FolderWithConversations>): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            conversationFolderDAO.updateConversationFolders(folderWithConversations.map { it.toDao() })
-        }
+        folderMutationMutex.withLock { persistFolders(folderWithConversations) }
+
+    private suspend fun persistFolders(folders: List<FolderWithConversations>): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationFolderDAO.updateConversationFolders(folders.map { it.toDao() })
+    }
 
     override suspend fun getFavoriteConversationFolder(): Either<CoreFailure, ConversationFolder> = wrapStorageRequest {
         conversationFolderDAO.getFavoriteConversationFolder()?.toModel()
@@ -92,7 +113,11 @@ internal class ConversationFolderDataSource internal constructor(
             }
         }
 
-    override suspend fun fetchConversationFolders(): Either<CoreFailure, Unit> = wrapApiRequest {
+    override suspend fun fetchConversationFolders(): Either<CoreFailure, Unit> = folderMutationMutex.withLock {
+        fetchFolders()
+    }
+
+    private suspend fun fetchFolders(): Either<CoreFailure, Unit> = wrapApiRequest {
         kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS).v("Fetching conversation folders")
         userPropertiesApi.getLabels()
     }
@@ -138,8 +163,8 @@ internal class ConversationFolderDataSource internal constructor(
     override suspend fun addConversationToFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit> {
         kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS)
             .v("Adding conversation ${conversationId.toLogString()} to folder ${folderId.obfuscateId()}")
-        return wrapStorageRequest {
-            conversationFolderDAO.addConversationToFolder(conversationId.toDao(), folderId)
+        return folderMutationMutex.withLock {
+            wrapStorageRequest { conversationFolderDAO.addConversationToFolder(conversationId.toDao(), folderId) }
         }
     }
 
@@ -150,28 +175,18 @@ internal class ConversationFolderDataSource internal constructor(
     ): Either<CoreFailure, Unit> {
         kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS)
             .v("Removing conversation ${conversationId.toLogString()} from folder ${folderId.obfuscateId()}")
-        return wrapStorageRequest {
-            conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId)
-            if (!isFavorite) {
-                val conversations = conversationFolderDAO.observeConversationListFromFolder(folderId).first()
-                if (conversations.isEmpty()) {
-                    conversationFolderDAO.removeFolder(folderId)
-                } else {
-                    Unit
-                }
-            } else {
-                Unit
-            }
+        return folderMutationMutex.withLock {
+            wrapStorageRequest { conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId) }
         }
     }
 
-    override suspend fun removeFolder(folderId: String): Either<CoreFailure, Unit> = wrapStorageRequest {
-        conversationFolderDAO.removeFolder(folderId)
+    override suspend fun removeFolder(folderId: String): Either<CoreFailure, Unit> = folderMutationMutex.withLock {
+        wrapStorageRequest { conversationFolderDAO.removeFolder(folderId) }
     }
 
-    override suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit> {
+    override suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit> = folderMutationMutex.withLock {
         kaliumLogger.withFeatureId(CONVERSATIONS_FOLDERS).v("Syncing conversation folders from local")
-        return wrapStorageRequest { conversationFolderDAO.getFoldersWithConversations().map { it.toModel() } }
+        wrapStorageRequest { conversationFolderDAO.getFoldersWithConversations().map { it.toModel() } }
             .flatMap {
                 wrapApiRequest {
                     userPropertiesApi.updateLabels(
@@ -188,8 +203,73 @@ internal class ConversationFolderDataSource internal constructor(
     }
 
     override suspend fun addFolder(folder: ConversationFolder): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            conversationFolderDAO.addFolder(folder.toDao())
+        return folderMutationMutex.withLock {
+            wrapStorageRequest { conversationFolderDAO.addFolder(folder.toDao()) }
         }
+    }
+
+    override suspend fun getFolder(folderId: String): Either<CoreFailure, FolderWithConversations> = wrapStorageRequest {
+        conversationFolderDAO.getFoldersWithConversations().first { it.id == folderId }.toModel()
+    }
+
+    override suspend fun updateMembership(
+        folderId: String,
+        added: Set<QualifiedID>,
+        removed: Set<QualifiedID>,
+    ): Either<CoreFailure, ConversationFolder> = mutateFolders { folders ->
+        val previous = folders.first { it.id == folderId }
+        val updated = previous.copy(conversationIdList = ((previous.conversationIdList.toSet() - removed) + added).toList())
+        folders.map { if (it.id == folderId) updated else it }
+    }.map { folders ->
+        val saved = folders.first { it.id == folderId }
+        ConversationFolder(saved.id, saved.name, saved.type)
+    }
+
+    override suspend fun saveFolder(
+        folder: ConversationFolder,
+        added: Set<QualifiedID>,
+        removed: Set<QualifiedID>,
+    ): Either<CoreFailure, Unit> = mutateFolders { folders ->
+        require(folder.type == FolderType.USER)
+        require(folder.name.isNotBlank() && folder.name.length <= MAX_FOLDER_NAME_LENGTH)
+        val previous = folders.firstOrNull { it.id == folder.id }
+        require(
+            previous?.name == folder.name || folders.none { it.id != folder.id && it.name.equals(folder.name, ignoreCase = true) }
+        )
+        require(previous == null || previous.type == FolderType.USER)
+        val members = (previous?.conversationIdList.orEmpty().toSet() - removed) + added
+        val saved = FolderWithConversations(folder.id, folder.name, FolderType.USER, members.toList())
+        // Keep an edited folder where the user placed it; a new folder goes last.
+        if (previous == null) folders + saved else folders.map { if (it.id == folder.id) saved else it }
+    }.map { }
+
+    override suspend fun deleteFolderAndSync(folderId: String): Either<CoreFailure, Unit> = mutateFolders { folders ->
+        require(folders.first { it.id == folderId }.type == FolderType.USER)
+        folders.filterNot { it.id == folderId }
+    }.map { }
+
+    // Only user folders move. Favorites and folders missing from the request, such as one just added on another
+    // device, keep their places even if a caller lists Favorites.
+    override suspend fun reorderFolders(folderIds: List<String>): Either<CoreFailure, Unit> = mutateFolders { folders ->
+        val requested = folderIds.withIndex().associate { (index, id) -> id to index }
+        fun FolderWithConversations.moves() = type == FolderType.USER && id in requested
+        val reordered = folders.filter { it.moves() }.sortedBy { requested.getValue(it.id) }.iterator()
+        folders.map { if (it.moves()) reordered.next() else it }
+    }.map { }
+
+    // Send one snapshot per batch. A network failure leaves local membership unchanged,
+    // allowing the editor to keep its draft and retry without a partially applied batch.
+    private suspend fun mutateFolders(
+        transform: (List<FolderWithConversations>) -> List<FolderWithConversations>,
+    ): Either<CoreFailure, List<FolderWithConversations>> = folderMutationMutex.withLock {
+        wrapStorageRequest { transform(conversationFolderDAO.getFoldersWithConversations().map { it.toModel() }) }
+            .flatMap { folders ->
+                wrapApiRequest { userPropertiesApi.updateLabels(LabelListResponseDTO(folders.map { it.toLabel() })) }
+                    .flatMap { persistFolders(folders).map { folders } }
+            }
+    }
+
+    private companion object {
+        const val MAX_FOLDER_NAME_LENGTH = 64
     }
 }

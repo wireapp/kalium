@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

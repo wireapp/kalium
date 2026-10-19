@@ -25,6 +25,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -108,11 +109,13 @@ class ReceiptModeUpdateEventHandlerTest {
 
     private class Arrangement {
         val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
+        val messageDAO = mock<MessageDAO>(mode = MockMode.autofill)
         val persistMessage = mock<PersistMessageUseCase>()
 
         private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler = ReceiptModeUpdateEventHandlerImpl(
             conversationDAO = conversationDAO,
             receiptModeMapper = MapperProvider.receiptModeMapper(),
+            messageDAO = messageDAO,
             persistMessage = persistMessage
         )
 

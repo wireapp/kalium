@@ -47,7 +47,7 @@ class SearchDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConnectedUser_whenGettingKnowUsers_thenReturnOnlyConnectedUsers() = runTest {
+    fun givenConnectedUser_whenGettingKnowUsers_thenReturnOnlyConnectedUsers() = runTest(dispatcher) {
 
         val connectedUser1 = newUserEntity(id = "1").copy(connectionStatus = ConnectionEntity.State.ACCEPTED)
         val connectedUser2 = newUserEntity(id = "2").copy(connectionStatus = ConnectionEntity.State.ACCEPTED)
@@ -80,7 +80,7 @@ class SearchDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConnectedUser_whenGettingKnowUsersExcludingAConversation_thenReturnOnlyConnectedUsers() = runTest {
+    fun givenConnectedUser_whenGettingKnowUsersExcludingAConversation_thenReturnOnlyConnectedUsers() = runTest(dispatcher) {
 
         val connectedUser1 = newUserEntity(id = "connectedUser1").copy(connectionStatus = ConnectionEntity.State.ACCEPTED)
         val connectedUser2 = newUserEntity(id = "connectedUser2").copy(connectionStatus = ConnectionEntity.State.ACCEPTED)
@@ -118,13 +118,15 @@ class SearchDAOTest : BaseDatabaseTest() {
             MemberEntity(
                 connectedPartOfConversation1.id,
                 MemberEntity.Role.Member
-            ), conversationToExclude.id
+            ),
+            conversationToExclude.id
         )
         memberDAO.insertMember(
             MemberEntity(
                 connectedPartOfConversation2.id,
                 MemberEntity.Role.Member
-            ), conversationToExclude.id
+            ),
+            conversationToExclude.id
         )
         searchDAO.getKnownContacts(
             excludeConversationId = conversationToExclude.id
@@ -136,7 +138,7 @@ class SearchDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUsers_whenSearchingByName_thenOnlyReturnConnectedUsers() = runTest {
+    fun givenUsers_whenSearchingByName_thenOnlyReturnConnectedUsers() = runTest(dispatcher) {
         val searchQuery = "searchQuery"
         val connectedUser1 = newUserEntity(id = "1").copy(name = "searchQuery", connectionStatus = ConnectionEntity.State.ACCEPTED)
         val connectedUser2 = newUserEntity(id = "2").copy(name = "qwerty", connectionStatus = ConnectionEntity.State.ACCEPTED)
@@ -168,7 +170,7 @@ class SearchDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUsers_whenSearchingByNameAndExcludingAConversation_thenOnlyReturnConnectedUsersThatAreNotMembers() = runTest {
+    fun givenUsers_whenSearchingByNameAndExcludingAConversation_thenOnlyReturnConnectedUsersThatAreNotMembers() = runTest(dispatcher) {
         val searchQuery = "searchQuery"
         val connectedUser1 = newUserEntity(id = "1").copy(name = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
         val connectedUser2 = newUserEntity(id = "2").copy(name = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
@@ -199,7 +201,8 @@ class SearchDAOTest : BaseDatabaseTest() {
             MemberEntity(
                 connectedUser1.id,
                 MemberEntity.Role.Member
-            ), conversation.id
+            ),
+            conversation.id
         )
 
         searchDAO.searchByName(excludeConversationId = conversation.id, searchQuery = searchQuery).also {
@@ -209,7 +212,7 @@ class SearchDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConnectedUser_whenSearchingByHandle_thenReturnOnlyConnectedUsers() = runTest {
+    fun givenConnectedUser_whenSearchingByHandle_thenReturnOnlyConnectedUsers() = runTest(dispatcher) {
         val searchQuery = "searchQuery"
         val connectedUser1 = newUserEntity(id = "1").copy(handle = "searchQuery", connectionStatus = ConnectionEntity.State.ACCEPTED)
         val connectedUser2 = newUserEntity(id = "2").copy(handle = "qwerty", connectionStatus = ConnectionEntity.State.ACCEPTED)
@@ -241,7 +244,7 @@ class SearchDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUsers_whenSearchingByHandleAndExcludingAConversation_thenOnlyReturnConnectedUsersThatAreNotMembers() = runTest {
+    fun givenUsers_whenSearchingByHandleAndExcludingAConversation_thenOnlyReturnConnectedUsersThatAreNotMembers() = runTest(dispatcher) {
         val searchQuery = "searchQuery"
         val connectedUser1 = newUserEntity(id = "1").copy(handle = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
         val connectedUser2 = newUserEntity(id = "2").copy(handle = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
@@ -272,7 +275,8 @@ class SearchDAOTest : BaseDatabaseTest() {
             MemberEntity(
                 connectedUser1.id,
                 MemberEntity.Role.Member
-            ), conversation.id
+            ),
+            conversation.id
         )
 
         searchDAO.searchByHandle(searchQuery = searchQuery, excludeConversationId = conversation.id).also {
@@ -280,4 +284,74 @@ class SearchDAOTest : BaseDatabaseTest() {
             assertEquals(connectedUser2.id, it[0].id)
         }
     }
+
+    @Test
+    fun givenContacts_whenGettingKnownContacts_thenAllFilterCombinationsAreApplied() = runTest(dispatcher) {
+        verifyFilterCombinations { conversation, team, domain ->
+            searchDAO.getKnownContacts(conversation, team, domain)
+        }
+    }
+
+    @Test
+    fun givenContacts_whenSearchingByName_thenAllFilterCombinationsAreApplied() = runTest(dispatcher) {
+        verifyFilterCombinations { conversation, team, domain ->
+            searchDAO.searchByName("candidate", conversation, team, domain)
+        }
+    }
+
+    @Test
+    fun givenContacts_whenSearchingByHandle_thenAllFilterCombinationsAreApplied() = runTest(dispatcher) {
+        verifyFilterCombinations { conversation, team, domain ->
+            searchDAO.searchByHandle("candidate", conversation, team, domain)
+        }
+    }
+
+    private suspend fun verifyFilterCombinations(
+        search: suspend (ConversationIDEntity?, String?, String?) -> List<UserSearchEntity>
+    ) {
+        fun contact(id: String, team: String? = "selfTeam", domain: String = selfUserId.domain) =
+            newUserEntity(UserIDEntity(id, domain)).copy(name = "candidate", handle = "candidate", team = team)
+
+        val eligible = listOf(
+            contact("teammate"),
+            contact("excluded"),
+            contact("otherConversation"),
+            contact("otherTeam", team = "otherTeam"),
+            contact("foreign", domain = "foreign.example"),
+            contact("noTeam", team = null),
+            contact("suffix", domain = "not${selfUserId.domain}"),
+            contact("case", domain = selfUserId.domain.uppercase())
+        )
+        val ineligible = listOf(
+            contact(selfUserId.value).copy(id = selfUserId),
+            contact("app").copy(userType = UserTypeEntity.APP),
+            contact("deleted").copy(deleted = true)
+        ) + ConnectionEntity.State.entries.filter { it != ConnectionEntity.State.ACCEPTED }.map {
+            contact(it.name).copy(connectionStatus = it)
+        }
+        userDAO.insertOrIgnoreUsers(eligible + ineligible)
+        val excludedConversation = newConversationEntity("excludedConversation")
+        val otherConversation = newConversationEntity("otherConversation")
+        conversationDAO.insertConversation(excludedConversation)
+        conversationDAO.insertConversation(otherConversation)
+        memberDAO.insertMember(MemberEntity(eligible[1].id, MemberEntity.Role.Member), excludedConversation.id)
+        memberDAO.insertMember(MemberEntity(eligible[2].id, MemberEntity.Role.Member), otherConversation.id)
+
+        val expectedByFilters = listOf(
+            Triple(null, null, eligible.map { it.id.value }.toSet()),
+            Triple("selfTeam", null, setOf("teammate", "excluded", "otherConversation", "foreign", "suffix", "case")),
+            Triple(null, selfUserId.domain, setOf("teammate", "excluded", "otherConversation", "otherTeam", "noTeam")),
+            Triple("selfTeam", selfUserId.domain, setOf("teammate", "excluded", "otherConversation"))
+        )
+        for ((team, domain, expected) in expectedByFilters) {
+            for (exclude in listOf(null, excludedConversation.id)) {
+                assertEquals(
+                    if (exclude == null) expected else expected - "excluded",
+                    search(exclude, team, domain).map { it.id.value }.toSet(),
+                    "team=$team domain=$domain exclude=$exclude"
+                )
+            }
+        }
+    }
+
 }

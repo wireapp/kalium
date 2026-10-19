@@ -65,7 +65,15 @@ kotlin {
                 implementation(libs.jna)
             }
         }
-        val appleMain by getting
+        val appleMain by getting {
+            dependencies {
+                implementation(libs.coroutines.core)
+                implementation(projects.core.logger)
+            }
+        }
+        val appleTest by getting {
+            dependencies { implementation(libs.coroutines.test) }
+        }
         val appleAvsMainSourceDir = "src/appleAvsMain/kotlin"
         listOf(
             getByName("iosArm64Main"),

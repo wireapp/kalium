@@ -31,6 +31,10 @@ import com.wire.kalium.logic.data.message.MessageContent
 
 @Suppress("TooManyFunctions")
 internal interface CallManager {
+    fun attachSignalJournal(journal: com.wire.kalium.logic.sync.receiving.CallSignalStore) = Unit
+    suspend fun replayPendingSignals() = Unit
+    suspend fun replayIncomingCallSignals(callId: String) = Unit
+
     suspend fun onCallingMessageReceived(
         message: Message.Signaling,
         content: MessageContent.Calling,
@@ -59,3 +63,6 @@ internal interface CallManager {
     suspend fun setNetworkQualityInterval(intervalInSeconds: Int)
     suspend fun cancelJobs()
 }
+
+/** Startup failed. An accepted native call may still be completing termination. */
+internal class CallStartException(message: String, cause: Throwable? = null) : Exception(message, cause)

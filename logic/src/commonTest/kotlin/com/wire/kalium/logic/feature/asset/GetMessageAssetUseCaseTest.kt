@@ -52,7 +52,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem

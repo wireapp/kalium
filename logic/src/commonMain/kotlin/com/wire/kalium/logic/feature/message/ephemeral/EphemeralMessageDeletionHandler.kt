@@ -36,7 +36,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.coroutines.CoroutineContext
 
 internal interface EphemeralMessageDeletionHandler {
@@ -60,8 +60,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 ) : EphemeralMessageDeletionHandler, CoroutineScope by userSessionCoroutineScope {
     private val kaliumLogger = kaliumLogger.withTextTag("EphemeralMessageDeletionHandler")
     private val logger = SelfDeletionEventLogger(kaliumLogger)
-    override val coroutineContext: CoroutineContext
-        get() = kaliumDispatcher.default
+    override val coroutineContext: CoroutineContext = userSessionCoroutineScope.coroutineContext + kaliumDispatcher.default
 
     private val ongoingSelfDeletionMessagesMutex = Mutex()
     private val ongoingSelfDeletionMessages = mutableMapOf<Pair<ConversationId, String>, Unit>()

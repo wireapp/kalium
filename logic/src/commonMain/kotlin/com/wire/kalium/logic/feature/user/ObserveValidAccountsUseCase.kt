@@ -58,7 +58,7 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
                     flowOf(listOf())
                 } else {
                     val flowsOfSelfUsers = accountList.map { accountInfo ->
-                        userSessionScopeProvider.getOrCreate(accountInfo.userId).let {
+                        userSessionScopeProvider.open(accountInfo.userId).let {
                             it.users.observeSelfUserWithTeam()
                         }
                     }

@@ -33,47 +33,22 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class DeleteConversationReminderEventHandlerTest {
-
     @Test
-    fun givenReminderEvent_whenHandling_thenStoresConversationDeletionTimestamp() = runTest {
+    fun remindersStoreScheduledTimestampAndContainWriteFailures() = runTest {
         val event = TestEvent.adminlessDeleteReminder()
-        val (arrangement, handler) = Arrangement().arrange()
+        val dao = mock<ConversationDAO>()
+        everySuspend { dao.insertAdminlessGroupDelete(any(), any()) } returns Unit
+        val handler = DeleteConversationReminderEventHandlerImpl(dao)
 
         handler.handle(event)
-
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.conversationDAO.insertAdminlessGroupDelete(
-                eq(event.conversationId.toDao()),
-                eq(event.deletionScheduledFor),
-            )
+            dao.insertAdminlessGroupDelete(eq(event.conversationId.toDao()), eq(event.deletionScheduledFor))
         }
-    }
 
-    @Test
-    fun givenStorageFailure_whenHandlingReminder_thenFailureIsContained() = runTest {
-        val event = TestEvent.adminlessDeleteReminder()
-        val (_, handler) = Arrangement()
-            .withInsertFailure(IllegalStateException("storage failure"))
-            .arrange()
-
+        everySuspend { dao.insertAdminlessGroupDelete(any(), any()) } throws IllegalStateException("storage failure")
         handler.handle(event)
-    }
-
-    private class Arrangement {
-        val conversationDAO = mock<ConversationDAO>()
-
-        init {
-            everySuspend {
-                conversationDAO.insertAdminlessGroupDelete(any(), any())
-            } returns Unit
+        verifySuspend(VerifyMode.exactly(1)) {
+            dao.insertAdminlessGroupDelete(eq(event.conversationId.toDao()), eq(event.deletionScheduledFor))
         }
-
-        fun withInsertFailure(throwable: Throwable) = apply {
-            everySuspend {
-                conversationDAO.insertAdminlessGroupDelete(any(), any())
-            } throws throwable
-        }
-
-        fun arrange() = this to DeleteConversationReminderEventHandlerImpl(conversationDAO)
     }
 }

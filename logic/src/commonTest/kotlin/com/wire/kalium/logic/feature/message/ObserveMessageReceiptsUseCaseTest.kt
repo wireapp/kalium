@@ -36,7 +36,7 @@ import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -51,14 +51,6 @@ class ObserveMessageReceiptsUseCaseTest {
         var usedReceiptType: ReceiptType? = null
 
         val receiptRepository = object : ReceiptRepositoryStub() {
-            override suspend fun persistReceipts(
-                userId: UserId,
-                conversationId: ConversationId,
-                date: Instant,
-                type: ReceiptType,
-                messageIds: List<String>
-            ) = Unit
-
             override fun observeMessageReceipts(
                 conversationId: ConversationId,
                 messageId: String,

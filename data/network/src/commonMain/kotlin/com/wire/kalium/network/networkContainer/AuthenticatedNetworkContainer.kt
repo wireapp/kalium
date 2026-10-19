@@ -23,6 +23,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.base.authenticated.SFTApi
 import com.wire.kalium.network.api.base.authenticated.ServerTimeApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
@@ -66,7 +67,9 @@ import com.wire.kalium.network.api.v6.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v7.authenticated.networkContainer.AuthenticatedNetworkContainerV7
 import com.wire.kalium.network.api.v8.authenticated.networkContainer.AuthenticatedNetworkContainerV8
 import com.wire.kalium.network.api.v9.authenticated.networkContainer.AuthenticatedNetworkContainerV9
+import com.wire.kalium.network.api.vcommon.SFTApiImpl
 import com.wire.kalium.network.HttpTrafficObserver
+import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
@@ -76,6 +79,11 @@ import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 import io.ktor.websocket.WebSocketSession
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.job
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
@@ -85,6 +93,15 @@ interface AuthenticatedNetworkContainer {
      * of the access token from the session manager on the next request.
      */
     suspend fun clearCachedToken()
+
+    /** Cancel and join all caller requests/collectors before closing. Injected mock engines remain caller-owned. */
+    suspend fun close()
+
+    /**
+     * Close open WebSockets and wait until their clients finish; HTTP requests and later WebSockets still work.
+     * The engine may finish closing the native socket afterwards. Stop collectors first, or they may reconnect.
+     */
+    suspend fun closeWebSockets()
 
     val accessTokenApi: AccessTokenApi
 
@@ -122,6 +139,8 @@ interface AuthenticatedNetworkContainer {
 
     val callApi: CallApi
 
+    val sftApi: SFTApi
+
     val connectionApi: ConnectionApi
 
     val featureConfigApi: FeatureConfigApi
@@ -139,7 +158,6 @@ interface AuthenticatedNetworkContainer {
     val meetingApi: MeetingApi
 
     val cellsHttpClient: HttpClient
-        get() = HttpClient()
 
     companion object {
 
@@ -363,7 +381,8 @@ interface AuthenticatedNetworkContainer {
                     certificatePinning,
                     mockEngine,
                     mockWebSocketSession,
-                    kaliumLogger
+                    kaliumLogger,
+                    engine = engine,
                 )
 
                 18 -> AuthenticatedNetworkContainerV18(
@@ -386,19 +405,29 @@ interface AuthenticatedNetworkContainer {
 }
 
 internal interface AuthenticatedHttpClientProvider {
+    suspend fun close()
+    suspend fun closeWebSockets()
+    val cellsHttpClient: HttpClient
+        get() = networkClient.httpClient
     val backendConfig: ServerConfigDTO.Links
     val nomadServiceUrl: String?
     val networkClient: AuthenticatedNetworkClient
     val websocketClient: AuthenticatedWebSocketClient
     val networkClientWithoutCompression: AuthenticatedNetworkClient
+
+    /** For SFT servers, which are not Wire backends and must never receive the Wire access token. */
+    val sftNetworkClient: UnboundNetworkClient
+    val sftApi: SFTApi
     suspend fun clearCachedToken()
 }
 
+@Suppress("LongParameterList")
 internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
     override val nomadServiceUrl: String?,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine,
+    private val ownsEngine: Boolean,
     private val webSocketSessionProvider: ((HttpClient, String) -> WebSocketSession)?,
     private val kaliumLogger: KaliumLogger,
 ) : AuthenticatedHttpClientProvider {
@@ -433,7 +462,7 @@ internal class AuthenticatedHttpClientProviderImpl(
 
     override val backendConfig = sessionManager.serverConfig().links
 
-    override val networkClient by lazy {
+    private val networkClientDelegate = lazy {
         AuthenticatedNetworkClient(
             engine,
             sessionManager.serverConfig(),
@@ -441,7 +470,7 @@ internal class AuthenticatedHttpClientProviderImpl(
             kaliumLogger
         )
     }
-    override val websocketClient by lazy {
+    private val websocketClientDelegate = lazy {
         AuthenticatedWebSocketClient(
             engine,
             bearerAuthProvider,
@@ -450,7 +479,7 @@ internal class AuthenticatedHttpClientProviderImpl(
             webSocketSessionProvider
         )
     }
-    override val networkClientWithoutCompression by lazy {
+    private val networkClientWithoutCompressionDelegate = lazy {
         AuthenticatedNetworkClient(
             engine,
             sessionManager.serverConfig(),
@@ -458,5 +487,45 @@ internal class AuthenticatedHttpClientProviderImpl(
             kaliumLogger,
             installCompression = false
         )
+    }
+    private val sftNetworkClientDelegate = lazy { UnboundNetworkClient(engine) }
+
+    override val networkClient by networkClientDelegate
+    override val websocketClient by websocketClientDelegate
+    override val networkClientWithoutCompression by networkClientWithoutCompressionDelegate
+    override val sftNetworkClient by sftNetworkClientDelegate
+    override val sftApi: SFTApi get() = SFTApiImpl(sftNetworkClient)
+    private val closeMutex = Mutex()
+    private var closeFailure: Throwable? = null
+    private var closed = false
+
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun close() = withContext(NonCancellable) {
+        closeMutex.withLock {
+            closeFailure?.let { throw it }
+            if (closed) return@withLock
+            try {
+                if (websocketClientDelegate.isInitialized()) websocketClientDelegate.value.close()
+                val clients = listOfNotNull(
+                    networkClientDelegate.takeIf { it.isInitialized() }?.value?.httpClient,
+                    networkClientWithoutCompressionDelegate.takeIf { it.isInitialized() }?.value?.httpClient,
+                    sftNetworkClientDelegate.takeIf { it.isInitialized() }?.value?.httpClient,
+                )
+                clients.forEach { it.close() }
+                clients.forEach { it.coroutineContext.job.join() }
+                if (ownsEngine) {
+                    engine.close()
+                    engine.coroutineContext.job.join()
+                }
+                closed = true
+            } catch (failure: Throwable) {
+                closeFailure = failure
+                throw failure
+            }
+        }
+    }
+
+    override suspend fun closeWebSockets() {
+        if (websocketClientDelegate.isInitialized()) websocketClientDelegate.value.closeSessions()
     }
 }

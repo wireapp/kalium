@@ -24,15 +24,16 @@ package com.wire.kalium.persistence.kmmSettings
  * Consumers (host apps) construct this and hand it to `CoreLogic`. It is then carried
  * through to every Apple-side site that talks to the iOS Keychain.
  *
- * Extend this class — do NOT add new top-level parameters to `CoreLogic` — when new
- * iOS Keychain options (access group, accessibility class, synchronizable, etc.) need
- * to be exposed.
- *
  * @property serviceName Stable identifier used as the iOS Keychain `kSecAttrService`
  *  value for all Kalium-managed entries (auth tokens, passphrases, per-user config).
- *  Must be stable across app reinstalls — typically the host app's bundle identifier.
+ *  Must be stable across app reinstalls, typically the host app's bundle identifier.
  *  Must NOT be derived from `NSHomeDirectory()`, which embeds the iOS Application UUID
  *  and changes on every reinstall, orphaning every previously stored entry.
+ * @property accessGroup Runtime Keychain access-group name shared by the host app and its
+ *  extensions. For an App Group this is the literal `group.*` identifier. For a group added through
+ *  Keychain Sharing this includes the prefix that Xcode applies while signing. Both targets must
+ *  include this exact value in their signed entitlements. Keep `null` to use the target's default
+ *  access group.
  * @property keychainAccessibility When Kalium-managed entries can be read, as the iOS Keychain
  *  `kSecAttrAccessible` value. Null keeps Apple's default, [KeychainAccessibility.WhenUnlocked],
  *  under which Kalium can't read its tokens and database keys while the device is locked, e.g.
@@ -46,7 +47,13 @@ package com.wire.kalium.persistence.kmmSettings
 public data class ApplePersistenceConfig(
     val serviceName: String,
     val keychainAccessibility: KeychainAccessibility?,
-)
+    val accessGroup: String? = null,
+) {
+    init {
+        require(serviceName.isNotBlank()) { "serviceName must not be blank" }
+        require(accessGroup == null || accessGroup.isNotBlank()) { "accessGroup must not be blank" }
+    }
+}
 
 /**
  * The iOS Keychain `kSecAttrAccessible` values Kalium-managed entries can be stored with.

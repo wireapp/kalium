@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.data.message.receipt
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.sync.receiver.handler.toReceiptEntity
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
@@ -69,11 +71,11 @@ class ReceiptRepositoryTest {
 
         val date = DateTimeUtil.currentInstant()
 
-        receiptRepository.persistReceipts(
-            userId = TestUser.OTHER_USER_ID,
-            conversationId = TEST_CONVERSATION_ID,
+        receiptDAO.insertReceipts(
+            userId = TestUser.OTHER_USER_ID.toDao(),
+            conversationId = TEST_CONVERSATION_ID.toDao(),
             date = date,
-            type = ReceiptType.READ,
+            type = ReceiptType.READ.toReceiptEntity(),
             messageIds = listOf(TEST_MESSAGE_ID)
         )
 
@@ -95,19 +97,19 @@ class ReceiptRepositoryTest {
 
             val date = DateTimeUtil.currentInstant()
 
-            receiptRepository.persistReceipts(
-                userId = TestUser.OTHER_USER_ID_2,
-                conversationId = TEST_CONVERSATION_ID,
+            receiptDAO.insertReceipts(
+                userId = TestUser.OTHER_USER_ID_2.toDao(),
+                conversationId = TEST_CONVERSATION_ID.toDao(),
                 date = date,
-                type = ReceiptType.READ,
+                type = ReceiptType.READ.toReceiptEntity(),
                 messageIds = listOf(TEST_MESSAGE_ID)
             )
 
-            receiptRepository.persistReceipts(
-                userId = TestUser.OTHER_USER_ID,
-                conversationId = TEST_CONVERSATION_ID,
+            receiptDAO.insertReceipts(
+                userId = TestUser.OTHER_USER_ID.toDao(),
+                conversationId = TEST_CONVERSATION_ID.toDao(),
                 date = date,
-                type = ReceiptType.READ,
+                type = ReceiptType.READ.toReceiptEntity(),
                 messageIds = listOf(TEST_MESSAGE_ID)
             )
 

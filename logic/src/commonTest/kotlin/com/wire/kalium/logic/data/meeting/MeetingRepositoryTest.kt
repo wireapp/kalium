@@ -49,6 +49,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingFrequencyDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingRecurrenceDTO
@@ -73,12 +74,13 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
 import io.ktor.http.HttpStatusCode
+import app.cash.turbine.test
+import com.wire.kalium.persistence.dao.meeting.MeetingParticipantEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -177,7 +179,10 @@ class MeetingRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingDao.upsertMeetings(emptyList(), any(), true)
         }
-        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.fetchConversationListDetails(any()) }
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.fetchConversationListDetails(any())
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
+        }
     }
 
     @Test
@@ -196,7 +201,67 @@ class MeetingRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingDao.upsertMeetings(emptyList(), any(), true)
         }
-        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.fetchConversationListDetails(any()) }
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.fetchConversationListDetails(any())
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
+        }
+    }
+
+    @Test
+    fun givenMeetingListFetchFailure_whenFetching_thenFailWithoutChangingStoredMeetings() = runTest {
+        val arrangement = Arrangement()
+        everySuspend { arrangement.meetingApi.fetchMeetings() } returns NetworkResponse.Error(TestNetworkException.generic)
+        val (_, repository) = arrangement.arrange()
+
+        assertIs<Either.Left<CoreFailure>>(repository.fetchAndPersistMeetings(arrangement.transactionContext))
+        verifySuspend(VerifyMode.not) {
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
+            arrangement.conversationRepository.fetchConversationListDetails(any())
+            arrangement.meetingDao.upsertMeetings(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenConversationFetchFailure_whenFetchingMeetings_thenContinueMeetingPersistence() = runTest {
+        val dto = meetingDTO()
+        val arrangement = Arrangement().withFetchMeetingsSuccess(listOf(dto))
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(dto.creatorId.toModel()))
+            .withFetchUsersIfUnknownSuccess(setOf(dto.creatorId.toModel()))
+        everySuspend { arrangement.conversationRepository.fetchConversationListDetails(any()) } returns
+            Either.Left(NetworkFailure.NoNetworkConnection(null))
+        val (_, repository) = arrangement.arrange()
+
+        assertTrue(repository.fetchAndPersistMeetings(arrangement.transactionContext).isRight())
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingDao.upsertMeetings(any(), any(), true) }
+        verifySuspend(VerifyMode.not) { arrangement.persistConversations(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun givenConversationPersistenceFailure_whenFetchingMeetings_thenContinueMeetingPersistence() = runTest {
+        val dto = meetingDTO()
+        val (arrangement, repository) = Arrangement().withFetchMeetingsSuccess(listOf(dto))
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(dto.creatorId.toModel()))
+            .withFetchUsersIfUnknownSuccess(setOf(dto.creatorId.toModel()))
+            .withFetchConversationsSuccess()
+            .withPersistConversationsFailure(StorageFailure.DataNotFound)
+            .arrange()
+
+        assertTrue(repository.fetchAndPersistMeetings(arrangement.transactionContext).isRight())
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingDao.upsertMeetings(any(), any(), true) }
+    }
+
+    @Test
+    fun givenMeetingPersistenceFailure_whenFetching_thenReturnFetchedMeetingsWithoutFailingSync() = runTest {
+        val dto = meetingDTO()
+        val arrangement = Arrangement().withFetchMeetingsSuccess(listOf(dto))
+            .withInsertOrIgnoreIncompleteUsersSuccess(listOf(dto.creatorId.toModel()))
+            .withFetchUsersIfUnknownSuccess(setOf(dto.creatorId.toModel()))
+            .withFetchConversationsSuccess().withPersistConversationsSuccess()
+        everySuspend { arrangement.meetingDao.upsertMeetings(any(), any(), true) } throws RuntimeException("storage failure")
+        val (_, repository) = arrangement.arrange()
+        val expected = arrangement.meetingMapper.fromDaoToModel(requireNotNull(arrangement.meetingMapper.fromApiToDao(dto)))
+
+        assertEquals(Either.Right(listOf(expected)), repository.fetchAndPersistMeetings(arrangement.transactionContext))
     }
 
     @Test
@@ -1163,6 +1228,39 @@ class MeetingRepositoryTest {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any(), any())
             arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun observedOccurrencesPreserveParticipantSelectionAndNullableAvatarsForEveryConversationType() = runTest {
+        val avatarId = QualifiedIDEntity("asset", "assets.example")
+        val otherId = QualifiedIDEntity("other", "remote.example")
+        val participants = listOf(
+            MeetingParticipantEntity(MEETING_ENTITY.conversationId, MEETING_ENTITY.creatorId, "Creator", 4, avatarId),
+            MeetingParticipantEntity(MEETING_ENTITY.conversationId, otherId, "Other", 7, null)
+        )
+        listOf(
+            ConversationEntity.Type.MEETING to MeetingOccurrence.ConversationType.Meeting,
+            ConversationEntity.Type.ONE_ON_ONE to MeetingOccurrence.ConversationType.OneOnOne,
+            ConversationEntity.Type.GROUP to MeetingOccurrence.ConversationType.Group,
+            ConversationEntity.Type.CHANNEL to MeetingOccurrence.ConversationType.Channel(true)
+        ).forEach { (type, expectedType) ->
+            val details = MEETING_OCCURRENCE_DETAILS.copy(conversationType = type, participants = participants)
+            val (_, repository) = Arrangement()
+                .withMeetingOccurrenceDetailsFlow(details.occurrence.occurrenceId, flowOf(details, details.copy(participants = participants.take(1))))
+                .arrange()
+            repository.observeMeetingOccurrence(details.occurrence.occurrenceId).test {
+                val occurrence = requireNotNull(awaitItem())
+                assertEquals(expectedType, occurrence.conversationType)
+                assertEquals(
+                    listOf(
+                        MeetingOccurrence.Participant(MEETING_ENTITY.creatorId.toModel(), "Creator", 4, avatarId.toModel()),
+                        MeetingOccurrence.Participant(otherId.toModel(), "Other", 7, null)
+                    ), occurrence.participants
+                )
+                assertEquals(listOf(MEETING_ENTITY.creatorId.toModel()), awaitItem()?.participants?.map { it.userId })
+                awaitComplete()
+            }
         }
     }
 

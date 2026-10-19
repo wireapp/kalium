@@ -74,7 +74,7 @@ class UserConfigDAOTest : BaseDatabaseTest() {
         userConfigDAO.setTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatusEntity)
         userConfigDAO.getTeamSettingsSelfDeletionStatus().let {
             assertTrue(it?.selfDeletionTimerEntity is SelfDeletionTimerEntity.Enforced)
-            val retrievedDuration = (it?.selfDeletionTimerEntity as SelfDeletionTimerEntity.Enforced).enforcedDuration
+            val retrievedDuration = it.selfDeletionTimerEntity.enforcedDuration
             assertEquals(enforcedTimeout, retrievedDuration)
             assertFalse(it.isStatusChanged!!)
         }

@@ -102,6 +102,7 @@ internal class AuthenticatedNetworkContainerV4 internal constructor(
         nomadServiceUrl = nomadServiceUrl,
         accessTokenApi = { httpClient -> AccessTokenApiV4(httpClient) },
         engine = engine,
+        ownsEngine = mockEngine == null,
         kaliumLogger = kaliumLogger,
         webSocketSessionProvider = if (mockWebSocketSession != null) {
             { _, _ -> mockWebSocketSession }

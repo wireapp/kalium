@@ -31,7 +31,7 @@ import com.wire.kalium.persistence.db.clearInMemoryDatabase
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test

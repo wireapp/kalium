@@ -49,6 +49,7 @@ import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.messaging.sending.SendingConversations
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
@@ -78,7 +79,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal data class ConversationMemberCounts(
     val conversationSize: Int,
@@ -88,7 +89,7 @@ internal data class ConversationMemberCounts(
 )
 
 @Suppress("TooManyFunctions")
-internal interface ConversationRepository {
+internal interface ConversationRepository : SendingConversations {
     val extensions: ConversationRepositoryExtensions
 
     // region Get/Observe by id
@@ -149,10 +150,7 @@ internal interface ConversationRepository {
 
     suspend fun fetchMlsOneToOneConversation(userId: UserId): Either<CoreFailure, ConversationResponse>
     suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: TeamId): Either<StorageFailure, List<QualifiedID>>
-    suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
-    suspend fun getRecipientById(conversationId: ConversationId, userIDList: List<UserId>): Either<StorageFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
-    suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
     suspend fun getConversationMemberRole(
         conversationId: ConversationId,
@@ -820,13 +818,8 @@ internal class ConversationDataSource internal constructor(
         conversationId: ConversationId,
         mutedStatus: MutedConversationStatus,
         mutedStatusTimestamp: Instant
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        conversationDAO.updateConversationMutedStatus(
-            conversationId = conversationId.toDao(),
-            mutedStatus = conversationStatusMapper.toMutedStatusDaoModel(mutedStatus),
-            mutedStatusTimestamp = mutedStatusTimestamp
-        )
-    }
+    ): Either<StorageFailure, Unit> =
+        updateMutedStatusLocally(conversationDAO, conversationId, mutedStatus, mutedStatusTimestamp)
 
     override suspend fun updateMutedStatusRemotely(
         conversationId: ConversationId,
@@ -843,13 +836,8 @@ internal class ConversationDataSource internal constructor(
         conversationId: ConversationId,
         isArchived: Boolean,
         archivedStatusTimestamp: Instant
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        conversationDAO.updateConversationArchivedStatus(
-            conversationId = conversationId.toDao(),
-            isArchived = isArchived,
-            archivedStatusTimestamp = archivedStatusTimestamp
-        )
-    }
+    ): Either<StorageFailure, Unit> =
+        updateArchivedStatusLocally(conversationDAO, conversationId, isArchived, archivedStatusTimestamp)
 
     override suspend fun updateArchivedStatusRemotely(
         conversationId: ConversationId,

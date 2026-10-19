@@ -19,7 +19,7 @@
 package com.wire.kalium.persistence.dao
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class ConnectionEntity(
     val conversationId: String,

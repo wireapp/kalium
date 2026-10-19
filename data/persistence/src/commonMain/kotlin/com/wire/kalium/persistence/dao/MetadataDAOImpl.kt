@@ -19,12 +19,12 @@
 package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.JsonSerializer
-import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -55,13 +55,18 @@ class MetadataDAOImpl internal constructor(
     ): Flow<String?> =
         metadataQueries.selectValueByKey(key)
             .asFlow()
-            .mapToOneOrNull()
+            .map { it.awaitAsOneOrNull() }
             .distinctUntilChanged()
             .flowOn(readDispatcher.value)
 
     override suspend fun valueByKey(key: String): String? = withContext(readDispatcher.value) {
         metadataQueries.selectValueByKey(key).awaitAsOneOrNull()
     }
+
+    override suspend fun valuesByKeyRange(fromInclusive: String, untilExclusive: String): Map<String, String> =
+        withContext(readDispatcher.value) {
+            metadataQueries.selectByKeyRange(fromInclusive, untilExclusive).awaitAsList().associate { it.key to it.stringValue }
+        }
 
     override suspend fun clear(keysToKeep: List<String>?) {
         withContext(writeDispatcher.value) {
@@ -88,7 +93,7 @@ class MetadataDAOImpl internal constructor(
     override fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> {
         return metadataQueries.selectValueByKey(key)
             .asFlow()
-            .mapToOneOrNull()
+            .map { it.awaitAsOneOrNull() }
             .map { jsonString ->
                 jsonString?.let {
                     JsonSerializer().decodeFromString(kSerializer, it)

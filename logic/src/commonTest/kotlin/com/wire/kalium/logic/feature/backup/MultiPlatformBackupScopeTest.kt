@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMetadataUseCase
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -28,6 +29,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -40,7 +42,7 @@ class MultiPlatformBackupScopeTest {
 
     @Test
     fun givenDispatcherOverload_whenUsingLegacyNamedArguments_thenThePropertyUseCaseStillRuns() = runTest {
-        val arrangement = Arrangement()
+        val arrangement = Arrangement(backgroundScope)
         var progressCalled = false
 
         // This is the existing GUI source form: same-named function must not shadow property.invoke.
@@ -56,7 +58,7 @@ class MultiPlatformBackupScopeTest {
 
     @Test
     fun givenDispatcherOverload_whenUsingExplicitDispatcher_thenTheConfiguredUseCaseRuns() = runTest {
-        val arrangement = Arrangement()
+        val arrangement = Arrangement(backgroundScope)
         var progressCalled = false
 
         val result = arrangement.scope.restore(progressDispatcher = Dispatchers.Default)(
@@ -69,7 +71,7 @@ class MultiPlatformBackupScopeTest {
         assertFalse(progressCalled)
     }
 
-    private class Arrangement {
+    private class Arrangement(userSessionScope: CoroutineScope) {
         private val fileSystem = mock<KaliumFileSystem>()
         private val workDirectory = "source-compatibility-restore-workdir".toPath()
         val scope = MultiPlatformBackupScope(
@@ -77,6 +79,9 @@ class MultiPlatformBackupScopeTest {
             kaliumFileSystem = fileSystem,
             backupRepository = mock<BackupRepository>(),
             userRepository = mock<UserRepository>(),
+            refreshConversationsWithoutMetadata = mock<RefreshConversationsWithoutMetadataUseCase>(),
+            userSessionScope = userSessionScope,
+            waitUntilSyncLive = {},
         )
 
         init {

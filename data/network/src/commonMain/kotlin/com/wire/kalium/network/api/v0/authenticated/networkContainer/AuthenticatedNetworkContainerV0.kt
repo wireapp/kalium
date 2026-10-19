@@ -101,6 +101,7 @@ internal constructor(
         nomadServiceUrl = nomadServiceUrl,
         accessTokenApi = { httpClient -> AccessTokenApiV0(httpClient) },
         engine = engine,
+        ownsEngine = mockEngine == null,
         kaliumLogger = kaliumLogger,
         webSocketSessionProvider = if (mockWebSocketSession != null) {
             { _, _ -> mockWebSocketSession }

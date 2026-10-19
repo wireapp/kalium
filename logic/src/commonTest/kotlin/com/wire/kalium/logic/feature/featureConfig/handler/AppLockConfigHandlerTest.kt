@@ -34,6 +34,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
 internal class AppLockConfigHandlerTest {
@@ -101,6 +102,21 @@ internal class AppLockConfigHandlerTest {
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(appLockTeamConfigEnabled.isStatusChanged)
             )
+        }
+    }
+
+    @Test
+    fun unchangedEnforcementPreservesNullableNotificationState() = runTest {
+        for (enabled in listOf(false, true)) for (changed in listOf(null, false, true)) {
+            val (arrangement, handler) = Arrangement().arrange()
+            everySuspend { arrangement.userConfigRepository.isTeamAppLockEnabled() } returns
+                Either.Right(AppLockTeamConfig(enabled, 44.seconds, changed))
+
+            assertEquals(Either.Right(Unit), handler.handle(AppLockModel(if (enabled) Status.ENABLED else Status.DISABLED, 60)))
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.userConfigRepository.setAppLockStatus(enabled, 60, changed)
+            }
         }
     }
 

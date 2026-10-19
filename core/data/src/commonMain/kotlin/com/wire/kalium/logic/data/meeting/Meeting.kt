@@ -21,7 +21,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserId
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -54,8 +54,8 @@ data class Meeting(
     val title: String,
     val startTime: Instant,
     val endTime: Instant,
-    val tzid: String,
     val recurrence: Recurrence?,
+    val tzid: String,
 ) {
     data class Recurrence(
         val frequency: Frequency,
@@ -79,9 +79,9 @@ data class UpsertMeeting(
     val title: String,
     val startTime: Instant,
     val endTime: Instant,
-    val tzid: String,
     val recurrence: Meeting.Recurrence?,
     val otherParticipants: List<UserId>,
+    val tzid: String,
 )
 
 data class MeetingReminder(

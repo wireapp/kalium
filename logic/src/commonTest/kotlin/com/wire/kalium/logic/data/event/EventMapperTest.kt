@@ -20,20 +20,49 @@ package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.network.api.authenticated.notification.AdminlessDeleteReminderData
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRoleChange
-import com.wire.kalium.network.api.authenticated.notification.AdminlessDeleteReminderData
+import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
-import kotlinx.datetime.Instant
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import com.wire.kalium.logic.data.id.QualifiedID as ModelQualifiedID
 import com.wire.kalium.network.api.model.QualifiedID as NetworkQualifiedID
-import kotlin.test.assertNull
 
 class EventMapperTest {
+
+    @Test
+    fun meetingConversationUsesTheExistingCreationEventAndKeepsItsGroupType() {
+        val response = com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE.copy(
+            conversationGroupType = com.wire.kalium.network.api.authenticated.conversation.ConversationResponse.GroupType.Meeting)
+        val timestamp = Instant.parse("2026-07-24T12:00:00.000Z")
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val dto = EventContentDTO.Conversation.NewMeetingConversationDTO(response.id, TestUser.NETWORK_ID, timestamp, response)
+        val event = assertIs<Event.Conversation.NewConversation>(mapper.fromEventContentDTO("meeting", dto))
+        assertEquals("meeting", event.id)
+        assertEquals(ModelQualifiedID(response.id.value, response.id.domain), event.conversationId)
+        assertEquals(ModelQualifiedID(TestUser.NETWORK_ID.value, TestUser.NETWORK_ID.domain), event.senderUserId)
+        assertEquals(timestamp, event.dateTime)
+        assertEquals(response, event.conversation)
+    }
+
+    @Test
+    fun metadataPayloadsHaveStableDistinctSystemIdentitiesAndKeepTheirQueueIdentity() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val dto = EventContentDTO.Conversation.ConversationRenameDTO(
+            NetworkQualifiedID("conversation-id", "domain"), TestUser.NETWORK_ID,
+            Instant.parse("2026-07-24T12:00:00.000Z"), ConversationNameUpdateEvent("Renamed")
+        )
+        val events = mapper.fromStoredDTO("notification", listOf(dto, dto), false).map {
+            assertIs<Event.Conversation.RenamedConversation>(it.event)
+        }
+        assertEquals(listOf("notification", "notification"), events.map { it.id })
+        assertEquals(listOf("notification", "notification:1"), events.map { it.systemMessageId })
+        assertEquals(events, mapper.fromStoredDTO("notification", listOf(dto, dto), false).map { it.event })
+    }
 
     @Test
     fun givenSessionRefreshSuggestedDTO_whenMapping_thenSessionRefreshSuggestedEventIsReturned() {
@@ -183,107 +212,52 @@ class EventMapperTest {
     }
 
     @Test
-    fun givenSystemMemberUpdate_whenMapping_thenItMatchesRegularMemberUpdate() {
-        val eventId = "event-id"
-        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
-        val roleChange = ConversationRoleChange(
-            user = TestConversation.NETWORK_USER_ID1.value,
-            qualifiedUserId = TestConversation.NETWORK_USER_ID1,
-            role = "wire_admin",
-            mutedRef = null,
-            mutedStatus = null,
-            isArchiving = null,
-            archivedRef = null,
+    fun systemMemberUpdateMapsTheAdminRoleWithoutASender() {
+        val dto = EventContentDTO.Conversation.SystemMemberUpdateDTO(
+            qualifiedConversation = TestConversation.NETWORK_ID, qualifiedFrom = null, time = TIMESTAMP,
+            roleChange = ConversationRoleChange(
+                user = TestConversation.NETWORK_USER_ID1.value, qualifiedUserId = TestConversation.NETWORK_USER_ID1,
+                role = "wire_admin", mutedRef = null, mutedStatus = null, isArchiving = null, archivedRef = null,
+            ),
         )
-        val regularEvent = EventContentDTO.Conversation.MemberUpdateDTO(
-            qualifiedConversation = TestConversation.NETWORK_ID,
-            qualifiedFrom = TestUser.NETWORK_ID,
-            time = TIMESTAMP,
-            from = TestUser.NETWORK_ID.value,
-            roleChange = roleChange,
+        val result = assertIs<Event.Conversation.MemberChanged.MemberChangedRole>(
+            MapperProvider.eventMapper(TestUser.SELF.id).fromEventContentDTO("event-id", dto)
         )
-        val systemEvent = EventContentDTO.Conversation.SystemMemberUpdateDTO(
-            qualifiedConversation = TestConversation.NETWORK_ID,
-            qualifiedFrom = null,
-            time = TIMESTAMP,
-            from = "system",
-            roleChange = roleChange,
-        )
-
-        val regularResult = assertIs<Event.Conversation.MemberChanged.MemberChangedRole>(
-            mapper.fromEventContentDTO(eventId, regularEvent)
-        )
-        val systemResult = assertIs<Event.Conversation.MemberChanged.MemberChangedRole>(
-            mapper.fromEventContentDTO(eventId, systemEvent)
-        )
-
-        assertEquals(regularResult.id, systemResult.id)
-        assertEquals(regularResult.conversationId, systemResult.conversationId)
-        assertEquals(regularResult.dateTime, systemResult.dateTime)
-        assertEquals(regularResult.member, systemResult.member)
+        assertEquals(TestConversation.MEMBER_TEST1, result.member)
+        assertEquals(ModelQualifiedID("valueConversation", "domainConversation"), result.conversationId)
+        assertEquals(Instant.parse(TIMESTAMP), result.dateTime)
     }
 
     @Test
-    fun givenSystemDeleteWithoutQualifiedFrom_whenMapping_thenSenderIsNull() {
-        val eventId = "event-id"
-        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
-        val event = EventContentDTO.Conversation.SystemDeletedConversationDTO(
-            qualifiedConversation = TestConversation.NETWORK_ID,
-            qualifiedFrom = null,
-            time = TIMESTAMP,
+    fun systemDeletionMapsWithoutASender() {
+        val dto = EventContentDTO.Conversation.SystemDeletedConversationDTO(TestConversation.NETWORK_ID, null, TIMESTAMP)
+        assertEquals(
+            Event.Conversation.DeletedConversation(
+                "event-id", ModelQualifiedID("valueConversation", "domainConversation"), null, Instant.parse(TIMESTAMP),
+            ),
+            MapperProvider.eventMapper(TestUser.SELF.id).fromEventContentDTO("event-id", dto),
         )
-
-        val result = assertIs<Event.Conversation.DeletedConversation>(
-            mapper.fromEventContentDTO(eventId, event)
-        )
-
-        assertEquals(eventId, result.id)
-        assertEquals(event.qualifiedConversation.value, result.conversationId.value)
-        assertEquals(event.qualifiedConversation.domain, result.conversationId.domain)
-        assertEquals(TIMESTAMP, result.dateTime.toIsoDateTimeString())
-        assertNull(result.senderUserId)
     }
 
     @Test
-    fun givenAdminlessReminderEvents_whenMapping_thenSemanticFieldsArePreserved() {
-        val eventId = "event-id"
+    fun regularAndSystemRemindersMapTheScheduledTimeAndOptionalSender() {
         val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
         val data = AdminlessDeleteReminderData(DELETION_TIME)
-        val regularEvent = EventContentDTO.Conversation.AdminlessDeleteReminderDTO(
-            conversation = TestConversation.NETWORK_ID.value,
-            data = data,
-            from = TestUser.NETWORK_ID.value,
-            qualifiedConversation = TestConversation.NETWORK_ID,
-            qualifiedFrom = TestUser.NETWORK_ID,
-            teamId = "team-id",
-            time = EVENT_TIME,
-            via = "user",
+        val regular = EventContentDTO.Conversation.AdminlessDeleteReminderDTO(
+            conversation = TestConversation.NETWORK_ID.value, data = data, from = TestUser.NETWORK_ID.value,
+            qualifiedConversation = TestConversation.NETWORK_ID, qualifiedFrom = TestUser.NETWORK_ID,
+            time = EVENT_TIME, via = "user",
         )
-        val systemEvent = EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO(
-            conversation = TestConversation.NETWORK_ID.value,
-            data = data,
-            from = TestUser.NETWORK_ID.value,
-            qualifiedConversation = TestConversation.NETWORK_ID,
-            qualifiedFrom = null,
-            teamId = "team-id",
-            time = EVENT_TIME,
-            via = "system",
+        val system = EventContentDTO.Conversation.SystemAdminlessDeleteReminderDTO(
+            conversation = TestConversation.NETWORK_ID.value, data = data,
+            qualifiedConversation = TestConversation.NETWORK_ID, qualifiedFrom = null,
+            time = EVENT_TIME, via = "system",
         )
-
-        val regularResult = assertIs<Event.Conversation.AdminlessDeleteReminder>(
-            mapper.fromEventContentDTO(eventId, regularEvent)
+        val expected = Event.Conversation.AdminlessDeleteReminder(
+            "event-id", ModelQualifiedID("valueConversation", "domainConversation"), TestUser.USER_ID, EVENT_TIME, DELETION_TIME,
         )
-        val systemResult = assertIs<Event.Conversation.AdminlessDeleteReminder>(
-            mapper.fromEventContentDTO(eventId, systemEvent)
-        )
-
-        assertEquals(eventId, regularResult.id)
-        assertEquals(regularEvent.qualifiedConversation.value, regularResult.conversationId.value)
-        assertEquals(regularEvent.qualifiedConversation.domain, regularResult.conversationId.domain)
-        assertEquals(TestUser.USER_ID, regularResult.senderUserId)
-        assertEquals(EVENT_TIME, regularResult.dateTime)
-        assertEquals(DELETION_TIME, regularResult.deletionScheduledFor)
-        assertEquals(regularResult.copy(senderUserId = null), systemResult)
+        assertEquals(expected, mapper.fromEventContentDTO("event-id", regular))
+        assertEquals(expected.copy(senderUserId = null), mapper.fromEventContentDTO("event-id", system))
     }
 
     @Test
@@ -296,6 +270,32 @@ class EventMapperTest {
             )
             val event = assertIs<Event.Meeting.MemberAdd>(MapperProvider.eventMapper(TestUser.SELF.id).fromEventContentDTO("invite", dto))
             assertEquals(sender?.let { ModelQualifiedID(it.value, it.domain) }, event.senderUserId)
+        }
+    }
+
+    @Test
+    fun givenAllMeetingEventsWithOptionalSender_whenMapping_thenPreserveSenderAndIdentity() {
+        val mapper = MapperProvider.eventMapper(TestUser.SELF.id)
+        val id = NetworkQualifiedID("meeting", "example.com")
+        listOf(null, NetworkQualifiedID("sender", "example.com")).forEach { sender ->
+            val events = listOf(
+                EventContentDTO.Meeting.MeetingCreateDTO(id, EVENT_TIME, sender),
+                EventContentDTO.Meeting.MeetingUpdateDTO(id, EVENT_TIME, sender),
+                EventContentDTO.Meeting.MeetingDeleteDTO(id, EVENT_TIME, sender),
+                EventContentDTO.Meeting.MeetingMemberAddDTO(id, EVENT_TIME, sender),
+            )
+            events.forEach { dto ->
+                val event = mapper.fromEventContentDTO("event", dto)
+                val actual = when (event) {
+                    is Event.Meeting.Create -> event.senderUserId
+                    is Event.Meeting.Update -> event.senderUserId
+                    is Event.Meeting.Delete -> event.senderUserId
+                    is Event.Meeting.MemberAdd -> event.senderUserId
+                    else -> error("Unexpected event")
+                }
+                assertEquals("event", event.id)
+                assertEquals(sender?.let { ModelQualifiedID(it.value, it.domain) }, actual)
+            }
         }
     }
 

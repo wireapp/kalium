@@ -50,6 +50,85 @@ import kotlin.test.assertIs
 class GetOrRegisterClientUseCaseTest {
 
     @Test
+    fun failedRegistrationConfigurationCannotRegisterAClientOrPublishReadiness() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult(Either.Left(failure))
+            .arrange()
+
+        assertEquals(RegisterClientResult.Failure.Generic(failure), useCase(RegisterClientParam("", listOf())))
+        verifySuspend(VerifyMode.not) { arrangement.registerClientUseCase.invoke(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userSessionScopeProvider.prepareReceiving(any(), any()) }
+    }
+
+    @Test
+    fun failedConfigurationReloadCannotRegisterAReplacementClient() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (arrangement, useCase) = Arrangement()
+            .withRetainedClientIdResult(Either.Right(ClientId("obsolete")))
+            .withVerifyExistingClientResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withClearHasConsumableNotifications(Either.Right(Unit))
+            .withSetUpdateFirebaseTokenFlagResult(Either.Right(Unit))
+            .arrange()
+        var synchronizations = 0
+        everySuspend { arrangement.syncFeatureConfigsUseCase.beforeClientRegistration() } calls {
+            synchronizations++
+            if (synchronizations == 1) Either.Right(Unit) else Either.Left(failure)
+        }
+
+        assertEquals(RegisterClientResult.Failure.Generic(failure), useCase(RegisterClientParam("", listOf())))
+        assertEquals(2, synchronizations)
+        verifySuspend(VerifyMode.not) { arrangement.registerClientUseCase.invoke(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userSessionScopeProvider.prepareReceiving(any(), any()) }
+    }
+
+    @Test
+    fun failedClientPersistenceCannotReportRegistrationSuccessOrPublishReadiness() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
+            .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
+            .withRegisterClientResult(RegisterClientResult.Success(TestClient.CLIENT))
+            .withUpgradeCurrentSessionResult(Either.Right(Unit))
+            .withPersistClientIdResult(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        assertIs<RegisterClientResult.Failure.Generic>(useCase(RegisterClientParam("", listOf())))
+        verifySuspend(VerifyMode.not) { arrangement.clientRepository.persistClientHasConsumableNotifications(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userSessionScopeProvider.prepareReceiving(any(), any()) }
+    }
+
+    @Test
+    fun failedTokenUpgradeCannotPersistClientOrPublishReadiness() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
+            .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
+            .withRegisterClientResult(RegisterClientResult.Success(TestClient.CLIENT))
+            .withUpgradeCurrentSessionResult(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
+
+        assertIs<RegisterClientResult.Failure.Generic>(useCase(RegisterClientParam("", listOf())))
+        verifySuspend(VerifyMode.not) { arrangement.clientRepository.persistClientId(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userSessionScopeProvider.prepareReceiving(any(), any()) }
+    }
+
+    @Test
+    fun failedNativePreparationCannotReportRegistrationSuccess() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
+            .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
+            .withRegisterClientResult(RegisterClientResult.Success(TestClient.CLIENT))
+            .withUpgradeCurrentSessionResult(Either.Right(Unit))
+            .withPersistClientIdResult(Either.Right(Unit))
+            .withPersistHasConsumableNotifications(false)
+            .arrange()
+        everySuspend { arrangement.userSessionScopeProvider.prepareReceiving(any(), any()) } returns Either.Left(StorageFailure.DataNotFound)
+
+        assertIs<RegisterClientResult.Failure.Generic>(useCase(RegisterClientParam("", listOf())))
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userSessionScopeProvider.invalidateReceiving(any(), any(), false) }
+    }
+
+    @Test
     fun givenValidClientIsRetained_whenRegisteringAClient_thenDoNotRegisterNewAndReturnPersistedClient() = runTest {
         val clientId = ClientId("clientId")
         val client = TestClient.CLIENT.copy(id = clientId)
@@ -141,7 +220,7 @@ class GetOrRegisterClientUseCaseTest {
             .withSetUpdateFirebaseTokenFlagResult(Either.Right(Unit))
             .arrange()
         val calls = mutableListOf<String>()
-        everySuspend { arrangement.syncFeatureConfigsUseCase.invoke() } calls {
+        everySuspend { arrangement.syncFeatureConfigsUseCase.beforeClientRegistration() } calls {
             calls += "syncFeatureConfigs"
             Either.Right(Unit)
         }
@@ -233,6 +312,13 @@ class GetOrRegisterClientUseCaseTest {
         val verifyExistingClientUseCase = mock<VerifyExistingClientUseCase>(mode = MockMode.autoUnit)
         val cachedClientIdClearer = mock<CachedClientIdClearer>(mode = MockMode.autoUnit)
 
+        val userSessionScopeProvider = mock<com.wire.kalium.logic.feature.UserSessionScopeProvider>(mode = MockMode.autoUnit)
+        private val originatingScope = mock<kotlinx.coroutines.CoroutineScope>()
+
+        init {
+            everySuspend { userSessionScopeProvider.prepareReceiving(any(), any()) } returns Either.Right(Unit)
+        }
+
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
             clientRepository,
             pushTokenRepository,
@@ -242,13 +328,16 @@ class GetOrRegisterClientUseCaseTest {
             verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase,
             cachedClientIdClearer,
-            syncFeatureConfigsUseCase
+            syncFeatureConfigsUseCase,
+            TestClient.USER_ID,
+            originatingScope,
+            userSessionScopeProvider,
         )
 
         suspend fun withSyncFeatureConfigResult(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             everySuspend {
-                syncFeatureConfigsUseCase.invoke()
-            } returns Either.Right(Unit)
+                syncFeatureConfigsUseCase.beforeClientRegistration()
+            } returns result
         }
 
         suspend fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {

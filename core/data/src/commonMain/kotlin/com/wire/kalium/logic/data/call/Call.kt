@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 enum class CallStatus {
     STARTED,

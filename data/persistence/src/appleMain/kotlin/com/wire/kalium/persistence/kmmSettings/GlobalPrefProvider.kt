@@ -41,7 +41,7 @@ actual class GlobalPrefProvider(
     actual val authTokenStorage: AuthTokenStorage
         get() = AuthTokenStorageImpl(kaliumPref)
     actual val passphraseStorage: PassphraseStorage
-        get() = KeychainPassphraseStorage(PassphraseStorageImpl(kaliumPref), keychainConfig.serviceName)
+        get() = KeychainPassphraseStorage(PassphraseStorageImpl(kaliumPref), keychainConfig)
     actual val tokenStorage: TokenStorage
         get() = TokenStorageImpl(kaliumPref)
 }

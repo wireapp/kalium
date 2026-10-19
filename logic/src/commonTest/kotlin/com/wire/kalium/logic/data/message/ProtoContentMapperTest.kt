@@ -32,6 +32,7 @@ import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Composite
 import com.wire.kalium.protobuf.messages.Confirmation
+import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
 import com.wire.kalium.protobuf.messages.MessageEdit
@@ -404,6 +405,57 @@ class ProtoContentMapperTest {
         )
         val encoded = protoContentMapper.encodeToProtobuf(originalContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertEquals(originalContent, decoded)
+    }
+
+    @Test
+    fun givenPollContent_whenMappingToProtoAndBack_thenShouldMaintainSameValues() {
+        val content = MessageContent.Poll(
+            question = "Lunch?",
+            options = listOf(MessageContent.Poll.Option("a", "Pizza"), MessageContent.Poll.Option("b", "Sushi")),
+            allowMultipleAnswers = true
+        )
+        val originalContent = ProtoContent.Readable("uid", content, true, Conversation.LegalHoldStatus.ENABLED)
+
+        val decoded = protoContentMapper.decodeFromProtobuf(protoContentMapper.encodeToProtobuf(originalContent))
+
+        assertEquals(originalContent, decoded)
+    }
+
+    @Test
+    fun givenPollContent_whenEncoding_thenOlderClientsAreAskedToWarnTheUser() {
+        val content = MessageContent.Poll("Lunch?", listOf(MessageContent.Poll.Option("a", "Pizza")), false)
+
+        val encoded = protoContentMapper.encodeToProtobuf(
+            ProtoContent.Readable("uid", content, false, Conversation.LegalHoldStatus.DISABLED)
+        )
+
+        assertEquals(UnknownStrategy.DISCARD_AND_WARN, GenericMessage.decodeFromByteArray(encoded.data).unknownStrategy)
+    }
+
+    @Test
+    fun givenPollWithDuplicatedOptionIds_whenDecoding_thenOnlyTheFirstOptionIsKept() {
+        val content = MessageContent.Poll(
+            question = "Lunch?",
+            options = listOf(MessageContent.Poll.Option("a", "Pizza"), MessageContent.Poll.Option("a", "Sushi")),
+            allowMultipleAnswers = false
+        )
+        val encoded = protoContentMapper.encodeToProtobuf(
+            ProtoContent.Readable("uid", content, false, Conversation.LegalHoldStatus.DISABLED)
+        )
+
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded) as ProtoContent.Readable
+
+        assertEquals(listOf(MessageContent.Poll.Option("a", "Pizza")), (decoded.messageContent as MessageContent.Poll).options)
+    }
+
+    @Test
+    fun givenPollVoteContent_whenMappingToProtoAndBack_thenShouldMaintainSameValues() {
+        val content = MessageContent.PollVote(referencedMessageId = "pollId", selectedOptionIds = listOf("a", "b"))
+        val originalContent = ProtoContent.Readable("uid", content, false, Conversation.LegalHoldStatus.UNKNOWN)
+
+        val decoded = protoContentMapper.decodeFromProtobuf(protoContentMapper.encodeToProtobuf(originalContent))
 
         assertEquals(originalContent, decoded)
     }

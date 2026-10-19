@@ -38,6 +38,7 @@ import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -46,11 +47,15 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
 import io.ktor.util.reflect.instanceOf
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class ConversationFolderRepositoryTest {
 
@@ -249,7 +254,7 @@ class ConversationFolderRepositoryTest {
     }
 
     @Test
-    fun givenLastConversationRemovedFromFolder_whenRemovingConversation_thenFolderShouldBeDeleted() = runTest {
+    fun givenLastConversationRemovedFromFolder_whenRemovingConversation_thenFolderShouldRemain() = runTest {
         // given
         val folderId = "folder1"
         val conversationId = TestConversation.ID
@@ -266,7 +271,7 @@ class ConversationFolderRepositoryTest {
         result.shouldSucceed()
 
         verifySuspend { arrangement.conversationFolderDAO.removeConversationFromFolder(conversationId.toDao(), folderId) }
-        verifySuspend { arrangement.conversationFolderDAO.removeFolder(folderId) }
+        verifySuspend(VerifyMode.not) { arrangement.conversationFolderDAO.removeFolder(folderId) }
     }
 
     @Test
@@ -317,6 +322,166 @@ class ConversationFolderRepositoryTest {
         verifySuspend(VerifyMode.not) { arrangement.conversationFolderDAO.removeFolder(folderId) }
     }
 
+
+    @Test
+    fun batchSavePreservesOtherFoldersAndSendsOneSnapshot() = runTest {
+        val first = TestConversation.ID
+        val second = first.copy(value = "second")
+        val other = FolderWithConversations("other", "Other", FolderType.USER, listOf(first))
+        val work = FolderWithConversations("work", "Work", FolderType.USER, listOf(first))
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(other, work))
+            .withSuccessfulFolderUpdate().withUpdateLabels(NetworkResponse.Success(Unit, emptyMap(), 200))
+        arrangement.repository.saveFolder(ConversationFolder("work", "Work", FolderType.USER), setOf(first, second), emptySet())
+            .shouldSucceed()
+        val expected = listOf(other, work.copy(conversationIdList = listOf(first, second)))
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userPropertiesApi.updateLabels(LabelListResponseDTO(expected.map { it.toLabel() }))
+        }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationFolderDAO.updateConversationFolders(expected.map { it.toDao() }) }
+    }
+
+    @Test
+    fun savingAnExistingFolderKeepsItsPlaceInTheSyncedOrder() = runTest {
+        val work = FolderWithConversations("work", "Work", FolderType.USER, emptyList())
+        val other = FolderWithConversations("other", "Other", FolderType.USER, emptyList())
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(work, other))
+            .withSuccessfulFolderUpdate().withUpdateLabels(NetworkResponse.Success(Unit, emptyMap(), 200))
+        arrangement.repository.saveFolder(ConversationFolder("work", "Projects", FolderType.USER), emptySet(), emptySet())
+            .shouldSucceed()
+        val expected = listOf(work.copy(name = "Projects"), other)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userPropertiesApi.updateLabels(LabelListResponseDTO(expected.map { it.toLabel() }))
+        }
+    }
+
+    @Test
+    fun reorderingFoldersSyncsTheNewOrderAndKeepsFavoritesInPlace() = runTest {
+        val favorites = FolderWithConversations("favorites", "", FolderType.FAVORITE, emptyList())
+        val a = FolderWithConversations("a", "A", FolderType.USER, listOf(TestConversation.ID))
+        val b = FolderWithConversations("b", "B", FolderType.USER, emptyList())
+        val c = FolderWithConversations("c", "C", FolderType.USER, emptyList())
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(a, favorites, b, c))
+            .withSuccessfulFolderUpdate().withUpdateLabels(NetworkResponse.Success(Unit, emptyMap(), 200))
+
+        arrangement.repository.reorderFolders(listOf("c", "favorites", "a", "b")).shouldSucceed()
+
+        val expected = listOf(c, favorites, a, b)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userPropertiesApi.updateLabels(LabelListResponseDTO(expected.map { it.toLabel() }))
+        }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationFolderDAO.updateConversationFolders(expected.map { it.toDao() }) }
+    }
+
+    @Test
+    fun failedReorderSyncLeavesLocalOrderUnchanged() = runTest {
+        val a = FolderWithConversations("a", "A", FolderType.USER, emptyList())
+        val b = FolderWithConversations("b", "B", FolderType.USER, emptyList())
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(a, b))
+            .withUpdateLabels(NetworkResponse.Error(KaliumException.NoNetwork()))
+
+        arrangement.repository.reorderFolders(listOf("b", "a")).shouldFail()
+
+        verifySuspend(VerifyMode.not) { arrangement.conversationFolderDAO.updateConversationFolders(any()) }
+    }
+
+    @Test
+    fun failedBatchSyncLeavesLocalFoldersUnchanged() = runTest {
+        val work = FolderWithConversations("work", "Work", FolderType.USER, emptyList())
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(work))
+            .withUpdateLabels(NetworkResponse.Error(KaliumException.NoNetwork()))
+        arrangement.repository.saveFolder(ConversationFolder("work", "Work", FolderType.USER), setOf(TestConversation.ID), emptySet())
+            .shouldFail()
+        verifySuspend(VerifyMode.not) { arrangement.conversationFolderDAO.updateConversationFolders(any()) }
+    }
+
+    @Test
+    fun removingEveryMembershipKeepsEmptyFolderInSyncedSnapshot() = runTest {
+        val work = FolderWithConversations("work", "Work", FolderType.USER, listOf(TestConversation.ID))
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(work))
+            .withSuccessfulFolderUpdate().withUpdateLabels(NetworkResponse.Success(Unit, emptyMap(), 200))
+        arrangement.repository.saveFolder(ConversationFolder("work", "Work", FolderType.USER), emptySet(), setOf(TestConversation.ID))
+            .shouldSucceed()
+        verifySuspend { arrangement.conversationFolderDAO.updateConversationFolders(listOf(work.copy(conversationIdList = emptyList()).toDao())) }
+    }
+
+    @Test
+    fun concurrentFavoriteChangeWaitsUntilBatchSnapshotIsCommitted() = runTest {
+        val work = FolderWithConversations("work", "Work", FolderType.USER, emptyList())
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(work)).withSuccessfulFolderUpdate()
+        val sent = CompletableDeferred<Unit>()
+        val finishNetwork = CompletableDeferred<Unit>()
+        everySuspend { arrangement.userPropertiesApi.updateLabels(any()) } calls {
+            sent.complete(Unit)
+            finishNetwork.await()
+            NetworkResponse.Success(Unit, emptyMap(), 200)
+        }
+        everySuspend { arrangement.conversationFolderDAO.addConversationToFolder(any(), any()) } returns Unit
+        val batch = async(start = CoroutineStart.UNDISPATCHED) {
+            arrangement.repository.saveFolder(ConversationFolder("work", "Work", FolderType.USER), setOf(TestConversation.ID), emptySet())
+        }
+        sent.await()
+        val favorite = async(start = CoroutineStart.UNDISPATCHED) {
+            arrangement.repository.addConversationToFolder(TestConversation.ID, "favorite")
+        }
+        assertFalse(favorite.isCompleted)
+        finishNetwork.complete(Unit)
+        batch.await().shouldSucceed()
+        favorite.await().shouldSucceed()
+    }
+
+    @Test
+    fun favoriteMembershipBatchPreservesMetadataOtherFoldersAndUntouchedMembers() = runTest {
+        val first = TestConversation.ID
+        val added = first.copy(value = "new")
+        val archived = first.copy(value = "archived")
+        val favorites = FolderWithConversations("favorite", "", FolderType.FAVORITE, listOf(first, archived))
+        val other = FolderWithConversations("other", "Other", FolderType.USER, listOf(first))
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(favorites, other))
+            .withSuccessfulFolderUpdate().withUpdateLabels(NetworkResponse.Success(Unit, emptyMap(), 200))
+        arrangement.repository.updateMembership(favorites.id, setOf(added), setOf(first)).shouldSucceed {
+            assertEquals(ConversationFolder(favorites.id, favorites.name, FolderType.FAVORITE), it)
+        }
+        val expected = listOf(favorites.copy(conversationIdList = listOf(archived, added)), other)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userPropertiesApi.updateLabels(LabelListResponseDTO(expected.map { it.toLabel() }))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationFolderDAO.updateConversationFolders(expected.map { it.toDao() })
+        }
+    }
+
+    @Test
+    fun failedFavoriteMembershipBatchLeavesLocalStateUnchanged() = runTest {
+        val favorites = FolderWithConversations("favorite", "", FolderType.FAVORITE, emptyList())
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(favorites))
+            .withUpdateLabels(NetworkResponse.Error(KaliumException.NoNetwork()))
+        arrangement.repository.updateMembership(favorites.id, setOf(TestConversation.ID), emptySet()).shouldFail()
+        verifySuspend(VerifyMode.not) { arrangement.conversationFolderDAO.updateConversationFolders(any()) }
+    }
+
+    @Test
+    fun clearingFavoritesPreservesTheEmptySystemFolder() = runTest {
+        val favorites = FolderWithConversations("favorite", "", FolderType.FAVORITE, listOf(TestConversation.ID))
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(favorites))
+            .withSuccessfulFolderUpdate().withUpdateLabels(NetworkResponse.Success(Unit, emptyMap(), 200))
+        arrangement.repository.updateMembership(favorites.id, emptySet(), setOf(TestConversation.ID)).shouldSucceed()
+        verifySuspend {
+            arrangement.conversationFolderDAO.updateConversationFolders(listOf(favorites.copy(conversationIdList = emptyList()).toDao()))
+        }
+    }
+
+    @Test
+    fun favoritesCannotBeRenamedOrDeletedAndMembershipRequiresAnExistingFolder() = runTest {
+        val favorites = FolderWithConversations("favorite", "", FolderType.FAVORITE, emptyList())
+        val arrangement = Arrangement().withGetFoldersWithConversations(listOf(favorites))
+        arrangement.repository.saveFolder(
+            ConversationFolder(favorites.id, "Renamed", FolderType.USER), emptySet(), emptySet(),
+        ).shouldFail()
+        arrangement.repository.deleteFolderAndSync(favorites.id).shouldFail()
+        arrangement.repository.updateMembership("missing", emptySet(), emptySet()).shouldFail()
+        verifySuspend(VerifyMode.not) { arrangement.userPropertiesApi.updateLabels(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.conversationFolderDAO.updateConversationFolders(any()) }
+    }
 
     private class Arrangement {
 

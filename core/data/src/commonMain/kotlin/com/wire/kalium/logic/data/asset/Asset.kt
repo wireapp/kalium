@@ -79,4 +79,4 @@ val SUPPORTED_AUDIO_ASSET_MIME_TYPES = setOf(
     "audio/x-pn-wav",
     "audio/x-m4a"
 )
-val SUPPORTED_VIDEO_ASSET_MIME_TYPES = setOf("video/mp4", "video/webm", "video/3gpp", "video/mkv")
+val SUPPORTED_VIDEO_ASSET_MIME_TYPES = setOf("video/mp4", "video/webm", "video/3gpp", "video/mkv", "video/quicktime")

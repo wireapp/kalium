@@ -40,12 +40,13 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.messaging.sending.BroadcastMessageTarget
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -169,6 +170,8 @@ class SendEditMultipartMessageUseCaseTest {
         private val clientIdProvider = CurrentClientIdProvider { TestClient.CLIENT_ID.right() }
 
         private val messageSender = object : MessageSender {
+            override suspend fun cancelPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean> =
+                error("Not used by edit tests")
             override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String) = Unit.right()
             override suspend fun sendMessage(
                 message: Message.Sendable,

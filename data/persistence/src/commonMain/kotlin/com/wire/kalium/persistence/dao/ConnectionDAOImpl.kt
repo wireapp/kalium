@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 
 import app.cash.sqldelight.coroutines.asFlow
@@ -31,7 +32,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import com.wire.kalium.persistence.Connection as SQLDelightConnection
 
 private class ConnectionMapper {
@@ -177,7 +178,7 @@ class ConnectionDAOImpl(
         withContext(writeDispatcher.value) {
             connectionsQueries.transaction {
                 connectionsQueries.deleteConnection(conversationId)
-                conversationsQueries.deleteConversation(conversationId)
+                conversationsQueries.deleteConversation(conversationId).await()
             }
         }
 

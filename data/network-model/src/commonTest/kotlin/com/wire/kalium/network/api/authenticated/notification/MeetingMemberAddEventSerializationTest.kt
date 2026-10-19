@@ -24,6 +24,29 @@ import kotlin.test.assertEquals
 
 class MeetingMemberAddEventSerializationTest {
     @Test
+    fun givenAnyMeetingEvent_whenDecodingPolymorphically_thenSenderIsOptional() {
+        listOf("meeting.create", "meeting.update", "meeting.delete", "meeting.member-add").forEach { type ->
+            listOf(
+                "" to null,
+                "\"qualified_from\":null," to null,
+                "\"qualified_from\":{\"id\":\"sender\",\"domain\":\"example.com\"}," to "sender"
+            ).forEach { (sender, expected) ->
+                val event = Json.decodeFromString<EventContentDTO>(
+                    """{"type":"$type",$sender"qualified_id":{"id":"meeting","domain":"example.com"},"time":"2026-10-01T09:00:00Z"}"""
+                )
+                val actual = when (event) {
+                    is EventContentDTO.Meeting.MeetingCreateDTO -> event.qualifiedFrom
+                    is EventContentDTO.Meeting.MeetingUpdateDTO -> event.qualifiedFrom
+                    is EventContentDTO.Meeting.MeetingDeleteDTO -> event.qualifiedFrom
+                    is EventContentDTO.Meeting.MeetingMemberAddDTO -> event.qualifiedFrom
+                    else -> error("Unexpected event")
+                }
+                assertEquals(expected, actual?.value)
+            }
+        }
+    }
+
+    @Test
     fun givenOptionalSender_whenDecoding_thenAcceptPresentMissingAndNull() {
         listOf(
             "" to null,

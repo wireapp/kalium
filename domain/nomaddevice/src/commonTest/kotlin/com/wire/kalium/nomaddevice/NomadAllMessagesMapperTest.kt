@@ -34,7 +34,7 @@ import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMultipart
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceText
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import pbandk.ByteArr
 import kotlin.io.encoding.Base64
 import kotlin.test.Test

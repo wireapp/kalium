@@ -37,9 +37,6 @@ android {
     testBuildType = "release"
 
     buildTypes {
-        debug {
-            // Keep debug available so the module still builds under the default variant.
-        }
         release {
             isMinifyEnabled = false
             isDefault = true
@@ -59,6 +56,10 @@ android {
     }
 }
 
+extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+    sourceSets.getByName("androidTest").kotlin.srcDir("../benchmark-fixtures/kotlin")
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_21)
@@ -74,12 +75,15 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>()
 dependencies {
     coreLibraryDesugaring(libs.desugarJdkLibs)
     androidTestImplementation(projects.data.persistence)
+    androidTestImplementation(projects.logic)
     androidTestImplementation(libs.androidx.benchmark.junit4)
     androidTestImplementation(libs.androidtest.runner)
     androidTestImplementation(libs.androidtest.core)
     androidTestImplementation(libs.androidtest.ext.junit)
-    androidTestImplementation(libs.coroutines.test)
-    androidTestImplementation(libs.ktxDateTime)
+    androidTestImplementation(libs.coroutines.core)
+    androidTestImplementation(libs.paging.common)
+    androidTestImplementation(libs.sql.android.cipher)
+    androidTestImplementation(libs.sqlite.androidx)
 }
 
 // Override the SQLCipher version used transitively by :data:persistence. Useful when comparing

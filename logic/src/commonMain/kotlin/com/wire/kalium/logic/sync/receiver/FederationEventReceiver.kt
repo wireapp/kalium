@@ -24,10 +24,11 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.membersToRemove
+import com.wire.kalium.logic.data.event.federationSystemMessage
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
@@ -45,7 +46,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 internal interface FederationEventReceiver : EventReceiver<Event.Federation>
 
@@ -100,18 +101,10 @@ internal class FederationEventReceiverImpl internal constructor(
             .onSuccess { conversationsWithMembers ->
                 conversationsWithMembers.forEach { (conversationId, userIds) ->
                     handleFederationDeleteEvent(conversationId, event.domain)
-                    when (conversationId.domain) {
-                        // remove defederated users from self domain conversations
-                        selfUserId.domain ->
-                            removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == selfUserId.domain })
-
-                        // remove self domain users from defederated domain conversations
-                        event.domain ->
-                            removeMembersFromConversation(conversationId, userIds.filter { it.domain == selfUserId.domain })
-
-                        // remove self domain and defederated domain users from not defederated and self domain conversations
-                        else -> removeMembersFromConversation(conversationId, userIds)
-                    }
+                    removeMembersFromConversation(
+                        conversationId,
+                        event.membersToRemove(conversationId.domain, selfUserId.domain, userIds)
+                    )
                 }
             }
             .onSuccess {
@@ -137,18 +130,10 @@ internal class FederationEventReceiverImpl internal constructor(
             .onSuccess { conversationsWithMembers ->
                 conversationsWithMembers.forEach { (conversationId, userIds) ->
                     handleFederationConnectionRemovedEvent(conversationId, event.domains)
-                    when (conversationId.domain) {
-                        // remove secondDomain users from firstDomain conversation
-                        firstDomain ->
-                            removeMembersFromConversation(conversationId, userIds.filter { it.domain == secondDomain })
-
-                        // remove firstDomain users from secondDomain conversation
-                        secondDomain ->
-                            removeMembersFromConversation(conversationId, userIds.filter { it.domain == firstDomain })
-
-                        // remove firstDomain and secondDomain users from rest conversations
-                        else -> removeMembersFromConversation(conversationId, userIds)
-                    }
+                    removeMembersFromConversation(
+                        conversationId,
+                        event.membersToRemove(conversationId.domain, selfUserId.domain, userIds)
+                    )
                 }
             }
             .onSuccess {
@@ -176,43 +161,34 @@ internal class FederationEventReceiverImpl internal constructor(
         }.map { }
 
     private suspend fun handleMemberRemovedEvent(conversationID: ConversationId, userIDList: List<UserId>) {
-        val message = Message.System(
+        val message = federationSystemMessage(
             id = Uuid.random().toString(),
             content = MessageContent.MemberChange.FederationRemoved(members = userIDList),
             conversationId = conversationID,
             date = Clock.System.now(),
-            senderUserId = selfUserId,
-            status = Message.Status.Read(0),
-            visibility = Message.Visibility.VISIBLE,
-            expirationData = null
+            selfUserId = selfUserId
         )
         persistMessage(message)
     }
 
     private suspend fun handleFederationDeleteEvent(conversationID: ConversationId, domain: String) {
-        val message = Message.System(
+        val message = federationSystemMessage(
             id = Uuid.random().toString(),
             content = MessageContent.FederationStopped.Removed(domain),
             conversationId = conversationID,
             date = Clock.System.now(),
-            senderUserId = selfUserId,
-            status = Message.Status.Read(0),
-            visibility = Message.Visibility.VISIBLE,
-            expirationData = null
+            selfUserId = selfUserId
         )
         persistMessage(message)
     }
 
     private suspend fun handleFederationConnectionRemovedEvent(conversationID: ConversationId, domainList: List<String>) {
-        val message = Message.System(
+        val message = federationSystemMessage(
             id = Uuid.random().toString(),
             content = MessageContent.FederationStopped.ConnectionRemoved(domainList),
             conversationId = conversationID,
             date = Clock.System.now(),
-            senderUserId = selfUserId,
-            status = Message.Status.Read(0),
-            visibility = Message.Visibility.VISIBLE,
-            expirationData = null
+            selfUserId = selfUserId
         )
         persistMessage(message)
     }

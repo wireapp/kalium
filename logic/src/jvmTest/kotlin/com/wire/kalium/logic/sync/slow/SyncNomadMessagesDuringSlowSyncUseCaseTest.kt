@@ -51,7 +51,7 @@ import com.wire.kalium.userstorage.di.DatabaseStorageType
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import okio.Sink
 import okio.Source
 import java.lang.reflect.Proxy

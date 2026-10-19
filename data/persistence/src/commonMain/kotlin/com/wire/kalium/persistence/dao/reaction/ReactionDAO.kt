@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 interface ReactionDAO {
 
@@ -134,6 +134,11 @@ class ReactionDAOImpl(
         val date = instant.toIsoDateTimeString()
         reactionsQueries.transaction {
             reactions.forEach { messageReactions ->
+                // Backups can include reactions to messages excluded from message export.
+                val messageExists = reactionsQueries.doesMessageExist(messageReactions.messageId, messageReactions.conversationId)
+                    .awaitAsOneOrNull() != null
+                if (!messageExists) return@forEach
+
                 messageReactions.reactions.forEach { reaction ->
                     reactionsQueries.insertReactionOrIgnore(
                         message_id = messageReactions.messageId,

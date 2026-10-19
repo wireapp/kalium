@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.app
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.app.AppRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -77,10 +78,31 @@ class SyncAppsUseCaseTest {
         assertEquals(failure, result.error)
     }
 
+    @Test
+    fun givenTeamProviderFailure_whenSyncing_thenFailureIsPropagatedWithoutRepositoryCall() = runTest {
+        val arrangement = Arrangement(apiVersion = 15)
+        val failure = StorageFailure.DataNotFound
+        everySuspend { arrangement.selfTeamIdProvider() } returns Either.Left(failure)
+
+        assertEquals(failure, assertIs<SyncAppsUseCase.Result.Failure>(arrangement.useCase()).error)
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.appRepository.syncApps(any(), any()) }
+    }
+
+    @Test
+    fun givenSupportedApiVersions_whenSyncing_thenTeamAppsGateMatchesEndpointSupport() = runTest {
+        for (version in 10..18) {
+            val includeTeamApps = version >= 15
+            val arrangement = Arrangement(version).withTeam(TEAM_ID).withSyncSuccess(includeTeamApps)
+
+            assertIs<SyncAppsUseCase.Result.Success>(arrangement.useCase())
+            verifySuspend { arrangement.appRepository.syncApps(TEAM_ID, includeTeamApps) }
+        }
+    }
+
     private class Arrangement(apiVersion: Int) {
         val appRepository = mock<AppRepository>()
         val selfTeamIdProvider = mock<SelfTeamIdProvider>()
-        val useCase = SyncAppsUseCaseImpl(appRepository, selfTeamIdProvider, apiVersion)
+        val useCase = AppScope(appRepository, selfTeamIdProvider, apiVersion).syncApps
 
         fun withTeam(teamId: TeamId?) = apply {
             everySuspend { selfTeamIdProvider() } returns Either.Right(teamId)

@@ -33,7 +33,7 @@ import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyn
 import com.wire.kalium.nomaddevice.NomadAllMessagesMapper
 import com.wire.kalium.persistence.dao.backup.NomadMessageToInsert
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 internal interface NomadMessagePagingCoordinator {
     /**

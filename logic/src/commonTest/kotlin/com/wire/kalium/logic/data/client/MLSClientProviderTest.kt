@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.CoreCryptoCentral
+import com.wire.kalium.cryptography.CoreCryptoOpenCleanupException
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
@@ -44,6 +45,7 @@ import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -51,9 +53,14 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import io.ktor.util.reflect.instanceOf
+import okio.FileSystem
+import kotlin.uuid.Uuid
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlin.test.assertIs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
@@ -194,11 +201,54 @@ class MLSClientProviderTest {
             verifySuspend(VerifyMode.exactly(1)) { arrangement.coreCryptoCentral.close() }
         }
 
+    @Test
+    fun givenNativeOpenCleanupFailed_whenClosing_thenCleanupRemainsUncertain() = runTest(testDispatchers.io) {
+        val (_, provider) = Arrangement(this).arrange {
+            withPassphraseStorage()
+            factoryFailure = CoreCryptoOpenCleanupException(IllegalStateException("Native partial open failed"))
+        }
+        provider.getCoreCrypto(TestClient.CLIENT_ID).shouldFail()
+        provider.getCoreCrypto(TestClient.CLIENT_ID).shouldFail()
+        repeat(2) { assertFailsWith<CoreCryptoOpenCleanupException> { provider.close() } }
+    }
+
+    @Test
+    fun givenNativeOpenFailed_whenRetrying_thenOpensAndCleansUp() = runTest(testDispatchers.io) {
+        val (arrangement, provider) = Arrangement(this).arrange {
+            withPassphraseStorage()
+            factoryFailure = IllegalStateException("Keystore is temporarily unavailable")
+        }
+        provider.getCoreCrypto(TestClient.CLIENT_ID).shouldFail()
+
+        arrangement.factoryFailure = null
+        provider.getCoreCrypto(TestClient.CLIENT_ID).shouldSucceed { assertEquals(arrangement.coreCryptoCentral, it) }
+        provider.clearLocalFiles()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.coreCryptoCentral.close() }
+        assertFalse(FileUtil.isDirectoryNonEmpty(arrangement.rootKeyStorePath))
+    }
+
+    @Test
+    fun givenNativeCloseFailed_whenClearing_thenKeepHandleAndFiles() = runTest(testDispatchers.io) {
+        val (arrangement, provider) = Arrangement(this).arrange {
+            withPassphraseStorage()
+            withCoreCryptoDatabaseExists()
+            everySuspend { coreCryptoCentral.close() } throws IllegalStateException("Native close failed")
+        }
+        provider.getCoreCrypto(TestClient.CLIENT_ID).shouldSucceed()
+        assertFailsWith<IllegalStateException> { provider.clearLocalFiles() }
+        assertTrue(FileUtil.isDirectoryNonEmpty(arrangement.rootKeyStorePath))
+        provider.getCoreCrypto(TestClient.CLIENT_ID).shouldSucceed { assertEquals(arrangement.coreCryptoCentral, it) }
+        assertFailsWith<IllegalStateException> { provider.close() }
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.coreCryptoCentral.close() }
+        FileUtil.deleteDirectory(arrangement.rootKeyStorePath)
+    }
+
     private inner class Arrangement(
         val processingScope: CoroutineScope
     ) {
 
-        val rootKeyStorePath: String = "rootKeyStorePath"
+        val rootKeyStorePath: String = "${FileSystem.SYSTEM_TEMPORARY_DIRECTORY}/mls-provider-${Uuid.random()}"
         val userId: UserId = UserId("userId", "domain")
         val userConfigRepository = mock<UserConfigRepository>()
         val featureConfigRepository = mock<FeatureConfigRepository>()
@@ -207,6 +257,7 @@ class MLSClientProviderTest {
         val mlsTransportProvider = mock<MLSTransportProvider>(mode = MockMode.autoUnit)
         val epochChangesObserver = mock<EpochChangesObserver>(mode = MockMode.autoUnit)
         val coreCryptoCentral = mock<CoreCryptoCentral>(mode = MockMode.autoUnit)
+        var factoryFailure: Throwable? = null
 
         fun withCoreCryptoDatabaseDoesNotExists() {
             val clientId = TestClient.CLIENT_ID
@@ -224,7 +275,10 @@ class MLSClientProviderTest {
             val rootDir = "$location/keystore"
             val dbPath = "$rootDir/keystore"
 
-            FileUtil.mkDirs(dbPath)
+            assertTrue(FileUtil.mkDirs(rootKeyStorePath))
+            assertTrue(FileUtil.mkDirs(location))
+            assertTrue(FileUtil.mkDirs(rootDir))
+            assertTrue(FileUtil.mkDirs(dbPath))
         }
 
         fun withPassphraseStorage() {
@@ -264,7 +318,7 @@ class MLSClientProviderTest {
                 epochObserver = epochChangesObserver,
                 dispatchers = testDispatchers,
                 processingScope = processingScope,
-                coreCryptoCentralFactory = { _, _ -> coreCryptoCentral },
+                coreCryptoCentralFactory = { _, _ -> factoryFailure?.let { throw it }; coreCryptoCentral },
             )
         }
     }

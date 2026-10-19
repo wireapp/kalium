@@ -1,0 +1,24 @@
+CREATE INDEX idx_msg_conv_date_id_desc ON Message(conversation_id, creation_date DESC, id DESC);
+
+CREATE VIEW MessageTimelineKey AS
+SELECT m.id, m.conversation_id, m.creation_date, m.visibility
+FROM Message m
+WHERE (
+    m.visibility = 'VISIBLE'
+    OR (m.visibility = 'DELETED' AND m.content_type IN
+        ('TEXT', 'ASSET', 'KNOCK', 'RESTRICTED_ASSET', 'UNKNOWN', 'FAILED_DECRYPTION', 'COMPOSITE', 'LOCATION', 'MULTIPART'))
+)
+AND (m.visibility = 'DELETED' OR NOT EXISTS (
+    SELECT 1 FROM MessageAssetContent a
+    WHERE a.message_id = m.id AND a.conversation_id = m.conversation_id
+      AND m.content_type = 'ASSET' AND m.sender_user_id != (SELECT id FROM SelfUser)
+      AND a.asset_mime_type IN ('image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp')
+      AND a.asset_width > 0 AND a.asset_height > 0
+      AND (length(a.asset_id) = 0 OR length(a.asset_otr_key) = 0 OR length(a.asset_sha256) = 0)
+))
+AND NOT EXISTS (
+    SELECT 1 FROM MessageSystemContent s
+    WHERE s.message_id = m.id AND s.conversation_id = m.conversation_id
+      AND m.content_type = 'MEMBER_CHANGE' AND s.enum_1 = 'USER_PROMOTED_TO_ADMIN'
+      AND instr(',' || s.list_1 || ',', ',' || (SELECT id FROM SelfUser) || ',') = 0
+);

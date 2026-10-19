@@ -46,7 +46,6 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
-import okio.use
 import kotlin.uuid.Uuid
 
 internal interface AssetRepository {
@@ -273,10 +272,12 @@ internal class AssetDataSource(
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
-                kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath).use { dataSource ->
-                    // we should also consider for avatar images, the compression for preview vs complete picture
-                    assetApi.uploadAsset(metaData, { dataSource }, uploadAssetData.dataSize)
-                }
+                // Authentication retries must reopen the file; the transport closes each attempt's source.
+                assetApi.uploadAsset(
+                    metaData,
+                    { kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath) },
+                    uploadAssetData.dataSize
+                )
             }
         }
             .flatMap { assetResponse ->
@@ -329,7 +330,15 @@ internal class AssetDataSource(
 
     override suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path> =
         wrapStorageRequest { assetDao.getAssetByKey(assetId).firstOrNull() }
-            .map { it.dataPath.toPath() }
+            .flatMap { asset ->
+                wrapStorageRequest {
+                    val path = asset.dataPath.toPath()
+                    if (kaliumFileSystem.exists(path)) path else {
+                        assetDao.deleteAsset(assetId)
+                        null
+                    }
+                }
+            }
 
     @Suppress("LongParameterList")
     private suspend fun fetchOrDownloadDecodedAsset(
@@ -458,22 +467,13 @@ internal class AssetDataSource(
             .flatMap { deleteAssetLocally(assetId) }
 
     override suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit> =
-        deleteAssetFileLocally(assetId).let {
-            wrapStorageRequest {
-                assetDao.deleteAsset(assetId)
-            }
-        }
-
-    private suspend fun deleteAssetFileLocally(assetId: String) {
         wrapStorageRequest {
-            assetDao.getAssetByKey(assetId).firstOrNull()
-        }.map {
-            val filePath = it.dataPath.toPath()
-            if (kaliumFileSystem.exists(filePath)) {
-                kaliumFileSystem.delete(path = it.dataPath.toPath(), mustExist = false)
+            assetDao.getAssetByKey(assetId).firstOrNull()?.let { asset ->
+                kaliumFileSystem.delete(asset.dataPath.toPath(), mustExist = false)
             }
+            // Keep the cache record if the file could not be removed.
+            assetDao.deleteAsset(assetId)
         }
-    }
 }
 
 private fun buildFileName(name: String, extension: String?): String =

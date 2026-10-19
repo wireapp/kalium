@@ -27,7 +27,7 @@ import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -52,7 +52,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAnReactionIsInserted_whenGettingReactions_thenTheReactionShouldBeReturned() = runTest {
+    fun givenAnReactionIsInserted_whenGettingReactions_thenTheReactionShouldBeReturned() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
@@ -69,7 +69,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingReaction_whenInsertingBackupPage_thenDuplicateIsIgnoredAndRemainingReactionsAreInserted() = runTest {
+    fun givenExistingReaction_whenInsertingBackupPage_thenDuplicateIsIgnoredAndRemainingReactionsAreInserted() = runTest(dispatcher) {
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
         messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
@@ -101,7 +101,45 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenInvalidReactionLateInBackupPage_whenInserting_thenWholePageIsRolledBack() = runTest {
+    fun givenBackupPageWithMissingMessages_whenInserting_thenPreserveReactionsForExistingMessages() = runTest(dispatcher) {
+        insertTestUsers()
+        val otherConversationId = TEST_CONVERSATION.id.copy(value = "other-conversation")
+        conversationDAO.insertConversation(TEST_CONVERSATION)
+        conversationDAO.insertConversation(TEST_CONVERSATION.copy(id = otherConversationId))
+        messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
+
+        reactionDAO.insertOrIgnoreReactions(
+            reactions = listOf(
+                MessageReactionsEntity(
+                    TEST_MESSAGE.id, TEST_MESSAGE.conversationId,
+                    listOf(MessageReactionUserEntity("before", SELF_USER_ID)),
+                ),
+                MessageReactionsEntity(
+                    "missing-message", TEST_MESSAGE.conversationId,
+                    listOf(MessageReactionUserEntity("missing", SELF_USER_ID)),
+                ),
+                MessageReactionsEntity(
+                    TEST_MESSAGE.id, otherConversationId,
+                    listOf(MessageReactionUserEntity("wrong-conversation", SELF_USER_ID)),
+                ),
+                MessageReactionsEntity(
+                    TEST_MESSAGE.id, TEST_MESSAGE.conversationId,
+                    listOf(MessageReactionUserEntity("after", SELF_USER_ID)),
+                ),
+            ),
+            instant = Instant.UNIX_FIRST_DATE,
+        )
+
+        assertContentEquals(
+            listOf("after", "before"),
+            reactionDAO.getReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID).sorted(),
+        )
+        assertTrue(reactionDAO.getReaction("missing-message", TEST_MESSAGE.conversationId, SELF_USER_ID).isEmpty())
+        assertTrue(reactionDAO.getReaction(TEST_MESSAGE.id, otherConversationId, SELF_USER_ID).isEmpty())
+    }
+
+    @Test
+    fun givenInvalidReactionLateInBackupPage_whenInserting_thenWholePageIsRolledBack() = runTest(dispatcher) {
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
         messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
@@ -129,7 +167,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAnReactionIsInsertedAndThenDeleted_whenGettingReactions_thenTheReactionShouldNotBeReturned() = runTest {
+    fun givenAnReactionIsInsertedAndThenDeleted_whenGettingReactions_thenTheReactionShouldNotBeReturned() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
@@ -147,7 +185,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMultipleUsersAndReactions_whenGettingReactionsForUser_thenOnlyReactionsFromUserShouldBeReturned() = runTest {
+    fun givenMultipleUsersAndReactions_whenGettingReactionsForUser_thenOnlyReactionsFromUserShouldBeReturned() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
@@ -169,7 +207,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMultipleMessagesAndReactions_whenGettingReactionsForMessage_thenOnlyReactionsFromSpecifiedMessageIdAreReturned() = runTest {
+    fun givenMultipleMessagesAndReactions_whenGettingReactionsForMessage_thenOnlyReactionsFromSpecifiedMessageIdAreReturned() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
@@ -192,7 +230,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesWithSameId_whenGettingReactionsForMessage_thenOnlyReactionsFromSpecifiedConversationAreReturned() = runTest {
+    fun givenMessagesWithSameId_whenGettingReactionsForMessage_thenOnlyReactionsFromSpecifiedConversationAreReturned() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         val wantedConversationId = TEST_CONVERSATION.id.copy(value = "wantedConversation")
@@ -216,7 +254,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenInitiallyInsertedReaction_whenUpdatingReactionsOfUserWithoutInitiallyInserted_thenInitiallyInsertedIsDeleted() = runTest {
+    fun givenInitiallyInsertedReaction_whenUpdatingReactionsOfUserWithoutInitiallyInserted_thenInitiallyInsertedIsDeleted() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)
@@ -236,7 +274,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenInitiallyInsertedReaction_whenUpdatingReactionsOfUserWithInitiallyInserted_thenInitiallyInsertedIsKept() = runTest {
+    fun givenInitiallyInsertedReaction_whenUpdatingReactionsOfUserWithInitiallyInserted_thenInitiallyInsertedIsKept() = runTest(dispatcher) {
         // Given
         insertTestUsers()
         conversationDAO.insertConversation(TEST_CONVERSATION)

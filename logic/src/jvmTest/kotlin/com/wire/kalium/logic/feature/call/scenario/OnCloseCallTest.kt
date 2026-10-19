@@ -43,7 +43,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import org.junit.Test
 
 class OnCloseCallTest {
@@ -105,6 +105,61 @@ class OnCloseCallTest {
 
             verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.leaveMlsConference(conversationId)
+            }
+        }
+
+    @Test
+    fun givenOneOnOneCallAnsweredElsewhere_whenOnCloseCallBackHappens_thenMarkAnsweredAndDoNotPersistMissedCall() =
+        testScope.runTest {
+            val (arrangement, onCloseCall) = Arrangement(testScope).arrange()
+
+            onCloseCall.onClosedCall(
+                CallClosedReason.ANSWERED_ELSEWHERE.avsValue,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.updateIsAnsweredElsewhere(conversationId)
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.callRepository.persistMissedCall(conversationId)
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
+            }
+        }
+
+    @Test
+    fun givenGroupCallAnsweredElsewhere_whenOnCloseCallBackHappens_thenMarkAnsweredAndKeepCallOngoing() =
+        testScope.runTest {
+            val groupCall = callMetadata.copy(conversationType = Conversation.Type.Group.Regular)
+            val (arrangement, onCloseCall) = Arrangement(testScope)
+                .withGetCallMetadata(groupCall)
+                .arrange()
+
+            onCloseCall.onClosedCall(
+                CallClosedReason.ANSWERED_ELSEWHERE.avsValue,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.updateIsAnsweredElsewhere(conversationId)
+            }
+            verifySuspend(VerifyMode.not) {
+                arrangement.callRepository.persistMissedCall(conversationId)
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.updateCallStatusById(conversationId, CallStatus.STILL_ONGOING)
             }
         }
 
@@ -438,6 +493,30 @@ class OnCloseCallTest {
                 arrangement.callRepository.leaveStaleMlsConferenceIfNeeded(conversationId)
             }
         }
+
+    @Test
+    fun givenMeeting_whenCancelled_thenDoNotPersistMissedCall() =
+        verifyMeetingClose(CallClosedReason.CANCELLED, CallStatus.MISSED)
+
+    @Test
+    fun givenMeeting_whenClosedWithoutJoining_thenDoNotPersistMissedCall() =
+        verifyMeetingClose(CallClosedReason.NORMAL, CallStatus.CLOSED)
+
+    private fun verifyMeetingClose(reason: CallClosedReason, expectedStatus: CallStatus) = testScope.runTest {
+        val (arrangement, onCloseCall) = Arrangement(testScope)
+            .withGetCallMetadata(callMetadata.copy(conversationType = Conversation.Type.Group.Meeting))
+            .arrange()
+
+        onCloseCall.onClosedCall(reason.avsValue, conversationIdString, time, userIdString, clientId, null)
+        yield()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.callRepository.persistMissedCall(conversationId)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callRepository.updateCallStatusById(conversationId, expectedStatus)
+        }
+    }
 
     private class Arrangement(val testScope: TestScope) {
         val callRepository: CallRepository = mock<CallRepository>(mode = MockMode.autoUnit)

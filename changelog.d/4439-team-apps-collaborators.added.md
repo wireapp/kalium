@@ -1,0 +1,7 @@
+Team slow sync now fetches internal apps from API 15 and external collaborators from API 10, alongside team members and services. All fetched app profiles are saved as apps even when they are absent from the team-member list; this profile behavior is shared by the app and iOS Notification Service Extension. Slow-sync version 12 refreshes existing accounts once.
+
+  - API: `TeamsApi` now extends `BaseApi` and adds `getTeamApps` and `getTeamCollaborators`; `TeamCollaboratorDTO` and `CollaboratorPermissionDTO` describe collaborators. Custom `TeamsApi` implementations must implement both methods; callers on older APIs receive `APINotSupported` without sending a request.
+  - ABI: the network interface change requires consumers to rebuild; the published logic API is unchanged.
+  - Source: custom `TeamsApi` implementations and test fakes need the new methods. App-facing logic APIs are unchanged.
+  - Behavior: once team metadata is fetched, member, app, collaborator and service syncs run concurrently and finish before team sync returns. Individual branch failures are logged and allow the other branches and overall team sync to complete; self-user and team-metadata failures still propagate. Cancellation still propagates.
+  - Migration: rebuild consumers, update custom network implementations if any, and allow the next slow sync to refresh the account. No database schema migration is required.

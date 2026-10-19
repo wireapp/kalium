@@ -49,7 +49,8 @@ class UserSearchApiWrapperTest {
     fun givenNoConversationExcludedAndAllTeamsAndDomains_whenSearching_thenReturnsExpectedContacts() = runTest {
         verifySearch(
             searchUsersOptions = SearchUsersOptions(conversationMembersExcluded = null, onlySelfTeamAndDomain = false),
-            expectedContacts = listOf(CONVERSATION_MEMBER, TEAMMATE, OTHER_TEAM_CONTACT, OTHER_DOMAIN_CONTACT, NO_TEAM_CONTACT)
+            expectedContacts = listOf(CONVERSATION_MEMBER, TEAMMATE, OTHER_TEAM_CONTACT, OTHER_DOMAIN_CONTACT, NO_TEAM_CONTACT),
+            selfTeamId = null
         )
     }
 
@@ -77,7 +78,16 @@ class UserSearchApiWrapperTest {
         )
     }
 
-    private suspend fun verifySearch(searchUsersOptions: SearchUsersOptions, expectedContacts: List<ContactDTO>) {
+    @Test
+    fun givenNoSelfTeam_whenSearchingWithinSelfTeam_thenReturnsNoCandidates() = runTest {
+        verifySearch(SearchUsersOptions(onlySelfTeamAndDomain = true), emptyList(), selfTeamId = null)
+    }
+
+    private suspend fun verifySearch(
+        searchUsersOptions: SearchUsersOptions,
+        expectedContacts: List<ContactDTO>,
+        selfTeamId: TeamId? = SELF_TEAM_ID
+    ) {
         val conversationMemberEntity = MemberEntity(
             user = UserId(CONVERSATION_MEMBER.qualifiedID.value, CONVERSATION_MEMBER.qualifiedID.domain).toDao(),
             role = MemberEntity.Role.Member
@@ -98,7 +108,7 @@ class UserSearchApiWrapperTest {
             searchQuery = "someQuery",
             domain = SELF_USER_ID.domain,
             maxResultSize = null,
-            selfTeamId = SELF_TEAM_ID,
+            selfTeamId = selfTeamId,
             searchUsersOptions = searchUsersOptions
         )
 

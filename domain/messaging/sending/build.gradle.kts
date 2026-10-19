@@ -32,8 +32,19 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(projects.core.cryptography)
+                implementation(projects.data.dataMappers)
+                implementation(projects.data.network)
+                implementation(projects.data.networkModel)
+                implementation(projects.data.persistence)
                 implementation(libs.ktxDateTime)
                 implementation(libs.ktxSerialization)
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(projects.data.persistenceTest)
+                implementation(libs.coroutines.test)
             }
         }
     }

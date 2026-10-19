@@ -23,8 +23,8 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
 import com.wire.kalium.common.logger.logStructuredJson
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /**
  * The `EventProcessingLogger` class is responsible for logging event processing details.

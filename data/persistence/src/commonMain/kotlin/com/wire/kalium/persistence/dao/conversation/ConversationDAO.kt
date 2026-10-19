@@ -18,11 +18,12 @@
 
 package com.wire.kalium.persistence.dao.conversation
 
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.time.Duration
 
 data class ProposalTimerEntity(
@@ -33,6 +34,12 @@ data class ProposalTimerEntity(
 @Suppress("TooManyFunctions")
 interface ConversationDAO {
     val platformExtensions: ConversationExtensions
+    fun observeConversationListItems(
+        pagingConfig: PagingConfig,
+        query: ConversationListQueryEntity,
+        initialPosition: ConversationListPositionEntity? = null,
+    ): Flow<PagingData<ConversationListItemEntity>>
+
     // region Get/Observe by ID
 
     suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
@@ -48,6 +55,7 @@ interface ConversationDAO {
     suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
+    suspend fun insertIncompleteConversationsOrBumpLastModified(datesByConversation: Map<QualifiedIDEntity, Instant>)
     suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
@@ -82,15 +90,6 @@ interface ConversationDAO {
         strictMLSFilter: Boolean = true,
     ): Flow<List<ConversationViewEntity>>
 
-    @DebugKaliumApi("Legacy conversation-list query retained for tests and performance benchmarks.")
-    fun getAllConversationDetailsWithEvents(
-        fromArchive: Boolean = false,
-        onlyInteractionEnabled: Boolean = false,
-        newActivitiesOnTop: Boolean = false,
-        ongoingCallConversationIds: List<QualifiedIDEntity> = emptyList(),
-        strictMLSFilter: Boolean = true
-    ): Flow<List<ConversationDetailsWithEventsEntity>>
-
     suspend fun getConversationIds(
         type: ConversationEntity.Type,
         protocol: ConversationEntity.Protocol,
@@ -105,6 +104,10 @@ interface ConversationDAO {
 
     fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
+
+    /** MLS columns survive a protocol update, including while the visible protocol is Proteus. */
+    suspend fun getConversationMLSInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo.MLS?
+
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Boolean

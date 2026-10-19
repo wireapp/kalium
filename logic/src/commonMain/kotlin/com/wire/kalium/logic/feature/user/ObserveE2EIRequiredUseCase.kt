@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -119,9 +119,9 @@ internal class ObserveE2EIRequiredUseCaseImpl(
         flowOf(instant).onStart { delay(delayMillis) }
     }
 
-    private fun E2EISettings.gracePeriodLeft(): Duration? = gracePeriodEnd?.let {
-        if (gracePeriodEnd <= DateTimeUtil.currentInstant()) null
-        else gracePeriodEnd.minus(DateTimeUtil.currentInstant())
+    private fun E2EISettings.gracePeriodLeft(): Duration? = gracePeriodEnd?.let { end ->
+        if (end <= DateTimeUtil.currentInstant()) null
+        else end.minus(DateTimeUtil.currentInstant())
     }
 
     private fun X509Identity.shouldRenew(): Boolean =

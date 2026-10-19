@@ -21,6 +21,8 @@ package com.wire.kalium.api.v2
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.mocks.extensions.toJsonString
 import com.wire.kalium.mocks.mocks.asset.AssetMocks
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.AssetId
@@ -30,20 +32,91 @@ import com.wire.kalium.network.api.v2.authenticated.AssetApiV2
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.http.headersOf
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteReadChannel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
+import okio.Buffer
 import okio.Path.Companion.toPath
 import okio.Source
 import okio.blackholeSink
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 internal class AssetApiV2Test : ApiTest() {
 
     private val userId: UserId = UserId("user_id", "domain")
+
+    @Test
+    fun concurrentUploadsReplayCompleteBodiesAfterAuthenticationChallenge() = runTest {
+        val firstBodies = mutableMapOf<String, ByteArray>()
+        val retryBodies = mutableMapOf<String, ByteArray>()
+        var refreshes = 0
+        val engine = MockEngine { request ->
+            val body = request.body.toByteArray()
+            val text = body.decodeToString()
+            val asset = (0 until 6).map { "fixture-asset-$it" }.single { it in text }
+            if (request.headers["Authorization"] == "Bearer expired") {
+                firstBodies[asset] = body
+                respond("", HttpStatusCode.Unauthorized, headersOf("WWW-Authenticate", "Bearer"))
+            } else {
+                retryBodies[asset] = body
+                respond(
+                    VALID_ASSET_UPLOAD_RESPONSE.toJsonString(),
+                    HttpStatusCode.Created,
+                    headersOf("Content-Type", "application/json")
+                )
+            }
+        }
+        val client = AuthenticatedNetworkClient(
+            engine = engine,
+            serverConfigDTO = TEST_SESSION_MANAGER.serverConfig(),
+            bearerAuthProvider = BearerAuthProvider(
+                refreshTokens = {
+                    refreshes++
+                    BearerTokens("renewed", "refresh")
+                },
+                loadTokens = { BearerTokens("expired", "refresh") },
+                sendWithoutRequestCallback = { true },
+                realm = null
+            ),
+            kaliumLogger = kaliumLogger
+        )
+        try {
+            val api = AssetApiV2(client, userId)
+            (0 until 6).map { index ->
+                async {
+                    val payload = "fixture-asset-$index".encodeToByteArray()
+                    val response = api.uploadAsset(
+                        AssetMetadataRequest("image/png", false, AssetRetentionType.PERSISTENT, "md5"),
+                        { Buffer().write(payload) }, payload.size.toLong()
+                    )
+                    assertTrue(response.isSuccessful())
+                }
+            }.awaitAll()
+            assertEquals(6, retryBodies.size)
+            assertTrue(firstBodies.isNotEmpty())
+            assertTrue(refreshes > 0)
+            firstBodies.forEach { (asset, body) -> assertContentEquals(body, retryBodies[asset]) }
+            retryBodies.values.forEach { body ->
+                val text = body.decodeToString()
+                assertTrue(text.startsWith("--frontier\r\n"))
+                assertTrue(text.endsWith("\r\n--frontier--\r\n"))
+            }
+        } finally {
+            client.httpClient.close()
+        }
+    }
 
     @Test
     fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {

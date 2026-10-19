@@ -19,7 +19,7 @@ package com.wire.kalium.persistence.dao.meeting
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.util.TzidUtil
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 object MeetingOccurrencesGenerator {
@@ -31,9 +31,8 @@ object MeetingOccurrencesGenerator {
     ): List<MeetingOccurrenceEntity> {
         if (meetings.isEmpty()) return emptyList()
         val maxDateLimit = (limit as? GenerationLimit.Window)?.until
-        val minDateLimit = (limit as? GenerationLimit.Window)?.from
         val totalCountToGenerate = (limit as? GenerationLimit.Count)?.totalCount
-        val statesList = meetings.initialGeneratorStates(lastGeneratedStarts, minDateLimit)
+        val statesList = meetings.initialGeneratorStates(lastGeneratedStarts, limit)
         return generateOccurrences(statesList, maxDateLimit, totalCountToGenerate)
     }
 
@@ -54,21 +53,19 @@ object MeetingOccurrencesGenerator {
 
     private fun List<MeetingEntity>.initialGeneratorStates(
         lastGeneratedStarts: Map<QualifiedIDEntity, Instant>,
-        minDateLimit: Instant?,
+        limit: GenerationLimit,
     ): MutableList<MeetingGeneratorState> =
         this.mapNotNull { meeting ->
-            meeting.toGeneratorState(lastGeneratedStarts[meeting.meetingId], minDateLimit)
+            meeting.toGeneratorState(lastGeneratedStarts[meeting.meetingId], limit)
         }.toMutableList()
 
-    private fun MeetingEntity.toGeneratorState(lastStart: Instant?, minDateLimit: Instant?): MeetingGeneratorState? {
-        // If the meeting has a recurrence, check if the tzid is supported. If not, return null to skip this meeting.
-        // This is a safeguard to prevent generating occurrences for meeting with unsupported tzid.
-        // After updating the app to support the given tzid, the next generation will correctly generate occurrences for this meeting.
+    private fun MeetingEntity.toGeneratorState(lastStart: Instant?, limit: GenerationLimit): MeetingGeneratorState? {
+        // Keep unsupported series stored until the platform's timezone data can generate them.
         if (recurrence != null && !TzidUtil.isTimeZoneSupported(tzid)) return null
 
         val interval = recurrence?.interval?.toInt() ?: 1
         val firstCandidateStart = firstCandidateStart(lastStart, interval)?.let {
-            advanceUntilAfter(candidateStart = it, minDateLimit = minDateLimit, interval = interval)
+            advanceIntoRange(candidateStart = it, limit = limit, interval = interval)
         }
         return if (firstCandidateStart == null || isBeyondSeriesEnd(firstCandidateStart)) {
             null
@@ -129,11 +126,20 @@ object MeetingOccurrencesGenerator {
         }
     }
 
-    private fun MeetingEntity.advanceUntilAfter(candidateStart: Instant, minDateLimit: Instant?, interval: Int): Instant? {
+    private fun MeetingEntity.advanceIntoRange(candidateStart: Instant, limit: GenerationLimit, interval: Int): Instant? {
         val duration = endTime - startTime
         val recurrence = recurrence
         var nextCandidateStart: Instant? = candidateStart
-        while (minDateLimit != null && nextCandidateStart != null && nextCandidateStart + duration <= minDateLimit) {
+        while (
+            nextCandidateStart != null && when (limit) {
+                is GenerationLimit.Window -> nextCandidateStart + duration <= limit.from
+                is GenerationLimit.Count -> limit.from != null && if (limit.includeOngoing) {
+                    nextCandidateStart + duration <= limit.from
+                } else {
+                    nextCandidateStart < limit.from
+                }
+            }
+        ) {
             nextCandidateStart = if (recurrence != null) {
                 nextCandidateStart.plusPeriod(recurrence.frequency, interval, tzid)?.takeIf { advancedStart ->
                     advancedStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(advancedStart)
@@ -163,7 +169,7 @@ object MeetingOccurrencesGenerator {
     )
 
     sealed interface GenerationLimit {
-        data class Count(val totalCount: Int) : GenerationLimit
+        data class Count(val totalCount: Int, val from: Instant? = null, val includeOngoing: Boolean = false) : GenerationLimit
         data class Window(val from: Instant, val until: Instant) : GenerationLimit
     }
 }

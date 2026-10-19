@@ -94,6 +94,19 @@ class DeleteConversationUseCaseTest {
         verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }
     }
 
+    @Test
+    fun proteusDeletionSucceedsWithoutNativeGroupWork() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange {
+            withGetConversationProtocolInfo(Either.Right(Conversation.ProtocolInfo.Proteus))
+            withDeletingConversationLocallySucceeding()
+        }
+
+        useCase(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(CONVERSATION_ID) }
+        verifySuspend(VerifyMode.not) { arrangement.mlsConversationRepository.leaveGroup(any(), any()) }
+    }
+
     private class Arrangement {
 
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)

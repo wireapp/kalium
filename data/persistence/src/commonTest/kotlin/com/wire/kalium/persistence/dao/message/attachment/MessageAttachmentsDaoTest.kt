@@ -55,7 +55,7 @@ class MessageAttachmentsDaoTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAttachmentsInDb_whenGettingByAssetIds_thenOnlyRequestedAttachmentsAreReturned() = runTest {
+    fun givenAttachmentsInDb_whenGettingByAssetIds_thenOnlyRequestedAttachmentsAreReturned() = runTest(dispatcher) {
         insertMessageWithAttachments("message_1", "asset_1", "asset_2", "asset_3")
 
         val result = messageAttachmentsDao.getAttachmentsByAssetIds(listOf("asset_1", "asset_3", "missing"))
@@ -64,7 +64,7 @@ class MessageAttachmentsDaoTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAssetAttachedToSeveralMessages_whenGettingByAssetIds_thenARowIsReturnedPerMessage() = runTest {
+    fun givenAssetAttachedToSeveralMessages_whenGettingByAssetIds_thenARowIsReturnedPerMessage() = runTest(dispatcher) {
         insertMessageWithAttachments("message_1", "asset_1")
         insertMessageWithAttachments("message_2", "asset_1")
 
@@ -74,7 +74,7 @@ class MessageAttachmentsDaoTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenEmptyAssetIds_whenGettingByAssetIds_thenEmptyListIsReturned() = runTest {
+    fun givenEmptyAssetIds_whenGettingByAssetIds_thenEmptyListIsReturned() = runTest(dispatcher) {
         insertMessageWithAttachments("message_1", "asset_1")
 
         val result = messageAttachmentsDao.getAttachmentsByAssetIds(emptyList())

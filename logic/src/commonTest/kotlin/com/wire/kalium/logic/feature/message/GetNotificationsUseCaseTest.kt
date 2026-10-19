@@ -59,7 +59,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -220,7 +220,7 @@ class GetNotificationsUseCaseTest {
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification(
                 flowOf(
-                    LocalNotification.Conversation.NewMessages(
+                    LocalNotification.Conversation(
                         conversationId(1), "some convo", listOf(), false
                     )
                 )
@@ -240,7 +240,7 @@ class GetNotificationsUseCaseTest {
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification(
                 flowOf(
-                    LocalNotification.Conversation.NewMessages(
+                    LocalNotification.Conversation(
                         conversationId(1), "some convo", listOf(), false
                     )
                 )
@@ -304,9 +304,9 @@ class GetNotificationsUseCaseTest {
                     notificationMessageConnectionRequest(authorName = otherUserName(otherUserId()))
                 ),
                 (actualToCheck.first { notification ->
-                    notification is LocalNotification.Conversation.NewMessages
+                    notification is LocalNotification.Conversation
                             && notification.messages.any { it is LocalNotificationMessage.ConnectionRequest }
-                } as LocalNotification.Conversation.NewMessages).messages
+                } as LocalNotification.Conversation).messages
             )
             awaitComplete()
         }
@@ -354,7 +354,40 @@ class GetNotificationsUseCaseTest {
                 assertEquals(listOf(invite), firstObserver.awaitItem())
                 expectNoEvents()
                 secondPublisher.scheduleConversationSeenNotification(conversationId())
-                assertEquals(listOf(LocalNotification.Conversation.Seen(conversationId())), awaitItem())
+                assertEquals(listOf(LocalNotification.ConversationSeen(conversationId())), awaitItem())
+                firstObserver.expectNoEvents()
+                cancelAndIgnoreRemainingEvents()
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenMeetingNotificationWithoutObservers_whenSubscribingLater_thenDoNotReplay() = runTest {
+        val publisher = NotificationEventsManagerImpl()
+        val notification = LocalNotification.Meeting.Cancel("event", conversationId(), conversationId(), "Planning", null, TIME)
+        publisher.scheduleMeetingNotification(notification)
+
+        publisher.observeEphemeralNotifications().test {
+            expectNoEvents()
+            publisher.scheduleMeetingNotification(notification.copy(eventId = "new-event"))
+            assertEquals(notification.copy(eventId = "new-event"), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenTwoSessionPublishers_whenCheckingRegularNotifications_thenOnlyOwningSessionReceivesCheck() = runTest {
+        val first = NotificationEventsManagerImpl()
+        val second = NotificationEventsManagerImpl()
+        first.observeRegularNotificationsChecking().test {
+            val firstObserver = this
+            second.observeRegularNotificationsChecking().test {
+                first.scheduleRegularNotificationChecking()
+                assertEquals(Unit, firstObserver.awaitItem())
+                expectNoEvents()
+                second.scheduleRegularNotificationChecking()
+                assertEquals(Unit, awaitItem())
                 firstObserver.expectNoEvents()
                 cancelAndIgnoreRemainingEvents()
             }
@@ -421,7 +454,7 @@ class GetNotificationsUseCaseTest {
             messages: List<LocalNotificationMessage> = emptyList(),
             conversationIdSeed: Int = 0,
             isOneOnOne: Boolean = true,
-        ) = LocalNotification.Conversation.NewMessages(
+        ) = LocalNotification.Conversation(
             conversationId(conversationIdSeed),
             conversationName = "conversation_$conversationIdSeed",
             messages = messages,
@@ -432,7 +465,7 @@ class GetNotificationsUseCaseTest {
             action: LocalNotificationUpdateMessageAction = LocalNotificationUpdateMessageAction.Delete,
             conversationIdSeed: Int = 0,
             messageId: String = "message_id",
-        ) = LocalNotification.Conversation.UpdateMessage(
+        ) = LocalNotification.UpdateMessage(
             conversationId(conversationIdSeed),
             messageId = messageId,
             action = action

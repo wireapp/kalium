@@ -58,10 +58,13 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
 
 import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.messaging.sending.BroadcastMessageTarget
+import com.wire.kalium.messaging.sending.MessageSendFailureHandler
+import com.wire.kalium.messaging.sending.MessageSenderImpl
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
@@ -78,16 +81,179 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.mock
 import dev.mokkery.verify
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.test.runCurrent
+import kotlin.test.assertFalse
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.time.Duration
+import com.wire.kalium.messaging.sending.MessageEnvelopeCreator
+import com.wire.kalium.messaging.sending.MLSMessageCreator
 
 class MessageSenderTest {
+    @Test
+    fun givenOfflineEditOfSentMessage_whenCancellingPending_thenDoNotRemoveItLocally() {
+        val (arrangement, sender) = arrange { }
+        arrangement.testScope.runTest {
+            val edited = TestMessage.TEXT_MESSAGE.copy(
+                isSelfMessage = true,
+                status = Message.Status.Pending,
+                editStatus = Message.EditStatus.Edited(Instant.UNIX_FIRST_DATE)
+            )
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } returns Either.Right(edited)
+            assertEquals(Either.Right(false), sender.cancelPendingMessage(edited.conversationId, edited.id))
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.deleteMessage(any(), any()) }
+        }
+    }
+
+    @Test
+    fun givenCancellationQueuedFirst_whenStaleSendWaitsForTransaction_thenItDoesNotSend() {
+        val (arrangement, sender) = arrange { }
+        arrangement.testScope.runTest {
+            val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true)
+            var stored: Message? = pending
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls {
+                stored?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
+            }
+            val deleting = CompletableDeferred<Unit>()
+            val releaseDeletion = CompletableDeferred<Unit>()
+            everySuspend { arrangement.messageRepository.deleteMessage(any(), any()) } calls {
+                deleting.complete(Unit)
+                releaseDeletion.await()
+                stored = null
+                Either.Right(Unit)
+            }
+            arrangement.serializeTransactions()
+            val cancel = async { sender.cancelPendingMessage(pending.conversationId, pending.id) }
+            deleting.await()
+            val send = async { sender.sendMessage(pending) }
+            runCurrent()
+            assertFalse(send.isCompleted)
+            releaseDeletion.complete(Unit)
+            assertEquals(Either.Right(true), cancel.await())
+            send.await().shouldSucceed()
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.sendEnvelope(any(), any(), any()) }
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.selfDeleteMessageSenderHandler.enqueueSelfDeletion(any(), any()) }
+        }
+    }
+
+    @Test
+    fun givenSendAlreadyInTransaction_whenCancellationWaits_thenSentMessageIsNotRemovedFromQueue() {
+        val (arrangement, sender) = arrange { withSendProteusMessage() }
+        arrangement.testScope.runTest {
+            val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true)
+            var stored = pending
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { Either.Right(stored) }
+            val promoting = CompletableDeferred<Unit>()
+            val releaseSend = CompletableDeferred<Unit>()
+            everySuspend { arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any()) } calls {
+                promoting.complete(Unit)
+                releaseSend.await()
+                stored = pending.copy(status = Message.Status.Sent)
+                Either.Right(Unit)
+            }
+            arrangement.serializeTransactions()
+            val send = async { sender.sendMessage(pending) }
+            promoting.await()
+            val cancel = async { sender.cancelPendingMessage(pending.conversationId, pending.id) }
+            runCurrent()
+            assertFalse(cancel.isCompleted)
+            releaseSend.complete(Unit)
+            send.await().shouldSucceed()
+            assertEquals(Either.Right(false), cancel.await())
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.deleteMessage(any(), any()) }
+        }
+    }
+
+    @Test
+    fun givenMissingPendingMessage_whenCancelling_thenCancellationIsIdempotent() {
+        val (arrangement, sender) = arrange { withGetMessageById(failing = true) }
+        arrangement.testScope.runTest {
+            assertEquals(Either.Right(true), sender.cancelPendingMessage(TestMessage.TEXT_MESSAGE.conversationId, TestMessage.TEXT_MESSAGE.id))
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.deleteMessage(any(), any()) }
+        }
+    }
+
+    @Test
+    fun givenForeignPendingMessage_whenCancelling_thenDoNotDeleteIt() {
+        val (arrangement, sender) = arrange { }
+        arrangement.testScope.runTest {
+            val foreign = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = false)
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } returns Either.Right(foreign)
+            assertEquals(Either.Right(false), sender.cancelPendingMessage(foreign.conversationId, foreign.id))
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.deleteMessage(any(), any()) }
+        }
+    }
+
+    @Test
+    fun givenStorageFailure_whenCancelling_thenPropagateFailure() {
+        val (arrangement, sender) = arrange { }
+        arrangement.testScope.runTest {
+            val failure = StorageFailure.Generic(IllegalStateException("database unavailable"))
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } returns Either.Left(failure)
+            assertEquals(Either.Left(failure), sender.cancelPendingMessage(TestMessage.TEXT_MESSAGE.conversationId, TestMessage.TEXT_MESSAGE.id))
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageRepository.deleteMessage(any(), any()) }
+        }
+    }
+
+    @Test
+    fun givenLocallyDeletedPendingMessage_whenStaleSnapshotIsSent_thenNoEnvelopeIsSent() {
+        val (arrangement, sender) = arrange { }
+        arrangement.testScope.runTest {
+            val pending = TestMessage.TEXT_MESSAGE.copy(isSelfMessage = true)
+            var stored: Message? = pending
+            everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls {
+                stored?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
+            }
+            everySuspend { arrangement.messageRepository.deleteMessage(any(), any()) } calls {
+                stored = null
+                Either.Right(Unit)
+            }
+            val slowSync = mock<com.wire.kalium.logic.data.sync.SlowSyncRepository>()
+            every { slowSync.slowSyncStatus } returns kotlinx.coroutines.flow.MutableStateFlow(
+                com.wire.kalium.logic.data.sync.SlowSyncStatus.Complete
+            )
+            val delete = DeleteMessageUseCase(
+                arrangement.messageRepository,
+                mock(mode = MockMode.autoUnit),
+                slowSync,
+                sender,
+                pending.senderUserId,
+                mock(mode = MockMode.autoUnit),
+                mock(mode = MockMode.autoUnit),
+                mock(mode = MockMode.autoUnit),
+                object : com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier {},
+                testKaliumDispatcher
+            )
+
+            delete(pending.conversationId, pending.id, false).toEither().shouldSucceed()
+            sender.sendMessage(pending).shouldSucceed()
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.messageRepository.sendEnvelope(any(), any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenCancelledPendingSnapshot_whenSending_thenDoNotSendEnvelope() {
+        val (arrangement, sender) = arrange { withGetMessageById(failing = true) }
+        arrangement.testScope.runTest {
+            sender.sendMessage(TestMessage.TEXT_MESSAGE).shouldSucceed()
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.messageRepository.sendEnvelope(any(), any(), any())
+            }
+        }
+    }
+
     @Test
     fun givenAllStepsSucceed_WhenSendingOutgoingMessage_ThenReturnSuccess() {
         // given
@@ -1136,31 +1302,42 @@ class MessageSenderTest {
 
         fun arrange() = run {
             runBlocking {
+                withGetMessageById()
                 block()
                 withTransactionReturning(Either.Right(Unit))
             }
             this@Arrangement to MessageSenderImpl(
-                messageRepository = messageRepository,
-                conversationRepository = conversationRepository,
-                syncManager = syncManager,
+                messages = messageRepository,
+                transport = messageRepository,
+                conversations = conversationRepository,
+                session = SyncedSendingSession(syncManager, cryptoTransactionProvider),
                 messageSendFailureHandler = messageSendFailureHandler,
-                legalHoldHandler = legalHoldHandler,
                 sessionEstablisher = sessionEstablisher,
                 messageEnvelopeCreator = messageEnvelopeCreator,
                 mlsMessageCreator = mlsMessageCreator,
-                messageSendingInterceptor = messageSendingInterceptor,
-                userRepository = userRepository,
+                prepareMessage = messageSendingInterceptor::prepareMessage,
+                legalHoldEnabledAfter = legalHoldHandler::handleMessageSendFailure,
+                verifyEpoch = { context, conversationId -> staleEpochVerifier.verifyEpoch(context, conversationId) },
+                handleGroupOutOfSync = mlsMissingUsersMessageRejectionHandler::handle,
+                broadcastRecipients = userRepository::getAllRecipients,
                 enqueueSelfDeletion = { message, expirationData ->
                     selfDeleteMessageSenderHandler.enqueueSelfDeletion(
                         message,
                         expirationData
                     )
                 },
-                staleEpochVerifier = staleEpochVerifier,
-                transactionProvider = cryptoTransactionProvider,
-                mlsMissingUsersMessageRejectionHandler = mlsMissingUsersMessageRejectionHandler,
                 scope = testScope
             )
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        suspend fun serializeTransactions() {
+            // Model the existing CoreCrypto transaction queue, not a message-specific lock.
+            val queue = Mutex()
+            everySuspend { cryptoTransactionProvider.transaction<Any?>(any(), any()) } calls {
+                val operation = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, Any?>
+                queue.withLock { operation(transactionContext) }
+            }
         }
 
         suspend fun withGetMessageById(failing: Boolean = false) = apply {

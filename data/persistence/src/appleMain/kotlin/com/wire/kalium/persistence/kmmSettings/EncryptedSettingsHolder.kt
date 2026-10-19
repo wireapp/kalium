@@ -27,6 +27,7 @@ import platform.CoreFoundation.CFStringRef
 import platform.CoreFoundation.CFTypeRef
 import platform.Foundation.CFBridgingRelease
 import platform.Foundation.CFBridgingRetain
+import platform.Security.kSecAttrAccessGroup
 import platform.Security.kSecAttrAccessible
 import platform.Security.kSecAttrAccessibleAfterFirstUnlock
 import platform.Security.kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
@@ -35,41 +36,70 @@ import platform.Security.kSecAttrAccessibleWhenUnlocked
 import platform.Security.kSecAttrAccessibleWhenUnlockedThisDeviceOnly
 import platform.Security.kSecAttrService
 import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.ref.Cleaner
 import kotlin.native.ref.createCleaner
 
-@OptIn(ExperimentalSettingsImplementation::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalSettingsApi::class, ExperimentalSettingsImplementation::class)
 internal actual fun buildSettings(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
 ): Settings {
     val config = param.keychainConfig
-    val accessibility = config.keychainAccessibility ?: return KeychainSettings(config.serviceName)
-    return AccessibleKeychainSettings(config.serviceName, accessibility)
+    if (config.keychainAccessibility == null && config.accessGroup == null) return KeychainSettings(config.serviceName)
+    return RetainedKeychainSettings(
+        serviceName = config.serviceName,
+        accessGroup = config.accessGroup,
+        accessibility = config.keychainAccessibility,
+    )
 }
 
 internal actual class EncryptedSettingsPlatformParam(val keychainConfig: ApplePersistenceConfig)
 
-/**
- * [KeychainSettings] for [service] whose entries are stored and looked up with [accessibility].
- *
- * `KeychainSettings` only takes extra attributes with the service already bridged to Core Foundation,
- * and then doesn't release it, so this releases it once collected, as `KeychainSettings(service)` does.
- */
-@OptIn(ExperimentalForeignApi::class, ExperimentalSettingsApi::class, ExperimentalSettingsImplementation::class)
-private class AccessibleKeychainSettings private constructor(
-    cfService: CFTypeRef?,
-    accessibility: KeychainAccessibility
-) : Settings by KeychainSettings(kSecAttrService to cfService, kSecAttrAccessible to accessibility.secAttrValue) {
+@OptIn(ExperimentalForeignApi::class, ExperimentalNativeApi::class)
+private class RetainedKeychainSettings private constructor(
+    @Suppress("unused") private val attributes: RetainedKeychainAttributes,
+) : Settings by attributes.settings {
+    constructor(
+        serviceName: String,
+        accessGroup: String?,
+        accessibility: KeychainAccessibility?,
+    ) : this(RetainedKeychainAttributes(serviceName, accessGroup, accessibility))
+}
 
-    constructor(service: String, accessibility: KeychainAccessibility) : this(CFBridgingRetain(service), accessibility)
+@OptIn(
+    ExperimentalForeignApi::class,
+    ExperimentalNativeApi::class,
+    ExperimentalSettingsApi::class,
+    ExperimentalSettingsImplementation::class,
+)
+@Suppress("SpreadOperator") // KeychainSettings exposes custom attributes only through a vararg constructor.
+private class RetainedKeychainAttributes(
+    serviceName: String,
+    accessGroup: String?,
+    accessibility: KeychainAccessibility?,
+) {
+    private val retainedService = CFBridgingRetain(serviceName)
+    private val retainedAccessGroup = accessGroup?.let { CFBridgingRetain(it) }
 
-    @OptIn(ExperimentalNativeApi::class)
     @Suppress("unused")
-    private val cleaner = createCleaner(cfService) { CFBridgingRelease(it) }
+    private val serviceCleaner: Cleaner = createCleaner(retainedService) { CFBridgingRelease(it) }
+
+    @Suppress("unused")
+    private val accessGroupCleaner: Cleaner? = retainedAccessGroup?.let { retainedValue ->
+        createCleaner(retainedValue) { CFBridgingRelease(it) }
+    }
+
+    val settings: Settings = KeychainSettings(
+        *buildList<Pair<CFStringRef?, CFTypeRef?>> {
+            add(kSecAttrService to retainedService)
+            retainedAccessGroup?.let { add(kSecAttrAccessGroup to it) }
+            accessibility?.let { add(kSecAttrAccessible to it.secAttrValue) }
+        }.toTypedArray()
+    )
 }
 
 @OptIn(ExperimentalForeignApi::class)
-private val KeychainAccessibility.secAttrValue: CFStringRef?
+internal val KeychainAccessibility.secAttrValue: CFStringRef?
     get() = when (this) {
         KeychainAccessibility.WhenUnlocked -> kSecAttrAccessibleWhenUnlocked
         KeychainAccessibility.WhenUnlockedThisDeviceOnly -> kSecAttrAccessibleWhenUnlockedThisDeviceOnly

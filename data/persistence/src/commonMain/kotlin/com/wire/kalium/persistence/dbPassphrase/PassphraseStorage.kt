@@ -20,6 +20,8 @@ package com.wire.kalium.persistence.dbPassphrase
 
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 
+const val USER_DB_PASSPHRASE_PREFIX_V2 = "user_db_secret_alias_v2"
+
 interface PassphraseStorage {
     fun getPassphrase(key: String): String?
     fun setPassphrase(key: String, passphrase: String)
