@@ -34,10 +34,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
-import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -95,9 +93,11 @@ class EventMapperTest {
         val decoded = Json.decodeFromJsonElement<EventContentDTO.Conversation.AccessUpdate>(datedPayload)
         val event = assertIs<Event.Conversation.AccessUpdate>(mapper.fromEventContentDTO("access-event", decoded))
         assertEquals(date, event.dateTime)
+        assertEquals(date, conversationAccessUpdate("access-event", decoded).dateTime)
         val decodedLegacy = Json.decodeFromJsonElement<EventContentDTO.Conversation.AccessUpdate>(legacyPayload)
         val legacy = assertIs<Event.Conversation.AccessUpdate>(mapper.fromEventContentDTO("legacy-event", decodedLegacy))
         assertNull(legacy.dateTime)
+        assertNull(conversationAccessUpdate("legacy-event", decodedLegacy).dateTime)
     }
 
     @Test
