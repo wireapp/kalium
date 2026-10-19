@@ -2,10 +2,10 @@ name: Setup Java and Gradle
 description: Set up Java and trusted Gradle caching for CI jobs
 
 inputs:
-  cache-provider:
-    description: Gradle cache provider; external when the caller manages its own cache
+  use-external-cache:
+    description: Whether the caller manages CI cache restore and save
     required: false
-    default: basic
+    default: "false"
   enable-kvm:
     description: Whether to enable KVM on Linux
     required: false
@@ -38,15 +38,16 @@ runs:
         PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
         PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
         MERGE_GROUP_BASE_REF: ${{ github.event.merge_group.base_ref }}
+        USE_EXTERNAL_CACHE: ${{ inputs.use-external-cache }}
       run: bash "$GITHUB_ACTION_PATH/cache-policy.sh"
 
     - name: Set up Gradle
       uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
       with:
-        # Default to the MIT-licensed provider backed by GitHub's ref-scoped cache.
-        # Callers managing a dedicated cache select the external provider.
-        cache-provider: ${{ inputs.cache-provider }}
-        cache-disabled: ${{ steps.cache_policy.outputs.enabled != 'true' }}
+        # The pinned action supports basic and enhanced providers. Dedicated caches
+        # disable its cache management while retaining the shared policy outputs.
+        cache-provider: basic
+        cache-disabled: ${{ steps.cache_policy.outputs.setup_gradle_disabled }}
         cache-read-only: ${{ steps.cache_policy.outputs.read_only == 'true' }}
 
     - name: Enable KVM

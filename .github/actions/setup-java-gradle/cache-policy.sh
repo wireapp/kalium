@@ -23,7 +23,13 @@ if [[ "${GRADLE_OPTS-}" == *$'\n'* || "${GRADLE_OPTS-}" == *$'\r'* ]]; then
   exit 1
 fi
 
-printf 'enabled=%s\nread_only=%s\n' "$enabled" "$read_only" >> "$GITHUB_OUTPUT"
+setup_gradle_disabled=true
+if [[ "$enabled" == "true" && "${USE_EXTERNAL_CACHE-}" != "true" ]]; then
+  setup_gradle_disabled=false
+fi
+
+printf 'enabled=%s\nread_only=%s\nsetup_gradle_disabled=%s\n' \
+  "$enabled" "$read_only" "$setup_gradle_disabled" >> "$GITHUB_OUTPUT"
 # Override the repository's local default and preserve the decision in nested builds.
 gradle_opts="${GRADLE_OPTS:+${GRADLE_OPTS} }-Dorg.gradle.caching=${enabled}"
 printf 'GRADLE_OPTS=%s\n' "$gradle_opts" >> "$GITHUB_ENV"

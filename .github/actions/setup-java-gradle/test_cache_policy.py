@@ -25,6 +25,7 @@ class CachePolicyTest(unittest.TestCase):
                 "PR_HEAD_REPOSITORY": "",
                 "MERGE_GROUP_BASE_REF": "",
                 "GRADLE_OPTS": "",
+                "USE_EXTERNAL_CACHE": "false",
                 **overrides,
             }
             result = subprocess.run(
@@ -47,7 +48,11 @@ class CachePolicyTest(unittest.TestCase):
     def assert_policy(self, enabled=False, read_only=False, **event):
         result, outputs, environment = self.evaluate(**event)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(outputs, {"enabled": str(enabled).lower(), "read_only": str(read_only).lower()})
+        self.assertEqual(outputs, {
+            "enabled": str(enabled).lower(),
+            "read_only": str(read_only).lower(),
+            "setup_gradle_disabled": str(not enabled or event.get("USE_EXTERNAL_CACHE") == "true").lower(),
+        })
         self.assertTrue(environment.endswith(f"-Dorg.gradle.caching={str(enabled).lower()}\n"))
 
     def test_develop_push_can_restore_and_save(self):
@@ -98,6 +103,23 @@ class CachePolicyTest(unittest.TestCase):
 
     def test_empty_repository_names_cannot_enable_pr_caching(self):
         self.assert_policy(EVENT_NAME="pull_request", PR_BASE_REF="develop", REPOSITORY="", PR_HEAD_REPOSITORY="")
+
+    def test_dedicated_cache_disables_upstream_caching_without_bypassing_policy(self):
+        self.assert_policy(
+            enabled=True,
+            USE_EXTERNAL_CACHE="true",
+            EVENT_NAME="pull_request",
+            PR_BASE_REF="develop",
+            PR_HEAD_REPOSITORY="wireapp/kalium",
+        )
+        self.assert_policy(
+            enabled=True,
+            read_only=True,
+            USE_EXTERNAL_CACHE="true",
+            EVENT_NAME="merge_group",
+            MERGE_GROUP_BASE_REF="refs/heads/develop",
+        )
+        self.assert_policy(USE_EXTERNAL_CACHE="true", EVENT_NAME="push", REF="refs/tags/v1.2.3")
 
     def test_environment_injection_is_rejected(self):
         for newline in ["\n", "\r"]:

@@ -46,7 +46,7 @@ jobs:
         id: setup-gradle
         uses: ./.github/actions/setup-java-gradle
         with:
-          cache-provider: external
+          use-external-cache: "true"
 
       - name: Restore iOS Gradle build cache
         if: steps.setup-gradle.outputs.cache-enabled == 'true'
@@ -77,6 +77,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-konan-
 
       - name: iOS Tests
+        id: ios-tests
         # Develop runs the complete suite to populate task outputs for future PRs.
         # PR and merge-queue runs keep using affected-module detection.
         run: |
@@ -130,7 +131,7 @@ jobs:
             build/ci/ios-runner-memory.log
 
       - name: Generate aggregated iOS test report
-        if: always()
+        if: ${{ always() && steps.ios-tests.outcome != 'skipped' }}
         run: ./gradlew aggregateIosSimulatorArm64TestReport
 
       - name: Archive Test Reports
@@ -168,7 +169,7 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/gc.properties
 
       - name: Save iOS Gradle build cache
-        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-cache.outputs.cache-hit != 'true' }}
+        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-cache.outcome == 'success' && steps.gradle-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: |
@@ -177,7 +178,7 @@ jobs:
           key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
       - name: Save Kotlin/Native tooling cache (.konan)
-        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.konan-cache.outputs.cache-hit != 'true' }}
+        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.konan-cache.outcome == 'success' && steps.konan-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ~/.konan
