@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logic.feature.call.usecase.SetCallHandRaisedUseCase
 import com.wire.kalium.logic.data.client.guardedBy
 import com.wire.kalium.logic.network.guardedBy
 
@@ -2155,6 +2156,7 @@ public class UserSessionScope internal constructor(
             buttonActionConfirmationHandler,
             dataTransferEventHandler,
             inCallReactionsRepository,
+            callRepository,
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
             callingMessageHandler,
@@ -3093,8 +3095,19 @@ public class UserSessionScope internal constructor(
     public suspend fun callPresentations(): List<CallPresentationRecord> =
         CallSignalJournal(userStorage.database).presentations()
 
+    private val setCallHandRaised by lazy {
+        SetCallHandRaisedUseCase(
+            selfUserId = userId,
+            provideClientId = clientIdProvider,
+            messageSender = messages.messageSender,
+            calls = callRepository,
+            scope = this
+        )
+    }
+
     public val calls: CallsScope
         get() = CallsScope(
+            setHandRaised = setCallHandRaised,
             callManager = callManager,
             callBackgroundManager = callBackgroundManager,
             callRepository = callRepository,

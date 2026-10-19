@@ -113,7 +113,7 @@ messages, but does not delete them when that deadline passes; the app's expirati
 executor does.
 
 Ignored, as in the app or because the NSE has no live UI or call: typing, remote
-mute, in-call emoji, legal-hold events and configuration, history-client signaling,
+mute, in-call emoji and hand raises, legal-hold events and configuration, history-client signaling,
 explicitly ignored content and unknown event types. Typing preference properties
 are still stored.
 

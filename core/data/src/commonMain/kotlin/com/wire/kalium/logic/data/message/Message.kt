@@ -265,6 +265,8 @@ sealed interface Message {
                     "content" to content.toLogMap(),
                 )
 
+                is MessageContent.InCallHandRaise -> mutableMapOf(typeKey to "inCallHandRaise")
+
                 is MessageContent.InCallEmoji -> mutableMapOf(
                     typeKey to "inCallEmoji",
                     "content" to content.emojis
