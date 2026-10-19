@@ -23,8 +23,11 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.configuration.FileSharingStatus
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
@@ -38,6 +41,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -47,15 +51,28 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -210,6 +227,191 @@ class ScheduleNewAssetMessageUseCaseTest {
         }
     }
 
+    @Test
+    fun givenUploadFails_whenTracking_thenCompletionReportsFailure() = runTest(testDispatcher.default) {
+        val (_, scheduler) = Arrangement(this)
+            .withAssetMessagePersistSuccess()
+            .withUploadFailure()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+            .arrange()
+
+        val result = assertIs<StartTrackedAssetUploadResult.Started>(StartTrackedAssetUploadUseCase(scheduler)(assetUploadParams))
+        assertIs<AssetUploadCompletion.Failure>(result.operation.awaitCompletion())
+        assertEquals(AssetUploadProgress.FAILED, result.operation.progress.value)
+    }
+
+    @Test
+    fun givenDeletedMessage_whenTracking_thenCancelAndMarkFailed() = runTest(testDispatcher.default) {
+        val (arrangement, scheduler) = Arrangement(this)
+            .withAssetMessagePersistSuccess()
+            .withUploadSuccess()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+            .arrange()
+        arrangement.withMessageDeleted()
+
+        val result = assertIs<StartTrackedAssetUploadResult.Started>(StartTrackedAssetUploadUseCase(scheduler)(assetUploadParams))
+        assertEquals(AssetUploadCompletion.Cancelled, result.operation.awaitCompletion())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.updateTransferStatus(AssetTransferStatus.FAILED_UPLOAD, any(), any())
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+        }
+    }
+
+    @Test
+    fun givenFailedSend_whenRetryingTrackedUpload_thenReusePersistedMessageAndRemoteAsset() = runTest(testDispatcher.default) {
+        val remoteMetadata = uploadMetadata.copy(
+            assetId = UploadedAssetId("remote-asset", "remote-domain"),
+            sha256Key = SHA256Key(byteArrayOf(1, 2, 3))
+        )
+        val persistedMessage = TestMessage.assetMessage().copy(content = MessageContent.Asset(remoteMetadata.toAssetContent()))
+        val (arrangement, scheduler) = Arrangement(this)
+            .withAssetMessagePersistSuccess()
+            .withUploadFailure()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+            .withPersistedMessage(persistedMessage)
+            .arrange()
+        val first = assertIs<StartTrackedAssetUploadResult.Started>(StartTrackedAssetUploadUseCase(scheduler)(assetUploadParams)).operation
+        assertIs<AssetUploadCompletion.Failure>(first.awaitCompletion())
+        arrangement.withUploadSuccess()
+
+        val retry = first.retry()
+        assertEquals(first.messageId, retry.messageId)
+        assertEquals(AssetUploadCompletion.Success, retry.awaitCompletion())
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistNewAssetMessage(any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(persistedMessage, remoteMetadata) }
+    }
+
+    @Test
+    fun givenCallerCancelledBeforeHandleReturns_whenStarting_thenAwaitOwnedUploadCleanup() = runTest(testDispatcher.default) {
+        val (arrangement, scheduler) = Arrangement(backgroundScope)
+            .withAssetMessagePersistSuccess()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+            .arrange()
+        val cleanup = CompletableDeferred<Unit>()
+        var uploadCleaned = false
+        lateinit var caller: Job
+        everySuspend { arrangement.uploadAsset(any(), any()) } calls {
+            caller.cancel()
+            try {
+                awaitCancellation()
+            } finally {
+                withContext(NonCancellable) { cleanup.await() }
+                uploadCleaned = true
+            }
+        }
+        // A different dispatcher forces withContext's prompt cancellation when returning the handle.
+        caller = launch(StandardTestDispatcher(testScheduler)) { scheduler.startTracked(assetUploadParams, "message") }
+        runCurrent()
+        assertFalse(caller.isCompleted)
+        cleanup.complete(Unit)
+        caller.join()
+        assertTrue(uploadCleaned)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+        }
+    }
+
+    @Test
+    fun givenPersistenceCommitsBeforeCancelledReturn_whenNoHandleCreated_thenMarkMessageFailedWithoutResend() =
+        runTest(testDispatcher.default) {
+            val (arrangement, scheduler) = Arrangement(backgroundScope)
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+                .arrange()
+            everySuspend { arrangement.persistNewAssetMessage(any(), any(), any()) } calls {
+                throw CancellationException("Persistence committed before cancellation was observed")
+            }
+            val caller = launch { scheduler.startTracked(assetUploadParams, "persisted-message") }
+            caller.join()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.updateTransferStatus(AssetTransferStatus.FAILED_UPLOAD, conversationId, "persisted-message")
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    any(), conversationId, "persisted-message", any(), eq(false)
+                )
+            }
+            verifySuspend(VerifyMode.not) { arrangement.uploadAsset(any(), any()) }
+        }
+
+    @Test
+    fun givenPolicyChangesAfterFailure_whenRetrying_thenBlockUploadWithoutCreatingAnotherMessage() = runTest(testDispatcher.default) {
+        for (policy in listOf(FileSharingStatus.Value.Disabled, FileSharingStatus.Value.EnabledSome(listOf("png")))) {
+            val (arrangement, scheduler) = Arrangement(this)
+                .withAssetMessagePersistSuccess()
+                .withUploadFailure()
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+                .withValidateAsseMimeTypeResult(false)
+                .arrange()
+            val first = assertIs<StartTrackedAssetUploadResult.Started>(scheduler.startTracked(assetUploadParams, "message")).operation
+            first.awaitCompletion()
+            arrangement.withObserveFileSharingStatusResult(policy)
+
+            val retry = first.retry()
+            val result = assertIs<AssetUploadCompletion.Failure>(retry.awaitCompletion())
+            assertIs<CoreFailure.Unknown>(result.coreFailure)
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.persistNewAssetMessage(any(), any(), any())
+                arrangement.uploadAsset(any(), any())
+            }
+        }
+    }
+
+    @Test
+    fun givenMessagePersistedSent_whenUploadReturnIsCancelled_thenDoNotDowngradeOrRetry() = runTest(testDispatcher.default) {
+        val (arrangement, scheduler) = Arrangement(this)
+            .withAssetMessagePersistSuccess()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+            .withPersistedMessage(TestMessage.assetMessage().copy(status = Message.Status.Sent))
+            .arrange()
+        everySuspend { arrangement.uploadAsset(any(), any()) } calls {
+            throw CancellationException("Send result lost while returning from IO")
+        }
+        val operation = assertIs<StartTrackedAssetUploadResult.Started>(
+            scheduler.startTracked(assetUploadParams, "already-sent-message")
+        ).operation
+
+        assertEquals(AssetUploadCompletion.Success, operation.awaitCompletion())
+        assertSame(operation, operation.retry())
+        verifySuspend(VerifyMode.not) {
+            arrangement.updateTransferStatus(AssetTransferStatus.FAILED_UPLOAD, any(), any())
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenAssetPersistedRemotely_whenFinalSendCancelled_thenKeepUploadedStateAndReuseOnRetry() = runTest(testDispatcher.default) {
+        val remoteMetadata = uploadMetadata.copy(
+            assetId = UploadedAssetId("already-uploaded", "asset-domain"),
+            sha256Key = SHA256Key(byteArrayOf(1, 2, 3))
+        )
+        val persistedMessage = TestMessage.assetMessage().copy(content = MessageContent.Asset(remoteMetadata.toAssetContent()))
+        val (arrangement, scheduler) = Arrangement(this)
+            .withAssetMessagePersistSuccess()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+            .withPersistedMessage(persistedMessage)
+            .arrange()
+        everySuspend { arrangement.uploadAsset(any(), any()) } calls {
+            throw CancellationException("Upload succeeded but final message send was cancelled")
+        }
+        val operation = assertIs<StartTrackedAssetUploadResult.Started>(
+            scheduler.startTracked(assetUploadParams, "uploaded-message")
+        ).operation
+        assertEquals(AssetUploadCompletion.Cancelled, operation.awaitCompletion())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.updateTransferStatus(AssetTransferStatus.UPLOADED, any(), any())
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.updateTransferStatus(AssetTransferStatus.FAILED_UPLOAD, any(), any())
+        }
+
+        arrangement.withUploadSuccess()
+        val retry = operation.retry()
+        assertEquals(AssetUploadCompletion.Success, retry.awaitCompletion())
+        assertEquals(operation.messageId, retry.messageId)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.uploadAsset(persistedMessage, remoteMetadata) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistNewAssetMessage(any(), any(), any()) }
+    }
+
     private class Arrangement(val coroutineScope: CoroutineScope) {
         val persistNewAssetMessage = mock<PersistNewAssetMessageUseCase>(mode = MockMode.autoUnit)
         val uploadAsset = mock<UploadAssetUseCase>(mode = MockMode.autoUnit)
@@ -226,6 +428,12 @@ class ScheduleNewAssetMessageUseCaseTest {
             everySuspend {
                 persistNewAssetMessage.invoke(any(), any(), any())
             } returns Pair(uploadMetadata, TestMessage.assetMessage()).right()
+        }
+
+        private var persistedMessage = TestMessage.assetMessage()
+
+        suspend fun withPersistedMessage(message: Message.Regular) = apply {
+            persistedMessage = message
         }
 
         suspend fun withAssetMessagePersistFailure() = apply {
@@ -285,6 +493,9 @@ class ScheduleNewAssetMessageUseCaseTest {
             dispatcher = testDispatcher,
         ).also {
             every { slowSyncRepository.slowSyncStatus } returns completeStateFlow
+            everySuspend { messageRepository.getMessageById(any(), any()) } returns persistedMessage.right()
+            everySuspend { messageRepository.observeMessageVisibility(any(), any()) } returns
+                flowOf(MessageEntity.Visibility.VISIBLE.right())
             everySuspend { updateTransferStatus(any(), any(), any()) } returns UpdateTransferStatusResult.Success
         }
     }

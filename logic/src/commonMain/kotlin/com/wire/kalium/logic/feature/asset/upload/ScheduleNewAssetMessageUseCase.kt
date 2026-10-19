@@ -21,16 +21,21 @@ package com.wire.kalium.logic.feature.asset.upload
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.SHA256Key
+import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
@@ -43,12 +48,12 @@ import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okio.Path
 import kotlin.uuid.Uuid
@@ -86,73 +91,138 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
 
-    private var outGoingAssetUploadJob: Job? = null
-
     override suspend fun invoke(asset: AssetUploadParams): ScheduleNewAssetMessageResult = invoke(asset, Uuid.random().toString())
 
     /** Schedules [asset] as [messageId], so a caller that may repeat itself can check for the message first (ADR 13). */
-    @Suppress("LongMethod", "ReturnCount")
-    internal suspend fun invoke(asset: AssetUploadParams, messageId: String): ScheduleNewAssetMessageResult {
-
-        validateAsset(asset).onFailure { error -> return error }
-
-        slowSyncRepository.slowSyncStatus.first {
-            it is SlowSyncStatus.Complete
+    internal suspend fun invoke(asset: AssetUploadParams, messageId: String): ScheduleNewAssetMessageResult =
+        when (val result = startTracked(asset, messageId)) {
+            is StartTrackedAssetUploadResult.Started -> ScheduleNewAssetMessageResult.Success(result.operation.messageId)
+            is StartTrackedAssetUploadResult.Failure -> result.reason
         }
 
-        return withContext(dispatcher.io) {
-            // We persist the asset with temporary id and message right away so that it can be displayed on the conversation screen loading
-            persistNewAssetMessage(messageId, userId, asset)
-                .onSuccess { (currentAssetMessageContent, message) ->
-                    // We schedule the asset upload and return Either.Right so later it's transformed to Success(message.id)
-                    outGoingAssetUploadJob = scope.launch {
-                        launch { monitorAndCancelUploadOnMessageVisibilityChange(message) }
-                        launch { uploadAsset(message, currentAssetMessageContent) }.invokeOnCompletion { reason ->
-                            if (reason is CancellationException) {
-                                scope.launch(NonCancellable) {
-                                    updateAssetMessageTransferStatus(
-                                        AssetTransferStatus.FAILED_UPLOAD,
-                                        message.conversationId,
-                                        message.id
-                                    )
-                                }
-                            }
+    internal suspend fun startTracked(asset: AssetUploadParams, messageId: String): StartTrackedAssetUploadResult {
+        validateAsset(asset).onFailure { return StartTrackedAssetUploadResult.Failure(it) }
+        slowSyncRepository.slowSyncStatus.first { it is SlowSyncStatus.Complete }
+
+        var operation: TrackedAssetUpload? = null
+        return try {
+            withContext(dispatcher.io) {
+                persistNewAssetMessage(messageId, userId, asset)
+                    .onFailure {
+                        updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, asset.conversationId, messageId)
+                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                            failure = it,
+                            conversationId = asset.conversationId,
+                            messageId = messageId,
+                            messageType = TYPE,
+                            scheduleResendIfNoNetwork = pendingMessagesEnabled
+                        )
+                    }.fold(
+                        { StartTrackedAssetUploadResult.Failure(Failure.Generic(it)) },
+                        { (metadata, message) ->
+                            val started = createOperation(message, metadata, asset, isRetry = false)
+                            operation = started
+                            StartTrackedAssetUploadResult.Started(started)
                         }
-                    }
-                }
-                .onFailure {
-                    updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, asset.conversationId, messageId)
-                    messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                        failure = it,
-                        conversationId = asset.conversationId,
-                        messageId = messageId,
-                        messageType = TYPE,
-                        scheduleResendIfNoNetwork = pendingMessagesEnabled
                     )
+            }
+        } catch (cancelled: CancellationException) {
+            withContext(NonCancellable) {
+                val started = operation
+                if (started != null) {
+                    started.cancel()
+                    started.awaitCompletion()
+                } else {
+                    // Persistence may have committed before cancellation prevented it from returning its result.
+                    markCancelled(asset.conversationId, messageId)
                 }
-        }.fold({
-            Failure.Generic(it)
-        }, { (_, message) ->
-            ScheduleNewAssetMessageResult.Success(message.id)
-        })
-    }
-
-    private fun monitorAndCancelUploadOnMessageVisibilityChange(
-        message: Message.Regular,
-    ): suspend CoroutineScope.() -> Unit = {
-        messageRepository.observeMessageVisibility(message.id, message.conversationId).collect { visibility ->
-            visibility.fold(
-                {
-                    outGoingAssetUploadJob?.cancel()
-                },
-                {
-                    if (it == MessageEntity.Visibility.DELETED) {
-                        outGoingAssetUploadJob?.cancel()
-                    }
-                }
-            )
+            }
+            throw cancelled
         }
     }
+
+    private fun createOperation(
+        originalMessage: Message.Regular,
+        metadata: UploadAssetMessageMetadata,
+        asset: AssetUploadParams,
+        isRetry: Boolean,
+    ): TrackedAssetUpload = TrackedAssetUploadImpl(
+        messageId = originalMessage.id,
+        scope = scope,
+        retryOperation = { createOperation(originalMessage, metadata, asset, isRetry = true) },
+        monitor = {
+            val deleted = messageRepository.observeMessageVisibility(originalMessage.id, originalMessage.conversationId)
+                .firstOrNull { visibility -> visibility.fold({ true }, { it == MessageEntity.Visibility.DELETED }) }
+            if (deleted == null) awaitCancellation()
+        },
+        upload = {
+            withContext(dispatcher.io) {
+                if (isRetry) {
+                    validateAsset(asset).fold(
+                        { failure ->
+                            when (failure) {
+                                is Failure.Generic -> failure.coreFailure
+                                else -> CoreFailure.Unknown(IllegalStateException("Asset retry blocked by policy: $failure"))
+                            }.left()
+                        },
+                        { Unit.right() }
+                    ).flatMap { retryUpload(originalMessage, metadata) }
+                } else {
+                    uploadAsset(originalMessage, metadata)
+                }
+            }
+        },
+        onCancelled = {
+            markCancelled(originalMessage.conversationId, originalMessage.id)
+        }
+    )
+
+    private suspend fun markCancelled(conversationId: ConversationId, messageId: String) {
+        val persisted = messageRepository.getMessageById(conversationId, messageId).getOrNull()
+        if (persisted?.status == Message.Status.Sent) {
+            currentCoroutineContext()[AssetMessageSendReceipt]?.succeeded = true
+            return
+        }
+        val content = persisted?.content as? MessageContent.Asset
+        val assetUploaded = content?.value?.remoteData?.sha256?.isNotEmpty() == true
+        updateAssetMessageTransferStatus(
+            if (assetUploaded) AssetTransferStatus.UPLOADED else AssetTransferStatus.FAILED_UPLOAD,
+            conversationId,
+            messageId
+        )
+        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+            failure = CoreFailure.Unknown(CancellationException("Asset message sending was cancelled")),
+            conversationId = conversationId,
+            messageId = messageId,
+            messageType = TYPE,
+            scheduleResendIfNoNetwork = false
+        )
+    }
+
+    private suspend fun retryUpload(
+        originalMessage: Message.Regular,
+        metadata: UploadAssetMessageMetadata,
+    ): Either<CoreFailure, Unit> =
+        // The upload may have succeeded even when message sending failed. Reuse its persisted remote data.
+        messageRepository.getMessageById(originalMessage.conversationId, originalMessage.id).flatMap { persisted ->
+            val message = persisted as? Message.Regular
+            val content = message?.content as? MessageContent.Asset
+            if (message == null || content == null) {
+                CoreFailure.Unknown(IllegalStateException("Asset message is unavailable for retry")).left()
+            } else if (message.status == Message.Status.Sent) {
+                Unit.right()
+            } else {
+                val remoteData = content.value.remoteData
+                uploadAsset(
+                    message,
+                    metadata.copy(
+                        assetId = UploadedAssetId(remoteData.assetId, remoteData.assetDomain.orEmpty(), remoteData.assetToken),
+                        otrKey = AES256Key(remoteData.otrKey),
+                        sha256Key = SHA256Key(remoteData.sha256)
+                    )
+                )
+            }
+        }
 
     private suspend fun validateAsset(asset: AssetUploadParams): Either<Failure, Unit> =
         observeFileSharingStatus().firstOrNull()?.let { fileSharingStatus ->

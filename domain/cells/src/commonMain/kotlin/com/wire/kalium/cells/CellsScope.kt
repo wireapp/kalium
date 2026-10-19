@@ -31,6 +31,8 @@ import com.wire.kalium.cells.data.FileDownloader
 import com.wire.kalium.cells.data.MessageAttachmentDraftDataSource
 import com.wire.kalium.cells.data.cellsAwsClient
 import com.wire.kalium.cells.data.fileDownloader
+import com.wire.kalium.cells.domain.CellAttachmentDraftUploads
+import com.wire.kalium.cells.domain.CellAttachmentDraftUploadsImpl
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConfigRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
@@ -280,8 +282,11 @@ public class CellsScope(
         )
     }
 
+    private val draftUploads: CellAttachmentDraftUploadsImpl by lazy { CellAttachmentDraftUploadsImpl(this) }
+    public val attachmentDraftUploads: CellAttachmentDraftUploads get() = draftUploads
+
     public val addAttachment: AddAttachmentDraftUseCase by lazy {
-        AddAttachmentDraftUseCaseImpl(uploadManager, cellsConversationRepository, messageAttachmentsDraftRepository, this)
+        AddAttachmentDraftUseCaseImpl(uploadManager, cellsConversationRepository, messageAttachmentsDraftRepository, this, draftUploads)
     }
 
     public val removeAttachment: RemoveAttachmentDraftUseCase by lazy {
@@ -350,7 +355,7 @@ public class CellsScope(
     }
 
     public val retryAttachmentUpload: RetryAttachmentUploadUseCase by lazy {
-        RetryAttachmentUploadUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, this)
+        RetryAttachmentUploadUseCaseImpl(uploadManager, messageAttachmentsDraftRepository, this, draftUploads)
     }
 
     public val createFolderUseCase: CreateFolderUseCase by lazy {

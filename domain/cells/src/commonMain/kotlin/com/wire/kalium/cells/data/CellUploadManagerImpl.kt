@@ -19,9 +19,11 @@ package com.wire.kalium.cells.data
 
 import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.CellUploadEvent
+import com.wire.kalium.cells.domain.CellUploadAttempt
 import com.wire.kalium.cells.domain.CellUploadInfo
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellsRepository
+import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
@@ -34,10 +36,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import okio.FileSystem
 import okio.Path
+import okio.Path.Companion.toPath
 import okio.SYSTEM
 
 internal class CellUploadManagerImpl internal constructor(
@@ -47,6 +52,7 @@ internal class CellUploadManagerImpl internal constructor(
 ) : CellUploadManager {
 
     private val uploads = mutableMapOf<String, UploadInfo>()
+    private val outcomes = CellUploadOutcomes()
 
     override suspend fun upload(
         localPath: Path,
@@ -72,6 +78,7 @@ internal class CellUploadManagerImpl internal constructor(
         }
 
     private fun startUpload(localPath: Path, node: CellNode) {
+        outcomes.clear(node.uuid)
 
         val uploadEventsFlow = MutableSharedFlow<CellUploadEvent>()
 
@@ -82,10 +89,12 @@ internal class CellUploadManagerImpl internal constructor(
                 onProgressUpdate = { updateUploadProgress(node.uuid, it) }
             )
                 .onSuccess {
+                    outcomes.record(node.uuid, CellUploadEvent.UploadCompleted)
                     uploads.remove(node.uuid)
                     uploadEventsFlow.emit(CellUploadEvent.UploadCompleted)
                 }
                 .onFailure { failure ->
+                    outcomes.record(node.uuid, CellUploadEvent.UploadError)
                     updateJobInfo(node.uuid) {
                         copy(uploadFailed = true, isConnectivityIssue = failure is NetworkFailure.NoNetworkConnection)
                     }
@@ -114,6 +123,21 @@ internal class CellUploadManagerImpl internal constructor(
         }
     }
 
+    override fun retryDraftUpload(draft: AttachmentDraft): Boolean {
+        val path = draft.localFilePath.toPath()
+        val retained = uploads[draft.uuid]
+        if (draft.versionId.isBlank() || !fileSystem.exists(path) || retained?.uploadFailed == false) return false
+        val node = retained?.node ?: CellNode(
+            uuid = draft.uuid,
+            versionId = draft.versionId,
+            path = draft.remoteFilePath,
+            size = draft.fileSize,
+            isDraft = true,
+        )
+        startUpload(path, node)
+        return true
+    }
+
     private fun updateUploadProgress(nodeUuid: String, uploaded: Long) {
         uploads[nodeUuid]?.let { info ->
             val progress = info.node.size?.let { uploaded.toFloat() / it } ?: 0f
@@ -125,12 +149,24 @@ internal class CellUploadManagerImpl internal constructor(
     }
 
     override suspend fun cancelUpload(nodeUuid: String) {
-        uploads[nodeUuid]?.run {
-            events.emit(CellUploadEvent.UploadCancelled)
-            job.cancelAndJoin()
-            uploads.remove(nodeUuid)
+        uploads[nodeUuid]?.let { cancelAttempt(nodeUuid, it) }
+    }
+
+    override fun captureUploadAttempt(nodeUuid: String): CellUploadAttempt? = uploads[nodeUuid]?.let { captured ->
+        object : CellUploadAttempt {
+            override suspend fun awaitStopped() { captured.job.join() }
+            override suspend fun cancelAndAwait() { cancelAttempt(nodeUuid, captured) }
         }
     }
+
+    private suspend fun cancelAttempt(nodeUuid: String, captured: UploadInfo) {
+        if (uploads[nodeUuid]?.job === captured.job) outcomes.record(nodeUuid, CellUploadEvent.UploadCancelled)
+        captured.events.emit(CellUploadEvent.UploadCancelled)
+        captured.job.cancelAndJoin()
+        if (uploads[nodeUuid]?.job === captured.job) uploads.remove(nodeUuid)
+    }
+
+    override fun consumeUploadOutcome(nodeUuid: String): CellUploadEvent? = outcomes.consume(nodeUuid)
 
     override fun observeUpload(nodeUuid: String): Flow<CellUploadEvent>? {
         return uploads[nodeUuid]?.events?.asSharedFlow()
@@ -164,3 +200,28 @@ private data class UploadInfo(
     val uploadFailed: Boolean = false,
     val isConnectivityIssue: Boolean = false,
 )
+
+private class CellUploadOutcomes {
+    private val values = MutableStateFlow<Map<String, CellUploadEvent>>(emptyMap())
+
+    fun clear(nodeUuid: String) { values.update { it - nodeUuid } }
+
+    fun consume(nodeUuid: String): CellUploadEvent? {
+        var result: CellUploadEvent? = null
+        values.update { current ->
+            result = current[nodeUuid]
+            current - nodeUuid
+        }
+        return result
+    }
+
+    fun record(nodeUuid: String, event: CellUploadEvent) {
+        // Draft waiters consume entries; bound outcomes unused by Drive callers for this session.
+        values.update { current ->
+            (current + (nodeUuid to event)).entries.toList().takeLast(MAX_RECORDED_OUTCOMES)
+                .associate { it.key to it.value }
+        }
+    }
+}
+
+private const val MAX_RECORDED_OUTCOMES = 128

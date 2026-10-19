@@ -27,7 +27,7 @@ import okio.Path
  * coordinator adds what it lacks: an ordered queue, admission control, aggregate per-file state,
  * cancellation and retry. The transfer itself stays with the manager.
  */
-public interface CellUploadCoordinator {
+public interface CellUploadCoordinator : CellUploadCancellationBarrier {
 
     /** Every upload of the current session, in the order the files were picked. */
     public val uploads: StateFlow<List<CellUploadItem>>
@@ -86,6 +86,16 @@ public interface CellUploadCoordinator {
 
     /** Removes the preparing item [id] from [uploads] after it failed to stage. */
     public fun failPreparing(id: String)
+}
+
+/** Explicit awaitable cancellation boundary for native process/account lifetime owners. */
+public interface CellUploadCancellationBarrier {
+    /**
+     * Cancels only [id] and waits until its worker and underlying transfer have stopped.
+     * Includes a draft created while cancellation was requested, before its node ID was published.
+     * Preparing entries have no accepted transfer and remain unchanged, as with [CellUploadCoordinator.cancel].
+     */
+    public suspend fun cancelAndAwait(id: String)
 }
 
 /**

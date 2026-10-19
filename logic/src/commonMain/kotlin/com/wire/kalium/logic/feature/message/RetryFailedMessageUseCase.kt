@@ -22,10 +22,12 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.usecase.PublishAttachmentsUseCase
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
@@ -53,8 +55,11 @@ import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // todo(interface). extract interface for use case
 @Suppress("LongParameterList")
@@ -92,58 +97,107 @@ public class RetryFailedMessageUseCase internal constructor(
         messageId: String,
         conversationId: ConversationId
     ): MessageOperationResult =
-        messageRepository.getMessageById(conversationId, messageId)
-            .flatMap { message ->
-                when (message.status) {
-                    Message.Status.Failed, Message.Status.FailedRemotely -> {
-                        when (message.content) {
-                            is MessageContent.Unknown,
-                            is MessageContent.CompositeEdited,
-                            is MessageContent.FailedDecryption,
-                            is MessageContent.RestrictedAsset,
-                            MessageContent.Ignored ->
-                                return@flatMap handleError("Message with ${message.content.getType()} content cannot be retried")
+        prepareRetry(messageId, conversationId)
+            .onSuccess { message -> scope.launch(dispatcher.io) { retry(message) } }
+            .fold({ MessageOperationResult.Failure(it) }, { MessageOperationResult.Success })
 
-                            else -> Unit
-                        }
-                        messageRepository.updateMessageStatus(
-                            messageStatus = MessageEntity.Status.PENDING,
-                            conversationId = message.conversationId,
-                            messageUuid = message.id
-                        )
-                        scope.launch(dispatcher.io) {
-                            val content = message.content
-                            when {
-                                message is Message.Regular && content is MessageContent.Asset ->
-                                    retrySendingAssetMessage(message, content.value)
+    /**
+     * Retries the existing persisted message and returns its actual upload/send result.
+     * Work belongs to the calling coroutine, rather than the session's fire-and-forget scope.
+     * Cancellation waits for upload/send unwinding and marks unfinished delivery failed before leaving;
+     * confirmed successful sends remain sent. No automatic network resend is scheduled.
+     * The message ID and uploaded remote data are preserved.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    public suspend fun invokeAndAwait(messageId: String, conversationId: ConversationId): MessageOperationResult {
+        var retryingMessage: Message? = null
+        var completedSuccessfully = false
+        return try {
+            withContext(dispatcher.io) {
+                prepareRetry(messageId, conversationId) { retryingMessage = it }
+                    .flatMap { retry(it) }
+                    .onSuccess { completedSuccessfully = true }
+                    .onFailure { failure -> retryingMessage?.let { markFailed(it, failure) } }
+                    .fold({ MessageOperationResult.Failure(it) }, { MessageOperationResult.Success })
+            }
+        } catch (cancelled: CancellationException) {
+            // Cancellation can win while dispatching a successful IO result back to its owner.
+            // A confirmed successful send must retain its SENT status in that case.
+            if (!completedSuccessfully) {
+                withContext(NonCancellable + dispatcher.io) { retryingMessage?.let { markFailed(it) } }
+            }
+            throw cancelled
+        } catch (failure: Exception) {
+            withContext(NonCancellable + dispatcher.io) { retryingMessage?.let { markFailed(it) } }
+            MessageOperationResult.Failure(CoreFailure.Unknown(failure))
+        }
+    }
 
-                                message is Message.Regular && message.editStatus is Message.EditStatus.Edited ->
-                                    retrySendingEditMessage(message)
+    private suspend fun prepareRetry(
+        messageId: String,
+        conversationId: ConversationId,
+        onValidated: (Message) -> Unit = {},
+    ): Either<CoreFailure, Message> = messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
+        if (message.status != Message.Status.Failed && message.status != Message.Status.FailedRemotely) {
+            return@flatMap handleError("Message with status ${message.status} cannot be retried")
+        }
+        when (message.content) {
+            is MessageContent.Unknown,
+            is MessageContent.CompositeEdited,
+            is MessageContent.FailedDecryption,
+            is MessageContent.RestrictedAsset,
+            MessageContent.Ignored -> return@flatMap handleError("Message with ${message.content.getType()} content cannot be retried")
+            else -> Unit
+        }
+        // Record ownership before the status write: cancellation may arrive after it commits.
+        onValidated(message)
+        messageRepository.updateMessageStatus(
+            messageStatus = MessageEntity.Status.PENDING,
+            conversationId = message.conversationId,
+            messageUuid = message.id
+        ).map { message }
+    }
 
-                                message is Message.Regular && content is MessageContent.Multipart ->
-                                    retrySendingMultipartMessage(message)
+    private suspend fun retry(message: Message): Either<CoreFailure, Unit> {
+        val content = message.content
+        return when {
+            message is Message.Regular && content is MessageContent.Asset -> retrySendingAssetMessage(message, content.value)
+            message is Message.Regular && message.editStatus is Message.EditStatus.Edited -> retrySendingEditMessage(message)
+            message is Message.Regular && content is MessageContent.Multipart -> retrySendingMultipartMessage(message)
+            message is Message.Sendable -> retrySendingMessage(message)
+            else -> handleError("Message of type ${message::class.simpleName} cannot be retried")
+        }
+    }
 
-                                message is Message.Sendable -> retrySendingMessage(message)
-
-                                else -> handleError("Message of type ${message::class.simpleName} cannot be retried")
-                            }
-                        }
-                        Either.Right(Unit)
-                    }
-
-                    else -> handleError("Message with status ${message.status} cannot be retried")
-                }
-            }.fold(
-                { MessageOperationResult.Failure(it) },
-                { MessageOperationResult.Success }
-            )
+    private suspend fun markFailed(message: Message, failure: CoreFailure? = null) {
+        // Crypto transactions may finish delivery under NonCancellable and lose their result on return.
+        // Never turn an acknowledged persisted send into a retryable failure during cleanup.
+        if (messageRepository.getMessageById(message.conversationId, message.id).getOrNull()?.status == Message.Status.Sent) return
+        if (message.content is MessageContent.Asset &&
+            getAssetMessageTransferStatusUseCase(message.conversationId, message.id) != AssetTransferStatus.UPLOADED
+        ) {
+            updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
+        }
+        val status = if (failure is NetworkFailure.FederatedBackendFailure) {
+            MessageEntity.Status.FAILED_REMOTELY
+        } else {
+            MessageEntity.Status.FAILED
+        }
+        messageRepository.updateMessageStatus(status, message.conversationId, message.id)
+    }
 
     private suspend fun retrySendingMessage(message: Message.Sendable): Either<CoreFailure, Unit> =
         messageSender.sendMessage(message)
             .onFailure {
                 val type = message.content.getType()
                 kaliumLogger.e("Failed to retry sending message of type $type. Failure = $it")
-                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, message.conversationId, message.id, type)
+                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    it,
+                    message.conversationId,
+                    message.id,
+                    type,
+                    scheduleResendIfNoNetwork = false
+                )
             }
 
     private suspend fun retrySendingEditMessage(message: Message.Regular): Either<CoreFailure, Unit> =
@@ -189,8 +243,7 @@ public class RetryFailedMessageUseCase internal constructor(
 
             else -> handleError("Asset message with transfer status $assetTransferStatus cannot be retried")
         }
-            .onSuccess { retrySendingMessage(it) }
-            .map { /* returns Unit */ }
+            .flatMap { retrySendingMessage(it) }
     }
 
     private suspend fun retryUploadingAsset(conversationId: ConversationId, assetContent: AssetContent): Either<CoreFailure, AssetContent> =
@@ -236,7 +289,7 @@ public class RetryFailedMessageUseCase internal constructor(
             }
             .getOrElse(false)
 
-        if (isCellEnabled) {
+        return if (isCellEnabled) {
             val attachments: List<MessageAttachment> = attachmentsRepository.getAll(message.conversationId)
                 .getOrElse { emptyList() }
                 .map {
@@ -253,12 +306,10 @@ public class RetryFailedMessageUseCase internal constructor(
                     )
                 }
 
-            publishAttachments(attachments).onSuccess {
-                messageSender.sendMessage(message)
-            }
+            publishAttachments(attachments).flatMap { retrySendingMessage(message) }
+        } else {
+            retrySendingMessage(message)
         }
-
-        return messageSender.sendMessage(message)
     }
 
     private fun handleError(message: String): Either.Left<CoreFailure> =

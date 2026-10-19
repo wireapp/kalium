@@ -38,6 +38,7 @@ import com.wire.kalium.messaging.sending.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 
 internal interface UploadAssetUseCase {
@@ -64,6 +65,12 @@ internal class UploadAssetUseCaseImpl(
     }
 
     override suspend fun invoke(message: Message.Regular, metadata: UploadAssetMessageMetadata) = withContext(dispatcher.io) {
+
+        // A retry after a successful upload reuses the persisted remote asset and message identity.
+        if (metadata.sha256Key.data.isNotEmpty()) {
+            updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
+            return@withContext sendMessage(message)
+        }
 
         updateAssetMessageTransferStatus(AssetTransferStatus.UPLOAD_IN_PROGRESS, message.conversationId, message.id)
 
@@ -115,23 +122,28 @@ internal class UploadAssetUseCaseImpl(
                     kaliumLogger.e(
                         "There was an error when trying to persist the updated asset message with the information returned by the backend"
                     )
-                }.onSuccess {
+                }.flatMap {
                     updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
                     // Keep the temporary asset around until the message points at the uploaded asset id.
                     assetDataSource.deleteAssetLocally(metadata.assetId.key)
                     // Finally we try to send the Asset Message to the recipients of the given conversation
-                    messageSender.sendMessage(updatedMessage).onFailure {
-                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
-                            failure = it,
-                            conversationId = message.conversationId,
-                            messageId = message.id,
-                            messageType = TYPE,
-                            scheduleResendIfNoNetwork = pendingMessagesEnabled
-                        )
-                    }
+                    sendMessage(updatedMessage)
                 }
         }
     }
+
+    private suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> =
+        messageSender.sendMessage(message).onSuccess {
+            currentCoroutineContext()[AssetMessageSendReceipt]?.succeeded = true
+        }.onFailure {
+            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                failure = it,
+                conversationId = message.conversationId,
+                messageId = message.id,
+                messageType = TYPE,
+                scheduleResendIfNoNetwork = pendingMessagesEnabled
+            )
+        }
 
     private companion object {
         const val TYPE = "Asset"

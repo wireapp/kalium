@@ -63,11 +63,22 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import dev.mokkery.matcher.matching
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.calls
+import dev.mokkery.matcher.eq
 import dev.mokkery.mock
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import okio.Path
 import okio.buffer
 import okio.use
@@ -75,6 +86,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertIs
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryFailedMessageUseCaseTest {
@@ -515,6 +528,248 @@ class RetryFailedMessageUseCaseTest {
                 )
             }
         }
+
+    @Test
+    fun givenUploadedAsset_whenAwaitingRetry_thenWaitForSendAndPropagateItsFailureWithoutReupload() =
+        runTest(testDispatcher.default) {
+            val message = assetMessage().copy(status = Message.Status.Failed)
+            val failure = NetworkFailure.NoNetworkConnection(null)
+            val (arrangement, useCase) = Arrangement()
+                .withGetMessageById(Either.Right(message))
+                .withUpdateMessageStatus(Either.Right(Unit))
+                .withGetAssetMessageTransferStatus(AssetTransferStatus.UPLOADED)
+                .arrange()
+            val entered = CompletableDeferred<Unit>()
+            val sendGate = CompletableDeferred<Unit>()
+            everySuspend { arrangement.messageSender.sendMessage(message, any()) } calls {
+                entered.complete(Unit)
+                sendGate.await()
+                Either.Left(failure)
+            }
+
+            val retry = async { useCase.invokeAndAwait(message.id, message.conversationId) }
+            runCurrent()
+            assertTrue(entered.isCompleted)
+            assertFalse(retry.isCompleted)
+            sendGate.complete(Unit)
+
+            assertEquals(failure, assertIs<MessageOperationResult.Failure>(retry.await()).error)
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    failure, message.conversationId, message.id, message.content.getType(), eq(false)
+                )
+                arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, message.conversationId, message.id)
+            }
+        }
+
+    @Test
+    fun givenAssetUploadFails_whenAwaitingRetry_thenReturnFailureWithoutSending() = runTest(testDispatcher.default) {
+        val message = assetMessage().copy(status = Message.Status.Failed)
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val path = fakeKaliumFileSystem.providePersistentAssetPath("awaited-retry")
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+            .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+            .withFetchPrivateDecodedAsset(Either.Right(path))
+            .withUploadAndPersistPrivateAsset(Either.Left(failure))
+            .arrange()
+
+        val result = useCase.invokeAndAwait(message.id, message.conversationId)
+
+        assertEquals(failure, assertIs<MessageOperationResult.Failure>(result).error)
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                failure, message.conversationId, message.id, message.content.getType(), eq(false)
+            )
+        }
+    }
+
+    @Test
+    fun givenRetryCancelledDuringUpload_whenIoCleanupWaits_thenOwnerWaitsBeforeMarkingOriginalFailed() =
+        runTest(testDispatcher.default) {
+            val message = assetMessage().copy(status = Message.Status.Failed)
+            val path = fakeKaliumFileSystem.providePersistentAssetPath("cancelled-retry")
+            val (arrangement, useCase) = Arrangement()
+                .withGetMessageById(Either.Right(message))
+                .withUpdateMessageStatus(Either.Right(Unit))
+                .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+                .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+                .withFetchPrivateDecodedAsset(Either.Right(path))
+                .arrange()
+            val entered = CompletableDeferred<Unit>()
+            val cleanupEntered = CompletableDeferred<Unit>()
+            val cleanupGate = CompletableDeferred<Unit>()
+            everySuspend {
+                arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
+            } calls {
+                entered.complete(Unit)
+                try {
+                    awaitCancellation()
+                } finally {
+                    withContext(NonCancellable) {
+                        cleanupEntered.complete(Unit)
+                        cleanupGate.await()
+                    }
+                }
+            }
+            val retry = launch { useCase.invokeAndAwait(message.id, message.conversationId) }
+            runCurrent()
+            assertTrue(entered.isCompleted)
+
+            retry.cancel()
+            runCurrent()
+            assertTrue(cleanupEntered.isCompleted)
+            assertFalse(retry.isCompleted)
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, any(), any())
+            }
+            cleanupGate.complete(Unit)
+            retry.join()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
+                arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, message.conversationId, message.id)
+            }
+            verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+        }
+
+    @Test
+    fun givenRetryCancelledDuringSend_whenAssetUploaded_thenKeepRemoteDataForNextRetry() = runTest(testDispatcher.default) {
+        val message = assetMessage().copy(status = Message.Status.Failed)
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.UPLOADED)
+            .arrange()
+        val entered = CompletableDeferred<Unit>()
+        everySuspend { arrangement.messageSender.sendMessage(message, any()) } calls {
+            entered.complete(Unit)
+            awaitCancellation()
+        }
+        val retry = launch { useCase.invokeAndAwait(message.id, message.conversationId) }
+        runCurrent()
+        assertTrue(entered.isCompleted)
+
+        retry.cancel()
+        retry.join()
+
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.updateAssetMessageTransferStatus(any(), any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, message.conversationId, message.id)
+        }
+    }
+
+    @Test
+    fun givenSendSucceeded_whenCancellationWinsReturningToOwner_thenDoNotMarkSentMessageFailed() =
+        runTest(testDispatcher.default) {
+            val message = assetMessage().copy(status = Message.Status.Failed)
+            val (arrangement, useCase) = Arrangement()
+                .withGetMessageById(Either.Right(message))
+                .withUpdateMessageStatus(Either.Right(Unit))
+                .withGetAssetMessageTransferStatus(AssetTransferStatus.UPLOADED)
+                .arrange()
+            lateinit var retry: Job
+            var sendSucceeded = false
+            everySuspend { arrangement.messageSender.sendMessage(message, any()) } calls {
+                // The real sender has persisted SENT before reporting successful completion.
+                sendSucceeded = true
+                retry.cancel()
+                Either.Right(Unit)
+            }
+            retry = launch { useCase.invokeAndAwait(message.id, message.conversationId) }
+            retry.join()
+
+            assertTrue(sendSucceeded)
+            assertTrue(retry.isCancelled)
+            verifySuspend(VerifyMode.exactly(0)) {
+                arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, any(), any())
+                arrangement.updateAssetMessageTransferStatus(any(), any(), any())
+            }
+        }
+
+    @Test
+    fun givenSentPersisted_whenSenderThrowsCancellationBeforeReturning_thenKeepSentStatus() = runTest(testDispatcher.default) {
+        val message = assetMessage().copy(status = Message.Status.Failed)
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.UPLOADED)
+            .arrange()
+        var persisted: Message = message
+        everySuspend { arrangement.messageRepository.getMessageById(any(), any()) } calls { Either.Right(persisted) }
+        everySuspend { arrangement.messageSender.sendMessage(message, any()) } calls {
+            persisted = message.copy(status = Message.Status.Sent)
+            throw CancellationException("Transaction result cancelled after persisting SENT")
+        }
+        val retry = launch { useCase.invokeAndAwait(message.id, message.conversationId) }
+        retry.join()
+
+        assertTrue(retry.isCancelled)
+        assertEquals(Message.Status.Sent, persisted.status)
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, any(), any())
+            arrangement.updateAssetMessageTransferStatus(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenRetryStatusCannotBePersisted_whenAwaiting_thenDoNotSend() = runTest(testDispatcher.default) {
+        val message = TEXT_MESSAGE.copy(status = Message.Status.Failed)
+        val failure = CoreFailure.Unknown(IllegalStateException("status write failed"))
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Left(failure))
+            .arrange()
+
+        val result = useCase.invokeAndAwait(message.id, message.conversationId)
+
+        assertEquals(failure, assertIs<MessageOperationResult.Failure>(result).error)
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenMultipartPublishFails_whenAwaitingRetry_thenPropagateFailureWithoutSending() = runTest(testDispatcher.default) {
+        val message = TEXT_MESSAGE.copy(content = MessageContent.Multipart("attachment"), status = Message.Status.Failed)
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .arrange()
+        everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
+        everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
+        everySuspend { arrangement.publishAttachments(any()) } returns Either.Left(failure)
+
+        val result = useCase.invokeAndAwait(message.id, message.conversationId)
+
+        assertEquals(failure, assertIs<MessageOperationResult.Failure>(result).error)
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
+    }
+
+    @Test
+    fun givenMultipartPublishSucceeds_whenAwaitingRetry_thenSendExactlyOnce() = runTest(testDispatcher.default) {
+        val message = TEXT_MESSAGE.copy(content = MessageContent.Multipart("attachment"), status = Message.Status.Failed)
+        val (arrangement, useCase) = Arrangement()
+            .withGetMessageById(Either.Right(message))
+            .withUpdateMessageStatus(Either.Right(Unit))
+            .withSendMessage(Either.Right(Unit))
+            .arrange()
+        everySuspend { arrangement.conversationRepository.isCellEnabled(message.conversationId) } returns Either.Right(true)
+        everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
+        everySuspend { arrangement.publishAttachments(any()) } returns Either.Right(Unit)
+
+        assertIs<MessageOperationResult.Success>(useCase.invokeAndAwait(message.id, message.conversationId))
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.publishAttachments(any())
+            arrangement.messageSender.sendMessage(message, any())
+        }
+    }
 
     private class Arrangement(
         val messageRepository: MessageRepository = mock(mode = MockMode.autoUnit)
