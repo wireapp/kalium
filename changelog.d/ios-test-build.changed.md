@@ -1,0 +1,2 @@
+- iOS CI selects affected tests before running them, reusing one Gradle daemon with limits suited to the free macOS runner. Build timing reports are saved for performance diagnosis.
+- Native test builds use a dedicated Gradle cache with fallback restores, so build script edits and faster macOS jobs no longer discard their reusable outputs.

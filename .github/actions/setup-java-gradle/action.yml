@@ -2,10 +2,22 @@ name: Setup Java and Gradle
 description: Set up Java and trusted Gradle caching for CI jobs
 
 inputs:
+  cache-provider:
+    description: Gradle cache provider; external when the caller manages its own cache
+    required: false
+    default: basic
   enable-kvm:
     description: Whether to enable KVM on Linux
     required: false
     default: "false"
+
+outputs:
+  cache-enabled:
+    description: Whether this event may restore trusted Gradle state
+    value: ${{ steps.cache_policy.outputs.enabled }}
+  cache-read-only:
+    description: Whether this event may only read trusted Gradle state
+    value: ${{ steps.cache_policy.outputs.read_only }}
 
 runs:
   using: composite
@@ -49,9 +61,9 @@ runs:
     - name: Set up Gradle
       uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
       with:
-        # Basic caching uses the MIT-licensed provider backed by GitHub's
-        # ref-scoped Actions cache.
-        cache-provider: basic
+        # Default to the MIT-licensed provider backed by GitHub's ref-scoped cache.
+        # Callers managing a dedicated cache select the external provider.
+        cache-provider: ${{ inputs.cache-provider }}
         cache-disabled: ${{ steps.cache_policy.outputs.enabled != 'true' }}
         cache-read-only: ${{ steps.cache_policy.outputs.read_only == 'true' }}
 
