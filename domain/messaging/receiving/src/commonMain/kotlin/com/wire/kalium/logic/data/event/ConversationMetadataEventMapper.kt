@@ -106,6 +106,7 @@ fun conversationAccessUpdate(
     access = event.data.access.map { it.toModel() }.toSet(),
     accessRole = event.data.accessRole.map { it.toModel() }.toSet(),
     qualifiedFrom = event.qualifiedFrom.toModel(),
+    dateTime = event.time,
 )
 
 fun conversationTyping(

@@ -45,7 +45,7 @@ internal class ReceivedAccessHandler(
                     event.conversationId,
                     event.qualifiedFrom,
                     event.hasApps(),
-                    previous?.date ?: Clock.System.now()
+                    event.dateTime ?: previous?.date ?: Clock.System.now()
                 )
             ).orThrow()
         }

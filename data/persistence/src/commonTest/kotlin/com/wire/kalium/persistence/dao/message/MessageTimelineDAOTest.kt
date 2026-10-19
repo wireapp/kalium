@@ -94,6 +94,19 @@ class MessageTimelineDAOTest : BaseDatabaseTest() {
     ) = assertIs<MessageTimelineLoadResultEntity.Success>(load(request, limit)).page
 
     @Test
+    fun initialAppsNoticeKeepsItsTypeAndDateInTimeline() = runTest(dispatcher) {
+        val date = Instant.parse("2001-01-01T00:00:00Z")
+        seed(listOf(newSystemMessageEntity(
+            "initial-apps", MessageEntityContent.NewConversationAppsEnabled, conversation.id, other.id, date = date,
+        )))
+
+        val page = open().page()
+
+        assertEquals(MessageEntityContent.NewConversationAppsEnabled, page.systemContents.getValue("initial-apps"))
+        assertEquals(date, page.rows.single().creation_date)
+    }
+
+    @Test
     fun emptyAndBoundedLoads() = runTest(dispatcher) {
         seed()
         val empty = open().page()

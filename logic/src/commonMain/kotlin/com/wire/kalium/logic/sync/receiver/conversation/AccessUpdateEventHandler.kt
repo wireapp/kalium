@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import kotlin.time.Clock
 
 internal interface AccessUpdateEventHandler {
     suspend fun handle(event: Event.Conversation.AccessUpdate): Either<StorageFailure, Unit>
@@ -66,7 +67,8 @@ internal fun AccessUpdateEventHandler(
                     eventId = event.id,
                     conversationId = event.conversationId,
                     senderUserId = event.qualifiedFrom,
-                    isAppsAccessEnabled = false
+                    isAppsAccessEnabled = false,
+                    instant = event.dateTime ?: Clock.System.now(),
                 )
             }
 
@@ -76,7 +78,8 @@ internal fun AccessUpdateEventHandler(
                     eventId = event.id,
                     conversationId = event.conversationId,
                     senderUserId = event.qualifiedFrom,
-                    isAppsAccessEnabled = true
+                    isAppsAccessEnabled = true,
+                    instant = event.dateTime ?: Clock.System.now(),
                 )
             }
         }
