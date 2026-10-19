@@ -68,7 +68,28 @@ jobs:
       - name: Test JS with Gradle
         run: |
           ./gradlew --stop
-          ./gradlew jsTest --no-daemon -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
+          mkdir -p build/ci/node-reports
+          # Record available memory and the largest processes, so a killed test process can be explained.
+          cat > build/ci/sample-memory.sh <<'EOF'
+          while true; do
+            date -u
+            grep -E '^(MemAvailable|SwapFree):' /proc/meminfo
+            awk '/^Name:/ { name = $2 } /^VmRSS:/ { rss = $2 } /^Threads:/ { print rss, $2, name; rss = 0 }' /proc/[0-9]*/status 2>/dev/null | sort -nr | head -8
+            sleep 5
+          done
+          EOF
+          nohup sh build/ci/sample-memory.sh > build/ci/js-runner-memory.log 2>&1 &
+          export NODE_OPTIONS="--report-on-fatalerror --report-uncaught-exception --report-directory=$PWD/build/ci/node-reports"
+          # --stacktrace reports the exit status when a test process dies without output.
+          ./gradlew jsTest --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
+
+      - name: Archive JS runner diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: js-runner-diagnostics
+          path: build/ci/**
+          if-no-files-found: ignore
 
       - name: Archive Test Reports
         if: always()
