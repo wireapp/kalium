@@ -274,26 +274,6 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
             runtime.database.eventDAO.getEventById(notificationId)?.isProcessed != true
         )
 
-    private suspend fun deliverPending(
-        claims: UnnotifiedMessageAlerts,
-        alerts: List<KaliumNSEAlert>,
-        delivery: KaliumNSEMessageDelivery,
-    ) {
-        for (alert in alerts) {
-            currentCoroutineContext().ensureActive()
-            // Finish an accepted native enqueue before account release, including NSE expiry during the callback.
-            withContext(NonCancellable) {
-                if (delivery.deliver(alert)) {
-                    val key = NotificationMessageKey(
-                        alert.messageId,
-                        QualifiedIDEntity(alert.conversationValue, alert.conversationDomain),
-                    )
-                    claims.pending.acknowledge(listOf(key))
-                }
-            }
-        }
-    }
-
     private suspend fun reconcileNotifications(
         runtime: AppleAccountRuntime,
         processed: ReceivedNotificationResult,
@@ -455,3 +435,24 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         const val BUDGET = "BUDGET"
     }
 }
+
+private suspend fun deliverPending(
+    claims: UnnotifiedMessageAlerts,
+    alerts: List<KaliumNSEAlert>,
+    delivery: KaliumNSEMessageDelivery,
+) {
+    for (alert in alerts) {
+        currentCoroutineContext().ensureActive()
+        // Finish an accepted native enqueue before account release, including NSE expiry during the callback.
+        withContext(NonCancellable) {
+            if (delivery.deliver(alert)) {
+                val key = NotificationMessageKey(
+                    alert.messageId,
+                    QualifiedIDEntity(alert.conversationValue, alert.conversationDomain),
+                )
+                claims.pending.acknowledge(listOf(key))
+            }
+        }
+    }
+}
+
