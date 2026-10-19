@@ -42,6 +42,9 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
+      - name: Boot iOS simulator
+        run: python3 scripts/boot-ios-simulator.py
+
       - name: Restore Kotlin/Native tooling cache (.konan)
         if: ${{ github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
         id: konan-cache
