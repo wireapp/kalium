@@ -31,6 +31,7 @@ import com.wire.crypto.Disposable
 import com.wire.crypto.ExternalSender
 import com.wire.crypto.KeyPackageRef
 import com.wire.crypto.MlsException
+import com.wire.crypto.TargetedMessagePolicy
 import com.wire.crypto.Uuid
 import com.wire.crypto.toGroupInfo
 import com.wire.crypto.toMLSKeyPackage
@@ -235,6 +236,23 @@ class MLSClientImpl private constructor(
 
         override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage = groupId.toCrypto().useNative {
             context.encryptMessage(it, message)
+        }
+
+        override suspend fun encryptTransientMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage =
+            groupId.toCrypto().useNative {
+                context.encryptTransientMessage(it, message)
+            }
+
+        override suspend fun encryptTargetedMessage(
+            groupId: MLSGroupId,
+            recipient: CryptoQualifiedClientId,
+            message: PlainMessage,
+            transient: Boolean
+        ): ApplicationMessage = groupId.toCrypto().useNative { nativeGroupId ->
+            recipient.toCoreCryptoClientId().useNative { nativeRecipient ->
+                val policy = if (transient) TargetedMessagePolicy.TRANSIENT else TargetedMessagePolicy.PERSISTED
+                context.encryptTargetedMessage(nativeGroupId, nativeRecipient, policy, message)
+            }
         }
 
         override suspend fun decryptMessage(

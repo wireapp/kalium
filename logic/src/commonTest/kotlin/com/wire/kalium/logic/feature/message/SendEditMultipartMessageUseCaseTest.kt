@@ -180,7 +180,8 @@ class SendEditMultipartMessageUseCaseTest {
             override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String) = Unit.right()
             override suspend fun sendMessage(
                 message: Message.Sendable,
-                messageTarget: MessageTarget
+                messageTarget: MessageTarget,
+                transient: Boolean
             ): Either<CoreFailure, Unit> {
                 return sendMessage()
             }
