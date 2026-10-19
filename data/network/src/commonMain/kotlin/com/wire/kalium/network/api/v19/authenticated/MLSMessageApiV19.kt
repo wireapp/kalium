@@ -19,8 +19,55 @@
 package com.wire.kalium.network.api.v19.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.v18.authenticated.MLSMessageApiV18
+import com.wire.kalium.network.serialization.Mls
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapRequest
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 
 internal open class MLSMessageApiV19 internal constructor(
-    authenticatedNetworkClient: AuthenticatedNetworkClient
-) : MLSMessageApiV18(authenticatedNetworkClient)
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+) : MLSMessageApiV18(authenticatedNetworkClient) {
+    private val httpClient get() = authenticatedNetworkClient.httpClient
+
+    override suspend fun sendTargetedMessage(
+        batch: MLSMessageApi.TargetedMessageBatch
+    ): NetworkResponse<SendMLSMessageResponse> =
+        wrapRequest {
+            httpClient.post(PATH_TARGETED_MESSAGE) {
+                setBody(batch.value)
+                contentType(ContentType.Message.Mls)
+            }
+        }
+
+    override suspend fun sendTransientMessage(
+        message: MLSMessageApi.TransientMessage
+    ): NetworkResponse<SendMLSMessageResponse> =
+        wrapRequest {
+            httpClient.post(PATH_TRANSIENT_MESSAGE) {
+                setBody(message.value)
+                contentType(ContentType.Message.Mls)
+            }
+        }
+
+    override suspend fun sendTransientTargetedMessage(
+        batch: MLSMessageApi.TargetedMessageBatch
+    ): NetworkResponse<SendMLSMessageResponse> =
+        wrapRequest {
+            httpClient.post(PATH_TRANSIENT_TARGETED_MESSAGE) {
+                setBody(batch.value)
+                contentType(ContentType.Message.Mls)
+            }
+        }
+
+    private companion object {
+        const val PATH_TARGETED_MESSAGE = "mls/messages/targeted"
+        const val PATH_TRANSIENT_MESSAGE = "mls/messages/transient"
+        const val PATH_TRANSIENT_TARGETED_MESSAGE = "mls/messages/transient-targeted"
+    }
+}
