@@ -27,12 +27,21 @@ import com.wire.kalium.persistence.db.TestDatabaseFile
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlin.test.AfterTest
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUUID
 import platform.Foundation.NSUserDomainMask
 
 actual abstract class GlobalDBBaseTest {
+
+    private val databases = mutableListOf<GlobalDatabaseBuilder>()
+
+    @AfterTest
+    fun closeDatabases() {
+        databases.forEach { it.close() }
+        databases.clear()
+    }
 
     private var storePath = NSFileManager.defaultManager
         .URLForDirectory(NSCachesDirectory, NSUserDomainMask, null, true, null)!!
@@ -41,6 +50,7 @@ actual abstract class GlobalDBBaseTest {
         .also { NSFileManager.defaultManager.createDirectoryAtPath(it, true, null, null) }
 
     actual fun deleteDatabase() {
+        closeDatabases()
         deleteDatabase(FileNameUtil.globalDBName(), storePath)
     }
 
@@ -54,6 +64,6 @@ actual abstract class GlobalDBBaseTest {
             // A raw key and WAL, as the SDK gives the global database.
             GlobalDatabaseSecret(TestDatabaseFile.KEY),
             enableWAL = true
-        )
+        ).also { databases.add(it) }
     }
 }
