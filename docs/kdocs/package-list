@@ -18,20 +18,27 @@ $dokka.location:com.wire.backup.dump/BackupExportResult.Success/fileName/#/Point
 $dokka.location:com.wire.backup.dump/BackupExportResult.Success/pathToOutputFile/#/PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/-success/path-to-output-file.html
 $dokka.location:com.wire.backup.dump/BackupExportResult///PointingToDeclaration/backup/com.wire.backup.dump/[non-js]-backup-export-result/index.html
 $dokka.location:com.wire.backup.dump/MPBackupExporter/finalize/#kotlin.String/PointingToDeclaration/backup/com.wire.backup.dump/-m-p-backup-exporter/[non-js]finalize.html
-$dokka.location:com.wire.kalium.logic.feature.call//attachPlatformVideoView/com.wire.kalium.calling.AppleAvsFlowManager#com.wire.kalium.logic.util.PlatformView/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[macos-arm64]attach-platform-video-view.html
+$dokka.location:com.wire.kalium.logic.feature.call//attachPlatformLocalVideoPreview/com.wire.kalium.calling.AppleAvsFlowManager#com.wire.kalium.logic.util.PlatformView/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[macos-arm64]attach-platform-local-video-preview.html
+$dokka.location:com.wire.kalium.logic.feature.call//attachPlatformRemoteVideoView/com.wire.kalium.calling.AppleAvsFlowManager#com.wire.kalium.logic.util.PlatformView#kotlin.String#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[macos-arm64]attach-platform-remote-video-view.html
+$dokka.location:com.wire.kalium.logic.feature.call//detachPlatformLocalVideoPreview/com.wire.kalium.calling.AppleAvsFlowManager#com.wire.kalium.logic.util.PlatformView/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[macos-arm64]detach-platform-local-video-preview.html
+$dokka.location:com.wire.kalium.logic.feature.call//detachPlatformRemoteVideoView/com.wire.kalium.calling.AppleAvsFlowManager#com.wire.kalium.logic.util.PlatformView/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[macos-arm64]detach-platform-remote-video-view.html
+$dokka.location:com.wire.kalium.logic.feature.call//hasNativeView/com.wire.kalium.logic.util.PlatformView#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[macos-arm64]has-native-view.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl.Companion///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/-companion/index.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl.Companion/DEFAULT_NETWORK_QUALITY_INTERVAL_SECONDS/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[android / jvm]-call-manager-impl/-companion/-d-e-f-a-u-l-t_-n-e-t-w-o-r-k_-q-u-a-l-i-t-y_-i-n-t-e-r-v-a-l_-s-e-c-o-n-d-s.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl.Companion/TAG/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[android / jvm]-call-manager-impl/-companion/-t-a-g.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl.Companion/UTF8_ENCODING/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[android / jvm]-call-manager-impl/-companion/-u-t-f8_-e-n-c-o-d-i-n-g.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/index.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/CallManagerImpl/#com.wire.kalium.calling.Calling#com.wire.kalium.logic.data.call.CallRepository#com.wire.kalium.logic.data.id.CurrentClientIdProvider#com.wire.kalium.logic.cache.SelfConversationIdProvider#com.wire.kalium.messaging.sending.MessageSender#com.wire.kalium.logic.data.call.mapper.CallMapper#com.wire.kalium.logic.data.id.FederatedIdMapper#com.wire.kalium.logic.data.id.QualifiedIdMapper#com.wire.kalium.logic.data.call.VideoStateChecker#com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater#com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater#com.wire.kalium.network.NetworkStateObserver#com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider#com.wire.kalium.logic.configuration.UserConfigRepository#com.wire.kalium.logic.featureFlags.KaliumConfigs#com.wire.kalium.logic.feature.call.MediaManagerService#com.wire.kalium.logic.feature.call.FlowManagerService#com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.util.ServerTimeHandler#com.wire.kalium.util.KaliumDispatcher#kotlinx.serialization.json.Json/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[android / jvm]-call-manager-impl/-call-manager-impl.html
-$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/CallManagerImpl/#com.wire.kalium.logic.data.call.CallRepository#com.wire.kalium.logic.data.id.CurrentClientIdProvider#com.wire.kalium.logic.cache.SelfConversationIdProvider#com.wire.kalium.messaging.sending.MessageSender#com.wire.kalium.logic.data.call.mapper.CallMapper#com.wire.kalium.logic.data.id.FederatedIdMapper#com.wire.kalium.logic.data.id.QualifiedIdMapper#com.wire.kalium.logic.data.call.VideoStateChecker#com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater#com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater#com.wire.kalium.network.NetworkStateObserver#com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider#com.wire.kalium.logic.configuration.UserConfigRepository#com.wire.kalium.logic.featureFlags.KaliumConfigs#com.wire.kalium.logic.feature.call.MediaManagerService#com.wire.kalium.logic.feature.call.FlowManagerService#com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.util.ServerTimeHandler#com.wire.kalium.util.KaliumDispatcher#kotlinx.serialization.json.Json/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/-call-manager-impl.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/CallManagerImpl/#com.wire.kalium.logic.data.call.CallRepository#com.wire.kalium.logic.data.id.CurrentClientIdProvider#com.wire.kalium.logic.cache.SelfConversationIdProvider#com.wire.kalium.messaging.sending.MessageSender#com.wire.kalium.logic.data.call.mapper.CallMapper#com.wire.kalium.logic.data.id.FederatedIdMapper#com.wire.kalium.logic.data.id.QualifiedIdMapper#com.wire.kalium.logic.data.call.VideoStateChecker#com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater#com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater#com.wire.kalium.network.NetworkStateObserver#com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider#com.wire.kalium.logic.configuration.UserConfigRepository#com.wire.kalium.logic.featureFlags.KaliumConfigs#com.wire.kalium.logic.feature.call.MediaManagerService#com.wire.kalium.logic.feature.call.FlowManagerService#com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.util.ServerTimeHandler#com.wire.kalium.util.KaliumDispatcher#kotlinx.serialization.json.Json#com.wire.kalium.calling.AppleAvsBridge/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/-call-manager-impl.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/answerCall/#com.wire.kalium.logic.data.id.QualifiedID#kotlin.Boolean#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/answer-call.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/attachSignalJournal/#com.wire.kalium.logic.sync.receiving.CallSignalStore/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/attach-signal-journal.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/cancelJobs/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/cancel-jobs.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/endCall/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/end-call.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/muteCall/#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/mute-call.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/onCallingMessageReceived/#com.wire.kalium.logic.data.message.Message.Signaling#com.wire.kalium.logic.data.message.MessageContent.Calling/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/on-calling-message-received.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/rejectCall/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/reject-call.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/replayIncomingCallSignals/#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/replay-incoming-call-signals.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/replayPendingSignals/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/replay-pending-signals.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/reportProcessNotifications/#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/report-process-notifications.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/requestVideoStreams/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.data.call.CallClientList/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/request-video-streams.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setBackground/#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/set-background.html
@@ -44,7 +51,6 @@ $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/startCall/#co
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateConversationClients/#com.wire.kalium.logic.data.id.QualifiedID#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/update-conversation-clients.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateEpochInfo/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.data.call.EpochInfo/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/update-epoch-info.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/waitUntilInitialized/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[ios-arm64 / ios-simulator-arm64 / macos-arm64]-call-manager-impl/wait-until-initialized.html
-$dokka.location:com.wire.kalium.logic.feature//UserSessionScope/#com.wire.kalium.userstorage.di.PlatformUserStorageProperties#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.GlobalKaliumScope#com.wire.kalium.logic.feature.call.GlobalCallManager#com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider#com.wire.kalium.persistence.db.GlobalDatabaseBuilder#com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider#com.wire.kalium.logic.di.RootPathsProvider#com.wire.kalium.logic.data.asset.DataStoragePaths#com.wire.kalium.logic.featureFlags.KaliumConfigs#com.wire.kalium.userstorage.di.UserStorageProvider#com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider#com.wire.kalium.logic.feature.UserSessionScopeProvider#com.wire.kalium.network.NetworkStateObserver#com.wire.kalium.logic.feature.auth.LogoutCallback#kotlin.String#com.wire.kalium.logic.sync.SyncShutdownCoordinator/PointingToDeclaration/logic/com.wire.kalium.logic.feature/[jvm]-user-session-scope.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeProviderImpl/create/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope-provider-impl/[jvm]create.html
 $dokka.location:com.wire.kalium.logic.util/CurrentPlatform/type/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-current-platform/[jvm]type.html
 $dokka.location:com.wire.kalium.logic.util/PlatformView/view/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-platform-view/[macos]view.html
@@ -117,13 +123,12 @@ com.wire.kalium.logic.data.keypackage
 com.wire.kalium.logic.data.logout
 com.wire.kalium.logic.data.meeting
 com.wire.kalium.logic.data.message
-com.wire.kalium.logic.data.message.attachment
 com.wire.kalium.logic.data.message.draft
 com.wire.kalium.logic.data.message.linkpreview
-com.wire.kalium.logic.data.message.mention
 com.wire.kalium.logic.data.message.paging
 com.wire.kalium.logic.data.message.reaction
 com.wire.kalium.logic.data.message.receipt
+com.wire.kalium.logic.data.message.timeline
 com.wire.kalium.logic.data.mls
 com.wire.kalium.logic.data.mlspublickeys
 com.wire.kalium.logic.data.notification
@@ -188,6 +193,7 @@ com.wire.kalium.logic.feature.message.confirmation
 com.wire.kalium.logic.feature.message.draft
 com.wire.kalium.logic.feature.message.ephemeral
 com.wire.kalium.logic.feature.message.linkpreview
+com.wire.kalium.logic.feature.message.poll
 com.wire.kalium.logic.feature.message.receipt
 com.wire.kalium.logic.feature.mlsmigration
 com.wire.kalium.logic.feature.notificationToken
@@ -205,6 +211,7 @@ com.wire.kalium.logic.feature.service
 com.wire.kalium.logic.feature.session
 com.wire.kalium.logic.feature.session.token
 com.wire.kalium.logic.feature.sessionreset
+com.wire.kalium.logic.feature.share
 com.wire.kalium.logic.feature.team
 com.wire.kalium.logic.feature.user
 com.wire.kalium.logic.feature.user.e2ei
@@ -218,6 +225,7 @@ com.wire.kalium.logic.feature.user.webSocketStatus
 com.wire.kalium.logic.featureFlags
 com.wire.kalium.logic.network
 com.wire.kalium.logic.sync
+com.wire.kalium.logic.sync.deferred
 com.wire.kalium.logic.sync.incremental
 com.wire.kalium.logic.sync.local
 com.wire.kalium.logic.sync.periodic

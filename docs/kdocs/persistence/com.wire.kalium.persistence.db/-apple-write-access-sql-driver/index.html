@@ -1,0 +1,383 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>AppleWriteAccessSqlDriver</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+      if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      } else {
+        const savedDarkMode = JSON.parse(storage)
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      }
+    </script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/safe-local-storage_blocking.js"></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script></head>
+<body>
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../../index.html" tabindex="1">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">4fa20b0
+        </div>
+        <div class="navigation-controls">
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":data:persistence/androidMain">android</button>
+                <button class="platform-tag platform-selector native-like" data-active="" aria-pressed="true" data-filter=":data:persistence/appleMain">apple</button>
+                <button class="platform-tag platform-selector common-like" data-active="" aria-pressed="true" data-filter=":data:persistence/commonMain">common</button>
+                <button class="platform-tag platform-selector js-like" data-active="" aria-pressed="true" data-filter=":data:persistence/jsMain">js</button>
+                <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":data:persistence/jvmMain">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence/androidMain" data-filter=":data:persistence/androidMain">
+                                <span class="checkbox--icon"></span>
+                                android
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence/appleMain" data-filter=":data:persistence/appleMain">
+                                <span class="checkbox--icon"></span>
+                                apple
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence/commonMain" data-filter=":data:persistence/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option js-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence/jsMain" data-filter=":data:persistence/jsMain">
+                                <span class="checkbox--icon"></span>
+                                js
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence/jvmMain" data-filter=":data:persistence/jvmMain">
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </ul>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="persistence::com.wire.kalium.persistence.db/AppleWriteAccessSqlDriver///PointingToDeclaration//1303495216">
+  <div class="breadcrumbs"><a href="../../index.html">persistence</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.persistence.db</a><span class="delimiter">/</span><span class="current">AppleWriteAccessSqlDriver</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Apple</span><wbr><span>Write</span><wbr><span>Access</span><wbr><span>Sql</span><wbr><span><span>Driver</span></span></h1>
+    <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+      <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="index.html">AppleWriteAccessSqlDriver</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">delegate<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">, </span></span><span class="parameter ">writes<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.util/AccountResourceAccess///PointingToDeclaration/">AccountResourceAccess</span></span></span><span class="token punctuation">)</span> : <span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span></div><p class="paragraph">Keeps NativeSqliteDriver's WAL reader pool available while account writes are paused. Transactions keep admission until SQLDelight reports commit or rollback, including nested work. A failed native transaction end must not release ownership through a finally block.</p></div>    </div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button><button class="section-tab" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION,EXTENSION_PROPERTY,EXTENSION_FUNCTION">Members &amp; Extensions</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="tableheader">Constructors</h2>
+        <div class="table"><a data-name="-857441513%2FConstructors%2F1303495216" anchor-label="AppleWriteAccessSqlDriver" id="-857441513%2FConstructors%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-apple-write-access-sql-driver.html"><span>Apple</span><wbr><span>Write</span><wbr><span>Access</span><wbr><span>Sql</span><wbr><span><span>Driver</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-857441513%2FConstructors%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">delegate<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">, </span></span><span class="parameter ">writes<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.util/AccountResourceAccess///PointingToDeclaration/">AccountResourceAccess</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="tableheader">Functions</h2>
+        <div class="table"><a data-name="-526227597%2FFunctions%2F1303495216" anchor-label="addListener" id="-526227597%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="add-listener.html"><span>add</span><wbr><span><span>Listener</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-526227597%2FFunctions%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="add-listener.html"><span class="token function">addListener</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">vararg </span>queryKeys<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">listener<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight/Query.Listener///PointingToDeclaration/">Query.Listener</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="848794229%2FFunctions%2F-1878625658" anchor-label="checkFKViolations" id="848794229%2FFunctions%2F-1878625658" data-filterable-set=":data:persistence/commonMain,:data:persistence/androidMain,:data:persistence/appleMain,:data:persistence/jsMain,:data:persistence/jvmMain"></a>
+          <div class="table-row table-row_content" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":data:persistence/commonMain,:data:persistence/androidMain,:data:persistence/appleMain,:data:persistence/jsMain,:data:persistence/jvmMain" data-filterable-set=":data:persistence/commonMain,:data:persistence/androidMain,:data:persistence/appleMain,:data:persistence/jsMain,:data:persistence/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../check-f-k-violations.html"><span>check</span><wbr><span><span>FKViolations</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="848794229%2FFunctions%2F-1878625658"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/androidMain" data-filterable-set=":data:persistence/androidMain" data-active="" data-toggle=":data:persistence/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-toggle=":data:persistence/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain" data-toggle=":data:persistence/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":data:persistence/jsMain" data-filterable-set=":data:persistence/jsMain" data-toggle=":data:persistence/jsMain">js</button><button class="platform-bookmark" data-filterable-current=":data:persistence/jvmMain" data-filterable-set=":data:persistence/jvmMain" data-toggle=":data:persistence/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-togglable=":data:persistence/androidMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../check-f-k-violations.html"><span class="token function">checkFKViolations</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div><div class="content sourceset-dependent-content" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../check-f-k-violations.html"><span class="token function">checkFKViolations</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">expect </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../check-f-k-violations.html"><span class="token function">checkFKViolations</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div><div class="content sourceset-dependent-content" data-togglable=":data:persistence/jsMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../check-f-k-violations.html"><span class="token function">checkFKViolations</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div><div class="content sourceset-dependent-content" data-togglable=":data:persistence/jvmMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../check-f-k-violations.html"><span class="token function">checkFKViolations</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2115731642%2FFunctions%2F1303495216" anchor-label="close" id="2115731642%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#2115731642%2FFunctions%2F1303495216"><span><span>close</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2115731642%2FFunctions%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="index.html#2115731642%2FFunctions%2F1303495216"><span class="token function">close</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1580878809%2FFunctions%2F1303495216" anchor-label="currentTransaction" id="-1580878809%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#-1580878809%2FFunctions%2F1303495216"><span>current</span><wbr><span><span>Transaction</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1580878809%2FFunctions%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="index.html#-1580878809%2FFunctions%2F1303495216"><span class="token function">currentTransaction</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight/Transacter.Transaction///PointingToDeclaration/">Transacter.Transaction</span><span class="token operator">?</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1960673836%2FFunctions%2F1303495216" anchor-label="execute" id="-1960673836%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="execute.html"><span><span>execute</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1960673836%2FFunctions%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="execute.html"><span class="token function">execute</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">identifier<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">sql<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">parameters<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">binders<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlPreparedStatement///PointingToDeclaration/">SqlPreparedStatement</span><span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/QueryResult///PointingToDeclaration/">QueryResult</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">&gt;</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1847619274%2FFunctions%2F1303495216" anchor-label="executeQuery" id="1847619274%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="execute-query.html"><span>execute</span><wbr><span><span>Query</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1847619274%2FFunctions%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="execute-query.html">R</a><span class="token operator">&gt; </span><a href="execute-query.html"><span class="token function">executeQuery</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">identifier<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">sql<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">mapper<span class="token operator">: </span><span class="token punctuation">(</span><span data-unresolved-link="app.cash.sqldelight.db/SqlCursor///PointingToDeclaration/">SqlCursor</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="app.cash.sqldelight.db/QueryResult///PointingToDeclaration/">QueryResult</span><span class="token operator">&lt;</span><a href="execute-query.html">R</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">parameters<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">binders<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlPreparedStatement///PointingToDeclaration/">SqlPreparedStatement</span><span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/QueryResult///PointingToDeclaration/">QueryResult</span><span class="token operator">&lt;</span><a href="execute-query.html">R</a><span class="token operator">&gt;</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="663502429%2FFunctions%2F-1878625658" anchor-label="migrate" id="663502429%2FFunctions%2F-1878625658" data-filterable-set=":data:persistence/commonMain,:data:persistence/androidMain,:data:persistence/appleMain,:data:persistence/jsMain,:data:persistence/jvmMain"></a>
+          <div class="table-row table-row_content" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":data:persistence/commonMain,:data:persistence/androidMain,:data:persistence/appleMain,:data:persistence/jsMain,:data:persistence/jvmMain" data-filterable-set=":data:persistence/commonMain,:data:persistence/androidMain,:data:persistence/appleMain,:data:persistence/jsMain,:data:persistence/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../migrate.html"><span><span>migrate</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="663502429%2FFunctions%2F-1878625658"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/androidMain" data-filterable-set=":data:persistence/androidMain" data-active="" data-toggle=":data:persistence/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-toggle=":data:persistence/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain" data-toggle=":data:persistence/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":data:persistence/jsMain" data-filterable-set=":data:persistence/jsMain" data-toggle=":data:persistence/jsMain">js</button><button class="platform-bookmark" data-filterable-current=":data:persistence/jvmMain" data-filterable-set=":data:persistence/jvmMain" data-toggle=":data:persistence/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-togglable=":data:persistence/androidMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../migrate.html"><span class="token function">migrate</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sqlSchema<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlSchema///PointingToDeclaration/">SqlSchema</span><span class="token operator">&lt;</span><span data-unresolved-link="app.cash.sqldelight.db/QueryResult.AsyncValue///PointingToDeclaration/">QueryResult.AsyncValue</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div><div class="content sourceset-dependent-content" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../migrate.html"><span class="token function">migrate</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sqlSchema<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlSchema///PointingToDeclaration/">SqlSchema</span><span class="token operator">&lt;</span><span data-unresolved-link="app.cash.sqldelight.db/QueryResult.AsyncValue///PointingToDeclaration/">QueryResult.AsyncValue</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">expect </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../migrate.html"><span class="token function">migrate</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sqlSchema<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlSchema///PointingToDeclaration/">SqlSchema</span><span class="token operator">&lt;</span><span data-unresolved-link="app.cash.sqldelight.db/QueryResult.AsyncValue///PointingToDeclaration/">QueryResult.AsyncValue</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div><div class="content sourceset-dependent-content" data-togglable=":data:persistence/jsMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../migrate.html"><span class="token function">migrate</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sqlSchema<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlSchema///PointingToDeclaration/">SqlSchema</span><span class="token operator">&lt;</span><span data-unresolved-link="app.cash.sqldelight.db/QueryResult.AsyncValue///PointingToDeclaration/">QueryResult.AsyncValue</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div><div class="content sourceset-dependent-content" data-togglable=":data:persistence/jvmMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../migrate.html"><span class="token function">migrate</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sqlSchema<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlSchema///PointingToDeclaration/">SqlSchema</span><span class="token operator">&lt;</span><span data-unresolved-link="app.cash.sqldelight.db/QueryResult.AsyncValue///PointingToDeclaration/">QueryResult.AsyncValue</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1163746180%2FFunctions%2F-1025503334" anchor-label="migrateSchema" id="-1163746180%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../migrate-schema.html"><span>migrate</span><wbr><span><span>Schema</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1163746180%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">.</span><a href="../migrate-schema.html"><span class="token function">migrateSchema</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">sqlSchema<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlSchema///PointingToDeclaration/">SqlSchema</span><span class="token operator">&lt;</span><span data-unresolved-link="app.cash.sqldelight.db/QueryResult.AsyncValue///PointingToDeclaration/">QueryResult.AsyncValue</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1478892354%2FFunctions%2F1303495216" anchor-label="newTransaction" id="1478892354%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="new-transaction.html"><span>new</span><wbr><span><span>Transaction</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1478892354%2FFunctions%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="new-transaction.html"><span class="token function">newTransaction</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/QueryResult///PointingToDeclaration/">QueryResult</span><span class="token operator">&lt;</span><span data-unresolved-link="app.cash.sqldelight/Transacter.Transaction///PointingToDeclaration/">Transacter.Transaction</span><span class="token operator">&gt;</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-166185498%2FFunctions%2F1303495216" anchor-label="notifyListeners" id="-166185498%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#-166185498%2FFunctions%2F1303495216"><span>notify</span><wbr><span><span>Listeners</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-166185498%2FFunctions%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="index.html#-166185498%2FFunctions%2F1303495216"><span class="token function">notifyListeners</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">vararg </span>queryKeys<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-988686818%2FFunctions%2F1303495216" anchor-label="refreshReads" id="-988686818%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="refresh-reads.html"><span>refresh</span><wbr><span><span>Reads</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-988686818%2FFunctions%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="refresh-reads.html"><span class="token function">refreshReads</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1596067554%2FFunctions%2F1303495216" anchor-label="removeListener" id="1596067554%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="index.html#1596067554%2FFunctions%2F1303495216"><span>remove</span><wbr><span><span>Listener</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1596067554%2FFunctions%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="index.html#1596067554%2FFunctions%2F1303495216"><span class="token function">removeListener</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">vararg </span>queryKeys<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">listener<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight/Query.Listener///PointingToDeclaration/">Query.Listener</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

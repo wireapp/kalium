@@ -38,10 +38,11 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">c8a50a7
+        <div class="library-version" id="library-version">4fa20b0
         </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector native-like" data-active="" aria-pressed="true" data-filter=":data:persistence/appleMain">apple</button>
                 <button class="platform-tag platform-selector common-like" data-active="" aria-pressed="true" data-filter=":data:persistence/commonMain">common</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
@@ -51,6 +52,13 @@
                             <i class="ui-kit-icon ui-kit-icon_cross"></i>
                         </button>
                     </div>
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence/appleMain" data-filter=":data:persistence/appleMain">
+                                <span class="checkbox--icon"></span>
+                                apple
+                            </label>
+                        </li>
                         <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
                             <label class="checkbox">
                                 <input type="checkbox" class="checkbox--input" id=":data:persistence/commonMain" data-filter=":data:persistence/commonMain">
@@ -93,24 +101,24 @@
   <div class="breadcrumbs"><a href="../../index.html">persistence</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.persistence.db</a><span class="delimiter">/</span><span class="current">UserDatabaseBuilder</span></div>
   <div class="cover ">
     <h1 class="cover"><span>User</span><wbr><span>Database</span><wbr><span><span>Builder</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">UserDatabaseBuilder</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-user-i-d-entity/index.html">UserIDEntity</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>sqlDriver<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineDispatcher///PointingToDeclaration/">CoroutineDispatcher</span><span class="token punctuation">, </span></span><span class="parameter ">platformDatabaseData<span class="token operator">: </span><a href="../-platform-database-data/index.html">PlatformDatabaseData</a><span class="token punctuation">, </span></span><span class="parameter ">isEncrypted<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>dbInvalidationController<span class="token operator">: </span><a href="../-db-invalidation-controller/index.html">DbInvalidationController</a></span></span><span class="token punctuation">)</span></div></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">UserDatabaseBuilder</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-user-i-d-entity/index.html">UserIDEntity</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>sqlDriver<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineDispatcher///PointingToDeclaration/">CoroutineDispatcher</span><span class="token punctuation">, </span></span><span class="parameter ">platformDatabaseData<span class="token operator">: </span><a href="../-platform-database-data/index.html">PlatformDatabaseData</a><span class="token punctuation">, </span></span><span class="parameter ">isEncrypted<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>dbInvalidationController<span class="token operator">: </span><a href="../-db-invalidation-controller/index.html">DbInvalidationController</a><span class="token punctuation">, </span></span><span class="parameter ">initializeSelfUser<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">true</span></span></span><span class="token punctuation">)</span></div></div></div>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button><button class="section-tab" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION,EXTENSION_PROPERTY,EXTENSION_FUNCTION">Members &amp; Extensions</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
         <h2 class="tableheader">Constructors</h2>
-        <div class="table"><a data-name="-2059108085%2FConstructors%2F-1025503334" anchor-label="UserDatabaseBuilder" id="-2059108085%2FConstructors%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+        <div class="table"><a data-name="-576029927%2FConstructors%2F-1025503334" anchor-label="UserDatabaseBuilder" id="-576029927%2FConstructors%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
           <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-user-database-builder.html"><span>User</span><wbr><span>Database</span><wbr><span><span>Builder</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2059108085%2FConstructors%2F-1025503334"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-576029927%2FConstructors%2F-1025503334"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-user-i-d-entity/index.html">UserIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">sqlDriver<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineDispatcher///PointingToDeclaration/">CoroutineDispatcher</span><span class="token punctuation">, </span></span><span class="parameter ">platformDatabaseData<span class="token operator">: </span><a href="../-platform-database-data/index.html">PlatformDatabaseData</a><span class="token punctuation">, </span></span><span class="parameter ">isEncrypted<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token punctuation">, </span></span><span class="parameter ">dbInvalidationController<span class="token operator">: </span><a href="../-db-invalidation-controller/index.html">DbInvalidationController</a></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao/-user-i-d-entity/index.html">UserIDEntity</a><span class="token punctuation">, </span></span><span class="parameter ">sqlDriver<span class="token operator">: </span><span data-unresolved-link="app.cash.sqldelight.db/SqlDriver///PointingToDeclaration/">SqlDriver</span><span class="token punctuation">, </span></span><span class="parameter ">dispatcher<span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineDispatcher///PointingToDeclaration/">CoroutineDispatcher</span><span class="token punctuation">, </span></span><span class="parameter ">platformDatabaseData<span class="token operator">: </span><a href="../-platform-database-data/index.html">PlatformDatabaseData</a><span class="token punctuation">, </span></span><span class="parameter ">isEncrypted<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token punctuation">, </span></span><span class="parameter ">dbInvalidationController<span class="token operator">: </span><a href="../-db-invalidation-controller/index.html">DbInvalidationController</a><span class="token punctuation">, </span></span><span class="parameter ">initializeSelfUser<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">true</span></span></span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -524,6 +532,21 @@
               </div>
             </div>
           </div>
+<a data-name="1241946686%2FProperties%2F-1025503334" anchor-label="messageTimelineDAO" id="1241946686%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="message-timeline-d-a-o.html"><span>message</span><wbr><span>Timeline</span><wbr><span><span>DAO</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1241946686%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="message-timeline-d-a-o.html">messageTimelineDAO</a><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao.message/-message-timeline-d-a-o/index.html">MessageTimelineDAO</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="1987467599%2FProperties%2F-1025503334" anchor-label="metadataDAO" id="1987467599%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
             <div class="main-subrow keyValue ">
@@ -569,6 +592,21 @@
               </div>
             </div>
           </div>
+<a data-name="-930065130%2FProperties%2F-1025503334" anchor-label="notificationEventStore" id="-930065130%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="notification-event-store.html"><span>notification</span><wbr><span>Event</span><wbr><span><span>Store</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-930065130%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="notification-event-store.html">notificationEventStore</a><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao.event/-notification-event-store/index.html">NotificationEventStore</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="-1589857042%2FProperties%2F-1025503334" anchor-label="obfuscatedCopyExporter" id="-1589857042%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
             <div class="main-subrow keyValue ">
@@ -595,6 +633,51 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="pending-action-d-a-o.html">pendingActionDAO</a><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao.pendingaction/-pending-action-d-a-o/index.html">PendingActionDAO</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1348147498%2FProperties%2F-1025503334" anchor-label="pendingDeliveryConfirmationDAO" id="-1348147498%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="pending-delivery-confirmation-d-a-o.html"><span>pending</span><wbr><span>Delivery</span><wbr><span>Confirmation</span><wbr><span><span>DAO</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1348147498%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="pending-delivery-confirmation-d-a-o.html">pendingDeliveryConfirmationDAO</a><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao.message/-pending-delivery-confirmation-d-a-o/index.html">PendingDeliveryConfirmationDAO</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-534094050%2FProperties%2F-1025503334" anchor-label="pendingSubconversationProposalDAO" id="-534094050%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="pending-subconversation-proposal-d-a-o.html"><span>pending</span><wbr><span>Subconversation</span><wbr><span>Proposal</span><wbr><span><span>DAO</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-534094050%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="pending-subconversation-proposal-d-a-o.html">pendingSubconversationProposalDAO</a><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao.conversation/-pending-subconversation-proposal-d-a-o/index.html">PendingSubconversationProposalDAO</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1700086174%2FProperties%2F-1025503334" anchor-label="pollMessageDAO" id="1700086174%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="poll-message-d-a-o.html"><span>poll</span><wbr><span>Message</span><wbr><span><span>DAO</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1700086174%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="poll-message-d-a-o.html">pollMessageDAO</a><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao.message/-poll-message-d-a-o/index.html">PollMessageDAO</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -749,6 +832,21 @@
               </div>
             </div>
           </div>
+<a data-name="-805024487%2FProperties%2F-1025503334" anchor-label="subconversationDAO" id="-805024487%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="subconversation-d-a-o.html"><span>subconversation</span><wbr><span><span>DAO</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-805024487%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="subconversation-d-a-o.html">subconversationDAO</a><span class="token operator">: </span><a href="../../com.wire.kalium.persistence.dao.conversation/-subconversation-d-a-o/index.html">SubconversationDAO</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="1816396285%2FProperties%2F-1025503334" anchor-label="teamDAO" id="1816396285%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
             <div class="main-subrow keyValue ">
@@ -843,7 +941,22 @@
       </div>
       <div data-togglable="FUNCTION">
         <h2 class="tableheader">Functions</h2>
-        <div class="table"><a data-name="-845328519%2FFunctions%2F-1025503334" anchor-label="dbFileLocation" id="-845328519%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+        <div class="table"><a data-name="-845657446%2FFunctions%2F-1025503334" anchor-label="close" id="-845657446%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="close.html"><span><span>close</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-845657446%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="close.html"><span class="token function">close</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Stop and await all database users before closing. Failed native cleanup must never appear successful on retry.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-845328519%2FFunctions%2F-1025503334" anchor-label="dbFileLocation" id="-845328519%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
@@ -869,6 +982,38 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="nuke.html"><span class="token function">nuke</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div><div class="brief "><p class="paragraph">drops DB connection and delete the DB file</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1953642588%2FFunctions%2F1303495216" anchor-label="refreshAfterExternalWrites" id="-1953642588%2FFunctions%2F1303495216" data-filterable-set=":data:persistence/appleMain"></a>
+          <div class="table-row table-row_content" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../refresh-after-external-writes.html"><span>refresh</span><wbr><span>After</span><wbr><span>External</span><wbr><span><span>Writes</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1953642588%2FFunctions%2F1303495216"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":data:persistence/appleMain" data-filterable-set=":data:persistence/appleMain" data-active="" data-toggle=":data:persistence/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="index.html#595842199%2FMain%2F1303495216">UserDatabaseBuilder</a><span class="token punctuation">.</span><a href="../refresh-after-external-writes.html"><span class="token function">refreshAfterExternalWrites</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Requery retained observers after the NSE may have committed changes through its own driver.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-708032534%2FFunctions%2F-1025503334" anchor-label="writeMessageEffects" id="-708032534%2FFunctions%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="write-message-effects.html"><span>write</span><wbr><span>Message</span><wbr><span><span>Effects</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-708032534%2FFunctions%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><span class="token operator">&lt;</span><a href="write-message-effects.html">T</a><span class="token operator">&gt; </span><a href="write-message-effects.html"><span class="token function">writeMessageEffects</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">block<span class="token operator">: </span><span class="token keyword">suspend </span><a href="../-message-effect-d-a-os/index.html">MessageEffectDAOs</a><span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="write-message-effects.html">T</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="write-message-effects.html">T</a></div><div class="brief "><p class="paragraph">Apply ordered receiving effects on the writer connection. The supplied DAOs use the same dispatcher for reads and writes, so native transactions never hop to a reader thread. Local file cleanup may run before its SQL references are removed. Callers awaiting network work here must supply a fixed thread dispatcher for the native SQLite driver (as the NSE does).</p></div></div></div>
                 </div>
               </div>
             </div>

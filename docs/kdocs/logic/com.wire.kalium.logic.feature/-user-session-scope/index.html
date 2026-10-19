@@ -38,11 +38,13 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">c8a50a7
+        <div class="library-version" id="library-version">4fa20b0
         </div>
         <div class="navigation-controls">
         <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector native-like" data-active="" aria-pressed="true" data-filter=":logic/appleMain">apple</button>
                 <button class="platform-tag platform-selector jvm-like" data-active="" aria-pressed="true" data-filter=":logic/commonMain">common</button>
+                <button class="platform-tag platform-selector native-like" data-active="" aria-pressed="true" data-filter=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main">iosArm64 / iosSimulatorArm64 / macosArm64</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
                 <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
@@ -51,11 +53,25 @@
                             <i class="ui-kit-icon ui-kit-icon_cross"></i>
                         </button>
                     </div>
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic/appleMain" data-filter=":logic/appleMain">
+                                <span class="checkbox--icon"></span>
+                                apple
+                            </label>
+                        </li>
                         <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
                                 <input type="checkbox" class="checkbox--input" id=":logic/commonMain" data-filter=":logic/commonMain">
                                 <span class="checkbox--icon"></span>
                                 common
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main" data-filter=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main">
+                                <span class="checkbox--icon"></span>
+                                iosArm64 / iosSimulatorArm64 / macosArm64
                             </label>
                         </li>
                 </ul>
@@ -95,26 +111,30 @@
     <h1 class="cover"><span>User</span><wbr><span>Session</span><wbr><span><span>Scope</span></span></h1>
     <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
       <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">UserSessionScope</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userAgent<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>userId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.user/-user-id/index.html">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">globalScope<span class="token operator">: </span><a href="../../com.wire.kalium.logic/-global-kalium-scope/index.html">GlobalKaliumScope</a><span class="token punctuation">, </span></span><span class="parameter ">globalCallManager<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.call/-global-call-manager/index.html">GlobalCallManager</a><span class="token punctuation">, </span></span><span class="parameter ">globalDatabaseBuilder<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.db/-global-database-builder/index.html">GlobalDatabaseBuilder</a><span class="token punctuation">, </span></span><span class="parameter ">globalPreferences<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.kmm-settings/-global-pref-provider/index.html">GlobalPrefProvider</a><span class="token punctuation">, </span></span><span class="parameter ">authenticationScopeProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-authentication-scope-provider/index.html">AuthenticationScopeProvider</a><span class="token punctuation">, </span></span><span class="parameter ">rootPathsProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.di/-root-paths-provider/index.html">RootPathsProvider</a><span class="token punctuation">, </span></span><span class="parameter ">dataStoragePaths<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-data-storage-paths/index.html">DataStoragePaths</a><span class="token punctuation">, </span></span><span class="parameter ">kaliumConfigs<span class="token operator">: </span><a href="../../com.wire.kalium.logic.featureFlags/-kalium-configs/index.html">KaliumConfigs</a><span class="token punctuation">, </span></span><span class="parameter ">userSessionScopeProvider<span class="token operator">: </span><a href="../-user-session-scope-provider/index.html">UserSessionScopeProvider</a><span class="token punctuation">, </span></span><span class="parameter ">userStorageProvider<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.userstorage.di/UserStorageProvider///PointingToDeclaration/">UserStorageProvider</span><span class="token punctuation">, </span></span><span class="parameter ">userAuthenticatedNetworkProvider<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.usernetwork.di/UserAuthenticatedNetworkProvider///PointingToDeclaration/">UserAuthenticatedNetworkProvider</span><span class="token punctuation">, </span></span><span class="parameter ">clientConfig<span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration/-client-config/index.html">ClientConfig</a><span class="token punctuation">, </span></span><span class="parameter ">platformUserStorageProperties<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.userstorage.di/PlatformUserStorageProperties///PointingToDeclaration/">PlatformUserStorageProperties</span><span class="token punctuation">, </span></span><span class="parameter ">networkStateObserver<span class="token operator">: </span><a href="../../../network/com.wire.kalium.network/-network-state-observer/index.html">NetworkStateObserver</a><span class="token punctuation">, </span></span><span class="parameter ">logoutCallback<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-logout-callback/index.html">LogoutCallback</a><span class="token punctuation">, </span></span><span class="parameter ">syncShutdownCoordinator<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-shutdown-coordinator/index.html">SyncShutdownCoordinator</a></span></span><span class="token punctuation">)</span> : <span data-unresolved-link="kotlinx.coroutines/CoroutineScope///PointingToDeclaration/">CoroutineScope</span></div></div>    </div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">UserSessionScope</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userAgent<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>userId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.user/-user-id/index.html">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">globalScope<span class="token operator">: </span><a href="../../com.wire.kalium.logic/-global-kalium-scope/index.html">GlobalKaliumScope</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>globalCallManager<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.call/-global-call-manager/index.html">GlobalCallManager</a><span class="token punctuation">, </span></span><span class="parameter ">globalDatabaseBuilder<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.db/-global-database-builder/index.html">GlobalDatabaseBuilder</a><span class="token punctuation">, </span></span><span class="parameter ">globalPreferences<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.kmm-settings/-global-pref-provider/index.html">GlobalPrefProvider</a><span class="token punctuation">, </span></span><span class="parameter ">authenticationScopeProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-authentication-scope-provider/index.html">AuthenticationScopeProvider</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>rootPathsProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.di/-root-paths-provider/index.html">RootPathsProvider</a><span class="token punctuation">, </span></span><span class="parameter ">dataStoragePaths<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-data-storage-paths/index.html">DataStoragePaths</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>kaliumConfigs<span class="token operator">: </span><a href="../../com.wire.kalium.logic.featureFlags/-kalium-configs/index.html">KaliumConfigs</a><span class="token punctuation">, </span></span><span class="parameter ">userSessionScopeProvider<span class="token operator">: </span><a href="../-user-session-scope-provider/index.html">UserSessionScopeProvider</a><span class="token punctuation">, </span></span><span class="parameter ">userStorageProvider<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.userstorage.di/UserStorageProvider///PointingToDeclaration/">UserStorageProvider</span><span class="token punctuation">, </span></span><span class="parameter ">userAuthenticatedNetworkProvider<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.usernetwork.di/UserAuthenticatedNetworkProvider///PointingToDeclaration/">UserAuthenticatedNetworkProvider</span><span class="token punctuation">, </span></span><span class="parameter ">clientConfig<span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration/-client-config/index.html">ClientConfig</a><span class="token punctuation">, </span></span><span class="parameter ">platformUserStorageProperties<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.userstorage.di/PlatformUserStorageProperties///PointingToDeclaration/">PlatformUserStorageProperties</span><span class="token punctuation">, </span></span><span class="parameter ">networkStateObserver<span class="token operator">: </span><a href="../../../network/com.wire.kalium.network/-network-state-observer/index.html">NetworkStateObserver</a><span class="token punctuation">, </span></span><span class="parameter ">logoutCallback<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-logout-callback/index.html">LogoutCallback</a><span class="token punctuation">, </span></span><span class="parameter ">syncShutdownCoordinator<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-shutdown-coordinator/index.html">SyncShutdownCoordinator</a><span class="token punctuation">, </span></span><span class="parameter ">enableDurableMLSReceiveRecovery<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span><span class="token punctuation">, </span></span><span class="parameter ">resourceAccess<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.util/AccountResourceAccess///PointingToDeclaration/">AccountResourceAccess</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">coreCryptoCentralFactory<span class="token operator">: </span><span class="token keyword">suspend </span><span class="token punctuation">(</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="../../../cryptography/com.wire.kalium.cryptography/-core-crypto-central/index.html">CoreCryptoCentral</a><span class="token operator"> = </span>{ root, key -&gt;
+        com.wire.kalium.cryptography.coreCryptoCentral(root, key)
+    }</span></span><span class="token punctuation">)</span> : <span data-unresolved-link="kotlinx.coroutines/CoroutineScope///PointingToDeclaration/">CoroutineScope</span></div></div>    </div>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button><button class="section-tab" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION,EXTENSION_PROPERTY,EXTENSION_FUNCTION">Members &amp; Extensions</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
         <h2 class="tableheader">Constructors</h2>
-        <div class="table"><a data-name="766968680%2FConstructors%2F-642582577" anchor-label="UserSessionScope" id="766968680%2FConstructors%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+        <div class="table"><a data-name="2079214173%2FConstructors%2F-642582577" anchor-label="UserSessionScope" id="2079214173%2FConstructors%2F-642582577" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-user-session-scope.html"><span>User</span><wbr><span>Session</span><wbr><span><span>Scope</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="766968680%2FConstructors%2F-642582577"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2079214173%2FConstructors%2F-642582577"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userAgent<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">userId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.user/-user-id/index.html">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">globalScope<span class="token operator">: </span><a href="../../com.wire.kalium.logic/-global-kalium-scope/index.html">GlobalKaliumScope</a><span class="token punctuation">, </span></span><span class="parameter ">globalCallManager<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.call/-global-call-manager/index.html">GlobalCallManager</a><span class="token punctuation">, </span></span><span class="parameter ">globalDatabaseBuilder<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.db/-global-database-builder/index.html">GlobalDatabaseBuilder</a><span class="token punctuation">, </span></span><span class="parameter ">globalPreferences<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.kmm-settings/-global-pref-provider/index.html">GlobalPrefProvider</a><span class="token punctuation">, </span></span><span class="parameter ">authenticationScopeProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-authentication-scope-provider/index.html">AuthenticationScopeProvider</a><span class="token punctuation">, </span></span><span class="parameter ">rootPathsProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.di/-root-paths-provider/index.html">RootPathsProvider</a><span class="token punctuation">, </span></span><span class="parameter ">dataStoragePaths<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-data-storage-paths/index.html">DataStoragePaths</a><span class="token punctuation">, </span></span><span class="parameter ">kaliumConfigs<span class="token operator">: </span><a href="../../com.wire.kalium.logic.featureFlags/-kalium-configs/index.html">KaliumConfigs</a><span class="token punctuation">, </span></span><span class="parameter ">userSessionScopeProvider<span class="token operator">: </span><a href="../-user-session-scope-provider/index.html">UserSessionScopeProvider</a><span class="token punctuation">, </span></span><span class="parameter ">userStorageProvider<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.userstorage.di/UserStorageProvider///PointingToDeclaration/">UserStorageProvider</span><span class="token punctuation">, </span></span><span class="parameter ">userAuthenticatedNetworkProvider<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.usernetwork.di/UserAuthenticatedNetworkProvider///PointingToDeclaration/">UserAuthenticatedNetworkProvider</span><span class="token punctuation">, </span></span><span class="parameter ">clientConfig<span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration/-client-config/index.html">ClientConfig</a><span class="token punctuation">, </span></span><span class="parameter ">platformUserStorageProperties<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.userstorage.di/PlatformUserStorageProperties///PointingToDeclaration/">PlatformUserStorageProperties</span><span class="token punctuation">, </span></span><span class="parameter ">networkStateObserver<span class="token operator">: </span><a href="../../../network/com.wire.kalium.network/-network-state-observer/index.html">NetworkStateObserver</a><span class="token punctuation">, </span></span><span class="parameter ">logoutCallback<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-logout-callback/index.html">LogoutCallback</a><span class="token punctuation">, </span></span><span class="parameter ">syncShutdownCoordinator<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-shutdown-coordinator/index.html">SyncShutdownCoordinator</a></span></span><span class="token punctuation">)</span></div></div>                  </div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userAgent<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">userId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.user/-user-id/index.html">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">globalScope<span class="token operator">: </span><a href="../../com.wire.kalium.logic/-global-kalium-scope/index.html">GlobalKaliumScope</a><span class="token punctuation">, </span></span><span class="parameter ">globalCallManager<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.call/-global-call-manager/index.html">GlobalCallManager</a><span class="token punctuation">, </span></span><span class="parameter ">globalDatabaseBuilder<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.db/-global-database-builder/index.html">GlobalDatabaseBuilder</a><span class="token punctuation">, </span></span><span class="parameter ">globalPreferences<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.kmm-settings/-global-pref-provider/index.html">GlobalPrefProvider</a><span class="token punctuation">, </span></span><span class="parameter ">authenticationScopeProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-authentication-scope-provider/index.html">AuthenticationScopeProvider</a><span class="token punctuation">, </span></span><span class="parameter ">rootPathsProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.di/-root-paths-provider/index.html">RootPathsProvider</a><span class="token punctuation">, </span></span><span class="parameter ">dataStoragePaths<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-data-storage-paths/index.html">DataStoragePaths</a><span class="token punctuation">, </span></span><span class="parameter ">kaliumConfigs<span class="token operator">: </span><a href="../../com.wire.kalium.logic.featureFlags/-kalium-configs/index.html">KaliumConfigs</a><span class="token punctuation">, </span></span><span class="parameter ">userSessionScopeProvider<span class="token operator">: </span><a href="../-user-session-scope-provider/index.html">UserSessionScopeProvider</a><span class="token punctuation">, </span></span><span class="parameter ">userStorageProvider<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.userstorage.di/UserStorageProvider///PointingToDeclaration/">UserStorageProvider</span><span class="token punctuation">, </span></span><span class="parameter ">userAuthenticatedNetworkProvider<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.usernetwork.di/UserAuthenticatedNetworkProvider///PointingToDeclaration/">UserAuthenticatedNetworkProvider</span><span class="token punctuation">, </span></span><span class="parameter ">clientConfig<span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration/-client-config/index.html">ClientConfig</a><span class="token punctuation">, </span></span><span class="parameter ">platformUserStorageProperties<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.userstorage.di/PlatformUserStorageProperties///PointingToDeclaration/">PlatformUserStorageProperties</span><span class="token punctuation">, </span></span><span class="parameter ">networkStateObserver<span class="token operator">: </span><a href="../../../network/com.wire.kalium.network/-network-state-observer/index.html">NetworkStateObserver</a><span class="token punctuation">, </span></span><span class="parameter ">logoutCallback<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.auth/-logout-callback/index.html">LogoutCallback</a><span class="token punctuation">, </span></span><span class="parameter ">syncShutdownCoordinator<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-shutdown-coordinator/index.html">SyncShutdownCoordinator</a><span class="token punctuation">, </span></span><span class="parameter ">enableDurableMLSReceiveRecovery<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">false</span><span class="token punctuation">, </span></span><span class="parameter ">resourceAccess<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.util/AccountResourceAccess///PointingToDeclaration/">AccountResourceAccess</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">coreCryptoCentralFactory<span class="token operator">: </span><span class="token keyword">suspend </span><span class="token punctuation">(</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><a href="../../../cryptography/com.wire.kalium.cryptography/-core-crypto-central/index.html">CoreCryptoCentral</a><span class="token operator"> = </span>{ root, key -&gt;
+        com.wire.kalium.cryptography.coreCryptoCentral(root, key)
+    }</span></span><span class="token punctuation">)</span></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -480,6 +500,23 @@
               </div>
             </div>
           </div>
+<a data-name="1757319567%2FProperties%2F-642582577" anchor-label="eventRepository" id="1757319567%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="event-repository.html"><span>event</span><wbr><span><span>Repository</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1757319567%2FProperties%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="event-repository.html">eventRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.event/-event-repository/index.html">EventRepository</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="-635927629%2FProperties%2F-642582577" anchor-label="federatedIdMapper" id="-635927629%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
@@ -650,6 +687,40 @@
               </div>
             </div>
           </div>
+<a data-name="1282805447%2FProperties%2F-642582577" anchor-label="globalCallManager" id="1282805447%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="global-call-manager.html"><span>global</span><wbr><span>Call</span><wbr><span><span>Manager</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1282805447%2FProperties%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="global-call-manager.html">globalCallManager</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.call/-global-call-manager/index.html">GlobalCallManager</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1860103476%2FProperties%2F-642582577" anchor-label="incrementalSyncRepository" id="1860103476%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="incremental-sync-repository.html"><span>incremental</span><wbr><span>Sync</span><wbr><span><span>Repository</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1860103476%2FProperties%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="incremental-sync-repository.html">incrementalSyncRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.sync/-incremental-sync-repository/index.html">IncrementalSyncRepository</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="1854694842%2FProperties%2F-642582577" anchor-label="isCellsInitialized" id="1854694842%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
@@ -752,6 +823,23 @@
               </div>
             </div>
           </div>
+<a data-name="-1284855027%2FProperties%2F-642582577" anchor-label="kaliumConfigs" id="-1284855027%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="kalium-configs.html"><span>kalium</span><wbr><span><span>Configs</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1284855027%2FProperties%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="kalium-configs.html">kaliumConfigs</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.featureFlags/-kalium-configs/index.html">KaliumConfigs</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="1308736529%2FProperties%2F-642582577" anchor-label="kaliumFileSystem" id="1308736529%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
@@ -764,7 +852,7 @@
                 <div class="title">
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="kalium-file-system.html">kaliumFileSystem</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-kalium-file-system/index.html">KaliumFileSystem</a></div></div>                  </div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="kalium-file-system.html">kaliumFileSystem</a><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.asset/-kalium-file-system/index.html">KaliumFileSystem</a></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -1075,6 +1163,23 @@
               </div>
             </div>
           </div>
+<a data-name="-1850293149%2FProperties%2F-642582577" anchor-label="mlsClientProvider" id="-1850293149%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="mls-client-provider.html"><span>mls</span><wbr><span>Client</span><wbr><span><span>Provider</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1850293149%2FProperties%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="mls-client-provider.html">mlsClientProvider</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.client/-m-l-s-client-provider/index.html">MLSClientProvider</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="-969081824%2FProperties%2F-642582577" anchor-label="mlsMigrationManager" id="-969081824%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
@@ -1376,7 +1481,7 @@
                 <div class="title">
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="persist-message.html">persistMessage</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a></div></div>                  </div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="persist-message.html">persistMessage</a><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.message/-persist-message-use-case/index.html">PersistMessageUseCase</a></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -1478,7 +1583,7 @@
                 <div class="title">
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="qualified-id-mapper.html">qualifiedIdMapper</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-qualified-id-mapper/index.html">QualifiedIdMapper</a></div></div>                  </div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="qualified-id-mapper.html">qualifiedIdMapper</a><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-qualified-id-mapper/index.html">QualifiedIdMapper</a></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -1513,6 +1618,23 @@
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
 <div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="reset-mls-conversation.html">resetMlsConversation</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.conversation/-reset-m-l-s-conversation-use-case/index.html">ResetMLSConversationUseCase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1619078262%2FProperties%2F-642582577" anchor-label="rootPathsProvider" id="1619078262%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="root-paths-provider.html"><span>root</span><wbr><span>Paths</span><wbr><span><span>Provider</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1619078262%2FProperties%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="root-paths-provider.html">rootPathsProvider</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.di/-root-paths-provider/index.html">RootPathsProvider</a></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -1581,6 +1703,23 @@
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
 <div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="set-new-user-tracking-identifier.html">setNewUserTrackingIdentifier</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.analytics/-set-new-user-tracking-identifier-use-case/index.html">SetNewUserTrackingIdentifierUseCase</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="813876033%2FProperties%2F-642582577" anchor-label="slowSyncRepository" id="813876033%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="slow-sync-repository.html"><span>slow</span><wbr><span>Sync</span><wbr><span><span>Repository</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="813876033%2FProperties%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="slow-sync-repository.html">slowSyncRepository</a><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -1682,7 +1821,7 @@
                 <div class="title">
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
-<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="user-config-repository.html">userConfigRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></div></div>                  </div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="user-config-repository.html">userConfigRepository</a><span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -1755,11 +1894,62 @@
               </div>
             </div>
           </div>
+<a data-name="1129288547%2FProperties%2F-642582577" anchor-label="userStorage" id="1129288547%2FProperties%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="user-storage.html"><span>user</span><wbr><span><span>Storage</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1129288547%2FProperties%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">val </span><a href="user-storage.html">userStorage</a><span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.userstorage.di/UserStorage///PointingToDeclaration/">UserStorage</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div data-togglable="FUNCTION">
         <h2 class="tableheader">Functions</h2>
-        <div class="table"><a data-name="671993717%2FFunctions%2F-642582577" anchor-label="buildAudioNormalizedLoudnessWorker" id="671993717%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+        <div class="table"><a data-name="-408428012%2FFunctions%2F188667977" anchor-label="attachLocalVideoPreview" id="-408428012%2FFunctions%2F188667977" data-filterable-set=":logic/appleMain,:logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main"></a>
+          <div class="table-row table-row_content" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":logic/appleMain,:logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main" data-filterable-set=":logic/appleMain,:logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../attach-local-video-preview.html"><span>attach</span><wbr><span>Local</span><wbr><span>Video</span><wbr><span><span>Preview</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-408428012%2FFunctions%2F188667977"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/appleMain" data-filterable-set=":logic/appleMain" data-active="" data-toggle=":logic/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main" data-filterable-set=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main" data-toggle=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main">iosArm64 / iosSimulatorArm64 / macosArm64</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/appleMain"><div class="symbol monospace"><span class="token keyword">expect </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="index.html#-219954728%2FMain%2F1292893165">UserSessionScope</a><span class="token punctuation">.</span><a href="../attach-local-video-preview.html"><span class="token function">attachLocalVideoPreview</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">view<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.util/-platform-view/index.html">PlatformView</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-local-video-preview-attachment/index.html">LocalVideoPreviewAttachment</a></div><div class="brief "><p class="paragraph">Attach one plain native view as the local camera preview. The caller owns its lifetime. Do not pass AVSVideoPreview, which attaches itself when added to a window.</p></div></div><div class="content sourceset-dependent-content" data-togglable=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="index.html">UserSessionScope</a><span class="token punctuation">.</span><a href="../attach-local-video-preview.html"><span class="token function">attachLocalVideoPreview</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">view<span class="token operator">: </span><a href="../../com.wire.kalium.logic.util/-platform-view/index.html">PlatformView</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-local-video-preview-attachment/index.html">LocalVideoPreviewAttachment</a></div><div class="brief "><p class="paragraph">Attach one plain native view as the local camera preview. The caller owns its lifetime. Do not pass AVSVideoPreview, which attaches itself when added to a window.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1932297581%2FFunctions%2F188667977" anchor-label="attachRemoteVideoView" id="1932297581%2FFunctions%2F188667977" data-filterable-set=":logic/appleMain,:logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main"></a>
+          <div class="table-row table-row_content" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":logic/appleMain,:logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main" data-filterable-set=":logic/appleMain,:logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../attach-remote-video-view.html"><span>attach</span><wbr><span>Remote</span><wbr><span>Video</span><wbr><span><span>View</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1932297581%2FFunctions%2F188667977"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/appleMain" data-filterable-set=":logic/appleMain" data-active="" data-toggle=":logic/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main" data-filterable-set=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main" data-toggle=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main">iosArm64 / iosSimulatorArm64 / macosArm64</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/appleMain"><div class="symbol monospace"><span class="token keyword">expect </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="index.html#-219954728%2FMain%2F1292893165">UserSessionScope</a><span class="token punctuation">.</span><a href="../attach-remote-video-view.html"><span class="token function">attachRemoteVideoView</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">participantId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-qualified-i-d/index.html">QualifiedID</a><span class="token punctuation">, </span></span><span class="parameter ">clientId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">view<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.util/-platform-view/index.html">PlatformView</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-remote-video-view-attachment/index.html">RemoteVideoViewAttachment</a></div><div class="brief "><p class="paragraph">Attach an iOS AVSVideoView to one remote client's stream. The caller owns the view lifetime. Different native views remain attached independently, including views of the same stream. Reattaching the same native view and stream returns its existing lease, even through another <a href="../../../logic/com.wire.kalium.logic.util/-platform-view/index.html">PlatformView</a> wrapper. Rebinding that view to another stream detaches its previous attachment and invalidates the old lease. If that detach fails, the previous attachment remains owned and the new stream is not attached. If the new attach fails after detach succeeds, that view remains detached. Other views are unaffected. Operations run on the main dispatcher. The caller must detach each returned lease when its view disappears.</p></div></div><div class="content sourceset-dependent-content" data-togglable=":logic/sharediosArm64MainiosSimulatorArm64MainmacosArm64Main"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="index.html">UserSessionScope</a><span class="token punctuation">.</span><a href="../attach-remote-video-view.html"><span class="token function">attachRemoteVideoView</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">participantId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-qualified-i-d/index.html">QualifiedID</a><span class="token punctuation">, </span></span><span class="parameter ">clientId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">view<span class="token operator">: </span><a href="../../com.wire.kalium.logic.util/-platform-view/index.html">PlatformView</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-remote-video-view-attachment/index.html">RemoteVideoViewAttachment</a></div><div class="brief "><p class="paragraph">Attach an iOS AVSVideoView to one remote client's stream. The caller owns the view lifetime. Different native views remain attached independently, including views of the same stream. Reattaching the same native view and stream returns its existing lease, even through another <a href="../../com.wire.kalium.logic.util/-platform-view/index.html">PlatformView</a> wrapper. Rebinding that view to another stream detaches its previous attachment and invalidates the old lease. If that detach fails, the previous attachment remains owned and the new stream is not attached. If the new attach fails after detach succeeds, that view remains detached. Other views are unaffected. Operations run on the main dispatcher. The caller must detach each returned lease when its view disappears.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="671993717%2FFunctions%2F-642582577" anchor-label="buildAudioNormalizedLoudnessWorker" id="671993717%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
@@ -1772,6 +1962,74 @@
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
 <div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><a href="build-audio-normalized-loudness-worker.html"><span class="token function">buildAudioNormalizedLoudnessWorker</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">conversationId<span class="token operator">: </span><a href="../../../logic/com.wire.kalium.logic.data.id/-conversation-id/index.html">ConversationId</a><span class="token punctuation">, </span></span><span class="parameter ">messageId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync.receiver.asset/-audio-normalized-loudness-worker/index.html">AudioNormalizedLoudnessWorker</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1917459816%2FFunctions%2F-642582577" anchor-label="callPresentations" id="-1917459816%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="call-presentations.html"><span>call</span><wbr><span><span>Presentations</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1917459816%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="call-presentations.html"><span class="token function">callPresentations</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="com.wire.kalium.logic.sync.receiving/CallPresentationRecord///PointingToDeclaration/">CallPresentationRecord</span><span class="token operator">&gt;</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-500963453%2FFunctions%2F-642582577" anchor-label="closeAccountResources" id="-500963453%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="close-account-resources.html"><span>close</span><wbr><span>Account</span><wbr><span><span>Resources</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-500963453%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="close-account-resources.html"><span class="token function">closeAccountResources</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="775956906%2FFunctions%2F-642582577" anchor-label="createIncrementalSyncWorker" id="775956906%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="create-incremental-sync-worker.html"><span>create</span><wbr><span>Incremental</span><wbr><span>Sync</span><wbr><span><span>Worker</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="775956906%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><a href="create-incremental-sync-worker.html"><span class="token function">createIncrementalSyncWorker</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">eventGatherer<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync.incremental/-event-gatherer/index.html">EventGatherer</a><span class="token operator"> = </span>this.eventGatherer</span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync.incremental/-incremental-sync-worker/index.html">IncrementalSyncWorker</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-607726232%2FFunctions%2F-642582577" anchor-label="observeCallPresentations" id="-607726232%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="observe-call-presentations.html"><span>observe</span><wbr><span>Call</span><wbr><span><span>Presentations</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-607726232%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="observe-call-presentations.html"><span class="token function">observeCallPresentations</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines.flow/Flow///PointingToDeclaration/">Flow</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="com.wire.kalium.logic.sync.receiving/CallPresentationRecord///PointingToDeclaration/">CallPresentationRecord</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div>                  </div>
                 </div>
               </div>
             </div>
@@ -1793,6 +2051,108 @@
               </div>
             </div>
           </div>
+<a data-name="-1242933348%2FFunctions%2F-642582577" anchor-label="observeNotificationRemovalCandidates" id="-1242933348%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="observe-notification-removal-candidates.html"><span>observe</span><wbr><span>Notification</span><wbr><span>Removal</span><wbr><span><span>Candidates</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1242933348%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="observe-notification-removal-candidates.html"><span class="token function">observeNotificationRemovalCandidates</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messageIds<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines.flow/Flow///PointingToDeclaration/">Flow</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence.dao.message/-notification-message-key/index.html">NotificationMessageKey</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div><div class="brief "><p class="paragraph">Uses the existing account database owner, also observing sync performed by the app.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2010434741%2FFunctions%2F-642582577" anchor-label="rememberNotificationMessages" id="2010434741%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="remember-notification-messages.html"><span>remember</span><wbr><span>Notification</span><wbr><span><span>Messages</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2010434741%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="remember-notification-messages.html"><span class="token function">rememberNotificationMessages</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">messages<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence.dao.message/-notification-message-key/index.html">NotificationMessageKey</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Register the identities of delivered Apple alerts before observing their canonical state.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2011284885%2FFunctions%2F-642582577" anchor-label="resumeIncomingCallSignals" id="-2011284885%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="resume-incoming-call-signals.html"><span>resume</span><wbr><span>Incoming</span><wbr><span>Call</span><wbr><span><span>Signals</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2011284885%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="resume-incoming-call-signals.html"><span class="token function">resumeIncomingCallSignals</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">callId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Prioritize the exact delivered Apple call, preserving all signaling in its conversation.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="980729732%2FFunctions%2F-642582577" anchor-label="resumePendingCallSignals" id="980729732%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="resume-pending-call-signals.html"><span>resume</span><wbr><span>Pending</span><wbr><span>Call</span><wbr><span><span>Signals</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="980729732%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="resume-pending-call-signals.html"><span class="token function">resumePendingCallSignals</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Resume NSE-committed signaling using this session's existing full calling engine.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-2102337601%2FFunctions%2F-642582577" anchor-label="resumeSync" id="-2102337601%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="resume-sync.html"><span>resume</span><wbr><span><span>Sync</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2102337601%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><a href="resume-sync.html"><span class="token function">resumeSync</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Resume after ownership returns.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="562695895%2FFunctions%2F1292893165" anchor-label="serveShareExtension" id="562695895%2FFunctions%2F1292893165" data-filterable-set=":logic/appleMain"></a>
+          <div class="table-row table-row_content" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":logic/appleMain" data-filterable-set=":logic/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="../../com.wire.kalium.logic.feature.share/serve-share-extension.html"><span>serve</span><wbr><span>Share</span><wbr><span><span>Extension</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="562695895%2FFunctions%2F1292893165"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/appleMain" data-filterable-set=":logic/appleMain" data-active="" data-toggle=":logic/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/appleMain"><div class="symbol monospace"><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="index.html#-219954728%2FMain%2F1292893165">UserSessionScope</a><span class="token punctuation">.</span><a href="../../com.wire.kalium.logic.feature.share/serve-share-extension.html"><span class="token function">serveShareExtension</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">doorbell<span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines.flow/Flow///PointingToDeclaration/">Flow</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/Unit///PointingToDeclaration/">Unit</span><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Answers the share extension while the app owns this account, live or not (ADR 13). It lists the account's conversations when the extension asks, and stores handed-off shares as the composer would: now, and whenever <a href="../../com.wire.kalium.logic.feature.share/serve-share-extension.html">doorbell</a> rings. Runs until cancelled, which must happen before the app releases the account. Servers of one account take turns.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="273007054%2FFunctions%2F-642582577" anchor-label="setIncrementalSyncUnprocessedEventsBatchLimit" id="273007054%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
           <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
             <div class="main-subrow keyValue ">
@@ -1806,6 +2166,40 @@
                   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                     <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
 <div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-incremental-sync-unprocessed-events-batch-limit.html"><span class="token function">setIncrementalSyncUnprocessedEventsBatchLimit</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">limit<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1253070999%2FFunctions%2F-642582577" anchor-label="stopAccountWork" id="1253070999%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="stop-account-work.html"><span>stop</span><wbr><span>Account</span><wbr><span><span>Work</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1253070999%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="stop-account-work.html"><span class="token function">stopAccountWork</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">The host must first cancel/join public account operations and account/global observers.</p></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1283120004%2FFunctions%2F-642582577" anchor-label="suspendSync" id="-1283120004%2FFunctions%2F-642582577" data-filterable-set=":logic/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="suspend-sync.html"><span>suspend</span><wbr><span><span>Sync</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1283120004%2FFunctions%2F-642582577"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic/commonMain" data-filterable-set=":logic/commonMain" data-active="" data-toggle=":logic/commonMain">common</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="suspend-sync.html"><span class="token function">suspendSync</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-suspension/index.html">SyncSuspension</a></div><div class="brief "><p class="paragraph">Stop sync and close its WebSocket client before another process may receive this account's events. Legacy push skips clients the backend serves over an open WebSocket, and consumable notifications need a single consumer. The native socket and the backend see the close asynchronously. Sync stays stopped, even for new requests, until <a href="resume-sync.html">resumeSync</a> or until the returned suspension is cancelled. Failure leaves sync running.</p></div></div>                  </div>
                 </div>
               </div>
             </div>

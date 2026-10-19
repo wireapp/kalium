@@ -1,0 +1,370 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>MessageTimelinePageEntity</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+      if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      } else {
+        const savedDarkMode = JSON.parse(storage)
+        if (savedDarkMode === true) {
+          document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+      }
+    </script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/safe-local-storage_blocking.js"></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script></head>
+<body>
+<div class="root">
+    <header class="navigation theme-dark" id="navigation-wrapper" role="banner">
+<a class="library-name--link" href="../../../index.html" tabindex="1">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">4fa20b0
+        </div>
+        <div class="navigation-controls">
+        <ul class="filter-section filter-section_loading" id="filter-section" aria-label="Target filter">
+                <button class="platform-tag platform-selector common-like" data-active="" aria-pressed="true" data-filter=":data:persistence/commonMain">common</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox" aria-label="Target filter">
+                    <div class="dropdown--header"><span>Target filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close target filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":data:persistence/commonMain" data-filter=":data:persistence/commonMain">
+                                <span class="checkbox--icon"></span>
+                                common
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </ul>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </header>
+    <div id="container">
+        <nav id="leftColumn" class="sidebar" data-item-type="SECTION" data-item-config="{&quot;defaultSize&quot;: 280, &quot;minSize&quot;: 200, &quot;maxSize&quot;: 400}">
+            <a class="toc--skip-link" href="#main">Skip to content</a>
+            <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox" aria-label="Table of contents">
+                    <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar--inner" id="sideMenu"></div>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </nav>
+        <div id="resizer" class="resizer" data-item-type="BAR"></div>
+        <div id="main" data-item-type="SECTION" role="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="persistence::com.wire.kalium.persistence.dao.message/MessageTimelinePageEntity///PointingToDeclaration//-1025503334">
+  <div class="breadcrumbs"><a href="../../index.html">persistence</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.persistence.dao.message</a><span class="delimiter">/</span><span class="current">MessageTimelinePageEntity</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Message</span><wbr><span>Timeline</span><wbr><span>Page</span><wbr><span><span>Entity</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">MessageTimelinePageEntity</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>rows<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-rows/index.html">TimelineRows</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>cursors<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><a href="../-message-timeline-cursor-entity/index.html">MessageTimelineCursorEntity</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>olderCursor<span class="token operator">: </span><a href="../-message-timeline-cursor-entity/index.html">MessageTimelineCursorEntity</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>newerCursor<span class="token operator">: </span><a href="../-message-timeline-cursor-entity/index.html">MessageTimelineCursorEntity</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>anchorMessageId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>mentions<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-message-mention/index.html">MessageMention</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>previews<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-previews/index.html">TimelinePreviews</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>buttons<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="com.wire.kalium.persistence.content/ButtonContent///PointingToDeclaration/">ButtonContent</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>polls<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><a href="../-message-entity-content/-poll/index.html">MessageEntityContent.Poll</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>reactions<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-reactions/index.html">TimelineReactions</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>readCounts<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>failures<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-message-recipient-failure/index.html">MessageRecipientFailure</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>attachments<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-attachments/index.html">TimelineAttachments</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>systemContents<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><a href="../-message-entity-content/-system/index.html">MessageEntityContent.System</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>users<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><a href="../../com.wire.kalium.persistence.dao/-user-i-d-entity/index.html">UserIDEntity</a><span class="token punctuation">, </span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-users/index.html">TimelineUsers</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div><p class="paragraph">Page-scoped rows. None of these queries hydrate MessageDetailsView or UserDetails.</p></div></div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="tableheader">Constructors</h2>
+        <div class="table"><a data-name="-1036486964%2FConstructors%2F-1025503334" anchor-label="MessageTimelinePageEntity" id="-1036486964%2FConstructors%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-message-timeline-page-entity.html"><span>Message</span><wbr><span>Timeline</span><wbr><span>Page</span><wbr><span><span>Entity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1036486964%2FConstructors%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">rows<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-rows/index.html">TimelineRows</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">cursors<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><a href="../-message-timeline-cursor-entity/index.html">MessageTimelineCursorEntity</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">olderCursor<span class="token operator">: </span><a href="../-message-timeline-cursor-entity/index.html">MessageTimelineCursorEntity</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">newerCursor<span class="token operator">: </span><a href="../-message-timeline-cursor-entity/index.html">MessageTimelineCursorEntity</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">anchorMessageId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">mentions<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-message-mention/index.html">MessageMention</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">previews<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-previews/index.html">TimelinePreviews</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">buttons<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="com.wire.kalium.persistence.content/ButtonContent///PointingToDeclaration/">ButtonContent</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">polls<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><a href="../-message-entity-content/-poll/index.html">MessageEntityContent.Poll</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">reactions<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-reactions/index.html">TimelineReactions</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">readCounts<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">failures<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-message-recipient-failure/index.html">MessageRecipientFailure</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">attachments<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-attachments/index.html">TimelineAttachments</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">systemContents<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><a href="../-message-entity-content/-system/index.html">MessageEntityContent.System</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()<span class="token punctuation">, </span></span><span class="parameter ">users<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><a href="../../com.wire.kalium.persistence.dao/-user-i-d-entity/index.html">UserIDEntity</a><span class="token punctuation">, </span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-users/index.html">TimelineUsers</a><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyMap()</span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="tableheader">Properties</h2>
+        <div class="table"><a data-name="1574990943%2FProperties%2F-1025503334" anchor-label="anchorMessageId" id="1574990943%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="anchor-message-id.html"><span>anchor</span><wbr><span>Message</span><wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1574990943%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="anchor-message-id.html">anchorMessageId</a><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1798367708%2FProperties%2F-1025503334" anchor-label="attachments" id="1798367708%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="attachments.html"><span><span>attachments</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1798367708%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="attachments.html">attachments</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-attachments/index.html">TimelineAttachments</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1705348437%2FProperties%2F-1025503334" anchor-label="buttons" id="-1705348437%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="buttons.html"><span><span>buttons</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1705348437%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="buttons.html">buttons</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="com.wire.kalium.persistence.content/ButtonContent///PointingToDeclaration/">ButtonContent</span><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-584730161%2FProperties%2F-1025503334" anchor-label="cursors" id="-584730161%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="cursors.html"><span><span>cursors</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-584730161%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="cursors.html">cursors</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><a href="../-message-timeline-cursor-entity/index.html">MessageTimelineCursorEntity</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="255300165%2FProperties%2F-1025503334" anchor-label="failures" id="255300165%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="failures.html"><span><span>failures</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="255300165%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="failures.html">failures</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-message-recipient-failure/index.html">MessageRecipientFailure</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1350026917%2FProperties%2F-1025503334" anchor-label="mentions" id="1350026917%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="mentions.html"><span><span>mentions</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1350026917%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="mentions.html">mentions</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-message-mention/index.html">MessageMention</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1581578007%2FProperties%2F-1025503334" anchor-label="newerCursor" id="-1581578007%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="newer-cursor.html"><span>newer</span><wbr><span><span>Cursor</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1581578007%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="newer-cursor.html">newerCursor</a><span class="token operator">: </span><a href="../-message-timeline-cursor-entity/index.html">MessageTimelineCursorEntity</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1552675138%2FProperties%2F-1025503334" anchor-label="olderCursor" id="1552675138%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="older-cursor.html"><span>older</span><wbr><span><span>Cursor</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1552675138%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="older-cursor.html">olderCursor</a><span class="token operator">: </span><a href="../-message-timeline-cursor-entity/index.html">MessageTimelineCursorEntity</a><span class="token operator">?</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1821399880%2FProperties%2F-1025503334" anchor-label="polls" id="-1821399880%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="polls.html"><span><span>polls</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1821399880%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="polls.html">polls</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><a href="../-message-entity-content/-poll/index.html">MessageEntityContent.Poll</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1790192893%2FProperties%2F-1025503334" anchor-label="previews" id="-1790192893%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="previews.html"><span><span>previews</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1790192893%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="previews.html">previews</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-previews/index.html">TimelinePreviews</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-514181342%2FProperties%2F-1025503334" anchor-label="reactions" id="-514181342%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="reactions.html"><span><span>reactions</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-514181342%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="reactions.html">reactions</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-reactions/index.html">TimelineReactions</a><span class="token operator">&gt;</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1680224468%2FProperties%2F-1025503334" anchor-label="readCounts" id="1680224468%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="read-counts.html"><span>read</span><wbr><span><span>Counts</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1680224468%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="read-counts.html">readCounts</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><span data-unresolved-link="kotlin/Long///PointingToDeclaration/">Long</span><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1265125141%2FProperties%2F-1025503334" anchor-label="rows" id="1265125141%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="rows.html"><span><span>rows</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1265125141%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="rows.html">rows</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-rows/index.html">TimelineRows</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1810688187%2FProperties%2F-1025503334" anchor-label="systemContents" id="-1810688187%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="system-contents.html"><span>system</span><wbr><span><span>Contents</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1810688187%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="system-contents.html">systemContents</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span><a href="../-message-entity-content/-system/index.html">MessageEntityContent.System</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-29507132%2FProperties%2F-1025503334" anchor-label="users" id="-29507132%2FProperties%2F-1025503334" data-filterable-set=":data:persistence/commonMain"></a>
+          <div class="table-row table-row_content" data-filterable-current=":data:persistence/commonMain" data-filterable-set=":data:persistence/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="users.html"><span><span>users</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-29507132%2FProperties%2F-1025503334"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":data:persistence/commonMain"><div class="symbol monospace"><span class="token keyword">val </span><a href="users.html">users</a><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/Map///PointingToDeclaration/">Map</span><span class="token operator">&lt;</span><a href="../../com.wire.kalium.persistence.dao/-user-i-d-entity/index.html">UserIDEntity</a><span class="token punctuation">, </span><a href="../../../persistence/com.wire.kalium.persistence/-timeline-users/index.html">TimelineUsers</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <div class="footer--container">
+            <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+            <div class="footer--content">
+                <div>
+                    <span>Generated by </span>
+                    <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                        Dokka
+                    </a>
+                    <div>© 2026 Copyright</div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
