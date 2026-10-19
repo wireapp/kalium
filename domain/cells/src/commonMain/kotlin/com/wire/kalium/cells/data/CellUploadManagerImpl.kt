@@ -85,8 +85,10 @@ internal class CellUploadManagerImpl internal constructor(
                     uploads.remove(node.uuid)
                     uploadEventsFlow.emit(CellUploadEvent.UploadCompleted)
                 }
-                .onFailure {
-                    updateJobInfo(node.uuid) { copy(uploadFailed = true) }
+                .onFailure { failure ->
+                    updateJobInfo(node.uuid) {
+                        copy(uploadFailed = true, isConnectivityIssue = failure is NetworkFailure.NoNetworkConnection)
+                    }
                     uploadEventsFlow.emit(CellUploadEvent.UploadError)
                 }
         }
@@ -104,8 +106,9 @@ internal class CellUploadManagerImpl internal constructor(
             if (fileSystem.exists(uploadInfo.localPath)) {
                 startUpload(uploadInfo.localPath, uploadInfo.node)
             } else {
-                // Original file is not available
-                updateJobInfo(nodeUuid) { copy(uploadFailed = true) }
+                // Original file is not available. Not a connectivity issue even if the last attempt was:
+                // explicit reset, since copy() would otherwise keep that stale flag from the previous failure.
+                updateJobInfo(nodeUuid) { copy(uploadFailed = true, isConnectivityIssue = false) }
                 uploadScope.launch { uploadInfo.events.emit(CellUploadEvent.UploadError) }
             }
         }
@@ -138,6 +141,7 @@ internal class CellUploadManagerImpl internal constructor(
             CellUploadInfo(
                 progress = progress,
                 uploadFailed = uploadFailed,
+                isConnectivityIssue = isConnectivityIssue,
             )
         }
     }
@@ -158,4 +162,5 @@ private data class UploadInfo(
     val events: MutableSharedFlow<CellUploadEvent>,
     val progress: Float = 0f,
     val uploadFailed: Boolean = false,
+    val isConnectivityIssue: Boolean = false,
 )

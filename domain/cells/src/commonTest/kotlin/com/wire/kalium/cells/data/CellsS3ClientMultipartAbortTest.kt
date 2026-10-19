@@ -22,6 +22,7 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandler
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.request.HttpRequestData
 import io.ktor.client.request.HttpResponseData
 import io.ktor.http.HttpHeaders
@@ -35,6 +36,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException as KtorIOException
 import okio.FileSystem
 import okio.ForwardingFileSystem
 import okio.IOException
@@ -63,7 +65,10 @@ class CellsS3ClientMultipartAbortTest {
             client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
         }
 
-        assertContains(exception.message.orEmpty(), "read failed")
+        // Wrapped as a local-source failure (not a connectivity one), with the original error as its cause.
+        assertContains(exception.message.orEmpty(), "Failed to open upload source")
+        assertContains(exception.cause?.message.orEmpty(), "read failed")
+        assertTrue(exception !is NoNetworkConnectionException)
         assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
         assertTrue(recorder.partNumbers.isEmpty())
         assertEquals(0, recorder.completeCount)
@@ -86,6 +91,7 @@ class CellsS3ClientMultipartAbortTest {
         }
 
         assertContains(exception.message.orEmpty(), "Upload multipart part failed: 403")
+        assertTrue(exception !is NoNetworkConnectionException)
         assertEquals(listOf(1, 2), recorder.partNumbers)
         assertEquals(listOf(TEST_UPLOAD_ID), recorder.abortedUploadIds)
         assertEquals(0, recorder.completeCount)
@@ -250,6 +256,78 @@ class CellsS3ClientMultipartAbortTest {
         }
     }
 
+    @Test
+    fun givenConnectivityFailureDuringPartUpload_whenUploadingMultipart_thenUploadIsNotAborted() = runTest {
+        val (fileSystem, uploadPath) = createMultipartUploadFile()
+        val recorder = MultipartRecorder()
+        val client = multipartClient(
+            recorder = recorder,
+            fileSystem = fileSystem,
+            failPart = { partNumber -> SocketTimeoutException("simulated connection drop").takeIf { partNumber == 2 } },
+        )
+
+        val exception = assertFailsWith<NoNetworkConnectionException> {
+            client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
+        }
+
+        assertTrue(exception is NoNetworkConnectionException)
+        assertTrue(recorder.abortedUploadIds.isEmpty())
+        assertEquals(listOf(1), recorder.partNumbers)
+        assertEquals(0, recorder.completeCount)
+    }
+
+    @Test
+    fun givenGenericNetworkIOExceptionDuringPartUpload_whenUploadingMultipart_thenItIsClassifiedAsConnectivityFailure() = runTest {
+        // Regression test: an android.net wifi-off failure (UnknownHostException, ConnectException, ...) is
+        // on the JVM a plain java.io.IOException, not Ktor's ConnectTimeoutException/SocketTimeoutException
+        // specifically. A previous version of uploadParts()'s error handling caught this generic case and
+        // wrongly reclassified it as a local file problem instead of a connectivity one.
+        val (fileSystem, uploadPath) = createMultipartUploadFile()
+        val recorder = MultipartRecorder()
+        val client = multipartClient(
+            recorder = recorder,
+            fileSystem = fileSystem,
+            failPart = { partNumber -> KtorIOException("simulated network drop").takeIf { partNumber == 2 } },
+        )
+
+        val exception = assertFailsWith<NoNetworkConnectionException> {
+            client.upload(uploadPath, cellNode(path = "upload.txt"), onProgressUpdate = {})
+        }
+
+        assertTrue(exception is NoNetworkConnectionException)
+        assertTrue(recorder.abortedUploadIds.isEmpty())
+    }
+
+    @Test
+    fun givenConnectivityFailureDuringPartUpload_whenRetrying_thenAlreadyUploadedPartsAreNotResent() = runTest {
+        val (fileSystem, uploadPath) = createMultipartUploadFile()
+        val recorder = MultipartRecorder()
+        // Stays true for every internal retry attempt within the first client.upload() call, so that call
+        // genuinely exhausts its retries and fails, instead of the mock engine's own failure silently
+        // succeeding on requestWithStatusRetry's 2nd/3rd attempt within the same outer call.
+        var failPart2 = true
+        val client = multipartClient(
+            recorder = recorder,
+            fileSystem = fileSystem,
+            failPart = { partNumber -> SocketTimeoutException("simulated connection drop").takeIf { partNumber == 2 && failPart2 } },
+        )
+        val node = cellNode(path = "upload.txt")
+
+        assertFailsWith<NoNetworkConnectionException> {
+            client.upload(uploadPath, node, onProgressUpdate = {})
+        }
+        assertEquals(listOf(1), recorder.partNumbers)
+
+        // Retry on the same client/node: part 1 must not be re-uploaded.
+        failPart2 = false
+        client.upload(uploadPath, node, onProgressUpdate = {})
+
+        assertEquals(1, recorder.createCount)
+        assertEquals(listOf(1, 2), recorder.partNumbers)
+        assertEquals(1, recorder.completeCount)
+        assertTrue(recorder.abortedUploadIds.isEmpty())
+    }
+
     private fun createMultipartUploadFile() = createUploadFile(ByteArray(UPLOAD_SIZE) { it.toByte() })
 
     private fun TestScope.multipartClient(
@@ -258,9 +336,13 @@ class CellsS3ClientMultipartAbortTest {
         uploadId: String? = TEST_UPLOAD_ID,
         partStatus: (Int) -> HttpStatusCode = { HttpStatusCode.OK },
         abortStatus: HttpStatusCode = HttpStatusCode.NoContent,
+        // Evaluated on every attempt (including internal retries), unlike partStatus which only affects
+        // the HTTP response: this simulates the request never reaching the server at all. Returning an
+        // exception throws it instead of responding.
+        failPart: (Int) -> Throwable? = { null },
     ): CellsS3Client = createClient(
         httpClient = testHttpClient { request ->
-            respondToMultipartRequest(request, recorder, uploadId, partStatus, abortStatus)
+            respondToMultipartRequest(request, recorder, uploadId, partStatus, abortStatus, failPart)
         },
         fileSystem = fileSystem,
         config = fixedDateConfig(maxRegularUploadSize = 1, multipartChunkSize = CHUNK_SIZE),
@@ -272,13 +354,16 @@ class CellsS3ClientMultipartAbortTest {
         uploadId: String?,
         partStatus: (Int) -> HttpStatusCode,
         abortStatus: HttpStatusCode,
+        failPart: (Int) -> Throwable? = { null },
     ): HttpResponseData = when {
         request.method == HttpMethod.Post && request.url.parameters.names().contains("uploads") -> {
+            recorder.createCount++
             respond(content = initiateMultipartUploadBody(uploadId), status = HttpStatusCode.OK)
         }
 
         request.method == HttpMethod.Put -> {
             val partNumber = assertNotNull(request.url.parameters["partNumber"]).toInt()
+            failPart(partNumber)?.let { throw it }
             recorder.partNumbers += partNumber
             respond(
                 content = "",
@@ -307,6 +392,7 @@ class CellsS3ClientMultipartAbortTest {
     }
 
     private class MultipartRecorder {
+        var createCount = 0
         var completeCount = 0
         val partNumbers = mutableListOf<Int>()
         val abortedUploadIds = mutableListOf<String>()

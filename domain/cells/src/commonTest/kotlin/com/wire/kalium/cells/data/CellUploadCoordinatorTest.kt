@@ -33,11 +33,16 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.network.CurrentNetwork
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -538,6 +543,100 @@ class CellUploadCoordinatorTest {
         arrangement.close()
     }
 
+    @Test
+    fun given_draft_creation_fails_due_to_no_network_then_item_is_paused() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.manager.failWithNoNetworkFor += "a.txt"
+        arrangement.coordinator.enqueue(listOf(request("a.txt")))
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Paused, arrangement.state("a.txt"))
+        assertTrue(arrangement.coordinator.hasActiveUploads.value)
+        arrangement.close()
+    }
+
+    @Test
+    fun given_upload_fails_due_to_no_network_then_item_is_paused() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.coordinator.enqueue(listOf(request("a.txt")))
+        advanceUntilIdle()
+
+        arrangement.manager.emitConnectivityError("a.txt")
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Paused, arrangement.state("a.txt"))
+        arrangement.close()
+    }
+
+    @Test
+    fun given_paused_item_when_dismissAll_then_it_is_not_removed() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.manager.failWithNoNetworkFor += "a.txt"
+        arrangement.coordinator.enqueue(listOf(request("a.txt")))
+        advanceUntilIdle()
+
+        arrangement.coordinator.dismissAll()
+        advanceUntilIdle()
+
+        assertEquals(1, arrangement.coordinator.uploads.value.size)
+        arrangement.close()
+    }
+
+    @Test
+    fun given_paused_item_when_cancel_then_it_is_cancelled_without_calling_manager() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.manager.failWithNoNetworkFor += "a.txt"
+        arrangement.coordinator.enqueue(listOf(request("a.txt")))
+        advanceUntilIdle()
+
+        arrangement.coordinator.cancel(arrangement.id("a.txt"))
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Cancelled, arrangement.state("a.txt"))
+        assertTrue(arrangement.manager.cancelled.isEmpty())
+        arrangement.close()
+    }
+
+    @Test
+    fun given_paused_item_when_cancelAll_then_it_is_cancelled() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.manager.failWithNoNetworkFor += "a.txt"
+        arrangement.coordinator.enqueue(listOf(request("a.txt")))
+        advanceUntilIdle()
+
+        arrangement.coordinator.cancelAll()
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Cancelled, arrangement.state("a.txt"))
+        arrangement.close()
+    }
+
+    @Test
+    fun given_paused_item_when_network_reconnects_then_it_resumes_and_completes() = runTest {
+        val arrangement = Arrangement(this)
+        arrangement.manager.failWithNoNetworkFor += "a.txt"
+        arrangement.coordinator.enqueue(listOf(request("a.txt")))
+        advanceUntilIdle()
+        assertEquals(CellUploadState.Paused, arrangement.state("a.txt"))
+
+        // Stop failing, then flip through a disconnected state first, letting the collector actually
+        // process it before flipping back: the observer starts already "connected", and a StateFlow only
+        // redelivers on a value distinct from the last one actually collected, not every intermediate write.
+        arrangement.manager.failWithNoNetworkFor -= "a.txt"
+        arrangement.networkObserver.state.value = NetworkState.NotConnected
+        advanceUntilIdle()
+        arrangement.networkObserver.state.value = NetworkState.ConnectedWithInternet
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Uploading(), arrangement.state("a.txt"))
+
+        arrangement.manager.emit("a.txt", CellUploadEvent.UploadCompleted)
+        advanceUntilIdle()
+
+        assertEquals(CellUploadState.Completed, arrangement.state("a.txt"))
+        arrangement.close()
+    }
+
     private fun request(fileName: String, size: Long = 42L, conversationId: String = "cells") = CellUploadRequest(
         localPath = "/tmp/$fileName".toPath(),
         fileName = fileName,
@@ -554,8 +653,9 @@ class CellUploadCoordinatorTest {
         val manager = FakeCellUploadManager()
         val repository = FakeCellsRepository()
         val fileSystem = FakeFileSystem().apply { createDirectories("/tmp".toPath()) }
+        val networkObserver = FakeNetworkStateObserver()
         val coordinator = CellUploadCoordinatorImpl(
-            manager, repository, scope, maxConcurrentUploads, largeFileThresholdBytes, fileSystem
+            manager, repository, scope, networkObserver, maxConcurrentUploads, largeFileThresholdBytes, fileSystem
         )
 
         fun stageLocalFile(fileName: String) {
@@ -631,6 +731,7 @@ class CellUploadCoordinatorTest {
         private val flows = linkedMapOf<String, MutableSharedFlow<CellUploadEvent>>()
         private val infos = linkedMapOf<String, CellUploadInfo>()
         val failUploadFor = mutableSetOf<String>()
+        val failWithNoNetworkFor = mutableSetOf<String>()
         val dropFlowAfterUpload = mutableSetOf<String>()
         val failedBeforeSubscription = mutableSetOf<String>()
         val cancelled = mutableListOf<String>()
@@ -639,6 +740,14 @@ class CellUploadCoordinatorTest {
 
         fun emit(fileName: String, event: CellUploadEvent) {
             flows.getValue("node-$fileName").tryEmit(event)
+        }
+
+        /** Mirrors what [CellUploadManagerImpl.startUpload]'s onFailure does for a connectivity failure. */
+        fun emitConnectivityError(fileName: String) {
+            val uuid = "node-$fileName"
+            infos[uuid] = infos[uuid]?.copy(uploadFailed = true, isConnectivityIssue = true)
+                ?: CellUploadInfo(uploadFailed = true, isConnectivityIssue = true)
+            emit(fileName, CellUploadEvent.UploadError)
         }
 
         fun forget(fileName: String) {
@@ -653,7 +762,8 @@ class CellUploadCoordinatorTest {
         ): Either<NetworkFailure, CellNode> {
             uploadCalls += 1
             val fileName = destNodePath.substringAfterLast('/')
-            if (fileName in failUploadFor) return NetworkFailure.NoNetworkConnection(null).left()
+            if (fileName in failWithNoNetworkFor) return NetworkFailure.NoNetworkConnection(null).left()
+            if (fileName in failUploadFor) return NetworkFailure.ServerMiscommunication(Exception("upload failed")).left()
             val uuid = "node-$fileName"
             if (fileName !in dropFlowAfterUpload) {
                 flows[uuid] = MutableSharedFlow(extraBufferCapacity = 16)
@@ -682,5 +792,11 @@ class CellUploadCoordinatorTest {
         override fun getUploadInfo(nodeUuid: String): CellUploadInfo? = infos[nodeUuid]
 
         override fun isUploading(nodeUuid: String): Boolean = flows.containsKey(nodeUuid)
+    }
+
+    private class FakeNetworkStateObserver : NetworkStateObserver {
+        val state = MutableStateFlow<NetworkState>(NetworkState.ConnectedWithInternet)
+        override fun observeNetworkState(): StateFlow<NetworkState> = state
+        override fun observeCurrentNetwork(): StateFlow<CurrentNetwork?> = MutableStateFlow(null)
     }
 }

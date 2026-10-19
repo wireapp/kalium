@@ -3251,6 +3251,7 @@ public class UserSessionScope internal constructor(
             sessionManager = sessionManager,
             accessTokenApi = authenticatedNetworkContainer.accessTokenApi,
             userId = userId,
+            networkStateObserver = networkStateObserver,
         )
     }
     public val cells: CellsScope by cellsLazy

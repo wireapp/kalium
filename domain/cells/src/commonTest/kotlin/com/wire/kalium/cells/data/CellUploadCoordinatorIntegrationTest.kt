@@ -26,8 +26,12 @@ import com.wire.kalium.cells.domain.model.PreCheckResult
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
@@ -36,6 +40,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -150,7 +155,12 @@ class CellUploadCoordinatorIntegrationTest {
         private val repository = mock<CellsRepository>(mode = MockMode.autoUnit)
         val fileSystem = FakeFileSystem().apply { createDirectories("/staged".toPath()) }
         val manager = CellUploadManagerImpl(repository, scope, fileSystem)
-        val coordinator = CellUploadCoordinatorImpl(manager, repository, scope, maxConcurrentUploads = 1, fileSystem = fileSystem)
+        private val networkObserver = mock<NetworkStateObserver> {
+            every { observeNetworkState() } returns MutableStateFlow(NetworkState.ConnectedWithInternet)
+        }
+        val coordinator = CellUploadCoordinatorImpl(
+            manager, repository, scope, networkObserver, maxConcurrentUploads = 1, fileSystem = fileSystem
+        )
         val transfers = mutableMapOf<String, CompletableDeferred<Unit>>()
         val published = mutableListOf<NodeIdAndVersion>()
         var afterPreCheck: () -> Unit = {}
@@ -171,7 +181,7 @@ class CellUploadCoordinatorIntegrationTest {
                 val progress = invocation.args[2] as (Long) -> Unit
                 if (failNextTransfer) {
                     failNextTransfer = false
-                    NetworkFailure.NoNetworkConnection(null).left()
+                    NetworkFailure.ServerMiscommunication(Exception("upload failed")).left()
                 } else {
                     val transfer = CompletableDeferred<Unit>()
                     transfers[node.path.substringAfterLast('/')] = transfer

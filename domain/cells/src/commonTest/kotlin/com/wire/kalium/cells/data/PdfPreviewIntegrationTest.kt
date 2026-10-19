@@ -104,7 +104,7 @@ class PdfPreviewIntegrationTest {
         val requests = mutableListOf<String>()
         client(MIXED_PREVIEWS, requests = requests).use { client ->
             val scope = CellsScope(client, CellsScope.CellScopeDao(mock(), mock(), mock(), mock(), mock(), mock(), mock(), config),
-                mock(), mock(), UserId("self", "domain"))
+                mock(), mock(), UserId("self", "domain"), mock())
             try {
                 assertSame(scope.getPdfPreviewUrl, scope.getPdfPreviewUrl)
                 assertEquals(Either.Right("pdf"), scope.getPdfPreviewUrl("asset"))

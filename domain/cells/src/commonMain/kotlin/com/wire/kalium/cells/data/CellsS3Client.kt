@@ -41,6 +41,8 @@ import io.ktor.utils.io.ByteWriteChannel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.io.IOException as KtorIOException
@@ -55,6 +57,7 @@ import okio.buffer
 import okio.use
 import kotlin.random.Random
 
+@Suppress("TooManyFunctions")
 internal class CellsS3Client(
     private val httpClient: HttpClient,
     private val endpointProvider: suspend () -> String,
@@ -62,6 +65,13 @@ internal class CellsS3Client(
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
     private val config: CellsS3ClientConfig = CellsS3ClientConfig(),
 ) : CellsAwsClient {
+
+    // Keyed by node.uuid, which stays stable across retries of the same logical upload (see
+    // CellUploadManagerImpl.retryUpload). Lets a multipart upload resume from its last completed part
+    // instead of restarting after a connectivity failure. Mutex-guarded since multiple uploads can run
+    // concurrently, same pattern as CellsScope's nodeServiceApiMutex.
+    private val multipartUploadsMutex = Mutex()
+    private val inProgressMultipartUploads = mutableMapOf<String, MultipartUploadState>()
 
     @Suppress("TooGenericExceptionCaught") // Sink and callback implementations can throw arbitrary exceptions.
     override suspend fun download(
@@ -109,14 +119,21 @@ internal class CellsS3Client(
         )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
         val length = fileSystem.metadata(path).size
             ?: throw IOException("Upload source size is not available")
 
-        if (length > config.maxRegularUploadSize) {
-            uploadMultipart(path, length, node, onProgressUpdate)
-        } else {
-            uploadRegular(path, length, node, onProgressUpdate)
+        try {
+            if (length > config.maxRegularUploadSize) {
+                uploadMultipart(path, length, node, onProgressUpdate)
+            } else {
+                uploadRegular(path, length, node, onProgressUpdate)
+            }
+        } catch (cause: CancellationException) {
+            throw cause
+        } catch (cause: Throwable) {
+            if (cause.isConnectivityFailure()) throw NoNetworkConnectionException(cause) else throw cause
         }
     }
 
@@ -156,28 +173,71 @@ internal class CellsS3Client(
         node: CellNodeDTO,
         onProgressUpdate: (Long) -> Unit,
     ) {
-        val uploadId = createMultipartUpload(node)
+        val resumed = multipartState(node.uuid)
+        val uploadId = resumed?.uploadId ?: createMultipartUpload(node).also {
+            recordMultipartProgress(node.uuid, it, emptyList())
+        }
         try {
-            val completedParts = uploadParts(path, length, node.path, uploadId, onProgressUpdate)
+            val completedParts = uploadParts(
+                nodeUuid = node.uuid,
+                alreadyCompleted = resumed?.completedParts.orEmpty(),
+                path = path,
+                length = length,
+                objectKey = node.path,
+                uploadId = uploadId,
+                onProgressUpdate = onProgressUpdate,
+            )
             completeMultipartUpload(node.path, uploadId, completedParts)
+            clearMultipartState(node.uuid)
         } catch (cause: Throwable) {
-            abortMultipartUpload(node.path, uploadId)
+            // A connectivity failure leaves the multipart upload open server-side, with the parts already
+            // sent recorded in inProgressMultipartUploads, so the next attempt resumes instead of
+            // restarting. Anything else (bad request, server error, local file problem, cancellation) is
+            // terminal: release the server-side upload and forget the recorded progress.
+            if (!cause.isConnectivityFailure()) {
+                clearMultipartState(node.uuid)
+                abortMultipartUpload(node.path, uploadId)
+            }
             throw cause
         }
     }
 
+    private suspend fun multipartState(nodeUuid: String): MultipartUploadState? =
+        multipartUploadsMutex.withLock { inProgressMultipartUploads[nodeUuid] }
+
+    private suspend fun recordMultipartProgress(nodeUuid: String, uploadId: String, completedParts: List<CompletedS3Part>) {
+        multipartUploadsMutex.withLock { inProgressMultipartUploads[nodeUuid] = MultipartUploadState(uploadId, completedParts) }
+    }
+
+    private suspend fun clearMultipartState(nodeUuid: String) {
+        multipartUploadsMutex.withLock { inProgressMultipartUploads.remove(nodeUuid) }
+    }
+
+    @Suppress("LongParameterList")
     private suspend fun uploadParts(
+        nodeUuid: String,
+        alreadyCompleted: List<CompletedS3Part>,
         path: Path,
         length: Long,
         objectKey: String,
         uploadId: String,
         onProgressUpdate: (Long) -> Unit,
     ): List<CompletedS3Part> {
-        val completedParts = mutableListOf<CompletedS3Part>()
-        var uploaded = 0L
-        var partNumber = 1
+        val completedParts = alreadyCompleted.toMutableList()
+        // Safe because multipartChunkSize is fixed for the lifetime of this config, and every completed
+        // part except possibly the last one is full-sized — if the last one were the final part, this
+        // upload would already have reached completeMultipartUpload() and never gotten back here.
+        val resumeOffset = alreadyCompleted.size.toLong() * config.multipartChunkSize
+        var uploaded = resumeOffset
+        var partNumber = alreadyCompleted.size + 1
 
-        fileSystem.source(path).buffer().use { source ->
+        // Local-source failures are classified right where they happen (openUploadSource/skipToResumeOffset/
+        // readPart all throw UploadSourceException on their own), instead of via a catch-all around this
+        // whole block: uploadPart() below is a genuine network call, and on the JVM okio.IOException and
+        // every network IOException share the same java.io.IOException runtime type, so a blanket catch here
+        // would misclassify a real connectivity failure (e.g. wifi dropping) as a local file problem.
+        openUploadSource(path).use { source ->
+            skipToResumeOffset(source, resumeOffset)
             while (uploaded < length) {
                 val partSize = minOf(config.multipartChunkSize, length - uploaded)
                 val partData = source.readPart(partSize)
@@ -185,11 +245,32 @@ internal class CellsS3Client(
                 uploaded += partData.size
                 onProgressUpdate(uploaded)
                 completedParts += CompletedS3Part(partNumber, eTag)
+                recordMultipartProgress(nodeUuid, uploadId, completedParts.toList())
                 partNumber++
             }
         }
 
         return completedParts
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun openUploadSource(path: Path): BufferedSource = try {
+        fileSystem.source(path).buffer()
+    } catch (cause: CancellationException) {
+        throw cause
+    } catch (cause: IOException) {
+        throw UploadSourceException("Failed to open upload source", cause)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun skipToResumeOffset(source: BufferedSource, resumeOffset: Long) {
+        try {
+            source.skip(resumeOffset)
+        } catch (cause: CancellationException) {
+            throw cause
+        } catch (cause: IOException) {
+            throw UploadSourceException("Failed to seek upload source", cause)
+        }
     }
 
     private suspend fun createMultipartUpload(node: CellNodeDTO): String {
@@ -215,7 +296,7 @@ internal class CellsS3Client(
             },
         )
         return responseBody.multipartUploadId()
-            ?: throw IOException("Create multipart upload response did not include an UploadId")
+            ?: throw S3RequestException("Create multipart upload response did not include an UploadId")
     }
 
     private suspend fun uploadPart(
@@ -249,7 +330,7 @@ internal class CellsS3Client(
             },
         )
         return eTag
-            ?: throw IOException("Upload multipart part response did not include an ETag")
+            ?: throw S3RequestException("Upload multipart part response did not include an ETag")
     }
 
     private suspend fun completeMultipartUpload(
@@ -417,7 +498,7 @@ internal class CellsS3Client(
             } catch (cause: UploadSourceException) {
                 throw cause
             } catch (cause: IOException) {
-                throw UploadSourceException("Failed to read upload source")
+                throw UploadSourceException("Failed to read upload source", cause)
             }
             channel.flushUpload()
         }
@@ -482,6 +563,11 @@ internal data class CompletedS3Part(
     val eTag: String,
 )
 
+private data class MultipartUploadState(
+    val uploadId: String,
+    val completedParts: List<CompletedS3Part>,
+)
+
 internal fun CellNodeDTO.createDraftNodeHeaders(): Map<String, String> = mapOf(
     "x-amz-meta-draft-mode" to "true",
     "x-amz-meta-create-resource-uuid" to uuid,
@@ -492,9 +578,13 @@ private fun BufferedSource.readPart(size: Long): ByteArray {
     val buffer = Buffer()
     var remaining = size
     while (remaining > 0L) {
-        val read = read(buffer, remaining)
+        val read = try {
+            read(buffer, remaining)
+        } catch (cause: IOException) {
+            throw UploadSourceException("Failed to read upload source", cause)
+        }
         if (read == -1L) {
-            throw IOException("Unexpected end of upload source")
+            throw UploadSourceException("Unexpected end of upload source")
         }
         remaining -= read
     }
@@ -577,7 +667,30 @@ private class RetryableS3Exception(message: String) : S3RequestException(message
  */
 private class UnauthorizedS3Exception(message: String) : S3RequestException(message)
 
-private class UploadSourceException(message: String) : S3RequestException(message)
+private class UploadSourceException(message: String, cause: Throwable? = null) : S3RequestException(message, cause)
+
+/**
+ * Thrown by [CellsS3Client.upload] once every retry attempt for a transport-level failure (timeout, dropped
+ * connection, failed write channel) has been exhausted, so [CellsDataSource.uploadFile] can tell this apart
+ * from a failure the server itself reported (wrong credentials, bad request, 5xx) without needing to know
+ * about any of the private exception types above.
+ */
+internal class NoNetworkConnectionException(cause: Throwable) : Exception(cause)
+
+/**
+ * Whether [this] indicates the device lost its connection, as opposed to the server rejecting the request
+ * or a local file problem. [S3RequestException] (and its subtypes, including [UploadSourceException]) is
+ * checked explicitly and before the generic IOException case below: on the JVM, [okio.IOException] and
+ * [KtorIOException] are both `actual typealias`-ed to `java.io.IOException`, so without this, any S3
+ * protocol error or local file-read failure — both of which extend [S3RequestException], which itself
+ * extends [okio.IOException] — would otherwise be wrongly classified as a connectivity failure too.
+ */
+private fun Throwable.isConnectivityFailure(): Boolean = when (this) {
+    is ConnectTimeoutException, is SocketTimeoutException, is RetryableTransportException -> true
+    is S3RequestException -> false
+    is KtorIOException -> true
+    else -> false
+}
 
 private sealed interface S3Attempt<out T> {
     data class Success<T>(val value: T) : S3Attempt<T>
