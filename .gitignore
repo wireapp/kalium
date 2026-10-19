@@ -116,3 +116,4 @@ generated/
 __pycache__/
 AGENTS.md
 CLAUDE.md
+/.agents/
