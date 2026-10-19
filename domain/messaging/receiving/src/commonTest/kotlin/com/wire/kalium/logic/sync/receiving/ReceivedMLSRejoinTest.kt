@@ -120,7 +120,7 @@ class ReceivedMLSRejoinTest {
             error("Unexpected transient message send")
 
         override suspend fun sendTransientTargetedMessage(
-            batch: MLSMessageApi.TransientTargetedMessageBatch
+            batch: MLSMessageApi.TargetedMessageBatch
         ): NetworkResponse<SendMLSMessageResponse> = error("Unexpected transient targeted message send")
 
         override suspend fun sendCommitBundle(bundle: MLSMessageApi.CommitBundle): NetworkResponse<SendMLSMessageResponse> {
