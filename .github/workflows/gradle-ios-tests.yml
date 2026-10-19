@@ -30,7 +30,7 @@ jobs:
       pull-requests: write # required to publish pull request comments
     runs-on: macos-26
     env:
-      # Leave room for the simulator and native linker on the free 7 GB runner.
+      # Leave room for the native linker on the free 7 GB runner.
       GRADLE_OPTS: -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
 
     steps:
@@ -63,9 +63,6 @@ jobs:
             gradle-ios-macos26-${{ runner.arch }}-jdk21-v1-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/*.versions.toml', 'gradle.properties') }}-
             gradle-ios-macos26-${{ runner.arch }}-jdk21-v1-
 
-      - name: Boot iOS simulator
-        run: python3 scripts/boot-ios-simulator.py
-
       - name: Restore Kotlin/Native tooling cache (.konan)
         if: steps.setup-gradle.outputs.cache-enabled == 'true'
         id: konan-cache
@@ -76,39 +73,57 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-konan-
 
-      - name: iOS Tests
-        id: ios-tests
-        # Develop runs the complete suite to populate task outputs for future PRs.
-        # PR and merge-queue runs keep using affected-module detection.
+      - name: Record runner memory in the background
         run: |
           mkdir -p build/ci
-          (
-            while true; do
-              date -u
-              sysctl vm.swapusage
-              vm_stat
-              sleep 60
-            done
-          ) > build/ci/ios-runner-memory.log 2>&1 &
-          memory_monitor_pid=$!
-          trap 'kill "$memory_monitor_pid" 2>/dev/null || true' EXIT
+          # The runner stops this process when the job ends.
+          nohup bash -c 'while true; do date -u; sysctl vm.swapusage; vm_stat; sleep 60; done' \
+            > build/ci/ios-runner-memory.log 2>&1 &
 
+      - name: Build iOS test binaries
+        id: build-tests
+        # Develop runs the complete suite to populate task outputs for future PRs.
+        # PR and merge-queue runs keep using affected-module detection.
+        # Link before booting the simulator: together they exceed the runner's memory and swap for hours.
+        run: |
           gradle_args=(--console=plain -Dorg.gradle.logging.level=lifecycle --profile)
           if [[ "$RUN_ALL_TESTS" == "true" ]]; then
-            ./gradlew "${gradle_args[@]}" iosSimulatorArm64Test
+            echo iosSimulatorArm64Test > build/ci/ios-test-tasks.txt
           else
-            # Finish selection before starting tests, so one Gradle daemon can be reused.
+            # Finish selection before building, so one Gradle daemon can be reused.
             ./gradlew "${gradle_args[@]}" iOSOnlyAffectedTest --list-only
-            test_tasks=()
-            while IFS= read -r task; do
-              [[ -z "$task" ]] || test_tasks+=("$task")
-            done < build/affected-tests/iOSOnlyAffectedTest.txt
-            if (( ${#test_tasks[@]} > 0 )); then
-              ./gradlew "${gradle_args[@]}" "${test_tasks[@]}"
-            fi
+            cp build/affected-tests/iOSOnlyAffectedTest.txt build/ci/ios-test-tasks.txt
           fi
+
+          link_tasks=()
+          while IFS= read -r task; do
+            [[ -z "$task" ]] || link_tasks+=("${task%iosSimulatorArm64Test}linkDebugTestIosSimulatorArm64")
+          done < build/ci/ios-test-tasks.txt
+          if (( ${#link_tasks[@]} > 0 )); then
+            ./gradlew "${gradle_args[@]}" "${link_tasks[@]}"
+            echo "has-tests=true" >> "$GITHUB_OUTPUT"
+          fi
+          # Release the daemon heap for the simulator. The test run only executes the linked binaries.
+          ./gradlew --stop
         env:
           RUN_ALL_TESTS: ${{ github.event_name == 'push' }}
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Boot iOS simulator
+        if: steps.build-tests.outputs.has-tests == 'true'
+        run: python3 scripts/boot-ios-simulator.py
+
+      - name: iOS Tests
+        id: ios-tests
+        if: steps.build-tests.outputs.has-tests == 'true'
+        run: |
+          test_tasks=()
+          while IFS= read -r task; do
+            [[ -z "$task" ]] || test_tasks+=("$task")
+          done < build/ci/ios-test-tasks.txt
+          ./gradlew --console=plain -Dorg.gradle.logging.level=lifecycle --profile "${test_tasks[@]}"
+        env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
