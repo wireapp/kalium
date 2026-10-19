@@ -172,7 +172,8 @@ class SendEditMultipartMessageUseCaseTest {
         private val messageSender = object : MessageSender {
             override suspend fun sendMessageWithOutcome(
                 message: Message.Sendable,
-                messageTarget: MessageTarget
+                messageTarget: MessageTarget,
+                transient: Boolean
             ): Either<CoreFailure, Boolean> = error("Not used by these tests")
 
             override suspend fun cancelPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Boolean> =
@@ -180,7 +181,8 @@ class SendEditMultipartMessageUseCaseTest {
             override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String) = Unit.right()
             override suspend fun sendMessage(
                 message: Message.Sendable,
-                messageTarget: MessageTarget
+                messageTarget: MessageTarget,
+                transient: Boolean
             ): Either<CoreFailure, Unit> {
                 return sendMessage()
             }
