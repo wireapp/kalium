@@ -247,7 +247,10 @@ class MLSClientImpl private constructor(
                     val bufferedMessages = when (decryptedMessage) {
                         is com.wire.crypto.DecryptedMessage.Commit -> decryptedMessage.bufferedMessages.orEmpty()
                         is com.wire.crypto.DecryptedMessage.Proposal,
-                        is com.wire.crypto.DecryptedMessage.Text -> emptyList()
+                        is com.wire.crypto.DecryptedMessage.ApplicationMessage,
+                        is com.wire.crypto.DecryptedMessage.Transient,
+                        is com.wire.crypto.DecryptedMessage.TransientTargeted,
+                        is com.wire.crypto.DecryptedMessage.PersistedTargeted -> emptyList()
                     }
 
                     MLSDecryptResult.Success(
@@ -324,7 +327,15 @@ class MLSClientImpl private constructor(
             context.checkCredentials()
         }
 
-        override suspend fun isE2EIEnabled(): Boolean = context.e2eiIsEnabled(defaultCipherSuite)
+        override suspend fun isE2EIEnabled(): Boolean {
+            val x509Credentials = coreCrypto.findCredentials(
+                clientId = clientId,
+                cipherSuite = defaultCipherSuite,
+                credentialType = CoreCredentialType.X509
+            )
+            x509Credentials.forEach { it.close() }
+            return x509Credentials.isNotEmpty()
+        }
 
         override suspend fun getGroupState(groupId: MLSGroupId): E2EIConversationState = groupId.toCrypto().useNative {
             context.e2eiConversationState(it).toCryptography()
