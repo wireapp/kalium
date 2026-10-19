@@ -20,16 +20,39 @@ package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.globalDatabaseProvider
+import com.wire.kalium.persistence.db.userDatabaseBuilder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.TestDispatcher
+
+private val userDatabases = mutableMapOf<UserIDEntity, UserDatabaseBuilder>()
+private var globalDatabase: GlobalDatabaseBuilder? = null
 
 internal actual fun createTestDatabase(
     userId: UserIDEntity,
     dispatcher: TestDispatcher
-): UserDatabaseBuilder = TODO("JavaScript Database not yet supported")
+): UserDatabaseBuilder = userDatabaseBuilder(
+    platformDatabaseData = PlatformDatabaseData(),
+    userId = userId,
+    passphrase = null,
+    dispatcher = dispatcher,
+    enableWAL = false,
+).also { userDatabases[userId] = it }
 
-internal actual fun deleteTestDatabase(userId: UserIDEntity) { TODO("JavaScript Database not yet supported") }
+internal actual fun deleteTestDatabase(userId: UserIDEntity) {
+    userDatabases.remove(userId)?.close()
+}
 
-internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder = TODO("JavaScript Database not yet supported")
+internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder = globalDatabaseProvider(
+    platformDatabaseData = PlatformDatabaseData(),
+    queriesContext = Dispatchers.Default,
+    passphrase = null,
+    enableWAL = false,
+).also { globalDatabase = it }
 
-internal actual fun deleteTestGlobalDatabase() { TODO("JavaScript Database not yet supported") }
+internal actual fun deleteTestGlobalDatabase() {
+    globalDatabase?.close()
+    globalDatabase = null
+}

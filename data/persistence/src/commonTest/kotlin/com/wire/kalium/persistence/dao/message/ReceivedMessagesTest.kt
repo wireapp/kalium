@@ -31,21 +31,21 @@ class ReceivedMessagesTest : BaseDatabaseTest() {
                 content = MessageEntityContent.Text("required text"), date = Instant.parse("2026-09-05T12:00:00Z"),
             )
             for (table in EFFECT_TABLES) {
-                database.sqlDriver.execute(null, "CREATE TRIGGER fail_effect BEFORE INSERT ON $table BEGIN SELECT RAISE(ABORT, 'failed'); END", 0)
+                database.sqlDriver.execute(null, "CREATE TRIGGER fail_effect BEFORE INSERT ON $table BEGIN SELECT RAISE(ABORT, 'failed'); END", 0).await()
                 assertFails { database.messageDAO.insertReceivedMessage(message, true) }
                 assertNull(database.messageDAO.getMessageById(message.id, conversation.id))
                 assertEquals(conversation.lastModifiedDate, database.conversationDAO.getConversationById(conversation.id)?.lastModifiedDate)
-                database.sqlDriver.execute(null, "DROP TRIGGER fail_effect", 0)
+                database.sqlDriver.execute(null, "DROP TRIGGER fail_effect", 0).await()
             }
             database.messageDAO.insertReceivedMessage(message, true)
             val stored = database.messageDAO.getMessageById(message.id, conversation.id)
-            database.sqlDriver.execute(null, "DELETE FROM UnreadEvent", 0)
-            database.sqlDriver.execute(null, "UPDATE Conversation SET last_modified_date = 2000000000000, last_notified_date = 2000000000000", 0)
+            database.sqlDriver.execute(null, "DELETE FROM UnreadEvent", 0).await()
+            database.sqlDriver.execute(null, "UPDATE Conversation SET last_modified_date = 2000000000000, last_notified_date = 2000000000000", 0).await()
             val afterRead = database.conversationDAO.getConversationById(conversation.id)
             for (table in EFFECT_TABLES) {
-                database.sqlDriver.execute(null, "CREATE TRIGGER repeat_$table BEFORE INSERT ON $table BEGIN SELECT RAISE(ABORT, 'repeated'); END", 0)
+                database.sqlDriver.execute(null, "CREATE TRIGGER repeat_$table BEFORE INSERT ON $table BEGIN SELECT RAISE(ABORT, 'repeated'); END", 0).await()
             }
-            database.sqlDriver.execute(null, "CREATE TRIGGER repeat_order BEFORE UPDATE ON Conversation BEGIN SELECT RAISE(ABORT, 'repeated'); END", 0)
+            database.sqlDriver.execute(null, "CREATE TRIGGER repeat_order BEFORE UPDATE ON Conversation BEGIN SELECT RAISE(ABORT, 'repeated'); END", 0).await()
             database.messageDAO.insertReceivedMessage(message, true)
             assertEquals(afterRead, database.conversationDAO.getConversationById(conversation.id))
             assertEquals(stored, database.messageDAO.getMessageById(message.id, conversation.id))

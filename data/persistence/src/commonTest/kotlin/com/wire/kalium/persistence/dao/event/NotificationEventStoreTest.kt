@@ -44,7 +44,7 @@ class NotificationEventStoreTest : BaseDatabaseTest() {
                 "DELETE ON Metadata WHEN OLD.key = 'recovery-one'",
             )
             for (failure in failures) {
-                database.sqlDriver.execute(null, "CREATE TRIGGER fail_ack BEFORE $failure BEGIN SELECT RAISE(ABORT, 'failed'); END", 0)
+                database.sqlDriver.execute(null, "CREATE TRIGGER fail_ack BEFORE $failure BEGIN SELECT RAISE(ABORT, 'failed'); END", 0).await()
                 assertFails { store.markProcessed(listOf("one", "two"), records) }
                 assertEquals(false, database.eventDAO.getEventById("one")?.isProcessed)
                 assertEquals(false, database.eventDAO.getEventById("two")?.isProcessed)
@@ -52,7 +52,7 @@ class NotificationEventStoreTest : BaseDatabaseTest() {
                 assertEquals(1_000L, store.deferredUntil("one"))
                 assertEquals(2_000L, store.deferredUntil("two"))
                 assertEquals("two", store.cursor())
-                database.sqlDriver.execute(null, "DROP TRIGGER fail_ack", 0)
+                database.sqlDriver.execute(null, "DROP TRIGGER fail_ack", 0).await()
             }
             assertFails { store.markProcessed(listOf("missing"), mapOf("missing" to listOf("recovery-one"))) }
             assertEquals("pending", database.metadataDAO.valueByKey("recovery-one"))
@@ -153,12 +153,12 @@ class NotificationEventStoreTest : BaseDatabaseTest() {
                 null,
                 "CREATE TRIGGER fail_page BEFORE INSERT ON Events WHEN NEW.event_id = 'two' BEGIN SELECT RAISE(ABORT, 'page failed'); END",
                 0
-            )
+            ).await()
             val page = listOf(NewEventEntity("one", "[]", false, false), NewEventEntity("two", null, false, false))
             assertFails { events.storePage(null, page) }
             assertNull(events.cursor())
             assertNull(events.nextPending())
-            database.sqlDriver.execute(null, "DROP TRIGGER fail_page", 0)
+            database.sqlDriver.execute(null, "DROP TRIGGER fail_page", 0).await()
             events.storePage(null, page)
             assertEquals("two", events.cursor())
             assertEquals("one", events.nextPending()?.eventId)
@@ -224,13 +224,13 @@ class NotificationEventStoreTest : BaseDatabaseTest() {
             database.eventDAO.markEventAsProcessed("anchor")
             val page = listOf(NewEventEntity("next", "[]", false, false), NewEventEntity("transient", "[]", true, false))
             for (failure in listOf("INSERT ON Events WHEN NEW.event_id = 'transient'", "INSERT ON Metadata")) {
-                database.sqlDriver.execute(null, "CREATE TRIGGER fail_page BEFORE $failure BEGIN SELECT RAISE(ABORT, 'failed'); END", 0)
+                database.sqlDriver.execute(null, "CREATE TRIGGER fail_page BEFORE $failure BEGIN SELECT RAISE(ABORT, 'failed'); END", 0).await()
                 assertFails { store.storePage("anchor", page) }
                 assertEquals("anchor", store.cursor())
                 assertNull(store.nextPending())
                 assertNull(database.eventDAO.getEventById("next"))
                 assertNull(database.eventDAO.getEventById("transient"))
-                database.sqlDriver.execute(null, "DROP TRIGGER fail_page", 0)
+                database.sqlDriver.execute(null, "DROP TRIGGER fail_page", 0).await()
             }
             store.storePage("anchor", page)
             assertEquals("next", store.cursor())

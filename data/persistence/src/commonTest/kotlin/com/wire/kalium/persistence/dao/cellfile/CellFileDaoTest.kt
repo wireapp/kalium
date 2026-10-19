@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.cellfile
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
@@ -118,7 +119,7 @@ class CellFileDaoTest : BaseDatabaseTest() {
         cellFileDao.upsert(file)
 
         assertEquals(file, cellFileDao.getById(file.uuid))
-        assertNull(database.database.cellFilesQueries.selectById(file.uuid).executeAsOne().assetPath)
+        assertNull(database.database.cellFilesQueries.selectById(file.uuid).awaitAsOne().assetPath)
     }
 
     @Test
@@ -129,7 +130,7 @@ class CellFileDaoTest : BaseDatabaseTest() {
         assertEquals(file, cellFileDao.getById(file.uuid))
         assertEquals(listOf(file), cellFileDao.observeOfflineFiles().first())
         assertEquals(listOf(file), cellFileDao.observeOfflineFilesByConversationId(file.conversationId).first())
-        assertEquals(file.remotePath, database.database.cellFilesQueries.selectById(file.uuid).executeAsOne().assetPath)
+        assertEquals(file.remotePath, database.database.cellFilesQueries.selectById(file.uuid).awaitAsOne().assetPath)
     }
 
     @Test
@@ -152,7 +153,7 @@ class CellFileDaoTest : BaseDatabaseTest() {
             null,
             "INSERT INTO CellFile(uuid, downloadedAt, assetPath) VALUES ('file-id', 0, 'conv/reports/file.pdf')",
             0,
-        )
+        ).await()
         val file = offlineFile()
         cellFileDao.upsert(file)
 
