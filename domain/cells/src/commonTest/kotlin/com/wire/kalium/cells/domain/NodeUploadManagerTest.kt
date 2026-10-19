@@ -23,6 +23,7 @@ import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
+import com.wire.kalium.cells.domain.model.NodeLocator
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PaginatedList
@@ -374,6 +375,7 @@ private class TestRepository : CellsRepository {
     }
 
     override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
+    override suspend fun moveNodes(nodes: List<NodeLocator>, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun restoreNode(uuid: String): Either<NetworkFailure, Unit> = Unit.right()
     override suspend fun getAllTags(): Either<NetworkFailure, List<String>> = listOf<String>().right()

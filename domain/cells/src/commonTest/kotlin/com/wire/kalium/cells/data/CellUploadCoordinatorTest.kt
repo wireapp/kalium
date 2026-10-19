@@ -25,6 +25,7 @@ import com.wire.kalium.cells.domain.CellUploadState
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
+import com.wire.kalium.cells.domain.model.NodeLocator
 import com.wire.kalium.cells.domain.model.NodePreview
 import com.wire.kalium.cells.domain.model.NodeVersion
 import com.wire.kalium.cells.domain.model.PublicLink
@@ -713,6 +714,7 @@ class CellUploadCoordinatorTest {
         override suspend fun createFolder(folderName: String): Either<NetworkFailure, List<CellNode>> = throw NotImplementedError()
         override suspend fun createFile(folderName: String, contentType: String, templateUuid: String): Either<NetworkFailure, List<CellNode>> = throw NotImplementedError()
         override suspend fun moveNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
+        override suspend fun moveNodes(nodes: List<NodeLocator>, targetPath: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
         override suspend fun renameNode(uuid: String, path: String, targetPath: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
         override suspend fun restoreNode(uuid: String): Either<NetworkFailure, Unit> = throw NotImplementedError()
         override suspend fun getAllTags(): Either<NetworkFailure, List<String>> = throw NotImplementedError()
