@@ -135,6 +135,11 @@ python3 -m venv .venv
 .venv/bin/python nse/scripts/run-ios-tests.py --continue
 ```
 
+CI then runs `macosArm64Test` for the modules with macOS-only code: `:core:logger`,
+`:logic` and `:share`, plus `AppleAccountRuntimeOwnerTest` in `:domain:messaging:receiving`.
+The rest of the receiving suite runs on the simulator only, because its X.509 tests need the
+fixture certificate that `run-ios-tests.py` trusts on the simulator.
+
 `./gradlew iOSOnlyAffectedTest` runs `iosSimulatorArm64Test` for the affected modules when
 affected-module data is available, and for all modules otherwise.
 

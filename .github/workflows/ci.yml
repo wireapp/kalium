@@ -131,7 +131,7 @@ jobs:
     name: iOS tests
     needs: static-analysis
     runs-on: [self-hosted, macOS, ARM64, wire-nirvana]
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -156,6 +156,19 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/kalium-ios-tests"
           "$RUNNER_TEMP/kalium-ios-tests/bin/pip" install -r nse/scripts/requirements-ios-tests.txt
           "$RUNNER_TEMP/kalium-ios-tests/bin/python" nse/scripts/run-ios-tests.py --continue
+
+      # Modules with macOS-only code. The rest of the receiving suite runs on the simulator only:
+      # its X.509 tests need the fixture certificate that run-ios-tests.py trusts there.
+      - name: Run macOS tests
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          ./gradlew --continue
+          :core:logger:macosArm64Test
+          :logic:macosArm64Test
+          :share:macosArm64Test
+          :domain:messaging:receiving:macosArm64Test --tests com.wire.kalium.logic.sync.receiving.AppleAccountRuntimeOwnerTest
 
       - name: Upload test reports on failure
         if: failure()
