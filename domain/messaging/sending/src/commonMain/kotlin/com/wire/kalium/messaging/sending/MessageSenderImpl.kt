@@ -25,6 +25,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapNetworkMlsFailureIfApplicable
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
@@ -52,6 +53,7 @@ import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
@@ -180,11 +182,19 @@ class MessageSenderImpl(
         )
     }
 
-    override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
-        sendMessageWithOutcome(message, messageTarget).map { Unit }
+    override suspend fun sendMessage(
+        message: Message.Sendable,
+        messageTarget: MessageTarget,
+        transient: Boolean
+    ): Either<CoreFailure, Unit> =
+        sendMessageWithOutcome(message, messageTarget, transient).map { Unit }
 
-    override suspend fun sendMessageWithOutcome(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Boolean> =
-        sendPreparedMessage(message, messageTarget, remainingAttempts = 1)
+    override suspend fun sendMessageWithOutcome(
+        message: Message.Sendable,
+        messageTarget: MessageTarget,
+        transient: Boolean
+    ): Either<CoreFailure, Boolean> =
+        sendPreparedMessage(message, messageTarget, transient, remainingAttempts = 1)
             .onSuccess { sentMessage -> sentMessage?.let(::startSelfDeletionIfNeeded) }
             .map { it != null }
             .onFailure {
@@ -198,12 +208,13 @@ class MessageSenderImpl(
     private suspend fun sendPreparedMessage(
         message: Message.Sendable,
         messageTarget: MessageTarget,
+        transient: Boolean,
         remainingAttempts: Int
     ): Either<CoreFailure, Message.Sendable?> =
         messageToSend(message).flatMap { current ->
             if (current == null) return@flatMap Either.Right(null)
             prepareMessage(current).flatMap { processedMessage ->
-                attemptToSend(processedMessage, messageTarget).map { serverDate ->
+                attemptToSend(processedMessage, messageTarget, transient).map { serverDate ->
                     val localDate = message.date
                     val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
                     // If it was the "edit" message type, we need to update the id before we promote it to "sent"
@@ -243,7 +254,7 @@ class MessageSenderImpl(
                 failure !is StaleUntilLive -> Either.Left(failure)
                 remainingAttempts <= 0 -> Either.Left(failure.cause)
                 else -> session.waitUntilLiveOrFailure().flatMap {
-                    sendPreparedMessage(message, messageTarget, remainingAttempts - 1)
+                    sendPreparedMessage(message, messageTarget, transient, remainingAttempts - 1)
                 }
             }
         }, { sent -> Either.Right(sent) })
@@ -258,7 +269,8 @@ class MessageSenderImpl(
 
     private suspend fun attemptToSend(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation()
+        messageTarget: MessageTarget = MessageTarget.Conversation(),
+        transient: Boolean = false
     ): Either<CoreFailure, Instant> {
         return conversations
             .getConversationProtocolInfo(message.conversationId)
@@ -272,7 +284,7 @@ class MessageSenderImpl(
                             logger.i("Skipping calling message while MLS reset is pending")
                             Either.Right(message.date)
                         } else {
-                            attemptToSendWithMLS(protocolInfo, message)
+                            attemptToSendWithMLS(protocolInfo, message, messageTarget, transient)
                         }
                     }
 
@@ -364,17 +376,22 @@ class MessageSenderImpl(
     }
 
     /**
-     * Attempts to send a MLS application message, recovering from rejections in [handleMlsRejection].
+     * Attempts to send a MLS application message, or a targeted message when [messageTarget] addresses specific
+     * users or clients. Either one is transient when [transient] is true.
+     *
+     * Recovering from rejections in [handleMlsRejection].
      */
     private suspend fun attemptToSendWithMLS(
         protocolInfo: Conversation.ProtocolInfo.MLS,
-        message: Message.Sendable
+        message: Message.Sendable,
+        messageTarget: MessageTarget,
+        transient: Boolean
     ): Either<CoreFailure, Instant> =
         session.transaction("encryptMlsMessage") { transactionContext ->
-            mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message)
+            createOutgoingMLSMessage(transactionContext, protocolInfo.groupId, message, messageTarget, transient)
         }
-            .flatMap { mlsMessage ->
-                transport.sendMLSMessage(mlsMessage).fold({
+            .flatMap { sendMLSMessage ->
+                sendMLSMessage().fold({
                     handleMlsRejection(it, protocolInfo, message)
                 }, { messageSent ->
                     handleMlsRecipientsDeliveryFailure(message, messageSent).flatMap {
@@ -444,6 +461,67 @@ class MessageSenderImpl(
             }
             else -> Either.Left(failure)
         }
+
+    /**
+     * Encrypts [message] for [messageTarget] and returns the request that sends it.
+     * A targeted message that selects no group member is not sent. A transient or targeted message the backend
+     * doesn't support is sent as a persistent application message to the whole group instead.
+     */
+    private suspend fun createOutgoingMLSMessage(
+        transactionContext: CryptoTransactionContext,
+        groupId: GroupID,
+        message: Message.Sendable,
+        messageTarget: MessageTarget,
+        transient: Boolean
+    ): Either<CoreFailure, suspend () -> Either<CoreFailure, MessageSent>> {
+        val isTargeted = !(messageTarget is MessageTarget.Conversation && messageTarget.usersToIgnore.isEmpty())
+        val outgoingMessage = when {
+            !isTargeted && !transient ->
+                return mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, groupId, message)
+                    .map { mlsMessage -> { transport.sendMLSMessage(mlsMessage) } }
+
+            !isTargeted ->
+                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTransientMLSMessage(transactionContext, groupId, message)
+                    .map { mlsMessage -> suspend { transport.sendMLSTransientMessage(mlsMessage) } }
+
+            else ->
+                mlsMessageCreator.prepareMLSGroupAndCreateOutgoingTargetedMLSMessage(
+                    transactionContext,
+                    groupId,
+                    message,
+                    messageTarget,
+                    transient
+                ).map { batch -> sendTargetedBatch(batch, transient, message) }
+        }
+        return outgoingMessage.map { send ->
+            {
+                send().flatMapLeft { failure ->
+                    if (failure is NetworkFailure.FeatureNotSupported) {
+                        logger.w(
+                            "MLS message (targeted = $isTargeted, transient = $transient) is not supported by the backend, " +
+                                "sending a persistent message to the whole group"
+                        )
+                        mlsMessageCreator.prepareMLSGroupAndCreateOutgoingMLSMessage(transactionContext, groupId, message)
+                            .flatMap { mlsMessage -> transport.sendMLSMessage(mlsMessage) }
+                    } else {
+                        Either.Left(failure)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun sendTargetedBatch(
+        batch: MLSMessageApi.TargetedMessageBatch,
+        transient: Boolean,
+        message: Message.Sendable
+    ): suspend () -> Either<CoreFailure, MessageSent> = {
+        when {
+            batch.value.isEmpty() -> Either.Right(MessageSent(time = message.date))
+            transient -> transport.sendMLSTransientTargetedMessage(batch)
+            else -> transport.sendMLSTargetedMessage(batch)
+        }
+    }
 
     /**
      * Attempts to send a Proteus envelope

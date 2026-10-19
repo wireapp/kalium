@@ -158,6 +158,40 @@ interface MlsCoreCryptoContext {
     ): ApplicationMessage
 
     /**
+     * Encrypt a transient message for distribution in a group. The backend doesn't persist transient messages.
+     *
+     * Transient messages have weaker security guarantees than application messages.
+     *
+     * @param groupId MLS group ID provided by BE
+     * @param message plain text message
+     *
+     * @return TLS-serialized transient message
+     */
+    suspend fun encryptTransientMessage(
+        groupId: MLSGroupId,
+        message: PlainMessage
+    ): ApplicationMessage
+
+    /**
+     * Encrypt a targeted message for a single member of a group.
+     *
+     * Targeted messages have weaker security guarantees than application messages.
+     *
+     * @param groupId MLS group ID provided by BE
+     * @param recipient the member client the message is addressed to
+     * @param message plain text message
+     * @param transient true if the backend shouldn't persist the message
+     *
+     * @return TLS-serialized targeted message
+     */
+    suspend fun encryptTargetedMessage(
+        groupId: MLSGroupId,
+        recipient: CryptoQualifiedClientId,
+        message: PlainMessage,
+        transient: Boolean
+    ): ApplicationMessage
+
+    /**
      * Decrypt an application message or a handshake message
      *
      * **NOTE**: handshake messages doesn't return any decrypted message.

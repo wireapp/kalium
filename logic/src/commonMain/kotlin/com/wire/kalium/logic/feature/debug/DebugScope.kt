@@ -209,6 +209,8 @@ public class DebugScope internal constructor(
             commitPendingProposals = mlsConversationRepository::commitPendingProposals,
             joinConversation = { context, conversationId -> joinExistingMLSConversationUseCaseProvider()(context, conversationId) },
             encrypt = mlsConversationRepository::encryptMessage,
+            encryptTransient = mlsConversationRepository::encryptTransientMessage,
+            encryptTargeted = mlsConversationRepository::encryptTargetedMessage,
             selfUserId = userId,
             protoContentMapper = protoContentMapper
         )
