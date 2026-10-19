@@ -33,4 +33,21 @@ internal open class MLSMessageApiV0 internal constructor() : MLSMessageApi {
         NetworkResponse.Error(
             APINotSupported("MLS: sendCommitBundle api is only available on API V5")
         )
+
+    override suspend fun sendTargetedMessage(batch: MLSMessageApi.TargetedMessageBatch): NetworkResponse<SendMLSMessageResponse> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: sendTargetedMessage api is only available on API V19")
+        )
+
+    override suspend fun sendTransientMessage(message: MLSMessageApi.TransientMessage): NetworkResponse<SendMLSMessageResponse> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: sendTransientMessage api is only available on API V19")
+        )
+
+    override suspend fun sendTransientTargetedMessage(
+        batch: MLSMessageApi.TargetedMessageBatch
+    ): NetworkResponse<SendMLSMessageResponse> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: sendTransientTargetedMessage api is only available on API V19")
+        )
 }
