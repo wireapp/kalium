@@ -31,7 +31,7 @@ jobs:
     runs-on: macos-26
     env:
       # Leave room for the simulator and native linker on the free 7 GB runner.
-      GRADLE_OPTS: -Dorg.gradle.caching=true -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
+      GRADLE_OPTS: -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
 
     steps:
       - name: Checkout
@@ -67,7 +67,7 @@ jobs:
         run: python3 scripts/boot-ios-simulator.py
 
       - name: Restore Kotlin/Native tooling cache (.konan)
-        if: ${{ github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
+        if: steps.setup-gradle.outputs.cache-enabled == 'true'
         id: konan-cache
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
@@ -177,7 +177,7 @@ jobs:
           key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
       - name: Save Kotlin/Native tooling cache (.konan)
-        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.konan-cache.outputs.cache-hit != 'true' }}
+        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.konan-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ~/.konan

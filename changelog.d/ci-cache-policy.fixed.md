@@ -1,0 +1,1 @@
+- CI applies the shared develop and PR cache policy to Kotlin/Native tooling and Gradle's local build cache. Release, fork, manual, and other branch builds disable the Gradle build cache, and merge-queue jobs never save shared caches.

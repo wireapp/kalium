@@ -28,9 +28,6 @@ jobs:
       checks: write # required to publish unit test check runs
       pull-requests: write # required to publish pull request comments
     runs-on: ubuntu-latest
-    env:
-      # Inherited by the nested Gradle process started by connectedAndroidOnlyAffectedTest.
-      GRADLE_OPTS: -Dorg.gradle.caching=true
     strategy:
       matrix:
         api-level: [ 31 ]
