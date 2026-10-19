@@ -1,14 +1,18 @@
 # MLS receiving stress test
 
-`stress-mls-receiving.py` runs independent native processes on a booted disposable
-Apple Silicon iOS simulator. It creates isolated accounts/stores and synthetic
-sender keys; it does not use or clear the installed app's session.
+`stress-mls-receiving.py` runs independent native processes on an Apple Silicon iOS
+simulator. It creates isolated accounts/stores and synthetic sender keys; it does
+not use or clear the installed app's session.
 
 From the Kalium root:
 
 ```sh
-python3 nse/scripts/stress-mls-receiving.py --simulator SIMULATOR_UUID
+python3 nse/scripts/stress-mls-receiving.py
 ```
+
+By default it creates a temporary iPhone simulator on the first available iOS
+runtime and deletes it afterwards. `--simulator UDID` reuses a booted, disposable
+simulator instead and leaves it in place.
 
 Both fixture binaries are built first. `--skip-build` is for binaries already
 rebuilt from the current sources. Defaults: three repetitions of eight cases,

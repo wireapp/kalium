@@ -8,6 +8,8 @@ import tempfile
 import time
 from pathlib import Path
 
+from ios_test_support import create_simulator, delete_simulator
+
 REPO = Path(__file__).resolve().parents[2]
 APP_FIXTURE = REPO / 'logic/build/bin/iosSimulatorArm64/swiftAppFixtureDebugExecutable/swift-app-verifier.kexe'
 FIXTURE = REPO / 'domain/messaging/receiving/build/bin/iosSimulatorArm64/swiftFixtureDebugExecutable/swift-receiving-fixture.kexe'
@@ -16,7 +18,7 @@ FIXTURE = REPO / 'domain/messaging/receiving/build/bin/iosSimulatorArm64/swiftFi
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--skip-build', action='store_true', help='Use binaries already rebuilt from current sources')
-    parser.add_argument('--simulator', required=True, help='Booted, disposable simulator UUID')
+    parser.add_argument('--simulator', help='Booted, disposable simulator UDID to reuse; by default a temporary one is created')
     parser.add_argument('--case', choices=['before-commit', 'after-commit', 'app-first', 'nse-first', 'app-resume'],
                         help='Run only cases with this ownership/checkpoint order')
     parser.add_argument('--messages', type=int, default=200)
@@ -28,10 +30,22 @@ def main():
     if not args.skip_build:
         subprocess.run(['./gradlew',
                         ':domain:messaging:receiving:linkSwiftFixtureDebugExecutableIosSimulatorArm64',
-                        ':logic:linkSwiftAppFixtureDebugExecutableIosSimulatorArm64',
-                        '-Pkotlin.native.toolchain.enabled=false',
-                        '-Pkotlin.native.distribution.downloadFromMaven=false', '--console=plain'],
+                        ':logic:linkSwiftAppFixtureDebugExecutableIosSimulatorArm64', '--console=plain'],
                        cwd=REPO, check=True, timeout=1800)
+    temporary_simulator = args.simulator is None
+    if temporary_simulator:
+        args.simulator, runtime = create_simulator('Kalium MLS stress')
+        print(f'Running on temporary simulator {args.simulator} ({runtime})', flush=True)
+    try:
+        if temporary_simulator:
+            subprocess.run(['xcrun', 'simctl', 'bootstatus', args.simulator, '-b'], check=True, capture_output=True)
+        stress(args)
+    finally:
+        if temporary_simulator:
+            delete_simulator(args.simulator)
+
+
+def stress(args):
     args.report.parent.mkdir(parents=True, exist_ok=True)
     logs = args.report.parent / 'logs'
     logs.mkdir(exist_ok=True)
