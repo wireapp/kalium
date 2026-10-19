@@ -71,11 +71,9 @@ tasks.withType<Test> {
 // Workaround for Kotlin Native test report writing issue
 // For some reason xml and html generation is failing, looks like tests running in parallel
 subprojects {
+    // Run on the simulator CI booted. Modules that need a booted device disable standalone mode themselves.
     tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest>().configureEach {
-        providers.environmentVariable("KALIUM_IOS_SIMULATOR_UDID").orNull?.let {
-            device.set(it)
-            standalone.set(false)
-        }
+        providers.environmentVariable("KALIUM_IOS_SIMULATOR_UDID").orNull?.let(device::set)
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
