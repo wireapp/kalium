@@ -409,14 +409,6 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         )
     }
 
-    private fun KaliumNSEKeychainAccessibility.toApple(): KeychainAccessibility = when (this) {
-        KaliumNSEKeychainAccessibility.WHEN_UNLOCKED -> KeychainAccessibility.WhenUnlocked
-        KaliumNSEKeychainAccessibility.WHEN_UNLOCKED_THIS_DEVICE_ONLY -> KeychainAccessibility.WhenUnlockedThisDeviceOnly
-        KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK -> KeychainAccessibility.AfterFirstUnlock
-        KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY -> KeychainAccessibility.AfterFirstUnlockThisDeviceOnly
-        KaliumNSEKeychainAccessibility.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY -> KeychainAccessibility.WhenPasscodeSetThisDeviceOnly
-    }
-
     private fun failure(reason: String) = KaliumNSEResult(
         KaliumNSEStatus.FAILED,
         false,
@@ -456,3 +448,10 @@ private suspend fun deliverPending(
     }
 }
 
+private fun KaliumNSEKeychainAccessibility.toApple(): KeychainAccessibility = when (this) {
+    KaliumNSEKeychainAccessibility.WHEN_UNLOCKED -> KeychainAccessibility.WhenUnlocked
+    KaliumNSEKeychainAccessibility.WHEN_UNLOCKED_THIS_DEVICE_ONLY -> KeychainAccessibility.WhenUnlockedThisDeviceOnly
+    KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK -> KeychainAccessibility.AfterFirstUnlock
+    KaliumNSEKeychainAccessibility.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY -> KeychainAccessibility.AfterFirstUnlockThisDeviceOnly
+    KaliumNSEKeychainAccessibility.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY -> KeychainAccessibility.WhenPasscodeSetThisDeviceOnly
+}
