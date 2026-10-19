@@ -391,6 +391,9 @@ public class MessageScope internal constructor(
             messageSendFailureHandler
         )
 
+    public val retryFailedMessageAndAwait: RetryFailedMessageAndAwaitUseCase
+        get() = RetryFailedMessageAndAwaitUseCase(retryFailedMessage)
+
     public val getMessageById: GetMessageByIdUseCase
         get() = GetMessageByIdUseCase(messageRepository)
 

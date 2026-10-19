@@ -6270,6 +6270,7 @@ public final class com/wire/kalium/logic/feature/message/MessageScope {
 	public final fun getRemoveMessageDraftUseCase ()Lcom/wire/kalium/logic/feature/message/draft/RemoveMessageDraftUseCase;
 	public final fun getResetSession ()Lcom/wire/kalium/logic/feature/sessionreset/ResetSessionUseCase;
 	public final fun getRetryFailedMessage ()Lcom/wire/kalium/logic/feature/message/RetryFailedMessageUseCase;
+	public final fun getRetryFailedMessageAndAwait ()Lcom/wire/kalium/logic/feature/message/RetryFailedMessageAndAwaitUseCase;
 	public final fun getSaveMessageDraftUseCase ()Lcom/wire/kalium/logic/feature/message/draft/SaveMessageDraftUseCase;
 	public final fun getSearchMessagesGlobally ()Lcom/wire/kalium/logic/feature/message/SearchMessagesGloballyUseCase;
 	public final fun getSearchMessagesInConversation ()Lcom/wire/kalium/logic/feature/message/SearchMessagesInConversationUseCase;
@@ -6363,9 +6364,12 @@ public final class com/wire/kalium/logic/feature/message/Result$Success : com/wi
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/wire/kalium/logic/feature/message/RetryFailedMessageAndAwaitUseCase {
+	public final fun invoke (Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class com/wire/kalium/logic/feature/message/RetryFailedMessageUseCase {
 	public final fun invoke (Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun invokeAndAwait (Ljava/lang/String;Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/message/SearchMessagesGloballyUseCase {

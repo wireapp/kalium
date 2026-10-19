@@ -547,7 +547,7 @@ class RetryFailedMessageUseCaseTest {
                 Either.Left(failure)
             }
 
-            val retry = async { useCase.invokeAndAwait(message.id, message.conversationId) }
+            val retry = async { RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId) }
             runCurrent()
             assertTrue(entered.isCompleted)
             assertFalse(retry.isCompleted)
@@ -579,7 +579,7 @@ class RetryFailedMessageUseCaseTest {
             .withUploadAndPersistPrivateAsset(Either.Left(failure))
             .arrange()
 
-        val result = useCase.invokeAndAwait(message.id, message.conversationId)
+        val result = RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId)
 
         assertEquals(failure, assertIs<MessageOperationResult.Failure>(result).error)
         verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
@@ -618,7 +618,7 @@ class RetryFailedMessageUseCaseTest {
                     }
                 }
             }
-            val retry = launch { useCase.invokeAndAwait(message.id, message.conversationId) }
+            val retry = launch { RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId) }
             runCurrent()
             assertTrue(entered.isCompleted)
 
@@ -652,7 +652,7 @@ class RetryFailedMessageUseCaseTest {
             entered.complete(Unit)
             awaitCancellation()
         }
-        val retry = launch { useCase.invokeAndAwait(message.id, message.conversationId) }
+        val retry = launch { RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId) }
         runCurrent()
         assertTrue(entered.isCompleted)
 
@@ -682,7 +682,7 @@ class RetryFailedMessageUseCaseTest {
                 retry.cancel()
                 Either.Right(Unit)
             }
-            retry = launch { useCase.invokeAndAwait(message.id, message.conversationId) }
+            retry = launch { RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId) }
             retry.join()
 
             assertTrue(sendSucceeded)
@@ -707,7 +707,7 @@ class RetryFailedMessageUseCaseTest {
             persisted = message.copy(status = Message.Status.Sent)
             throw CancellationException("Transaction result cancelled after persisting SENT")
         }
-        val retry = launch { useCase.invokeAndAwait(message.id, message.conversationId) }
+        val retry = launch { RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId) }
         retry.join()
 
         assertTrue(retry.isCancelled)
@@ -727,7 +727,7 @@ class RetryFailedMessageUseCaseTest {
             .withUpdateMessageStatus(Either.Left(failure))
             .arrange()
 
-        val result = useCase.invokeAndAwait(message.id, message.conversationId)
+        val result = RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId)
 
         assertEquals(failure, assertIs<MessageOperationResult.Failure>(result).error)
         verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
@@ -745,7 +745,7 @@ class RetryFailedMessageUseCaseTest {
         everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
         everySuspend { arrangement.publishAttachments(any()) } returns Either.Left(failure)
 
-        val result = useCase.invokeAndAwait(message.id, message.conversationId)
+        val result = RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId)
 
         assertEquals(failure, assertIs<MessageOperationResult.Failure>(result).error)
         verifySuspend(VerifyMode.exactly(0)) { arrangement.messageSender.sendMessage(any(), any()) }
@@ -763,7 +763,7 @@ class RetryFailedMessageUseCaseTest {
         everySuspend { arrangement.attachmentsRepository.getAll(message.conversationId) } returns Either.Right(emptyList())
         everySuspend { arrangement.publishAttachments(any()) } returns Either.Right(Unit)
 
-        assertIs<MessageOperationResult.Success>(useCase.invokeAndAwait(message.id, message.conversationId))
+        assertIs<MessageOperationResult.Success>(RetryFailedMessageAndAwaitUseCase(useCase)(message.id, message.conversationId))
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.publishAttachments(any())

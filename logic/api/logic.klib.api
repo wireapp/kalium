@@ -5518,6 +5518,8 @@ final class com.wire.kalium.logic.feature.message/MessageScope { // com.wire.kal
         final fun <get-resetSession>(): com.wire.kalium.logic.feature.sessionreset/ResetSessionUseCase // com.wire.kalium.logic.feature.message/MessageScope.resetSession.<get-resetSession>|<get-resetSession>(){}[0]
     final val retryFailedMessage // com.wire.kalium.logic.feature.message/MessageScope.retryFailedMessage|{}retryFailedMessage[0]
         final fun <get-retryFailedMessage>(): com.wire.kalium.logic.feature.message/RetryFailedMessageUseCase // com.wire.kalium.logic.feature.message/MessageScope.retryFailedMessage.<get-retryFailedMessage>|<get-retryFailedMessage>(){}[0]
+    final val retryFailedMessageAndAwait // com.wire.kalium.logic.feature.message/MessageScope.retryFailedMessageAndAwait|{}retryFailedMessageAndAwait[0]
+        final fun <get-retryFailedMessageAndAwait>(): com.wire.kalium.logic.feature.message/RetryFailedMessageAndAwaitUseCase // com.wire.kalium.logic.feature.message/MessageScope.retryFailedMessageAndAwait.<get-retryFailedMessageAndAwait>|<get-retryFailedMessageAndAwait>(){}[0]
     final val saveMessageDraftUseCase // com.wire.kalium.logic.feature.message/MessageScope.saveMessageDraftUseCase|{}saveMessageDraftUseCase[0]
         final fun <get-saveMessageDraftUseCase>(): com.wire.kalium.logic.feature.message.draft/SaveMessageDraftUseCase // com.wire.kalium.logic.feature.message/MessageScope.saveMessageDraftUseCase.<get-saveMessageDraftUseCase>|<get-saveMessageDraftUseCase>(){}[0]
     final val searchMessagesGlobally // com.wire.kalium.logic.feature.message/MessageScope.searchMessagesGlobally|{}searchMessagesGlobally[0]
@@ -5596,9 +5598,12 @@ final class com.wire.kalium.logic.feature.message/OpenMessageTimelineUseCase { /
     final fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.message.timeline/MessageTimelinePolicy = ...): com.wire.kalium.logic.data.message.timeline/MessageTimeline // com.wire.kalium.logic.feature.message/OpenMessageTimelineUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.message.timeline.MessageTimelinePolicy){}[0]
 }
 
+final class com.wire.kalium.logic.feature.message/RetryFailedMessageAndAwaitUseCase { // com.wire.kalium.logic.feature.message/RetryFailedMessageAndAwaitUseCase|null[0]
+    final suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.message/MessageOperationResult // com.wire.kalium.logic.feature.message/RetryFailedMessageAndAwaitUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID){}[0]
+}
+
 final class com.wire.kalium.logic.feature.message/RetryFailedMessageUseCase { // com.wire.kalium.logic.feature.message/RetryFailedMessageUseCase|null[0]
     final suspend fun invoke(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.message/MessageOperationResult // com.wire.kalium.logic.feature.message/RetryFailedMessageUseCase.invoke|invoke(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID){}[0]
-    final suspend fun invokeAndAwait(kotlin/String, com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.message/MessageOperationResult // com.wire.kalium.logic.feature.message/RetryFailedMessageUseCase.invokeAndAwait|invokeAndAwait(kotlin.String;com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
 final class com.wire.kalium.logic.feature.message/SendEditMultipartMessageUseCase { // com.wire.kalium.logic.feature.message/SendEditMultipartMessageUseCase|null[0]

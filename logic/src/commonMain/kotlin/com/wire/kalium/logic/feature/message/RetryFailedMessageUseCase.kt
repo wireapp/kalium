@@ -109,7 +109,7 @@ public class RetryFailedMessageUseCase internal constructor(
      * The message ID and uploaded remote data are preserved.
      */
     @Suppress("TooGenericExceptionCaught")
-    public suspend fun invokeAndAwait(messageId: String, conversationId: ConversationId): MessageOperationResult {
+    internal suspend fun invokeAndAwait(messageId: String, conversationId: ConversationId): MessageOperationResult {
         var retryingMessage: Message? = null
         var completedSuccessfully = false
         return try {
