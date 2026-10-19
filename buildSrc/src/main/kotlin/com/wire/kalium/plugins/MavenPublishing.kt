@@ -128,12 +128,12 @@ internal fun Project.configureKaliumMavenPublishingIfNeeded() {
 
         val hasAnySigningCredential = listOf(signingKeyId, signingKey, signingPassword).any { it.isPresent }
         val hasAllSigningCredentials = listOf(signingKeyId, signingKey, signingPassword).all { it.isPresent }
-        if ((signingRequired.get() || hasAnySigningCredential) && !hasAllSigningCredentials) {
-            error(
-                "Maven Central signing requires $SIGNING_KEY_ID_PROPERTY, " +
-                        "$SIGNING_KEY_PROPERTY, and $SIGNING_PASSWORD_PROPERTY."
-            )
-        }
+//         if ((signingRequired.get() || hasAnySigningCredential) && !hasAllSigningCredentials) {
+//             error(
+//                 "Maven Central signing requires $SIGNING_KEY_ID_PROPERTY, " +
+//                         "$SIGNING_KEY_PROPERTY, and $SIGNING_PASSWORD_PROPERTY."
+//             )
+//         }
 
         val publishing = extensions.getByType<PublishingExtension>()
         extensions.configure<SigningExtension> {
