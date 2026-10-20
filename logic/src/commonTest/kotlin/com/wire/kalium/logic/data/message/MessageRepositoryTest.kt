@@ -981,7 +981,7 @@ class MessageRepositoryTest {
             isQuotingSelfUser = false
         )
 
-        val NOTIFICATION_CONVERSATION = LocalNotification.Conversation.NewMessages(
+        val NOTIFICATION_CONVERSATION = LocalNotification.Conversation(
             TestConversation.ID, "", listOf(NOTIFICATION_MESSAGE), true, true
         )
 

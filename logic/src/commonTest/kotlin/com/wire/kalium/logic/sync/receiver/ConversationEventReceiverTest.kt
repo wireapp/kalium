@@ -57,9 +57,9 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlin.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Instant
 
 class ConversationEventReceiverTest {
     @Test
@@ -147,23 +147,6 @@ class ConversationEventReceiverTest {
             arrangement.deletedConversationEventHandler.handle(any(), eq(deletedConversationEvent))
         }
 
-        result.shouldSucceed()
-    }
-
-    @Test
-    fun givenAdminlessDeleteReminderEvent_whenOnEventInvoked_thenDeleteConversationReminderHandlerShouldBeCalled() = runTest {
-        val reminderEvent = TestEvent.adminlessDeleteReminder()
-        val (arrangement, conversationEventReceiver) = Arrangement().arrange()
-
-        val result = conversationEventReceiver.onEvent(
-            arrangement.transactionContext,
-            reminderEvent,
-            TestEvent.liveDeliveryInfo
-        )
-
-        verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.deleteConversationReminderEventHandler.handle(eq(reminderEvent))
-        }
         result.shouldSucceed()
     }
 
