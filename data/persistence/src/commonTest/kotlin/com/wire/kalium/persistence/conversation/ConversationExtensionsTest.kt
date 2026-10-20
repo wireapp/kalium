@@ -605,8 +605,8 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         memberDAO.insertMembersWithQualifiedId(listOf(MemberEntity(added.id, MemberEntity.Role.Admin)), group)
 
         assertTrue(source.invalid)
-        val members = getMembersPagingSource(restricted = false).load(PagingSource.LoadParams.Refresh(null, 10, false)).page().data.single()
-            .members
+        val members =
+            getMembersPagingSource(restricted = false).load(PagingSource.LoadParams.Refresh(null, 10, false)).page().data.single().members
         assertEquals(3, members.size)
         assertEquals(MemberEntity.Role.Admin, members.single { it.user.id == added.id }.role)
     }
@@ -719,7 +719,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithMembersEntity>>(this)
 
     private fun memberSearchUser(value: String) = newUserEntity(UserIDEntity(value, selfUserId.domain))
-
     private fun getPager(
         searchQuery: String = "",
         fromArchive: Boolean = false,
