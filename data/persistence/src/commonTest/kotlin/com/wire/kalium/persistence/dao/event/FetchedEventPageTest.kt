@@ -28,11 +28,11 @@ class FetchedEventPageTest : BaseDatabaseTest() {
             val before = dao.observeEvents(0).first()
             val page = listOf(event("live").copy(payload = "new"), event("new"), event("processed"))
             for (failure in listOf("INSERT ON Events WHEN NEW.event_id = 'new'", "INSERT ON Metadata")) {
-                database.sqlDriver.execute(null, "CREATE TRIGGER fail_page BEFORE $failure BEGIN SELECT RAISE(ABORT, 'page failed'); END", 0)
+                database.sqlDriver.execute(null, "CREATE TRIGGER fail_page BEFORE $failure BEGIN SELECT RAISE(ABORT, 'page failed'); END", 0).await()
                 assertFails { dao.storeFetchedPage(page) }
                 assertEquals(before, dao.observeEvents(0).first())
                 assertEquals("anchor", database.metadataDAO.valueByKey(NotificationEventStore.FETCH_CURSOR_KEY))
-                database.sqlDriver.execute(null, "DROP TRIGGER fail_page", 0)
+                database.sqlDriver.execute(null, "DROP TRIGGER fail_page", 0).await()
             }
             dao.storeFetchedPage(page)
             assertEquals(listOf("pending", "processed", "live", "new"), dao.observeEvents(0).first().map { it.eventId })

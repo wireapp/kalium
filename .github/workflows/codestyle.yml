@@ -22,9 +22,10 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
+      - name: Check CI cache policy
+        run: python3 -m unittest discover -s .github/actions/setup-java-gradle -p 'test_*.py'
+
       - name: Run Detekt
-        env:
-          GRADLE_OPTS: -Dorg.gradle.caching=true
         run: |
           ./gradlew clean detekt
       - name: Cleanup Gradle Cache

@@ -24,7 +24,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import com.wire.kalium.persistence.utils.IgnoreJS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -33,8 +32,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-// sql.js surfaces the query's expression columns as null, which breaks the generated mapper.
-@IgnoreJS
 class MessageAttachmentsDaoTest : BaseDatabaseTest() {
 
     private lateinit var messageAttachmentsDao: MessageAttachmentsDao

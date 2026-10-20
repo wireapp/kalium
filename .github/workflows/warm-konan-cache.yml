@@ -1,7 +1,6 @@
 name: "Warm Konan Cache"
 
 on:
-  workflow_dispatch:
   push:
     branches: [ develop ]
     paths:
@@ -18,7 +17,7 @@ permissions:
 jobs:
   warm-konan-cache:
     name: Warm Konan Cache
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -26,9 +25,11 @@ jobs:
           persist-credentials: false
 
       - name: Setup Java and Gradle
+        id: setup-gradle
         uses: ./.github/actions/setup-java-gradle
 
       - name: Restore Konan cache
+        if: steps.setup-gradle.outputs.cache-enabled == 'true'
         id: konan-cache
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
@@ -36,14 +37,14 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-konan-${{ hashFiles('gradle.properties', 'gradle/libs.versions.toml') }}
 
       - name: Download Kotlin/Native toolchain
-        if: steps.konan-cache.outputs.cache-hit != 'true'
+        if: steps.setup-gradle.outputs.cache-enabled == 'true' && steps.konan-cache.outputs.cache-hit != 'true'
         run: ./gradlew :logic:compileKotlinIosSimulatorArm64
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Save Konan cache
-        if: always() && steps.konan-cache.outputs.cache-hit != 'true'
+        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.konan-cache.outcome == 'success' && steps.konan-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ~/.konan

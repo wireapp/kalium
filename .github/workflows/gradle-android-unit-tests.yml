@@ -28,9 +28,6 @@ jobs:
       checks: write # required to publish unit test check runs
       pull-requests: write # required to publish pull request comments
     runs-on: ubuntu-latest
-    env:
-      # Inherited by the nested Gradle process started by androidUnitOnlyAffectedTest.
-      GRADLE_OPTS: -Dorg.gradle.caching=true
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -114,4 +111,5 @@ jobs:
           DD_ENV: ci
           DATADOG_SITE: datadoghq.eu
         run: |
-          find . -name "*.xml" -type f | sed 's/ /\\ /g' | tr '\n' ' ' | xargs -L 1 datadog-ci junit upload --service kalium-android-unit .
+          # xargs splits the report paths into batches that fit the argument limit.
+          find . -name "*.xml" -type f -print0 | xargs -0 -r datadog-ci junit upload --service kalium-android-unit

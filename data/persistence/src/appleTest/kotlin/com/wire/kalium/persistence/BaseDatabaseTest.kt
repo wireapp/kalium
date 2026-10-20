@@ -30,12 +30,21 @@ import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlin.test.AfterTest
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUUID
 import platform.Foundation.NSUserDomainMask
 
 actual open class BaseDatabaseTest actual constructor() {
+
+    private val databases = mutableMapOf<UserIDEntity, MutableList<UserDatabaseBuilder>>()
+
+    @AfterTest
+    fun closeDatabases() {
+        databases.values.flatten().forEach { it.close() }
+        databases.clear()
+    }
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
 
@@ -60,6 +69,7 @@ actual open class BaseDatabaseTest actual constructor() {
     ): Boolean = TODO("not implemented")
 
     actual fun deleteDatabase(userId: UserIDEntity) {
+        databases.remove(userId)?.forEach { it.close() }
         deleteDatabase(FileNameUtil.userDBName(userId), storePath)
     }
 
@@ -76,7 +86,7 @@ actual open class BaseDatabaseTest actual constructor() {
             dispatcher,
             enableWAL,
             dbInvalidationControlEnabled
-        )
+        ).also { databases.getOrPut(userId) { mutableListOf() }.add(it) }
     }
 
     actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData =

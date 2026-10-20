@@ -23,14 +23,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
-import kotlin.time.Clock
 import okio.Buffer
-import okio.FileSystem
 import okio.ForwardingSource
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.Source
 import okio.use
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 /** Optional image work stays within the owned NSE lifetime; failures leave the text usable. */
@@ -40,11 +39,11 @@ internal class ReceivedLinkPreviewImages(
     assetDirectory: String,
 ) {
     private val directory = assetDirectory.toPath().resolve("nse-previews")
-    private val files = FileSystem.SYSTEM
+    private val files = receivedPreviewFileSystem()
     private val created = mutableListOf<Path>()
 
     suspend fun resolve(data: MessageEffectDAOs, message: Message.Regular) {
-        if (!enabled) return
+        if (!enabled || files == null) return
         (message.content as? MessageContent.Text)?.linkPreviews.orEmpty().forEach { preview ->
             val image = preview.image ?: return@forEach
             if (image.assetDataPath != null || !image.hasRemoteAssetData()) return@forEach
@@ -68,7 +67,7 @@ internal class ReceivedLinkPreviewImages(
 
     /** Recover only unreferenced files in our own directory, including an interrupted file/SQL gap. */
     suspend fun cleanupAbandoned(assets: AssetDAO) {
-        if (!files.exists(directory)) return
+        if (files == null || !files.exists(directory)) return
         cleanup(assets, files.list(directory))
     }
 
@@ -76,6 +75,7 @@ internal class ReceivedLinkPreviewImages(
     suspend fun cleanupCreated(assets: AssetDAO) = cleanup(assets, created.toList())
 
     private suspend fun cleanup(assets: AssetDAO, paths: List<Path>) {
+        val files = files ?: return
         paths.forEach { path ->
             currentCoroutineContext().ensureActive()
             if (!assets.isFileReferenced(path.toString())) files.delete(path, mustExist = false)
@@ -84,6 +84,7 @@ internal class ReceivedLinkPreviewImages(
     }
 
     private suspend fun download(assets: AssetDAO, image: LinkPreviewAsset): Path {
+        val files = checkNotNull(files)
         // The native CBC primitive expects a complete key and IV. Reject malformed remote data
         // before it reaches that primitive. The app resolver also uses CBC for preview images.
         require(image.otrKey.size == KEY_SIZE && image.sha256Key.size == KEY_SIZE) { "Invalid preview encryption keys" }
@@ -119,6 +120,7 @@ internal class ReceivedLinkPreviewImages(
     }
 
     private suspend fun cancellableSource(path: Path): Source {
+        val files = checkNotNull(files)
         val context = currentCoroutineContext()
         return object : ForwardingSource(files.source(path)) {
             override fun read(sink: Buffer, byteCount: Long): Long {
