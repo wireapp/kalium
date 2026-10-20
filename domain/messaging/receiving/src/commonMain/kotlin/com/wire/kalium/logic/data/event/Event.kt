@@ -82,6 +82,8 @@ sealed class Event(open val id: String) {
         const val timestampIsoKey = "timestampIso"
         const val selfDeletionDurationKey = "selfDeletionDuration"
         const val meetingIdKey = "meetingId"
+        const val targetedKey = "targeted"
+        const val transientKey = "transient"
     }
 
     open fun toLogString(): String {
@@ -130,13 +132,19 @@ sealed class Event(open val id: String) {
             )
         }
 
+        /**
+         * @param targeted true if the message was addressed to specific clients rather than the whole group
+         * @param transient true if the backend didn't persist the message, so only clients online at the time received it
+         */
         data class NewMLSMessage(
             override val id: String,
             override val conversationId: ConversationId,
             val subconversationId: SubconversationId?,
             val senderUserId: UserId,
             val messageInstant: Instant,
-            val content: String
+            val content: String,
+            val targeted: Boolean = false,
+            val transient: Boolean = false
         ) : Conversation(id, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
@@ -144,7 +152,9 @@ sealed class Event(open val id: String) {
                 idKey to id,
                 conversationIdKey to conversationId.toLogString(),
                 senderUserIdKey to senderUserId.toLogString(),
-                timestampIsoKey to messageInstant
+                timestampIsoKey to messageInstant,
+                targetedKey to targeted,
+                transientKey to transient
             )
         }
 
