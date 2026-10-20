@@ -133,7 +133,7 @@ internal class ReceivedMessageHandler(
         data.messages.insertReceivedMessage(mapper.toEntity(stored), stored.content.shouldUpdateConversationOrder())
     }
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     suspend fun handle(
         unpacked: MessageUnpackResult.ApplicationMessage,
         laterMessages: List<MessageUnpackResult.ApplicationMessage>,
@@ -143,7 +143,8 @@ internal class ReceivedMessageHandler(
         recreatedLater: Set<QualifiedIDEntity> = emptySet(),
     ) {
         if (unpacked.content.messageContent is MessageContent.LegalHold ||
-            unpacked.content.messageContent is MessageContent.InCallEmoji
+            unpacked.content.messageContent is MessageContent.InCallEmoji ||
+            unpacked.content.messageContent is MessageContent.InCallHandRaise
         ) return
         val conversationId = unpacked.conversationId.toDao()
         val conversation = checkNotNull(data.conversations.getConversationById(conversationId)) {

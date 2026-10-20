@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -33,6 +34,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.sync.SlowSyncProgress
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.network.exceptions.KaliumException
@@ -40,6 +42,8 @@ import com.wire.kalium.network.exceptions.isTooManyRequests
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Send an external commit to join all MLS conversations for which the user is a member,
@@ -53,6 +57,7 @@ internal interface JoinExistingMLSConversationsUseCase {
         keepRetryingOnFailure: Boolean = true,
         allowJoinByExternalCommit: Boolean = true,
         includePendingWelcome: Boolean = false,
+        onProgress: suspend (SlowSyncProgress) -> Unit = {},
     ): Either<CoreFailure, Unit>
 }
 
@@ -80,6 +85,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
         keepRetryingOnFailure: Boolean,
         allowJoinByExternalCommit: Boolean,
         includePendingWelcome: Boolean,
+        onProgress: suspend (SlowSyncProgress) -> Unit,
     ): Either<CoreFailure, Unit> =
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
@@ -91,8 +97,17 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                 getPendingConversations(includePendingWelcome).flatMap { pendingConversations ->
                     filterSelfMemberConversations(pendingConversations).flatMap { recoverableConversations ->
                         kaliumLogger.d("Requesting to re-join ${recoverableConversations.size} existing MLS conversation(s)")
+                        val progressMutex = Mutex()
+                        var completed = 0
+                        onProgress(SlowSyncProgress(completed, recoverableConversations.size))
                         recoverableConversations.chunked(maxConcurrentJoins).foldToEitherWhileRight(Unit) { batch, _ ->
-                            joinBatch(transactionContext, batch, keepRetryingOnFailure, allowJoinByExternalCommit)
+                            joinBatch(transactionContext, batch, keepRetryingOnFailure, allowJoinByExternalCommit) {
+                                // Completion order can differ from input order. Serialize increments and publication.
+                                progressMutex.withLock {
+                                    completed++
+                                    onProgress(SlowSyncProgress(completed, recoverableConversations.size))
+                                }
+                            }
                         }
                     }
                 }
@@ -129,10 +144,12 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
         batch: List<Conversation>,
         keepRetryingOnFailure: Boolean,
         allowJoinByExternalCommit: Boolean,
+        onConversationProcessed: suspend () -> Unit,
     ): Either<CoreFailure, Unit> = coroutineScope {
         batch.map { conversation ->
             async {
                 joinRetrying(transactionContext, conversation, keepRetryingOnFailure, allowJoinByExternalCommit)
+                    .onSuccess { onConversationProcessed() }
             }
         }
     }.foldToEitherWhileRight(Unit) { value, _ ->

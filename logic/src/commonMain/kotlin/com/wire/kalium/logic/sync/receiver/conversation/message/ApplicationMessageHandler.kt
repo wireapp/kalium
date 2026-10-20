@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.logic.data.call.CallHandIdentity
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -101,6 +103,7 @@ internal class ApplicationMessageHandlerImpl(
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler,
     private val dataTransferEventHandler: DataTransferEventHandler,
     private val inCallReactionsRepository: InCallReactionsRepository,
+    private val callRepository: CallRepository,
     private val buttonActionHandler: ButtonActionHandler,
     private val messageCompositeEditHandler: MessageCompositeEditHandler,
     private val callingMessageHandler: CallingMessageHandler,
@@ -189,6 +192,13 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.PollVote -> pollVoteHandler.handle(signaling, content)
 
             is MessageContent.DataTransfer -> dataTransferEventHandler.handle(signaling, content)
+            is MessageContent.InCallHandRaise -> callRepository.updateHand(
+                signaling.conversationId,
+                CallHandIdentity(signaling.senderUserId, signaling.senderClientId.value),
+                content.isRaised,
+                signaling.date,
+                signaling.id
+            )
             is MessageContent.InCallEmoji -> inCallReactionsRepository.addInCallReaction(
                 conversationId = signaling.conversationId,
                 senderUserId = signaling.senderUserId,

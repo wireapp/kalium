@@ -145,6 +145,40 @@ need the fixture certificate that the scripts above trust on the simulator.
 `./gradlew iOSOnlyAffectedTest` runs `iosSimulatorArm64Test` for the affected modules when
 affected-module data is available, and for all modules otherwise.
 
+### CI test groups
+
+The iOS workflow runs four macOS jobs in parallel, with each module's tests assigned once:
+
+- `logic`: `:logic`, whose native test binary is the largest.
+- `data`: `:data:persistence`, `:data:network` and `:core:cryptography`.
+- `receiving`: `:domain:messaging:receiving`, whose integration tests are the longest-running suite.
+- `extensions`: `:nse`, `:share` and all remaining modules. New modules enter this group automatically.
+
+Each job selects affected tests, links its binaries with one Gradle worker and a 4 GB heap,
+then stops Gradle before booting its simulator. Tests run sequentially within the job using
+a 1 GB Gradle heap, leaving memory for the simulator and native test process. A failed test
+does not cancel the other groups or prevent independent test tasks from running.
+`Gradle Run Tests` remains the combined check and succeeds only when all groups succeed.
+Reports and timing artifacts include the group name.
+
+To inspect a group's selection without building or running tests:
+
+```bash
+./gradlew iOSOnlyAffectedTest --list-only --ios-shard=logic
+./gradlew iOSOnlyAffectedTest --list-only --ios-shard=data --all-modules
+./gradlew iOSOnlyAffectedTest --list-only --ios-shard=receiving --all-modules
+```
+
+Develop pushes and manual workflow runs select every eligible module. PRs and merge-queue
+runs select affected modules; edits to the iOS workflow or fixture scripts select the full suite.
+
+Only develop pushes write caches. Dependency downloads and Gradle tooling are shared, with
+the `logic` job as the single writer; each group saves its own Gradle task-output cache. Tests
+may fail without discarding the cache from a successful build. These cache keys differ from
+the previous single-job layout, so the first develop run must populate them before PRs can
+restore them. Cold jobs still compile shared dependencies independently; the split trades
+more runner work for less elapsed time and less memory contention per runner.
+
 ## Troubleshooting
 
 - **SQLite or Security link errors:** install the Xcode command-line tools and check

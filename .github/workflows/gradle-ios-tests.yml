@@ -10,7 +10,7 @@ on:
       - develop
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
+    group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha || github.ref }}
     cancel-in-progress: true
 
 permissions:
@@ -20,18 +20,40 @@ jobs:
   detekt:
     name: Detekt
     uses: ./.github/workflows/codestyle.yml
-  gradle-run-tests:
-    name: Gradle Run Tests
-    needs: [detekt]
+
+  test-selection:
+    name: Validate iOS task selection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          # This small verification job must not write another Gradle-home cache.
+          use-external-cache: "true"
+      - name: Test affected-module selection and shard coverage
+        run: ./gradlew -p buildSrc test --tests DagCommandTaskTest --max-workers=2 -Dorg.gradle.jvmargs="-Xmx2g -XX:+UseParallelGC"
+
+  ios-tests:
+    name: iOS Tests (${{ matrix.shard }})
+    needs: [detekt, test-selection]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [logic, data, receiving, extensions]
     permissions:
       contents: read # required to read repository metadata in private repositories
       issues: read # required to find related pull requests in private repositories
       checks: write # required to publish unit test check runs
       pull-requests: write # required to publish pull request comments
     runs-on: macos-26
+    timeout-minutes: 90
     env:
-      # Leave room for the native linker on the free 7 GB runner.
-      GRADLE_OPTS: -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
+      # Parallelize across runners, not competing native links on the same 7 GB Mac.
+      GRADLE_OPTS: -Dorg.gradle.workers.max=1 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx4g -XX:+UseParallelGC"
 
     steps:
       - name: Checkout
@@ -48,20 +70,31 @@ jobs:
         with:
           use-external-cache: "true"
 
-      - name: Restore iOS Gradle build cache
+      - name: Restore shared iOS Gradle dependencies
         if: steps.setup-gradle.outputs.cache-enabled == 'true'
-        id: gradle-cache
+        id: gradle-dependencies
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: |
             ~/.gradle/caches
+            !~/.gradle/caches/build-cache-*
             ~/.gradle/wrapper
-          # Separate native test outputs from faster macOS jobs. Each develop commit saves
-          # new outputs, while fallback restores retain reusable work after build edits.
-          key: gradle-ios-macos26-${{ runner.arch }}-jdk21-v1-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/*.versions.toml', 'gradle.properties') }}-${{ github.sha }}
+          # Share downloads and Gradle tooling, without duplicating them in every shard cache.
+          key: gradle-ios-deps-macos26-${{ runner.arch }}-jdk21-v1-${{ hashFiles('**/*.gradle*', 'gradle/*.versions.toml', 'gradle.properties') }}
           restore-keys: |
-            gradle-ios-macos26-${{ runner.arch }}-jdk21-v1-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/*.versions.toml', 'gradle.properties') }}-
-            gradle-ios-macos26-${{ runner.arch }}-jdk21-v1-
+            gradle-ios-deps-macos26-${{ runner.arch }}-jdk21-v1-
+
+      - name: Restore iOS shard build outputs
+        if: steps.setup-gradle.outputs.cache-enabled == 'true'
+        id: gradle-outputs
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          path: ~/.gradle/caches/build-cache-*
+          # Each shard owns its task outputs; concurrent saves must not race for one cache key.
+          key: gradle-ios-outputs-macos26-${{ runner.arch }}-jdk21-v1-${{ matrix.shard }}-${{ hashFiles('**/*.gradle*', 'gradle/*.versions.toml', 'gradle.properties') }}-${{ github.sha }}
+          restore-keys: |
+            gradle-ios-outputs-macos26-${{ runner.arch }}-jdk21-v1-${{ matrix.shard }}-${{ hashFiles('**/*.gradle*', 'gradle/*.versions.toml', 'gradle.properties') }}-
+            gradle-ios-outputs-macos26-${{ runner.arch }}-jdk21-v1-${{ matrix.shard }}-
 
       - name: Restore Kotlin/Native tooling cache (.konan)
         if: steps.setup-gradle.outputs.cache-enabled == 'true'
@@ -77,23 +110,29 @@ jobs:
         run: |
           mkdir -p build/ci
           # The runner stops this process when the job ends.
-          nohup bash -c 'while true; do date -u; sysctl vm.swapusage; vm_stat; sleep 60; done' \
+          nohup bash -c 'while true; do
+            date -u
+            sysctl vm.swapusage
+            vm_stat
+            ps -axo pid,ppid,%cpu,rss,comm | sort -k4 -nr | head -15
+            sleep 60
+          done' \
             > build/ci/ios-runner-memory.log 2>&1 &
 
       - name: Build iOS test binaries
         id: build-tests
-        # Develop runs the complete suite to populate task outputs for future PRs.
+        # Develop and manual runs select the full suite, partitioned into disjoint groups.
         # PR and merge-queue runs keep using affected-module detection.
         # Link before booting the simulator: together they exceed the runner's memory and swap for hours.
         run: |
           gradle_args=(--console=plain -Dorg.gradle.logging.level=lifecycle --profile)
+          selection_args=("--ios-shard=$IOS_TEST_SHARD")
           if [[ "$RUN_ALL_TESTS" == "true" ]]; then
-            echo iosSimulatorArm64Test > build/ci/ios-test-tasks.txt
-          else
-            # Finish selection before building, so one Gradle daemon can be reused.
-            ./gradlew "${gradle_args[@]}" iOSOnlyAffectedTest --list-only
-            cp build/affected-tests/iOSOnlyAffectedTest.txt build/ci/ios-test-tasks.txt
+            selection_args+=(--all-modules)
           fi
+          # Finish selection before building, so one Gradle daemon can be reused.
+          ./gradlew "${gradle_args[@]}" iOSOnlyAffectedTest --list-only "${selection_args[@]}"
+          cp build/affected-tests/iOSOnlyAffectedTest.txt build/ci/ios-test-tasks.txt
 
           link_tasks=()
           while IFS= read -r task; do
@@ -106,7 +145,8 @@ jobs:
           # Release the daemon heap for the simulator. The test run only executes the linked binaries.
           ./gradlew --stop
         env:
-          RUN_ALL_TESTS: ${{ github.event_name == 'push' }}
+          IOS_TEST_SHARD: ${{ matrix.shard }}
+          RUN_ALL_TESTS: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -130,7 +170,8 @@ jobs:
           done < build/ci/ios-test-tasks.txt
           # Receiving's X.509 tests call a local test CA that the booted simulator must trust.
           "$RUNNER_TEMP/ios-tests-venv/bin/python" nse/scripts/with-x509-fixture.py "$KALIUM_IOS_SIMULATOR_UDID" \
-            ./gradlew --console=plain -Dorg.gradle.logging.level=lifecycle --profile "${test_tasks[@]}"
+            ./gradlew --console=plain -Dorg.gradle.logging.level=lifecycle \
+            -Dorg.gradle.jvmargs="-Xmx1g -XX:+UseParallelGC" --profile --continue "${test_tasks[@]}"
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -147,21 +188,22 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: ios-build-timings
+          name: ios-build-timings-${{ matrix.shard }}
           path: |
             build/reports/profile/**
             build/affected-tests/**
+            build/ci/ios-test-tasks.txt
             build/ci/ios-runner-memory.log
 
       - name: Generate aggregated iOS test report
-        if: ${{ always() && steps.ios-tests.outcome != 'skipped' }}
-        run: ./gradlew aggregateIosSimulatorArm64TestReport
+        if: ${{ always() && (steps.ios-tests.outcome == 'success' || steps.ios-tests.outcome == 'failure') }}
+        run: ./gradlew -Dorg.gradle.jvmargs="-Xmx1g -XX:+UseParallelGC" aggregateIosSimulatorArm64TestReport
 
       - name: Archive Test Reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-            name: test-reports
+            name: test-reports-ios-${{ matrix.shard }}
             path: |
               build/reports/tests/iosSimulatorArm64Test/**
               ./**/build/reports/tests/**
@@ -170,7 +212,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-            name: test-results
+            name: test-results-ios-${{ matrix.shard }}
             path: |
               ./**/build/test-results/testDebugUnitTest/**/*.xml
               ./**/build/test-results/**/*.xml
@@ -180,33 +222,60 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action/macos@c950f6fb443cb5af20a377fd0dfaa78838901040
         if: ${{ always() }}
         with:
+          check_name: iOS Test Results (${{ matrix.shard }})
           files: |
             **/build/test-results/testDebugUnitTest/**/*.xml
             **/build/test-results/**/*.xml
 
-      - name: Cleanup Gradle Cache
+      - name: Stop Gradle and clean cache locks
+        if: always()
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
         # Restoring these files from a GitHub Actions cache might cause problems for future builds.
         run: |
+          ./gradlew --stop
           rm -f ~/.gradle/caches/modules-2/modules-2.lock
           rm -f ~/.gradle/caches/modules-2/gc.properties
 
-      - name: Save iOS Gradle build cache
-        # Only develop saves: each entry is about 2 GB, and PR entries evicted the shared caches.
-        if: ${{ always() && github.event_name == 'push' && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-cache.outcome == 'success' && steps.gradle-cache.outputs.cache-hit != 'true' }}
+      - name: Save shared iOS Gradle dependencies
+        # Logic has the broadest dependencies. Failed tests must not discard a successful build.
+        if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && matrix.shard == 'logic' && steps.build-tests.outcome == 'success' && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-dependencies.outcome == 'success' && steps.gradle-dependencies.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: |
             ~/.gradle/caches
+            !~/.gradle/caches/build-cache-*
             ~/.gradle/wrapper
-          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
+          key: ${{ steps.gradle-dependencies.outputs.cache-primary-key }}
+
+      - name: Save iOS shard build outputs
+        if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && steps.build-tests.outcome == 'success' && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.gradle-outputs.outcome == 'success' && steps.gradle-outputs.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          path: ~/.gradle/caches/build-cache-*
+          key: ${{ steps.gradle-outputs.outputs.cache-primary-key }}
 
       - name: Save Kotlin/Native tooling cache (.konan)
-        if: ${{ always() && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.konan-cache.outcome == 'success' && steps.konan-cache.outputs.cache-hit != 'true' }}
+        if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/develop' && matrix.shard == 'logic' && steps.build-tests.outcome == 'success' && steps.setup-gradle.outputs.cache-enabled == 'true' && steps.setup-gradle.outputs.cache-read-only != 'true' && steps.konan-cache.outcome == 'success' && steps.konan-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ~/.konan
           key: ${{ steps.konan-cache.outputs.cache-primary-key }}
+
+  # Preserve the existing required check name while exposing each shard's result separately.
+  gradle-run-tests:
+    name: Gradle Run Tests
+    runs-on: ubuntu-latest
+    needs: ios-tests
+    if: always()
+    steps:
+      - name: Check every iOS shard
+        env:
+          SHARD_RESULT: ${{ needs.ios-tests.result }}
+        run: |
+          if [[ "$SHARD_RESULT" != "success" ]]; then
+            echo "::error::iOS test shards finished with result: $SHARD_RESULT"
+            exit 1
+          fi
 
   upload-test-results-datadadog:
     name: Upload Test Results Datadadog
@@ -219,7 +288,7 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         continue-on-error: true
         with:
-            name: test-results
+            pattern: test-results-ios-*
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: 24.19.0
