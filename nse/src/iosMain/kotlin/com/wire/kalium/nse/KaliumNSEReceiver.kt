@@ -124,6 +124,8 @@ public data class KaliumNSEResult(
     /** Diagnostic code only: why receiving stopped, or `CATCH_UP_*` when the catch-up did not reach live. */
     public val stoppedReason: String? = null,
     public val messageKind: NotificationMessageKind? = null,
+    /** Absolute unread-conversation count after receiving; absent when receiving failed. */
+    public val unreadConversationBadgeCount: Long? = null,
 )
 
 /** A message alert beyond the request's own; text and names are present only when preview is allowed. */
@@ -205,7 +207,11 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
                     configuration.userAgent,
                     configuration.certificatePins,
                     diagnostics = diagnostics,
-                ) { runtime -> receive(runtime, request, diagnostics, started, delivery).also { produced = it } }
+                ) { runtime ->
+                    // The badge is auxiliary: a slow count read must not discard already-produced alerts.
+                    val received = receive(runtime, request, diagnostics, started, delivery).also { produced = it }
+                    received.withBadgeCount(runtime).also { produced = it }
+                }
                 when (result) {
                     is Either.Left -> failure(result.value.name)
                     is Either.Right -> result.value
@@ -219,6 +225,14 @@ public class KaliumNSEReceiver(private val configuration: KaliumNSEConfiguration
         }
         diagnostics.record(outcome.status.name, outcome.failureReason, outcome.shouldNotify)
         return outcome
+    }
+
+    private suspend fun KaliumNSEResult.withBadgeCount(runtime: AppleAccountRuntime): KaliumNSEResult = try {
+        copy(unreadConversationBadgeCount = runtime.database.conversationDAO.observeUnreadConversationBadgeCount().first())
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+        this
     }
 
     private suspend fun receive(
