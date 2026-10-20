@@ -376,6 +376,36 @@ sealed class EventContentDTO {
         ) : Conversation()
 
         @Serializable
+        @SerialName("conversation.mls-message-targeted")
+        data class NewMLSTargetedMessageDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("time") val time: Instant,
+            /** Base64-encoded TLS-serialized targeted MLS message. */
+            @SerialName("data") val message: String,
+        ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.mls-message-transient")
+        data class NewMLSTransientMessageDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("time") val time: Instant,
+            /** Base64-encoded TLS-serialized transient MLS message. */
+            @SerialName("data") val message: String,
+        ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.mls-message-transient-targeted")
+        data class NewMLSTransientTargetedMessageDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            @SerialName("time") val time: Instant,
+            /** Base64-encoded TLS-serialized transient targeted MLS message. */
+            @SerialName("data") val message: String,
+        ) : Conversation()
+
+        @Serializable
         @SerialName("conversation.mls-welcome")
         data class MLSWelcomeDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
