@@ -38,35 +38,32 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
       - name: Run Benchmarks
-        run: ./gradlew :test:benchmarks:benchmark
+        run: ./gradlew benchmark
       - name: Archive Reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: benchmarks-reports
           path: ./test/benchmarks/build/reports/benchmarks/**
-      - name: Locate JMH report
-        id: path
-        shell: bash
-        run: |
-          shopt -s nullglob
-          reports=(./test/benchmarks/build/reports/benchmarks/main/*/main.json)
-          if [ "${#reports[@]}" -ne 1 ]; then
-            echo "Expected one benchmark report, found ${#reports[@]}" >&2
-            exit 1
-          fi
-          echo "report_full_path=${reports[0]}" >> "$GITHUB_OUTPUT"
-
       - name: Create Benchmark Table
         id: benchmark-table
         uses: boswelja/kotlinx-benchmark-table-action@0b1ff502591bcba42a55bd052eae6a82b187968b
         with:
-          benchmark-results: ${{ steps.path.outputs.report_full_path }}
+          benchmark-results: ./test/benchmarks/build/reports/benchmarks/main/**/main.json
       - name: Post Results
         run: |
-          printf '%s\n' '## Benchmarks results ⏱️' "$STEPS_BENCHMARK_TABLE_OUTPUTS_BENCHMARK_TABLE" >> "$GITHUB_STEP_SUMMARY"
+          echo '## Benchmarks results ⏱️' >> $GITHUB_STEP_SUMMARY
+          echo '${STEPS_BENCHMARK_TABLE_OUTPUTS_BENCHMARK_TABLE}️' >> $GITHUB_STEP_SUMMARY
         env:
           STEPS_BENCHMARK_TABLE_OUTPUTS_BENCHMARK_TABLE: ${{steps.benchmark-table.outputs.benchmark-table}}
+
+      - name: Set JMH report full path
+        id: path
+        shell: bash
+        run: |
+          REPORT_FULL_PATH_REF="$(set -- ./test/benchmarks/build/reports/benchmarks/main/**/main.json; echo $1)"
+          echo "report_full_path=$REPORT_FULL_PATH_REF" >> $GITHUB_OUTPUT
+          unset REPORT_FULL_PATH_REF
 
       - name: Install bencher
         uses: bencherdev/bencher@f6dd4bde2670dd4a55a6cd2ca1c7c47ecf6d5b5f
@@ -79,14 +76,14 @@ jobs:
           STEPS_PATH_OUTPUTS_REPORT_FULL_PATH: ${{ steps.path.outputs.report_full_path }}
         run: |
           bencher run \
-          --branch "$GITHUB_HEAD_REF" \
-          --branch-start-point "$GITHUB_BASE_REF" \
+          --branch '${GITHUB_HEAD_REF}' \
+          --branch-start-point '${GITHUB_BASE_REF}' \
           --branch-start-point-hash "$PULL_REQUEST_BASE_SHA" \
           --adapter java_jmh \
           --testbed ubuntu-latest \
           --err \
           --github-actions "$GITHUB_ACTIONS_TOKEN" \
-          --file "$STEPS_PATH_OUTPUTS_REPORT_FULL_PATH"
+          --file ${STEPS_PATH_OUTPUTS_REPORT_FULL_PATH}
 
       - name: Run Bencher on base branch
         if: github.event_name == 'push' && github.ref_name == 'develop'
@@ -96,7 +93,7 @@ jobs:
           --adapter java_jmh \
           --testbed ubuntu-latest \
           --err \
-          --file "$STEPS_PATH_OUTPUTS_REPORT_FULL_PATH"
+          --file ${STEPS_PATH_OUTPUTS_REPORT_FULL_PATH}
         env:
           STEPS_PATH_OUTPUTS_REPORT_FULL_PATH: ${{ steps.path.outputs.report_full_path }}
 
